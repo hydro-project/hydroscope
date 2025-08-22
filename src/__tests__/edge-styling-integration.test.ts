@@ -10,7 +10,7 @@ import {
   FlowGraph,
   VisualizationEngine
 } from '../index';
-import { convertEdgesToReactFlow } from '../../bridges/EdgeConverter';
+import { convertEdgesToReactFlow } from '../bridges/EdgeConverter';
 
 describe('Edge Styling Integration', () => {
   const testJSON = {
@@ -155,7 +155,7 @@ describe('Edge Styling Integration', () => {
     await engine.runLayout();
     
     // Test ReactFlowBridge with edge style config
-    const { ReactFlowBridge } = await import('../../bridges/ReactFlowBridge');
+    const { ReactFlowBridge } = await import('../bridges/ReactFlowBridge');
     const bridge = new ReactFlowBridge();
     bridge.setEdgeStyleConfig(renderConfig.edgeStyleConfig);
     

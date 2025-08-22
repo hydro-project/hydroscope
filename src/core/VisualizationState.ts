@@ -324,7 +324,7 @@ export class VisualizationState implements ContainerHierarchyView {
    */
   getAdjacentEdges(nodeId: string): ReadonlySet<string> {
     const edgeSet = this._collections.nodeToEdges.get(nodeId);
-    return edgeSet ? new Set(edgeSet) : new Set();
+    return edgeSet ? edgeSet : new Set();
   }
 
   /**
@@ -784,10 +784,7 @@ export class VisualizationState implements ContainerHierarchyView {
     try {
       // Expand each top-level collapsed container one by one using the basic method
       for (const container of collapsedTopLevel) {
-        const startTime = performance.now();
         this.expandContainerRecursive(container.id);
-        const endTime = performance.now();
-        console.log(`🔍 Expanded container ${container.id} in ${endTime - startTime}ms`);
       }
     } finally {
       // Re-enable validation and run final validation

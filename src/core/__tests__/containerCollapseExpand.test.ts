@@ -215,6 +215,7 @@ describe('Container Collapse/Expand Tests', () => {
    * 4. Verify cross-container connections are preserved
    */
   it('should preserve cross-container hyperedges when expanding one container while other remains collapsed', () => {
+    console.log("Starting test: preserve cross-container hyperedges");
     const state: VisualizationState = createVisualizationState();
     
     // Create two containers with cross-container connections

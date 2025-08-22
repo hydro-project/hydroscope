@@ -9,7 +9,6 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { performance, PerformanceObserver } from 'perf_hooks';
 import { parseGraphJSON, validateGraphJSON } from '../core/JSONParser';
 import { VisualizationState } from '../core/VisualizationState';
 import { VisualizationEngine } from '../core/VisualizationEngine';
@@ -17,35 +16,6 @@ import { GraphNode, GraphEdge, Container, HyperEdge } from '../shared/types';
 import type { LayoutConfig } from '../core/types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// Performance tracking
-const performanceMetrics = new Map<string, number[]>();
-
-function markStart(name: string): void {
-  performance.mark(`${name}-start`);
-}
-
-function markEnd(name: string): void {
-  performance.mark(`${name}-end`);
-  performance.measure(name, `${name}-start`, `${name}-end`);
-  
-  const measure = performance.getEntriesByName(name, 'measure')[0];
-  if (!performanceMetrics.has(name)) {
-    performanceMetrics.set(name, []);
-  }
-  performanceMetrics.get(name)!.push(measure.duration);
-}
-
-function logPerformanceStats(): void {
-  console.log('\n📊 PERFORMANCE ANALYSIS:');
-  for (const [operation, times] of performanceMetrics.entries()) {
-    const total = times.reduce((a, b) => a + b, 0);
-    const avg = total / times.length;
-    const max = Math.max(...times);
-    const min = Math.min(...times);
-    console.log(`  ${operation}: ${times.length} calls, avg: ${avg.toFixed(2)}ms, max: ${max.toFixed(2)}ms, total: ${total.toFixed(2)}ms`);
-  }
-}
 
 // Skip fuzz tests by default unless explicitly enabled
 const shouldRunFuzzTests = process.env.ENABLE_FUZZ_TESTS === 'true';
@@ -188,16 +158,13 @@ class ComprehensiveFuzzTester {
     console.log(`🎲 Starting comprehensive fuzz test: ${this.testName} (grouping: ${groupingId || 'default'})`);
     
     // Parse the data
-    markStart('parseGraphJSON-initial');
     const result = parseGraphJSON(this.testData, groupingId);
-    markEnd('parseGraphJSON-initial');
     const state = result.state;
     
     // Extract available hierarchies
     this.availableHierarchies = this.testData.hierarchyChoices?.map((h: any) => h.id) || [];
     
     // Create engine for realistic testing
-    markStart('createVisualizationEngine');
     const engine = new VisualizationEngine(state, {
       enableLogging: false, // Reduce noise
       layoutConfig: {
@@ -206,22 +173,15 @@ class ComprehensiveFuzzTester {
         direction: 'DOWN'
       }
     });
-    markEnd('createVisualizationEngine');
     
     console.log(`📊 Initial state: ${state.getVisibleNodes().length} nodes, ${state.visibleHyperEdges.length} hyperEdges, ${state.getVisibleContainers().length} containers`);
     
     // Run initial layout
-    markStart('runLayout-initial');
     await engine.runLayout();
-    markEnd('runLayout-initial');
     
     // Use the existing validateInvariants method instead of our own
-    markStart('validateInvariants');
     state.validateInvariants();
-    markEnd('validateInvariants');
-    markStart('validateEdgeIntegrity');
     await validateEdgeIntegrity(state, 'Initial layout');
-    markEnd('validateEdgeIntegrity');
     
     let totalOperations = 0;
     let disconnectedEdgeIssues = 0;
@@ -443,67 +403,46 @@ class ComprehensiveFuzzTester {
    * Execute a fuzz operation
    */
   private async executeOperation(state: VisualizationState, engine: VisualizationEngine, operation: FuzzOperation): Promise<void> {
-    markStart(`operation-${operation.type}`);
     
     switch (operation.type) {
       case 'expandNode':
-        markStart('expandContainer');
         state.expandContainer(operation.containerId);
-        markEnd('expandContainer');
-        markStart('runLayout');
         await engine.runLayout();
-        markEnd('runLayout');
         break;
         
       case 'contractNode':
-        markStart('collapseContainer');
         state.collapseContainer(operation.containerId);
-        markEnd('collapseContainer');
-        markStart('runLayout');
         await engine.runLayout();
-        markEnd('runLayout');
         break;
         
       case 'expandAllNodes':
         // Expand all containers using bulk method with suspended layout
-        markStart('expandAllContainers');
         engine.suspendAutoLayout();
         state.expandAllContainers();
-        markEnd('expandAllContainers');
-        markStart('runLayout');
         engine.resumeAutoLayout(false); // Resume but don't trigger immediately
         await engine.runLayout();
-        markEnd('runLayout');
         break;
         
       case 'contractAllNodes':
         // Collapse all containers using bulk method
-        markStart('collapseAllContainers');
         state.collapseAllContainers();
-        markEnd('collapseAllContainers');
-        markStart('runLayout');
         await engine.runLayout();
-        markEnd('runLayout');
         break;
         
       case 'changeHierarchy':
         // Parse data with new hierarchy
-        markStart('parseGraphJSON-hierarchy');
         const result = parseGraphJSON(this.testData, operation.hierarchyId);
-        markEnd('parseGraphJSON-hierarchy');
         // This would require engine reinitialization - for now, just log
         console.log(`   🔄 Hierarchy change simulated: ${operation.hierarchyId}`);
         break;
         
       case 'changeLayout':
-        markStart('updateLayoutConfig');
         const layoutConfig: LayoutConfig = {
           algorithm: operation.algorithm,
           direction: operation.direction,
           enableSmartCollapse: true
         };
         engine.updateLayoutConfig(layoutConfig, true);
-        markEnd('updateLayoutConfig');
         break;
         
       case 'toggleAutofit':
@@ -513,34 +452,22 @@ class ComprehensiveFuzzTester {
         
       case 'fitToViewport':
         // Viewport fitting - simulate by running layout
-        markStart('runLayout');
         await engine.runLayout();
-        markEnd('runLayout');
         console.log(`   🔄 Fit to viewport executed`);
         break;
         
       case 'hierarchyTreeExpand':
         // HierarchyTree expand - same as regular expand, respects hierarchy constraints
-        markStart('expandContainer');
         state.expandContainer(operation.containerId);
-        markEnd('expandContainer');
-        markStart('runLayout');
         await engine.runLayout();
-        markEnd('runLayout');
         break;
         
       case 'hierarchyTreeContract':
         // HierarchyTree collapse - same as regular collapse, respects hierarchy constraints
-        markStart('collapseContainer');
         state.collapseContainer(operation.containerId);
-        markEnd('collapseContainer');
-        markStart('runLayout');
         await engine.runLayout();
-        markEnd('runLayout');
         break;
     }
-    
-    markEnd(`operation-${operation.type}`);
   }
   
   /**
@@ -607,15 +534,9 @@ testSuite('Comprehensive Visualizer Fuzz Testing', () => {
   }, 120000); // 2 minute timeout for comprehensive testing
   
   it('should validate individual fuzz operations work correctly', async () => {
-    // Clear performance metrics from any previous runs
-    performanceMetrics.clear();
-    
-    // Load test data
-    markStart('loadTestData');
     const paxosFilePath = join(__dirname, '../test-data/paxos-flipped.json');
     const paxosJsonString = readFileSync(paxosFilePath, 'utf-8');
     const data = JSON.parse(paxosJsonString);
-    markEnd('loadTestData');
     
     // Quick test with just a few iterations
     const tester = new ComprehensiveFuzzTester(data, 'paxos-flipped-quick');
@@ -624,12 +545,7 @@ testSuite('Comprehensive Visualizer Fuzz Testing', () => {
     const groupings = data.hierarchyChoices || [];
     const groupingId = groupings.length > 0 ? groupings[0].id : null;
     
-    markStart('runTest');
     await tester.runTest(groupingId);
-    markEnd('runTest');
-    
-    // Log performance statistics
-    logPerformanceStats();
     
     // If we get here without throwing, the test passed
     expect(true).toBe(true);

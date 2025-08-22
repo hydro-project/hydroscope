@@ -133,8 +133,6 @@ export function parseGraphJSON(
   jsonData: RawGraphData | string,
   selectedGrouping?: string
 ): ParseResult {
-  const parseStart = performance.now();
-  console.log('🔥 parseGraphJSON START');
   
   // Parse JSON if it's a string
   const data: RawGraphData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
@@ -147,16 +145,10 @@ export function parseGraphJSON(
   const state = createVisualizationState();
   
   // Parse metadata
-  const metadataStart = performance.now();
   const metadata = extractMetadata(data);
-  const metadataEnd = performance.now();
-  console.log(`🔥 extractMetadata took ${metadataEnd - metadataStart}ms`);
   
   // Determine which grouping to use
-  const groupingStart = performance.now();
   const grouping = selectGrouping(data, selectedGrouping);
-  const groupingEnd = performance.now();
-  console.log(`🔥 selectGrouping took ${groupingEnd - groupingStart}ms`);
   
   // Parse nodes first (base graph nodes)
   parseNodes(data.nodes, state);

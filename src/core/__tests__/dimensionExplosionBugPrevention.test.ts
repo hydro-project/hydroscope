@@ -858,10 +858,9 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       // Run initial layout
       await engine.runLayout();
       await validateEdgeIntegrity(testVisState, 'Initial layout complete');
-      
+
       // Get all containers for intensive testing
-      const allContainers = testVisState.getVisibleContainers()
-        .filter(container => container.children && container.children.length > 0);
+      const allContainers = testVisState.getVisibleContainers();
       
       let disconnectedEdgeCount = 0;
       let totalOperations = 0;

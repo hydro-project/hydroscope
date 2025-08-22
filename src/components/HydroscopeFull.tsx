@@ -272,23 +272,15 @@ export function HydroscopeFull({
 
   // Handle grouping change
   const handleGroupingChange = useCallback((newGrouping: string | undefined) => {
-    const startTime = performance.now();
-    console.log('🔥 handleGroupingChange START', { newGrouping });
     
     setGrouping(newGrouping);
     
     // Re-create edge style config with new grouping, like vis.js handleGroupingChange
     if (graphData) {
       try {
-        const parseStart = performance.now();
         const parsedData = parseGraphJSON(graphData, newGrouping);
-        const parseEnd = performance.now();
-        console.log(`🔥 parseGraphJSON took ${parseEnd - parseStart}ms`);
         
-        const configStart = performance.now();
         const renderConfig = createRenderConfig(parsedData);
-        const configEnd = performance.now();
-        console.log(`🔥 createRenderConfig took ${configEnd - configStart}ms`);
         
         setEdgeStyleConfig(renderConfig);
         console.log('🎯 Updated edge style config for grouping change:', renderConfig);
@@ -297,8 +289,6 @@ export function HydroscopeFull({
       }
     }
     
-    const endTime = performance.now();
-    console.log(`🔥 handleGroupingChange TOTAL took ${endTime - startTime}ms`);
   }, [graphData]);
 
   const layoutConfig = {
