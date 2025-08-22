@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createVisualizationState } from '../core/VisualizationState';
-import type { VisualizationState } from '../core/VisualizationState';
-import { ELKBridge } from '../bridges/ELKBridge';
-import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
+import { createVisualizationState } from '../../core/VisualizationState';
+import type { VisualizationState } from '../../core/VisualizationState';
+import { ELKBridge } from '../../bridges/ELKBridge';
+import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
 
 /**
  * Tests to verify that ReactFlowBridge correctly uses computed dimensions from VisState

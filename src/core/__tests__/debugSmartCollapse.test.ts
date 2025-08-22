@@ -3,13 +3,13 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { parseGraphJSON } from '../core/JSONParser';
-import { VisualizationEngine } from '../core/VisualizationEngine';
+import { parseGraphJSON } from '../JSONParser';
+import { VisualizationEngine } from '../VisualizationEngine';
 
 describe('Debug Smart Collapse', () => {
   test('should debug missing hyperedges during smart collapse', async () => {
     // Load the paxos data that's causing issues
-    const mockJsonData = require('../test-data/paxos-flipped.json');
+    const mockJsonData = require('../../test-data/paxos-flipped.json');
     const result = parseGraphJSON(mockJsonData, null);
     const state = result.state;
     

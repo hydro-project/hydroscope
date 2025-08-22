@@ -3,13 +3,13 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { parseGraphJSON } from '../core/JSONParser';
-import { VisualizationEngine } from '../core/VisualizationEngine';
+import { parseGraphJSON } from '../JSONParser';
+import { VisualizationEngine } from '../VisualizationEngine';
 
 describe('Debug Edge e460', () => {
   test('should investigate edge e460 and its relationship to containers bt_29 and bt_187', async () => {
     // Load the paxos data
-    const mockJsonData = require('../test-data/paxos-flipped.json');
+    const mockJsonData = require('../../test-data/paxos-flipped.json');
     const result = parseGraphJSON(mockJsonData, null);
     const state = result.state;
     

@@ -315,7 +315,19 @@ export class VisualizationState implements ContainerHierarchyView {
     
     const coveredEdgeIds = this._coveredEdgesIndex!.getCoveredEdges(entityId);
     return coveredEdgeIds;
-  }  /**
+  }
+
+  /**
+   * Get all edges adjacent to a given node or container
+   * @param nodeId The ID of the node or container
+   * @returns ReadonlySet of edge IDs that are connected to this node/container
+   */
+  getAdjacentEdges(nodeId: string): ReadonlySet<string> {
+    const edgeSet = this._collections.nodeToEdges.get(nodeId);
+    return edgeSet ? new Set(edgeSet) : new Set();
+  }
+
+  /**
    * Check if the covered edges index needs rebuilding
    */
   isCoveredEdgesIndexStale(): boolean {
@@ -763,9 +775,26 @@ export class VisualizationState implements ContainerHierarchyView {
     
     if (collapsedTopLevel.length === 0) return;
     
-    // Expand each top-level collapsed container one by one using the basic method
-    for (const container of collapsedTopLevel) {
-      this.expandContainerRecursive(container.id);
+    console.log(`🔍 expandAllContainers: About to expand ${collapsedTopLevel.length} top-level containers`);
+    
+    // Disable validation during bulk expansion to avoid intermediate state issues
+    const originalValidation = this._validationEnabled;
+    this._validationEnabled = false;
+    
+    try {
+      // Expand each top-level collapsed container one by one using the basic method
+      for (const container of collapsedTopLevel) {
+        const startTime = performance.now();
+        this.expandContainerRecursive(container.id);
+        const endTime = performance.now();
+        console.log(`🔍 Expanded container ${container.id} in ${endTime - startTime}ms`);
+      }
+    } finally {
+      // Re-enable validation and run final validation
+      this._validationEnabled = originalValidation;
+      if (this._validationEnabled) {
+        this.validateInvariants();
+      }
     }
   }
 

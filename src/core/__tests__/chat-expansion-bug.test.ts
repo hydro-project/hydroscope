@@ -4,9 +4,9 @@
  * creates duplicate hyperEdges and validation warnings
  */
 
-import { createVisualizationState } from '../core/VisualizationState';
-import type { VisualizationState } from '../core/VisualizationState';
-import type { HyperEdge } from '../core/types';
+import { createVisualizationState } from '../VisualizationState';
+import type { VisualizationState } from '../VisualizationState';
+import type { HyperEdge } from '../types';
 
 describe('Chat Expansion Bug Tests', () => {
   let state: VisualizationState;

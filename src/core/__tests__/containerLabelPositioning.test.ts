@@ -21,9 +21,9 @@
     });ing and dimension adjustments
  */
 
-import { createVisualizationState } from '../core/VisualizationState';
-import { LAYOUT_CONSTANTS } from '../shared/config';
-import { ELKBridge } from '../bridges/ELKBridge';
+import { createVisualizationState } from '../VisualizationState';
+import { LAYOUT_CONSTANTS } from '../../shared/config';
+import { ELKBridge } from '../../bridges/ELKBridge';
 
 describe('Container Label Positioning & Dimensions', () => {
   let visState: any;

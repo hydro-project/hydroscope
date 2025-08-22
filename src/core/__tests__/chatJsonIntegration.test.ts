@@ -5,11 +5,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseGraphJSON, getAvailableGroupings } from '../core/JSONParser';
-import { ELKBridge } from '../bridges/ELKBridge';
-import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
-import { loadChatJsonTestData, skipIfNoTestData } from './testUtils';
-import { isHyperEdge } from '../core/types';
+import { parseGraphJSON, getAvailableGroupings } from '../JSONParser';
+import { ELKBridge } from '../../bridges/ELKBridge';
+import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
+import { loadChatJsonTestData, skipIfNoTestData } from '../../__tests__/testUtils';
+import { isHyperEdge } from '../types';
 
 
 describe('ChatJsonIntegration', () => {

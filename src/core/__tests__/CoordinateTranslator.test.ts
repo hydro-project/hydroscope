@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { CoordinateTranslator } from '../CoordinateTranslator';
-import type { ContainerInfo } from '../CoordinateTranslator';
+import { CoordinateTranslator } from '../../bridges/CoordinateTranslator';
+import type { ContainerInfo } from '../../bridges/CoordinateTranslator';
 
 describe('CoordinateTranslator', () => {
   describe('elkToReactFlow', () => {

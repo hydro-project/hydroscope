@@ -3,8 +3,8 @@
  * Tests the specific case where both containers are collapsed and should render with hyperEdges
  */
 
-import { VisualizationState } from '../core/VisualizationState';
-import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
+import { VisualizationState } from '../VisualizationState';
+import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
 
 function createCollapsedContainersTestGraph(): VisualizationState {
   const visState = new VisualizationState();

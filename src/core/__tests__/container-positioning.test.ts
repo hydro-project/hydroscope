@@ -1,5 +1,5 @@
-import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
-import { VisualizationState } from '../core/VisualizationState';
+import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
+import { VisualizationState } from '../VisualizationState';
 
 describe('ReactFlowBridge Container Positioning', () => {
   let bridge: ReactFlowBridge;

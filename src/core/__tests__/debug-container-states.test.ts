@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseGraphJSON } from '../core/JSONParser';
-import paxosFlippedData from '../test-data/paxos-flipped.json';
+import { parseGraphJSON } from '../JSONParser';
+import paxosFlippedData from '../../test-data/paxos-flipped.json';
 
 describe('Debug Container States', () => {
   it('should show container collapse and visibility states', async () => {

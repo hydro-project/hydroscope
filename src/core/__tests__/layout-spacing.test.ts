@@ -3,14 +3,14 @@
  * This prevents the ELKBridge position corruption bug from recurring
  */
 
-import { VisualizationState } from '../core/VisualizationState';
-import { parseGraphJSON } from '../core/JSONParser';
-import { ELKBridge } from '../bridges/ELKBridge';
+import { VisualizationState } from '../VisualizationState';
+import { parseGraphJSON } from '../JSONParser';
+import { ELKBridge } from '../../bridges/ELKBridge';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // Load the paxos-flipped.json test data
-const paxosFlippedPath = join(__dirname, '../test-data/paxos-flipped.json');
+const paxosFlippedPath = join(__dirname, '../../test-data/paxos-flipped.json');
 const paxosFlippedData = JSON.parse(readFileSync(paxosFlippedPath, 'utf-8'));
 
 describe('Layout Spacing Regression Tests', () => {
@@ -43,7 +43,7 @@ describe('Layout Spacing Regression Tests', () => {
       
       // ADDITIONAL DEBUG: Test ReactFlow conversion to see edge coordinates
       console.log('🔗 Testing ReactFlow conversion...');
-      const { ReactFlowBridge } = await import('../bridges/ReactFlowBridge');
+      const { ReactFlowBridge } = await import('../../bridges/ReactFlowBridge');
       const reactFlowBridge = new ReactFlowBridge();
       const reactFlowData = reactFlowBridge.convertVisState(visState);
       

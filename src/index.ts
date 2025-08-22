@@ -18,6 +18,9 @@
  * DIY TOOLKIT: Individual components for custom layouts
  */
 
+// Import CSS to be bundled
+import './style.css';
+
 // === THREE-TIER API ===
 
 // Tier 1: Basic (read-only)
@@ -47,6 +50,9 @@ export type { RenderConfig, LayoutConfig, FlowGraphEventHandlers } from './core/
 
 // JSON parsing
 export { parseGraphJSON, createRenderConfig } from './core/JSONParser';
+
+// Data utilities
+export { decompressData, parseDataFromUrl } from './utils/compression';
 
 // Example data generation and schema versioning
 export { generateCompleteExample, SCHEMA_VERSION, LAST_UPDATED } from './docs/generateJSONSchema';

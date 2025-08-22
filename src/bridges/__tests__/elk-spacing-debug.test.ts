@@ -4,7 +4,7 @@
  */
 
 import ELK from 'elkjs';
-import { getELKLayoutOptions } from '../shared/config';
+import { getELKLayoutOptions } from '../../shared/config';
 
 describe('ELK Spacing Debug', () => {
   test('should produce reasonable spacing with our exact input data', async () => {

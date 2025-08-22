@@ -12,9 +12,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { VisualizationState } from '../core/VisualizationState';
-import { parseGraphJSON } from '../core/JSONParser';
-import { GraphEdge, HyperEdge } from '../core/types';
+import { VisualizationState } from '../VisualizationState';
+import { parseGraphJSON } from '../JSONParser';
+import { GraphEdge, HyperEdge } from '../types';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 

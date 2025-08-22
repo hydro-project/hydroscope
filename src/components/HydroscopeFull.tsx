@@ -8,14 +8,14 @@ import { InfoPanel } from './InfoPanel';
 import { GroupingControls } from './GroupingControls';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
+import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
 
-const { Content, Sider } = Layout;
+const { Content } = Layout;
 
 export interface HydroscopeFullProps extends Omit<HydroscopeProps, 'eventHandlers' | 'onParsed'> {
   // Layout and styling
   showFileUpload?: boolean;        // Show file upload area (default: true)
   showSidebar?: boolean;          // Show control sidebar (default: true)
-  defaultSiderWidth?: number;     // Default sidebar width (default: 320)
   
   // Feature toggles
   enableCollapse?: boolean;        // Enable container interaction (default: true)
@@ -52,7 +52,6 @@ export function HydroscopeFull({
   data: initialData,
   showFileUpload = true,
   showSidebar = true,
-  defaultSiderWidth = 320,
   enableCollapse = true,
   autoFit = true,
   initialLayoutAlgorithm = 'mrtree',
@@ -68,8 +67,17 @@ export function HydroscopeFull({
   const [data, setData] = useState(initialData);
   const [visualizationState, setVisualizationState] = useState<VisualizationState | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
+  const [graphData, setGraphData] = useState<any>(null); // Raw parsed JSON data like vis.js
+  const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null); // Processed edge style config
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
-  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [collapsedContainers, setCollapsedContainers] = useState<Set<string>>(new Set());
+  
+  // Sync internal data state with prop changes
+  useEffect(() => {
+    if (initialData !== data) {
+      setData(initialData);
+    }
+  }, [initialData, data]);
   
   // Configuration state
   const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
@@ -102,8 +110,46 @@ export function HydroscopeFull({
     console.log('🎯 HydroscopeFull: Received visualization state');
     setVisualizationState(visState);
     setMetadata(parsedMetadata);
+    
+    // Initialize collapsed containers state
+    const initialCollapsedContainers = new Set(visState.visibleContainers
+      .filter(container => container.collapsed)
+      .map(container => container.id));
+    setCollapsedContainers(initialCollapsedContainers);
+    
     onParsed?.(parsedMetadata, visState);
   }, [onParsed]);
+
+  // Initialize graph data and edge style config when data first loads
+  useEffect(() => {
+    if (!data) return;
+    
+    let jsonData = null;
+    if (typeof data === 'string') {
+      try {
+        jsonData = JSON.parse(data);
+      } catch (e) {
+        console.error('Failed to parse JSON data:', e);
+        return;
+      }
+    } else if (data && typeof data === 'object') {
+      jsonData = data;
+    }
+    
+    if (jsonData) {
+      setGraphData(jsonData);
+      
+      // Only create edge style config on initial data load, not on grouping changes
+      try {
+        const parsedData = parseGraphJSON(jsonData, grouping);
+        const renderConfig = createRenderConfig(parsedData);
+        setEdgeStyleConfig(renderConfig);
+        console.log('🎯 Created edge style config:', renderConfig);
+      } catch (e) {
+        console.error('Failed to create render config:', e);
+      }
+    }
+  }, [data]); // Only depend on data, NOT grouping
 
   // Default interactive node click handler
   const handleNodeClick = useCallback(async (event: any, node: any) => {
@@ -226,9 +272,34 @@ export function HydroscopeFull({
 
   // Handle grouping change
   const handleGroupingChange = useCallback((newGrouping: string | undefined) => {
+    const startTime = performance.now();
+    console.log('🔥 handleGroupingChange START', { newGrouping });
+    
     setGrouping(newGrouping);
-    // Data will be re-parsed automatically due to grouping prop change
-  }, []);
+    
+    // Re-create edge style config with new grouping, like vis.js handleGroupingChange
+    if (graphData) {
+      try {
+        const parseStart = performance.now();
+        const parsedData = parseGraphJSON(graphData, newGrouping);
+        const parseEnd = performance.now();
+        console.log(`🔥 parseGraphJSON took ${parseEnd - parseStart}ms`);
+        
+        const configStart = performance.now();
+        const renderConfig = createRenderConfig(parsedData);
+        const configEnd = performance.now();
+        console.log(`🔥 createRenderConfig took ${configEnd - configStart}ms`);
+        
+        setEdgeStyleConfig(renderConfig);
+        console.log('🎯 Updated edge style config for grouping change:', renderConfig);
+      } catch (e) {
+        console.error('Failed to update render config for grouping change:', e);
+      }
+    }
+    
+    const endTime = performance.now();
+    console.log(`🔥 handleGroupingChange TOTAL took ${endTime - startTime}ms`);
+  }, [graphData]);
 
   const layoutConfig = {
     algorithm: layoutAlgorithm as any,
@@ -264,88 +335,137 @@ export function HydroscopeFull({
           </Card>
         )}
 
-        {/* Main Graph Area */}
+        {/* Main Graph Area with horizontal layout like vis.js */}
         {data && (
-          <div style={graphContainerStyle}>
-            <Hydroscope
-              ref={hydroscopeRef}
-              data={data}
-              grouping={grouping}
-              config={renderConfig}
-              layoutConfig={layoutConfig}
-              onParsed={handleParsed}
-              eventHandlers={{
-                onNodeClick: handleNodeClick,
-              }}
-              fillViewport={true}
-              {...hydroscopeProps}
-            />
+          <div style={{ ...graphContainerStyle }}>
+            {/* Layout Controls - Horizontal bar above graph like vis.js */}
+            {visualizationState && (
+              <div style={{ 
+                marginBottom: '8px', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                padding: '0 16px'
+              }}>
+                <LayoutControls
+                  visualizationState={visualizationState}
+                  currentLayout={layoutAlgorithm}
+                  onLayoutChange={handleLayoutChange}
+                  onCollapseAll={handlePackAll}
+                  onExpandAll={handleUnpackAll}
+                  autoFit={autoFit}
+                  onAutoFitToggle={(enabled) => {
+                    // Update the render config to include fitView
+                    const newConfig = { ...renderConfig, fitView: enabled };
+                    setRenderConfig(newConfig);
+                  }}
+                  onFitView={() => hydroscopeRef.current?.fitView?.()}
+                />
+              </div>
+            )}
+
+            {/* Graph container with horizontal layout */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'row', // Horizontal layout
+              height: '600px', // Set explicit height
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              overflow: 'hidden'
+            }}>
+              {/* Info Panel - Left sidebar (matches vis.js layout) */}
+              {showSidebar && visualizationState && (
+                <div style={{
+                  width: '300px',
+                  height: '100%',
+                  borderRight: '1px solid #eee',
+                  overflow: 'auto',
+                  flexShrink: 0,
+                  background: '#fff',
+                }}>
+                  <InfoPanel
+                    visualizationState={visualizationState}
+                    legendData={graphData && graphData.legend ? graphData.legend : {}}
+                    edgeStyleConfig={edgeStyleConfig}
+                    hierarchyChoices={metadata?.availableGroupings || []}
+                    currentGrouping={grouping}
+                    onGroupingChange={handleGroupingChange}
+                    onToggleContainer={async (containerId) => {
+                      try {
+                        const container = visualizationState.getContainer(containerId);
+                        if (container) {
+                          if (container.collapsed) {
+                            visualizationState.expandContainer(containerId);
+                            onContainerExpand?.(containerId, visualizationState);
+                          } else {
+                            visualizationState.collapseContainer(containerId);
+                            onContainerCollapse?.(containerId, visualizationState);
+                          }
+                          
+                          // Update collapsed containers state
+                          const newCollapsedContainers = new Set(visualizationState.visibleContainers
+                            .filter(container => container.collapsed)
+                            .map(container => container.id));
+                          setCollapsedContainers(newCollapsedContainers);
+                          
+                          if (hydroscopeRef.current?.refreshLayout) {
+                            await hydroscopeRef.current.refreshLayout();
+                          }
+                        }
+                      } catch (err) {
+                        console.error('❌ Error toggling container:', err);
+                      }
+                    }}
+                    collapsedContainers={collapsedContainers}
+                    colorPalette={colorPalette}
+                  />
+                </div>
+              )}
+              
+              {/* Flow Graph - Takes remaining space */}
+              <div style={{ 
+                flex: 1,
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Hydroscope
+                  ref={hydroscopeRef}
+                  data={data}
+                  grouping={grouping}
+                  config={renderConfig}
+                  layoutConfig={layoutConfig}
+                  onParsed={handleParsed}
+                  eventHandlers={{
+                    onNodeClick: handleNodeClick,
+                  }}
+                  fillViewport={true}
+                  {...hydroscopeProps}
+                />
+                
+                {/* Style Tuner Panel - Absolute positioned like vis.js */}
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '12px', 
+                  right: '12px', 
+                  zIndex: 1500, 
+                  width: '320px' 
+                }}>
+                  <Card size="small">
+                    <StyleTunerPanel
+                      value={{}}
+                      onChange={() => {}}
+                      colorPalette={colorPalette}
+                      onPaletteChange={setColorPalette}
+                    />
+                  </Card>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </Content>
-
-      {/* Control Sidebar */}
-      {showSidebar && (
-        <Sider
-          width={defaultSiderWidth}
-          collapsible
-          collapsed={siderCollapsed}
-          onCollapse={setSiderCollapsed}
-          style={{
-            background: '#fff',
-            borderLeft: '1px solid #d9d9d9',
-            height: '100vh',
-            overflow: 'auto',
-          }}
-        >
-          <div style={{ padding: '16px' }}>
-            {/* Grouping Controls */}
-    {metadata?.availableGroupings && (
-              <Card size="small" style={{ marginBottom: '16px' }}>
-                <GroupingControls
-      hierarchyChoices={metadata.availableGroupings}
-      currentGrouping={grouping}
-      onGroupingChange={(g) => handleGroupingChange(g)}
-                />
-              </Card>
-            )}
-
-            {/* Layout Controls */}
-            <Card size="small" style={{ marginBottom: '16px' }}>
-              <LayoutControls
-                visualizationState={visualizationState}
-                currentLayout={layoutAlgorithm}
-                onLayoutChange={handleLayoutChange}
-                onCollapseAll={handlePackAll}
-                onExpandAll={handleUnpackAll}
-                autoFit={autoFit}
-                onFitView={() => hydroscopeRef.current?.fitView?.()}
-              />
-            </Card>
-
-            {/* Style Tuning Panel */}
-            <Card size="small" style={{ marginBottom: '16px' }}>
-              <StyleTunerPanel
-                value={{}}
-                onChange={() => {}}
-                colorPalette={colorPalette}
-                onPaletteChange={setColorPalette}
-              />
-            </Card>
-
-            {/* Info Panel */}
-            {visualizationState && (
-              <Card size="small">
-                <InfoPanel
-                  visualizationState={visualizationState}
-                  hierarchyChoices={metadata?.availableGroupings}
-                  currentGrouping={grouping}
-                />
-              </Card>
-            )}
-          </div>
-        </Sider>
-      )}
     </Layout>
   );
 }

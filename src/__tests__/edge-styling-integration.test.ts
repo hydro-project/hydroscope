@@ -10,7 +10,7 @@ import {
   FlowGraph,
   VisualizationEngine
 } from '../index';
-import { convertEdgesToReactFlow } from '../bridges/EdgeConverter';
+import { convertEdgesToReactFlow } from '../../bridges/EdgeConverter';
 
 describe('Edge Styling Integration', () => {
   const testJSON = {
@@ -81,7 +81,7 @@ describe('Edge Styling Integration', () => {
     expect(renderConfig.fitView).toBe(true);
   });
 
-  test('EdgeConverter processes edge properties correctly', () => {
+  test('EdgeBridge processes edge properties correctly', () => {
     const parseResult = parseGraphJSON(testJSON);
     const edges = Array.from(parseResult.state.visibleEdges);
     
@@ -146,7 +146,7 @@ describe('Edge Styling Integration', () => {
     expect(edge.label).toMatch(/\[.*\]/); // Should contain property abbreviations in brackets
   });
 
-  test('ReactFlowBridge integration with EdgeConverter', async () => {
+  test('ReactFlowBridge integration with EdgeBridge', async () => {
     const parseResult = parseGraphJSON(testJSON);
     const renderConfig = createRenderConfig(parseResult);
     
@@ -155,7 +155,7 @@ describe('Edge Styling Integration', () => {
     await engine.runLayout();
     
     // Test ReactFlowBridge with edge style config
-    const { ReactFlowBridge } = await import('../bridges/ReactFlowBridge');
+    const { ReactFlowBridge } = await import('../../bridges/ReactFlowBridge');
     const bridge = new ReactFlowBridge();
     bridge.setEdgeStyleConfig(renderConfig.edgeStyleConfig);
     

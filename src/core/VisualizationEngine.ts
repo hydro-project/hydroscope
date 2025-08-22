@@ -113,6 +113,26 @@ export class VisualizationEngine {
   }
 
   /**
+   * Temporarily suspend automatic layout for bulk operations
+   */
+  suspendAutoLayout(): void {
+    this.config.autoLayout = false;
+    this.log('⏸️ Auto-layout suspended for bulk operations');
+  }
+
+  /**
+   * Resume automatic layout and optionally trigger immediate layout
+   */
+  resumeAutoLayout(triggerLayout: boolean = true): void {
+    this.config.autoLayout = true;
+    this.log('▶️ Auto-layout resumed');
+    
+    if (triggerLayout) {
+      this.scheduleLayout();
+    }
+  }
+
+  /**
    * Run layout on current VisState data
    */
   async runLayout(): Promise<void> {

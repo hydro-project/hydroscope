@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createVisualizationState } from '../core/VisualizationState';
-import { ELKBridge } from '../bridges/ELKBridge';
+import { createVisualizationState } from '../VisualizationState';
+import { ELKBridge } from '../../bridges/ELKBridge';
 
 describe('Layout Configuration Changes', () => {
   it('should accept different layout algorithms', async () => {

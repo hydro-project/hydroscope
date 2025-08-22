@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { VisualizationEngine } from '../core/VisualizationEngine';
-import { VisualizationState } from '../core/VisualizationState';
-import { ELKBridge } from '../bridges/ELKBridge';
+import { VisualizationEngine } from '../VisualizationEngine';
+import { VisualizationState } from '../VisualizationState';
+import { ELKBridge } from '../../bridges/ELKBridge';
 
 describe('Algorithm Configuration Consistency', () => {
   it('should default to mrtree algorithm in VisualizationEngine', () => {

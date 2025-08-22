@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { VisualizationState } from '../core/VisualizationState';
-import { ELKBridge } from '../bridges/ELKBridge';
+import { VisualizationState } from '../VisualizationState';
+import { ELKBridge } from '../../bridges/ELKBridge';
 
 describe('Hidden Container ELK Filtering', () => {
   let state: VisualizationState;

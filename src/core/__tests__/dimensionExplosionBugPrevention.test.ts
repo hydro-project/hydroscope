@@ -832,7 +832,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       console.log(`\n✅ All edge dimension validations passed!`);
     });
 
-    test('🐛 DISCONNECTED EDGES BUG HUNTER: stress test expand/collapse with comprehensive edge monitoring', async () => {
+    test('🐛 DISCONNECTED EDGES LITE FUZZ: stress test expand/collapse with comprehensive edge monitoring', async () => {
       // Load paxos-flipped data - the file that's causing disconnected edges
       const paxosFilePath = join(__dirname, '../../test-data/paxos-flipped.json');
       const paxosJsonString = readFileSync(paxosFilePath, 'utf-8');
@@ -852,7 +852,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         }
       });
       
-      console.log(`🐛 BUG HUNTER: Starting comprehensive edge integrity monitoring...`);
+      console.log(`🐛 LITE FUZZ: Starting comprehensive edge integrity monitoring...`);
       console.log(`📊 Initial state: ${testVisState.getVisibleNodes().length} nodes, ${testVisState.visibleHyperEdges.length} hyperEdges, ${testVisState.getVisibleContainers().length} containers`);
       
       // Run initial layout
@@ -868,7 +868,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       
       // Stress test: rapid expand/collapse cycles like a user clicking containers
       for (let cycle = 0; cycle < 3; cycle++) {
-        console.log(`\n🔄 BUG HUNTER CYCLE ${cycle + 1}: Testing ${allContainers.length} containers...`);
+        console.log(`\n🔄 LITE FUZZ CYCLE ${cycle + 1}: Testing ${allContainers.length} containers...`);
         
         // Test expanding multiple containers rapidly
         const containersToTest = allContainers.slice(0, Math.min(8, allContainers.length));
@@ -911,7 +911,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       await validateLayoutedEdgeDimensions(testVisState, 'Final dimension check');
       
       // Report results
-      console.log(`\n🎯 BUG HUNTER RESULTS:`);
+      console.log(`\n🎯 LITE FUZZ RESULTS:`);
       console.log(`   Total operations: ${totalOperations}`);
       console.log(`   Disconnected edge issues: ${disconnectedEdgeCount}`);
       console.log(`   Final state: ${testVisState.getVisibleNodes().length} nodes, ${testVisState.visibleHyperEdges.length} hyperEdges`);
@@ -919,7 +919,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       // This test passes if no disconnected edges are found
       expect(disconnectedEdgeCount).toBe(0);
       
-      console.log(`✅ BUG HUNTER: No disconnected edges found! The edge integrity system is working correctly.`);
+      console.log(`✅ LITE FUZZ: No disconnected edges found! The edge integrity system is working correctly.`);
     });
   });
 });

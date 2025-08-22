@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { VisualizationState } from '../core/VisualizationState';
+import { VisualizationState } from '../VisualizationState';
 
 describe('Aggregated Edge Preservation', () => {
   let visState: VisualizationState;

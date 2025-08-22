@@ -11,9 +11,9 @@
  */
 
 import { describe, test, expect, beforeEach } from 'vitest';
-import { createVisualizationState } from '../VisualizationState';
-import type { VisualizationState } from '../VisualizationState';
-import { ELKBridge } from '../../bridges/ELKBridge';
+import { createVisualizationState } from '../core/VisualizationState';
+import type { VisualizationState } from '../core/VisualizationState';
+import { ELKBridge } from '../bridges/ELKBridge';
 
 describe('TreeHierarchy/VisState Synchronization Tests', () => {
   let visState: VisualizationState;

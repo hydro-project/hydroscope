@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseGraphJSON } from '../core/JSONParser';
+import { parseGraphJSON } from '../JSONParser';
 
 describe('Hierarchy Change Functionality', () => {
   const mockGraphData = {

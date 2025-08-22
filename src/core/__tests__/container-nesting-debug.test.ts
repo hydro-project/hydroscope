@@ -1,5 +1,5 @@
-import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
-import { VisualizationState } from '../core/VisualizationState';
+import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
+import { VisualizationState } from '../VisualizationState';
 
 describe('Container Nesting Debug', () => {
   let bridge: ReactFlowBridge;

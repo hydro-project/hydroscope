@@ -24,7 +24,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createVisualizationState } from '../core/VisualizationState';
+import { createVisualizationState } from '../VisualizationState';
 
 describe('LayoutBoundaries', () => {
   describe('boundary validation', () => {
