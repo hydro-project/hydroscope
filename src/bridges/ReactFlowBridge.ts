@@ -8,6 +8,7 @@
 import type { VisualizationState } from '../core/VisualizationState';
 import type { GraphNode, GraphEdge, Container } from '../shared/types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
+import { generateNodeColors } from '../shared/colorUtils';
 import { MarkerType, Edge as ReactFlowEdge } from '@xyflow/react';
 import { getHandleConfig, CURRENT_HANDLE_STRATEGY } from '../render/handleConfig';
 import { convertEdgesToReactFlow, EdgeConverterOptions } from './EdgeConverter';
@@ -34,8 +35,10 @@ export interface ReactFlowNode {
     [key: string]: any;
   };
   style?: {
-    width?: number;
-    height?: number;
+  width?: number;
+  height?: number;
+  backgroundColor?: string;
+  border?: string;
   };
   parentId?: string;
   connectable?: boolean; // For floating handles strategy
@@ -95,7 +98,8 @@ export class ReactFlowBridge {
     // Debug: Log first few visible nodes
     const firstFewNodes = visState.visibleNodes.slice(0, 5);
     firstFewNodes.forEach(node => {
-      console.log(`[Bridge] 📋 Node ${node.id}: label="${node.label}", shortLabel="${node.shortLabel}", fullLabel="${node.fullLabel}"`);
+      const nt = (node as any).nodeType || (node as any).type;
+      console.log(`[Bridge] 📋 Node ${node.id}: label="${node.label}", shortLabel="${node.shortLabel}", fullLabel="${node.fullLabel}", nodeType=${nt}`);
     });
 
     const nodes: ReactFlowNode[] = [];
@@ -141,6 +145,9 @@ export class ReactFlowBridge {
         };
       }
       
+      const nodeType: string = (node as any).nodeType || (node as any).type || 'default';
+      const nodeColors = generateNodeColors([nodeType], this.colorPalette);
+
       const flatNode: ReactFlowNode = {
         id: node.id,
         type: 'standard',
@@ -150,8 +157,14 @@ export class ReactFlowBridge {
           shortLabel: node.shortLabel || node.id,
           fullLabel: node.fullLabel || node.shortLabel || node.id,
           style: node.style || 'default',
+          // Preserve nodeType explicitly for coloring/rendering
+          nodeType,
           colorPalette: this.colorPalette,
           ...this.extractCustomProperties(node)
+        },
+        style: {
+          backgroundColor: nodeColors.primary,
+          border: `1px solid ${nodeColors.border}`
         }
         // NO parentId - completely flat
       };
@@ -204,6 +217,8 @@ export class ReactFlowBridge {
           label: container.label || container.id, // Use single label field for containers
           style: (container as any).style || 'default',
           collapsed: container.collapsed || false,
+          // Containers can inherit palette and optional type for legend consistency
+          nodeType: (container as any).nodeType,
           colorPalette: this.colorPalette,
           nodeCount,
           width,
@@ -311,6 +326,7 @@ export class ReactFlowBridge {
           label: container.label || container.id, // Use container.label, fallback to id
           style: (container as any).style || 'default',
           collapsed: container.collapsed,
+          nodeType: (container as any).nodeType,
           colorPalette: this.colorPalette,
           width,
           height,
@@ -344,6 +360,9 @@ export class ReactFlowBridge {
       const nodeLayout = visState.getNodeLayout(node.id);
   const position: { x: number; y: number } = computeNodePosition(visState, node, parentId);
       
+      const nodeType: string = (node as any).nodeType || (node as any).type || 'default';
+      const nodeColors = generateNodeColors([nodeType], this.colorPalette);
+
       const standardNode: ReactFlowNode = {
         id: node.id,
         type: 'standard',
@@ -353,8 +372,14 @@ export class ReactFlowBridge {
           shortLabel: node.shortLabel || node.id,
           fullLabel: node.fullLabel || node.shortLabel || node.id,
           style: node.style || 'default',
+          // Preserve nodeType explicitly for coloring/rendering
+          nodeType,
           colorPalette: this.colorPalette,
           ...this.extractCustomProperties(node)
+        },
+        style: {
+          backgroundColor: nodeColors.primary,
+          border: `1px solid ${nodeColors.border}`
         },
         parentId,
         connectable: CURRENT_HANDLE_STRATEGY === 'floating',
@@ -368,6 +393,10 @@ export class ReactFlowBridge {
       }
       
       nodes.push(standardNode);
+      if (nodes.length <= 8) {
+        // eslint-disable-next-line no-console
+        console.debug(`[Bridge] 🎨 Standard node ${node.id} type=${standardNode.data.nodeType} palette=${this.colorPalette}`);
+      }
     });
   }
 

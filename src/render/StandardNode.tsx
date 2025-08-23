@@ -11,9 +11,21 @@ import { HandlesRenderer } from './handles';
 export function StandardNode({ id, data }: NodeProps) {
   const styleCfg = useStyleConfig();
   // Get dynamic colors based on node type (preferred) or style as fallback
-  const nodeType = String(data.nodeType || data.style || 'default');
+  // Support nodeType possibly nested under a 'data' payload coming from JSON
+  const nodeType = String((data as any).nodeType || (data as any)?.data?.nodeType || data.style || 'default');
   const colorPalette = String(data.colorPalette || 'Set3');
   const colors = generateNodeColors([nodeType], colorPalette);
+
+  // Dev-only: log computed color mapping to verify at runtime
+  if (process.env.NODE_ENV !== 'production') {
+    // Only log a small sample to avoid noise
+    if ((window as any).__hydroColorLogCount__ === undefined) (window as any).__hydroColorLogCount__ = 0;
+    if ((window as any).__hydroColorLogCount__ < 8) {
+      (window as any).__hydroColorLogCount__++;
+      // eslint-disable-next-line no-console
+      console.debug(`[StandardNode] ${id} type=${nodeType} palette=${colorPalette} ->`, colors);
+    }
+  }
 
   // Determine which label to display
   // Priority: data.label (if set by toggle) > data.shortLabel > id
@@ -23,7 +35,7 @@ export function StandardNode({ id, data }: NodeProps) {
     <div
       style={{
         padding: `${styleCfg.nodePadding ?? 12}px 16px`,
-        background: colors.primary,
+  backgroundColor: colors.primary,
         border: `1px solid ${colors.border}`,
         borderRadius: `${styleCfg.nodeBorderRadius ?? 4}px`,
         fontSize: `${styleCfg.nodeFontSize ?? 12}px`,

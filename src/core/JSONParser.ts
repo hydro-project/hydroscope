@@ -518,6 +518,8 @@ function parseNodes(nodes: RawNode[], state: VisualizationState): void {
     try {
       // Extract immutable properties and filter out UI state fields
       const { id, shortLabel, fullLabel, nodeType, semanticTags, position, type, expanded, collapsed, hidden, style, ...safeProps } = rawNode;
+      // Resolve nodeType with fallbacks: explicit nodeType > legacy 'type' > default
+      const resolvedNodeType = (nodeType ?? (typeof type === 'string' ? type : undefined) ?? 'default');
       
       state.addGraphNode(id, {
         label: shortLabel || id, // Initial display label (starts with short, can be toggled to full)
@@ -526,7 +528,7 @@ function parseNodes(nodes: RawNode[], state: VisualizationState): void {
         style: NODE_STYLES.DEFAULT, // Default style - will be applied by bridge based on semanticTags
         // ✅ All nodes start visible - VisualizationState manages visibility
         hidden: false,
-        nodeType: nodeType || 'default',
+        nodeType: resolvedNodeType,
         semanticTags: semanticTags || [],
         ...safeProps // Only include non-UI-state properties
       });

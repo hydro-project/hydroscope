@@ -446,8 +446,57 @@ function EdgeStyleLegendInner({
   const renderLegacyBoxes = () => {
     if (!edgeStyleConfig.propertyMappings) return null;
 
-    return Object.entries(edgeStyleConfig.propertyMappings).map(([property, styleTag], index) => {
-      const sample = EDGE_STYLE_SAMPLES[styleTag as keyof typeof EDGE_STYLE_SAMPLES];
+    return Object.entries(edgeStyleConfig.propertyMappings).map(([property, styleDefinition], index) => {
+      let sample;
+      let displayLabel = property;
+      
+      // Handle both old string format and new object format
+      if (typeof styleDefinition === 'string') {
+        // Old format: property -> styleTag string
+        sample = EDGE_STYLE_SAMPLES[styleDefinition as keyof typeof EDGE_STYLE_SAMPLES];
+      } else if (typeof styleDefinition === 'object' && styleDefinition !== null) {
+        // New format: property -> { reactFlowType, style, animated, label }
+        const config = styleDefinition as { reactFlowType?: string; style?: Record<string, any>; animated?: boolean; label?: string; styleTag?: string };
+        
+        // Use the label if provided, otherwise use the property name
+        if (config.label) {
+          displayLabel = `${property} (${config.label})`;
+        }
+        
+        // Try to get sample from styleTag if provided
+        if (config.styleTag) {
+          sample = EDGE_STYLE_SAMPLES[config.styleTag as keyof typeof EDGE_STYLE_SAMPLES];
+        } else {
+          // Generate a simple visual based on the style properties
+          const stroke = config.style?.stroke || '#4a5568';
+          const strokeWidth = config.style?.strokeWidth || 2;
+          const animated = config.animated || false;
+          
+          sample = (
+            <svg width="40" height="8" viewBox="0 0 40 8">
+              <line 
+                x1="0" 
+                y1="4" 
+                x2="40" 
+                y2="4" 
+                stroke={stroke} 
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+              >
+                {animated && (
+                  <animateTransform 
+                    attributeName="transform" 
+                    type="translate" 
+                    values="0,0;5,0;0,0" 
+                    dur="1s" 
+                    repeatCount="indefinite"
+                  />
+                )}
+              </line>
+            </svg>
+          );
+        }
+      }
       
       return (
         <div key={property} style={styles.pairBoxStyle}>
@@ -461,7 +510,7 @@ function EdgeStyleLegendInner({
                 {sample || <span>■</span>}
               </div>
               <span style={styles.labelStyle}>
-                {property}
+                {displayLabel}
               </span>
             </div>
           </div>

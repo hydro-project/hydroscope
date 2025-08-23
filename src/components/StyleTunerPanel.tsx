@@ -15,15 +15,11 @@ export interface StyleTunerPanelProps {
   // Feed and control the FlowGraph RenderConfig style fields
   value: {
     edgeStyle?: EdgeStyleKind;
-    edgeColor?: string;
     edgeWidth?: number;
     edgeDashed?: boolean;
-    nodeBorderRadius?: number;
     nodePadding?: number;
     nodeFontSize?: number;
-    containerBorderRadius?: number;
     containerBorderWidth?: number;
-    containerShadow?: 'LIGHT' | 'MEDIUM' | 'LARGE' | 'NONE';
   };
   onChange: (next: StyleTunerPanelProps['value']) => void;
   colorPalette?: string;
@@ -87,16 +83,6 @@ export function StyleTunerPanel({
         </div>
 
         <div style={rowStyle}>
-          <label>Edge Color</label>
-          <input
-            type="color"
-            value={local.edgeColor || '#1976d2'}
-            style={{ ...inputStyle, padding: 0, height: 28 }}
-            onChange={(e) => update({ edgeColor: e.target.value })}
-          />
-        </div>
-
-        <div style={rowStyle}>
           <label>Edge Width</label>
           <input
             type="range" min={1} max={8}
@@ -130,20 +116,13 @@ export function StyleTunerPanel({
         <hr />
 
         <div style={rowStyle}>
-          <label>Node Border Radius</label>
-          <input
-            type="range" min={0} max={24}
-            value={local.nodeBorderRadius ?? 4}
-            onChange={(e) => update({ nodeBorderRadius: parseInt(e.target.value, 10) })}
-          />
-        </div>
-
-        <div style={rowStyle}>
           <label>Node Padding</label>
           <input
             type="range" min={4} max={32}
             value={local.nodePadding ?? 12}
-            onChange={(e) => update({ nodePadding: parseInt(e.target.value, 10) })}
+            onChange={(e) => {
+              update({ nodePadding: parseInt(e.target.value, 10) });
+            }}
           />
         </div>
 
@@ -152,20 +131,13 @@ export function StyleTunerPanel({
           <input
             type="range" min={10} max={20}
             value={local.nodeFontSize ?? 12}
-            onChange={(e) => update({ nodeFontSize: parseInt(e.target.value, 10) })}
+            onChange={(e) => {
+              update({ nodeFontSize: parseInt(e.target.value, 10) });
+            }}
           />
         </div>
 
         <hr />
-
-        <div style={rowStyle}>
-          <label>Container Border Radius</label>
-          <input
-            type="range" min={0} max={24}
-            value={local.containerBorderRadius ?? 8}
-            onChange={(e) => update({ containerBorderRadius: parseInt(e.target.value, 10) })}
-          />
-        </div>
 
         <div style={rowStyle}>
           <label>Container Border Width</label>
@@ -174,20 +146,6 @@ export function StyleTunerPanel({
             value={local.containerBorderWidth ?? 2}
             onChange={(e) => update({ containerBorderWidth: parseInt(e.target.value, 10) })}
           />
-        </div>
-
-        <div style={rowStyle}>
-          <label>Container Shadow</label>
-          <select
-            value={local.containerShadow || 'LIGHT'}
-            style={inputStyle}
-            onChange={(e) => update({ containerShadow: e.target.value as any })}
-          >
-            <option value="NONE">None</option>
-            <option value="LIGHT">Light</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LARGE">Large</option>
-          </select>
         </div>
       </div>
     </AntDockablePanel>

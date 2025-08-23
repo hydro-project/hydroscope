@@ -29,7 +29,7 @@ export interface FlowGraphProps {
 
 export interface FlowGraphRef {
   fitView: () => void;
-  refreshLayout: () => Promise<void>;
+  refreshLayout: (force?: boolean) => Promise<void>;
 }
 
 // Internal component that uses ReactFlow hooks
@@ -57,7 +57,7 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
 
   useImperativeHandle(ref, () => ({
     fitView: () => { fitOnce(); },
-    refreshLayout: async () => { await refreshLayout(); }
+    refreshLayout: async (force?: boolean) => { await refreshLayout(force); }
   }));
 
   // Calculate container styles based on fillViewport prop

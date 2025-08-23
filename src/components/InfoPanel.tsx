@@ -49,7 +49,8 @@ export function InfoPanel({
     
     // Collect all unique node types from visible nodes
     visualizationState.visibleNodes.forEach(node => {
-      const nodeType = (node as any).nodeType || (node as any).style || 'default';
+      // Support nodeType possibly nested under a data field
+      const nodeType = (node as any).nodeType || (node as any)?.data?.nodeType || (node as any).style || 'default';
       nodeTypes.add(nodeType);
     });
     
@@ -199,8 +200,8 @@ export function InfoPanel({
           />
         </CollapsibleSection>
 
-        {/* Edge Style Legend Section */}
-        {(edgeStyleConfig?.semanticMappings || edgeStyleConfig?.booleanPropertyPairs || edgeStyleConfig?.singlePropertyMappings || edgeStyleConfig?.propertyMappings) && (
+        {/* Edge Style Legend Section - Show whenever edgeStyleConfig exists */}
+        {edgeStyleConfig && (
           <CollapsibleSection
             title="Edge Styles"
             isCollapsed={edgeStyleCollapsed}

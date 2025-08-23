@@ -359,9 +359,6 @@ export function HydroscopeFull({
               display: 'flex',
               flexDirection: 'row', // Horizontal layout
               height: '600px', // Set explicit height
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              backgroundColor: 'white',
               overflow: 'hidden'
             }}>
               {/* Info Panel - Left sidebar (matches vis.js layout) */}
@@ -372,12 +369,11 @@ export function HydroscopeFull({
                   borderRight: '1px solid #eee',
                   overflow: 'auto',
                   flexShrink: 0,
-                  background: '#fff',
                 }}>
                   <InfoPanel
                     visualizationState={visualizationState}
                     legendData={graphData && graphData.legend ? graphData.legend : {}}
-                    edgeStyleConfig={edgeStyleConfig}
+                    edgeStyleConfig={graphData?.edgeStyleConfig}
                     hierarchyChoices={metadata?.availableGroupings || []}
                     currentGrouping={grouping}
                     onGroupingChange={handleGroupingChange}
@@ -442,14 +438,23 @@ export function HydroscopeFull({
                   zIndex: 1500, 
                   width: '320px' 
                 }}>
-                  <Card size="small">
-                    <StyleTunerPanel
-                      value={{}}
-                      onChange={() => {}}
-                      colorPalette={colorPalette}
-                      onPaletteChange={setColorPalette}
-                    />
-                  </Card>
+                  <StyleTunerPanel
+                    value={renderConfig}
+                    onChange={(newStyles) => {
+                      const newConfig = {
+                        ...renderConfig,
+                        ...newStyles,
+                      };
+                      setRenderConfig(newConfig);
+
+                      if (visualizationState) {
+                        visualizationState.updateNodeDimensions(newConfig);
+                        hydroscopeRef.current?.refreshLayout(true); // Force relayout
+                      }
+                    }}
+                    colorPalette={colorPalette}
+                    onPaletteChange={setColorPalette}
+                  />
                 </div>
               </div>
             </div>

@@ -38,6 +38,8 @@ export const CONTAINER_STYLES = {
 
 // Layout constants
 export const LAYOUT_CONSTANTS = {
+  defaultNodePadding: 12,
+  defaultNodeFontSize: 12,
   DEFAULT_NODE_WIDTH: 180,
   DEFAULT_NODE_HEIGHT: 60,
   DEFAULT_CONTAINER_PADDING: 20,

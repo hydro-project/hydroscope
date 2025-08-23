@@ -1234,6 +1234,26 @@ export class VisualizationState implements ContainerHierarchyView {
       console.warn(`[DUPLICATE_KEYS] React will show warnings for these duplicate keys. Check hyperEdge creation/removal timing.`);
     }
   }
+
+  public updateNodeDimensions(config: any) {
+    for (const node of this._collections.graphNodes.values()) {
+      const { width, height } = this.layoutOps.calculateNodeDimensions(node, config);
+      node.width = width;
+      node.height = height;
+    }
+
+    // When node dimensions change, we must invalidate the cached dimensions of expanded containers
+    // so that the layout engine is forced to recalculate them.
+    for (const container of this._collections.containers.values()) {
+      if (!container.collapsed) {
+        container.width = undefined;
+        container.height = undefined;
+        if (container.layout) {
+          container.layout.dimensions = undefined;
+        }
+      }
+    }
+  }
 }
 
 /**

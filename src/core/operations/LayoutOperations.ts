@@ -234,4 +234,20 @@ export class LayoutOperations {
     
     Object.assign(edge, layout);
   }
+
+  /**
+   * Calculate node dimensions based on its content and styling
+   */
+  calculateNodeDimensions(node: any, config: any = {}): { width: number; height: number } {
+    const padding = config.nodePadding ?? LAYOUT_CONSTANTS.defaultNodePadding;
+    const fontSize = config.nodeFontSize ?? LAYOUT_CONSTANTS.defaultNodeFontSize;
+    
+    // Simple estimation based on label length
+    const label = node.label || node.id;
+    const estimatedCharWidth = fontSize * 0.6;
+    const width = label.length * estimatedCharWidth + 2 * padding;
+    const height = fontSize + 2 * padding;
+    
+    return { width, height };
+  }
 }

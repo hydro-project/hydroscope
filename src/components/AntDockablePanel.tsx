@@ -79,11 +79,11 @@ export function AntDockablePanel({
   // Position based on placement
   if (placement === 'right') {
     cardStyle.right = '16px';
-    cardStyle.top = '80px';
+    cardStyle.top = '180px'; // Positioned lower to avoid occluding LayoutControls
     cardStyle.width = width;
   } else if (placement === 'left') {
     cardStyle.left = '16px';
-    cardStyle.top = '80px';
+    cardStyle.top = '180px'; // Positioned lower to avoid occluding LayoutControls
     cardStyle.width = width;
   } else if (placement === 'top') {
     cardStyle.top = '16px';

@@ -162,16 +162,20 @@ export class ELKBridge {
       elkGraph.edges = [];
     }
     
-    // Validate each node has required properties (VisualizationState should ensure this)
+    // Validate each node has required properties
     elkGraph.children.forEach(node => {
       if (!node.id) {
         throw new Error(`ELK node missing ID: ${JSON.stringify(node)}`);
       }
-      if (typeof node.width !== 'number' || node.width <= 0) {
-        throw new Error(`ELK node ${node.id} has invalid width: ${node.width}. VisualizationState should provide valid dimensions.`);
-      }
-      if (typeof node.height !== 'number' || node.height <= 0) {
-        throw new Error(`ELK node ${node.id} has invalid height: ${node.height}. VisualizationState should provide valid dimensions.`);
+      const isContainer = Array.isArray(node.children) && node.children.length > 0;
+      // Require dimensions only for leaf nodes; containers may omit to let ELK derive sizes
+      if (!isContainer) {
+        if (typeof node.width !== 'number' || node.width <= 0) {
+          throw new Error(`ELK node ${node.id} has invalid width: ${node.width}. VisualizationState should provide valid dimensions.`);
+        }
+        if (typeof node.height !== 'number' || node.height <= 0) {
+          throw new Error(`ELK node ${node.id} has invalid height: ${node.height}. VisualizationState should provide valid dimensions.`);
+        }
       }
       
       // Validate children if this is a container
@@ -180,11 +184,14 @@ export class ELKBridge {
           if (!child.id) {
             throw new Error(`ELK child node missing ID: ${JSON.stringify(child)}`);
           }
-          if (typeof child.width !== 'number' || child.width <= 0) {
-            throw new Error(`ELK child node ${child.id} has invalid width: ${child.width}. VisualizationState should provide valid dimensions.`);
-          }
-          if (typeof child.height !== 'number' || child.height <= 0) {
-            throw new Error(`ELK child node ${child.id} has invalid height: ${child.height}. VisualizationState should provide valid dimensions.`);
+          const childIsContainer = Array.isArray(child.children) && child.children.length > 0;
+          if (!childIsContainer) {
+            if (typeof child.width !== 'number' || child.width <= 0) {
+              throw new Error(`ELK child node ${child.id} has invalid width: ${child.width}. VisualizationState should provide valid dimensions.`);
+            }
+            if (typeof child.height !== 'number' || child.height <= 0) {
+              throw new Error(`ELK child node ${child.id} has invalid height: ${child.height}. VisualizationState should provide valid dimensions.`);
+            }
           }
         });
       }
@@ -263,14 +270,13 @@ export class ELKBridge {
       const containerHeight = (typeof container.height === 'number' && !isNaN(container.height) && isFinite(container.height)) 
         ? container.height : 150;
       
-      const containerNode: ElkNode = {
-        id: container.id,
-        width: containerWidth,
-        height: containerHeight,
-        children: []
-      };
+      // Important: Only provide fixed width/height for collapsed containers.
+      // For expanded containers, omit width/height so ELK can derive the size from children.
+      const containerNode: ElkNode = container.collapsed
+        ? { id: container.id, width: containerWidth, height: containerHeight, children: [] }
+        : { id: container.id, children: [] } as ElkNode;
       
-      if (!container.collapsed) {
+  if (!container.collapsed) {
         // Use VisualizationState API to get children (returns Set)
         const containerChildren = visState.getContainerChildren(container.id);
         containerChildren.forEach(childId => {
@@ -301,19 +307,10 @@ export class ELKBridge {
           }
         });
         
-        // Add a label node for expanded containers to ensure ELK accounts for label space
-        // This acts as a virtual node that reserves space for the container's label
-        if (containerNode.children!.length > 0) { // Only add label if container has content
-          const labelNode: ElkNode = {
-            id: `${container.id}_label`,
-            width: Math.min(containerWidth * 0.6, 150), // Label width (smaller to not dominate layout)
-            height: 20, // Compact label height
-            layoutOptions: {
-              // Let ELK position the label node naturally among other children
-              // No fixed positioning - ELK will place it where it fits best
-            }
-          };
-          containerNode.children!.push(labelNode);
+        // If no real children were added (rare), provide a minimal footprint so ELK keeps the node visible
+        if (!containerNode.children || containerNode.children.length === 0) {
+          (containerNode as any).width = containerWidth;
+          (containerNode as any).height = containerHeight;
         }
       }
       

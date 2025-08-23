@@ -19,7 +19,7 @@ export interface HydroscopeProps {
 
 export interface HydroscopeRef {
   getVisualizationState: () => VisualizationState | null;
-  refreshLayout: () => Promise<void>;
+  refreshLayout: (force?: boolean) => Promise<void>;
   fitView: () => void;
 }
 
@@ -70,9 +70,9 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     getVisualizationState: () => visState,
-    refreshLayout: async () => {
+    refreshLayout: async (force?: boolean) => {
       if (flowGraphRef.current?.refreshLayout) {
-        await flowGraphRef.current.refreshLayout();
+        await flowGraphRef.current.refreshLayout(force);
       }
     },
     fitView: () => {

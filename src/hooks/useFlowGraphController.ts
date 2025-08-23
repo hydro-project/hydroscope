@@ -24,7 +24,7 @@ export interface UseFlowGraphControllerReturn {
   reactFlowData: ReactFlowData | null;
   loading: boolean;
   error: string | null;
-  refreshLayout: () => Promise<void>;
+  refreshLayout: (force?: boolean) => Promise<void>;
   fitOnce: () => void;
   // Handlers
   onNodeClick: (event: any, node: any) => void;
@@ -78,12 +78,17 @@ export function useFlowGraphController({
     }
   }, [fitView]);
 
-  const refreshLayout = useCallback(async () => {
+  const refreshLayout = useCallback(async (force?: boolean) => {
     try {
       setLoading(true);
       setError(null);
 
-      await engine.runLayout();
+      if (force) {
+        engine.updateLayoutConfig({ ...layoutConfig }, true);
+      } else {
+        await engine.runLayout();
+      }
+      
       const baseData = bridge.convertVisState(visualizationState);
       baseReactFlowDataRef.current = baseData;
       const dataWithManual = applyManualPositions(baseData, manualPositions);
