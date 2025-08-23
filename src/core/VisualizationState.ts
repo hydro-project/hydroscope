@@ -1130,11 +1130,6 @@ export class VisualizationState implements ContainerHierarchyView {
       return; // Skip validation during controlled transitions
     }
     
-    // Skip validation during smart collapse to avoid intermediate state warnings
-    if ((this as any).isRunningSmartCollapse) {
-      return;
-    }
-    
     this.invariantValidator.validateInvariants();
   }
 
@@ -1145,6 +1140,16 @@ export class VisualizationState implements ContainerHierarchyView {
     if (context) {
     }
     this.validateInvariants();
+  }
+
+  disableValidation(): boolean {
+    const currentState = this._validationEnabled;
+    this._validationEnabled = false;
+    return currentState;
+  }
+
+  resetValidation(oldState: boolean): void {
+    this._validationEnabled = oldState;
   }
 
   // ============ INTERNAL ACCESS FOR OPERATION CLASSES ============

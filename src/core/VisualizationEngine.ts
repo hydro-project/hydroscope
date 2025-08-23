@@ -30,7 +30,6 @@ export interface VisualizationEngineState {
   lastUpdate: number;
   layoutCount: number;
   error?: string;
-  isRunningSmartCollapse?: boolean;
 }
 
 export interface VisualizationEngineConfig {
@@ -75,9 +74,6 @@ export class VisualizationEngine {
       layoutCount: 0
     };
 
-    this.log('🚀 VisualizationEngine initialized');
-    this.log(`🔧 Config: ${JSON.stringify(this.config)}`);
-    this.log(`📊 Initial layoutCount: ${this.state.layoutCount}`);
   }
 
   // ============ Public API ============
@@ -103,7 +99,6 @@ export class VisualizationEngine {
     this.config.layoutConfig = { ...this.config.layoutConfig, ...layoutConfig };
     this.elkBridge.updateLayoutConfig(layoutConfig);
     
-    this.log(`🔧 Layout config updated: ${JSON.stringify(layoutConfig)}`);
     
     if (autoReLayout) {
       // Reset layout count to trigger smart collapse on algorithm change
@@ -117,7 +112,6 @@ export class VisualizationEngine {
    */
   suspendAutoLayout(): void {
     this.config.autoLayout = false;
-    this.log('⏸️ Auto-layout suspended for bulk operations');
   }
 
   /**
@@ -125,7 +119,6 @@ export class VisualizationEngine {
    */
   resumeAutoLayout(triggerLayout: boolean = true): void {
     this.config.autoLayout = true;
-    this.log('▶️ Auto-layout resumed');
     
     if (triggerLayout) {
       this.scheduleLayout();
@@ -136,10 +129,8 @@ export class VisualizationEngine {
    * Run layout on current VisState data
    */
   async runLayout(): Promise<void> {
-    this.log('📊 Layout requested');
     
     if (this.state.phase === 'laying_out') {
-      this.log('⚠️ Layout already in progress, skipping');
       return;
     }
 
@@ -150,25 +141,18 @@ export class VisualizationEngine {
       await this.elkBridge.layoutVisState(this.visState);
             
       // DEBUG: Check smart collapse conditions
-      this.log(`🔍 SMART COLLAPSE DEBUG:`);
-      this.log(`  - enableSmartCollapse: ${this.config.layoutConfig?.enableSmartCollapse}`);
-      this.log(`  - layoutCount: ${this.state.layoutCount}`);
-      this.log(`  - condition met: ${this.config.layoutConfig?.enableSmartCollapse && (this.state.layoutCount === 0)}`);
       
       // Run smart collapse if enabled and this is the first layout (initiation) or layout config changed
       if (this.config.layoutConfig?.enableSmartCollapse && (this.state.layoutCount === 0)) {
-        this.log('🧠 Running smart collapse after initial layout');
         await this.runSmartCollapse();
         // Use ELK bridge to re-layout the VisState after smartCollapse
         await this.elkBridge.layoutVisState(this.visState);
       } else {
-        this.log('⚠️ Smart collapse SKIPPED - conditions not met');
       }
 
       this.state.layoutCount++;
       this.updateState('ready');
       
-      this.log(`✅ Layout complete (${this.state.layoutCount} total layouts)`);
 
       
     } catch (error) {
@@ -180,7 +164,6 @@ export class VisualizationEngine {
    * Get ReactFlow data for rendering
    */
   getReactFlowData(): ReactFlowData {
-    this.log('🔄 ReactFlow data requested');
     
     if (this.state.phase === 'error') {
       throw new Error(`Cannot render in error state: ${this.state.error}`);
@@ -194,7 +177,6 @@ export class VisualizationEngine {
       
       this.updateState('displayed');
       
-      this.log(`✅ ReactFlow data generated: ${reactFlowData.nodes.length} nodes, ${reactFlowData.edges.length} edges`);
       
       return reactFlowData;
       
@@ -208,7 +190,6 @@ export class VisualizationEngine {
    * Complete visualization pipeline: layout + render
    */
   async visualize(): Promise<ReactFlowData> {
-    this.log('🎨 Full visualization pipeline requested');
     
     // Step 1: Run layout if needed
     if (this.state.phase !== 'ready' && this.state.phase !== 'displayed') {
@@ -227,7 +208,6 @@ export class VisualizationEngine {
       return;
     }
 
-    this.log('⏱️ Layout scheduled with debouncing');
     
     // Clear existing timeout
     if (this.layoutTimeout) {
@@ -246,7 +226,6 @@ export class VisualizationEngine {
    * Notify that VisState data has changed
    */
   onDataChanged(): void {
-    this.log('📝 VisState data changed');
     this.updateState('initial');
     this.scheduleLayout();
   }
@@ -273,7 +252,6 @@ export class VisualizationEngine {
       clearTimeout(this.layoutTimeout);
     }
     this.listeners.clear();
-    this.log('🧹 VisualizationEngine disposed');
   }
 
   /**
@@ -281,166 +259,119 @@ export class VisualizationEngine {
    * Run after initial ELK layout to collapse containers that exceed viewport budget
    */
   private async runSmartCollapse(): Promise<void> {
-    try {
-      this.log('🧠 Starting smart collapse algorithm');
+    // Step 1: Get only TOP-LEVEL containers from VisState
+    // This ensures we don't double-process parent and child containers
+    const containers = this.visState.getTopLevelContainers();
+    
+    if (containers.length === 0) {
+      return;
+    }
+    
+          // Step 2: Calculate container areas using layout dimensions
+    const containerAreas = containers.map(container => {
+      // Get dimensions from ELK layout results (stored as width/height on container)
+      const width = (container as any).width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
+      const height = (container as any).height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
+      const area = width * height;
       
-      // Step 1: Get only TOP-LEVEL containers from VisState
-      // This ensures we don't double-process parent and child containers
-      const containers = this.visState.getTopLevelContainers();
       
-      if (containers.length === 0) {
-        this.log('ℹ️ No top-level containers found, skipping smart collapse');
-        return;
+      return {
+        container,
+        area,
+        width,
+        height
+      };
+    }).sort((a, b) => a.area - b.area); // Sort by area, smallest to largest
+    
+    
+    // Step 3: Calculate viewport area and budget
+    // Use reasonable default viewport size (window dimensions would be ideal)
+    const viewportWidth = 1200;
+    const viewportHeight = 800;
+    const viewportArea = viewportWidth * viewportHeight;
+    const containerAreaBudgetRatio = 0.7; // Use 70% of viewport for containers
+    const containerAreaBudget = viewportArea * containerAreaBudgetRatio;
+    
+    
+    // Step 4: Iterate through containers, keep expanding until budget exceeded
+    let usedArea = 0;
+    const containersToKeepExpanded: string[] = [];
+    const containersToCollapse: string[] = [];
+    
+    for (const { container, area } of containerAreas) {
+      if (usedArea + area <= containerAreaBudget) {
+        // We can afford to keep this container expanded
+        containersToKeepExpanded.push(container.id);
+        usedArea += area;
+      } else {
+        // This would exceed budget, collapse it
+        containersToCollapse.push(container.id);
       }
+    }
+    
+    
+    // Step 5: Apply collapse decisions using collapseContainer
+    if (containersToCollapse.length > 0) {
       
-      this.log(`📊 Found ${containers.length} top-level containers for smart collapse analysis`);
-      
-            // Step 2: Calculate container areas using layout dimensions
-      const containerAreas = containers.map(container => {
-        // Get dimensions from ELK layout results (stored as width/height on container)
-        const width = (container as any).width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
-        const height = (container as any).height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
-        const area = width * height;
-        
-        this.log(`📏 Container ${container.id} area calculation: ${width}x${height} = ${area}, collapsed=${(container as any).collapsed}`);
-        
-        return {
-          container,
-          area,
-          width,
-          height
-        };
-      }).sort((a, b) => a.area - b.area); // Sort by area, smallest to largest
-      
-      this.log(`📐 Container areas: ${containerAreas.map(ca => `${ca.container.id}=${ca.area}`).join(', ')}`);
-      
-      // Step 3: Calculate viewport area and budget
-      // Use reasonable default viewport size (window dimensions would be ideal)
-      const viewportWidth = 1200;
-      const viewportHeight = 800;
-      const viewportArea = viewportWidth * viewportHeight;
-      const containerAreaBudgetRatio = 0.7; // Use 70% of viewport for containers
-      const containerAreaBudget = viewportArea * containerAreaBudgetRatio;
-      
-      this.log(`📱 Viewport: ${viewportWidth}x${viewportHeight} (${viewportArea} total area)`);
-      this.log(`💰 Container area budget: ${containerAreaBudget} (${containerAreaBudgetRatio * 100}% of viewport)`);
-      
-      // Step 4: Iterate through containers, keep expanding until budget exceeded
-      let usedArea = 0;
-      const containersToKeepExpanded: string[] = [];
-      const containersToCollapse: string[] = [];
-      
-      for (const { container, area } of containerAreas) {
-        if (usedArea + area <= containerAreaBudget) {
-          // We can afford to keep this container expanded
-          containersToKeepExpanded.push(container.id);
-          usedArea += area;
-          this.log(`✅ Keeping ${container.id} expanded (area: ${area}, total used: ${usedArea})`);
-        } else {
-          // This would exceed budget, collapse it
-          containersToCollapse.push(container.id);
-          this.log(`📦 Will collapse ${container.id} (area: ${area} would exceed budget)`);
-        }
-      }
-      
-      this.log(`🎯 Smart collapse decisions: keep ${containersToKeepExpanded.length} expanded, collapse ${containersToCollapse.length}`);
-      this.log(`📋 Keeping expanded: ${containersToKeepExpanded.join(', ') || 'none'}`);
-      this.log(`📋 Collapsing: ${containersToCollapse.join(', ') || 'none'}`);
-      
-      // Step 5: Apply collapse decisions using collapseContainer
-      if (containersToCollapse.length > 0) {
-        this.log(`🔧 Applying collapse decisions to ${containersToCollapse.length} containers`);
-        
-        // Set flag to skip individual validation during batch collapse
-        (this.visState as any).isRunningSmartCollapse = true;
-        
-        for (const containerId of containersToCollapse) {
-          try {
-            // CRITICAL: Check if container is already collapsed before attempting collapse
-            // During recursive collapse, parent containers may have already collapsed their children
-            const container = this.visState.getContainer(containerId);
-            if (!container) {
-              this.log(`⚠️ Container ${containerId} no longer exists, skipping`);
-              continue;
-            }
-            
-            if (container.collapsed) {
-              this.log(`⚠️ Container ${containerId} is already collapsed, skipping`);
-              continue;
-            }
-            
-            // CRITICAL: Check if container is now hidden due to ancestor collapse
-            // Smart collapse processes containers individually, but our recursive collapse
-            // may have already hidden descendant containers when their ancestors were collapsed
-            if (container.hidden) {
-              this.log(`⚠️ Container ${containerId} was hidden by ancestor collapse, skipping`);
-              continue;
-            }
-            
-            // Use collapseContainer which handles all the mechanics atomically:
-            // - Collapsing the container and its children
-            // - Creating hyperEdges for crossing edges  
-            // - Hiding descendant containers
-            // - Validating invariants
-            this.visState.collapseContainer(containerId);
-            this.log(`📦 Collapsed container: ${containerId}`);
-          } catch (error) {
-            this.log(`⚠️ Failed to collapse container ${containerId}: ${error}`);
-            // Continue with other containers even if one fails
-            // collapseContainer already handles invariant validation internally
-          }
-        }
-        
-        // Clear the smart collapse flag
-        (this.visState as any).isRunningSmartCollapse = false;
-        
-        // Run final validation after all containers are collapsed
-        this.log('🔍 Running final hyper edge validation after smart collapse');
-        // CRITICAL: Always clean up invalid hyperEdges after smart collapse
+      for (const containerId of containersToCollapse) {
         try {
-          (this.visState as any).containerOps.validateHyperEdgeLifting();
+          // CRITICAL: Check if container is already collapsed before attempting collapse
+          // During recursive collapse, parent containers may have already collapsed their children
+          const container = this.visState.getContainer(containerId);
+          if (!container) {
+            continue;
+          }
+          
+          if (container.collapsed) {
+            continue;
+          }
+          
+          // CRITICAL: Check if container is now hidden due to ancestor collapse
+          // Smart collapse processes containers individually, but our recursive collapse
+          // may have already hidden descendant containers when their ancestors were collapsed
+          if (container.hidden) {
+            continue;
+          }
+          
+          // Use collapseContainer which handles all the mechanics atomically:
+          // - Collapsing the container and its children
+          // - Creating hyperEdges for crossing edges  
+          // - Hiding descendant containers
+          // - Validating invariants
+          this.visState.collapseContainer(containerId);
         } catch (error) {
-          this.log(`⚠️ HyperEdge cleanup failed: ${error}`);
+          // Continue with other containers even if one fails
+          // collapseContainer already handles invariant validation internally
         }
-        
-        this.log(`✅ All ${containersToCollapse.length} collapse operations complete`);
-        
-        // Step 6: Re-run layout after collapse to get clean final layout
-        this.log('🔄 Re-running layout after smart collapse');
-        // IMPORTANT: Clear any cached positions to force fresh layout with new collapsed dimensions
-        this.log('🧹 Clearing layout cache to force fresh ELK layout with collapsed dimensions');
-        this.clearLayoutPositions();
-        // Force ELK to rebuild from scratch with new dimensions
-        this.log('🔄 Creating fresh ELK instance to avoid any internal caching');
-        this.log(`📋 ELKBridge config: ${JSON.stringify(this.config.layoutConfig)}`);
-        this.elkBridge = new ELKBridge(this.config.layoutConfig);
-        
-        // INVARIANT: All containers should be unfixed for fresh layout
-        this.validateRelayoutInvariants();
-        
-        // CRITICAL: Validate collapsed containers have small dimensions  
-        this.validateCollapsedContainerDimensions();
-        
-        // Sanity check ELK layout config
-        this.validateELKLayoutConfig();
-        
-        // Validate TreeHierarchy and VisState are in sync  
-        this.validateTreeHierarchySync();
-        
-        await this.elkBridge.layoutVisState(this.visState);
-        this.log('✅ Post-collapse layout complete');
       }
       
-      this.log(`💰 Final budget usage: ${usedArea}/${containerAreaBudget} (${((usedArea/containerAreaBudget)*100).toFixed(1)}%)`);
-      this.log('🎉 Smart collapse algorithm complete');
+      // Run final validation after all containers are collapsed
+      // CRITICAL: Always clean up invalid hyperEdges after smart collapse
+      try {
+        (this.visState as any).containerOps.validateHyperEdgeLifting();
+      } catch (error) {
+      }
       
-    } catch (error) {
-      // Ensure smart collapse flag is cleared even on error
-      (this.visState as any).isRunningSmartCollapse = false;
-      this.handleError('Smart collapse failed', error);
-    } finally {
-      // Ensure smart collapse flag is always cleared
-      (this.visState as any).isRunningSmartCollapse = false;
+      
+      // Step 6: Re-run layout after collapse to get clean final layout
+      // IMPORTANT: Clear any cached positions to force fresh layout with new collapsed dimensions
+      this.clearLayoutPositions();
+      // Force ELK to rebuild from scratch with new dimensions
+      this.elkBridge = new ELKBridge(this.config.layoutConfig);
+      
+      // INVARIANT: All containers should be unfixed for fresh layout
+      this.validateRelayoutInvariants();
+      
+      // CRITICAL: Validate collapsed containers have small dimensions  
+      this.validateCollapsedContainerDimensions();
+      
+      // Sanity check ELK layout config
+      this.validateELKLayoutConfig();
+      
+      // Validate TreeHierarchy and VisState are in sync  
+      this.validateTreeHierarchySync();
+      
+      await this.elkBridge.layoutVisState(this.visState);
     }
   }
 
@@ -455,7 +386,6 @@ export class VisualizationEngine {
       delete this.state.error;
     }
     
-    this.log(`🔄 State: ${previousPhase} → ${phase}`);
     
     // Notify listeners
     this.listeners.forEach(listener => {
@@ -471,7 +401,6 @@ export class VisualizationEngine {
    * Validate that collapsed containers have correct small dimensions
    */
   private validateCollapsedContainerDimensions(): void {
-    this.log('🔍 Validating collapsed container dimensions...');
     
     const containers = this.visState.visibleContainers;
     let collapsedCount = 0;
@@ -485,9 +414,7 @@ export class VisualizationEngine {
         // Collapsed containers should be small (≤300x200)
         if (dimensions.width > 300 || dimensions.height > 200) {
           dimensionViolations++;
-          this.log(`❌ DIMENSION VIOLATION: Collapsed container ${container.id} has dimensions ${dimensions.width}x${dimensions.height} but should be ≤300x200`);
         } else {
-          this.log(`✅ Container ${container.id}: ${dimensions.width}x${dimensions.height} (collapsed)`);
         }
       }
     }
@@ -496,14 +423,12 @@ export class VisualizationEngine {
       throw new Error(`Collapsed container dimension violations: ${dimensionViolations}/${collapsedCount} collapsed containers have incorrect dimensions`);
     }
     
-    this.log(`✅ Collapsed container dimensions validated: ${collapsedCount} containers all have proper small dimensions`);
   }
 
   /**
    * Validate invariants before re-layout after collapse
    */
   private validateRelayoutInvariants(): void {
-    this.log('🔍 Validating re-layout invariants...');
     
     // INVARIANT: All containers should have elkFixed=false for fresh layout
     const containers = this.visState.visibleContainers;
@@ -513,7 +438,6 @@ export class VisualizationEngine {
       const isFixed = this.elkBridge.getContainerELKFixed(this.visState, container.id);
       if (isFixed) {
         fixedCount++;
-        this.log(`❌ INVARIANT VIOLATION: Container ${container.id} is elkFixed=true but should be false for fresh layout`);
       }
     }
     
@@ -521,29 +445,24 @@ export class VisualizationEngine {
       throw new Error(`Re-layout invariant violation: ${fixedCount} containers are still elkFixed=true, preventing fresh layout`);
     }
     
-    this.log(`✅ Re-layout invariants passed: ${containers.length} containers all have elkFixed=false`);
   }
 
   /**
    * Validate ELK layout configuration
    */
   private validateELKLayoutConfig(): void {
-    this.log('🔍 Validating ELK layout config...');
     
     const config = this.config.layoutConfig;
     if (!config) {
       throw new Error('ELK layout config is undefined');
     }
     
-    this.log(`📐 ELK Config: algorithm=${config.algorithm || 'default'}`);
-    this.log(`✅ ELK layout config validated`);
   }
 
   /**
    * Validate TreeHierarchy and VisState are in sync
    */
   private validateTreeHierarchySync(): void {
-    this.log('🔍 Validating TreeHierarchy/VisState sync...');
     
     // Check that visible containers in VisState match what TreeHierarchy should show
     const visibleContainers = this.visState.visibleContainers;
@@ -558,8 +477,6 @@ export class VisualizationEngine {
       }
     }
     
-    this.log(`📊 Container states: ${collapsedCount} collapsed, ${expandedCount} expanded`);
-    this.log(`✅ TreeHierarchy sync validated (${visibleContainers.length} total containers)`);
   }
 
   /**
@@ -568,12 +485,10 @@ export class VisualizationEngine {
    * calculated with old (large) container dimensions
    */
   private clearLayoutPositions(): void {
-    this.log('🧹 Clearing layout positions for fresh ELK calculation...');
     
     // Use VisState's public method to clear all layout positions
     this.visState.clearLayoutPositions();
     
-    this.log(`✅ Cleared layout positions for all containers and nodes`);
   }
 
   private handleError(message: string, error: any): void {

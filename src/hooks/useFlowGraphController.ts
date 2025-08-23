@@ -155,12 +155,10 @@ export function useFlowGraphController({
 
   // Listen to visualization state changes
   useEffect(() => {
-    if (engine.getState().isRunningSmartCollapse) return;
-
     const handle = async () => {
       try {
         const state = engine.getState();
-        if (state.phase === 'laying_out' || state.isRunningSmartCollapse) {
+        if (state.phase === 'laying_out') {
           // Skip; engine busy
           return;
         }

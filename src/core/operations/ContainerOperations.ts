@@ -1,12 +1,10 @@
 /**
  * Container Operations - Collapse/Expand Logic
  * 
- * Handles all container state transitions including collapse/expand operations,
- * hyperEdge management, and visibility cascading. Extracted from VisState.ts
- * for better separation of concerns.
+ * Handles container state transitions including collapse/expand operations and
+ * hyperEdge management.
  */
 
-import { VisualizationState } from '../VisualizationState';
 import { GraphNode, Container, GraphEdge, HyperEdge, Edge, isGraphEdge, isHyperEdge } from '../types';
 import { createHyperEdge } from '../EdgeFactory';
 import { HYPEREDGE_CONSTANTS } from '../../shared/config';
@@ -23,6 +21,9 @@ export class ContainerOperations {
    */
   handleContainerCollapse(containerId: string): void {
     const children = this.state.getContainerChildren(containerId) || new Set();
+
+    // Disable invariant checking while collapsing
+    const validationState = this.state.disableValidation();
     
     // Step 1: Recursively collapse any expanded child containers first
     for (const childId of children) {
@@ -37,70 +38,59 @@ export class ContainerOperations {
     for (const childId of children) {
       const container = this.state.getContainer(childId);
       const node = this.state.getGraphNode(childId);
-      
       if (container) {
         // Child containers must be both collapsed and hidden when parent is collapsed
         this.state.setContainerState(childId, { collapsed: true, hidden: true });
-        // Clean up invalid hyperEdges immediately after hiding each container
-        this.cleanupInvalidHyperEdges();
       } else if (node) {
         this.state.setNodeVisibility(childId, false);
       }
     }
     
     // Step 3: Clean up any hyperEdges that are no longer valid due to visibility changes
-    // Do this immediately after hiding children to prevent validation errors
-    this.cleanupInvalidHyperEdges();
+    this.cleanupAdjacentHyperEdges(children);
     
-    // Step 4: Delete all GraphEdges adjacent to children
-    this.deleteAdjacentEdges(new Set(children));
-    
-    // Step 5: Create hyperEdges based on external connections
+    // Step 4: Create hyperEdges based on external connections
     this.createHyperEdgesForCollapsedContainer(containerId);
     
-    // Step 6: Mark container as collapsed
+    // Step 5: Mark container as collapsed
     this.state.setContainerCollapsed(containerId, true);
+
+    // Reenable invariants
+    this.state.resetValidation(validationState);
   }
 
   /**
    * Handle container expansion by removing hyperEdges and restoring GraphEdge visibility
    */
   handleContainerExpansion(containerId: string): void {
-    // 1. Find all hyperEdges connected to this container, prep to remove
-    const hyperEdgeIds = this.state._collections.nodeToEdges.get(containerId) || new Set();
-    const hyperEdgesToRemove: string[] = [];
-    
-    for (const hyperEdgeId of hyperEdgeIds) {
-      const hyperEdge: HyperEdge | undefined = this.state.getHyperEdge(hyperEdgeId);
-      if (hyperEdge && (hyperEdge.source === containerId || hyperEdge.target === containerId)) {
-        hyperEdgesToRemove.push(hyperEdgeId);
-      }
-    }
-
-    // 2. Remove the hyperEdges (they are no longer needed)
-    for (const hyperEdgeId of hyperEdgesToRemove) {
-      this.state.removeHyperEdge(hyperEdgeId);
-    }
-
-    // 3. Mark container as expanded
+    // 1. Mark container as expanded
     this.state.setContainerCollapsed(containerId, false);
 
-    // 4. Show all child nodes and expanded child containers
+    // 2. Remove the adjacent hyperEdges (they are now invalid)
+    const nodes = new Set<String>();
+    nodes.add(containerId);
+    this.cleanupAdjacentHyperEdges(nodes);
+
+    // 3. Show all child nodes and expanded child containers
     const children = this.state.getContainerChildren(containerId) || new Set();
     for (const childId of children) {
       const container = this.state.getContainer(childId);
       const node = this.state.getGraphNode(childId);
       
       if (container) {
-        // For child containers, show them and respect their collapsed state
+        // For child containers, show them
         this.state.setContainerState(childId, { hidden: false });
+        // This node was collapsed until now; all its children should be collapsed (recursively)
+        if (!this.state.getContainer(childId).collapsed) {
+          throw new Error(`[handleContainerExpansion] child ${childId} of expanding container is already expanded`);
+        }
       } else if (node) {
         // Show child nodes
         this.state.setNodeVisibility(childId, true);
       }
     }
 
-    // 5. Restore visibility of GraphEdges using CoveredEdgesIndex
+    // 4. Restore visibility of GraphEdges that were aggregated in former hyperedges
     const coveredEdgeIds = this.state.getAggregatedEdges(containerId);
     for (const edgeId of coveredEdgeIds) {
       const edge = this.state.getGraphEdge(edgeId);
@@ -114,35 +104,14 @@ export class ContainerOperations {
       }
     }
 
-    // 6. Create hyperEdges for any child containers -- or container neighbors of child nodes!
+    // 6. Create hyperEdges for any child containers -- or neighbors of child nodes that are containers!
     for (const collapsedContainerId of this.findCollapsedNodesOrNeighbors(children)) {
       this.createHyperEdgesForCollapsedContainer(collapsedContainerId);
     }
   }
 
   /**
-   * Delete all GraphEdges that are adjacent to the given nodes
-   */
-  private deleteAdjacentEdges(nodeIds: Set<string>): void {
-    const edgesToDelete: string[] = [];
-    
-    for (const nodeId of nodeIds) {
-      for (const edgeId of this.state.getAdjacentEdges(nodeId)) {
-        const edge = this.state.getGraphEdge(edgeId);
-        if (edge && !edge.hidden) {
-          if (nodeIds.has(edge.source) || nodeIds.has(edge.target)) {
-            edgesToDelete.push(edge.id);
-          }
-        }
-      }
-    }    
-    for (const edgeId of edgesToDelete) {
-      this.state.removeGraphEdge(edgeId);
-    }
-  }
-
-  /**
-   * Get crossing edges for a container (public API)
+   * Get crossing edges for a container (public API used by tests only)
    */
   getCrossingEdges(containerId: string): GraphEdge[] {
     return this.findCrossingEdges(containerId);
@@ -170,7 +139,7 @@ export class ContainerOperations {
   }
 
   /**
-   * Create hyperEdges for a collapsed container by finding crossing edges
+   * Create fresh hyperEdges for a collapsed container
    */
   private createHyperEdgesForCollapsedContainer(containerId: string): void {
     // Ensure the container is actually collapsed before creating hyperEdges
@@ -227,9 +196,9 @@ export class ContainerOperations {
         continue; // Skip creating hyperEdges with invalid endpoints
       }
       
-      // Create incoming hyperEdge (external -> container)
+      // Create incoming hyperEdge (container <- external)
       if (group.incoming.length > 0) {
-  const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${externalEndpoint}${HYPEREDGE_CONSTANTS.SEPARATOR}${containerId}`;
+        const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${externalEndpoint}${HYPEREDGE_CONSTANTS.SEPARATOR}${containerId}`;
         const aggregatedEdges = new Map<string, GraphEdge>();
         for (const edge of group.incoming) {
           aggregatedEdges.set(edge.id, edge);
@@ -246,7 +215,7 @@ export class ContainerOperations {
       
       // Create outgoing hyperEdge (container -> external)
       if (group.outgoing.length > 0) {
-  const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${containerId}${HYPEREDGE_CONSTANTS.SEPARATOR}${externalEndpoint}`;
+        const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${containerId}${HYPEREDGE_CONSTANTS.SEPARATOR}${externalEndpoint}`;
         const aggregatedEdges = new Map<string, GraphEdge>();
         for (const edge of group.outgoing) {
           aggregatedEdges.set(edge.id, edge);
@@ -284,17 +253,15 @@ export class ContainerOperations {
       return entityId;
     }
 
-    // If it's a node, find its visible ancestor container
-    const nodeContainer = this.state.getNodeContainer(entityId);
+    // If it's a node, find its visible ancestor
+    let nodeContainer = this.state.getNodeContainer(entityId);
+    // If it's a container, find its visible ancestor
+    if (!nodeContainer) {
+      nodeContainer = this.state.getContainer(entityId)?.parentId;
+    }
     if (nodeContainer) {
       // Recursively find the lowest visible ancestor of the container
       return this.findLowestVisibleAncestor(nodeContainer);
-    }
-
-    // If it's a container, find its visible ancestor
-    const container = this.state.getContainer(entityId);
-    if (container && container.parentId) {
-      return this.findLowestVisibleAncestor(container.parentId);
     }
 
     // If no visible ancestor found, return the entity itself
@@ -310,83 +277,35 @@ export class ContainerOperations {
   }
 
   /**
-   * Validate that hyperEdges only exist between valid, visible endpoints
-   */
-  validateHyperEdgeLifting(): void {
-    // Check that hyperEdges only exist between valid, visible endpoints that ELK can process
-    const invalidHyperEdges: string[] = [];
-    
-    for (const [hyperEdgeId, hyperEdge] of this.state._collections.hyperEdges) {
-      // Check if both endpoints exist and are visible to ELK
-      const sourceNodeExists = this.state._collections._visibleNodes.has(hyperEdge.source);
-      const sourceContainerExists = this.state._collections._visibleContainers.has(hyperEdge.source);
-      const targetNodeExists = this.state._collections._visibleNodes.has(hyperEdge.target);
-      const targetContainerExists = this.state._collections._visibleContainers.has(hyperEdge.target);
-
-      const sourceExists = sourceNodeExists || sourceContainerExists;
-      const targetExists = targetNodeExists || targetContainerExists;
-
-      // HyperEdges are valid if:
-      // 1. Both endpoints exist and are visible to ELK
-      // 2. At least one endpoint is a collapsed container
-      const hasCollapsedContainer = sourceContainerExists || targetContainerExists;
-      
-      if (!sourceExists || !targetExists || !hasCollapsedContainer) {
-        invalidHyperEdges.push(hyperEdgeId);
-      }
-    }
-    
-    // Note: This method should only validate, not mutate
-    // If invalid hyperEdges are found, they should be reported but not removed here
-    if (invalidHyperEdges.length > 0) {
-      console.warn(`[validateHyperEdgeLifting] Found ${invalidHyperEdges.length} invalid hyperEdges: ${invalidHyperEdges.join(', ')}`);
-    }
-  }
-
-  /**
    * Clean up hyperEdges that connect to nodes that are no longer visible
    */
-  private cleanupInvalidHyperEdges(): void {
+  private cleanupAdjacentHyperEdges(nodeIds: Set<String>): void {
     const hyperEdgesToRemove: string[] = [];
-    
+
     // Check all hyperEdges for invalid endpoints
-    for (const [hyperEdgeId, hyperEdge] of this.state._collections.hyperEdges.entries()) {
-      const sourceVisible = this.isNodeOrContainerVisible(hyperEdge.source);
-      const targetVisible = this.isNodeOrContainerVisible(hyperEdge.target);
-      
-      // Remove hyperEdges with any hidden endpoints
-      // HyperEdges should only exist between visible entities
-      if (!sourceVisible || !targetVisible) {
-        hyperEdgesToRemove.push(hyperEdgeId);
+    for (const nodeId of nodeIds) {
+      for (const edgeId of this.state.getAdjacentEdges(nodeId)) {
+        const hyperEdge = this.state.getHyperEdge(edgeId);
+        if (hyperEdge) {
+          const sourceVisible = this.isNodeOrContainerVisible(hyperEdge.source);
+          const targetVisible = this.isNodeOrContainerVisible(hyperEdge.target);
+          const sourceContainer = this.state.getContainer(hyperEdge.source);
+          const targetContainer = this.state.getContainer(hyperEdge.target);
+          const sourceExpanded = sourceContainer && !sourceContainer.hidden;
+          const targetExpanded = targetContainer && !targetContainer.hidden;
+        
+          // Remove hyperEdges with any hidden endpoints
+          // HyperEdges should only exist between visible entities
+          if (!sourceVisible || !targetVisible || sourceExpanded || targetExpanded) {
+            hyperEdgesToRemove.push(hyperEdge.id);
+          }
+        }
       }
     }
     
     // Remove invalid hyperEdges
     for (const hyperEdgeId of hyperEdgesToRemove) {
       this.state.removeHyperEdge(hyperEdgeId);
-    }
-  }
-
-  /**
-   * Recreate hyperEdges for all collapsed containers 
-   * Used after expanding a container to ensure other collapsed containers get proper hyperEdges
-   */
-  private recreateHyperEdgesForAllCollapsedContainers(): void {
-    // Find all collapsed containers
-    for (const [containerId, container] of this.state._collections.containers.entries()) {
-      if (container.collapsed) {
-        // First remove existing hyperEdges for this container
-        const existingHyperEdges = [...this.state._collections.hyperEdges.entries()]
-          .filter(([, hyperEdge]) => (hyperEdge as any).source === containerId || (hyperEdge as any).target === containerId)
-          .map(([hyperEdgeId]) => hyperEdgeId as string);
-        
-        for (const hyperEdgeId of existingHyperEdges) {
-          this.state.removeHyperEdge(hyperEdgeId);
-        }
-        
-        // Then recreate hyperEdges based on current visibility
-        this.createHyperEdgesForCollapsedContainer(containerId);
-      }
     }
   }
 
@@ -410,7 +329,7 @@ export class ContainerOperations {
           let remote = (edge.source === nodeId) ? edge.target : edge.source;
           const remoteAnc = this.findLowestVisibleAncestor(remote);
           if (!remoteAnc) {
-            throw new Error(`[recreateHyperEdgesForCollapsedNeighbors] No visible ancestor found for node ${remote}`);
+            throw new Error(`[findCollapsedNodesOrNeighbors] No visible ancestor found for node ${remote}`);
           }
           // If the lowest visible ancestor is a container, add it to the set
           if (this.state.getContainer(remoteAnc)) {
