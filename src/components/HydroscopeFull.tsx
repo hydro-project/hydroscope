@@ -11,6 +11,13 @@ import { GroupingControls } from './GroupingControls';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
 import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
+import { 
+  saveToStorage, 
+  loadFromStorage, 
+  clearHydroscopeStorage,
+  STORAGE_KEYS, 
+  isStorageAvailable 
+} from '../utils/persistence';
 
 const { Content } = Layout;
 
@@ -88,6 +95,22 @@ export function HydroscopeFull({
   const [infoPanelOpen, setInfoPanelOpen] = useState(false); // Start collapsed
   const [stylePanelOpen, setStylePanelOpen] = useState(false); // Start collapsed
 
+  // Default values for reset functionality
+  const defaultRenderConfig = {
+    ...hydroscopeProps.config,
+    edgeStyleConfig: (initialData && typeof initialData === 'object' && (initialData as any).edgeStyleConfig) || undefined
+  };
+  const defaultColorPalette = initialColorPalette;
+  const defaultLayoutAlgorithm = initialLayoutAlgorithm;
+  const defaultAutoFit = autoFit;
+
+  // Load persisted settings with graceful fallback
+  const storageAvailable = isStorageAvailable();
+  const persistedRenderConfig = storageAvailable ? loadFromStorage(STORAGE_KEYS.RENDER_CONFIG, defaultRenderConfig) : defaultRenderConfig;
+  const persistedColorPalette = storageAvailable ? loadFromStorage(STORAGE_KEYS.COLOR_PALETTE, defaultColorPalette) : defaultColorPalette;
+  const persistedLayoutAlgorithm = storageAvailable ? loadFromStorage(STORAGE_KEYS.LAYOUT_ALGORITHM, defaultLayoutAlgorithm) : defaultLayoutAlgorithm;
+  const persistedAutoFit = storageAvailable ? loadFromStorage(STORAGE_KEYS.AUTO_FIT, defaultAutoFit) : defaultAutoFit;
+
   // Ensure renderConfig.edgeStyleConfig is always in sync with graphData.edgeStyleConfig
   useEffect(() => {
     if (graphData && graphData.edgeStyleConfig) {
@@ -104,15 +127,12 @@ export function HydroscopeFull({
     setData(initialData);
   }, [initialData]);
   
-  // Configuration state
+  // Configuration state with persistence
   const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
-  const [colorPalette, setColorPalette] = useState(initialColorPalette);
-  const [layoutAlgorithm, setLayoutAlgorithm] = useState(initialLayoutAlgorithm);
-  const [renderConfig, setRenderConfig] = useState<RenderConfig>({
-    ...hydroscopeProps.config,
-    edgeStyleConfig: (initialData && typeof initialData === 'object' && (initialData as any).edgeStyleConfig) || undefined
-  });
-  const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(autoFit);
+  const [colorPalette, setColorPalette] = useState(persistedColorPalette);
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState(persistedLayoutAlgorithm);
+  const [renderConfig, setRenderConfig] = useState<RenderConfig>(persistedRenderConfig);
+  const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(persistedAutoFit);
   
   const hydroscopeRef = useRef<HydroscopeRef>(null);
 
@@ -130,6 +150,44 @@ export function HydroscopeFull({
       return next;
     });
   }, [colorPalette, autoFitEnabled, onConfigChange]);
+
+  // Persistence effects - save to localStorage when values change
+  useEffect(() => {
+    if (storageAvailable) {
+      saveToStorage(STORAGE_KEYS.RENDER_CONFIG, renderConfig);
+    }
+  }, [renderConfig, storageAvailable]);
+
+  useEffect(() => {
+    if (storageAvailable) {
+      saveToStorage(STORAGE_KEYS.COLOR_PALETTE, colorPalette);
+    }
+  }, [colorPalette, storageAvailable]);
+
+  useEffect(() => {
+    if (storageAvailable) {
+      saveToStorage(STORAGE_KEYS.LAYOUT_ALGORITHM, layoutAlgorithm);
+    }
+  }, [layoutAlgorithm, storageAvailable]);
+
+  useEffect(() => {
+    if (storageAvailable) {
+      saveToStorage(STORAGE_KEYS.AUTO_FIT, autoFitEnabled);
+    }
+  }, [autoFitEnabled, storageAvailable]);
+
+  // Reset to defaults function
+  const handleResetToDefaults = useCallback(() => {
+    setRenderConfig(defaultRenderConfig);
+    setColorPalette(defaultColorPalette);
+    setLayoutAlgorithm(defaultLayoutAlgorithm);
+    setAutoFitEnabled(defaultAutoFit);
+    
+    // Clear persisted storage
+    if (storageAvailable) {
+      clearHydroscopeStorage();
+    }
+  }, [defaultRenderConfig, defaultColorPalette, defaultLayoutAlgorithm, defaultAutoFit, storageAvailable]);
 
   // Handle file upload
   const handleFileUpload = useCallback((uploadedData: any, filename: string) => {
@@ -612,6 +670,7 @@ export function HydroscopeFull({
                   }}
                   colorPalette={colorPalette}
                   onPaletteChange={setColorPalette}
+                  onResetToDefaults={handleResetToDefaults}
                 />
               </div>
             </div>

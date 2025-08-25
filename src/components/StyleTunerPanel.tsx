@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer } from 'antd';
+import { Drawer, Button, Divider } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
@@ -24,6 +25,7 @@ export interface StyleTunerPanelProps {
   onChange: (next: StyleTunerPanelProps['value']) => void;
   colorPalette?: string;
   onPaletteChange?: (palette: string) => void;
+  onResetToDefaults?: () => void;
   defaultCollapsed?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -34,6 +36,7 @@ export function StyleTunerPanel({
   onChange, 
   colorPalette = 'Set2',
   onPaletteChange,
+  onResetToDefaults,
   defaultCollapsed = false,
   open = true,
   onOpenChange
@@ -138,6 +141,19 @@ export function StyleTunerPanel({
             onChange={(e) => update({ containerBorderWidth: parseInt(e.target.value, 10) })}
           />
         </div>
+
+        {/* Reset to Defaults Button */}
+        <Divider style={{ margin: '16px 0 12px 0' }} />
+        <Button 
+          type="default"
+          icon={<ReloadOutlined />}
+          onClick={onResetToDefaults}
+          block
+          size="small"
+          style={{ fontSize: '12px' }}
+        >
+          Reset to Defaults
+        </Button>
       </div>
     </Drawer>
   );
