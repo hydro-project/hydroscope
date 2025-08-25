@@ -5,7 +5,7 @@
  * we maintain the fundamental invariant that ALL GraphEdges in the system
  * are accounted for either as:
  * 1. Visible GraphEdges, OR
- * 2. Aggregated edges within HyperEdges
+ * 2. Edges covered by HyperEdges
  * 
  * This catches the critical bug where aggregated edges were being lost
  * during nested container collapse operations.
@@ -17,6 +17,7 @@ import { parseGraphJSON } from '../JSONParser';
 import { GraphEdge, HyperEdge } from '../types';
 import { join } from 'path';
 import { readFileSync } from 'fs';
+import { isHyperEdge } from '../types';
 
 interface ConnectivityReport {
   totalGraphEdges: number;
@@ -29,51 +30,58 @@ interface ConnectivityReport {
 
 /**
  * Validates that all GraphEdges are accounted for in the current visualization state
- * Updated for the new architecture that doesn't use aggregatedEdges in hyperEdges
  */
 function validateConnectivityPreservation(visState: VisualizationState): ConnectivityReport {
   // Get all GraphEdges in the system by collecting from visible edges
   const allGraphEdges = new Map<string, GraphEdge>();
-  
-  // Collect visible graph edges (non-hyperEdges)
   for (const edge of visState.visibleEdges) {
     if ((edge as any).source && (edge as any).target && !(edge as any).aggregatedEdges) {
-      // This is a GraphEdge (has source/target but no aggregatedEdges)
       allGraphEdges.set(edge.id, edge as GraphEdge);
     }
   }
-  
+
   // Track which edges are accounted for
   const accountedEdges = new Set<string>();
-  const aggregationCounts = new Map<string, number>();
-  const hyperEdgeContainingEdge = new Map<string, string[]>(); // Track which hyperEdges contain each edge
-  
-  // Count visible graph edges (not hyperEdges)
   for (const edge of visState.visibleEdges) {
     if ((edge as any).source && (edge as any).target && !(edge as any).aggregatedEdges) {
       accountedEdges.add(edge.id);
     }
   }
-  
-  // In the new architecture, hyperEdges don't contain aggregatedEdges directly
-  // Instead, we would use CoveredEdgesIndex to compute aggregated edges on demand
-  // For now, let's just count hyperEdges as representing some aggregated connectivity
-  for (const hyperEdge of visState.visibleHyperEdges) {
-    // In the new architecture, we can't directly enumerate aggregated edges
-    // This validation will need to be updated once CoveredEdgesIndex is integrated
+
+  // Compute edges aggregated in hyperedges using CoveredEdgesIndex
+  const aggregatedEdgeIds = new Set<string>();
+  for (const hyperEdge of visState.visibleHyperEdges ?? []) {
+    const covered = visState.getCoveredEdges(hyperEdge.id);
+    for (const edgeId of covered) {
+      aggregatedEdgeIds.add(edgeId);
+    }
   }
-  
-  // Find missing edges (in the new architecture, this concept may change)
+
+  // Find missing edges: allGraphEdges minus (accountedEdges + aggregatedEdgeIds)
   const missingEdges: string[] = [];
-  // We can only check for edges we know about from visible edges
-  
-  // Find duplicate aggregations (not applicable in new architecture)
+  for (const edgeId of allGraphEdges.keys()) {
+    if (!accountedEdges.has(edgeId) && !aggregatedEdgeIds.has(edgeId)) {
+      missingEdges.push(edgeId);
+    }
+  }
+
+  // Find duplicate aggregations (edges covered by >1 hyperedge)
+  const aggregationCounts = new Map<string, number>();
+  for (const hyperEdge of visState.visibleHyperEdges ?? []) {
+    const covered = visState.getCoveredEdges(hyperEdge.id);
+    for (const edgeId of covered) {
+      aggregationCounts.set(edgeId, (aggregationCounts.get(edgeId) ?? 0) + 1);
+    }
+  }
   const duplicateAggregations: string[] = [];
-  
+  for (const [edgeId, count] of aggregationCounts.entries()) {
+    if (count > 1) duplicateAggregations.push(edgeId);
+  }
+
   return {
     totalGraphEdges: allGraphEdges.size,
-    visibleGraphEdges: visState.visibleEdges.filter(e => !(e as any).aggregatedEdges).length,
-    aggregatedInHyperEdges: 0, // Will need to compute differently in new architecture
+    visibleGraphEdges: accountedEdges.size,
+    aggregatedInHyperEdges: aggregatedEdgeIds.size,
     missingEdges,
     duplicateAggregations,
     isValid: missingEdges.length === 0 && duplicateAggregations.length === 0

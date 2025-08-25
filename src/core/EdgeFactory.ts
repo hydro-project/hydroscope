@@ -36,7 +36,6 @@ export function createHyperEdge(props: {
   target: string;
   style?: EdgeStyle | string;
   hidden?: boolean;
-  aggregatedEdges?: Map<string, GraphEdge>;
 }): HyperEdge {
   return {
     type: 'hyper',
@@ -45,7 +44,6 @@ export function createHyperEdge(props: {
     target: props.target,
     style: props.style,
     hidden: props.hidden || false,
-    aggregatedEdges: props.aggregatedEdges || new Map()
   };
 }
 

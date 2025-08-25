@@ -46,7 +46,7 @@ describe('Container Abstraction Level Tests', () => {
       const initialAbstractions = state.visibleEdges.filter(e => isHyperEdge(e));
       expect(initialAbstractions.length).toBe(0);
       
-      // // console.log((('  Initial concrete state verified')));
+      console.log((('  Initial concrete state verified')));
       
       // PERFORM LIFTING: Collapse container to create abstraction
       state.collapseContainer('abstractModule');
@@ -67,7 +67,7 @@ describe('Container Abstraction Level Tests', () => {
       const abstraction = abstractions[0];
       expect(abstraction.id).toBe('hyper_abstractModule_to_external');
       
-      // // console.log((('  ✅ LIFTING successful: Implementation details abstracted away')));
+      console.log((('  ✅ LIFTING successful: Implementation details abstracted away')));
     });
 
     /**
@@ -100,7 +100,7 @@ describe('Container Abstraction Level Tests', () => {
       const abstractionsBefore = state.visibleEdges.filter(e => isHyperEdge(e));
       expect(abstractionsBefore.length).toBe(1);
       
-      // // console.log((('  Starting from abstract state')));
+      console.log((('  Starting from abstract state')));
       
       // PERFORM GROUNDING: Expand container to reveal implementation
       state.expandContainer('abstractModule');
@@ -118,7 +118,7 @@ describe('Container Abstraction Level Tests', () => {
       const abstractionsAfter = state.visibleEdges.filter(e => isHyperEdge(e));
       expect(abstractionsAfter.length).toBe(0);
       
-      // // console.log((('  ✅ GROUNDING successful: Implementation details revealed')));
+      console.log((('  ✅ GROUNDING successful: Implementation details revealed')));
     });
 
     /**
@@ -154,7 +154,7 @@ describe('Container Abstraction Level Tests', () => {
       expect(state.getGraphNode('external')?.hidden).toBe(false);
       expect(state.getGraphEdge('edge')?.hidden).toBe(false);
       
-      // // console.log((('  ✅ SYMMETRY verified: Lift → Ground = Identity')));
+      console.log((('  ✅ SYMMETRY verified: Lift → Ground = Identity')));
     });
   });
 
@@ -208,7 +208,7 @@ describe('Container Abstraction Level Tests', () => {
       const secondLevelAbstractions = state.visibleEdges.filter(e => isHyperEdge(e));
       expect(secondLevelAbstractions.length).toBeGreaterThan(0);
       
-      // // console.log((('  ✅ PROGRESSIVE LIFTING successful: Multiple abstraction levels created')));
+      console.log((('  ✅ PROGRESSIVE LIFTING successful: Multiple abstraction levels created')));
     });
 
     /**
@@ -251,7 +251,7 @@ describe('Container Abstraction Level Tests', () => {
       expect(state.visibleEdges.length).toBe(5); // All implementation edges visible
       expect(state.visibleEdges.filter(e => isHyperEdge(e)).length).toBe(0);
       
-      // // console.log((('  ✅ PROGRESSIVE GROUNDING successful: Full implementation details revealed')));
+      console.log((('  ✅ PROGRESSIVE GROUNDING successful: Full implementation details revealed')));
     });
   });
 
@@ -289,7 +289,7 @@ describe('Container Abstraction Level Tests', () => {
       const hierarchicalAbstractions = state.visibleEdges.filter(e => isHyperEdge(e));
       expect(hierarchicalAbstractions.length).toBe(1);
       
-      // // console.log((('  ✅ HIERARCHICAL LIFTING successful: Nested structure abstracted')));
+      console.log((('  ✅ HIERARCHICAL LIFTING successful: Nested structure abstracted')));
     });
 
     /**
@@ -321,7 +321,7 @@ describe('Container Abstraction Level Tests', () => {
       expect(state.visibleEdges.length).toBe(2); // Both edges visible
       expect(state.visibleEdges.filter(e => isHyperEdge(e)).length).toBe(0);
       
-      // // console.log((('  ✅ HIERARCHICAL GROUNDING successful: Nested implementation revealed')));
+      console.log((('  ✅ HIERARCHICAL GROUNDING successful: Nested implementation revealed')));
     });
 
     /**
@@ -354,7 +354,7 @@ describe('Container Abstraction Level Tests', () => {
       expect(state.visibleEdges.length).toBe(initialEdges);
       expect(state.visibleEdges.filter(e => isHyperEdge(e)).length).toBe(0);
       
-      // // console.log((('  ✅ NESTED SYMMETRY verified: Complex Lift → Ground = Identity')));
+      console.log((('  ✅ NESTED SYMMETRY verified: Complex Lift → Ground = Identity')));
     });
   });
 });

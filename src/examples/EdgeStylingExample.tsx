@@ -38,52 +38,10 @@ const exampleHydroJSON = {
   // Edge style configuration from Hydro's JSON output
   edgeStyleConfig: {
     propertyMappings: {
-      'Network': {
-        reactFlowType: 'floating',
-        style: {
-          stroke: '#2563eb', // Blue for network edges
-          strokeWidth: 3,
-          strokeDasharray: '5,5'
-        },
-        animated: true,
-        label: 'NET'
-      },
-      'Cycle': {
-        reactFlowType: 'floating',
-        style: {
-          stroke: '#dc2626', // Red for cycle edges
-          strokeWidth: 2,
-          strokeDasharray: '10,5'
-        },
-        animated: false,
-        label: 'CYC'
-      },
-      'Bounded': {
-        reactFlowType: 'floating',
-        style: {
-          stroke: '#16a34a', // Green for bounded data
-          strokeWidth: 2
-        },
-        animated: false,
-        label: 'B'
-      },
-      'Unbounded': {
-        reactFlowType: 'floating',
-        style: {
-          stroke: '#ca8a04', // Yellow for unbounded data
-          strokeWidth: 3
-        },
-        animated: true,
-        label: 'U'
-      }
-    },
-    defaultStyle: {
-      reactFlowType: 'floating',
-      style: {
-        stroke: '#999999',
-        strokeWidth: 2
-      },
-      animated: false
+      'Network': { styleTag: 'edge_style_3_alt' }, // animated
+      'Cycle': { styleTag: 'edge_style_4' },       // double-line/dash-dot
+      'Bounded': { styleTag: 'edge_style_2' },     // thin
+      'Unbounded': { styleTag: 'edge_style_2_alt' } // thick
     },
     combinationRules: {
       priority: ['Cycle', 'Network', 'Bounded', 'Unbounded'],
@@ -142,17 +100,8 @@ export function AdvancedEdgeStylingExample() {
       ...parseResult.metadata.edgeStyleConfig,
       propertyMappings: {
         ...parseResult.metadata.edgeStyleConfig?.propertyMappings,
-        // Add custom styling for specific properties
-        'CustomProperty': {
-          reactFlowType: 'floating',
-          style: {
-            stroke: '#8b5cf6', // Purple
-            strokeWidth: 4,
-            strokeDasharray: '15,5,5,5'
-          },
-          animated: true,
-          label: 'CUSTOM'
-        }
+        // Add custom style tag for specific properties
+        'CustomProperty': { styleTag: 'edge_style_5' }
       }
     }
   });
@@ -187,8 +136,6 @@ export async function EdgeStylingDebugExample() {
     Array.from(parseResult.state.visibleEdges),
     renderConfig.edgeStyleConfig
   );
-  
-  console.log('Edge Style Statistics:', stats);
   
   return (
     <div style={{ height: '600px', width: '100%' }}>

@@ -100,7 +100,6 @@ export function useFlowGraphController({
           try {
             fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
             lastFitTimeRef.current = Date.now();
-            // console.log('[FlowGraph] 🎯 Auto-fit applied after refresh');
           } catch (err) {
             console.warn('[FlowGraph] ⚠️ Auto-fit failed during refresh:', err);
           }

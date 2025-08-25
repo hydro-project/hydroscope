@@ -20,11 +20,11 @@ export interface ParseResultSchema {
   edgeCount: number;
   containerCount: number;
   availableGroupings: any[];
-  styleConfig?: Record<string, any>;
   edgeStyleConfig?: {
   propertyMappings: Record<string, any>;
-  defaultStyle: any;
-  combinationRules: any;
+  singlePropertyMappings?: Record<string, string>;
+  booleanPropertyPairs?: Array<{ pair: [string, string]; defaultStyle: string; altStyle: string; description?: string }>;
+  combinationRules?: any;
   };
   nodeTypeConfig?: {
   defaultType?: string;
@@ -92,14 +92,11 @@ export interface RawGraphDataSchema {
   hierarchies?: RawHierarchySchema[];
   hierarchyChoices?: RawHierarchyChoiceSchema[];
   nodeAssignments?: Record<string, Record<string, string>>;
-  styleConfig?: {
-  edgeStyles?: Record<string, any>;
-  nodeStyles?: Record<string, any>;
-  };
   edgeStyleConfig?: {
   propertyMappings: Record<string, any>;
-  defaultStyle: any;
-  combinationRules: any;
+  singlePropertyMappings?: Record<string, string>;
+  booleanPropertyPairs?: Array<{ pair: [string, string]; defaultStyle: string; altStyle: string; description?: string }>;
+  combinationRules?: any;
   };
   nodeTypeConfig?: {
   defaultType?: string;
@@ -163,10 +160,23 @@ export function generateSchemaDocumentation(): {
   "nodeAssignments": {          // Node-to-hierarchy id mappings; place the node in each hierarchy separately
     "hierarchyId": { "nodeId": "groupId" }
   },
-  "edgeStyleConfig": {          // Edge styling configuration
-    "propertyMappings": { "property": "styleTag" },
-    "defaultStyle": { "stroke": "#666", "strokeWidth": 2 },
-    "combinationRules": { "priority": ["tag1", "tag2"] }
+  "edgeStyleConfig": {          // Edge styling (semantics-only via styleTag)
+    "propertyMappings": {
+      "Network": { "styleTag": "edge_style_3_alt" },
+      "Bounded": "edge_style_2"
+    },
+    "singlePropertyMappings": {
+      "TotalOrder": "edge_style_4"
+    },
+    "booleanPropertyPairs": [
+      {
+        "pair": ["Loop", "Acyclic"],
+        "defaultStyle": "edge_style_2",
+        "altStyle": "edge_style_2_alt",
+        "description": "Choose alternate when Acyclic"
+      }
+    ],
+    "combinationRules": { "priority": ["Network", "TotalOrder"] }
   },
   "nodeTypeConfig": {           // Node type configuration
     "defaultType": "default",

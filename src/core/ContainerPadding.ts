@@ -2,7 +2,6 @@
  * @fileoverview Container Padding Management
  * 
  * Encapsulates all logic related to container label padding and dimension adjustments.
- * This centralizes the decision of whether to tell ELK about padding or handle it in the bridge layer.
  */
 
 import { LAYOUT_CONSTANTS } from '../shared/config';
@@ -49,52 +48,15 @@ export class ContainerPadding {
   }
 
   /**
-   * Should we tell ELK about container padding upfront, or handle it in the bridge layer?
-   * 
-   * DECISION: Tell ELK about padding upfront
-   * - ELK can layout with proper spacing included
-   * - ReactFlow gets consistent dimensions that ELK calculated
-   * - No post-processing dimension adjustments needed
-   */
-  static shouldTellELKAboutPadding(): boolean {
-    return true; // NEW approach: tell ELK about padding
-  }
-
-  /**
    * Get ELK container padding configuration (if we decide to tell ELK about padding)
    */
   static getELKPaddingConfig(): { top: number; bottom: number; left: number; right: number } {
-    if (!this.shouldTellELKAboutPadding()) {
-      return { top: 0, bottom: 0, left: 0, right: 0 };
-    }
-
-    // If we decide to tell ELK about padding in the future:
     return {
       top: LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING,
       bottom: LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT + LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING,
       left: LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING,
       right: LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING
     };
-  }
-
-  /**
-   * Adjust container dimensions after ELK layout (current approach)
-   */
-  static adjustPostELKDimensions(elkWidth: number, elkHeight: number, collapsed: boolean): { width: number; height: number } {
-    if (this.shouldTellELKAboutPadding()) {
-      // ELK already calculated dimensions with padding included, use as-is
-      return {
-        width: elkWidth,
-        height: elkHeight
-      };
-    }
-
-    // Legacy approach: add padding after ELK
-    if (collapsed) {
-      return this.getCollapsedContainerMinDimensions();
-    }
-
-    return this.getExpandedContainerDimensions(elkWidth, elkHeight);
   }
 
   /**

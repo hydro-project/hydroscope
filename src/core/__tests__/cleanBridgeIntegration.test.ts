@@ -52,9 +52,6 @@ describe('VisualizationState + Clean Bridges Integration', () => {
         hidden: false
       });
 
-      // CRITICAL: Ensure dimensions are valid (no longer done in bridge)
-      visState.validateAndFixDimensions();
-
       // Simulate ELKBridge.extractVisibleNodes() - now clean of business logic
       const visibleNodes = visState.visibleNodes;
       const collapsedAsNodes = visState.getCollapsedContainersAsNodes();

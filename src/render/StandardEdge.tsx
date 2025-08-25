@@ -30,7 +30,7 @@ export function StandardEdge(props: EdgeProps) {
       targetX: props.targetX,
       targetY: props.targetY,
       amplitude: 8, // Moderate wave amplitude
-      frequency: 6  // 2 complete waves along the path
+      frequency: 2  // 2 complete waves along the path
     });
   } else if (styleCfg.edgeStyle === 'straight') {
     [edgePath] = getStraightPath({

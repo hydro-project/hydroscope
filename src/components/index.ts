@@ -119,11 +119,6 @@ export function createContainerClickHandler(
       }
       
       await refreshLayout();
-      
-      if (autoFit) {
-        // Note: fitView would need to be passed in or accessed from ref
-        console.log('Auto-fit after container toggle');
-      }
     }
   };
 }

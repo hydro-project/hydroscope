@@ -70,8 +70,8 @@ export function processEdgeStyle(
     return processWithMappings(edgeProperties, styleConfig);
   }
 
-  // Otherwise, treat edge properties as direct style tags
-  return processDirectStyleTags(edgeProperties);
+  // Otherwise, in semantics-only mode do not interpret properties as style tags
+  return getDefaultStyle();
 }
 
 /**
@@ -393,9 +393,8 @@ function processLegacyMappings(
  * Process edge properties as direct style tag names
  */
 function processDirectStyleTags(edgeProperties: string[]): ProcessedEdgeStyle {
-  // Use first property as style tag
-  const styleTag = edgeProperties[0];
-  return mapStyleTagToVisual(styleTag, edgeProperties);
+  // Disabled in semantics-only mode: return neutral default
+  return getDefaultStyle();
 }
 
 /**
@@ -545,39 +544,7 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
       style: {},
       animated: false,
       label: ''
-    },
-    
-    // Colors (for when semantic tags directly specify colors)
-    'blue': {
-      style: { stroke: '#2563eb' },
-      animated: false,
-      label: 'B'
-    },
-    'red': {
-      style: { stroke: '#dc2626' },
-      animated: false,
-      label: 'R'
-    },
-    'green': {
-      style: { stroke: '#16a34a' },
-      animated: false,
-      label: 'G'
-    },
-    'orange': {
-      style: { stroke: '#ea580c' },
-      animated: false,
-      label: 'O'
-    },
-    'purple': {
-      style: { stroke: '#9333ea' },
-      animated: false,
-      label: 'P'
-    },
-    'gray': {
-      style: { stroke: '#6b7280' },
-      animated: false,
-      label: 'GY'
-    }
+  }
   };
 
   const normalizedTag = styleTag.toLowerCase().replace(/[_\s]/g, '-');
@@ -597,18 +564,15 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
     };
   }
 
-  // Unknown style tag - generate style based on hash
-  const hash = styleTag.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-  const hue = hash % 360;
-  
+  // Unknown tag: return neutral default (no arbitrary colors)
   return {
     reactFlowType: 'standard',
     style: {
-      stroke: `hsl(${hue}, 60%, 50%)`,
+      stroke: '#666666',
       strokeWidth: 2
     },
     animated: false,
-    label: styleTag.substring(0, 3).toUpperCase(),
+    label: '',
     appliedProperties: originalProperties
   };
 }

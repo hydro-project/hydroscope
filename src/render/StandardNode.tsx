@@ -22,8 +22,6 @@ export function StandardNode({ id, data }: NodeProps) {
     if ((window as any).__hydroColorLogCount__ === undefined) (window as any).__hydroColorLogCount__ = 0;
     if ((window as any).__hydroColorLogCount__ < 8) {
       (window as any).__hydroColorLogCount__++;
-      // eslint-disable-next-line no-console
-      console.debug(`[StandardNode] ${id} type=${nodeType} palette=${colorPalette} ->`, colors);
     }
   }
 

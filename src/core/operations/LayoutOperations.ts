@@ -2,7 +2,6 @@
  * Layout Operations - Handles layout-related operations
  * 
  * Manages layout positioning, dimension updates, and manual position tracking.
- * Extracted from VisState.ts for better separation of concerns.
  */
 
 import { LAYOUT_CONSTANTS } from '../../shared/config';
@@ -99,9 +98,6 @@ export class LayoutOperations {
 
   /**
    * Get container adjusted dimensions
-   * 
-   * FIXED DOUBLE PADDING: Don't add manual label space since ELK layout and container 
-   * components should handle label positioning internally
    */
   getContainerAdjustedDimensions(containerId: string): { width: number; height: number } {
     const container = this.state._collections.containers.get(containerId);
@@ -157,58 +153,6 @@ export class LayoutOperations {
     // CRITICAL: Clear positions for ALL nodes (both visible and hidden)
     for (const [nodeId, node] of this.state._collections.graphNodes) {
       this.setNodeLayout(nodeId, { position: undefined });
-    }
-  }
-
-  /**
-   * Validate and fix invalid dimensions
-   */
-  validateAndFixDimensions(): void {
-    let fixedCount = 0;
-    
-    // Fix node dimensions
-    for (const [nodeId, node] of this.state._collections.graphNodes) {
-      let needsUpdate = false;
-      const updates: any = {};
-      
-      if (!node.width || node.width <= 0) {
-        updates.width = LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH;
-        needsUpdate = true;
-      }
-      
-      if (!node.height || node.height <= 0) {
-        updates.height = LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
-        needsUpdate = true;
-      }
-      
-      if (needsUpdate) {
-        Object.assign(node, updates);
-        fixedCount++;
-      }
-    }
-    
-    // Fix container dimensions
-    for (const [containerId, container] of this.state._collections.containers) {
-      let needsUpdate = false;
-      const updates: any = {};
-      
-      if (container.width !== LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH) {
-        updates.width = LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
-        needsUpdate = true;
-      }
-      
-      if (container.height !== LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT) {
-        updates.height = LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
-        needsUpdate = true;
-      }
-      
-      if (needsUpdate) {
-        Object.assign(container, updates);
-        fixedCount++;
-      }
-    }
-    
-    if (fixedCount > 0) {
     }
   }
 

@@ -305,10 +305,9 @@ export class VisualizationState implements ContainerHierarchyView {
   }
 
   /**
-   * Get all edges that would be aggregated by a given container or hyperEdge
-   * This replaces the complex aggregatedEdges tracking in hyperEdges
+   * Get all edges that are covered by a given container or hyperEdge
    */
-  getAggregatedEdges(entityId: string): ReadonlySet<string> {
+  getCoveredEdges(entityId: string): ReadonlySet<string> {
     if (!this._coveredEdgesIndex) {
       this.buildCoveredEdgesIndex();
     }
@@ -377,10 +376,6 @@ export class VisualizationState implements ContainerHierarchyView {
 
   clearLayoutPositions(): void {
     this.layoutOps.clearLayoutPositions();
-  }
-
-  validateAndFixDimensions(): void {
-    this.layoutOps.validateAndFixDimensions();
   }
 
   getEdgeLayout(edgeId: string): { sections?: any[]; [key: string]: any } | undefined {
@@ -774,8 +769,6 @@ export class VisualizationState implements ContainerHierarchyView {
     const collapsedTopLevel = topLevelContainers.filter(c => c.collapsed);
     
     if (collapsedTopLevel.length === 0) return;
-    
-    console.log(`🔍 expandAllContainers: About to expand ${collapsedTopLevel.length} top-level containers`);
     
     // Disable validation during bulk expansion to avoid intermediate state issues
     const originalValidation = this._validationEnabled;

@@ -1,15 +1,4 @@
-/**
- * @fileoverview Bridge Architecture Types
-export interface GraphEdge {
-  id: string;
-  source: string;
-  target: string;
-  style?: EdgeStyle | string;
-  hidden?: boolean;
-  type: 'graph';
-}Clean type definitions for our bridge-based implementation.
- * No dependencies on alpha.
- */
+// Core type definitions for Hydroscope
 
 import type { NodeStyle, EdgeStyle, ContainerStyle } from '../shared/config';
 import type { ExternalContainer } from '../shared/types';
@@ -61,7 +50,6 @@ export interface HyperEdge {
   style?: EdgeStyle | string;
   hidden?: boolean;
   type: 'hyper';
-  aggregatedEdges?: Map<string, GraphEdge>;
 }
 
 // Union type for all edge types

@@ -187,19 +187,6 @@ export function InfoPanel({
           </CollapsibleSection>
         )}
 
-        {/* Legend Section */}
-        <CollapsibleSection
-          title={effectiveLegendData.title}
-          isCollapsed={legendCollapsed}
-          onToggle={() => setLegendCollapsed(!legendCollapsed)}
-        >
-          <Legend
-            legendData={effectiveLegendData}
-            colorPalette={colorPalette}
-            compact={true}
-          />
-        </CollapsibleSection>
-
         {/* Edge Style Legend Section - Show whenever edgeStyleConfig exists */}
         {edgeStyleConfig && (
           <CollapsibleSection
@@ -213,6 +200,19 @@ export function InfoPanel({
             />
           </CollapsibleSection>
         )}
+
+        {/* Node Legend Section */}
+        <CollapsibleSection
+          title={effectiveLegendData.title}
+          isCollapsed={legendCollapsed}
+          onToggle={() => setLegendCollapsed(!legendCollapsed)}
+        >
+          <Legend
+            legendData={effectiveLegendData}
+            colorPalette={colorPalette}
+            compact={true}
+          />
+        </CollapsibleSection>
       </div>
     </AntDockablePanel>
   );

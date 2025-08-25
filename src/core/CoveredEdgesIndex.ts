@@ -1,7 +1,7 @@
 /**
  * CoveredEdgesIndex - Maintains an index of which GraphEdges are "covered" by each container
+ * This supports efficient computation of aggregated edges for containers, especially in nested hierarchies.
  * 
- * This replaces the complex aggregatedEdges tracking in hyperEdges with a simpler approach:
  * - Each container tracks all GraphEdges that are recursively underneath it
  * - HyperEdges become simple connection representations without embedded edge data
  * - Aggregated edges are computed on-demand using this index

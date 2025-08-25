@@ -93,15 +93,6 @@ export class ReactFlowBridge {
    * TRUST ELK: Use ELK's hierarchical layout results completely
    */
   private visStateToReactFlow(visState: VisualizationState): ReactFlowData {
-    console.log(`[Bridge] 🔍 Converting VisualizationState with ${visState.visibleNodes.length} visible nodes`);
-    
-    // Debug: Log first few visible nodes
-    const firstFewNodes = visState.visibleNodes.slice(0, 5);
-    firstFewNodes.forEach(node => {
-      const nt = (node as any).nodeType || (node as any).type;
-      console.log(`[Bridge] 📋 Node ${node.id}: label="${node.label}", shortLabel="${node.shortLabel}", fullLabel="${node.fullLabel}", nodeType=${nt}`);
-    });
-
     const nodes: ReactFlowNode[] = [];
     const edges: ReactFlowEdge[] = [];
     
@@ -168,16 +159,6 @@ export class ReactFlowBridge {
         }
         // NO parentId - completely flat
       };
-      
-      // Debug: Log label data for troubleshooting
-      if (node.id === '0' || node.id === '7') {
-        console.log(`[Bridge] 🏷️ Node ${node.id}: label="${flatNode.data.label}", shortLabel="${flatNode.data.shortLabel}", fullLabel="${flatNode.data.fullLabel}"`);
-      }
-      
-      // Debug: Log node label resolution
-      if (node.label && node.label !== node.shortLabel) {
-        console.log(`🔗 Bridge: Node ${node.id} using toggled label: "${node.label}" (short: "${node.shortLabel}", full: "${node.fullLabel}")`);
-      }
       
       nodes.push(flatNode);
     });
@@ -315,9 +296,6 @@ export class ReactFlowBridge {
       const nodeCount = container.collapsed ? 
         visState.getContainerChildren(container.id)?.size || 0 : 0;
       
-      // Debug: Log container label source
-      console.log(`🏷️ Container ${container.id}: label="${container.label}", id="${container.id}", using="${container.label || container.id}"`);
-      
       const containerNode: ReactFlowNode = {
         id: container.id,
         type: 'container',
@@ -387,16 +365,7 @@ export class ReactFlowBridge {
         extent: parentId ? 'parent' : undefined
       };
 
-      // Debug: Log label handling for ELK nodes
-      if (node.label && node.label !== node.shortLabel) {
-        console.log(`🔗 Bridge (ELK): Node ${node.id} using toggled label: "${node.label}" (short: "${node.shortLabel}", full: "${node.fullLabel}")`);
-      }
-      
       nodes.push(standardNode);
-      if (nodes.length <= 8) {
-        // eslint-disable-next-line no-console
-        console.debug(`[Bridge] 🎨 Standard node ${node.id} type=${standardNode.data.nodeType} palette=${this.colorPalette}`);
-      }
     });
   }
 
@@ -404,7 +373,7 @@ export class ReactFlowBridge {
    * Convert regular edges to ReactFlow edges
    */
   private convertEdges(visState: VisualizationState, edges: ReactFlowEdge[]): void {
-    // First, convert edges using EdgeConverter for proper styling
+    // Always use semantic mappings for edge styling
     const visibleEdges = Array.from(visState.visibleEdges);
     const edgeConverterOptions: EdgeConverterOptions = {
       edgeStyleConfig: this.edgeStyleConfig,
@@ -412,21 +381,28 @@ export class ReactFlowBridge {
       enableAnimations: true
     };
     const convertedEdges = convertEdgesToReactFlow(visibleEdges, edgeConverterOptions);
-    
-    // Then, apply smart handle selection to each converted edge
+
+    // Ensure processedStyle is present and semantic mappings are honored
     convertedEdges.forEach((reactFlowEdge, index) => {
       const originalEdge = visibleEdges[index];
-      
+      // Defensive: If processedStyle is missing, reprocess with semanticMappings
+      if (!reactFlowEdge.data?.processedStyle && this.edgeStyleConfig?.semanticMappings) {
+        const edgeProperties = originalEdge.edgeProperties || [];
+        const { processEdgeStyle } = require('../core/EdgeStyleProcessor');
+        const processedStyle = processEdgeStyle(edgeProperties, this.edgeStyleConfig);
+        if (reactFlowEdge.data) {
+          reactFlowEdge.data.processedStyle = processedStyle;
+        }
+        reactFlowEdge.style = processedStyle.style;
+        reactFlowEdge.animated = processedStyle.animated;
+        reactFlowEdge.markerEnd = processedStyle.markerEndSpec;
+      }
       if (CURRENT_HANDLE_STRATEGY === 'discrete') {
         const smartHandles = this.getEdgeHandles(visState, originalEdge.id);
-        
-        // Override EdgeConverter handles with smart selection
         reactFlowEdge.sourceHandle = smartHandles.sourceHandle || 'out-bottom';
         reactFlowEdge.targetHandle = smartHandles.targetHandle || 'in-top';
       }
     });
-    
-    // Add converted edges to the result array
     edges.push(...convertedEdges);
   }
 

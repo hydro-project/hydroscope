@@ -2,8 +2,7 @@
  * Visibility Management - Handles visibility state and cache updates
  * 
  * Centralizes all visibility-related operations including cache management,
- * cascading updates, and consistency checks. Extracted from VisState.ts
- * for better separation of concerns.
+ * cascading updates, and consistency checks.
  */
 
 export class VisibilityManager {
@@ -71,27 +70,11 @@ export class VisibilityManager {
    * Update container visibility caches
    */
   updateContainerVisibilityCaches(containerId: string, container: any): void {
-    
-    // DIAGNOSTIC: Check for specific problem containers
-    if (containerId === 'bt_81' || containerId === 'bt_98') {
-      
-      // Check if this container has a parent and if that parent is collapsed
-      const parentContainerId = this.state._collections.nodeContainers.get(containerId);
-      if (parentContainerId) {
-        const parentContainer = this.state._collections.containers.get(parentContainerId);
-        if (parentContainer?.collapsed) {
-        }
-      } else {
-      }
-    }
-    
     // Update _visibleContainers (includes collapsed containers)
     if (!container.hidden) {
       this.state._collections._visibleContainers.set(containerId, container);
     } else {
       this.state._collections._visibleContainers.delete(containerId);
-      if (containerId === 'bt_81' || containerId === 'bt_98') {
-      }
     }
     
     // Update _expandedContainers (only non-collapsed containers)
@@ -113,7 +96,7 @@ export class VisibilityManager {
    * Cascade node visibility to connected edges
    */
   private cascadeNodeVisibilityToEdges(nodeId: string, nodeVisible: boolean): void {
-    const connectedEdges = this.state._collections.nodeToEdges.get(nodeId) || new Set();
+    const connectedEdges = this.state.getAdjacentEdges(nodeId) || new Set();
     
     for (const edgeId of Array.from(connectedEdges)) {
       const edge = this.state._collections.graphEdges.get(edgeId);

@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { FlowGraph } from '../render/FlowGraph';
 import { parseGraphJSON } from '../core/JSONParser';
 import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core/types';
@@ -39,37 +39,34 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   onParsed,
   onError,
 }, ref) => {
-  const [error, setError] = useState<string | null>(null);
   const flowGraphRef = React.useRef<any>(null);
-
-  const { visState, mergedConfig } = useMemo(() => {
+  
+  // Compute parsed state and merged config without causing state updates during render
+  const parseOutcome = useMemo(() => {
     try {
-      // Reset previous error
-      setError(null);
-
       const { state, metadata } = parseGraphJSON(data as any, grouping);
-      
-      // Call onParsed with both metadata and visualization state
-      onParsed?.(metadata, state);
-
-      // Merge any edge style configuration coming from JSON into render config
       const merged: RenderConfig | undefined = metadata?.edgeStyleConfig
         ? { ...config, edgeStyleConfig: metadata.edgeStyleConfig }
         : config;
-
-      return { visState: state, mergedConfig: merged };
+      return { state, metadata, mergedConfig: merged, error: null as string | null };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-      onError?.(msg);
-      return { visState: null, mergedConfig: config } as any;
+      return { state: null as VisualizationState | null, metadata: null as any, mergedConfig: config, error: msg };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, grouping, config]);
+
+  // Notify parent about parse result outside of render
+  useEffect(() => {
+    if (parseOutcome.error) {
+      onError?.(parseOutcome.error);
+    } else if (parseOutcome.state && parseOutcome.metadata) {
+      onParsed?.(parseOutcome.metadata, parseOutcome.state);
+    }
+  }, [parseOutcome.error, parseOutcome.state, parseOutcome.metadata, onParsed, onError]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
-    getVisualizationState: () => visState,
+    getVisualizationState: () => parseOutcome.state,
     refreshLayout: async (force?: boolean) => {
       if (flowGraphRef.current?.refreshLayout) {
         await flowGraphRef.current.refreshLayout(force);
@@ -80,17 +77,17 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
         flowGraphRef.current.fitView();
       }
     },
-  }), [visState]);
+  }), [parseOutcome.state]);
 
-  if (error) {
+  if (parseOutcome.error) {
     return (
       <div className={className} style={{ color: '#b00', padding: 12, ...style }}>
-        Failed to parse graph JSON: {error}
+        Failed to parse graph JSON: {parseOutcome.error}
       </div>
     );
   }
 
-  if (!visState) {
+  if (!parseOutcome.state) {
     return (
       <div className={className} style={{ padding: 12, ...style }}>
         No data
@@ -101,8 +98,8 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   return (
     <FlowGraph
       ref={flowGraphRef}
-      visualizationState={visState}
-      config={mergedConfig}
+      visualizationState={parseOutcome.state}
+      config={parseOutcome.mergedConfig}
       layoutConfig={layoutConfig}
       eventHandlers={eventHandlers}
       className={className}

@@ -92,7 +92,7 @@ describe('Aggregated Edge Preservation', () => {
     console.log(`  - Container1 children: ${Array.from(container1Children || []).join(', ')}`);
     
     // Debug: Check aggregated edges using new CoveredEdgesIndex
-    const aggregatedEdges = visState.getAggregatedEdges('container1');
+    const aggregatedEdges = visState.getCoveredEdges('container1');
     console.log(`  - Aggregated edges for container1: ${aggregatedEdges.size}`);
     for (const edgeId of aggregatedEdges) {
       const edge = visState.getGraphEdge(edgeId);

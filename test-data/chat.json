@@ -4,40 +4,6 @@
     "data": {
       "backtrace": [
         {
-          "file": "src/stream.rs",
-          "fn": "broadcast_bincode",
-          "line": 2731
-        },
-        {
-          "file": "src/cluster/chat.rs",
-          "fn": "chat_server",
-          "line": 42
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "{{closure}}",
-          "line": 19
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "main",
-          "line": 41
-        }
-      ],
-      "fullLabel": "network(ser + deser)",
-      "label": "network(recv)",
-      "locationId": 0,
-      "locationType": "Cluster",
-      "nodeType": "Network",
-      "shortLabel": "network(recv)"
-    },
-    "id": "7",
-    "label": "network(recv)"
-  },
-  {
-    "data": {
-      "backtrace": [
-        {
           "file": "src/cluster/chat.rs",
           "fn": "chat_server",
           "line": 32
@@ -53,73 +19,13 @@
           "line": 41
         }
       ],
-      "fullLabel": "network(ser + deser)",
-      "label": "network(recv)",
       "locationId": 1,
-      "locationType": "Process",
-      "nodeType": "Network",
-      "shortLabel": "network(recv)"
+      "locationType": "Process"
     },
-    "id": "2",
-    "label": "network(recv)"
-  },
-  {
-    "data": {
-      "backtrace": [
-        {
-          "file": "src/cluster/chat.rs",
-          "fn": "chat_server",
-          "line": 32
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "{{closure}}",
-          "line": 19
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "main",
-          "line": 41
-        }
-      ],
-      "fullLabel": "persist [state storage]",
-      "label": "persist",
-      "locationId": 1,
-      "locationType": "Process",
-      "nodeType": "Transform",
-      "shortLabel": "persist"
-    },
+    "fullLabel": "persist [state storage]",
     "id": "5",
-    "label": "persist"
-  },
-  {
-    "data": {
-      "backtrace": [
-        {
-          "file": "src/cluster/chat.rs",
-          "fn": "chat_server",
-          "line": 42
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "{{closure}}",
-          "line": 19
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "main",
-          "line": 41
-        }
-      ],
-      "fullLabel": "for_each(q!(| (id , msg) | println ! (\"From {}: {:}\" , id . raw_id , msg . content . color (crate :: __staged :: cluster :: chat :: hash_to_color (id . raw_id + 10)))))",
-      "label": "for_each",
-      "locationId": 0,
-      "locationType": "Cluster",
-      "nodeType": "Sink",
-      "shortLabel": "for_each"
-    },
-    "id": "8",
-    "label": "for_each"
+    "nodeType": "Transform",
+    "shortLabel": "persist"
   },
   {
     "data": {
@@ -140,15 +46,67 @@
           "line": 41
         }
       ],
-      "fullLabel": "persist [state storage]",
-      "label": "persist",
-      "locationId": 0,
-      "locationType": "Cluster",
-      "nodeType": "Transform",
-      "shortLabel": "persist"
+      "locationId": 1,
+      "locationType": "Process"
     },
-    "id": "1",
-    "label": "persist"
+    "fullLabel": "tee [branch dataflow]",
+    "id": "3",
+    "nodeType": "Tee",
+    "shortLabel": "tee"
+  },
+  {
+    "data": {
+      "backtrace": [
+        {
+          "file": "src/cluster/chat.rs",
+          "fn": "chat_server",
+          "line": 32
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "{{closure}}",
+          "line": 19
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "main",
+          "line": 41
+        }
+      ],
+      "locationId": 1,
+      "locationType": "Process"
+    },
+    "fullLabel": "network(ser + deser)",
+    "id": "2",
+    "nodeType": "Network",
+    "shortLabel": "network(recv)"
+  },
+  {
+    "data": {
+      "backtrace": [
+        {
+          "file": "src/cluster/chat.rs",
+          "fn": "chat_server",
+          "line": 42
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "{{closure}}",
+          "line": 19
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "main",
+          "line": 41
+        }
+      ],
+      "locationId": 0,
+      "locationType": "Cluster"
+    },
+    "fullLabel": "for_each(q!(| (id , msg) | println ! (\"From {}: {:}\" , id . raw_id , msg . content . color (crate :: __staged :: cluster :: chat :: hash_to_color (id . raw_id + 10)))))",
+    "id": "8",
+    "nodeType": "Sink",
+    "shortLabel": "for_each"
   },
   {
     "data": {
@@ -156,7 +114,7 @@
         {
           "file": "src/stream.rs",
           "fn": "broadcast_bincode",
-          "line": 2731
+          "line": 2757
         },
         {
           "file": "src/cluster/chat.rs",
@@ -174,44 +132,72 @@
           "line": 41
         }
       ],
-      "fullLabel": "flatmap(q!(| v | { ids__free . iter () . map (move | id | (* id , v . clone ())) }))",
-      "label": "flatmap",
-      "locationId": 1,
-      "locationType": "Process",
-      "nodeType": "Transform",
-      "shortLabel": "flatmap"
-    },
-    "id": "6",
-    "label": "flatmap"
-  },
-  {
-    "data": {
-      "backtrace": [
-        {
-          "file": "src/cluster/chat.rs",
-          "fn": "chat_server",
-          "line": 32
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "{{closure}}",
-          "line": 19
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "main",
-          "line": 41
-        }
-      ],
-      "fullLabel": "source_iter(q!({ use crate :: __staged :: __deps :: * ; use crate :: __staged :: cluster :: chat :: * ; let CLUSTER_SELF_ID__free = hydro_lang :: ClusterId :: < hydro_test :: __staged :: cluster :: chat :: Clients > :: from_raw (__hydro_lang_cluster_self_id_0) ; [ChatMsg { content : format ! (\"Hi, it's me! Client #{}!\" , CLUSTER_SELF_ID__free . raw_id) }] }))",
-      "label": "source_iter",
       "locationId": 0,
-      "locationType": "Cluster",
-      "nodeType": "Source",
-      "shortLabel": "source_iter"
+      "locationType": "Cluster"
     },
+    "fullLabel": "network(ser + deser)",
+    "id": "7",
+    "nodeType": "Network",
+    "shortLabel": "network(recv)"
+  },
+  {
+    "data": {
+      "backtrace": [
+        {
+          "file": "src/stream.rs",
+          "fn": "broadcast_bincode",
+          "line": 2757
+        },
+        {
+          "file": "src/cluster/chat.rs",
+          "fn": "chat_server",
+          "line": 42
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "{{closure}}",
+          "line": 19
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "main",
+          "line": 41
+        }
+      ],
+      "locationId": 1,
+      "locationType": "Process"
+    },
+    "fullLabel": "flatmap(q!(| v | { ids__free . iter () . map (move | id | (* id , v . clone ())) }))",
+    "id": "6",
+    "nodeType": "Transform",
+    "shortLabel": "flatmap"
+  },
+  {
+    "data": {
+      "backtrace": [
+        {
+          "file": "src/cluster/chat.rs",
+          "fn": "chat_server",
+          "line": 32
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "{{closure}}",
+          "line": 19
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "main",
+          "line": 41
+        }
+      ],
+      "locationId": 0,
+      "locationType": "Cluster"
+    },
+    "fullLabel": "source_iter(q!({ use crate :: __staged :: __deps :: * ; use crate :: __staged :: cluster :: chat :: * ; let CLUSTER_SELF_ID__free = hydro_lang :: ClusterId :: < hydro_test :: __staged :: cluster :: chat :: Clients > :: from_raw (__hydro_lang_cluster_self_id_0) ; [ChatMsg { content : format ! (\"Hi, it's me! Client #{}!\" , CLUSTER_SELF_ID__free . raw_id) }] }))",
     "id": "0",
-    "label": "source_iter"
+    "nodeType": "Source",
+    "shortLabel": "source_iter"
   },
   {
     "data": {
@@ -232,71 +218,67 @@
           "line": 41
         }
       ],
-      "fullLabel": "inspect(q!(| (id , msg) | println ! (\"...forwarding chat {} from client #{}...\" , msg . content , id)))",
-      "label": "inspect",
-      "locationId": 1,
-      "locationType": "Process",
-      "nodeType": "Transform",
-      "shortLabel": "inspect"
+      "locationId": 0,
+      "locationType": "Cluster"
     },
+    "fullLabel": "persist [state storage]",
+    "id": "1",
+    "nodeType": "Transform",
+    "shortLabel": "persist"
+  },
+  {
+    "data": {
+      "backtrace": [
+        {
+          "file": "src/cluster/chat.rs",
+          "fn": "chat_server",
+          "line": 32
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "{{closure}}",
+          "line": 19
+        },
+        {
+          "file": "examples/chat.rs",
+          "fn": "main",
+          "line": 41
+        }
+      ],
+      "locationId": 1,
+      "locationType": "Process"
+    },
+    "fullLabel": "inspect(q!(| (id , msg) | println ! (\"...forwarding chat {} from client #{}...\" , msg . content , id)))",
     "id": "4",
-    "label": "inspect"
-  },
-  {
-    "data": {
-      "backtrace": [
-        {
-          "file": "src/cluster/chat.rs",
-          "fn": "chat_server",
-          "line": 32
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "{{closure}}",
-          "line": 19
-        },
-        {
-          "file": "examples/chat.rs",
-          "fn": "main",
-          "line": 41
-        }
-      ],
-      "fullLabel": "tee [branch dataflow]",
-      "label": "tee",
-      "locationId": 1,
-      "locationType": "Process",
-      "nodeType": "Tee",
-      "shortLabel": "tee"
-    },
-    "id": "3",
-    "label": "tee"
+    "nodeType": "Transform",
+    "shortLabel": "inspect"
   }
 ],
   "edges": [
   {
     "edgeProperties": [
-      "TotalOrder",
-      "Unbounded"
+      "Unbounded",
+      "TotalOrder"
     ],
     "id": "e0",
     "semanticTags": [
-      "TotalOrder",
-      "Unbounded"
+      "Unbounded",
+      "TotalOrder"
     ],
     "source": "0",
     "target": "1"
   },
   {
     "edgeProperties": [
-      "Unbounded",
       "TotalOrder",
+      "Unbounded",
       "Network"
     ],
     "id": "e1",
     "label": "to Some(1)",
     "semanticTags": [
-      "Unbounded",
       "TotalOrder",
+      "Unbounded",
       "Network"
     ],
     "source": "1",
@@ -304,83 +286,93 @@
   },
   {
     "edgeProperties": [
-      "Unbounded",
       "TotalOrder",
-      "Network"
+      "Network",
+      "Unbounded"
     ],
     "id": "e2",
     "semanticTags": [
-      "Unbounded",
       "TotalOrder",
-      "Network"
+      "Network",
+      "Unbounded"
     ],
     "source": "2",
     "target": "3"
   },
   {
     "edgeProperties": [
-      "TotalOrder",
-      "Unbounded"
+      "Stream",
+      "Unbounded",
+      "NoOrder"
     ],
     "id": "e3",
     "semanticTags": [
-      "TotalOrder",
-      "Unbounded"
+      "Stream",
+      "Unbounded",
+      "NoOrder"
     ],
     "source": "3",
     "target": "4"
   },
   {
     "edgeProperties": [
+      "Stream",
       "Unbounded",
-      "TotalOrder"
+      "NoOrder"
     ],
     "id": "e4",
     "semanticTags": [
+      "Stream",
       "Unbounded",
-      "TotalOrder"
+      "NoOrder"
     ],
     "source": "4",
     "target": "5"
   },
   {
     "edgeProperties": [
+      "NoOrder",
       "Unbounded",
-      "TotalOrder"
+      "Stream"
     ],
     "id": "e5",
     "semanticTags": [
+      "NoOrder",
       "Unbounded",
-      "TotalOrder"
+      "Stream"
     ],
     "source": "5",
     "target": "6"
   },
   {
     "edgeProperties": [
-      "Network",
+      "Stream",
       "Unbounded",
-      "TotalOrder"
+      "NoOrder",
+      "Network"
     ],
     "id": "e6",
     "label": "to Some(0)",
     "semanticTags": [
-      "Network",
+      "Stream",
       "Unbounded",
-      "TotalOrder"
+      "NoOrder",
+      "Network"
     ],
     "source": "6",
     "target": "7"
   },
   {
     "edgeProperties": [
-      "TotalOrder",
-      "Unbounded"
+      "Unbounded",
+      "NoOrder",
+      "Stream"
     ],
     "id": "e7",
     "semanticTags": [
-      "TotalOrder",
-      "Unbounded"
+      "Unbounded",
+      "NoOrder",
+      "Stream"
     ],
     "source": "7",
     "target": "8"
@@ -414,23 +406,23 @@
                   {
                     "children": [
                       {
-                        "id": "bt_7",
+                        "id": "bt_10",
                         "name": "broadcast_bincode"
                       }
                     ],
-                    "id": "bt_5",
+                    "id": "bt_7",
                     "name": "chat_server"
                   }
                 ],
-                "id": "bt_1",
+                "id": "bt_9",
                 "name": "{{closure}}"
               }
             ],
-            "id": "bt_2",
+            "id": "bt_3",
             "name": "poll"
           }
         ],
-        "id": "bt_3",
+        "id": "bt_4",
         "name": "runtime/park.rs"
       },
       {
@@ -446,19 +438,19 @@
                         "name": "chat_server"
                       }
                     ],
-                    "id": "bt_9",
+                    "id": "bt_8",
                     "name": "{{closure}}"
                   }
                 ],
-                "id": "bt_4",
+                "id": "bt_2",
                 "name": "poll"
               }
             ],
-            "id": "bt_10",
+            "id": "bt_1",
             "name": "{{closure}}"
           }
         ],
-        "id": "bt_8",
+        "id": "bt_5",
         "name": "coop/mod.rs"
       }
     ],
@@ -474,8 +466,8 @@
     "3": "bt_6",
     "4": "bt_6",
     "5": "bt_6",
-    "6": "bt_7",
-    "7": "bt_7",
+    "6": "bt_10",
+    "7": "bt_10",
     "8": "bt_6"
   },
   "location": {
@@ -491,17 +483,59 @@
   }
 },
   "edgeStyleConfig": {
-  "combinationRules": {
-    "mutualExclusions": [],
-    "visualGroups": {}
-  },
-  "propertyMappings": {
-    "Bounded": "thick-stroke",
-    "Keyed": "double-line",
-    "Network": "dashed-animated",
-    "NoOrder": "wavy-line",
-    "TotalOrder": "smooth-line",
-    "Unbounded": "thin-stroke"
+  "semanticMappings": {
+    "BoundednessGroup": {
+      "Bounded": {
+        "line-width": 3
+      },
+      "Unbounded": {
+        "line-width": 1
+      }
+    },
+    "CollectionGroup": {
+      "KeyedStream": {
+        "arrowhead": "triangle-filled",
+        "line-style": "double"
+      },
+      "Optional": {
+        "arrowhead": "diamond-open",
+        "line-style": "single"
+      },
+      "Singleton": {
+        "arrowhead": "circle-filled",
+        "line-style": "single"
+      },
+      "Stream": {
+        "arrowhead": "triangle-filled",
+        "line-style": "single"
+      }
+    },
+    "FlowGroup": {
+      "Cycle": {
+        "halo": "light-red"
+      },
+      "Linear": {
+        "halo": "none"
+      }
+    },
+    "NetworkGroup": {
+      "Local": {
+        "animation": "static",
+        "line-pattern": "solid"
+      },
+      "Network": {
+        "animation": "animated",
+        "line-pattern": "dotted"
+      }
+    },
+    "OrderingGroup": {
+      "NoOrder": {
+        "waviness": "wavy"
+      },
+      "TotalOrder": {
+        "waviness": "none"
+      }
+    }
   }
 },
   "nodeTypeConfig": {

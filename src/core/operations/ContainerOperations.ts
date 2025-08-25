@@ -1,8 +1,8 @@
 /**
  * Container Operations - Collapse/Expand Logic
  * 
- * Handles container state transitions including collapse/expand operations and
- * hyperEdge management.
+ * Handles all container state transitions including collapse/expand operations,
+ * hyperEdge management, and visibility cascading.
  */
 
 import { GraphNode, Container, GraphEdge, HyperEdge, Edge, isGraphEdge, isHyperEdge } from '../types';
@@ -90,8 +90,8 @@ export class ContainerOperations {
       }
     }
 
-    // 4. Restore visibility of GraphEdges that were aggregated in former hyperedges
-    const coveredEdgeIds = this.state.getAggregatedEdges(containerId);
+    // 5. Restore visibility of GraphEdges using CoveredEdgesIndex
+    const coveredEdgeIds = this.state.getCoveredEdges(containerId);
     for (const edgeId of coveredEdgeIds) {
       const edge = this.state.getGraphEdge(edgeId);
       if (!edge) continue;
@@ -199,16 +199,11 @@ export class ContainerOperations {
       // Create incoming hyperEdge (container <- external)
       if (group.incoming.length > 0) {
         const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${externalEndpoint}${HYPEREDGE_CONSTANTS.SEPARATOR}${containerId}`;
-        const aggregatedEdges = new Map<string, GraphEdge>();
-        for (const edge of group.incoming) {
-          aggregatedEdges.set(edge.id, edge);
-        }
         
         const hyperEdge = createHyperEdge({
           id: hyperEdgeId,
           source: externalEndpoint,
-          target: containerId,
-          aggregatedEdges: aggregatedEdges
+          target: containerId
         });
         this.state.setHyperEdge(hyperEdge.id, hyperEdge);
       }
@@ -216,16 +211,11 @@ export class ContainerOperations {
       // Create outgoing hyperEdge (container -> external)
       if (group.outgoing.length > 0) {
         const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${containerId}${HYPEREDGE_CONSTANTS.SEPARATOR}${externalEndpoint}`;
-        const aggregatedEdges = new Map<string, GraphEdge>();
-        for (const edge of group.outgoing) {
-          aggregatedEdges.set(edge.id, edge);
-        }
         
         const hyperEdge = createHyperEdge({
           id: hyperEdgeId,
           source: containerId,
           target: externalEndpoint,
-          aggregatedEdges: aggregatedEdges
         });
         this.state.setHyperEdge(hyperEdge.id, hyperEdge);
       }

@@ -4,7 +4,7 @@
     const warnings: ValidationError[] = []; Validation System
  * 
  * Centralizes all validation logic for VisualizationState to ensure consistency
- * and catch bugs early. Extracted from VisState.ts for better separation of concerns.
+ * and catch bugs early.
  */
 
 import { LAYOUT_CONSTANTS, HYPEREDGE_CONSTANTS } from '../../shared/config';
@@ -86,25 +86,20 @@ export class VisualizationStateInvariantValidator {
       return acc;
     }, {} as Record<string, number>);
     
-    // Special handling for smart collapse warnings that are expected
-    const hyperEdgeWarnings = warningsByType['HYPEREDGE_TO_HIDDEN_CONTAINER'] || 0;
-    if (hyperEdgeWarnings > 0) {
-      // ALWAYS suppress individual HYPEREDGE_TO_HIDDEN_CONTAINER warnings during smart collapse
-      // These are expected behavior and create console noise
-      if (hyperEdgeWarnings > 10) {
-        console.warn(`[VisState] Smart collapse in progress: ${hyperEdgeWarnings} hyperEdge routing adjustments (normal)`);
-      }
-      // Remove from individual logging regardless of count
-      delete warningsByType['HYPEREDGE_TO_HIDDEN_CONTAINER'];
-    }
+    // // Special handling for smart collapse warnings that are expected
+    // const hyperEdgeWarnings = warningsByType['HYPEREDGE_TO_HIDDEN_CONTAINER'] || 0;
+    // if (hyperEdgeWarnings > 0) {
+    //   // Remove from individual logging regardless of count
+    //   delete warningsByType['HYPEREDGE_TO_HIDDEN_CONTAINER'];
+    // }
     
-    // Special handling for container dimension warnings during collapse transitions
-    const dimensionWarnings = warningsByType['COLLAPSED_CONTAINER_LARGE_DIMENSIONS'] || 0;
-    if (dimensionWarnings > 0) {
-      // Suppress dimension warnings during active collapse operations
-      // These are expected during layout transitions
-      delete warningsByType['COLLAPSED_CONTAINER_LARGE_DIMENSIONS'];
-    }
+    // // Special handling for container dimension warnings during collapse transitions
+    // const dimensionWarnings = warningsByType['COLLAPSED_CONTAINER_LARGE_DIMENSIONS'] || 0;
+    // if (dimensionWarnings > 0) {
+    //   // Suppress dimension warnings during active collapse operations
+    //   // These are expected during layout transitions
+    //   delete warningsByType['COLLAPSED_CONTAINER_LARGE_DIMENSIONS'];
+    // }
     
     // Log other warnings normally (excluding suppressed types)
     const otherWarnings = warnings.filter(w => 

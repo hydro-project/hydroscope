@@ -124,9 +124,6 @@ describe('Bridge Migration Validation', () => {
         // No width/height
       });
 
-      // First: Validate dimensions
-      visState.validateAndFixDimensions();
-
       // Execute: Get top-level nodes
       const topLevelNodes = visState.getTopLevelNodes();
 

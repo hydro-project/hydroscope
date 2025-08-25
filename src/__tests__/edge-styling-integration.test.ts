@@ -28,33 +28,12 @@ describe('Edge Styling Integration', () => {
       }
     ],
     edgeStyleConfig: {
+      // Map semantic properties to visual style tags only (no raw style objects)
       propertyMappings: {
-        'Network': {
-          reactFlowType: 'floating',
-          style: {
-            stroke: '#2563eb',
-            strokeWidth: 3
-          },
-          animated: true,
-          label: 'NET'
-        },
-        'Bounded': {
-          reactFlowType: 'floating',
-          style: {
-            stroke: '#16a34a',
-            strokeWidth: 2
-          },
-          animated: false,
-          label: 'B'
-        }
-      },
-      defaultStyle: {
-        reactFlowType: 'floating',
-        style: {
-          stroke: '#999999',
-          strokeWidth: 2
-        },
-        animated: false
+        // Network implies animation in our style tag system
+        'Network': { styleTag: 'edge_style_3_alt' },
+        // Bounded implies a width/thinness tag
+        'Bounded': { styleTag: 'edge_style_2' }
       },
       combinationRules: {
         priority: ['Network', 'Bounded'],
@@ -69,7 +48,7 @@ describe('Edge Styling Integration', () => {
     expect(parseResult.metadata.edgeStyleConfig).toBeDefined();
     expect(parseResult.metadata.edgeStyleConfig.propertyMappings).toBeDefined();
     expect(parseResult.metadata.edgeStyleConfig.propertyMappings['Network']).toBeDefined();
-    expect(parseResult.metadata.edgeStyleConfig.propertyMappings['Network'].style.stroke).toBe('#2563eb');
+  expect(parseResult.metadata.edgeStyleConfig.propertyMappings['Network'].styleTag).toBe('edge_style_3_alt');
   });
 
   test('createRenderConfig includes edgeStyleConfig', () => {
@@ -96,8 +75,7 @@ describe('Edge Styling Integration', () => {
     const edge = reactFlowEdges[0];
     expect(edge.id).toBe('e1');
     expect(edge.type).toBe('standard'); // Now using standard edges instead of floating
-    expect(edge.animated).toBe(true); // Network property should enable animation
-    expect(edge.style?.stroke).toBe('#2563eb'); // Network should take priority
+  expect(edge.animated).toBe(true); // Network style tag implies animation
     expect(edge.data?.edgeProperties).toContain('Network');
     expect(edge.data?.edgeProperties).toContain('Bounded');
   });
@@ -112,8 +90,6 @@ describe('Edge Styling Integration', () => {
     });
     
     const edge = reactFlowEdges[0];
-    expect(edge.style?.stroke).toBe('#2563eb'); // Network color, not Bounded color
-    expect(edge.style?.strokeWidth).toBe(3); // Network width, not Bounded width
     expect(edge.animated).toBe(true); // Network animation
   });
 
@@ -164,7 +140,6 @@ describe('Edge Styling Integration', () => {
     expect(reactFlowData.edges).toHaveLength(1);
     const edge = reactFlowData.edges[0];
     expect(edge.type).toBe('standard'); // Now using standard edges
-    expect(edge.style?.stroke).toBe('#2563eb');
     expect(edge.animated).toBe(true);
   });
 });

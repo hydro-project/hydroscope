@@ -20,8 +20,9 @@ interface EdgeStyleLegendProps {
     }>;
     singlePropertyMappings?: Record<string, string>;
     combinationRules?: any;
-    // Accept richer mapping objects used by processors (reactFlowType/style/etc.) as well as plain strings
-    propertyMappings?: Record<string, string | { reactFlowType?: string; style?: Record<string, any>; animated?: boolean; label?: string; styleTag?: string } >;
+  // Semantics-focused: accept a styleTag string or an object with optional styleTag
+  // (additional fields from internal configs are tolerated but ignored by the legend)
+  propertyMappings?: Record<string, string | { styleTag?: string; [key: string]: any } >;
   };
   compact?: boolean;
   className?: string;
@@ -116,7 +117,7 @@ function EdgeStyleLegendInner({
   style
 }: EdgeStyleLegendProps) {
   // Safety check for edgeStyleConfig
-  if (!edgeStyleConfig) {
+  if (!edgeStyleConfig || (!edgeStyleConfig.semanticMappings && !edgeStyleConfig.booleanPropertyPairs && !edgeStyleConfig.singlePropertyMappings && !edgeStyleConfig.propertyMappings)) {
     return (
       <div className={`edge-style-legend-empty ${className}`} style={style}>
         <span style={{ 
@@ -449,65 +450,25 @@ function EdgeStyleLegendInner({
     return Object.entries(edgeStyleConfig.propertyMappings).map(([property, styleDefinition], index) => {
       let sample;
       let displayLabel = property;
-      
       // Handle both old string format and new object format
       if (typeof styleDefinition === 'string') {
-        // Old format: property -> styleTag string
         sample = EDGE_STYLE_SAMPLES[styleDefinition as keyof typeof EDGE_STYLE_SAMPLES];
       } else if (typeof styleDefinition === 'object' && styleDefinition !== null) {
-        // New format: property -> { reactFlowType, style, animated, label }
-        const config = styleDefinition as { reactFlowType?: string; style?: Record<string, any>; animated?: boolean; label?: string; styleTag?: string };
-        
-        // Use the label if provided, otherwise use the property name
-        if (config.label) {
-          displayLabel = `${property} (${config.label})`;
-        }
-        
-        // Try to get sample from styleTag if provided
-        if (config.styleTag) {
-          sample = EDGE_STYLE_SAMPLES[config.styleTag as keyof typeof EDGE_STYLE_SAMPLES];
-        } else {
-          // Generate a simple visual based on the style properties
-          const stroke = config.style?.stroke || '#4a5568';
-          const strokeWidth = config.style?.strokeWidth || 2;
-          const animated = config.animated || false;
-          
-          sample = (
-            <svg width="40" height="8" viewBox="0 0 40 8">
-              <line 
-                x1="0" 
-                y1="4" 
-                x2="40" 
-                y2="4" 
-                stroke={stroke} 
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-              >
-                {animated && (
-                  <animateTransform 
-                    attributeName="transform" 
-                    type="translate" 
-                    values="0,0;5,0;0,0" 
-                    dur="1s" 
-                    repeatCount="indefinite"
-                  />
-                )}
-              </line>
-            </svg>
-          );
-        }
+        const config = styleDefinition as { styleTag?: string };
+        sample = config.styleTag
+          ? EDGE_STYLE_SAMPLES[config.styleTag as keyof typeof EDGE_STYLE_SAMPLES]
+          : undefined;
       }
-      
+  // ...existing code...
       return (
         <div key={property} style={styles.pairBoxStyle}>
           <div style={styles.numberStyle}>
             {index + 1}
           </div>
-          
           <div style={styles.contentStyle}>
             <div style={styles.edgeRowStyle}>
               <div style={styles.sampleStyle}>
-                {sample || <span>■</span>}
+                {sample}
               </div>
               <span style={styles.labelStyle}>
                 {displayLabel}

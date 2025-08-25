@@ -30,6 +30,22 @@ export function convertEdgeToReactFlow(
   
   // Process the edge style based on properties
   const processedStyle = processEdgeStyle(edgeProperties, edgeStyleConfig);
+
+  // Defensive: If processedStyle didn't mark as animated, infer from styleTag mappings
+  let animatedFlag = enableAnimations && processedStyle.animated;
+  if (enableAnimations && !animatedFlag && edgeStyleConfig && edgeStyleConfig.propertyMappings) {
+    try {
+      const animatedTags = new Set<string>(['edge_style_3_alt', 'edge_style_5']);
+      for (const prop of edgeProperties) {
+        const mapping = (edgeStyleConfig as any).propertyMappings?.[prop];
+        const tag = typeof mapping === 'string' ? mapping : mapping?.styleTag;
+        if (tag && animatedTags.has(tag)) {
+          animatedFlag = true;
+          break;
+        }
+      }
+    } catch {}
+  }
   
   // Create label if requested
   const label = showPropertyLabels 
@@ -43,7 +59,7 @@ export function convertEdgeToReactFlow(
     target: edge.target,
     type: processedStyle.reactFlowType || 'standard', // Use type from style processing, fallback to standard
     style: processedStyle.style,
-    animated: enableAnimations && processedStyle.animated,
+  animated: animatedFlag,
     label: label,
     markerEnd: typeof processedStyle.markerEndSpec === 'string' 
       ? processedStyle.markerEndSpec  // For custom URL markers like 'url(#circle-filled)'

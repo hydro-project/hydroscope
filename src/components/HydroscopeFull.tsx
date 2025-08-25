@@ -1,3 +1,4 @@
+  // ...existing code...
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { Layout, Card, Button, message } from 'antd';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
@@ -67,6 +68,7 @@ export function HydroscopeFull({
   onConfigChange,
   ...hydroscopeProps
 }: HydroscopeFullProps) {
+  // All hooks and effects go here, inside the function body
   const [data, setData] = useState(initialData);
   const [visualizationState, setVisualizationState] = useState<VisualizationState | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
@@ -77,6 +79,16 @@ export function HydroscopeFull({
   const [hasParsedData, setHasParsedData] = useState<boolean>(false);
   const initialCollapsedCountRef = useRef<number>(0);
   const smartCollapseToastShownRef = useRef<boolean>(false);
+
+  // Ensure renderConfig.edgeStyleConfig is always in sync with graphData.edgeStyleConfig
+  useEffect(() => {
+    if (graphData && graphData.edgeStyleConfig) {
+      setRenderConfig(prev => ({
+        ...prev,
+        edgeStyleConfig: graphData.edgeStyleConfig
+      }));
+    }
+  }, [graphData]);
   
   // Sync internal data state with prop changes
   useEffect(() => {
@@ -88,7 +100,10 @@ export function HydroscopeFull({
   const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
   const [colorPalette, setColorPalette] = useState(initialColorPalette);
   const [layoutAlgorithm, setLayoutAlgorithm] = useState(initialLayoutAlgorithm);
-  const [renderConfig, setRenderConfig] = useState<RenderConfig>(hydroscopeProps.config || {});
+  const [renderConfig, setRenderConfig] = useState<RenderConfig>({
+    ...hydroscopeProps.config,
+    edgeStyleConfig: (initialData && typeof initialData === 'object' && (initialData as any).edgeStyleConfig) || undefined
+  });
   const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(autoFit);
   
   const hydroscopeRef = useRef<HydroscopeRef>(null);
@@ -97,7 +112,12 @@ export function HydroscopeFull({
   useEffect(() => {
     // Keep renderConfig in sync with palette and auto-fit preference
     setRenderConfig(prev => {
-      const next = { ...prev, colorPalette, fitView: autoFitEnabled } as RenderConfig;
+      const next = {
+        ...prev,
+        colorPalette,
+        fitView: autoFitEnabled,
+        edgeStyleConfig: (graphData && graphData.edgeStyleConfig) || prev.edgeStyleConfig
+      } as RenderConfig;
       onConfigChange?.(next);
       return next;
     });
@@ -105,14 +125,12 @@ export function HydroscopeFull({
 
   // Handle file upload
   const handleFileUpload = useCallback((uploadedData: any, filename: string) => {
-    console.log(`📁 File uploaded: ${filename}`);
     setData(uploadedData);
     onFileUpload?.(uploadedData, filename);
   }, [onFileUpload]);
 
   // Handle parsing to get access to visualization state
   const handleParsed = useCallback((parsedMetadata: any, visState: VisualizationState) => {
-    console.log('🎯 HydroscopeFull: Received visualization state');
     setVisualizationState(visState);
     setMetadata(parsedMetadata);
     
@@ -187,7 +205,6 @@ export function HydroscopeFull({
         const parsedData = parseGraphJSON(jsonData, grouping);
         const renderConfig = createRenderConfig(parsedData);
         setEdgeStyleConfig(renderConfig);
-        console.log('🎯 Created edge style config:', renderConfig);
       } catch (e) {
         console.error('Failed to create render config:', e);
       }
@@ -216,11 +233,9 @@ export function HydroscopeFull({
         setIsLayoutRunning(true);
         
         if (container.collapsed) {
-          console.log(`🔄 Expanding container: ${node.id}`);
           visualizationState.expandContainer(node.id);
           onContainerExpand?.(node.id, visualizationState);
         } else {
-          console.log(`🔄 Collapsing container: ${node.id}`);
           visualizationState.collapseContainer(node.id);
           onContainerCollapse?.(node.id, visualizationState);
         }
@@ -249,9 +264,7 @@ export function HydroscopeFull({
     if (!visualizationState) return;
     
     try {
-      setIsLayoutRunning(true);
-      console.log('📦 Packing all containers...');
-      
+      setIsLayoutRunning(true);      
       visualizationState.collapseAllContainers();
       
       // Trigger layout refresh
@@ -278,8 +291,6 @@ export function HydroscopeFull({
     
     try {
       setIsLayoutRunning(true);
-      console.log('📂 Unpacking all containers...');
-      
       visualizationState.expandAllContainers();
       
       // Trigger layout refresh
@@ -326,7 +337,6 @@ export function HydroscopeFull({
         const renderConfig = createRenderConfig(parsedData);
         
         setEdgeStyleConfig(renderConfig);
-        console.log('🎯 Updated edge style config for grouping change:', renderConfig);
       } catch (e) {
         console.error('Failed to update render config for grouping change:', e);
       }
@@ -355,6 +365,8 @@ export function HydroscopeFull({
     flex: 1,
     minHeight: 0, // Important for flex child to shrink
   };
+
+  // Diagnostic: log props passed to InfoPanel and Hydroscope on each render
 
   return (
     <Layout style={mainContentStyle}>
@@ -447,7 +459,7 @@ export function HydroscopeFull({
                   <InfoPanel
                     visualizationState={visualizationState}
                     legendData={graphData && graphData.legend ? graphData.legend : {}}
-                    edgeStyleConfig={graphData?.edgeStyleConfig}
+                    edgeStyleConfig={graphData && graphData.edgeStyleConfig ? graphData.edgeStyleConfig : undefined}
                     hierarchyChoices={metadata?.availableGroupings || []}
                     currentGrouping={grouping}
                     onGroupingChange={handleGroupingChange}
@@ -462,13 +474,11 @@ export function HydroscopeFull({
                             visualizationState.collapseContainer(containerId);
                             onContainerCollapse?.(containerId, visualizationState);
                           }
-                          
                           // Update collapsed containers state
                           const newCollapsedContainers = new Set(visualizationState.visibleContainers
                             .filter(container => container.collapsed)
                             .map(container => container.id));
                           setCollapsedContainers(newCollapsedContainers);
-                          
                           if (hydroscopeRef.current?.refreshLayout) {
                             await hydroscopeRef.current.refreshLayout();
                           }
@@ -491,18 +501,18 @@ export function HydroscopeFull({
                 overflow: 'hidden'
               }}>
                 <Hydroscope
-                  ref={hydroscopeRef}
-                  data={data}
-                  grouping={grouping}
-                  config={renderConfig}
-                  layoutConfig={layoutConfig}
-                  onParsed={handleParsed}
-                  eventHandlers={{
-                    onNodeClick: handleNodeClick,
-                  }}
-                  fillViewport={true}
-                  {...hydroscopeProps}
-                />
+                    ref={hydroscopeRef}
+                    data={data}
+                    grouping={grouping}
+                    config={renderConfig}
+                    layoutConfig={layoutConfig}
+                    onParsed={handleParsed}
+                    eventHandlers={{
+                      onNodeClick: handleNodeClick,
+                    }}
+                    fillViewport={true}
+                    {...hydroscopeProps}
+                  />
                 
                 {/* Style Tuner Panel - Absolute positioned like vis.js */}
                 <div style={{ 

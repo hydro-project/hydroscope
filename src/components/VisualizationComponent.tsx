@@ -228,10 +228,8 @@ export function VisualizationComponent({
               const container = visState.getContainer(node.id);
               if (container) {
                 if (container.collapsed) {
-                  console.log(`[VisualizationComponent] 🔓 Expanding container: ${node.id}`);
                   visState.expandContainer(node.id);
                 } else {
-                  console.log(`[VisualizationComponent] 🔒 Collapsing container: ${node.id}`);
                   visState.collapseContainer(node.id);
                 }
                 // Force refresh after container state change

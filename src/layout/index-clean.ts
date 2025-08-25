@@ -29,7 +29,6 @@ import { DEFAULT_LAYOUT_CONFIG } from './ELKLayoutEngine';
 
 // Configuration helpers
 export function getLayoutConfig(name: string): LayoutConfig {
-  // // console.log(((`[Layout] Getting config: ${name}`)));
   return DEFAULT_LAYOUT_CONFIG;
 }
 

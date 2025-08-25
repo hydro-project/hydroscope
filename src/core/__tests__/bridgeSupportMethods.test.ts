@@ -6,7 +6,6 @@
  * - getParentChildMap() 
  * - getTopLevelNodes()
  * - getEdgeHandles()
- * - validateAndFixDimensions()
  */
 
 import { describe, test, expect, beforeEach } from 'vitest';
@@ -322,83 +321,6 @@ describe('VisualizationState Bridge Support Methods', () => {
     });
   });
 
-  describe('validateAndFixDimensions()', () => {
-    test('should fix invalid node dimensions', () => {
-      // Setup: Nodes with invalid dimensions
-      visState.setGraphNode('validNode', { 
-        label: 'Valid', 
-        hidden: false,
-        width: 100,
-        height: 50
-      });
-      
-      visState.setGraphNode('invalidNode', { 
-        label: 'Invalid', 
-        hidden: false,
-        width: 0,
-        height: -10
-      });
-      
-      visState.setGraphNode('missingDims', { 
-        label: 'Missing', 
-        hidden: false
-        // No width/height specified
-      });
-
-      // Execute
-      visState.validateAndFixDimensions();
-
-      // Verify
-      const validNode = visState.getGraphNode('validNode');
-      expect(validNode?.width).toBe(100);
-      expect(validNode?.height).toBe(50);
-      
-      const invalidNode = visState.getGraphNode('invalidNode');
-      expect(invalidNode?.width).toBe(LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH);
-      expect(invalidNode?.height).toBe(LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT);
-      
-      const missingNode = visState.getGraphNode('missingDims');
-      expect(missingNode?.width).toBe(LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH);
-      expect(missingNode?.height).toBe(LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT);
-    });
-
-    test('should fix invalid container dimensions', () => {
-      // Setup: Containers with invalid dimensions
-      visState.setContainer('validContainer', {
-        collapsed: false,
-        hidden: false,
-        children: [],
-        width: 300,
-        height: 200
-      });
-      
-      visState.setContainer('invalidContainer', {
-        collapsed: false,
-        hidden: false,
-        children: [],
-        width: 0,
-        height: -5
-      });
-
-      // Execute
-      visState.validateAndFixDimensions();
-
-      // Verify
-      const validContainer = visState.getContainer('validContainer');
-      expect(validContainer?.width).toBe(LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH); // External dimensions ignored due to encapsulation
-      expect(validContainer?.height).toBe(LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT);
-      
-      const invalidContainer = visState.getContainer('invalidContainer');
-      expect(invalidContainer?.width).toBe(LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH);
-      expect(invalidContainer?.height).toBe(LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT);
-    });
-
-    test('should handle empty state gracefully', () => {
-      // Execute on empty state
-      expect(() => visState.validateAndFixDimensions()).not.toThrow();
-    });
-  });
-
   describe('Integration: Bridge Support Methods Working Together', () => {
     test('should provide consistent data for ELK Bridge workflow', () => {
       // Setup: Complex graph structure
@@ -429,9 +351,6 @@ describe('VisualizationState Bridge Support Methods', () => {
         sourceHandle: 'out-1',
         hidden: false
       });
-
-      // Ensure dimensions are valid
-      visState.validateAndFixDimensions();
 
       // Execute: Get all bridge support data
       const collapsedAsNodes = visState.getCollapsedContainersAsNodes();

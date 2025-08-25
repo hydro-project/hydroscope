@@ -20,7 +20,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
   });
 
   it('should correctly use ELK-calculated dimensions in ReactFlow conversion', async () => {
-    // // console.log((('\n=== Testing ReactFlowBridge Dimensions Fix ===')));
+    console.log((('\n=== Testing ReactFlowBridge Dimensions Fix ===')));
 
     // 1. Create a simple hierarchy with containers using fluent API
     visState
@@ -31,15 +31,11 @@ describe('ReactFlowBridge Dimensions Fix', () => {
       .setGraphEdge('edge1', { source: 'node1', target: 'node2' })
       .setGraphEdge('edge2', { source: 'node2', target: 'node3' });
 
-    // // console.log((('✅ Created test data with 1 container containing 2 nodes')));
-
     // 2. Check initial state (before ELK)
     const initialContainers = visState.visibleContainers;
     expect(initialContainers).toHaveLength(1);
     
     const initialContainer = initialContainers[0];
-    // // console.log(((`📏 Initial container dimensions: ${initialContainer.width}x${initialContainer.height} at (${initialContainer.x}, ${initialContainer.y})`)));
-    
     // Initial dimensions should be minimum dimensions from label-adjusted calculations
     // (Our container label positioning provides minimum dimensions)
     expect(initialContainer.width).toBe(200); // MIN_CONTAINER_WIDTH
@@ -47,12 +43,10 @@ describe('ReactFlowBridge Dimensions Fix', () => {
 
     // 3. Run ELK layout to calculate proper dimensions
     await elkBridge.layoutVisState(visState);
-    // // console.log((('✅ ELK layout completed')));
 
     // 4. Check dimensions after ELK
     const elkContainers = visState.visibleContainers;
     const elkContainer = elkContainers[0];
-    // // console.log(((`📏 ELK-calculated container dimensions: ${elkContainer.width}x${elkContainer.height} at (${elkContainer.x}, ${elkContainer.y})`)));
     
     // ELK should have calculated proper dimensions
     expect(elkContainer.width).toBeGreaterThan(0);
@@ -62,14 +56,12 @@ describe('ReactFlowBridge Dimensions Fix', () => {
 
     // 5. Convert to ReactFlow format
     const reactFlowData = reactFlowBridge.convertVisState(visState);
-    // // console.log((('✅ ReactFlow conversion completed')));
 
     // 6. Verify ReactFlow gets the correct container dimensions
     const containerNodes = reactFlowData.nodes.filter(node => node.type === 'container');
     expect(containerNodes).toHaveLength(1);
 
     const reactFlowContainer = containerNodes[0];
-    // // console.log(((`📏 ReactFlow container dimensions: ${reactFlowContainer.data.width}x${reactFlowContainer.data.height} at (${reactFlowContainer.position.x}, ${reactFlowContainer.position.y})`)));
 
     // ReactFlow should receive the same dimensions that are used for layout
     const expectedDimensions = visState.getContainerAdjustedDimensions(elkContainer.id);
@@ -82,12 +74,12 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     expect(reactFlowContainer.style?.width).toBe(expectedDimensions.width);
     expect(reactFlowContainer.style?.height).toBe(expectedDimensions.height);
 
-    // // console.log((('✅ All dimension checks passed - ReactFlowBridge correctly uses ELK-calculated dimensions!')));
-    // // console.log((('=== Test Complete ===\n')));
+    console.log((('✅ All dimension checks passed - ReactFlowBridge correctly uses ELK-calculated dimensions!')));
+    console.log((('=== Test Complete ===\n')));
   });
 
   it('should handle multiple containers with different sizes', async () => {
-    // // console.log((('\n=== Testing Multiple Container Dimensions ===')));
+    console.log((('\n=== Testing Multiple Container Dimensions ===')));
 
     // Create containers with different numbers of children (should get different sizes)
     visState
@@ -114,9 +106,6 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     const smallContainer = visStateContainers.find(c => c.id === 'small_container')!;
     const largeContainer = visStateContainers.find(c => c.id === 'large_container')!;
 
-    // // console.log(((`📏 Small container (2 nodes): ${smallContainer.width}x${smallContainer.height}`)));
-    // // console.log(((`📏 Large container (3 nodes): ${largeContainer.width}x${largeContainer.height}`)));
-
     // Large container should be at least as tall as small container
     // Note: Layout algorithm may assign same minimum height to both containers
     expect(largeContainer.height).toBeGreaterThanOrEqual(smallContainer.height);
@@ -135,11 +124,9 @@ describe('ReactFlowBridge Dimensions Fix', () => {
       expect(reactFlowContainer.data.height).toBe(expectedDimensions.height);
       expect(reactFlowContainer.position.x).toBe(visStateContainer.x);
       expect(reactFlowContainer.position.y).toBe(visStateContainer.y);
-
-      // // console.log(((`✅ Container ${reactFlowContainer.id}: ReactFlow matches VisState dimensions`)));
     }
 
-    // // console.log((('✅ Multiple container dimension test passed!')));
-    // // console.log((('=== Test Complete ===\n')));
+    console.log((('✅ Multiple container dimension test passed!')));
+    console.log((('=== Test Complete ===\n')));
   });
 });

@@ -8,24 +8,11 @@
 // import { runChatJsonIntegrationTests } from './chatJsonIntegration.test.js';
 
 async function runAllTests(): Promise<void> {
-  // // console.log((('🚀 Starting All Layout Tests...\n')));
-  
   const startTime = Date.now();
   
   try {
-    // Run boundary validation tests
-    // await runLayoutBoundaryTests();
-    
-    // Run chat.json integration tests  
-    // await runChatJsonIntegrationTests();
-    
-    // // console.log((('Layout tests are temporarily disabled')));
-    
-    
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
-    
-    // // console.log(((`\n🎉 All Tests Completed Successfully in ${duration}s!\n`)));
     
   } catch (error) {
     const endTime = Date.now();

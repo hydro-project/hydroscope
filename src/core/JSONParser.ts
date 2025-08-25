@@ -2,7 +2,7 @@
  * JSON Parser for Graph Data
  * 
  * Framework-independent JSON parser that converts graph data into a VisualizationState.
- * Handles nodes, edges, hierarchies, and grouping assignments.
+ * Handles nodes, edges, hierarchies, grouping assignments and styling based on semantic tags.
  */
 
 import { createVisualizationState, VisualizationState } from './VisualizationState';
@@ -23,10 +23,20 @@ export interface ParseResult {
     edgeCount: number;
     containerCount: number;
     availableGroupings: GroupingOption[];
-    styleConfig?: Record<string, any>;
     edgeStyleConfig?: {
-      propertyMappings: Record<string, any>;
-      defaultStyle?: any;
+      // Semantics-only fields surfaced by the parser (sanitized):
+      // - propertyMappings: property -> styleTag or { styleTag }
+      // - singlePropertyMappings: property -> styleTag
+      // - booleanPropertyPairs: pairs with semantic tags (no raw styles)
+      // - combinationRules: metadata only
+      propertyMappings?: Record<string, string | { styleTag: string }>;
+      singlePropertyMappings?: Record<string, string>;
+      booleanPropertyPairs?: Array<{
+        pair: [string, string];
+        defaultStyle: string; // styleTag
+        altStyle: string;     // styleTag
+        description?: string;
+      }>;
       combinationRules?: any;
     };
     nodeTypeConfig?: {
@@ -96,14 +106,22 @@ interface RawGraphData {
   hierarchies?: RawHierarchy[];
   hierarchyChoices?: RawHierarchyChoice[];
   nodeAssignments?: Record<string, Record<string, string>>;
-  styleConfig?: {
-    edgeStyles?: Record<string, any>;
-    nodeStyles?: Record<string, any>;
-  };
   edgeStyleConfig?: {
-    propertyMappings: Record<string, any>;
-    defaultStyle?: any;
+    // Input may contain legacy/raw fields, but the parser will ignore/drop
+    // anything that isn't semantics-only.
+    propertyMappings?: Record<string, string | { styleTag: string } | any>;
+    singlePropertyMappings?: Record<string, string>;
+    booleanPropertyPairs?: Array<{
+      pair: [string, string];
+      defaultStyle: string; // styleTag
+      altStyle: string;     // styleTag
+      description?: string;
+      // Any additional fields will be ignored by sanitizer
+      [key: string]: any;
+    }>;
     combinationRules?: any;
+    // Note: fields like style, reactFlowType, animated, defaultStyle, etc. are ignored
+    [key: string]: any;
   };
   nodeTypeConfig?: {
     defaultType?: string;
@@ -170,8 +188,9 @@ export function parseGraphJSON(
       selectedGrouping: grouping,
       containerCount,
       availableGroupings: getAvailableGroupings(data),
-      styleConfig: data.styleConfig || {}, // Include style configuration
-      edgeStyleConfig: data.edgeStyleConfig, // Include edge style configuration
+  // Do not pass through raw styleConfig – visuals are controlled by renderer.
+  // Only allow semantic edge style config with styleTag/propertyMappings.
+  edgeStyleConfig: sanitizeEdgeStyleConfig(data.edgeStyleConfig),
       nodeTypeConfig: metadata.nodeTypeConfig
     }
   };
@@ -675,6 +694,66 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
   return containerCount;
 }
 
+/**
+ * Sanitize edgeStyleConfig from JSON to only allow semantic mappings.
+ * - Keep propertyMappings where values are string styleTags or objects with a styleTag string.
+ * - Keep singlePropertyMappings (property -> styleTag) if values are strings.
+ * - Keep booleanPropertyPairs but only their semantic fields (pair/defaultStyle/altStyle/description).
+ * - Keep combinationRules metadata.
+ * - Drop any raw style objects, reactFlowType, animated flags, semanticMappings, and defaultStyle objects.
+ */
+function sanitizeEdgeStyleConfig(raw: any): any | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+
+  const sanitized: any = {};
+
+  // propertyMappings: { prop: string | { styleTag?: string } }
+  if (raw.propertyMappings && typeof raw.propertyMappings === 'object') {
+    const pm: Record<string, any> = {};
+    for (const [prop, val] of Object.entries(raw.propertyMappings)) {
+      if (typeof val === 'string') {
+        pm[prop] = val; // assume styleTag
+      } else if (val && typeof val === 'object' && typeof (val as any).styleTag === 'string') {
+        pm[prop] = { styleTag: (val as any).styleTag };
+      }
+      // else: drop entries that attempt to inject styles
+    }
+    if (Object.keys(pm).length > 0) sanitized.propertyMappings = pm;
+  }
+
+  // singlePropertyMappings: { prop: styleTag }
+  if (raw.singlePropertyMappings && typeof raw.singlePropertyMappings === 'object') {
+    const spm: Record<string, string> = {};
+    for (const [prop, val] of Object.entries(raw.singlePropertyMappings)) {
+      if (typeof val === 'string') spm[prop] = val;
+    }
+    if (Object.keys(spm).length > 0) sanitized.singlePropertyMappings = spm;
+  }
+
+  // booleanPropertyPairs: [{ pair, defaultStyle, altStyle, description }]
+  if (Array.isArray(raw.booleanPropertyPairs)) {
+    const pairs = raw.booleanPropertyPairs
+      .map((p: any) => {
+        if (!p || !Array.isArray(p.pair) || p.pair.length !== 2) return null;
+        const defaultStyle = typeof p.defaultStyle === 'string' ? p.defaultStyle : undefined;
+        const altStyle = typeof p.altStyle === 'string' ? p.altStyle : undefined;
+        const description = typeof p.description === 'string' ? p.description : undefined;
+        if (!defaultStyle || !altStyle) return null;
+        return { pair: [p.pair[0], p.pair[1]], defaultStyle, altStyle, ...(description ? { description } : {}) };
+      })
+      .filter(Boolean);
+    if (pairs.length > 0) sanitized.booleanPropertyPairs = pairs;
+  }
+
+  // combinationRules (kept as metadata, not direct styles)
+  if (raw.combinationRules && typeof raw.combinationRules === 'object') {
+    sanitized.combinationRules = { ...raw.combinationRules };
+  }
+
+  // Explicitly do NOT pass through: semanticMappings, defaultStyle, style, reactFlowType, animated, label
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+}
+
 function mapStyleConstant(
   rawStyle: string | undefined, 
   styleConstants: Record<string, string>, 
@@ -710,9 +789,8 @@ function mapStyleConstant(
 export function createRenderConfig(parseResult: ParseResult, baseConfig: any = {}): any {
   return {
     ...baseConfig,
-    edgeStyleConfig: parseResult.metadata.edgeStyleConfig,
-    // Include other metadata as needed
-    styleConfig: parseResult.metadata.styleConfig,
+  edgeStyleConfig: parseResult.metadata.edgeStyleConfig,
+  // Include other metadata as needed
     nodeTypeConfig: parseResult.metadata.nodeTypeConfig
   };
 }

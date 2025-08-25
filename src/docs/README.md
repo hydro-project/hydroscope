@@ -195,13 +195,11 @@ const renderConfig = {
 ```
 
 ### Styling Configuration
-```typescript
-const styleConfig = {
-  nodeColors: 'Set2',         // ColorBrewer palette
-  edgeStyle: 'default',       // Edge styling
-  containerStyle: 'outlined'  // Container appearance
-};
-```
+Hydroscope controls concrete visuals internally. From JSON, provide only semantic inputs:
+- nodeType for nodes
+- edgeStyleConfig with styleTag-based mappings
+
+At runtime, you can choose high-level themes via component props or CSS variables.
 
 ## 🎨 Customization
 
