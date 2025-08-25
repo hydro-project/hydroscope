@@ -38,14 +38,14 @@ describe('Layout Spacing Regression Tests', () => {
     const elkBridge = new ELKBridge();
     
     try {
-      await elkBridge.layoutVisState(visState);
+      await elkBridge.layoutVisualizationState(visState);
       console.log(`✅ ELK layout completed successfully`);
       
       // ADDITIONAL DEBUG: Test ReactFlow conversion to see edge coordinates
       console.log('🔗 Testing ReactFlow conversion...');
       const { ReactFlowBridge } = await import('../../bridges/ReactFlowBridge');
       const reactFlowBridge = new ReactFlowBridge();
-      const reactFlowData = reactFlowBridge.convertVisState(visState);
+      const reactFlowData = reactFlowBridge.convertVisualizationState(visState);
       
       console.log(`📊 ReactFlow conversion: ${reactFlowData.nodes.length} nodes, ${reactFlowData.edges.length} edges`);
       
@@ -184,7 +184,7 @@ describe('Layout Spacing Regression Tests', () => {
     // The bug was that ELKBridge couldn't distinguish collapsed containers from nodes
     // Let's verify that the fix prevents this
     try {
-      await elkBridge.layoutVisState(visState);
+      await elkBridge.layoutVisualizationState(visState);
       
       // Verify that containers are still in the containers collection, not moved to nodes
       const internalState = visState as any;
@@ -241,8 +241,8 @@ describe('Layout Spacing Regression Tests', () => {
     
     try {
       // Run layout on both states
-      await elkBridge1.layoutVisState(visState1);
-      await elkBridge2.layoutVisState(visState2);
+      await elkBridge1.layoutVisualizationState(visState1);
+      await elkBridge2.layoutVisualizationState(visState2);
       
       // Compare positions of collapsed containers
       const tolerance = 5; // Allow small differences due to floating point

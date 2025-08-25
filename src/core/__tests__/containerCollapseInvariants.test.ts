@@ -5,7 +5,7 @@
  * 1. Child nodes have hidden: true
  * 2. Child edges have hidden: true  
  * 3. Nested child containers are properly handled
- * 4. VisState never leaks hidden elements
+ * 4. VisualizationState never leaks hidden elements
  */
 
 import { describe, test, expect, beforeEach } from 'vitest';

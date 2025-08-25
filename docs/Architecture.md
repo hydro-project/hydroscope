@@ -49,18 +49,18 @@ Raw Graph Data → JSONParser → VisualizationState
 
 ### 2. Layout Calculation (ELKBridge)
 ```
-VisualizationState → ELKBridge.layoutVisState() → ELK Layout Engine
+VisualizationState → ELKBridge.layoutVisualizationState() → ELK Layout Engine
        ↓                        ↓                         ↓
    Visible Elements     ELK Graph Format         Positioned Results
        ↓                        ↓                         ↓
-VisualizationState ← elkToVisState() ←─────────── ELK Results
+VisualizationState ← elkToVisualizationState() ←─────────── ELK Results
    (updated with                                  (x, y, width, height)
     layout positions)
 ```
 
 ### 3. Rendering Pipeline (ReactFlowBridge)  
 ```
-VisualizationState → ReactFlowBridge.convertVisState() → React Components → DOM
+VisualizationState → ReactFlowBridge.convertVisualizationState() → React Components → DOM
        ↓                          ↓                             ↓              ↓
    Positioned            ReactFlow Format              ReactFlow Nodes    Visual Output
     Elements            (nodes, edges, styles)          & Edges
@@ -72,7 +72,7 @@ Both main bridges follow similar patterns:
 
 **ELKBridge (Layout)**:
 - Input: `VisualizationState` 
-- Process: `visStateToELK()` → ELK computation → `elkToVisState()`
+- Process: `visStateToELK()` → ELK computation → `elkToVisualizationState()`
 - Output: Updates `VisualizationState` in-place (async)
 
 **ReactFlowBridge (Rendering)**:
@@ -135,7 +135,7 @@ Both main bridges follow similar patterns:
 const elkBridge = new ELKBridge(layoutConfig);
 
 // 2. Apply layout to VisualizationState (async, modifies in-place)
-await elkBridge.layoutVisState(visualizationState);
+await elkBridge.layoutVisualizationState(visualizationState);
 
 // 3. VisualizationState now has layout positions
 const nodeLayout = visualizationState.getNodeLayout('node1');
@@ -151,7 +151,7 @@ reactFlowBridge.setColorPalette('Set3');
 reactFlowBridge.setEdgeStyleConfig(edgeConfig);
 
 // 2. Convert to ReactFlow format (sync, returns new data)
-const reactFlowData = reactFlowBridge.convertVisState(visualizationState);
+const reactFlowData = reactFlowBridge.convertVisualizationState(visualizationState);
 
 // 3. Render in React
 <ReactFlow 
@@ -170,10 +170,10 @@ const elkBridge = new ELKBridge(layoutConfig);
 const reactFlowBridge = new ReactFlowBridge();
 
 // 1. Apply layout
-await elkBridge.layoutVisState(visualizationState);
+await elkBridge.layoutVisualizationState(visualizationState);
 
 // 2. Convert for rendering  
-const reactFlowData = reactFlowBridge.convertVisState(visualizationState);
+const reactFlowData = reactFlowBridge.convertVisualizationState(visualizationState);
 
 // 3. Update UI
 setReactFlowData(reactFlowData);

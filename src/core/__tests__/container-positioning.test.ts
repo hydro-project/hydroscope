@@ -45,7 +45,7 @@ describe('ReactFlowBridge Container Positioning', () => {
     });
 
     // Convert to ReactFlow format
-    const reactFlowData = bridge.convertVisState(visState);
+    const reactFlowData = bridge.convertVisualizationState(visState);
     
     // Find containers in the result
     const parentContainer = reactFlowData.nodes.find(n => n.id === 'parent');
@@ -95,7 +95,7 @@ describe('ReactFlowBridge Container Positioning', () => {
     });
 
     // Convert without ELK data
-    const reactFlowData = bridge.convertVisState(visState);
+    const reactFlowData = bridge.convertVisualizationState(visState);
     
     const child1 = reactFlowData.nodes.find(n => n.id === 'child1');
     const child2 = reactFlowData.nodes.find(n => n.id === 'child2');

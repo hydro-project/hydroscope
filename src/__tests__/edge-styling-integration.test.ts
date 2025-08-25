@@ -135,7 +135,7 @@ describe('Edge Styling Integration', () => {
     const bridge = new ReactFlowBridge();
     bridge.setEdgeStyleConfig(renderConfig.edgeStyleConfig);
     
-    const reactFlowData = bridge.convertVisState(parseResult.state);
+    const reactFlowData = bridge.convertVisualizationState(parseResult.state);
     
     expect(reactFlowData.edges).toHaveLength(1);
     const edge = reactFlowData.edges[0];

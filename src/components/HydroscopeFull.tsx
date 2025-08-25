@@ -16,7 +16,8 @@ const { Content } = Layout;
 export interface HydroscopeFullProps extends Omit<HydroscopeProps, 'eventHandlers' | 'onParsed'> {
   // Layout and styling
   showFileUpload?: boolean;        // Show file upload area (default: true)
-  showSidebar?: boolean;          // Show control sidebar (default: true)
+  showInfoPanel?: boolean;         // Show control sidebar (default: true)
+  showStylePanel?: boolean;        // Show styling sidebar (default: true)
   
   // Feature toggles
   enableCollapse?: boolean;        // Enable container interaction (default: true)
@@ -55,7 +56,8 @@ export interface HydroscopeFullProps extends Omit<HydroscopeProps, 'eventHandler
 export function HydroscopeFull({
   data: initialData,
   showFileUpload = true,
-  showSidebar = true,
+  showInfoPanel = true,
+  showStylePanel = true,
   enableCollapse = true,
   autoFit = true,
   initialLayoutAlgorithm = 'mrtree',
@@ -66,6 +68,7 @@ export function HydroscopeFull({
   onContainerExpand,
   onParsed,
   onConfigChange,
+  style,
   ...hydroscopeProps
 }: HydroscopeFullProps) {
   // All hooks and effects go here, inside the function body
@@ -350,7 +353,8 @@ export function HydroscopeFull({
   };
 
   const mainContentStyle: React.CSSProperties = {
-    height: '100vh',
+    height: '100%',
+    width: '100%',
     overflow: 'hidden',
   };
 
@@ -362,9 +366,22 @@ export function HydroscopeFull({
   };
 
   const graphContainerStyle: React.CSSProperties = {
-    flex: 1,
-    minHeight: 0, // Important for flex child to shrink
+  flex: 1,
+  minHeight: 0,
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
   };
+  
+  // Instrument the graph container size once to confirm parent-provided height
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = graphContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    console.log(`[HydroscopeFull] graph container size: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
+  }, []);
 
   // Diagnostic: log props passed to InfoPanel and Hydroscope on each render
 
@@ -384,7 +401,7 @@ export function HydroscopeFull({
 
         {/* Main Graph Area with horizontal layout like vis.js */}
         {hasParsedData && data && (
-          <div style={{ ...graphContainerStyle }}>
+          <div ref={graphContainerRef} style={{ ...graphContainerStyle }}>
             {/* Layout Controls - Horizontal bar above graph like vis.js */}
             {visualizationState && (
               <div style={{ 
@@ -443,19 +460,14 @@ export function HydroscopeFull({
             {/* Graph container with horizontal layout */}
             <div style={{
               display: 'flex',
-              flexDirection: 'row', // Horizontal layout
-              height: '600px', // Set explicit height
+              flexDirection: 'row',
+              flex: 1,
+              minHeight: 0,
+              height: '100%',
               overflow: 'hidden'
             }}>
-              {/* Info Panel - Left sidebar (matches vis.js layout) */}
-              {showSidebar && visualizationState && (
-                <div style={{
-                  width: '300px',
-                  height: '100%',
-                  borderRight: '1px solid #eee',
-                  overflow: 'auto',
-                  flexShrink: 0,
-                }}>
+              {/* Info Panel - Left side */}
+              {showInfoPanel && visualizationState && (
                   <InfoPanel
                     visualizationState={visualizationState}
                     legendData={graphData && graphData.legend ? graphData.legend : {}}
@@ -490,12 +502,12 @@ export function HydroscopeFull({
                     collapsedContainers={collapsedContainers}
                     colorPalette={colorPalette}
                   />
-                </div>
               )}
               
               {/* Flow Graph - Takes remaining space */}
               <div style={{ 
                 flex: 1,
+                minHeight: 0,
                 height: '100%',
                 position: 'relative',
                 overflow: 'hidden'
@@ -510,36 +522,39 @@ export function HydroscopeFull({
                     eventHandlers={{
                       onNodeClick: handleNodeClick,
                     }}
-                    fillViewport={true}
+                    fillViewport={false}
+                    style={{ width: '100%', height: '100%' }}
                     {...hydroscopeProps}
                   />
                 
-                {/* Style Tuner Panel - Absolute positioned like vis.js */}
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '12px', 
-                  right: '12px', 
-                  zIndex: 1500, 
-                  width: '320px' 
-                }}>
-                  <StyleTunerPanel
-                    value={renderConfig}
-                    onChange={(newStyles) => {
-                      const newConfig = {
-                        ...renderConfig,
-                        ...newStyles,
-                      };
-                      setRenderConfig(newConfig);
+                {/* Style Tuner Panel - Absolute positioned */}
+                {showStylePanel && visualizationState && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: '12px', 
+                    right: '12px', 
+                    zIndex: 1500, 
+                    width: '320px' 
+                  }}>
+                    <StyleTunerPanel
+                      value={renderConfig}
+                      onChange={(newStyles) => {
+                        const newConfig = {
+                          ...renderConfig,
+                          ...newStyles,
+                        };
+                        setRenderConfig(newConfig);
 
-                      if (visualizationState) {
-                        visualizationState.updateNodeDimensions(newConfig);
-                        hydroscopeRef.current?.refreshLayout(true); // Force relayout
-                      }
-                    }}
-                    colorPalette={colorPalette}
-                    onPaletteChange={setColorPalette}
-                  />
-                </div>
+                        if (visualizationState) {
+                          visualizationState.updateNodeDimensions(newConfig);
+                          hydroscopeRef.current?.refreshLayout(true); // Force relayout
+                        }
+                      }}
+                      colorPalette={colorPalette}
+                      onPaletteChange={setColorPalette}
+                    />
+                  </div>
+                }
               </div>
             </div>
           </div>

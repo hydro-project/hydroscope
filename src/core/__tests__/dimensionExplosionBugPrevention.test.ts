@@ -95,7 +95,7 @@
         visState.setGraphNode(`external_${i}`, { their children
  * 2. visibleNodes never contains children of collapsed containers
  * 3. ELK Bridge receives clean data with no dimension explosion risk
- * 4. The entire chain from JSON -> VisState -> ELK -> VisState -> ReactFlow works correctly
+ * 4. The entire chain from JSON -> VisualizationState -> ELK -> VisualizationState -> ReactFlow works correctly
  * 
  * Historical Context: The original bug caused ELK to try to layout thousands
  * of hidden nodes inside small collapsed containers, creating massive spacing.
@@ -141,18 +141,18 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       
       console.log(`Loaded paxos-flipped.json: ${validation.nodeCount} nodes, ${validation.edgeCount} edges`);
       
-      // STEP 2: Parse JSON into VisState with default grouping
+      // STEP 2: Parse JSON into VisualizationState with default grouping
       const parseResult = parseGraphJSON(paxosJsonData);
       expect(parseResult.state).toBeDefined();
       expect(parseResult.metadata.nodeCount).toBe(validation.nodeCount);
       expect(parseResult.metadata.edgeCount).toBe(validation.edgeCount);
       
-      const loadedVisState = parseResult.state;
+      const loadedVisualizationState = parseResult.state;
       
       // STEP 3: Create VisualizationEngine with smart collapse enabled to test full pipeline
       const { VisualizationEngine } = await import('../VisualizationEngine');
       
-      const engine = new VisualizationEngine(loadedVisState, {
+      const engine = new VisualizationEngine(loadedVisualizationState, {
         autoLayout: false, // We'll manually trigger layout
         enableLogging: true,
         layoutConfig: {
@@ -205,14 +205,14 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       
       // CRITICAL: Validate that no invariants are violated after smart collapse
       try {
-        loadedVisState.validateInvariants();
+        loadedVisualizationState.validateInvariants();
         console.log('✅ All invariants passed after smart collapse');
       } catch (error) {
         throw new Error(`❌ Invariant violations detected after smart collapse: ${error.message}`);
       }
       
       // CRITICAL: Check specifically for DANGLING_HYPEREDGE issues
-      const hyperEdgeViolations = (loadedVisState as any).invariantValidator.validateDanglingHyperedges();
+      const hyperEdgeViolations = (loadedVisualizationState as any).invariantValidator.validateDanglingHyperedges();
       const danglingHyperEdges = hyperEdgeViolations.filter((v: any) => v.type === 'DANGLING_HYPEREDGE');
       
       if (danglingHyperEdges.length > 0) {
@@ -224,10 +224,10 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       }
       
       // STEP 4: Verify that smart collapse prevented dimension explosion
-      const visibleNodes = loadedVisState.visibleNodes;
-      const visibleEdges = loadedVisState.visibleEdges;
-      const expandedContainers = loadedVisState.getExpandedContainers();
-      const allVisibleContainers = loadedVisState.visibleContainers;
+      const visibleNodes = loadedVisualizationState.visibleNodes;
+      const visibleEdges = loadedVisualizationState.visibleEdges;
+      const expandedContainers = loadedVisualizationState.getExpandedContainers();
+      const allVisibleContainers = loadedVisualizationState.visibleContainers;
       const collapsedContainers = allVisibleContainers.filter(container => container.collapsed);
       
       console.log(`ELK successfully laid out ${visibleNodes.length} nodes and ${expandedContainers.length} containers`);
@@ -270,10 +270,10 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       const paxosJsonData = JSON.parse(paxosJsonString);
       
       const parseResult = parseGraphJSON(paxosJsonData);
-      const loadedVisState = parseResult.state;
+      const loadedVisualizationState = parseResult.state;
       
       // Find a container to test with by looking at collapsed containers
-      const allVisibleContainers = loadedVisState.visibleContainers;
+      const allVisibleContainers = loadedVisualizationState.visibleContainers;
       const collapsedContainers = allVisibleContainers.filter(container => container.collapsed);
       
       if (collapsedContainers.length === 0) {
@@ -287,7 +287,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       console.log(`Testing expansion/collapse of container ${containerId}`);
       
       // DEBUG: Check if children actually exist as nodes
-      const containerData = loadedVisState.getContainer(containerId);
+      const containerData = loadedVisualizationState.getContainer(containerId);
       if (containerData && containerData.children) {
         console.log(`Container ${containerId} children:`, Array.from(containerData.children));
         
@@ -296,8 +296,8 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         let childContainerCount = 0;
         
         containerData.children.forEach(childId => {
-          const childNode = loadedVisState.getGraphNode(childId);
-          const childContainer = loadedVisState.getContainer(childId);
+          const childNode = loadedVisualizationState.getGraphNode(childId);
+          const childContainer = loadedVisualizationState.getContainer(childId);
           
           if (childNode) {
             leafNodeCount++;
@@ -317,13 +317,13 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         // Instead, we test that the collapse/expand state is handled correctly
         
         // Initially should be collapsed (auto-collapsed due to dimension prevention)
-        expect(loadedVisState.getContainerCollapsed(containerId)).toBe(true);
+        expect(loadedVisualizationState.getContainerCollapsed(containerId)).toBe(true);
         
         // Try to expand the container
-        loadedVisState.setContainerCollapsed(containerId, false);
+        loadedVisualizationState.setContainerCollapsed(containerId, false);
         
         // Check if the auto-collapse logic is working
-        const expandedContainers = loadedVisState.expandedContainers;
+        const expandedContainers = loadedVisualizationState.expandedContainers;
         const containerIsExpanded = expandedContainers.some(c => c.id === containerId);
         
         const childCount = containerData.children.size;
@@ -338,8 +338,8 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         }
         
         // Collapse it back
-        loadedVisState.setContainerCollapsed(containerId, true);
-        expect(loadedVisState.getContainerCollapsed(containerId)).toBe(true);
+        loadedVisualizationState.setContainerCollapsed(containerId, true);
+        expect(loadedVisualizationState.getContainerCollapsed(containerId)).toBe(true);
         
         console.log(`✅ Container expansion/collapse behavior working correctly`);
       }
@@ -354,12 +354,12 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       console.log(`Loaded paxos-flipped.json: ${Object.keys(paxosJsonData.nodes).length} nodes, ${Object.keys(paxosJsonData.edges).length} edges`);
       
       const parseResult = parseGraphJSON(paxosJsonData);
-      const loadedVisState = parseResult.state;
+      const loadedVisualizationState = parseResult.state;
       
       // STEP 3: Create VisualizationEngine with smart collapse enabled to test full pipeline
       const { VisualizationEngine } = await import('../VisualizationEngine');
       
-      const engine = new VisualizationEngine(loadedVisState, {
+      const engine = new VisualizationEngine(loadedVisualizationState, {
         autoLayout: false, // We'll manually trigger layout
         enableLogging: true,
         layoutConfig: {
@@ -373,11 +373,11 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       await engine.runLayout();
       
       // STEP 4: Check for presence of hyperEdges between visible collapsed containers
-      const visibleContainers = loadedVisState.visibleContainers;
-      const visibleNodes = loadedVisState.visibleNodes;
+      const visibleContainers = loadedVisualizationState.visibleContainers;
+      const visibleNodes = loadedVisualizationState.visibleNodes;
       
       // Use a private accessor to get hyperEdges for testing
-      const allHyperEdges = Array.from((loadedVisState as any).hyperEdges.values());
+      const allHyperEdges = Array.from((loadedVisualizationState as any).hyperEdges.values());
       const visibleHyperEdges = allHyperEdges.filter((edge: any) => !edge.hidden);
       
       console.log(`\nHyperEdge Analysis:`);
@@ -403,8 +403,8 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         console.log(`\nAll hyperEdges (for debugging):`);
         allHyperEdges.slice(0, 10).forEach((edge: any) => {
           // Simple existence check for debugging
-          const sourceExists = loadedVisState.getContainer(edge.source) || loadedVisState.getGraphNode(edge.source);
-          const targetExists = loadedVisState.getContainer(edge.target) || loadedVisState.getGraphNode(edge.target);
+          const sourceExists = loadedVisualizationState.getContainer(edge.source) || loadedVisualizationState.getGraphNode(edge.source);
+          const targetExists = loadedVisualizationState.getContainer(edge.target) || loadedVisualizationState.getGraphNode(edge.target);
           console.log(`  ${edge.id}: ${edge.source} -> ${edge.target}, hidden=${edge.hidden}, sourceExists=${!!sourceExists}, targetExists=${!!targetExists}`);
         });
       }
@@ -743,16 +743,16 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       const paxosJsonString = readFileSync(paxosFilePath, 'utf-8');
       const paxosJsonData = JSON.parse(paxosJsonString);
       
-      // Parse JSON into VisState
+      // Parse JSON into VisualizationState
       const parseResult = parseGraphJSON(paxosJsonData);
       expect(parseResult.state).toBeDefined();
       
-      const testVisState = parseResult.state;
+      const testVisualizationState = parseResult.state;
       
-      console.log(`🔍 Loaded paxos-flipped data: ${testVisState.getVisibleNodes().length} nodes, ${testVisState.visibleHyperEdges.length} hyperEdges, ${testVisState.getVisibleContainers().length} containers`);
+      console.log(`🔍 Loaded paxos-flipped data: ${testVisualizationState.getVisibleNodes().length} nodes, ${testVisualizationState.visibleHyperEdges.length} hyperEdges, ${testVisualizationState.getVisibleContainers().length} containers`);
       
       // Get a few containers that have children for testing
-      const testContainers = testVisState.getVisibleContainers()
+      const testContainers = testVisualizationState.getVisibleContainers()
         .filter(container => container.children && container.children.length > 0)
         .slice(0, 5); // Test first 5 containers
       
@@ -762,24 +762,24 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         console.log(`\n📦 Testing container: ${container.id} (${container.children?.length || 0} children)`);
         
         // PHASE 1: Test initial state validation
-        await validateEdgeIntegrity(testVisState, `Initial state for ${container.id}`);
+        await validateEdgeIntegrity(testVisualizationState, `Initial state for ${container.id}`);
         
         // PHASE 2: Collapse the container if it's expanded
         if (!container.isCollapsed) {
           console.log(`  ⬇️  Collapsing ${container.id}...`);
-          testVisState.setContainerCollapsed(container.id, true);
-          await validateEdgeIntegrity(testVisState, `After collapsing ${container.id}`);
+          testVisualizationState.setContainerCollapsed(container.id, true);
+          await validateEdgeIntegrity(testVisualizationState, `After collapsing ${container.id}`);
         }
         
         // PHASE 3: Expand the container
         console.log(`  ⬆️  Expanding ${container.id}...`);
-        testVisState.setContainerCollapsed(container.id, false);
-        await validateEdgeIntegrity(testVisState, `After expanding ${container.id}`);
+        testVisualizationState.setContainerCollapsed(container.id, false);
+        await validateEdgeIntegrity(testVisualizationState, `After expanding ${container.id}`);
         
         // PHASE 4: Collapse again to test round-trip
         console.log(`  ⬇️  Re-collapsing ${container.id}...`);
-        testVisState.setContainerCollapsed(container.id, true);
-        await validateEdgeIntegrity(testVisState, `After re-collapsing ${container.id}`);
+        testVisualizationState.setContainerCollapsed(container.id, true);
+        await validateEdgeIntegrity(testVisualizationState, `After re-collapsing ${container.id}`);
       }
       
       console.log(`\n✅ All expand/collapse cycles completed successfully with valid edge integrity!`);
@@ -792,11 +792,11 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       const paxosJsonData = JSON.parse(paxosJsonString);
       
       const parseResult = parseGraphJSON(paxosJsonData);
-      const testVisState = parseResult.state;
+      const testVisualizationState = parseResult.state;
       
       // Set up VisualizationEngine with layout
       const { VisualizationEngine } = await import('../VisualizationEngine');
-      const engine = new VisualizationEngine(testVisState, {
+      const engine = new VisualizationEngine(testVisualizationState, {
         enableLogging: true,
         layoutConfig: {
           enableSmartCollapse: true,
@@ -808,10 +808,10 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       // Run initial layout
       console.log(`🎯 Running initial layout...`);
       await engine.runLayout();
-      await validateLayoutedEdgeDimensions(testVisState, 'After initial layout');
+      await validateLayoutedEdgeDimensions(testVisualizationState, 'After initial layout');
       
       // Test expand/collapse cycles with dimension validation
-      const testContainers = testVisState.getVisibleContainers()
+      const testContainers = testVisualizationState.getVisibleContainers()
         .filter(container => container.children && container.children.length > 0)
         .slice(0, 3); // Test fewer containers but more thoroughly
       
@@ -819,14 +819,14 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         console.log(`\n📦 Testing layout dimensions for container: ${container.id}`);
         
         // Expand and re-layout
-        testVisState.setContainerCollapsed(container.id, false);
+        testVisualizationState.setContainerCollapsed(container.id, false);
         await engine.runLayout();
-        await validateLayoutedEdgeDimensions(testVisState, `After expanding and re-layouting ${container.id}`);
+        await validateLayoutedEdgeDimensions(testVisualizationState, `After expanding and re-layouting ${container.id}`);
         
         // Collapse and re-layout
-        testVisState.setContainerCollapsed(container.id, true);
+        testVisualizationState.setContainerCollapsed(container.id, true);
         await engine.runLayout();
-        await validateLayoutedEdgeDimensions(testVisState, `After collapsing and re-layouting ${container.id}`);
+        await validateLayoutedEdgeDimensions(testVisualizationState, `After collapsing and re-layouting ${container.id}`);
       }
       
       console.log(`\n✅ All edge dimension validations passed!`);
@@ -839,11 +839,11 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       const paxosJsonData = JSON.parse(paxosJsonString);
       
       const parseResult = parseGraphJSON(paxosJsonData);
-      const testVisState = parseResult.state;
+      const testVisualizationState = parseResult.state;
       
       // Create engine for realistic expand/collapse operations
       const { VisualizationEngine } = await import('../VisualizationEngine');
-      const engine = new VisualizationEngine(testVisState, {
+      const engine = new VisualizationEngine(testVisualizationState, {
         enableLogging: false, // Reduce noise for this focused test
         layoutConfig: {
           enableSmartCollapse: true,
@@ -853,14 +853,14 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       });
       
       console.log(`🐛 LITE FUZZ: Starting comprehensive edge integrity monitoring...`);
-      console.log(`📊 Initial state: ${testVisState.getVisibleNodes().length} nodes, ${testVisState.visibleHyperEdges.length} hyperEdges, ${testVisState.getVisibleContainers().length} containers`);
+      console.log(`📊 Initial state: ${testVisualizationState.getVisibleNodes().length} nodes, ${testVisualizationState.visibleHyperEdges.length} hyperEdges, ${testVisualizationState.getVisibleContainers().length} containers`);
       
       // Run initial layout
       await engine.runLayout();
-      await validateEdgeIntegrity(testVisState, 'Initial layout complete');
+      await validateEdgeIntegrity(testVisualizationState, 'Initial layout complete');
 
       // Get all containers for intensive testing
-      const allContainers = testVisState.getVisibleContainers();
+      const allContainers = testVisualizationState.getVisibleContainers();
       
       let disconnectedEdgeCount = 0;
       let totalOperations = 0;
@@ -876,13 +876,13 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
           try {
             // Expand
             totalOperations++;
-            testVisState.setContainerCollapsed(container.id, false);
+            testVisualizationState.setContainerCollapsed(container.id, false);
             await engine.runLayout();
-            await validateEdgeIntegrity(testVisState, `Expanded ${container.id} in cycle ${cycle + 1}`);
+            await validateEdgeIntegrity(testVisualizationState, `Expanded ${container.id} in cycle ${cycle + 1}`);
             
             // Check edge count changes
-            const edgeCount = testVisState.visibleHyperEdges.length;
-            const nodeCount = testVisState.getVisibleNodes().length;
+            const edgeCount = testVisualizationState.visibleHyperEdges.length;
+            const nodeCount = testVisualizationState.getVisibleNodes().length;
             
             if (edgeCount === 0 && nodeCount > 0) {
               console.error(`🚨 POTENTIAL BUG: All edges disappeared after expanding ${container.id}!`);
@@ -891,9 +891,9 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
             
             // Collapse
             totalOperations++;
-            testVisState.setContainerCollapsed(container.id, true);
+            testVisualizationState.setContainerCollapsed(container.id, true);
             await engine.runLayout();
-            await validateEdgeIntegrity(testVisState, `Collapsed ${container.id} in cycle ${cycle + 1}`);
+            await validateEdgeIntegrity(testVisualizationState, `Collapsed ${container.id} in cycle ${cycle + 1}`);
             
           } catch (error) {
             console.error(`🚨 BUG DETECTED: Edge integrity failure on container ${container.id}!`);
@@ -906,14 +906,14 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       }
       
       // Final validation
-      await validateEdgeIntegrity(testVisState, 'Final state after all stress testing');
-      await validateLayoutedEdgeDimensions(testVisState, 'Final dimension check');
+      await validateEdgeIntegrity(testVisualizationState, 'Final state after all stress testing');
+      await validateLayoutedEdgeDimensions(testVisualizationState, 'Final dimension check');
       
       // Report results
       console.log(`\n🎯 LITE FUZZ RESULTS:`);
       console.log(`   Total operations: ${totalOperations}`);
       console.log(`   Disconnected edge issues: ${disconnectedEdgeCount}`);
-      console.log(`   Final state: ${testVisState.getVisibleNodes().length} nodes, ${testVisState.visibleHyperEdges.length} hyperEdges`);
+      console.log(`   Final state: ${testVisualizationState.getVisibleNodes().length} nodes, ${testVisualizationState.visibleHyperEdges.length} hyperEdges`);
       
       // This test passes if no disconnected edges are found
       expect(disconnectedEdgeCount).toBe(0);

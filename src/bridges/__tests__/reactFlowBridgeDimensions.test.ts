@@ -5,7 +5,7 @@ import { ELKBridge } from '../../bridges/ELKBridge';
 import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
 
 /**
- * Tests to verify that ReactFlowBridge correctly uses computed dimensions from VisState
+ * Tests to verify that ReactFlowBridge correctly uses computed dimensions from VisualizationState
  * after ELK layout calculations, addressing the encapsulation of expandedDimensions.
  */
 describe('ReactFlowBridge Dimensions Fix', () => {
@@ -42,7 +42,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     expect(initialContainer.height).toBeGreaterThanOrEqual(150); // MIN_CONTAINER_HEIGHT + label space
 
     // 3. Run ELK layout to calculate proper dimensions
-    await elkBridge.layoutVisState(visState);
+    await elkBridge.layoutVisualizationState(visState);
 
     // 4. Check dimensions after ELK
     const elkContainers = visState.visibleContainers;
@@ -55,7 +55,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     expect(elkContainer.y).toBeGreaterThanOrEqual(0);
 
     // 5. Convert to ReactFlow format
-    const reactFlowData = reactFlowBridge.convertVisState(visState);
+    const reactFlowData = reactFlowBridge.convertVisualizationState(visState);
 
     // 6. Verify ReactFlow gets the correct container dimensions
     const containerNodes = reactFlowData.nodes.filter(node => node.type === 'container');
@@ -97,9 +97,9 @@ describe('ReactFlowBridge Dimensions Fix', () => {
       .setGraphEdge('edge3', { source: 'node4', target: 'node5' });
 
     // Run ELK layout
-    await elkBridge.layoutVisState(visState);
+    await elkBridge.layoutVisualizationState(visState);
 
-    // Check VisState containers
+    // Check VisualizationState containers
     const visStateContainers = visState.visibleContainers;
     expect(visStateContainers).toHaveLength(2);
 
@@ -111,11 +111,11 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     expect(largeContainer.height).toBeGreaterThanOrEqual(smallContainer.height);
 
     // Convert to ReactFlow
-    const reactFlowData = reactFlowBridge.convertVisState(visState);
+    const reactFlowData = reactFlowBridge.convertVisualizationState(visState);
     const reactFlowContainers = reactFlowData.nodes.filter(node => node.type === 'container');
     expect(reactFlowContainers).toHaveLength(2);
 
-    // Verify ReactFlow containers match VisState containers
+    // Verify ReactFlow containers match VisualizationState containers
     for (const reactFlowContainer of reactFlowContainers) {
       const visStateContainer = visStateContainers.find(c => c.id === reactFlowContainer.id)!;
       const expectedDimensions = visState.getContainerAdjustedDimensions(visStateContainer.id);

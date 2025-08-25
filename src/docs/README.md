@@ -47,7 +47,7 @@ Understand the system design and component interactions.
 - Performance characteristics
 - Extensibility points
 
-### [📋 VisualizationState API](./VisState.md)
+### [📋 VisualizationState API](./VisualizationState.md)
 Complete reference for the core state management class.
 - Comprehensive API documentation
 - Usage examples and best practices
@@ -81,7 +81,7 @@ Complete reference for the core state management class.
 
 ### Basic Graph
 ```typescript
-import { createVisualizationState, NODE_STYLES } from './core/VisState';
+import { createVisualizationState, NODE_STYLES } from './core/VisualizationState';
 
 const state = createVisualizationState()
   .setGraphNode('input', { label: 'Data Source', style: NODE_STYLES.HIGHLIGHTED })
@@ -119,7 +119,7 @@ state
 ```
 docs/src/components/vis/
 ├── core/                   # Core state management
-│   ├── VisState.ts        # Main state class
+│   ├── VisualizationState.ts        # Main state class
 │   ├── ContainerCollapseExpand.ts
 │   └── adapter.ts
 ├── render/                # React rendering components
@@ -143,7 +143,7 @@ docs/src/components/vis/
 │   ├── chatJsonIntegration.test.ts
 │   └── layoutBoundaries.test.ts
 └── docs/                  # This documentation
-    ├── VisState.md        # Complete API reference
+    ├── VisualizationState.md        # Complete API reference
     ├── Architecture.md    # System architecture
     ├── QuickStart.md      # Getting started guide
     └── README.md          # This file
@@ -244,7 +244,7 @@ const eventHandlers = {
 - **Performance issues**: Monitor graph size and complexity
 
 ### Getting Help
-1. Check the [Troubleshooting section](./VisState.md#troubleshooting) in API docs
+1. Check the [Troubleshooting section](./VisualizationState.md#troubleshooting) in API docs
 2. Review test examples for usage patterns
 3. Examine the source code for implementation details
 4. Check TypeScript types for parameter requirements

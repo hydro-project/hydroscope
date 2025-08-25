@@ -45,7 +45,7 @@ export class ELKLayoutEngine implements LayoutEngine {
     const startTime = Date.now();
     
     try {
-      // Create temporary VisState and load data
+      // Create temporary VisualizationState and load data
       const visState = createVisualizationState();
       
       // Load nodes

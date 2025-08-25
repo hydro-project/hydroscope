@@ -47,7 +47,7 @@ export function VisualizationComponent({
       
       // Convert to ReactFlow format
       const bridge = new ReactFlowBridge();
-      const reactFlowData = bridge.convertVisState(visState);
+      const reactFlowData = bridge.convertVisualizationState(visState);
       
       setReactFlowData(reactFlowData);
     } catch (err) {

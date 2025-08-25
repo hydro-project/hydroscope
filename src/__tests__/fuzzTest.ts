@@ -156,10 +156,10 @@ class InvariantChecker {
   
   /**
    * Invariant: HyperEdges exist only for visible, collapsed containers and connect to visible endpoints
-   * NOTE: HyperEdges are now encapsulated within VisState - external code should not see them
+   * NOTE: HyperEdges are now encapsulated within VisualizationState - external code should not see them
    */
   private checkHyperEdgeConsistency(context: string): void {
-    // HyperEdges are now completely encapsulated within VisState
+    // HyperEdges are now completely encapsulated within VisualizationState
     // External code should never see hyperedges in visibleEdges
     // This invariant check is no longer needed as hyperedges are internal implementation
     

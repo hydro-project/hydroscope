@@ -78,9 +78,9 @@ export class ReactFlowBridge {
 
   /**
    * Main conversion method: Convert VisualizationState to ReactFlow format
-   * This is the primary public interface, symmetric with ELKBridge.layoutVisState()
+   * This is the primary public interface, symmetric with ELKBridge.layoutVisualizationState()
    */
-  convertVisState(visState: VisualizationState): ReactFlowData {
+  convertVisualizationState(visState: VisualizationState): ReactFlowData {
     return this.visStateToReactFlow(visState);
   }
 
@@ -89,7 +89,7 @@ export class ReactFlowBridge {
   // ============================================================================
 
   /**
-   * Convert positioned VisState data to ReactFlow format
+   * Convert positioned VisualizationState data to ReactFlow format
    * TRUST ELK: Use ELK's hierarchical layout results completely
    */
   private visStateToReactFlow(visState: VisualizationState): ReactFlowData {

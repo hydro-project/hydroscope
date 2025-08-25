@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ELKBridge } from '../../bridges/ELKBridge';
-import { loadChatJsonTestData, skipIfNoTestData, createMockVisStateWithContainers } from '../../__tests__/testUtils';
+import { loadChatJsonTestData, skipIfNoTestData, createMockVisualizationStateWithContainers } from '../../__tests__/testUtils';
 import type { VisualizationState } from '../core/VisualizationState';
 
 describe('ELKBridge Container Hierarchy', () => {
@@ -18,7 +18,7 @@ describe('ELKBridge Container Hierarchy', () => {
 
   describe('Mock Data Tests', () => {
     it('should handle simple container hierarchy correctly', async () => {
-      const state = createMockVisStateWithContainers();
+      const state = createMockVisualizationStateWithContainers();
       
       // Check initial state
       expect(state.visibleNodes.length).toBe(5); // 5 nodes
@@ -38,7 +38,7 @@ describe('ELKBridge Container Hierarchy', () => {
       expect(containerB!.children.has('node_4')).toBe(true);
       
       // Run ELK layout
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // Verify containers got proper dimensions
       const layoutA = state.getContainerLayout('container_a');
@@ -53,10 +53,10 @@ describe('ELKBridge Container Hierarchy', () => {
     });
 
     it('should correctly identify nodes in containers', async () => {
-      const state = createMockVisStateWithContainers();
+      const state = createMockVisualizationStateWithContainers();
       
       // Test the actual container behavior by checking state directly
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // Verify containers exist and have correct membership
       const containerA = state.getContainer('container_a');
@@ -88,14 +88,14 @@ describe('ELKBridge Container Hierarchy', () => {
     });
 
     it('should handle cross-container edges correctly', async () => {
-      const state = createMockVisStateWithContainers();
+      const state = createMockVisualizationStateWithContainers();
       
       // Add a cross-container edge (from container_a to container_b)
       state.setGraphEdge('edge_cross', { source: 'node_1', target: 'node_2' });
       
       expect(state.visibleEdges.length).toBe(5); // Now 5 edges including cross-container
       
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // Check edge layouts - cross-container edges may or may not have sections
       const crossEdgeLayout = state.getEdgeLayout('edge_cross');
@@ -121,7 +121,7 @@ describe('ELKBridge Container Hierarchy', () => {
       const state = testData!.state;
       
       // Test the actual container hierarchy by validating state directly
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // Verify containers and node membership directly
       const containers = state.visibleContainers;
@@ -167,7 +167,7 @@ describe('ELKBridge Container Hierarchy', () => {
       const state = testData!.state;
       
       // Test the private methods indirectly by running layout and checking results
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // After layout, all containers should have proper layout information
       const containers = state.getExpandedContainers();
@@ -214,7 +214,7 @@ describe('ELKBridge Container Hierarchy', () => {
       
       const state = testData!.state;
       
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // Validate edge routing structure
       const edges = state.visibleEdges;
@@ -263,7 +263,7 @@ describe('ELKBridge Container Hierarchy', () => {
         };
       });
       
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
       
       // After layout, containers should have updated dimensions from ELK
       for (const container of containers) {

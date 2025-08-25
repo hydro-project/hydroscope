@@ -3,15 +3,9 @@
  * 
  * Maintains the mutable state of the visualization including nodes, edges, containers, and hyperEdges.
  * Provides efficient access to visible/non-hidden elements through Maps and collections.
- * 
- * This refactored version delegates to specialized operation classes for better maintainability.
  */
 
-import { NODE_STYLES, EDGE_STYLES, CONTAINER_STYLES } from '../shared/config';
 import type { 
-  CreateNodeProps,
-  CreateEdgeProps,
-  CreateContainerProps,
   GraphNode,
   GraphEdge,
   Container
@@ -28,25 +22,6 @@ import { ContainerOperations } from './operations/ContainerOperations';
 import { VisibilityManager } from './operations/VisibilityManager';
 import { CoveredEdgesIndex } from './CoveredEdgesIndex';
 import { LayoutOperations } from './operations/LayoutOperations';
-
-// Simple assertion function that works in both Node.js and browser environments
-function assert(condition: any, message?: string): asserts condition {
-  if (!condition) {
-    throw new Error(message || 'Assertion failed');
-  }
-}
-
-// Constants for consistent string literals
-const DEFAULT_STYLE = 'default';
-
-/**
- * Read-only interface for container hierarchy information
- * Used by external systems that need hierarchy access without mutation capabilities
- */
-export interface ContainerHierarchyView {
-  getContainerChildren(containerId: string): ReadonlySet<string>;
-  getNodeContainer(nodeId: string): string | undefined;
-}
 
 /**
  * Core visualization state class that manages all graph elements including nodes, edges, 
@@ -69,7 +44,7 @@ export interface ContainerHierarchyView {
  * state.setContainerState('container1', { collapsed: true });
  * ```
  */
-export class VisualizationState implements ContainerHierarchyView {
+export class VisualizationState {
   // Protected state collections - NEVER access directly!
   private readonly _collections = {
     graphNodes: new Map<string, GraphNode>(),
@@ -105,6 +80,9 @@ export class VisualizationState implements ContainerHierarchyView {
   // Flag to control validation during transitions
   public _validationEnabled = true;
   public _validationLevel: 'strict' | 'normal' | 'minimal' | 'silent' = 'normal';
+
+  // Viewport dimensions for layout calculations
+  private _viewport: { width: number; height: number } | null = null;
 
   // Covered edges index for efficient aggregated edge queries
   private _coveredEdgesIndex: CoveredEdgesIndex | null = null;
@@ -167,6 +145,29 @@ export class VisualizationState implements ContainerHierarchyView {
       'setGraphNode': ValidationConfigs.MUTATOR,
       'setHyperEdge': ValidationConfigs.MUTATOR
     });
+  }
+
+  // ============ Viewport Management ============
+
+  /**
+   * Sets the viewport dimensions for layout calculations.
+   * @param width The width of the viewport in pixels.
+   * @param height The height of the viewport in pixels.
+   */
+  public setViewport(width: number, height: number): void {
+    if (width > 0 && height > 0) {
+      this._viewport = { width, height };
+    } else {
+      this._viewport = null;
+    }
+  }
+
+  /**
+   * Gets the current viewport dimensions.
+   * @returns The viewport dimensions or null if not set.
+   */
+  public get viewport(): { width: number; height: number } | null {
+    return this._viewport;
   }
 
   // ============ SAFE BRIDGE API (Read-only access for external systems) ============

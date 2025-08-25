@@ -95,7 +95,7 @@ describe('CoordinateTranslator', () => {
 
   describe('getContainerInfo', () => {
     it('should extract container info for existing containers', () => {
-      const mockVisState = {
+      const mockVisualizationState = {
         getContainer: (id: string) => {
           if (id === 'container1') {
             return {
@@ -109,7 +109,7 @@ describe('CoordinateTranslator', () => {
         }
       };
       
-      const result = CoordinateTranslator.getContainerInfo('container1', mockVisState);
+      const result = CoordinateTranslator.getContainerInfo('container1', mockVisualizationState);
       
       expect(result).toBeDefined();
       expect(result!.id).toBe('container1');
@@ -120,11 +120,11 @@ describe('CoordinateTranslator', () => {
     });
 
     it('should return undefined for non-existent containers', () => {
-      const mockVisState = {
+      const mockVisualizationState = {
         getContainer: () => null
       };
       
-      const result = CoordinateTranslator.getContainerInfo('nonexistent', mockVisState);
+      const result = CoordinateTranslator.getContainerInfo('nonexistent', mockVisualizationState);
       
       expect(result).toBeUndefined();
     });

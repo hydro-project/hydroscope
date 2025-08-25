@@ -45,6 +45,13 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   const parseOutcome = useMemo(() => {
     try {
       const { state, metadata } = parseGraphJSON(data as any, grouping);
+      
+      // Set a reasonable initial viewport size based on common screen sizes
+      // This will be updated when the actual component size is known
+      const initialViewportWidth = Math.min(window.innerWidth * 0.8, 1400);
+      const initialViewportHeight = Math.min(window.innerHeight * 0.8, 800);
+      state.setViewport(initialViewportWidth, initialViewportHeight);
+      
       const merged: RenderConfig | undefined = metadata?.edgeStyleConfig
         ? { ...config, edgeStyleConfig: metadata.edgeStyleConfig }
         : config;

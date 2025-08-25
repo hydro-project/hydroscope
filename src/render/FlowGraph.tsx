@@ -3,7 +3,7 @@
  * 
  */
 
-import React, { useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { ReactFlow, Background, Controls, MiniMap, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -54,6 +54,77 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
     onNodeDragStop,
     onNodesChange,
   } = useFlowGraphController({ visualizationState, config, layoutConfig, eventHandlers });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const loggedOnceRef = useRef(false);
+  const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Track viewport dimensions and update VisualizationState
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateViewport = () => {
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        visualizationState.setViewport(rect.width, rect.height);
+        if (!loggedOnceRef.current) {
+          console.log(`[FlowGraph] container size: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
+          loggedOnceRef.current = true;
+        }
+        // If AutoFit is enabled, schedule a layout refresh on size changes
+        if (config.fitView !== false) {
+          if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
+          resizeDebounceRef.current = setTimeout(() => {
+            try {
+              // Force to ensure ELK considers the new viewport
+              refreshLayout(true);
+            } catch {}
+          }, 200);
+        }
+      }
+    };
+
+    // Set initial viewport size immediately and again on next frame to avoid zero heights
+    updateViewport();
+    const raf = requestAnimationFrame(updateViewport);
+
+    // Create ResizeObserver to track size changes
+    const resizeObserver = new ResizeObserver(() => {
+      updateViewport();
+    });
+
+    resizeObserver.observe(container);
+
+    // Fallback: also listen to window resize (some browsers/layouts don't fire RO when % heights change)
+    const onWindowResize = () => {
+      updateViewport();
+      if (config.fitView !== false) {
+        if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
+        resizeDebounceRef.current = setTimeout(() => {
+          console.log('[FlowGraph] window resize -> refreshLayout');
+          refreshLayout(true);
+        }, 200);
+      }
+    };
+    window.addEventListener('resize', onWindowResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      cancelAnimationFrame(raf);
+      if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
+      window.removeEventListener('resize', onWindowResize);
+    };
+  }, [visualizationState, refreshLayout, config.fitView]);
+
+  // When ReactFlow data is ready, log the container size again (helps confirm logging is visible)
+  useEffect(() => {
+    if (!reactFlowData) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    console.log(`[FlowGraph] ready, container size: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
+  }, [reactFlowData]);
 
   useImperativeHandle(ref, () => ({
     fitView: () => { fitOnce(); },
@@ -115,7 +186,7 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
       containerBorderWidth: config.containerBorderWidth,
       containerShadow: config.containerShadow
     }}>
-    <div className={className} style={getContainerStyle()}>
+    <div ref={containerRef} className={className} style={getContainerStyle()}>
   {/* Invisible SVG defs for edge filters/markers */}
   <GraphDefs />
       <ReactFlow

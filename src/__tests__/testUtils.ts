@@ -55,7 +55,7 @@ export function skipIfNoTestData(testData: TestDataResult | null, testName: stri
  * Create a mock VisualizationState with container hierarchy for testing
  * Useful for unit tests that don't need the full chat.json data
  */
-export function createMockVisStateWithContainers() {
+export function createMockVisualizationStateWithContainers() {
   const state = createVisualizationState()
     // Create nodes
     .setGraphNode('node_0', { label: 'Node 0' })

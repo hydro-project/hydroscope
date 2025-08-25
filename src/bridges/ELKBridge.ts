@@ -1,10 +1,10 @@
 /**
- * @fileoverview ELK Bridge - Clean interface between VisState and ELK
+ * @fileoverview ELK Bridge - Clean interface between VisualizationState and ELK
  * 
  * This bridge implements the core architectural principle:
- * - VisState contains ALL data (nodes, edges, containers) 
+ * - VisualizationState contains ALL data (nodes, edges, containers) 
  * - ELK gets visible elements only through visibleEdges (hyperedges included transparently)
- * - ELK returns layout positions that get applied back to VisState
+ * - ELK returns layout positions that get applied back to VisualizationState
  */
 
 import { VisualizationState } from '../core/VisualizationState';
@@ -45,10 +45,10 @@ export class ELKBridge {
   // ============================================================================
 
   /**
-   * Convert VisState to ELK format and run layout
+   * Convert VisualizationState to ELK format and run layout
    * Key insight: Include ALL visible edges (regular + hyper) with no distinction
    */
-  async layoutVisState(visState: VisualizationState): Promise<void> {
+  async layoutVisualizationState(visState: VisualizationState): Promise<void> {
     // Clear any existing edge layout data to ensure ReactFlow starts fresh
     visState.visibleEdges.forEach(edge => {
       try {
@@ -58,7 +58,7 @@ export class ELKBridge {
       }
     });
     
-    // 1. Extract all visible data from VisState
+    // 1. Extract all visible data from VisualizationState
     const elkGraph = this.visStateToELK(visState);
         
     // 2. Validate ELK input data
@@ -115,8 +115,8 @@ export class ELKBridge {
     // 5. Yield control again before applying results
     await new Promise(resolve => setTimeout(resolve, 10));
     
-    // 6. Apply results back to VisState
-    this.elkToVisState(elkResult, visState);
+    // 6. Apply results back to VisualizationState
+    this.elkToVisualizationState(elkResult, visState);
   }
 
   // ============================================================================
@@ -248,7 +248,7 @@ export class ELKBridge {
   // ============================================================================
 
   /**
-   * Convert VisState to ELK format
+   * Convert VisualizationState to ELK format
    * HIERARCHICAL: Use proper ELK hierarchy to match ReactFlow parent-child relationships
    */
   private visStateToELK(visState: VisualizationState): ElkGraph {    
@@ -368,9 +368,9 @@ export class ELKBridge {
   }
 
   /**
-   * Apply ELK results back to VisState
+   * Apply ELK results back to VisualizationState
    */
-  private elkToVisState(elkResult: ElkGraph, visState: VisualizationState): void {
+  private elkToVisualizationState(elkResult: ElkGraph, visState: VisualizationState): void {
     if (!elkResult.children) {
       console.warn('[ELKBridge] ⚠️ No children in ELK result');
       return;
@@ -405,7 +405,7 @@ export class ELKBridge {
     
     // Apply positions to containers and nodes using ELK coordinates directly
     elkResult.children.forEach(elkNode => {
-      // Check if this ID exists as a container in VisState first
+      // Check if this ID exists as a container in VisualizationState first
       try {
         const container = visState.getContainer(elkNode.id);
         if (container) {
@@ -436,7 +436,7 @@ export class ELKBridge {
    * Update container dimensions and child positions from ELK result
    */
   private updateContainerFromELK(elkNode: ElkNode, visState: VisualizationState): void {
-    // Use VisState's proper layout methods instead of direct property access
+    // Use VisualizationState's proper layout methods instead of direct property access
     const layoutUpdates: any = {};
     
     // Validate and set position
@@ -542,7 +542,7 @@ export class ELKBridge {
    * Update node position from ELK result
    */
   private updateNodeFromELK(elkNode: ElkNode, visState: VisualizationState): void {
-    // Try to update as regular node first using VisState's layout methods
+    // Try to update as regular node first using VisualizationState's layout methods
     try {
       const layoutUpdates: any = {};
       
@@ -650,7 +650,7 @@ export class ELKBridge {
         }
         return;
       } catch (containerError) {
-        console.warn(`[ELKBridge] Node/Container ${elkNode.id} not found in VisState`);
+        console.warn(`[ELKBridge] Node/Container ${elkNode.id} not found in VisualizationState`);
       }
     }
   }

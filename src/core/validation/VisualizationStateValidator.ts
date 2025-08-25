@@ -69,11 +69,11 @@ export class VisualizationStateInvariantValidator {
     }
 
     if (errors.length > 0) {
-      console.error(`[VisState] CRITICAL: Invariant violations (${errors.length}):`, errors);
+      console.error(`[VisualizationState] CRITICAL: Invariant violations (${errors.length}):`, errors);
       
       // Add stack trace for debugging
       const stackTrace = new Error().stack;
-      console.error(`[VisState] STACK TRACE for invariant violations:\n${stackTrace}`);
+      console.error(`[VisualizationState] STACK TRACE for invariant violations:\n${stackTrace}`);
       
       throw new Error(`VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`);
     }
@@ -107,19 +107,19 @@ export class VisualizationStateInvariantValidator {
       w.type !== 'COLLAPSED_CONTAINER_LARGE_DIMENSIONS'
     );
     if (otherWarnings.length > 0) {
-      console.warn(`[VisState] Invariant warnings (${otherWarnings.length}):`, otherWarnings);
+      console.warn(`[VisualizationState] Invariant warnings (${otherWarnings.length}):`, otherWarnings);
       
       // Add stack trace for hyperEdge routing issues to help debug
       const hyperEdgeRoutingWarnings = otherWarnings.filter(w => w.type.includes('HYPEREDGE') || w.type.includes('ROUTING'));
       if (hyperEdgeRoutingWarnings.length > 0) {
         const stackTrace = new Error().stack;
-        console.warn(`[VisState] STACK TRACE for hyperEdge warnings:\n${stackTrace}`);
+        console.warn(`[VisualizationState] STACK TRACE for hyperEdge warnings:\n${stackTrace}`);
       }
     }
     
     // Show summary only for non-hyperEdge warnings
     if (Object.keys(warningsByType).length > 0) {
-      console.warn(`[VisState] Warning summary:`, warningsByType);
+      console.warn(`[VisualizationState] Warning summary:`, warningsByType);
     }
   }
 

@@ -90,7 +90,7 @@ export function useFlowGraphController({
       }
       await engine.runLayout();
       
-      const baseData = bridge.convertVisState(visualizationState);
+      const baseData = bridge.convertVisualizationState(visualizationState);
       baseReactFlowDataRef.current = baseData;
       const dataWithManual = applyManualPositions(baseData, manualPositions);
       setReactFlowData(dataWithManual);
@@ -122,7 +122,7 @@ export function useFlowGraphController({
         setError(null);
         engine.updateLayoutConfig(layoutConfig, false);
         await engine.runLayout();
-        const baseData = bridge.convertVisState(visualizationState);
+        const baseData = bridge.convertVisualizationState(visualizationState);
         baseReactFlowDataRef.current = baseData;
         const withManual = applyManualPositions(baseData, visualizationState.getAllManualPositions());
         setReactFlowData(withManual);
@@ -171,7 +171,7 @@ export function useFlowGraphController({
         setLoading(true);
         setError(null);
         await engine.runLayout();
-        const baseData = bridge.convertVisState(visualizationState);
+        const baseData = bridge.convertVisualizationState(visualizationState);
         baseReactFlowDataRef.current = baseData;
         const withManual = applyManualPositions(baseData, manualPositions);
         setReactFlowData(withManual);

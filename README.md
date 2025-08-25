@@ -88,7 +88,7 @@ import { HydroscopeFull } from '@hydro-project/hydroscope';
 <HydroscopeFull
   data={yourGraphJson}
   showFileUpload
-  showSidebar
+  showInfoPanel
   onFileUpload={(data, filename) => console.log('Uploaded', filename)}
 />
 ```
@@ -118,7 +118,7 @@ HydroscopeMini
 
 HydroscopeFull
 - showFileUpload?: boolean (default: true)
-- showSidebar?: boolean (default: true)
+- showInfoPanel?: boolean (default: true)
 - initialLayoutAlgorithm?: string (default: 'mrtree')
 - initialColorPalette?: string (default: 'Set3')
 - autoFit?: boolean (default: true)

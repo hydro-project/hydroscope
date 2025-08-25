@@ -92,7 +92,7 @@ export const VERSION = '1.0.0-alpha.1' as const;
  * <HydroscopeFull 
  *   data={graphJSON}
  *   showFileUpload={true}
- *   showSidebar={true}
+ *   showInfoPanel={true}
  *   onFileUpload={(data, filename) => console.log('Uploaded:', filename)}
  * />
  * 

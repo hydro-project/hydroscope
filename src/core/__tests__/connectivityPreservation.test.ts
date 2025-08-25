@@ -273,10 +273,10 @@ describe('Connectivity Preservation Validation', () => {
         const testData = JSON.parse(testDataRaw);
         
         const result = parseGraphJSON(testData, 'backtrace');
-        const realVisState = result.state;
+        const realVisualizationState = result.state;
 
         // Validate initial state
-        let report = validateConnectivityPreservation(realVisState);
+        let report = validateConnectivityPreservation(realVisualizationState);
         console.log('\n📊 Paxos data initial connectivity:');
         console.log(`  - Total graph edges: ${report.totalGraphEdges}`);
         console.log(`  - Visible graph edges: ${report.visibleGraphEdges}`);
@@ -286,16 +286,16 @@ describe('Connectivity Preservation Validation', () => {
 
         // Perform some collapse operations and validate connectivity is maintained
         // Since we can't access containers directly, we'll test with expanded containers
-        const expandedContainers = realVisState.getExpandedContainers().slice(0, 5);
+        const expandedContainers = realVisualizationState.getExpandedContainers().slice(0, 5);
         
         for (const container of expandedContainers) {
           const containerId = (container as any).id;
           if (containerId && !(container as any).collapsed) {
             console.log(`\n🔄 Testing collapse of container: ${containerId}`);
             
-            realVisState._containerOperations.handleContainerCollapse(containerId);
+            realVisualizationState._containerOperations.handleContainerCollapse(containerId);
             
-            report = validateConnectivityPreservation(realVisState);
+            report = validateConnectivityPreservation(realVisualizationState);
             console.log(`📊 After ${containerId} collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated, valid: ${report.isValid}`);
             
             // For debugging, let's not fail immediately but log the issue

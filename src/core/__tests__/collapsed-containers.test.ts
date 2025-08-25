@@ -82,7 +82,7 @@ describe('Collapsed Containers Rendering', () => {
     
     // Test the ReactFlow conversion
     const bridge = new ReactFlowBridge();
-    const reactFlowData = bridge.convertVisState(visState);
+    const reactFlowData = bridge.convertVisualizationState(visState);
     
     console.log('=== REACTFLOW CONVERSION RESULT ===');
     console.log('Nodes:', reactFlowData.nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: { collapsed: n.data.collapsed, width: n.data.width, height: n.data.height } })));

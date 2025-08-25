@@ -18,7 +18,7 @@ describe('EdgeIndexEncapsulation', () => {
     });
 
     it('should handle edge indexing correctly', () => {
-      // Test basic edge indexing functionality by using VisState edge operations
+      // Test basic edge indexing functionality by using VisualizationState edge operations
       const state = createVisualizationState();
       
       // Add some nodes

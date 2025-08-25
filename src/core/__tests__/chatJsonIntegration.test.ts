@@ -139,11 +139,11 @@ describe('ChatJsonIntegration', () => {
 
       // Run ELK layout (this part works correctly from console logs)
       const elkBridge = new ELKBridge();
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
 
       // Convert to ReactFlow format (this is where the edge errors occur)
       const reactFlowBridge = new ReactFlowBridge();
-      const reactFlowData = reactFlowBridge.convertVisState(state);
+      const reactFlowData = reactFlowBridge.convertVisualizationState(state);
 
       // Debug: Check that we have the expected structure from console logs
       expect(reactFlowData.nodes.length).toBeGreaterThan(0);
@@ -188,7 +188,7 @@ describe('ChatJsonIntegration', () => {
 
       // Run ELK layout
       const elkBridge = new ELKBridge();
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
 
       // Check container positioning (from console: loc_0, loc_1 containers)
       const containers = state.visibleContainers;
@@ -223,7 +223,7 @@ describe('ChatJsonIntegration', () => {
 
       // Convert to ReactFlow and check coordinate conversion
       const reactFlowBridge = new ReactFlowBridge();
-      const reactFlowData = reactFlowBridge.convertVisState(state);
+      const reactFlowData = reactFlowBridge.convertVisualizationState(state);
 
       // Check for negative coordinates (bug seen in console: `(-224, 320)`)
       for (const node of reactFlowData.nodes) {
@@ -251,7 +251,7 @@ describe('ChatJsonIntegration', () => {
 
       // Run ELK layout 
       const elkBridge = new ELKBridge();
-      await elkBridge.layoutVisState(state);
+      await elkBridge.layoutVisualizationState(state);
 
       // Check that ELK produced edge sections (seen in console logs)
       const edges = state.visibleEdges;

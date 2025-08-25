@@ -1,7 +1,7 @@
 /**
  * @fileoverview ReactFlowBridge Unit Tests
  * 
- * Tests for the ReactFlow bridge that converts VisState to ReactFlow format
+ * Tests for the ReactFlow bridge that converts VisualizationState to ReactFlow format
  */
 
 import { describe, it, expect } from 'vitest';
@@ -12,8 +12,8 @@ import { CURRENT_HANDLE_STRATEGY } from '../../render/handleConfig';
 describe('ReactFlowBridge', () => {
   const bridge = new ReactFlowBridge();
 
-  // Helper to create a simple mock VisState
-  const createMockVisState = () => ({
+  // Helper to create a simple mock VisualizationState
+  const createMockVisualizationState = () => ({
     visibleNodes: [
       { 
         id: 'node1', 
@@ -155,10 +155,10 @@ describe('ReactFlowBridge', () => {
     }
   });
 
-  describe('convertVisState', () => {
-    it('should convert VisState to ReactFlow format', () => {
-      const mockVisState = createMockVisState();
-      const result: ReactFlowData = bridge.convertVisState(mockVisState as any);
+  describe('convertVisualizationState', () => {
+    it('should convert VisualizationState to ReactFlow format', () => {
+      const mockVisualizationState = createMockVisualizationState();
+      const result: ReactFlowData = bridge.convertVisualizationState(mockVisualizationState as any);
       
       expect(result).toBeDefined();
       expect(Array.isArray(result.nodes)).toBe(true);
@@ -166,8 +166,8 @@ describe('ReactFlowBridge', () => {
     });
 
     it('should convert nodes correctly', () => {
-      const mockVisState = createMockVisState();
-      const result = bridge.convertVisState(mockVisState as any);
+      const mockVisualizationState = createMockVisualizationState();
+      const result = bridge.convertVisualizationState(mockVisualizationState as any);
       
       const standardNodes = result.nodes.filter(n => n.type === 'standard');
       expect(standardNodes.length).toBe(2);
@@ -179,8 +179,8 @@ describe('ReactFlowBridge', () => {
     });
 
     it('should convert containers correctly', () => {
-      const mockVisState = createMockVisState();
-      const result = bridge.convertVisState(mockVisState as any);
+      const mockVisualizationState = createMockVisualizationState();
+      const result = bridge.convertVisualizationState(mockVisualizationState as any);
       
       const containerNodes = result.nodes.filter(n => n.type === 'container');
       expect(containerNodes.length).toBe(1);
@@ -192,8 +192,8 @@ describe('ReactFlowBridge', () => {
     });
 
     it('should convert edges correctly', () => {
-      const mockVisState = createMockVisState();
-      const result = bridge.convertVisState(mockVisState as any);
+      const mockVisualizationState = createMockVisualizationState();
+      const result = bridge.convertVisualizationState(mockVisualizationState as any);
       
       // All edges (including hyperedges) should be processed as standard edges
       const expectedEdgeType = CURRENT_HANDLE_STRATEGY === 'floating' ? 'floating' : 'standard';
@@ -207,8 +207,8 @@ describe('ReactFlowBridge', () => {
     });
 
     it('should process edges transparently (including hyperedges)', () => {
-      const mockVisState = createMockVisState();
-      const result = bridge.convertVisState(mockVisState as any);
+      const mockVisualizationState = createMockVisualizationState();
+      const result = bridge.convertVisualizationState(mockVisualizationState as any);
       
       // All edges should be processed as standard ReactFlow edges
       // Hyperedges are included transparently through visibleEdges
@@ -226,7 +226,7 @@ describe('ReactFlowBridge', () => {
     });
 
     it('should handle child node positioning correctly', () => {
-      const testVisState = {
+      const testVisualizationState = {
         visibleNodes: [
           {
             id: 'child_node',
@@ -295,7 +295,7 @@ describe('ReactFlowBridge', () => {
         }
       };
       
-      const result = bridge.convertVisState(testVisState as any);
+      const result = bridge.convertVisualizationState(testVisualizationState as any);
       const childNode = result.nodes.find(n => n.id === 'child_node');
       
       expect(childNode).toBeDefined();
@@ -310,9 +310,9 @@ describe('ReactFlowBridge', () => {
 
   describe('handle strategy', () => {
     it('should respect current handle strategy for edge creation', async () => {
-      const mockVisState = createMockVisState();
+      const mockVisualizationState = createMockVisualizationState();
       
-      const result = bridge.convertVisState(mockVisState as any);
+      const result = bridge.convertVisualizationState(mockVisualizationState as any);
       
       // Import the handle configuration to check current strategy
       const { getHandleConfig } = await import('../../render/handleConfig');

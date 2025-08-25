@@ -6,17 +6,17 @@ This directory contains **visualizer-v4**, which combines the improved front-end
 
 ### Core Principles
 
-- **VisState.ts as Single Source of Truth**: All application state flows through `core/VisState.ts`
+- **VisualizationState.ts as Single Source of Truth**: All application state flows through `core/VisualizationState.ts`
 - **Stateless Bridges**: All bridge components (`ELKBridge`, `ReactFlowBridge`, `CoordinateTranslator`) remain stateless
 - **Clean Separation**: v3 architecture handles state management, v2 frontend handles user interface
-- **Non-transient State Management**: All persistent state is reflected in `core/VisState.ts`
+- **Non-transient State Management**: All persistent state is reflected in `core/VisualizationState.ts`
 
 ### Directory Structure
 
 ```
 visualizer-v4/
 ├── core/                    # v3 Core (State Management)
-│   ├── VisState.ts          # Single source of truth for app state
+│   ├── VisualizationState.ts          # Single source of truth for app state
 │   ├── VisualizationEngine.ts
 │   ├── ContainerCollapseExpand.ts
 │   └── ...
@@ -50,7 +50,7 @@ visualizer-v4/
 - **Container Hierarchy**: Tree validation and edge lifting/grounding
 - **Hyperedge Management**: Automatic edge aggregation during container operations
 - **Layout State**: Centralized position and dimension management
-- **Manual Positions**: User drag interactions stored in VisState
+- **Manual Positions**: User drag interactions stored in VisualizationState
 
 ### 2. V3 Bridge Architecture (Preserved)
 
@@ -75,7 +75,7 @@ import { createIntegratedStateManager } from './integration/StateAdapter.js';
 
 const stateManager = createIntegratedStateManager();
 
-// Set data (v2 format → v3 VisState)
+// Set data (v2 format → v3 VisualizationState)
 stateManager.setGraphData({ nodes, edges, containers });
 
 // Layout (v3 ELK bridge)
@@ -84,7 +84,7 @@ await stateManager.performLayout({ algorithm: 'mrtree' });
 // Render (v3 ReactFlow bridge)  
 const reactFlowData = stateManager.getReactFlowData();
 
-// Container operations (v3 VisState)
+// Container operations (v3 VisualizationState)
 stateManager.collapseContainer('container1');
 ```
 
@@ -98,7 +98,7 @@ import { createVisualizationState, ELKBridge, ReactFlowBridge } from './visualiz
 // Create v3 state as single source of truth
 const visState = createVisualizationState();
 
-// Add data to VisState
+// Add data to VisualizationState
 visState.setGraphNode('node1', { label: 'Node 1' });
 visState.setGraphNode('node2', { label: 'Node 2' });
 visState.setGraphEdge('edge1', { source: 'node1', target: 'node2' });
@@ -111,7 +111,7 @@ const reactFlowBridge = new ReactFlowBridge();
 await elkBridge.applyLayout(visState, { algorithm: 'mrtree' });
 
 // Render via bridge
-const reactFlowData = reactFlowBridge.convertVisState(visState);
+const reactFlowData = reactFlowBridge.convertVisualizationState(visState);
 ```
 
 ### With Integration Layer
@@ -133,10 +133,10 @@ const reactFlowData = stateManager.getReactFlowData();
 
 ## State Management
 
-### All State Flows Through VisState
+### All State Flows Through VisualizationState
 
 ```javascript
-// ✅ Correct: State stored in VisState
+// ✅ Correct: State stored in VisualizationState
 visState.setGraphNode('node1', { label: 'My Node' });
 visState.setNodeLayout('node1', { position: { x: 100, y: 200 } });
 visState.setManualPosition('node1', 150, 250);
@@ -153,7 +153,7 @@ visState.setManualPosition('node1', 150, 250);
 visState.collapseContainer('container1');  // Creates hyperedges
 visState.expandContainer('container1');    // Restores original edges
 
-// All operations maintain VisState consistency
+// All operations maintain VisualizationState consistency
 const nodes = visState.visibleNodes;       // Always current
 const edges = visState.visibleEdges;       // Includes hyperedges when appropriate
 ```
@@ -182,22 +182,22 @@ npm test -- integration.test.js
 
 ### From Visualizer v2
 
-- Replace state management with VisState
+- Replace state management with VisualizationState
 - Use StateAdapter for compatibility
-- Update components to read from VisState
-- Replace direct state mutations with VisState methods
+- Update components to read from VisualizationState
+- Replace direct state mutations with VisualizationState methods
 
 ### From Vis v3
 
 - Add v2 frontend components 
 - Use existing core/bridges as-is
-- Integrate via StateAdapter or direct VisState usage
+- Integrate via StateAdapter or direct VisualizationState usage
 
 ## Architecture Benefits
 
 ### 1. Clean State Management
 - Single source of truth eliminates state synchronization bugs
-- All state mutations go through VisState methods
+- All state mutations go through VisualizationState methods
 - Automatic consistency checks and validation
 
 ### 2. Stateless Bridges

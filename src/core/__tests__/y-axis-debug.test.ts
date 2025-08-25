@@ -28,7 +28,7 @@ describe('Y-Axis Debug', () => {
     
     // Run ELK layout
     const elkBridge = new ELKBridge();
-    await elkBridge.layoutVisState(visState);
+    await elkBridge.layoutVisualizationState(visState);
     
     // Get ELK layout results
     console.log('\n🔧 ELK layout results:');

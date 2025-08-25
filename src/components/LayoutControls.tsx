@@ -1,7 +1,7 @@
 /**
  * Layout Controls Component for Vis System
  * 
- * Ported from the visualizer system and adapted for the new VisState architecture.
+ * Ported from the visualizer system and adapted for the new VisualizationState architecture.
  * Provides controls for layout, color palette, container operations, and viewport management.
  */
 

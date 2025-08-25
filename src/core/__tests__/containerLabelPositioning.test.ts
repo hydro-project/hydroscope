@@ -102,9 +102,9 @@ describe('Container Label Positioning & Dimensions', () => {
       visState.setGraphNode('node1', { container: 'container1' });
       visState.setGraphNode('node2', { container: 'container1' });
 
-      // Run ELK layout through VisState API
+      // Run ELK layout through VisualizationState API
       const elkBridge = new ELKBridge();
-      await elkBridge.layoutVisState(visState);
+      await elkBridge.layoutVisualizationState(visState);
       
       const containers = visState.visibleContainers;
       const container = containers.find((c: any) => c.id === 'container1');

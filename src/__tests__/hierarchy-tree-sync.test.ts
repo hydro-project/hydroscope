@@ -67,7 +67,7 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should compute collapsedContainers set correctly from visState', () => {
-    // Get the actual collapsed containers from VisState using utility
+    // Get the actual collapsed containers from VisualizationState using utility
     const collapsedContainers = getCollapsedContainersSet(visState);
     
     // Should only contain child_container_2 which we set as collapsed
@@ -118,7 +118,7 @@ describe('HierarchyTree State Synchronization', () => {
     expect(nestedContainer.children).toHaveLength(0); // No child containers (node_5 is a leaf)
   });
 
-  it('should synchronize HierarchyTree expandedKeys with VisState collapsed state', () => {
+  it('should synchronize HierarchyTree expandedKeys with VisualizationState collapsed state', () => {
     const hierarchyTree = buildHierarchyTree(visState, 'default');
     const collapsedContainers = getCollapsedContainersSet(visState);
     
@@ -190,7 +190,7 @@ describe('HierarchyTree State Synchronization', () => {
     // This test simulates the actual UI flow where:
     // 1. User clicks in HierarchyTree
     // 2. handleHierarchyToggle is called
-    // 3. VisState is updated
+    // 3. VisualizationState is updated
     // 4. Component re-renders with new collapsedContainers
     
     const simulateHierarchyTreeClick = (containerId: string) => {

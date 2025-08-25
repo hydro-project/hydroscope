@@ -75,11 +75,11 @@ describe('Initial Layout Regression Tests', () => {
       expect(container.collapsed).toBe(false);
     });
 
-    // Mock the ELK Bridge layoutVisState method to capture calls
-    const mockLayoutVisState = vi.fn().mockResolvedValue(undefined);
+    // Mock the ELK Bridge layoutVisualizationState method to capture calls
+    const mockLayoutVisualizationState = vi.fn().mockResolvedValue(undefined);
     const MockedELKBridge = ELKBridge as any;
     MockedELKBridge.mockImplementation(() => ({
-      layoutVisState: mockLayoutVisState
+      layoutVisualizationState: mockLayoutVisualizationState
     }));
 
     // Create VisualizationEngine (this will create the mocked ELKBridge)
@@ -89,10 +89,10 @@ describe('Initial Layout Regression Tests', () => {
     await engine.runLayout();
 
     // Verify ELK was called
-    expect(mockLayoutVisState).toHaveBeenCalled();
+    expect(mockLayoutVisualizationState).toHaveBeenCalled();
     
-    // Get the VisState that was passed to ELK
-    const elkCall = mockLayoutVisState.mock.calls[0];
+    // Get the VisualizationState that was passed to ELK
+    const elkCall = mockLayoutVisualizationState.mock.calls[0];
     const visStatePassedToElk = elkCall[0];
     
     // Verify that ELK received expanded containers
@@ -143,10 +143,10 @@ describe('Initial Layout Regression Tests', () => {
     const visState = parseResult.state;
 
     // Mock ELK Bridge
-    const mockLayoutVisState = vi.fn().mockResolvedValue(undefined);
+    const mockLayoutVisualizationState = vi.fn().mockResolvedValue(undefined);
     const MockedELKBridge = ELKBridge as any;
     MockedELKBridge.mockImplementation(() => ({
-      layoutVisState: mockLayoutVisState
+      layoutVisualizationState: mockLayoutVisualizationState
     }));
 
     // Create VisualizationEngine  
@@ -156,10 +156,10 @@ describe('Initial Layout Regression Tests', () => {
     await engine.runLayout();
 
     // Verify ELK was called
-    expect(mockLayoutVisState).toHaveBeenCalled();
+    expect(mockLayoutVisualizationState).toHaveBeenCalled();
 
-    // Get the VisState passed to ELK
-    const visStatePassedToElk = mockLayoutVisState.mock.calls[0][0];
+    // Get the VisualizationState passed to ELK
+    const visStatePassedToElk = mockLayoutVisualizationState.mock.calls[0][0];
     
     // REGRESSION TEST: ELK should never receive empty input
     const expandedContainers = visStatePassedToElk.getExpandedContainers();

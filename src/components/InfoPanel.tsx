@@ -24,15 +24,13 @@ export function InfoPanel({
   onGroupingChange,
   collapsedContainers = new Set(),
   onToggleContainer,
-  onPositionChange,
   colorPalette = 'Set3',
   defaultCollapsed = false,
   className = '',
   style
 }: InfoPanelProps) {
-  const [legendCollapsed, setLegendCollapsed] = useState(false); // Start expanded so users can see it
-  const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(false);
-  const [hierarchyCollapsed, setHierarchyCollapsed] = useState(false);
+  const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
+  const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
   const [groupingCollapsed, setGroupingCollapsed] = useState(false);
 
   // Get default legend data if none provided

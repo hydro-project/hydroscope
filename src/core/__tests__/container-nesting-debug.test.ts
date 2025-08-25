@@ -112,7 +112,7 @@ describe('Container Nesting Debug', () => {
     });
 
     // Convert to ReactFlow format
-    const reactFlowData = bridge.convertVisState(visState);
+    const reactFlowData = bridge.convertVisualizationState(visState);
     
     // Find containers in the result
     const containers = reactFlowData.nodes.filter(n => n.type === 'container');
@@ -217,7 +217,7 @@ describe('Container Nesting Debug', () => {
     });
 
     // Convert without ELK data (should use fallback positioning)
-    const reactFlowData = bridge.convertVisState(visState);
+    const reactFlowData = bridge.convertVisualizationState(visState);
     
     const containers = reactFlowData.nodes.filter(n => n.type === 'container');
     const parent = containers.find(n => n.id === 'parent');

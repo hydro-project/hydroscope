@@ -4,7 +4,7 @@
  * Handles translation between different coordinate systems used by ELK and ReactFlow.
  * 
  * CANONICAL COORDINATE SYSTEM: ELK
- * - VisState stores positions in ELK format (absolute coordinates)
+ * - VisualizationState stores positions in ELK format (absolute coordinates)
  * - All layout calculations use ELK coordinates
  * - ReactFlow translation happens only when rendering
  * 
@@ -72,7 +72,7 @@ export class CoordinateTranslator {
    * Convert ReactFlow coordinates back to ELK absolute coordinates
    * 
    * Used when ReactFlow reports position changes (e.g., user dragging nodes)
-   * and we need to store them back in VisState using ELK coordinates.
+   * and we need to store them back in VisualizationState using ELK coordinates.
    * 
    * @param reactFlowCoords - ReactFlow coordinates (relative to parent if applicable)
    * @param parentContainer - Parent container info (if node is inside a container)
@@ -92,7 +92,7 @@ export class CoordinateTranslator {
     
     // Since ELK expects child coordinates relative to their container,
     // and ReactFlow provides relative coordinates, we can use them directly.
-    // We only add parent position if we need absolute coordinates in the VisState.
+    // We only add parent position if we need absolute coordinates in the VisualizationState.
     const absoluteCoords = {
       x: reactFlowCoords.x + parentContainer.x,
       y: reactFlowCoords.y + parentContainer.y
@@ -105,7 +105,7 @@ export class CoordinateTranslator {
    * Get container information for coordinate translation
    * 
    * @param containerId - Container ID
-   * @param visState - VisState instance to extract container info from
+   * @param visState - VisualizationState instance to extract container info from
    * @returns Container info for coordinate translation
    */
   static getContainerInfo(containerId: string, visState: any): ContainerInfo | undefined {

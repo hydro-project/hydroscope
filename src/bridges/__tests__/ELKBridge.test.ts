@@ -1,7 +1,7 @@
 /**
  * @fileoverview ELKBridge Unit Tests
  * 
- * Tests for the ELK bridge that handles VisState ↔ ELK conversion and layout
+ * Tests for the ELK bridge that handles VisualizationState ↔ ELK conversion and layout
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -17,10 +17,10 @@ describe('ELKBridge', () => {
     });
   });
 
-  describe('layoutVisState', () => {
+  describe('layoutVisualizationState', () => {
     it('should exist as a public method', () => {
       const bridge = new ELKBridge();
-      expect(typeof bridge.layoutVisState).toBe('function');
+      expect(typeof bridge.layoutVisualizationState).toBe('function');
     });
 
     it('should complete layout without errors', async () => {
@@ -47,15 +47,15 @@ describe('ELKBridge', () => {
       });
       
       // This should complete without throwing
-      await expect(bridge.layoutVisState(state)).resolves.not.toThrow();
+      await expect(bridge.layoutVisualizationState(state)).resolves.not.toThrow();
     });
 
-    it('should handle empty VisState', async () => {
+    it('should handle empty VisualizationState', async () => {
       const bridge = new ELKBridge();
       const emptyState = createVisualizationState();
       
       // Empty state should be handled gracefully
-      await expect(bridge.layoutVisState(emptyState)).resolves.not.toThrow();
+      await expect(bridge.layoutVisualizationState(emptyState)).resolves.not.toThrow();
     });
 
     it('should update node positions after layout', async () => {
@@ -84,7 +84,7 @@ describe('ELKBridge', () => {
       expect(node2Before).toBeDefined();
       
       // Run layout
-      await bridge.layoutVisState(state);
+      await bridge.layoutVisualizationState(state);
       
       // Check that nodes still exist and have positions
       const finalNodes = state.visibleNodes;
@@ -133,7 +133,7 @@ describe('ELKBridge', () => {
       });
       
       // Run layout
-      await bridge.layoutVisState(state);
+      await bridge.layoutVisualizationState(state);
       
       // Verify container and children exist
       const containers = state.visibleContainers;
@@ -201,7 +201,7 @@ describe('ELKBridge', () => {
       });
       
       // Run ELK layout
-      await bridge.layoutVisState(state);
+      await bridge.layoutVisualizationState(state);
       
       // Get final positions and dimensions
       const containers = state.visibleContainers;
@@ -270,7 +270,7 @@ describe('ELKBridge', () => {
       });
       
       // Run ELK layout
-      await bridge.layoutVisState(state);
+      await bridge.layoutVisualizationState(state);
       
       // Check that edge sections are stored in the layout
       const edges = state.visibleEdges;
@@ -310,7 +310,7 @@ describe('ELKBridge', () => {
       // Test with null/undefined - should not crash the process
       await expect(async () => {
         try {
-          await bridge.layoutVisState(null as any);
+          await bridge.layoutVisualizationState(null as any);
         } catch (error) {
           // Expected to throw, but shouldn't crash the test runner
           expect(error).toBeDefined();
@@ -320,8 +320,8 @@ describe('ELKBridge', () => {
   });
 
   describe('integration notes', () => {
-    it('should document expected VisState interface', () => {
-      // This test documents what the ELKBridge expects from VisState:
+    it('should document expected VisualizationState interface', () => {
+      // This test documents what the ELKBridge expects from VisualizationState:
       const expectedMethods = [
         'getGraphNode',
         'getContainer',

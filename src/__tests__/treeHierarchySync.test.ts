@@ -1,5 +1,5 @@
 /**
- * @fileoverview TreeHierarchy and VisState Synchronization Tests
+ * @fileoverview TreeHierarchy and VisualizationState Synchronization Tests
  * 
  * These tests ensure that the TreeHierarchy display in the InfoPanel
  * accurately reflects the collapsed/expanded state in VisualizationState.
@@ -15,7 +15,7 @@ import { createVisualizationState } from '../core/VisualizationState';
 import type { VisualizationState } from '../core/VisualizationState';
 import { ELKBridge } from '../bridges/ELKBridge';
 
-describe('TreeHierarchy/VisState Synchronization Tests', () => {
+describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
   let visState: VisualizationState;
 
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe('TreeHierarchy/VisState Synchronization Tests', () => {
   });
 
   describe('Basic Hierarchy Sync', () => {
-    test('should have consistent collapsed state between VisState and what TreeHierarchy should display', () => {
+    test('should have consistent collapsed state between VisualizationState and what TreeHierarchy should display', () => {
       // Setup: Create a container with child nodes
       visState.setContainer('parent', {
         children: ['child1', 'child2'],
@@ -45,7 +45,7 @@ describe('TreeHierarchy/VisState Synchronization Tests', () => {
       // Collapse the container
       visState.collapseContainer('parent');
       
-      // VisState should show collapsed
+      // VisualizationState should show collapsed
       expect(visState.getContainer('parent')?.collapsed).toBe(true);
       
       // Children should be hidden when parent is collapsed
@@ -89,7 +89,7 @@ describe('TreeHierarchy/VisState Synchronization Tests', () => {
   });
 
   describe('Visibility Consistency', () => {
-    test('should have consistent container visibility between VisState.visibleContainers and hierarchy state', () => {
+    test('should have consistent container visibility between VisualizationState.visibleContainers and hierarchy state', () => {
       // Create hierarchy with multiple levels
       visState.setContainer('root', {
         children: ['level1A', 'level1B'],
@@ -156,7 +156,7 @@ describe('TreeHierarchy/VisState Synchronization Tests', () => {
       // Manually corrupt the state (simulating a bug)
       const container = visState.getContainer('container1');
       if (container) {
-        // Simulate TreeHierarchy thinking it's expanded but VisState thinks it's collapsed
+        // Simulate TreeHierarchy thinking it's expanded but VisualizationState thinks it's collapsed
         container.collapsed = true;
         // But don't update visibility properly (simulating the bug we're looking for)
       }

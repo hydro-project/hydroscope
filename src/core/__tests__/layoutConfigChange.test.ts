@@ -22,7 +22,7 @@ describe('Layout Configuration Changes', () => {
       console.log(((`Testing algorithm: ${algorithm}`)));
       
       const bridge = new ELKBridge({ algorithm });
-      await bridge.layoutVisState(visState);
+      await bridge.layoutVisualizationState(visState);
       
       // Verify that the layout completed without errors
       // (positions should be set on nodes)
@@ -48,12 +48,12 @@ describe('Layout Configuration Changes', () => {
     const bridge = new ELKBridge({ algorithm: 'mrtree' });
     
     // Initial layout
-    await bridge.layoutVisState(visState);
+    await bridge.layoutVisualizationState(visState);
     const initialPosition = visState.getNodeLayout('node1')?.position;
     
     // Update config and re-layout
     bridge.updateLayoutConfig({ algorithm: 'force' });
-    await bridge.layoutVisState(visState);
+    await bridge.layoutVisualizationState(visState);
     const newPosition = visState.getNodeLayout('node1')?.position;
     
     // Both should have valid positions (though they may be the same for this simple case)

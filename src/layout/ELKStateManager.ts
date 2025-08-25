@@ -685,7 +685,7 @@ export function createELKStateManager(): ELKStateManager {
     layoutType: ELKAlgorithm = ELK_ALGORITHMS.LAYERED,
     dimensionsCache?: Map<string, LayoutDimensions>,
     changedContainerId?: string | null,
-    visualizationState?: any // VisState reference for centralized state management
+    visualizationState?: any // VisualizationState reference for centralized state management
   ): Promise<{
     nodes: any[];
     edges: GraphEdge[];
@@ -696,7 +696,7 @@ export function createELKStateManager(): ELKStateManager {
     // For selective layout: Use full hierarchical layout with position fixing
     if (isSelectiveLayout && visualizationState) {
       
-      // Use VisState method to set up position fixing - CENTRALIZED LOGIC
+      // Use VisualizationState method to set up position fixing - CENTRALIZED LOGIC
       const containersWithFixing = visualizationState.getContainersRequiringLayout(changedContainerId);
       
       // Combine regular edges and hyperEdges for ELK layout
@@ -758,20 +758,20 @@ export function createELKStateManager(): ELKStateManager {
       return { nodes: [], edges: [], elkResult: null };
     }
 
-    // Create ELK nodes - ALL configuration comes from VisState
+    // Create ELK nodes - ALL configuration comes from VisualizationState
     const elkContainers = visibleContainers.map(container => {
       
-      // Get dimensions from VisState layout (handles collapsed/expanded automatically)
+      // Get dimensions from VisualizationState layout (handles collapsed/expanded automatically)
       const layout = container.layout || {};
       const dimensions = layout.dimensions || { 
         width: container.collapsed ? SIZES.COLLAPSED_CONTAINER_WIDTH : (dimensionsCache?.get(container.id)?.width || 400),
         height: container.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : (dimensionsCache?.get(container.id)?.height || 300)
       };
 
-      // Get position from VisState layout
+      // Get position from VisualizationState layout
       const position = layout.position || { x: 0, y: 0 };
 
-      // Get ELK options from VisState (handles fixed/free automatically)  
+      // Get ELK options from VisualizationState (handles fixed/free automatically)  
       const elkFixed = layout.elkFixed;
       const layoutOptions = elkFixed 
         ? createFixedPositionOptions(position.x, position.y)
