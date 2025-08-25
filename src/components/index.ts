@@ -43,7 +43,6 @@ export { HierarchyTree } from './HierarchyTree';
 // UI building blocks
 export { CollapsibleSection } from './CollapsibleSection';
 export { DockablePanel } from './DockablePanel';
-export { AntDockablePanel } from './AntDockablePanel';
 
 // Visualization core
 export { VisualizationComponent } from './VisualizationComponent';

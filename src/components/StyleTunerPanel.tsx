@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AntDockablePanel } from './AntDockablePanel';
+import { Drawer } from 'antd';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
@@ -25,6 +25,8 @@ export interface StyleTunerPanelProps {
   colorPalette?: string;
   onPaletteChange?: (palette: string) => void;
   defaultCollapsed?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function StyleTunerPanel({ 
@@ -32,7 +34,9 @@ export function StyleTunerPanel({
   onChange, 
   colorPalette = 'Set2',
   onPaletteChange,
-  defaultCollapsed = false 
+  defaultCollapsed = false,
+  open = true,
+  onOpenChange
 }: StyleTunerPanelProps) {
   const [local, setLocal] = useState(value);
 
@@ -63,11 +67,14 @@ export function StyleTunerPanel({
 
 
   return (
-    <AntDockablePanel
+    <Drawer
       title="Style Tuner"
-      defaultOpen={!defaultCollapsed}
       placement="right"
+      open={open}
+      onClose={() => onOpenChange?.(false)}
       width={300}
+      mask={false}
+      getContainer={false}
     >
       <div style={{ fontSize: '12px' }}>
         <div style={rowStyle}>
@@ -132,7 +139,7 @@ export function StyleTunerPanel({
           />
         </div>
       </div>
-    </AntDockablePanel>
+    </Drawer>
   );
 }
 

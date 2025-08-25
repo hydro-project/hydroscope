@@ -6,8 +6,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { Drawer } from 'antd';
 import { InfoPanelProps, HierarchyTreeNode, LegendData } from './types';
-import { AntDockablePanel } from './AntDockablePanel';
 import { CollapsibleSection } from './CollapsibleSection';
 import { GroupingControls } from './GroupingControls';
 import { HierarchyTree } from './HierarchyTree';
@@ -27,8 +27,10 @@ export function InfoPanel({
   colorPalette = 'Set3',
   defaultCollapsed = false,
   className = '',
-  style
-}: InfoPanelProps) {
+  style,
+  open = true,
+  onOpenChange
+}: InfoPanelProps & { open?: boolean; onOpenChange?: (open: boolean) => void }) {
   const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
   const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
   const [groupingCollapsed, setGroupingCollapsed] = useState(false);
@@ -142,13 +144,16 @@ export function InfoPanel({
   };
 
   return (
-    <AntDockablePanel
+    <Drawer
       title="Graph Info"
-      defaultOpen={!defaultCollapsed}
       placement="left"
+      open={open}
+      onClose={() => onOpenChange?.(false)}
       width={300}
       className={className}
       style={style}
+      mask={false}
+      getContainer={false}
     >
       <div style={{ fontSize: TYPOGRAPHY.INFOPANEL_BASE }}> {/* Increased from 10px to 14px */}
         {/* Grouping & Hierarchy Section */}
@@ -212,7 +217,7 @@ export function InfoPanel({
           />
         </CollapsibleSection>
       </div>
-    </AntDockablePanel>
+    </Drawer>
   );
 }
 
@@ -221,4 +226,3 @@ export { Legend } from './Legend';
 export { HierarchyTree } from './HierarchyTree';
 export { GroupingControls } from './GroupingControls';
 export { CollapsibleSection } from './CollapsibleSection';
-export { AntDockablePanel } from './AntDockablePanel';

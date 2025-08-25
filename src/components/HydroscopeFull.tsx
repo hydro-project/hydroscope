@@ -1,6 +1,7 @@
   // ...existing code...
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Layout, Card, Button, message } from 'antd';
+import { Layout, Card, Button, message, Divider } from 'antd';
+import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
 import { FileDropZone } from './FileDropZone';
 import { LayoutControls } from './LayoutControls';
@@ -82,6 +83,10 @@ export function HydroscopeFull({
   const [hasParsedData, setHasParsedData] = useState<boolean>(false);
   const initialCollapsedCountRef = useRef<number>(0);
   const smartCollapseToastShownRef = useRef<boolean>(false);
+
+  // Drawer states
+  const [infoPanelOpen, setInfoPanelOpen] = useState(false); // Start collapsed
+  const [stylePanelOpen, setStylePanelOpen] = useState(false); // Start collapsed
 
   // Ensure renderConfig.edgeStyleConfig is always in sync with graphData.edgeStyleConfig
   useEffect(() => {
@@ -456,6 +461,14 @@ export function HydroscopeFull({
                 )}
               </div>
             )}
+            
+            {/* Subtle divider below layout controls */}
+            <div style={{ 
+              height: '1px', 
+              backgroundColor: '#f0f0f0', 
+              margin: '8px 16px',
+              borderRadius: '0.5px'
+            }} />
 
             {/* Graph container with horizontal layout */}
             <div style={{
@@ -475,6 +488,8 @@ export function HydroscopeFull({
                     hierarchyChoices={metadata?.availableGroupings || []}
                     currentGrouping={grouping}
                     onGroupingChange={handleGroupingChange}
+                    open={infoPanelOpen}
+                    onOpenChange={setInfoPanelOpen}
                     onToggleContainer={async (containerId) => {
                       try {
                         const container = visualizationState.getContainer(containerId);
@@ -527,34 +542,77 @@ export function HydroscopeFull({
                     {...hydroscopeProps}
                   />
                 
-                {/* Style Tuner Panel - Absolute positioned */}
-                {showStylePanel && visualizationState && (
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: '12px', 
-                    right: '12px', 
-                    zIndex: 1500, 
-                    width: '320px' 
-                  }}>
-                    <StyleTunerPanel
-                      value={renderConfig}
-                      onChange={(newStyles) => {
-                        const newConfig = {
-                          ...renderConfig,
-                          ...newStyles,
-                        };
-                        setRenderConfig(newConfig);
+                {/* Floating Action Buttons */}
+                {/* Info Panel Button - Left */}
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  zIndex: 1000
+                }}>
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<InfoCircleOutlined />}
+                    onClick={() => setInfoPanelOpen(true)}
+                    title="Show Info Panel"
+                    size="large"
+                    style={{ 
+                      backgroundColor: infoPanelOpen ? '#1890ff' : '#ffffff',
+                      borderColor: '#1890ff',
+                      color: infoPanelOpen ? '#ffffff' : '#1890ff',
+                      width: '56px',
+                      height: '56px',
+                      fontSize: '20px'
+                    }}
+                  />
+                </div>
+                
+                {/* Style Panel Button - Right */}
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  zIndex: 1000
+                }}>
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<SettingOutlined />}
+                    onClick={() => setStylePanelOpen(true)}
+                    title="Show Style Panel"
+                    size="large"
+                    style={{ 
+                      backgroundColor: stylePanelOpen ? '#1890ff' : '#ffffff',
+                      borderColor: '#1890ff',
+                      color: stylePanelOpen ? '#ffffff' : '#1890ff',
+                      width: '56px',
+                      height: '56px',
+                      fontSize: '20px'
+                    }}
+                  />
+                </div>
 
-                        if (visualizationState) {
-                          visualizationState.updateNodeDimensions(newConfig);
-                          hydroscopeRef.current?.refreshLayout(true); // Force relayout
-                        }
-                      }}
-                      colorPalette={colorPalette}
-                      onPaletteChange={setColorPalette}
-                    />
-                  </div>
-                }
+                {/* Style Tuner Panel - Drawer */}
+                <StyleTunerPanel
+                  open={stylePanelOpen}
+                  onOpenChange={setStylePanelOpen}
+                  value={renderConfig}
+                  onChange={(newStyles) => {
+                    const newConfig = {
+                      ...renderConfig,
+                      ...newStyles,
+                    };
+                    setRenderConfig(newConfig);
+
+                    if (visualizationState) {
+                      visualizationState.updateNodeDimensions(newConfig);
+                      hydroscopeRef.current?.refreshLayout(true); // Force relayout
+                    }
+                  }}
+                  colorPalette={colorPalette}
+                  onPaletteChange={setColorPalette}
+                />
               </div>
             </div>
           </div>
