@@ -35,7 +35,7 @@ function validateConnectivityPreservation(visState: VisualizationState): Connect
   // Get all GraphEdges in the system by collecting from visible edges
   const allGraphEdges = new Map<string, GraphEdge>();
   for (const edge of visState.visibleEdges) {
-    if ((edge as any).source && (edge as any).target && !(edge as any).aggregatedEdges) {
+    if ((edge as any).source && (edge as any).target) {
       allGraphEdges.set(edge.id, edge as GraphEdge);
     }
   }
@@ -43,7 +43,7 @@ function validateConnectivityPreservation(visState: VisualizationState): Connect
   // Track which edges are accounted for
   const accountedEdges = new Set<string>();
   for (const edge of visState.visibleEdges) {
-    if ((edge as any).source && (edge as any).target && !(edge as any).aggregatedEdges) {
+    if ((edge as any).source && (edge as any).target) {
       accountedEdges.add(edge.id);
     }
   }

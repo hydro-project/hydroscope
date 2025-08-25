@@ -7,7 +7,7 @@ import React, { useRef, forwardRef, useImperativeHandle, useEffect } from 'react
 import { ReactFlow, Background, Controls, MiniMap, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { DEFAULT_RENDER_CONFIG } from './config';
+import { DEFAULT_RENDER_CONFIG } from '../shared/config';
 import { nodeTypes } from './nodes';
 import { edgeTypes } from './edges';
 import { StyleConfigProvider } from './StyleConfigContext';

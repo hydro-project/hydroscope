@@ -43,7 +43,7 @@ export function createHyperEdge(props: {
     source: props.source,
     target: props.target,
     style: props.style,
-    hidden: props.hidden || false,
+  hidden: props.hidden || false,
   };
 }
 

@@ -80,9 +80,10 @@ describe('Debug Edge e460', () => {
     // Check for hyperEdges that might represent this connectivity
     console.log('\n=== CHECKING HYPEREDGES FOR e460 ===');
     
-    const relevantHyperEdges = allHyperEdges.filter(he => {
-      // Check if this hyperEdge has e460 in its aggregatedEdges
-      if (he.aggregatedEdges && he.aggregatedEdges.has('e460')) {
+  const relevantHyperEdges = allHyperEdges.filter(he => {
+      // Check if this hyperEdge covers e460 via CoveredEdgesIndex
+      const covered = state.getCoveredEdges(he.id);
+      if (covered.has('e460')) {
         return true;
       }
       
@@ -96,14 +97,12 @@ describe('Debug Edge e460', () => {
     });
     
     console.log(`Found ${relevantHyperEdges.length} potentially relevant hyperEdges:`);
-    for (const he of relevantHyperEdges) {
-      const hasE460 = he.aggregatedEdges && he.aggregatedEdges.has('e460');
-      console.log(`  ${he.id}: ${he.source} -> ${he.target}, contains e460: ${hasE460}, aggregated: ${he.aggregatedEdges?.size || 0}`);
+  for (const he of relevantHyperEdges) {
+      const hasE460 = state.getCoveredEdges(he.id).has('e460');
+      console.log(`  ${he.id}: ${he.source} -> ${he.target}, contains e460: ${hasE460}`);
       
-      if (he.aggregatedEdges) {
-        const edgeIds = Array.from(he.aggregatedEdges.keys()).slice(0, 5);
-        console.log(`    First few aggregated edges: ${edgeIds.join(', ')}`);
-      }
+      const edgeIds = Array.from(state.getCoveredEdges(he.id).values()).slice(0, 5);
+      console.log(`    Covered edges (sample): ${edgeIds.join(', ')}`);
     }
     
     // Try to understand the node hierarchy

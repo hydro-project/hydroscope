@@ -119,6 +119,13 @@ export class ELKBridge {
     this.elkToVisualizationState(elkResult, visState);
   }
 
+  /**
+   * Backward-compatible alias expected by existing tests
+   */
+  async layoutVisState(visState: VisualizationState): Promise<void> {
+    return this.layoutVisualizationState(visState);
+  }
+
   // ============================================================================
   // Debug and Validation Methods
   // ============================================================================

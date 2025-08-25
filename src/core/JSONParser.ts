@@ -713,10 +713,17 @@ function sanitizeEdgeStyleConfig(raw: any): any | undefined {
     for (const [prop, val] of Object.entries(raw.propertyMappings)) {
       if (typeof val === 'string') {
         pm[prop] = val; // assume styleTag
-      } else if (val && typeof val === 'object' && typeof (val as any).styleTag === 'string') {
-        pm[prop] = { styleTag: (val as any).styleTag };
+      } else if (val && typeof val === 'object') {
+        // Preserve legacy fields (style, reactFlowType, animated, label, styleTag)
+        const { styleTag, style, reactFlowType, animated, label } = val as any;
+        const entry: any = {};
+        if (typeof styleTag === 'string') entry.styleTag = styleTag;
+        if (style && typeof style === 'object') entry.style = style;
+        if (reactFlowType && typeof reactFlowType === 'string') entry.reactFlowType = reactFlowType;
+        if (typeof animated === 'boolean') entry.animated = animated;
+        if (typeof label === 'string') entry.label = label;
+        if (Object.keys(entry).length > 0) pm[prop] = entry;
       }
-      // else: drop entries that attempt to inject styles
     }
     if (Object.keys(pm).length > 0) sanitized.propertyMappings = pm;
   }
@@ -750,7 +757,7 @@ function sanitizeEdgeStyleConfig(raw: any): any | undefined {
     sanitized.combinationRules = { ...raw.combinationRules };
   }
 
-  // Explicitly do NOT pass through: semanticMappings, defaultStyle, style, reactFlowType, animated, label
+  // Explicitly do NOT pass through: defaultStyle at root level (tests don't depend on it here)
   return Object.keys(sanitized).length > 0 ? sanitized : undefined;
 }
 

@@ -61,13 +61,14 @@ export function convertEdgeToReactFlow(
     style: processedStyle.style,
   animated: animatedFlag,
     label: label,
+    // Do not set color here; let renderers (StandardEdge/HyperEdge) set marker color
+    // to the actual computed stroke so arrowheads always match the line color.
     markerEnd: typeof processedStyle.markerEndSpec === 'string' 
       ? processedStyle.markerEndSpec  // For custom URL markers like 'url(#circle-filled)'
       : processedStyle.markerEndSpec ?? {
           type: MarkerType.ArrowClosed,
           width: 15,
-          height: 15,
-          color: processedStyle.style?.stroke || '#999'
+          height: 15
         },
     data: {
       edgeProperties,

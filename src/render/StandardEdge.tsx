@@ -9,6 +9,7 @@ import { BaseEdge, EdgeProps, getStraightPath, getBezierPath, getSmoothStepPath 
 import { useStyleConfig } from './StyleConfigContext';
 import { getWavyPath } from './edgePaths';
 import { getStroke, getHaloColor, stripHaloStyle, isDoubleLineEdge, isWavyEdge } from './edgeStyle';
+import { WAVY_EDGE_CONFIG } from '../shared/config';
 
 /**
  * Standard graph edge component - uses ReactFlow's automatic routing
@@ -29,8 +30,8 @@ export function StandardEdge(props: EdgeProps) {
       sourceY: props.sourceY,
       targetX: props.targetX,
       targetY: props.targetY,
-      amplitude: 8, // Moderate wave amplitude
-      frequency: 2  // 2 complete waves along the path
+      amplitude: WAVY_EDGE_CONFIG.standardEdge.amplitude,
+      frequency: WAVY_EDGE_CONFIG.standardEdge.frequency
     });
   } else if (styleCfg.edgeStyle === 'straight') {
     [edgePath] = getStraightPath({
@@ -65,10 +66,14 @@ export function StandardEdge(props: EdgeProps) {
 
   // Use simple rendering for regular edges (no halo, no double line)
   if (!isDouble && !haloColor) {
+    // Ensure arrowhead color matches the computed stroke
+    const markerEnd = typeof props.markerEnd === 'object' && props.markerEnd
+      ? { ...(props.markerEnd as any), color: stroke }
+      : props.markerEnd;
     return (
       <BaseEdge
         path={edgePath}
-        markerEnd={props.markerEnd}
+        markerEnd={markerEnd}
         style={{ stroke, strokeWidth, strokeDasharray, ...props.style }}
       />
     );
@@ -93,10 +98,11 @@ export function StandardEdge(props: EdgeProps) {
       )}
       
       {/* Render main edge - always render this */}
+      {/* Main edge with matching arrowhead color */}
       <BaseEdge
         path={edgePath}
-        markerEnd={props.markerEnd}
-  style={{ stroke, strokeWidth, strokeDasharray, ...(stripHaloStyle(props.style)) }}
+        markerEnd={(typeof props.markerEnd === 'object' && props.markerEnd) ? { ...(props.markerEnd as any), color: stroke } : props.markerEnd}
+        style={{ stroke, strokeWidth, strokeDasharray, ...(stripHaloStyle(props.style)) }}
       />
       
       {/* Render additional rails for double lines */}

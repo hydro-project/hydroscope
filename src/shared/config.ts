@@ -198,6 +198,63 @@ export const SHADOWS = {
   PANEL_DRAGGING: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
 };
 
+// ============================================================================
+// RENDER CONFIG (migrated from src/render/config.ts)
+// ============================================================================
+
+// Note: Keep types decoupled to avoid circular deps; use simple shape here.
+export const DEFAULT_RENDER_CONFIG = {
+  enableMiniMap: true,
+  enableControls: true,
+  fitView: true,
+  nodesDraggable: true,
+  snapToGrid: false,
+  gridSize: 20,
+  nodesConnectable: false,
+  elementsSelectable: true,
+  enableZoom: true,
+  enablePan: true,
+  enableSelection: true,
+
+  // Visual style defaults (kept here to avoid importing types and to satisfy FlowGraph expectations)
+  edgeStyle: 'bezier',       // 'bezier' | 'straight' | 'smoothstep'
+  edgeColor: '#1976d2',      // default blue edge color
+  edgeWidth: 2,              // px
+  edgeDashed: false,         // solid by default
+
+  nodeBorderRadius: 4,       // px
+  nodePadding: 12,           // px
+  nodeFontSize: 12,          // px
+
+  containerBorderRadius: 8,  // px
+  containerBorderWidth: 2,   // px
+  containerShadow: 'LIGHT'   // 'LIGHT' | 'MEDIUM' | 'LARGE' | 'NONE'
+} as const;
+
+// Wavy edge rendering configuration
+export const WAVY_EDGE_CONFIG = {
+  // Standard edges (most common)
+  standardEdge: {
+    amplitude: 2,      // Wave height
+    frequency: 4,      // Number of wave cycles (increased for more visible waves)
+  },
+  
+  // Hyper edges (multi-node connections)
+  hyperEdge: {
+    amplitude: 2,      // Slightly smaller amplitude for hyper edges
+    frequency: 4,      
+  },
+  
+  // Wave calculation parameters
+  calculation: {
+    segments: {
+      min: 150,        // Minimum segments for smooth curves
+      divisor: 1.5,    // Distance divisor for segment calculation (lower = more segments)
+    },
+    frequencyDivisor: 20,  // Controls wave density (lower = more waves)
+  }
+} as const;
+
 // ELK Layout exports expected by ELKStateManager
 export const ELK_ALGORITHMS = {
   MRTREE: 'mrtree',

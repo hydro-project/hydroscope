@@ -9,6 +9,7 @@ import { BaseEdge, EdgeProps, getStraightPath } from '@xyflow/react';
 import { useStyleConfig } from './StyleConfigContext';
 import { getWavyPath } from './edgePaths';
 import { getStroke, getHaloColor, stripHaloStyle, isWavyEdge } from './edgeStyle';
+import { WAVY_EDGE_CONFIG } from '../shared/config';
 
 /**
  * HyperEdge component
@@ -28,8 +29,8 @@ export function HyperEdge(props: EdgeProps) {
       sourceY: props.sourceY,
       targetX: props.targetX,
       targetY: props.targetY,
-      amplitude: 6, // Slightly smaller amplitude for hyper edges
-      frequency: 2.5  // More frequent waves for hyper edges
+      amplitude: WAVY_EDGE_CONFIG.hyperEdge.amplitude,
+      frequency: WAVY_EDGE_CONFIG.hyperEdge.frequency
     });
   } else {
     [edgePath] = getStraightPath({
@@ -50,10 +51,13 @@ export function HyperEdge(props: EdgeProps) {
 
   // Simple rendering for edges without halos
   if (!haloColor) {
+    const markerEnd = (typeof props.markerEnd === 'object' && props.markerEnd)
+      ? { ...(props.markerEnd as any), color: stroke }
+      : props.markerEnd;
     return (
       <BaseEdge
         path={edgePath}
-        markerEnd={props.markerEnd}
+        markerEnd={markerEnd}
         style={{ 
           stroke, 
           strokeWidth, 
@@ -83,7 +87,7 @@ export function HyperEdge(props: EdgeProps) {
       {/* Render main edge */}
       <BaseEdge
         path={edgePath}
-        markerEnd={props.markerEnd}
+        markerEnd={(typeof props.markerEnd === 'object' && props.markerEnd) ? { ...(props.markerEnd as any), color: stroke } : props.markerEnd}
         style={{ 
           stroke, 
           strokeWidth, 

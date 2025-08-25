@@ -20,7 +20,7 @@ export {
 } from './eventHandlers';
 
 // Configuration
-export { DEFAULT_RENDER_CONFIG } from './config';
+export { DEFAULT_RENDER_CONFIG } from '../shared/config';
 
 // Re-export our own types
 export type {

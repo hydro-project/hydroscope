@@ -84,6 +84,13 @@ export class ReactFlowBridge {
     return this.visStateToReactFlow(visState);
   }
 
+  /**
+   * Backward-compatible alias expected by existing tests
+   */
+  convertVisState(visState: VisualizationState): ReactFlowData {
+    return this.convertVisualizationState(visState);
+  }
+
   // ============================================================================
   // Core Conversion Logic  
   // ============================================================================
@@ -229,11 +236,11 @@ export class ReactFlowBridge {
         target: edge.target,
         sourceHandle: 'out-bottom', // Force edges to come out the bottom of source nodes
         targetHandle: 'in-top',     // Force edges to go into the top of target nodes
+        // No explicit color; renderer will set appropriate color to match stroke
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 15,
-          height: 15,
-          color: '#999'
+          height: 15
         },
         data: {
           style: edge.style || 'default'
