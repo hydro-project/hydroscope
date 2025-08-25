@@ -150,14 +150,10 @@ export class VisualizationEngine {
       await this.elkBridge.layoutVisualizationState(this.visState);
             
       // Run smart collapse only on the first layout if enabled
-      console.log(`[Layout] Smart collapse enabled: ${this.config.layoutConfig?.enableSmartCollapse}, layout count: ${this.state.layoutCount}`);
       if (this.config.layoutConfig?.enableSmartCollapse && this.state.layoutCount === 0) {
-        console.log('[Layout] Running smart collapse...');
         await this.runSmartCollapse();
         // Re-layout after smart collapse
         await this.elkBridge.layoutVisualizationState(this.visState);
-      } else {
-        console.log('[Layout] Skipping smart collapse');
       }
 
       // layoutCount is used to avoid running smart collapse on subsequent layouts
@@ -271,16 +267,11 @@ export class VisualizationEngine {
    * Run after initial ELK layout to collapse containers that exceed viewport budget
    */
   private async runSmartCollapse(): Promise<void> {
-    console.log('[SmartCollapse] Starting smart collapse analysis...');
-    
     // Step 1: Get TOP-LEVEL containers from VisualizationState
     // This ensures we don't double-process parent and child containers
     const containers = this.visState.getTopLevelContainers();
     
-    console.log(`[SmartCollapse] Found ${containers.length} top-level containers`);
-    
     if (containers.length === 0) {
-      console.log('[SmartCollapse] No containers found, skipping');
       return;
     }
     
@@ -306,10 +297,7 @@ export class VisualizationEngine {
     const viewport = this.visState.viewport;
     const viewportWidth = viewport?.width || 1200;
     const viewportHeight = viewport?.height || 800;
-    const viewportArea = viewportWidth * viewportHeight;
-    
-    console.log(`[SmartCollapse] Viewport: ${viewportWidth}x${viewportHeight} (area: ${viewportArea}), using ${viewport ? 'actual' : 'default'} dimensions`);
-    
+    const viewportArea = viewportWidth * viewportHeight;    
     const containerAreaBudgetRatio = 0.7; // Use 70% of viewport for containers
     const containerAreaBudget = viewportArea * containerAreaBudgetRatio;
     
@@ -416,12 +404,6 @@ export class VisualizationEngine {
     this.updateState('error');
     
     console.error(`[VisualizationEngine] ❌ ${errorMessage}`, error);
-  }
-
-  private log(message: string): void {
-    if (this.config.enableLogging) {
-      console.log(`[VisualizationEngine] ${message}`);
-    }
   }
 }
 

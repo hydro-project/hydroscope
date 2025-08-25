@@ -8,6 +8,14 @@ export default defineConfig({
     pool: 'forks', // Use fork pool to avoid CJS issues
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/_DEPRECATED_*/**'],
+    // Suppress noisy console output in tests by default; set ENABLE_TEST_LOGS=true to see logs
+    onConsoleLog(log, type) {
+      if (process.env.ENABLE_TEST_LOGS === 'true') {
+        return;
+      }
+      // Returning false prevents Vitest from printing the log
+      return false;
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

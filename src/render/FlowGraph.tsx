@@ -69,7 +69,6 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
       if (rect.width > 0 && rect.height > 0) {
         visualizationState.setViewport(rect.width, rect.height);
         if (!loggedOnceRef.current) {
-          console.log(`[FlowGraph] container size: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
           loggedOnceRef.current = true;
         }
         // If AutoFit is enabled, schedule a layout refresh on size changes
@@ -102,7 +101,6 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
       if (config.fitView !== false) {
         if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
         resizeDebounceRef.current = setTimeout(() => {
-          console.log('[FlowGraph] window resize -> refreshLayout');
           refreshLayout(true);
         }, 200);
       }
@@ -123,7 +121,6 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    console.log(`[FlowGraph] ready, container size: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
   }, [reactFlowData]);
 
   useImperativeHandle(ref, () => ({
