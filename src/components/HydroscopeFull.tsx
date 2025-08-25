@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Layout, Card } from 'antd';
+import { Layout, Card, Button, message } from 'antd';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
 import { FileDropZone } from './FileDropZone';
 import { LayoutControls } from './LayoutControls';
@@ -24,6 +24,9 @@ export interface HydroscopeFullProps extends Omit<HydroscopeProps, 'eventHandler
   // Initial state
   initialLayoutAlgorithm?: string; // Initial layout algorithm
   initialColorPalette?: string;    // Initial color palette
+  
+  // Large-file support: display a generated file path to load from disk
+  generatedFilePath?: string;
   
   // Callbacks
   onFileUpload?: (data: any, filename: string) => void;
@@ -71,32 +74,34 @@ export function HydroscopeFull({
   const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null); // Processed edge style config
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
   const [collapsedContainers, setCollapsedContainers] = useState<Set<string>>(new Set());
+  const [hasParsedData, setHasParsedData] = useState<boolean>(false);
+  const initialCollapsedCountRef = useRef<number>(0);
+  const smartCollapseToastShownRef = useRef<boolean>(false);
   
   // Sync internal data state with prop changes
   useEffect(() => {
-    if (initialData !== data) {
-      setData(initialData);
-    }
-  }, [initialData, data]);
+    // Sync internal data only when the prop changes; do not override local resets
+    setData(initialData);
+  }, [initialData]);
   
   // Configuration state
   const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
   const [colorPalette, setColorPalette] = useState(initialColorPalette);
   const [layoutAlgorithm, setLayoutAlgorithm] = useState(initialLayoutAlgorithm);
   const [renderConfig, setRenderConfig] = useState<RenderConfig>(hydroscopeProps.config || {});
+  const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(autoFit);
   
   const hydroscopeRef = useRef<HydroscopeRef>(null);
 
   // Update render config when settings change
   useEffect(() => {
-    const newConfig: RenderConfig = {
-      ...renderConfig,
-      colorPalette,
-      fitView: autoFit,
-    };
-    setRenderConfig(newConfig);
-    onConfigChange?.(newConfig);
-  }, [colorPalette, autoFit, onConfigChange]);
+    // Keep renderConfig in sync with palette and auto-fit preference
+    setRenderConfig(prev => {
+      const next = { ...prev, colorPalette, fitView: autoFitEnabled } as RenderConfig;
+      onConfigChange?.(next);
+      return next;
+    });
+  }, [colorPalette, autoFitEnabled, onConfigChange]);
 
   // Handle file upload
   const handleFileUpload = useCallback((uploadedData: any, filename: string) => {
@@ -112,33 +117,71 @@ export function HydroscopeFull({
     setMetadata(parsedMetadata);
     
     // Initialize collapsed containers state
-    const initialCollapsedContainers = new Set(visState.visibleContainers
+  const initialCollapsedContainers = new Set(visState.visibleContainers
       .filter(container => container.collapsed)
       .map(container => container.id));
     setCollapsedContainers(initialCollapsedContainers);
+  initialCollapsedCountRef.current = initialCollapsedContainers.size;
     
     onParsed?.(parsedMetadata, visState);
   }, [onParsed]);
 
+  // Show a small toast once if Smart Collapse collapsed any containers on initial layout
+  useEffect(() => {
+    if (!visualizationState || smartCollapseToastShownRef.current) return;
+    const t = setTimeout(() => {
+      try {
+        const currentCollapsed = visualizationState.visibleContainers
+          .filter(c => c.collapsed)
+          .map(c => c.id);
+        const collapsedCount = currentCollapsed.length;
+        if (collapsedCount > initialCollapsedCountRef.current) {
+          message.success(`Smart Collapse applied: ${collapsedCount} containers collapsed`);
+          // Keep InfoPanel in sync with actual collapsed state
+          setCollapsedContainers(new Set(currentCollapsed));
+          smartCollapseToastShownRef.current = true;
+        }
+      } catch {}
+    }, 900);
+    return () => clearTimeout(t);
+  }, [visualizationState]);
+
   // Initialize graph data and edge style config when data first loads
   useEffect(() => {
-    if (!data) return;
-    
-    let jsonData = null;
+    if (!data) {
+      setHasParsedData(false);
+      return;
+    }
+
+    let jsonData: any = null;
     if (typeof data === 'string') {
+      const trimmed = data.trim();
+      const looksLikeJSON = trimmed.startsWith('{') || trimmed.startsWith('[');
+      const looksLikePath = !looksLikeJSON && (/^\//.test(trimmed) || /^file:\/\//i.test(trimmed) || /\.json$/i.test(trimmed));
+
+      if (looksLikePath) {
+        // Browser cannot load arbitrary filesystem paths; show uploader with path hint
+        console.info('📄 Detected file path string; waiting for user to drop/select file.');
+        setHasParsedData(false);
+        setGraphData(null);
+        return;
+      }
+
       try {
         jsonData = JSON.parse(data);
       } catch (e) {
         console.error('Failed to parse JSON data:', e);
+        setHasParsedData(false);
         return;
       }
     } else if (data && typeof data === 'object') {
       jsonData = data;
     }
-    
+
     if (jsonData) {
       setGraphData(jsonData);
-      
+      setHasParsedData(true);
+
       // Only create edge style config on initial data load, not on grouping changes
       try {
         const parsedData = parseGraphJSON(jsonData, grouping);
@@ -188,7 +231,7 @@ export function HydroscopeFull({
         }
 
         // Auto-fit after layout completes
-        if (autoFit && hydroscopeRef.current?.fitView) {
+  if (autoFitEnabled && hydroscopeRef.current?.fitView) {
           setTimeout(() => {
             hydroscopeRef.current?.fitView();
           }, 300);
@@ -199,7 +242,7 @@ export function HydroscopeFull({
         setIsLayoutRunning(false);
       }
     }
-  }, [visualizationState, enableCollapse, autoFit, onNodeClick, onContainerCollapse, onContainerExpand]);
+  }, [visualizationState, enableCollapse, autoFitEnabled, onNodeClick, onContainerCollapse, onContainerExpand]);
 
   // Pack all containers (collapse all)
   const handlePackAll = useCallback(async () => {
@@ -217,7 +260,7 @@ export function HydroscopeFull({
       }
 
       // Auto-fit after packing
-      if (autoFit && hydroscopeRef.current?.fitView) {
+  if (autoFitEnabled && hydroscopeRef.current?.fitView) {
         setTimeout(() => {
           hydroscopeRef.current?.fitView();
         }, 500);
@@ -227,7 +270,7 @@ export function HydroscopeFull({
     } finally {
       setIsLayoutRunning(false);
     }
-  }, [visualizationState, autoFit]);
+  }, [visualizationState, autoFitEnabled]);
 
   // Unpack all containers (expand all)
   const handleUnpackAll = useCallback(async () => {
@@ -245,7 +288,7 @@ export function HydroscopeFull({
       }
 
       // Auto-fit after unpacking
-      if (autoFit && hydroscopeRef.current?.fitView) {
+  if (autoFitEnabled && hydroscopeRef.current?.fitView) {
         setTimeout(() => {
           hydroscopeRef.current?.fitView();
         }, 500);
@@ -255,7 +298,7 @@ export function HydroscopeFull({
     } finally {
       setIsLayoutRunning(false);
     }
-  }, [visualizationState, autoFit]);
+  }, [visualizationState, autoFitEnabled]);
 
   // Handle layout algorithm change
   const handleLayoutChange = useCallback(async (algorithm: string) => {
@@ -293,6 +336,7 @@ export function HydroscopeFull({
 
   const layoutConfig = {
     algorithm: layoutAlgorithm as any,
+  enableSmartCollapse: true,
   };
 
   const mainContentStyle: React.CSSProperties = {
@@ -315,18 +359,19 @@ export function HydroscopeFull({
   return (
     <Layout style={mainContentStyle}>
       <Content style={contentStyle}>
-        {/* File Upload Area */}
-        {showFileUpload && !data && (
+  {/* File Upload Area: show when no parsed data is available */}
+  {showFileUpload && !hasParsedData && (
           <Card style={{ margin: '16px', flexShrink: 0 }}>
             <FileDropZone
               onFileUpload={handleFileUpload}
               acceptedTypes={['.json']}
+      generatedFilePath={hydroscopeProps.generatedFilePath}
             />
           </Card>
         )}
 
         {/* Main Graph Area with horizontal layout like vis.js */}
-        {data && (
+        {hasParsedData && data && (
           <div style={{ ...graphContainerStyle }}>
             {/* Layout Controls - Horizontal bar above graph like vis.js */}
             {visualizationState && (
@@ -343,14 +388,43 @@ export function HydroscopeFull({
                   onLayoutChange={handleLayoutChange}
                   onCollapseAll={handlePackAll}
                   onExpandAll={handleUnpackAll}
-                  autoFit={autoFit}
+                  autoFit={autoFitEnabled}
                   onAutoFitToggle={(enabled) => {
-                    // Update the render config to include fitView
-                    const newConfig = { ...renderConfig, fitView: enabled };
-                    setRenderConfig(newConfig);
+                    setAutoFitEnabled(enabled);
+                    setRenderConfig(prev => ({ ...prev, fitView: enabled }));
                   }}
                   onFitView={() => hydroscopeRef.current?.fitView?.()}
                 />
+                {showFileUpload && (
+                  <Button
+                    onClick={() => {
+                      // Clean URL: drop any hash and ?file param
+                      if (typeof window !== 'undefined') {
+                        try {
+                          const url = new URL(window.location.href);
+                          url.hash = '';
+                          url.searchParams.delete('file');
+                          window.history.replaceState(null, '', url.toString());
+                        } catch {}
+                      }
+                      // Reset to file drop zone
+                      setHasParsedData(false);
+                      setGraphData(null);
+                      setVisualizationState(null);
+                      setMetadata(null);
+                      setCollapsedContainers(new Set());
+                      smartCollapseToastShownRef.current = false;
+                      initialCollapsedCountRef.current = 0;
+                      // If we have a generated file path, restore it; else clear data
+                      const nextData = hydroscopeProps.generatedFilePath || null;
+                      setData(nextData as any);
+                      // Optional: notify and propagate config if needed
+                      message.info('Ready to load another file');
+                    }}
+                  >
+                    Load another file
+                  </Button>
+                )}
               </div>
             )}
 

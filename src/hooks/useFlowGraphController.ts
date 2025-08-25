@@ -83,11 +83,12 @@ export function useFlowGraphController({
       setLoading(true);
       setError(null);
 
-      if (force) {
-        engine.updateLayoutConfig({ ...layoutConfig }, true);
-      } else {
-        await engine.runLayout();
+      // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
+      // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
+      if (force && layoutConfig) {
+        engine.updateLayoutConfig({ ...layoutConfig }, false);
       }
+      await engine.runLayout();
       
       const baseData = bridge.convertVisState(visualizationState);
       baseReactFlowDataRef.current = baseData;

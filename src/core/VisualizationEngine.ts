@@ -64,9 +64,19 @@ export class VisualizationEngine {
     config: Partial<VisualizationEngineConfig> = {}
   ) {
     this.visState = visState;
-    this.elkBridge = new ELKBridge(config.layoutConfig);
+    // Deep-merge layoutConfig to preserve DEFAULT_CONFIG.layoutConfig values
+    const mergedConfig: VisualizationEngineConfig = {
+      ...DEFAULT_CONFIG,
+      ...config,
+      layoutConfig: {
+        ...DEFAULT_CONFIG.layoutConfig,
+        ...(config.layoutConfig || {}),
+      },
+    } as VisualizationEngineConfig;
+    this.config = mergedConfig;
+    // Initialize bridges after computing the merged config
+    this.elkBridge = new ELKBridge(this.config.layoutConfig);
     this.reactFlowBridge = new ReactFlowBridge();
-    this.config = { ...DEFAULT_CONFIG, ...config };
     
     this.state = {
       phase: 'initial',

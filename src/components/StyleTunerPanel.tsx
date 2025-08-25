@@ -61,6 +61,7 @@ export function StyleTunerPanel({
     marginBottom: '8px'
   };
 
+
   return (
     <AntDockablePanel
       title="Style Tuner"
@@ -82,23 +83,6 @@ export function StyleTunerPanel({
           </select>
         </div>
 
-        <div style={rowStyle}>
-          <label>Edge Width</label>
-          <input
-            type="range" min={1} max={8}
-            value={local.edgeWidth ?? 2}
-            onChange={(e) => update({ edgeWidth: parseInt(e.target.value, 10) })}
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label>Edge Dashed</label>
-          <input
-            type="checkbox"
-            checked={!!local.edgeDashed}
-            onChange={(e) => update({ edgeDashed: e.target.checked })}
-          />
-        </div>
 
         <div style={rowStyle}>
           <label>Color Palette</label>
