@@ -35,10 +35,10 @@ export interface ReactFlowNode {
     [key: string]: any;
   };
   style?: {
-  width?: number;
-  height?: number;
-  backgroundColor?: string;
-  border?: string;
+    width?: number;
+    height?: number;
+    backgroundColor?: string;
+    border?: string;
   };
   parentId?: string;
   connectable?: boolean; // For floating handles strategy
@@ -53,6 +53,16 @@ export interface ReactFlowData {
 export class ReactFlowBridge {
   private colorPalette: string = 'Set3';
   private edgeStyleConfig?: any; // EdgeStyleConfig from EdgeStyleProcessor
+
+  constructor(colorPalette?: string, edgeStyleConfig?: any) {
+    if (colorPalette) this.colorPalette = colorPalette;
+    if (edgeStyleConfig) this.edgeStyleConfig = edgeStyleConfig;
+
+    // Make debug method available globally in browser
+    if (typeof window !== 'undefined') {
+      (window as any).debugRecalculateHandles = ReactFlowBridge.debugRecalculateHandles;
+    }
+  }
 
   // ============================================================================
   // Configuration Methods
@@ -79,9 +89,25 @@ export class ReactFlowBridge {
   /**
    * Main conversion method: Convert VisualizationState to ReactFlow format
    * This is the primary public interface, symmetric with ELKBridge.layoutVisualizationState()
+   * 
+   * IMPORTANT: This method ALWAYS recalculates handles fresh from current positions
+   * to ensure handles are correct after any layout operations (collapse/expand/ELK layout)
    */
   convertVisualizationState(visState: VisualizationState): ReactFlowData {
-    return this.visStateToReactFlow(visState);
+    const result = this.visStateToReactFlow(visState);
+
+    // Simple debug logging
+    if (typeof window !== 'undefined') {
+      const hyperEdges = result.edges.filter(e => e.id.includes('hyper'));
+      if (hyperEdges.length > 0) {
+        console.log(`[ReactFlowBridge] SIMPLIFIED: Converted ${hyperEdges.length} hyperedges:`);
+        hyperEdges.forEach(edge => {
+          console.log(`  ${edge.id}: ${edge.source} -> ${edge.target}, handles=(${edge.sourceHandle} -> ${edge.targetHandle})`);
+        });
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -102,19 +128,25 @@ export class ReactFlowBridge {
   private visStateToReactFlow(visState: VisualizationState): ReactFlowData {
     const nodes: ReactFlowNode[] = [];
     const edges: ReactFlowEdge[] = [];
-    
+
     // Build parent-child mapping from VisualizationState
     const parentMap = this.buildParentMap(visState);
-    
+
     // Convert containers using ELK positions
     this.convertContainersFromELK(visState, nodes, parentMap);
-    
+
     // Convert regular nodes using ELK positions  
     this.convertNodesFromELK(visState, nodes, parentMap);
-    
+
     // Convert edges using smart handle selection
     this.convertEdges(visState, edges);
-    
+
+    // ALWAYS recalculate handles after all nodes are created
+    // This ensures handles are correct regardless of when layout operations occurred
+    if (CURRENT_HANDLE_STRATEGY === 'discrete') {
+      this.assignHandlesToEdges(visState, edges, nodes);
+    }
+
     return { nodes, edges };
   }
 
@@ -142,9 +174,13 @@ export class ReactFlowBridge {
           y: node.y || 0
         };
       }
-      
+
       const nodeType: string = (node as any).nodeType || (node as any).type || 'default';
       const nodeColors = generateNodeColors([nodeType], this.colorPalette);
+
+      // HANDLE FIX: Add explicit dimensions to regular nodes to match collapsed container behavior
+      const nodeWidth = node.width || LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH;
+      const nodeHeight = node.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
 
       const flatNode: ReactFlowNode = {
         id: node.id,
@@ -158,15 +194,21 @@ export class ReactFlowBridge {
           // Preserve nodeType explicitly for coloring/rendering
           nodeType,
           colorPalette: this.colorPalette,
+          // HANDLE FIX: Add explicit dimensions to data (like collapsed containers)
+          width: nodeWidth,
+          height: nodeHeight,
           ...this.extractCustomProperties(node)
         },
         style: {
           backgroundColor: nodeColors.primary,
-          border: `1px solid ${nodeColors.border}`
+          border: `1px solid ${nodeColors.border}`,
+          // HANDLE FIX: Add explicit dimensions to style (like collapsed containers)
+          width: nodeWidth,
+          height: nodeHeight
         }
         // NO parentId - completely flat
       };
-      
+
       nodes.push(flatNode);
     });
   }
@@ -191,12 +233,25 @@ export class ReactFlowBridge {
           y: container.y || 0
         };
       }
-      
-      const width = container.width;
-      const height = container.height;
-      const nodeCount = container.collapsed ? 
+
+      // For collapsed containers, use collapsed dimensions consistently
+      let width, height;
+      if (container.collapsed) {
+        width = container.width;
+        height = container.height;
+      } else {
+        try {
+          const containerLayout = visState.getContainerLayout(container.id);
+          width = containerLayout?.dimensions?.width || container.width;
+          height = containerLayout?.dimensions?.height || container.height;
+        } catch {
+          width = container.width;
+          height = container.height;
+        }
+      }
+      const nodeCount = container.collapsed ?
         visState.getContainerChildren(container.id)?.size || 0 : 0;
-      
+
       const flatContainer: ReactFlowNode = {
         id: container.id,
         type: 'container',
@@ -219,7 +274,7 @@ export class ReactFlowBridge {
         }
         // NO parentId - completely flat
       };
-      
+
       nodes.push(flatContainer);
     });
   }
@@ -247,7 +302,7 @@ export class ReactFlowBridge {
         }
         // NO custom routing - ReactFlow handles positioning automatically
       };
-      
+
       edges.push(flatEdge);
     });
   }
@@ -276,36 +331,40 @@ export class ReactFlowBridge {
    * TRUST ELK: Use ELK's hierarchical positioning completely
    */
   private convertContainersFromELK(
-    visState: VisualizationState, 
-    nodes: ReactFlowNode[], 
+    visState: VisualizationState,
+    nodes: ReactFlowNode[],
     parentMap: Map<string, string>
   ): void {
     // Sort containers by hierarchy level (parents first, then children)
     const containers = Array.from(visState.visibleContainers);
     const sortedContainers = this.sortContainersByHierarchy(containers, parentMap);
-    
+
     sortedContainers.forEach(container => {
       const parentId = parentMap.get(container.id);
-      
+
       // Get position and dimensions from ELK layout (stored in VisualizationState)
       const containerLayout = visState.getContainerLayout(container.id);
       let position: { x: number; y: number };
-      
+
       if (parentId) {
         position = computeChildContainerPosition(visState, container, parentId);
       } else {
         position = computeRootContainerPosition(visState, container);
       }
-      
+
       // Get adjusted dimensions that include label space (matches test expectations)
-  const { width, height } = getAdjustedContainerDimensionsSafe(visState, container.id);
-      
-      const nodeCount = container.collapsed ? 
+      const { width, height } = getAdjustedContainerDimensionsSafe(visState, container.id);
+
+      const nodeCount = container.collapsed ?
         visState.getContainerChildren(container.id)?.size || 0 : 0;
-      
+
+      // HANDLE FIX: Use 'standard' type for collapsed containers to match regular nodes
+      // This ensures ReactFlow treats both node types identically for handle positioning
+      const nodeType = container.collapsed ? 'standard' : 'container';
+
       const containerNode: ReactFlowNode = {
         id: container.id,
-        type: 'container',
+        type: nodeType,
         position,
         data: {
           label: container.label || container.id, // Use container.label, fallback to id
@@ -324,7 +383,7 @@ export class ReactFlowBridge {
         parentId: parentId,
         extent: parentId ? 'parent' : undefined // Constrain to parent if nested
       };
-      
+
       nodes.push(containerNode);
     });
   }
@@ -334,19 +393,24 @@ export class ReactFlowBridge {
    * TRUST ELK: Use ELK's hierarchical positioning completely
    */
   private convertNodesFromELK(
-    visState: VisualizationState, 
-    nodes: ReactFlowNode[], 
+    visState: VisualizationState,
+    nodes: ReactFlowNode[],
     parentMap: Map<string, string>
   ): void {
     visState.visibleNodes.forEach(node => {
       const parentId = parentMap.get(node.id);
-      
+
       // Get position from ELK layout (stored in VisualizationState)
       const nodeLayout = visState.getNodeLayout(node.id);
-  const position: { x: number; y: number } = computeNodePosition(visState, node, parentId);
-      
+      const position: { x: number; y: number } = computeNodePosition(visState, node, parentId);
+
       const nodeType: string = (node as any).nodeType || (node as any).type || 'default';
       const nodeColors = generateNodeColors([nodeType], this.colorPalette);
+
+      // HANDLE FIX: Add explicit dimensions to regular nodes to match collapsed container behavior
+      // This ensures ReactFlow uses consistent dimension sources for handle positioning
+      const nodeWidth = node.width || LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH;
+      const nodeHeight = node.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
 
       const standardNode: ReactFlowNode = {
         id: node.id,
@@ -360,11 +424,17 @@ export class ReactFlowBridge {
           // Preserve nodeType explicitly for coloring/rendering
           nodeType,
           colorPalette: this.colorPalette,
+          // HANDLE FIX: Add explicit dimensions to data (like collapsed containers)
+          width: nodeWidth,
+          height: nodeHeight,
           ...this.extractCustomProperties(node)
         },
         style: {
           backgroundColor: nodeColors.primary,
-          border: `1px solid ${nodeColors.border}`
+          border: `1px solid ${nodeColors.border}`,
+          // HANDLE FIX: Add explicit dimensions to style (like collapsed containers)
+          width: nodeWidth,
+          height: nodeHeight
         },
         parentId,
         connectable: CURRENT_HANDLE_STRATEGY === 'floating',
@@ -404,92 +474,160 @@ export class ReactFlowBridge {
         reactFlowEdge.animated = processedStyle.animated;
         reactFlowEdge.markerEnd = processedStyle.markerEndSpec;
       }
-      if (CURRENT_HANDLE_STRATEGY === 'discrete') {
-        const smartHandles = this.getEdgeHandles(visState, originalEdge.id);
-        reactFlowEdge.sourceHandle = smartHandles.sourceHandle || 'out-bottom';
-        reactFlowEdge.targetHandle = smartHandles.targetHandle || 'in-top';
-      }
+      // Note: Handle assignment will be done after all nodes are created
     });
     edges.push(...convertedEdges);
   }
 
   /**
-   * Get edge handles for ReactFlow bridge (moved from VisualizationState)
-   * This is ReactFlow-specific logic for handle assignment
-   * For discrete strategy: intelligently choose handles based on node positions
-   * Prefer: inputs at top or left, outputs at bottom or right
+   * SIMPLIFIED: Get edge handles using a fixed strategy that worked before
+   * Instead of complex coordinate calculations, use a simple rule-based approach
    */
-  getEdgeHandles(visState: VisualizationState, edgeId: string): { sourceHandle?: string; targetHandle?: string } {
-    const edge = visState.getGraphEdge(edgeId);
+  getEdgeHandles(visState: VisualizationState, edgeId: string, reactFlowNodes: ReactFlowNode[]): { sourceHandle?: string; targetHandle?: string } {
+    const edge = visState.getGraphEdge(edgeId) || visState.getHyperEdge(edgeId);
     if (!edge) {
       return {};
     }
-    
+
     if (CURRENT_HANDLE_STRATEGY === 'discrete') {
-      // Get source and target nodes to determine optimal handle positions
-      const sourceNode = visState.getGraphNode(edge.source);
-      const targetNode = visState.getGraphNode(edge.target);
-      
-      if (sourceNode && targetNode && sourceNode.layout && targetNode.layout) {
-        // Fix: Access position coordinates correctly from nested structure
-        const sourcePos = { 
-          x: sourceNode.layout.position?.x || sourceNode.layout.x || 0, 
-          y: sourceNode.layout.position?.y || sourceNode.layout.y || 0,
-          width: sourceNode.layout.dimensions?.width || sourceNode.layout.width || 120,
-          height: sourceNode.layout.dimensions?.height || sourceNode.layout.height || 40
-        };
-        const targetPos = { 
-          x: targetNode.layout.position?.x || targetNode.layout.x || 0, 
-          y: targetNode.layout.position?.y || targetNode.layout.y || 0,
-          width: targetNode.layout.dimensions?.width || targetNode.layout.width || 120,
-          height: targetNode.layout.dimensions?.height || targetNode.layout.height || 40
-        };
-        
-        // Calculate center-to-center distances
-        const sourceCenterX = sourcePos.x + sourcePos.width / 2;
-        const sourceCenterY = sourcePos.y + sourcePos.height / 2;
-        const targetCenterX = targetPos.x + targetPos.width / 2;
-        const targetCenterY = targetPos.y + targetPos.height / 2;
-        
-        const deltaX = targetCenterX - sourceCenterX;
-        const deltaY = targetCenterY - sourceCenterY;
-        
-        // Use absolute distances to determine primary direction
-        const absX = Math.abs(deltaX);
-        const absY = Math.abs(deltaY);
-        
-        let sourceHandle: string;
-        let targetHandle: string;
-        
-        // STRICT RULES: 
-        // - Sources only use: out-bottom, out-right (NEVER out-top or out-left)
-        // - Targets only use: in-top, in-left (NEVER in-bottom or in-right)
-        
-        if (absX > absY * 0.8) {
-          // Horizontal relationship is stronger - prefer left/right handles
-          sourceHandle = 'out-right';   // Always use right for horizontal sources
-          targetHandle = 'in-left';     // Always use left for horizontal targets
-        } else {
-          // Vertical or diagonal relationship - use bottom/top handles
-          sourceHandle = 'out-bottom';  // Always use bottom for sources (never top!)
-          targetHandle = 'in-top';      // Always use top for targets
+      // SIMPLE RULE: For hyperedges involving collapsed containers, use fixed handles
+      // This avoids coordinate system mismatches
+      if (edgeId.includes('hyper')) {
+        const sourceContainer = visState.getContainer(edge.source);
+        const targetContainer = visState.getContainer(edge.target);
+
+        // If source is a collapsed container, use out-right
+        // If target is a collapsed container, use in-left
+        // Otherwise use out-bottom -> in-top
+
+        let sourceHandle = 'out-bottom';
+        let targetHandle = 'in-top';
+
+        if (sourceContainer && sourceContainer.collapsed) {
+          sourceHandle = 'out-right';
         }
-        
+        if (targetContainer && targetContainer.collapsed) {
+          targetHandle = 'in-left';
+        }
+
+        console.log(`SIMPLIFIED handle calc for ${edgeId}: ${edge.source} -> ${edge.target}`);
+        console.log(`  sourceContainer: ${sourceContainer ? `${sourceContainer.id} (collapsed: ${sourceContainer.collapsed})` : 'none'}`);
+        console.log(`  targetContainer: ${targetContainer ? `${targetContainer.id} (collapsed: ${targetContainer.collapsed})` : 'none'}`);
+        console.log(`  FINAL handles: (${sourceHandle} -> ${targetHandle})`);
         return { sourceHandle, targetHandle };
       }
-      
-      // Fallback to default if no layout information
-      return {
-        sourceHandle: (edge as any).sourceHandle || 'out-bottom',
-        targetHandle: (edge as any).targetHandle || 'in-top'
-      };
+
+      // For regular edges, use the original complex logic
+      const sourceReactFlowNode = reactFlowNodes?.find(n => n.id === edge.source);
+      const targetReactFlowNode = reactFlowNodes?.find(n => n.id === edge.target);
+
+      if (sourceReactFlowNode && targetReactFlowNode) {
+        const sourceCenterX = sourceReactFlowNode.position.x + (sourceReactFlowNode.data?.width || 120) / 2;
+        const targetCenterX = targetReactFlowNode.position.x + (targetReactFlowNode.data?.width || 120) / 2;
+        const deltaX = targetCenterX - sourceCenterX;
+
+        if (Math.abs(deltaX) > 50) {
+          return { sourceHandle: 'out-right', targetHandle: 'in-left' };
+        } else {
+          return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+        }
+      }
     }
-    
-    // Handle edges with port information for other strategies
+
     return {
-      sourceHandle: (edge as any).sourceHandle || 'default-out',
-      targetHandle: (edge as any).targetHandle || 'default-in'
+      sourceHandle: 'out-bottom',
+      targetHandle: 'in-top'
     };
+  }
+
+  /**
+   * Assign handles to edges after all nodes are created
+   * This ensures handle calculation uses the same coordinate system as ReactFlow rendering
+   */
+  private assignHandlesToEdges(visState: VisualizationState, edges: ReactFlowEdge[], nodes: ReactFlowNode[]): void {
+    edges.forEach(reactFlowEdge => {
+      // Find the original edge to get its ID
+      const originalEdge = visState.getGraphEdge(reactFlowEdge.id) || visState.getHyperEdge(reactFlowEdge.id);
+      if (originalEdge) {
+        const smartHandles = this.getEdgeHandles(visState, reactFlowEdge.id, nodes);
+        reactFlowEdge.sourceHandle = smartHandles.sourceHandle || 'out-bottom';
+        reactFlowEdge.targetHandle = smartHandles.targetHandle || 'in-top';
+      }
+    });
+  }
+
+  /**
+   * Recalculate handles for existing ReactFlow data after layout changes
+   * This is the aggressive approach to ensure handles are always correct after ELK layout
+   */
+  recalculateHandlesAfterLayout(visState: VisualizationState, reactFlowData: ReactFlowData): ReactFlowData {
+    if (CURRENT_HANDLE_STRATEGY !== 'discrete') {
+      return reactFlowData; // No handle recalculation needed for other strategies
+    }
+
+    // Create a copy to avoid mutating the original
+    const updatedEdges = reactFlowData.edges.map(edge => {
+      const originalEdge = visState.getGraphEdge(edge.id) || visState.getHyperEdge(edge.id);
+      if (originalEdge) {
+        const smartHandles = this.getEdgeHandles(visState, edge.id, reactFlowData.nodes);
+        return {
+          ...edge,
+          sourceHandle: smartHandles.sourceHandle || edge.sourceHandle || 'out-bottom',
+          targetHandle: smartHandles.targetHandle || edge.targetHandle || 'in-top'
+        };
+      }
+      return edge;
+    });
+
+    return {
+      nodes: reactFlowData.nodes,
+      edges: updatedEdges
+    };
+  }
+
+  /**
+   * Static method to recalculate handles after any layout operation
+   * This can be called from anywhere in the application after ELK layout
+   */
+  static recalculateHandlesAfterLayoutStatic(visState: VisualizationState, reactFlowData: ReactFlowData, colorPalette?: any, edgeStyleConfig?: any): ReactFlowData {
+    // Create a temporary bridge instance to use the handle calculation logic
+    const tempBridge = new ReactFlowBridge(colorPalette, edgeStyleConfig);
+    return tempBridge.recalculateHandlesAfterLayout(visState, reactFlowData);
+  }
+
+  /**
+   * Debug method: Force recalculation of all handles for browser debugging
+   * Call this from browser console: window.debugRecalculateHandles()
+   */
+  static debugRecalculateHandles(visState: VisualizationState): ReactFlowData {
+    console.log('[ReactFlowBridge] DEBUG: Force recalculating all handles...');
+    const bridge = new ReactFlowBridge();
+    const result = bridge.convertVisualizationState(visState);
+    console.log('[ReactFlowBridge] DEBUG: Recalculation complete');
+    return result;
+  }
+
+  /**
+   * Get the parent container ID for a node (used for coordinate system consistency)
+   */
+  private getNodeParentId(visState: VisualizationState, nodeId: string): string | undefined {
+    const node = visState.getGraphNode(nodeId);
+    if (!node) return undefined;
+
+    // Check if node has a containerId property
+    if ((node as any).containerId) {
+      return (node as any).containerId;
+    }
+
+    // Check if any visible container contains this node
+    for (const container of visState.visibleContainers) {
+      const children = visState.getContainerChildren(container.id);
+      if (children && children.has(nodeId)) {
+        return container.id;
+      }
+    }
+
+    return undefined;
   }
 
   /**
@@ -497,20 +635,20 @@ export class ReactFlowBridge {
    */
   private extractCustomProperties(element: GraphNode | GraphEdge | Container): Record<string, any> {
     const customProps: Record<string, any> = {};
-    
+
     // Filter out known properties to get custom ones
     const knownProps = new Set([
-      'id', 'label', 'style', 'hidden', 'layout', 
+      'id', 'label', 'style', 'hidden', 'layout',
       'source', 'target', 'children', 'collapsed',
       'x', 'y', 'width', 'height'
     ]);
-    
+
     Object.entries(element).forEach(([key, value]) => {
       if (!knownProps.has(key)) {
         customProps[key] = value;
       }
     });
-    
+
     return customProps;
   }
 }
