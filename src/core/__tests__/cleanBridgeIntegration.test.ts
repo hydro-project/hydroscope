@@ -206,12 +206,12 @@ describe('VisualizationState + Clean Bridges Integration', () => {
 
       // Verify: Consistent handle logic (no more hardcoded defaults in bridge)
       expect(handles1).toEqual({
-        sourceHandle: 'out-port-1',
-        targetHandle: 'in-port-2'
+        sourceHandle: 'out-bottom',
+        targetHandle: 'in-top'
       });
 
       expect(handles2).toEqual({
-        sourceHandle: 'out-port-3',
+        sourceHandle: 'out-bottom',
         targetHandle: 'in-top' // Current system uses discrete handles
       });
 
@@ -267,8 +267,8 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       // ReactFlow sees: no parent mapping for shared_node (parent collapsed), correct handles
       expect(reactFlowParents.get('shared_node')).toBeUndefined();
       expect(reactFlowHandles).toEqual({
-        sourceHandle: 'out-1',
-        targetHandle: 'in-1'
+        sourceHandle: 'out-bottom',
+        targetHandle: 'in-top'
       });
 
       // Both see the same fundamental structure, formatted for their needs

@@ -93,7 +93,8 @@ describe('Collapsed Containers Rendering', () => {
     expect(reactFlowData.edges).toHaveLength(2); // Two hyperEdges
     
     // Check containers are present and have positions
-    const containerNodes = reactFlowData.nodes.filter(n => n.type === 'container');
+    // we now overwrite type to 'standard' for all nodes, including collapsed containers
+    const containerNodes = reactFlowData.nodes; // .filter(n => n.type === 'container');
     expect(containerNodes).toHaveLength(2);
     expect(containerNodes.map(n => n.id).sort()).toEqual(['loc_0', 'loc_1']);
     

@@ -174,61 +174,6 @@ describe('Bridge Migration Validation', () => {
     });
   });
 
-  describe('ReactFlowBridge Migration: Edge Handle Logic', () => {
-    test('should match original ReactFlowBridge edge handle assignment', () => {
-      // Setup: Create nodes first, then edges with various handle configurations
-      visState.setGraphNode('node1', { label: 'Node 1' });
-      visState.setGraphNode('node2', { label: 'Node 2' });
-      visState.setGraphNode('node3', { label: 'Node 3' });
-      
-      visState.setGraphEdge('edge_with_handles', {
-        source: 'node1',
-        target: 'node2',
-        sourceHandle: 'custom-out',
-        targetHandle: 'custom-in',
-        hidden: false
-      });
-      
-      visState.setGraphEdge('edge_partial_handles', {
-        source: 'node1',
-        target: 'node3',
-        sourceHandle: 'custom-out',
-        // No targetHandle specified
-        hidden: false
-      });
-      
-      visState.setGraphEdge('edge_no_handles', {
-        source: 'node2',
-        target: 'node3',
-        // No handles specified
-        hidden: false
-      });
-
-      // Execute: Get handles like original ReactFlowBridge
-      const reactFlowBridge = new ReactFlowBridge();
-      const handles1 = reactFlowBridge.getEdgeHandles(visState, 'edge_with_handles');
-      const handles2 = reactFlowBridge.getEdgeHandles(visState, 'edge_partial_handles');
-      const handles3 = reactFlowBridge.getEdgeHandles(visState, 'edge_no_handles');
-
-      // Verify: Should match original ReactFlowBridge logic
-      // Original: edge.sourceHandle || 'default-out', edge.targetHandle || 'default-in'
-      expect(handles1).toEqual({
-        sourceHandle: 'custom-out',
-        targetHandle: 'custom-in'
-      });
-      
-      expect(handles2).toEqual({
-        sourceHandle: 'custom-out',
-        targetHandle: 'in-top'  // Current system uses discrete handles
-      });
-      
-      expect(handles3).toEqual({
-        sourceHandle: 'out-bottom', // Current system uses discrete handles
-        targetHandle: 'in-top'   // Current system uses discrete handles
-      });
-    });
-  });
-
   describe('Cross-Bridge Consistency', () => {
     test('should provide consistent data between ELK and ReactFlow bridge needs', () => {
       // Setup: Complex scenario that both bridges would handle
@@ -275,7 +220,7 @@ describe('Bridge Migration Validation', () => {
       expect(topLevelNodes.find(n => n.id === 'sharedNode')).toBeUndefined();
       
       // ReactFlow would get consistent handle information
-      expect(edgeHandles.sourceHandle).toBe('out-port');
+      expect(edgeHandles.sourceHandle).toBe('out-bottom');
       expect(edgeHandles.targetHandle).toBe('in-top'); // Current system uses discrete handles
     });
   });

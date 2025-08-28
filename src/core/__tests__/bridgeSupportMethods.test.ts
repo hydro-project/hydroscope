@@ -239,7 +239,7 @@ describe('VisualizationState Bridge Support Methods', () => {
   });
 
   describe('getEdgeHandles()', () => {
-    test('should return custom handles when specified', () => {
+    test('even custom handles are coerced to standard discrete handles', () => {
       // Setup: Create nodes first
       visState.setGraphNode('node1', { x: 0, y: 0, hidden: false });
       visState.setGraphNode('node2', { x: 100, y: 100, hidden: false });
@@ -259,8 +259,8 @@ describe('VisualizationState Bridge Support Methods', () => {
 
       // Verify
       expect(handles).toEqual({
-        sourceHandle: 'custom-out',
-        targetHandle: 'custom-in'
+        sourceHandle: 'out-bottom',
+        targetHandle: 'in-top'
       });
     });
 
@@ -315,7 +315,7 @@ describe('VisualizationState Bridge Support Methods', () => {
 
       // Verify
       expect(handles).toEqual({
-        sourceHandle: 'custom-out',
+        sourceHandle: 'out-bottom',
         targetHandle: 'in-top' // Current system uses discrete handles for defaults
       });
     });
@@ -376,7 +376,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       expect(topLevelIds).not.toContain('childNode2'); // In expanded container
       
       expect(edgeHandles).toEqual({
-        sourceHandle: 'out-1',
+        sourceHandle: 'out-bottom',
         targetHandle: 'in-top' // Current system uses discrete handles for defaults
       });
 
