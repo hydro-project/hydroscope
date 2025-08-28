@@ -179,7 +179,7 @@ export class ReactFlowBridge {
       const { width, height } = getAdjustedContainerDimensionsSafe(visState, container.id);
 
       const nodeCount = container.collapsed ?
-        visState.getContainerChildren(container.id)?.size || 0 : 0;
+        visState.countRecursiveLeafNodes(container.id) : 0;
 
       // HANDLE FIX: Use 'standard' type for collapsed containers to match regular nodes
       // This ensures ReactFlow treats both node types identically for handle positioning

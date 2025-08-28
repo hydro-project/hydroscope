@@ -1074,6 +1074,31 @@ export class VisualizationState {
     return container?.collapsed || false;
   }
 
+  /**
+   * Recursively count leaf nodes (graphNodes) within a container
+   * This counts all graphNodes that are descendants of the container, 
+   * not just direct children.
+   */
+  countRecursiveLeafNodes(containerId: string): number {
+    let leafCount = 0;
+    const children = this.getContainerChildren(containerId);
+    
+    for (const childId of children) {
+      // Check if this child is a container or a leaf node
+      const childContainer = this._collections.containers.get(childId);
+      
+      if (childContainer) {
+        // It's a container, recurse into it
+        leafCount += this.countRecursiveLeafNodes(childId);
+      } else {
+        // It's a leaf node (graphNode), count it
+        leafCount += 1;
+      }
+    }
+    
+    return leafCount;
+  }
+
   setContainerCollapsed(containerId: string, collapsed: boolean): void {
     this.setContainerState(containerId, { collapsed });
   }
