@@ -17,21 +17,21 @@ export class LayoutOperations {
    * Set manual position for a node or container
    */
   setManualPosition(entityId: string, x: number, y: number): void {
-    this.state._collections.manualPositions.set(entityId, { x, y });
+    this.state._collections._manualPositions.set(entityId, { x, y });
   }
 
   /**
    * Get all manual positions for nodes and containers
    */
   getAllManualPositions(): Map<string, { x: number; y: number }> {
-    return new Map(this.state._collections.manualPositions);
+    return new Map(this.state._collections._manualPositions);
   }
 
   /**
    * Check if there are any manual positions
    */
   hasAnyManualPositions(): boolean {
-    return this.state._collections.manualPositions.size > 0;
+    return this.state._collections._manualPositions.size > 0;
   }
 
   /**
@@ -153,33 +153,6 @@ export class LayoutOperations {
     // CRITICAL: Clear positions for ALL nodes (both visible and hidden)
     for (const [nodeId, node] of this.state._collections.graphNodes) {
       this.setNodeLayout(nodeId, { position: undefined });
-    }
-  }
-
-  /**
-   * Clear layout positions only for a specific container and its children
-   */
-  clearLayoutPositionsForContainer(containerId: string): void {
-    // Clear position for the target container
-    this.setContainerLayout(containerId, { position: undefined });
-    
-    // Get all children of this container recursively
-    const children = this.state.getContainerChildren(containerId) || new Set();
-    
-    for (const childId of children) {
-      const container = this.state.getContainer(childId);
-      const node = this.state.getGraphNode(childId);
-      
-      if (container) {
-        // Clear child container position
-        this.setContainerLayout(childId, { position: undefined });
-        
-        // Recursively clear child container's children
-        this.clearLayoutPositionsForContainer(childId);
-      } else if (node) {
-        // Clear child node position
-        this.setNodeLayout(childId, { position: undefined });
-      }
     }
   }
 

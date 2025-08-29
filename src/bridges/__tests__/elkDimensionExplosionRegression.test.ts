@@ -317,7 +317,7 @@ describe('ELK Dimension Explosion Bug - Regression Tests', () => {
       if (process.env.NODE_ENV !== 'production') {
         // Debug what's happening
         console.log('Before corruption:', {
-          nodeInContainer: (visState as any)._collections.nodeContainers.get('test_node'),
+          nodeInContainer: (visState as any)._collections._nodeContainers.get('test_node'),
           containerCollapsed: visState.getContainer('test_container')?.collapsed,
           nodeInVisibleNodes: (visState as any)._collections._visibleNodes.has('test_node')
         });

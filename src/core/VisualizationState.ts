@@ -55,11 +55,11 @@ export class VisualizationState {
     _visibleEdges: new Map<string, Edge>(),
     _visibleContainers: new Map<string, Container>(),
     _expandedContainers: new Map<string, Container>(),
-    collapsedContainers: new Map<string, Container>(),
-    nodeToEdges: new Map<string, Set<string>>(),
-    manualPositions: new Map<string, {x: number, y: number}>(),
-    containerChildren: new Map<string, Set<string>>(),
-    nodeContainers: new Map<string, string>(),
+    _collapsedContainers: new Map<string, Container>(),
+    _nodeToEdges: new Map<string, Set<string>>(),
+    _manualPositions: new Map<string, {x: number, y: number}>(),
+    _containerChildren: new Map<string, Set<string>>(),
+    _nodeContainers: new Map<string, string>(),
     
     // Track active keys to prevent duplicates at React rendering level
     _activeRenderKeys: new Set<string>()
@@ -101,13 +101,16 @@ export class VisualizationState {
   private get _visibleEdges(): Map<string, Edge> { return this._collections._visibleEdges; }
   private get _visibleContainers(): Map<string, Container> { return this._collections._visibleContainers; }
   private get _expandedContainers(): Map<string, Container> { return this._collections._expandedContainers; }
-  private get collapsedContainers(): Map<string, Container> { return this._collections.collapsedContainers; }
-  private get nodeToEdges(): Map<string, Set<string>> { return this._collections.nodeToEdges; }
-  private get manualPositions(): Map<string, {x: number, y: number}> { return this._collections.manualPositions; }
+  private get _collapsedContainers(): Map<string, Container> { return this._collections._collapsedContainers; }
+  private get _nodeToEdges(): Map<string, Set<string>> { return this._collections._nodeToEdges; }
+  private get _manualPositions(): Map<string, {x: number, y: number}> { return this._collections._manualPositions; }
+
+  // ============ BRIDGE PATTERN ACCESSORS ============
+  // These provide indirect access for specialized operations classes
+  private get _containerChildren(): Map<string, Set<string>> { return this._collections._containerChildren; }
+  private get _nodeContainers(): Map<string, string> { return this._collections._nodeContainers; }
   
-  // Hierarchy tracking (with protected access)
-  private get containerChildren(): Map<string, Set<string>> { return this._collections.containerChildren; }
-  private get nodeContainers(): Map<string, string> { return this._collections.nodeContainers; }
+  // ============ CONSTRUCTOR ============
 
   /**
    * Create a new VisualizationState instance
@@ -284,18 +287,18 @@ export class VisualizationState {
    * Bridges should ONLY use this method, never access internal maps directly
    */
   getCollapsedContainers(): ReadonlyArray<any> {
-    return Array.from(this._collections.collapsedContainers.values());
+    return Array.from(this._collections._collapsedContainers.values());
   }
 
   /**
    * Container hierarchy access (backwards compatibility)
    */
   getContainerChildren(containerId: string): ReadonlySet<string> {
-    return this._collections.containerChildren.get(containerId) || new Set();
+    return this._collections._containerChildren.get(containerId) || new Set();
   }
   
   getNodeContainer(nodeId: string): string | undefined {
-    return this._collections.nodeContainers.get(nodeId);
+    return this._collections._nodeContainers.get(nodeId);
   }
 
   // ============ COVERED EDGES INDEX API ============
@@ -311,8 +314,8 @@ export class VisualizationState {
     this._coveredEdgesIndex.initialize(
       this._collections.containers,
       this._collections.graphEdges,
-      this._collections.containerChildren,
-      this._collections.nodeContainers
+      this._collections._containerChildren,
+      this._collections._nodeContainers
     );
   }
 
@@ -334,7 +337,7 @@ export class VisualizationState {
    * @returns ReadonlySet of edge IDs that are connected to this node/container
    */
   getAdjacentEdges(nodeId: string): ReadonlySet<string> {
-    const edgeSet = this._collections.nodeToEdges.get(nodeId);
+    const edgeSet = this._collections._nodeToEdges.get(nodeId);
     return edgeSet ? edgeSet : new Set();
   }
 
@@ -440,7 +443,7 @@ export class VisualizationState {
    */
   addGraphNode(nodeId: string, nodeData: any): void {
     // Check if node belongs to a collapsed container and should be hidden
-    const parentContainer = this._collections.nodeContainers.get(nodeId);
+    const parentContainer = this._collections._nodeContainers.get(nodeId);
     let shouldBeHidden = nodeData.hidden || false;
     
     if (parentContainer) {
@@ -480,7 +483,7 @@ export class VisualizationState {
     }
     
     // Update edge mappings if needed
-    this._collections.nodeToEdges.set(nodeId, new Set());
+    this._collections._nodeToEdges.set(nodeId, new Set());
     
     // Invalidate covered edges index since graph structure changed
     this.invalidateCoveredEdgesIndex();
@@ -498,17 +501,17 @@ export class VisualizationState {
     this._collections.graphEdges.set(edgeId, processedData);
     
     // Update node-to-edge mappings
-    const sourceSet = this._collections.nodeToEdges.get(edgeData.source) || new Set();
+    const sourceSet = this._collections._nodeToEdges.get(edgeData.source) || new Set();
     sourceSet.add(edgeId);
-    this._collections.nodeToEdges.set(edgeData.source, sourceSet);
+    this._collections._nodeToEdges.set(edgeData.source, sourceSet);
     
-    const targetSet = this._collections.nodeToEdges.get(edgeData.target) || new Set();
+    const targetSet = this._collections._nodeToEdges.get(edgeData.target) || new Set();
     targetSet.add(edgeId);
-    this._collections.nodeToEdges.set(edgeData.target, targetSet);
+    this._collections._nodeToEdges.set(edgeData.target, targetSet);
     
     // Update CoveredEdgesIndex if it exists
     if (this._coveredEdgesIndex) {
-      this._coveredEdgesIndex.addEdge(edgeId, processedData, this._collections.nodeContainers);
+      this._coveredEdgesIndex.addEdge(edgeId, processedData, this._collections._nodeContainers);
     }
     
     // Update visibility cache if edge should be visible
@@ -545,9 +548,9 @@ export class VisualizationState {
     
     // Process children relationships
     if (containerData.children) {
-      this._collections.containerChildren.set(containerId, new Set(containerData.children));
+      this._collections._containerChildren.set(containerId, new Set(containerData.children));
       for (const childId of containerData.children) {
-        this._collections.nodeContainers.set(childId, containerId);
+        this._collections._nodeContainers.set(childId, containerId);
       }
     }
     
@@ -779,7 +782,7 @@ export class VisualizationState {
       // Check if this container has a parent container
       let hasVisibleParent = false;
       
-      for (const [parentId, children] of this.containerChildren) {
+      for (const [parentId, children] of this._containerChildren) {
         if (children.has(container.id)) {
           const parent = this.containers.get(parentId);
           if (parent && !parent.collapsed && !parent.hidden) {
@@ -864,7 +867,7 @@ export class VisualizationState {
     
     // Map visible nodes to their expanded parent containers
     for (const node of this.visibleNodes) {
-      const parentContainer = this._collections.nodeContainers.get(node.id);
+      const parentContainer = this._collections._nodeContainers.get(node.id);
       if (parentContainer) {
         const parent = this._collections.containers.get(parentContainer);
         if (parent && !parent.collapsed && !parent.hidden) {
@@ -884,7 +887,7 @@ export class VisualizationState {
     
     // Also map visible containers to their parent containers
     for (const container of this.visibleContainers) {
-      for (const [parentId, children] of this._collections.containerChildren) {
+      for (const [parentId, children] of this._collections._containerChildren) {
         if (children.has(container.id)) {
           const parent = this._collections.containers.get(parentId);
           if (parent && !parent.collapsed && !parent.hidden) {
@@ -933,7 +936,7 @@ export class VisualizationState {
       
       for (const container of this.visibleContainers) {
         if (!container.collapsed) {
-          const children = this._collections.containerChildren.get(container.id);
+          const children = this._collections._containerChildren.get(container.id);
           if (children && children.has(node.id)) {
             isInExpandedContainer = true;
             break;
@@ -959,7 +962,7 @@ export class VisualizationState {
       // Check if this container has a parent container
       let hasVisibleParent = false;
       
-      for (const [parentId, children] of this._collections.containerChildren) {
+      for (const [parentId, children] of this._collections._containerChildren) {
         if (children.has(container.id)) {
           const parent = this._collections.containers.get(parentId);
           if (parent && !parent.collapsed && !parent.hidden) {
@@ -1003,13 +1006,13 @@ export class VisualizationState {
   setHyperEdge(hyperEdgeId: string, hyperEdgeData: any): this {
     this._collections.hyperEdges.set(hyperEdgeId, hyperEdgeData);
      // Update node-to-edge mappings
-    const sourceSet = this._collections.nodeToEdges.get(hyperEdgeData.source) || new Set();
+    const sourceSet = this._collections._nodeToEdges.get(hyperEdgeData.source) || new Set();
     sourceSet.add(hyperEdgeId);
-    this._collections.nodeToEdges.set(hyperEdgeData.source, sourceSet);
+    this._collections._nodeToEdges.set(hyperEdgeData.source, sourceSet);
     
-    const targetSet = this._collections.nodeToEdges.get(hyperEdgeData.target) || new Set();
+    const targetSet = this._collections._nodeToEdges.get(hyperEdgeData.target) || new Set();
     targetSet.add(hyperEdgeId);
-    this._collections.nodeToEdges.set(hyperEdgeData.target, targetSet);
+    this._collections._nodeToEdges.set(hyperEdgeData.target, targetSet);
     
     // Update visibility cache if edge should be visible
     const sourceExists = this._isEndpointVisible(hyperEdgeData.source);
@@ -1019,21 +1022,21 @@ export class VisualizationState {
   }
 
   addContainerChild(containerId: string, childId: string): void {
-    const children = this._collections.containerChildren.get(containerId) || new Set();
+    const children = this._collections._containerChildren.get(containerId) || new Set();
     children.add(childId);
-    this._collections.containerChildren.set(containerId, children);
-    this._collections.nodeContainers.set(childId, containerId);
+    this._collections._containerChildren.set(containerId, children);
+    this._collections._nodeContainers.set(childId, containerId);
   }
 
   removeContainerChild(containerId: string, childId: string): void {
-    const children = this._collections.containerChildren.get(containerId);
+    const children = this._collections._containerChildren.get(containerId);
     if (children) {
       children.delete(childId);
       if (children.size === 0) {
-        this._collections.containerChildren.delete(containerId);
+        this._collections._containerChildren.delete(containerId);
       }
     }
-    this._collections.nodeContainers.delete(childId);
+    this._collections._nodeContainers.delete(childId);
   }
 
   updateNode(nodeId: string, updates: any): void {
@@ -1055,18 +1058,18 @@ export class VisualizationState {
   removeGraphNode(nodeId: string): void {
     this._collections.graphNodes.delete(nodeId);
     this._collections._visibleNodes.delete(nodeId);
-    this._collections.nodeToEdges.delete(nodeId);
-    this._collections.nodeContainers.delete(nodeId);
+    this._collections._nodeToEdges.delete(nodeId);
+    this._collections._nodeContainers.delete(nodeId);
   }
 
   removeGraphEdge(edgeId: string): void {
     const edge = this._collections.graphEdges.get(edgeId);
     if (edge) {
       // Remove from node-to-edges mappings
-      const sourceEdges = this._collections.nodeToEdges.get(edge.source);
+      const sourceEdges = this._collections._nodeToEdges.get(edge.source);
       if (sourceEdges) sourceEdges.delete(edgeId);
       
-      const targetEdges = this._collections.nodeToEdges.get(edge.target);
+      const targetEdges = this._collections._nodeToEdges.get(edge.target);
       if (targetEdges) targetEdges.delete(edgeId);
     }
     
@@ -1078,10 +1081,10 @@ export class VisualizationState {
     const edge = this._collections.hyperEdges.get(edgeId);
     if (edge) {
       // Remove from node-to-edges mappings
-      const sourceEdges = this._collections.nodeToEdges.get(edge.source);
+      const sourceEdges = this._collections._nodeToEdges.get(edge.source);
       if (sourceEdges) sourceEdges.delete(edgeId);
 
-      const targetEdges = this._collections.nodeToEdges.get(edge.target);
+      const targetEdges = this._collections._nodeToEdges.get(edge.target);
       if (targetEdges) targetEdges.delete(edgeId);
     }
 
@@ -1214,7 +1217,7 @@ export class VisualizationState {
   }
 
   _cascadeNodeVisibilityToEdges(nodeId: string, visible: boolean): void {
-    const connectedEdges = this._collections.nodeToEdges.get(nodeId) || new Set();
+    const connectedEdges = this._collections._nodeToEdges.get(nodeId) || new Set();
     
     for (const edgeId of Array.from(connectedEdges)) {
       const edge = this._collections.graphEdges.get(edgeId);

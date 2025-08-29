@@ -86,9 +86,9 @@ export class VisibilityManager {
     
     // Update collapsedContainers
     if (container.collapsed && !container.hidden) {
-      this.state._collections.collapsedContainers.set(containerId, container);
+      this.state._collections._collapsedContainers.set(containerId, container);
     } else {
-      this.state._collections.collapsedContainers.delete(containerId);
+      this.state._collections._collapsedContainers.delete(containerId);
     }
   }
 
@@ -127,7 +127,7 @@ export class VisibilityManager {
    * Hide all descendants of a container
    */
   private hideAllDescendants(containerId: string): void {
-    const children = this.state._collections.containerChildren.get(containerId) || new Set();
+    const children = this.state._collections._containerChildren.get(containerId) || new Set();
     
     for (const childId of Array.from(children)) {
       // First, recursively hide descendants
