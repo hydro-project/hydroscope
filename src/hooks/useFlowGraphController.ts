@@ -88,7 +88,17 @@ export function useFlowGraphController({
       if (force && layoutConfig) {
         engine.updateLayoutConfig({ ...layoutConfig }, false);
       }
-      await engine.runLayout();
+
+      // Check if we should use selective layout
+      const lastChangedContainer = visualizationState.getLastChangedContainer();
+      if (lastChangedContainer && !force) {
+        // Use selective layout for individual container changes
+        await engine.runSelectiveLayout(lastChangedContainer);
+        visualizationState.clearLastChangedContainer();
+      } else {
+        // Use full layout for other cases
+        await engine.runLayout();
+      }
       
       const baseData = bridge.convertVisualizationState(visualizationState);
       baseReactFlowDataRef.current = baseData;

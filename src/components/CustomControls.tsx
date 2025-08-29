@@ -124,7 +124,7 @@ export function CustomControls({
           setStandardControlsHeight(finalHeight);
         }
       } else {
-        console.log('📏 CustomControls: standardControlsRef not available yet');
+        // standardControlsRef not available yet - will retry on next effect run
       }
     };
 

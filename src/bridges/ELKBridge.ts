@@ -15,7 +15,7 @@ import type {
   HyperEdge
 } from '../shared/types';
 import type { LayoutConfig } from '../core/types';
-import { getELKLayoutOptions } from '../shared/config';
+import { getELKLayoutOptions, createFixedPositionOptions } from '../shared/config';
 
 import ELK from 'elkjs';
 import type { ElkGraph, ElkNode, ElkEdge } from './elk-types';
@@ -48,7 +48,20 @@ export class ELKBridge {
    * Convert VisualizationState to ELK format and run layout
    * Key insight: Include ALL visible edges (regular + hyper) with no distinction
    */
-  async layoutVisualizationState(visState: VisualizationState): Promise<void> {
+  async layoutVisualizationState(visState: VisualizationState, changedContainerId?: string): Promise<void> {
+    if (changedContainerId) {
+      // Use selective layout approach for individual container changes
+      return this.runSelectiveLayout(visState, changedContainerId);
+    }
+    
+    // Use standard full layout for initial layout or bulk operations
+    return this.runFullLayout(visState);
+  }
+
+  /**
+   * Run full layout for all containers (initial layout)
+   */
+  private async runFullLayout(visState: VisualizationState): Promise<void> {
     // Clear any existing edge layout data to ensure ReactFlow starts fresh
     visState.visibleEdges.forEach(edge => {
       try {
@@ -120,10 +133,39 @@ export class ELKBridge {
   }
 
   /**
+   * Run selective layout for individual container changes
+   * This preserves unchanged container positions exactly
+   */
+  private async runSelectiveLayout(visState: VisualizationState, changedContainerId: string): Promise<void> {
+    // Store the original positions of all unchanged containers
+    const originalPositions = new Map<string, {x: number, y: number}>();
+    
+    for (const container of visState.visibleContainers) {
+      if (container.id !== changedContainerId) {
+        const layout = visState.getContainerLayout(container.id);
+        const position = layout?.position || { x: container.x || 0, y: container.y || 0 };
+        originalPositions.set(container.id, position);
+      }
+    }
+    
+    // Run full layout as usual (position fixing happens in visStateToELK)
+    await this.runFullLayout(visState);
+    
+    // Restore the exact positions of unchanged containers
+    for (const [containerId, originalPosition] of originalPositions) {
+      visState.setContainerLayout(containerId, {
+        position: originalPosition,
+        // Keep any dimension updates from ELK
+        dimensions: visState.getContainerLayout(containerId)?.dimensions
+      });
+    }
+  }
+
+  /**
    * Backward-compatible alias expected by existing tests
    */
-  async layoutVisState(visState: VisualizationState): Promise<void> {
-    return this.layoutVisualizationState(visState);
+  async layoutVisState(visState: VisualizationState, changedContainerId?: string): Promise<void> {
+    return this.layoutVisualizationState(visState, changedContainerId);
   }
 
   // ============================================================================
@@ -258,7 +300,7 @@ export class ELKBridge {
    * Convert VisualizationState to ELK format
    * HIERARCHICAL: Use proper ELK hierarchy to match ReactFlow parent-child relationships
    */
-  private visStateToELK(visState: VisualizationState): ElkGraph {    
+  private visStateToELK(visState: VisualizationState, changedContainerId?: string): ElkGraph {    
     // HIERARCHICAL: Build proper container hierarchy
     const rootNodes: ElkNode[] = [];
     const processedNodes = new Set<string>();
@@ -282,6 +324,28 @@ export class ELKBridge {
       const containerNode: ElkNode = container.collapsed
         ? { id: container.id, width: containerWidth, height: containerHeight, children: [] }
         : { id: container.id, children: [] } as ElkNode;
+      
+      // SELECTIVE LAYOUT: Fix positions for unchanged containers
+      if (changedContainerId && container.id !== changedContainerId) {
+        // Get current position from VisualizationState
+        const layout = visState.getContainerLayout(container.id);
+        const currentPosition = layout?.position || { x: container.x || 0, y: container.y || 0 };
+        
+        console.log(`🔒 FIXING position for container ${container.id} at (${currentPosition.x}, ${currentPosition.y})`);
+        
+        // Fix this container's position during selective layout using strict constraints
+        containerNode.x = currentPosition.x;
+        containerNode.y = currentPosition.y;
+        containerNode.layoutOptions = {
+          ...createFixedPositionOptions(currentPosition.x, currentPosition.y),
+          'elk.nodeSize.constraints': 'FIXED_POS',
+          'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE'
+        };
+        
+        console.log(`🔒 Container ${container.id} layoutOptions:`, containerNode.layoutOptions);
+      } else if (changedContainerId) {
+        console.log(`🔄 ALLOWING movement for changed container ${container.id}`);
+      }
       
   if (!container.collapsed) {
         // Use VisualizationState API to get children (returns Set)

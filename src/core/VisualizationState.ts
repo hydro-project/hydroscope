@@ -87,6 +87,9 @@ export class VisualizationState {
   // Covered edges index for efficient aggregated edge queries
   private _coveredEdgesIndex: CoveredEdgesIndex | null = null;
 
+  // Track the most recently changed container for selective layout
+  private _lastChangedContainer: string | null = null;
+
   // ============ PROTECTED ACCESSORS (Internal use only) ============
   // These provide controlled access to collections for internal methods
   
@@ -690,6 +693,7 @@ export class VisualizationState {
     this._inRecursiveOperation = true;
     try {
       this._recentlyCollapsedContainers.add(containerId);
+      this._lastChangedContainer = containerId; // Track for selective layout
       this.setContainerState(containerId, { collapsed: true });
       
       setTimeout(() => {
@@ -710,6 +714,7 @@ export class VisualizationState {
       throw new Error(`Cannot expand non-existent container: ${containerId}`);
     }
     
+    this._lastChangedContainer = containerId; // Track for selective layout
     
     // Just update the container's collapsed state - setContainerState will handle calling handleContainerExpansion
     this.setContainerState(containerId, { collapsed: false });
@@ -747,6 +752,20 @@ export class VisualizationState {
         }
       }
     }
+  }
+
+  /**
+   * Get the most recently changed container for selective layout
+   */
+  getLastChangedContainer(): string | null {
+    return this._lastChangedContainer;
+  }
+
+  /**
+   * Clear the last changed container tracking
+   */
+  clearLastChangedContainer(): void {
+    this._lastChangedContainer = null;
   }
 
   /**

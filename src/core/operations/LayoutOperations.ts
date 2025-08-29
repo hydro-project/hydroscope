@@ -157,6 +157,33 @@ export class LayoutOperations {
   }
 
   /**
+   * Clear layout positions only for a specific container and its children
+   */
+  clearLayoutPositionsForContainer(containerId: string): void {
+    // Clear position for the target container
+    this.setContainerLayout(containerId, { position: undefined });
+    
+    // Get all children of this container recursively
+    const children = this.state.getContainerChildren(containerId) || new Set();
+    
+    for (const childId of children) {
+      const container = this.state.getContainer(childId);
+      const node = this.state.getGraphNode(childId);
+      
+      if (container) {
+        // Clear child container position
+        this.setContainerLayout(childId, { position: undefined });
+        
+        // Recursively clear child container's children
+        this.clearLayoutPositionsForContainer(childId);
+      } else if (node) {
+        // Clear child node position
+        this.setNodeLayout(childId, { position: undefined });
+      }
+    }
+  }
+
+  /**
    * Get edge layout information (sections, routing)
    */
   getEdgeLayout(edgeId: string): { sections?: any[]; [key: string]: any } | undefined {

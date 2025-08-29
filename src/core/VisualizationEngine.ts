@@ -166,6 +166,32 @@ export class VisualizationEngine {
   }
 
   /**
+   * Run selective layout with fixed positions for unchanged containers
+   * This is used for individual container collapse/expand operations
+   */
+  async runSelectiveLayout(changedContainerId: string): Promise<void> {
+    
+    if (this.state.phase === 'laying_out') {
+      return;
+    }
+
+    try {
+      this.updateState('laying_out');
+      
+      // Use ELK bridge to layout with position fixing
+      await this.elkBridge.layoutVisualizationState(this.visState, changedContainerId);
+      
+      // Don't run smart collapse for selective layouts - respect user intent
+      // Don't increment layout count either - this is just a refinement
+      
+      this.updateState('ready');
+      
+    } catch (error) {
+      this.handleError('Selective layout failed', error);
+    }
+  }
+
+  /**
    * Get ReactFlow data for rendering
    */
   getReactFlowData(): ReactFlowData {

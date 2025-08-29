@@ -328,7 +328,13 @@ export function getELKLayoutOptions(algorithm: string = ELK_ALGORITHMS.MRTREE) {
 export function createFixedPositionOptions(x?: number, y?: number) {
   const options = {
     ...ELK_LAYOUT_OPTIONS,
-    'elk.position': 'FIXED'
+    // Use stronger position constraints based on ELK documentation
+    'elk.position': 'FIXED',
+    // Fixed size constraints - empty means size is already fixed and should not be changed
+    'elk.nodeSize.constraints': '',
+    'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE',
+    // Interactive layout to respect existing positions
+    'elk.interactive': 'true'
   };
   
   if (x !== undefined && y !== undefined) {
