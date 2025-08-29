@@ -202,7 +202,15 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
   {/* Invisible SVG defs for edge filters/markers */}
   <GraphDefs />
       <ReactFlow
-        nodes={reactFlowData?.nodes || []}
+        nodes={(() => {
+          // Sort nodes so clicked nodes are rendered last (on top)
+          const nodes = reactFlowData?.nodes || [];
+          return nodes.slice().sort((a, b) => {
+            const aClicked = a.data?.isClicked ? 1 : 0;
+            const bClicked = b.data?.isClicked ? 1 : 0;
+            return aClicked - bClicked;
+          });
+        })()}
         edges={reactFlowData?.edges || []}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

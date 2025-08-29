@@ -10,29 +10,17 @@ import type { VisualizationState } from '../core/VisualizationState';
 
 // SVG Icons for pack/unpack operations (same as GraphControls)
 const PackIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 66 66" fill="currentColor">
-    <path d="M63.6,28.1l-6.5-6.9c0,0-.3-.2-.4-.2l-14.8-5.8h0c.2-.3.3-.7,0-1-.2-.3-.5-.6-.8-.6h-3.6V3.4c0-.6-.4-.9-.9-.9h-7.7c-.6,0-.9.4-.9.9v10.1h-3.6c-.4,0-.7.2-.8.6-.2.3,0,.7,0,.9l-13.9,5.6c0,0-.2,0-.3.2h0l-7.3,7.4c-.2.2-.3.6-.3.8,0,.3.3.6.6.7l6.7,2.7v20.8c0,.4.2.7.6.8l22.5,10.1h0c0,0,.2,0,.4,0h0c0,0,.2,0,.3,0h0l23.8-9.8c.4-.2.6-.5.6-.8v-21.6l5.8-2.3c.3,0,.5-.4.6-.7,0-.4,0-.7-.2-.8ZM29.2,15.4c.6,0,.9-.4.9-.9V4.4h5.8v10.1c0,.6.4.9.9.9h2.5l-6.4,8.2-6.4-8.2h2.5ZM25.1,16.6l7.1,9.2c.2.2.5.4.7.4s.6,0,.7-.4l7.1-9.1,13.1,5.2-21.2,8-20-8.2,12.3-5.1ZM10.5,22.7l20.3,8.3-7.4,5.4c-14.5-6.1-10.6-4.5-18.8-7.8l5.9-6ZM11.3,33.3l12,5.1c.3,0,.7,0,.9,0l7.7-5.6v29.3l-20.6-9.3s0-19.4,0-19.4ZM55.6,52.9l-21.9,9.1v-29.3l6.7,5.5c.3.2.7.3.9.2l14.2-5.7v20.2ZM41.2,36.4l-6.6-5.3,21.7-8.2,5.1,5.4-20.2,8.1Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      fill="currentColor"
-    />
-    
-  </svg>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+  <path fill="currentColor" d="M48.68,170.67c30.01-3,69.24,1.26,99.98,1.2l-.47,44.47c-31.79-.64-85.93-5.15-91.45,31.65-8.5,56.73,5.61,129.95.95,188.29,4.46,11.9,12.64,21.32,26.06,26.84,108.97,7.41,220.75,1.13,330.73,3.21,20.07-2.42,37.72-16.78,40.27-34.05,8.32-56.31-6.25-127.27,0-185.09-11.77-36.93-54.69-30.94-90.5-30.85l-.47-45.27c31.13,1.64,69.66-3.56,99.98-.4,23.16,2.42,42.04,19.44,45.01,38.86-7.67,83.32,10.23,180.25,0,262.01-2.57,20.51-19.89,36.92-44.07,40.46H46.78c-26.2-4.46-41.74-21.6-44.07-43.67-8.55-81.04,6.41-172.67,0-254.8,1.08-21.27,20.53-40.32,45.96-42.87h.01Z"/>
+  <path fill="currentColor" d="M258.31,429.8c-.72.25-4.19.29-4.81,0-5.19-2.36-56.57-122.05-66.1-135.93-3.69-24.83,25.3-7.28,33.65-15.32V11.79c1.18-4.89,3.41-9.69,6.81-10.85,3.66-1.26,53.37-1.27,56.89,0,.82.3,4.76,4.33,5.21,5.75l.8,271.87c9.31,8.06,42.87-10.94,32.05,20.42-5.44,15.77-52.12,113.24-60.09,125.08-1.07,1.58-3.09,5.29-4.41,5.75v-.02Z"/>
+</svg>
 );
 
 const UnpackIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 66.1 65.8" fill="currentColor">
-    <path d="M56.6,27.1l5.3-2.6c.3-.2.5-.5.5-.8s-.2-.6-.4-.8l-16.3-8.9c-.4-.3-1,0-1.2.4-.3.5,0,1,.4,1.3l14.8,8-4.6,2.3-11.8-5.9c-.4-.2-1,0-1.2.5s0,1,.4,1.2l10.6,5.2-19.8,9.7-19.6-9.7,11.1-5.4c.4-.2.6-.7.4-1.2s-.7-.6-1.2-.5l-12.5,6.1-4.6-2.3,15.2-8c.4-.3.6-.8.4-1.2-.3-.5-.8-.6-1.2-.4L4.5,22.9c-.3.2-.4.5-.4.8s.2.6.5.8l5.3,2.5-5.8,4.1c-.4.2-.4.5-.4.8s.2.6.4.7l6.6,3.4v17.5c0,.4.3.7.5.8l21.6,8.2c.2,0,.4,0,.6,0l21.6-8.1c.4,0,.6-.5.6-.8v-17.3l6.1-3.3c.3-.2.4-.5.4-.7s0-.6-.4-.8l-5.3-4.4ZM11.6,27.9l20.1,9.9-4.3,4.9L6.2,31.7l5.4-3.8ZM12.4,37l14.9,7.7c0,0,.3,0,.4,0,.3,0,.5,0,.7-.3l3.9-4.5v20.6l-19.9-7.6v-16ZM54,53.1l-19.8,7.4v-20.9l4.9,4.9c.2.2.4.3.6.3s.3,0,.4,0l13.9-7.4v15.8ZM39.8,42.8l-5-5.1,20-9.8,5.1,4.1-20.1,10.7Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      fill="currentColor"
-    />
-    <path d="M22,18.5c.2.3.4.5.8.5h4.7v12.8c0,.3,0,.5.3.6s.4.3.6.3h9.6c.5,0,.9-.4.9-.9v-12.8h4.8c.4,0,.6-.2.8-.5.2-.3,0-.6,0-.9l-10.5-14.1c-.4-.5-1.1-.5-1.4,0l-10.4,14.1c-.2.3-.3.6,0,.9ZM33.2,5.5l8.7,11.7h-3.8c-.5,0-.9.4-.9.9v12.8h-7.8v-12.8c0-.3,0-.5-.3-.6-.2-.2-.4-.3-.6-.3h-3.8l8.5-11.7Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      fill="currentColor"
-    />
-  </svg>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+  <path fill="currentColor" d="M48.68,170.67c30.01-3,69.24,1.26,99.98,1.2l-.47,44.47c-31.79-.64-85.93-5.15-91.45,31.65-8.5,56.73,5.61,129.95.95,188.29,4.46,11.9,12.64,21.32,26.06,26.84,108.97,7.41,220.75,1.13,330.73,3.21,20.07-2.42,37.72-16.78,40.27-34.05,8.32-56.31-6.25-127.27,0-185.09-11.77-36.93-54.69-30.94-90.5-30.85l-.47-45.27c31.13,1.64,69.66-3.56,99.98-.4,23.16,2.42,42.04,19.44,45.01,38.86-7.67,83.32,10.23,180.25,0,262.01-2.57,20.51-19.89,36.92-44.07,40.46H46.78c-26.2-4.46-41.74-21.6-44.07-43.67-8.55-81.04,6.41-172.67,0-254.8,1.08-21.27,20.53-40.32,45.96-42.87h.01Z"/>
+  <path fill="currentColor" d="M253.7.2c.72-.25,4.19-.29,4.81,0,5.19,2.36,56.57,122.05,66.1,135.93,3.69,24.83-25.3,7.28-33.65,15.32v266.76c-1.18,4.89-3.41,9.69-6.81,10.85-3.66,1.26-53.37,1.27-56.89,0-.82-.3-4.76-4.33-5.21-5.75l-.8-271.87c-9.31-8.06-42.87,10.94-32.05-20.42,5.44-15.77,52.12-113.24,60.09-125.08,1.07-1.58,3.09-5.29,4.41-5.75v.02Z"/>
+</svg>
 );
 
 const FitIcon = () => (
@@ -108,12 +96,12 @@ export function CustomControls({
         <div
           style={{
             position: 'absolute',
-            bottom: '110px', // Position above the standard controls (which are at 0px)
+            top: '50%', // Vertically center
             left: '0px', // Same left alignment as standard controls
             zIndex: 5
           }}
         >
-          <Controls showZoom={false} showFitView={false} showInteractive={false}>
+          <Controls showZoom={false} showFitView={false} showInteractive={false} style={{ transform: 'scale(1.35)', transformOrigin: 'left bottom' }}>
             {/* Load File Button - at the top when enabled */}
             {showLoadFile && onLoadFile && (
               <ControlButton
@@ -123,7 +111,6 @@ export function CustomControls({
                 <LoadFileIcon />
               </ControlButton>
             )}
-            
             {/* Pack/Unpack buttons - always show when pack/unpack is enabled */}
             {showPackUnpack && (
               <>
@@ -141,7 +128,6 @@ export function CustomControls({
                 >
                   <PackIcon />
                 </ControlButton>
-                
                 {/* Unpack All (Expand All) Button */}
                 <ControlButton
                   onClick={onExpandAll}
@@ -158,7 +144,6 @@ export function CustomControls({
                 </ControlButton>
               </>
             )}
-            
             {/* Fit View Button - always show when callback provided */}
             {onFitView && (
               <ControlButton
@@ -168,7 +153,6 @@ export function CustomControls({
                 <FitIcon />
               </ControlButton>
             )}
-            
             {/* Auto Fit Toggle Button - always show when callback provided */}
             {onAutoFitToggle && (
               <ControlButton
@@ -185,9 +169,8 @@ export function CustomControls({
           </Controls>
         </div>
       )}
-      
       {/* Standard ReactFlow Controls - at the bottom in their usual position */}
-      <Controls position={position} />
+      <Controls position={position} style={{ transform: 'scale(1.3)', transformOrigin: 'left bottom' }} />
     </>
   );
 }

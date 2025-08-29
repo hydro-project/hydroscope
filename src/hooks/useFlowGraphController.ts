@@ -212,9 +212,18 @@ export function useFlowGraphController({
 
   // Event handlers
   const onNodeClick = useCallback((event: any, node: any) => {
-    console.log('🖱️ useFlowGraphController: onNodeClick called', { nodeId: node?.id, hasEventHandlers: !!eventHandlers, hasOnNodeClick: !!eventHandlers?.onNodeClick });
+    
+    // Set isClicked: true for the clicked node, false for all others
+    visualizationState.visibleNodes.forEach(n => {
+      visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
+    });
+    
+    // Trigger a refresh to update node ordering
+    refreshLayout(false);
+    
+    // Call the original event handler if provided
     eventHandlers?.onNodeClick?.(event, node);
-  }, [eventHandlers]);
+  }, [eventHandlers, visualizationState, refreshLayout]);
 
   const onEdgeClick = useCallback((event: any, edge: any) => {
     eventHandlers?.onEdgeClick?.(event, edge);
