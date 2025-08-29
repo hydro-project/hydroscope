@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Drawer } from 'antd';
+import { Button } from 'antd';
 import { InfoPanelProps, HierarchyTreeNode, LegendData } from './types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { GroupingControls } from './GroupingControls';
@@ -143,20 +143,68 @@ export function InfoPanel({
     return leafCount;
   };
 
+  // Panel style
+  const panelStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 10, // position to occlude the button
+    left: 8, // nearly flush with edge
+    zIndex: 1200,
+    minWidth: 280,
+    maxWidth: 340,
+    background: '#fff',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+    borderRadius: 2,
+    border: '1px solid #eee',
+    padding: 20,
+    transition: 'transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s',
+    transform: open ? 'translateX(0)' : 'translateX(-120%)', // slide from left
+    opacity: open ? 1 : 0,
+    pointerEvents: open ? 'auto' : 'none',
+  };
+
+  // Custom button style for open/close, matching CustomControls
+  const controlButtonStyle: React.CSSProperties = {
+    fontSize: 18,
+    color: '#222',
+    marginLeft: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    border: '1px solid #3b82f6',
+    borderRadius: 4,
+    boxShadow: '0 1px 4px rgba(59,130,246,0.08)',
+    transition: 'background 0.18s, box-shadow 0.18s',
+    padding: '2px 8px',
+    outline: 'none',
+    cursor: 'pointer',
+  };
+
+  // Add hover/focus effect via inline event handlers
+  const [btnHover, setBtnHover] = useState(false);
+  const [btnFocus, setBtnFocus] = useState(false);
+  const mergedButtonStyle = {
+    ...controlButtonStyle,
+    backgroundColor: btnHover || btnFocus ? 'rgba(59,130,246,0.18)' : controlButtonStyle.backgroundColor,
+    boxShadow: btnHover || btnFocus ? '0 2px 8px rgba(59,130,246,0.16)' : controlButtonStyle.boxShadow,
+    borderColor: btnHover || btnFocus ? '#2563eb' : '#3b82f6',
+  };
+
   return (
-    <Drawer
-      title="Graph Info"
-      placement="left"
-      open={open}
-      onClose={() => onOpenChange?.(false)}
-      width={300}
-      className={className}
-      rootClassName="hydro-custom-drawer"
-      style={{ ...style, zIndex: 1100, height: 'auto', maxHeight: 'none', boxShadow: 'none', background: 'transparent' }}
-      bodyStyle={{ height: 'auto', maxHeight: '90vh', overflow: 'auto', background: '#fff', boxShadow: 'none' }}
-      mask={false}
-    >
-      <div style={{ fontSize: TYPOGRAPHY.INFOPANEL_BASE }}> {/* Increased from 10px to 14px */}
+    <div style={panelStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontWeight: 600, fontSize: 16 }}>Graph Info</span>
+        <Button
+          type="text"
+          size="small"
+          onClick={() => onOpenChange?.(false)}
+          style={mergedButtonStyle}
+          onMouseEnter={() => setBtnHover(true)}
+          onMouseLeave={() => setBtnHover(false)}
+          onFocus={() => setBtnFocus(true)}
+          onBlur={() => setBtnFocus(false)}
+        >
+          ×
+        </Button>
+      </div>
+      <div style={{ fontSize: TYPOGRAPHY.INFOPANEL_BASE, maxHeight: '68vh', overflowY: 'auto', paddingRight: 4 }}>
         {/* Grouping & Hierarchy Section */}
         {(safeHierarchyChoices.length > 0 || hierarchyTree.length > 0) && (
           <CollapsibleSection
@@ -175,7 +223,6 @@ export function InfoPanel({
                 />
               </div>
             )}
-            
             {/* Hierarchy Tree */}
             {hierarchyTree.length > 0 && (
               <HierarchyTree
@@ -190,7 +237,6 @@ export function InfoPanel({
             )}
           </CollapsibleSection>
         )}
-
         {/* Edge Style Legend Section - Show whenever edgeStyleConfig exists */}
         {edgeStyleConfig && (
           <CollapsibleSection
@@ -204,7 +250,6 @@ export function InfoPanel({
             />
           </CollapsibleSection>
         )}
-
         {/* Node Legend Section */}
         <CollapsibleSection
           title={effectiveLegendData.title}
@@ -218,7 +263,7 @@ export function InfoPanel({
           />
         </CollapsibleSection>
       </div>
-    </Drawer>
+    </div>
   );
 }
 

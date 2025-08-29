@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Button, Divider } from 'antd';
+import { Button, Divider } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
@@ -31,7 +31,14 @@ export interface StyleTunerPanelProps {
     nodeFontSize?: number;
     containerBorderWidth?: number;
   };
-  onChange: (next: StyleTunerPanelProps['value']) => void;
+  onChange: (next: {
+    edgeStyle?: EdgeStyleKind;
+    edgeWidth?: number;
+    edgeDashed?: boolean;
+    nodePadding?: number;
+    nodeFontSize?: number;
+    containerBorderWidth?: number;
+  }) => void;
   colorPalette?: string;
   onPaletteChange?: (palette: string) => void;
   currentLayout?: string;
@@ -43,8 +50,8 @@ export interface StyleTunerPanelProps {
 }
 
 export function StyleTunerPanel({ 
-  value, 
-  onChange, 
+  value,
+  onChange,
   colorPalette = 'Set2',
   onPaletteChange,
   currentLayout = 'layered',
@@ -55,7 +62,6 @@ export function StyleTunerPanel({
   onOpenChange
 }: StyleTunerPanelProps) {
   const [local, setLocal] = useState(value);
-
   useEffect(() => setLocal(value), [value]);
 
   const update = (patch: Partial<typeof local>) => {
@@ -81,19 +87,66 @@ export function StyleTunerPanel({
     marginBottom: '8px'
   };
 
+  // Custom button style for open/close, matching CustomControls
+  const controlButtonStyle: React.CSSProperties = {
+    fontSize: 18,
+    color: '#222',
+    marginLeft: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    border: '1px solid #3b82f6',
+    borderRadius: 4,
+    boxShadow: '0 1px 4px rgba(59,130,246,0.08)',
+    transition: 'background 0.18s, box-shadow 0.18s',
+    padding: '2px 8px',
+    outline: 'none',
+    cursor: 'pointer',
+  };
+
+  // Add hover/focus effect via inline event handlers
+  const [btnHover, setBtnHover] = useState(false);
+  const [btnFocus, setBtnFocus] = useState(false);
+  const mergedButtonStyle = {
+    ...controlButtonStyle,
+    backgroundColor: btnHover || btnFocus ? 'rgba(59,130,246,0.18)' : controlButtonStyle.backgroundColor,
+    boxShadow: btnHover || btnFocus ? '0 2px 8px rgba(59,130,246,0.16)' : controlButtonStyle.boxShadow,
+    borderColor: btnHover || btnFocus ? '#2563eb' : '#3b82f6',
+  };
 
   return (
-    <Drawer
-      title="Style Tuner"
-      placement="right"
-      open={open}
-      onClose={() => onOpenChange?.(false)}
-      width={300}
-      mask={false}
-      rootClassName="hydro-custom-drawer"
-      style={{ zIndex: 1100, height: 'auto', maxHeight: 'none', boxShadow: 'none', background: 'transparent' }}
-      bodyStyle={{ height: 'auto', maxHeight: '90vh', overflow: 'auto', background: '#fff', boxShadow: 'none' }}
+    <div
+      style={{
+        position: 'absolute',
+        top: 10, // position to occlude the button
+        right: 8, // further right, nearly flush with edge
+        zIndex: 1200, // higher than button
+        minWidth: 280,
+        maxWidth: 340,
+        background: '#fff',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+        borderRadius: 2,
+        border: '1px solid #eee',
+        padding: 20,
+        transition: 'transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s',
+        transform: open ? 'translateX(0)' : 'translateX(120%)', // slide from right
+        opacity: open ? 1 : 0,
+        pointerEvents: open ? 'auto' : 'none',
+      }}
     >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontWeight: 600, fontSize: 16 }}>Style Tuner</span>
+        <Button
+          type="text"
+          size="small"
+          onClick={() => onOpenChange?.(false)}
+          style={mergedButtonStyle}
+          onMouseEnter={() => setBtnHover(true)}
+          onMouseLeave={() => setBtnHover(false)}
+          onFocus={() => setBtnFocus(true)}
+          onBlur={() => setBtnFocus(false)}
+        >
+          ×
+        </Button>
+      </div>
       <div style={{ fontSize: '12px' }}>
         <div style={rowStyle}>
           <label>Layout Algorithm</label>
@@ -107,7 +160,6 @@ export function StyleTunerPanel({
             ))}
           </select>
         </div>
-
         <div style={rowStyle}>
           <label>Edge Style</label>
           <select
@@ -120,8 +172,6 @@ export function StyleTunerPanel({
             <option value="smoothstep">SmoothStep</option>
           </select>
         </div>
-
-
         <div style={rowStyle}>
           <label>Color Palette</label>
           <select 
@@ -134,10 +184,6 @@ export function StyleTunerPanel({
             ))}
           </select>
         </div>
-
-        <hr />
-
-        {/* Reset to Defaults Button */}
         <Divider style={{ margin: '16px 0 12px 0' }} />
         <Button 
           type="default"
@@ -150,7 +196,7 @@ export function StyleTunerPanel({
           Reset to Defaults
         </Button>
       </div>
-    </Drawer>
+    </div>
   );
 }
 

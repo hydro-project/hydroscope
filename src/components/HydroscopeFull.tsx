@@ -578,7 +578,7 @@ export function HydroscopeFull({
             left: '16px',
             zIndex: 100,
             boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-            borderRadius: '6px',
+            borderRadius: '1px',
             background: '#fff',
             width: '40px',
             height: '40px',
@@ -614,7 +614,7 @@ export function HydroscopeFull({
             right: '16px',
             zIndex: 100,
             boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-            borderRadius: '6px',
+            borderRadius: '1px',
             background: '#fff',
             width: '40px',
             height: '40px',
@@ -648,7 +648,14 @@ export function HydroscopeFull({
             open={stylePanelOpen}
             onOpenChange={setStylePanelOpen}
             value={renderConfig}
-            onChange={(newStyles) => {
+            onChange={(newStyles: {
+              edgeStyle?: "bezier" | "straight" | "smoothstep";
+              edgeWidth?: number;
+              edgeDashed?: boolean;
+              nodePadding?: number;
+              nodeFontSize?: number;
+              containerBorderWidth?: number;
+            }) => {
               const newConfig = {
                 ...renderConfig,
                 ...newStyles,
@@ -660,16 +667,9 @@ export function HydroscopeFull({
                 hydroscopeRef.current?.refreshLayout(true); // Force relayout
               }
             }}
-            colorPalette={colorPalette}
-            onPaletteChange={setColorPalette}
-            currentLayout={layoutAlgorithm}
-            onLayoutChange={handleLayoutChange}
-            onResetToDefaults={handleResetToDefaults}
           />
         </div>
       )}
     </div>
   );
 }
-
-export default HydroscopeFull;
