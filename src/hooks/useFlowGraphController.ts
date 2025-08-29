@@ -213,16 +213,33 @@ export function useFlowGraphController({
   // Event handlers
   const onNodeClick = useCallback((event: any, node: any) => {
     
-    // Set isClicked: true for the clicked node, false for all others
-    visualizationState.visibleNodes.forEach(n => {
-      visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
-    });
+    // Check if this is a container node
+    const container = visualizationState.getContainer(node.id);
     
-    // Trigger a refresh to update node ordering
-    refreshLayout(false);
-    
-    // Call the original event handler if provided
-    eventHandlers?.onNodeClick?.(event, node);
+    if (container) {
+      // For container nodes, call the event handler FIRST (to change container state)
+      // then do click animation logic AFTER the container state has changed
+      eventHandlers?.onNodeClick?.(event, node);
+      
+      // Set isClicked: true for the clicked node, false for all others
+      visualizationState.visibleNodes.forEach(n => {
+        visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
+      });
+      
+      // Note: Don't call refreshLayout here for containers - the container handler will do its own layout refresh
+    } else {
+      // For regular nodes, do click animation logic first, then call event handler
+      // Set isClicked: true for the clicked node, false for all others
+      visualizationState.visibleNodes.forEach(n => {
+        visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
+      });
+      
+      // Trigger a refresh to update node ordering
+      refreshLayout(false);
+      
+      // Call the original event handler if provided
+      eventHandlers?.onNodeClick?.(event, node);
+    }
   }, [eventHandlers, visualizationState, refreshLayout]);
 
   const onEdgeClick = useCallback((event: any, edge: any) => {
