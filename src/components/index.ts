@@ -29,7 +29,6 @@ export type { HydroscopeFullProps } from './HydroscopeFull';
 export { FileDropZone } from './FileDropZone';
 
 // Layout and interaction controls
-export { GraphControls } from './GraphControls';
 export { GroupingControls } from './GroupingControls';
 
 // Style and theming
@@ -42,10 +41,6 @@ export { HierarchyTree } from './HierarchyTree';
 
 // UI building blocks
 export { CollapsibleSection } from './CollapsibleSection';
-export { DockablePanel } from './DockablePanel';
-
-// Visualization core
-export { VisualizationComponent } from './VisualizationComponent';
 
 // Edge styling
 export { EdgeStyleLegend } from './EdgeStyleLegend';
@@ -70,7 +65,6 @@ export type {
   BaseComponentProps
 } from './types';
 
-export type { GraphControlsProps } from './GraphControls';
 export type { StyleTunerPanelProps } from './StyleTunerPanel';
 
 // === UTILITY FUNCTIONS ===
