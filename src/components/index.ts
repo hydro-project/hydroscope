@@ -29,7 +29,7 @@ export type { HydroscopeFullProps } from './HydroscopeFull';
 export { FileDropZone } from './FileDropZone';
 
 // Layout and interaction controls
-export { LayoutControls } from './LayoutControls';
+export { GraphControls } from './GraphControls';
 export { GroupingControls } from './GroupingControls';
 
 // Style and theming
@@ -70,7 +70,7 @@ export type {
   BaseComponentProps
 } from './types';
 
-export type { LayoutControlsProps } from './LayoutControls';
+export type { GraphControlsProps } from './GraphControls';
 export type { StyleTunerPanelProps } from './StyleTunerPanel';
 
 // === UTILITY FUNCTIONS ===

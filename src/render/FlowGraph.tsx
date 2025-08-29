@@ -4,8 +4,9 @@
  */
 
 import React, { useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
-import { ReactFlow, Background, Controls, MiniMap, ReactFlowProvider } from '@xyflow/react';
+import { ReactFlow, Background, MiniMap, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { CustomControls } from '../components/CustomControls';
 
 import { DEFAULT_RENDER_CONFIG } from '../shared/config';
 import { nodeTypes } from './nodes';
@@ -25,6 +26,13 @@ export interface FlowGraphProps {
   className?: string;
   style?: React.CSSProperties;
   fillViewport?: boolean; // New prop to control viewport sizing
+  onCollapseAll?: () => void; // Pack/unpack callbacks
+  onExpandAll?: () => void;
+  onFitView?: () => void; // Fit view callback
+  autoFit?: boolean; // Auto-fit state
+  onAutoFitToggle?: (enabled: boolean) => void; // Auto-fit toggle callback
+  onLoadFile?: () => void; // Load file callback
+  showLoadFile?: boolean; // Show load file button
 }
 
 export interface FlowGraphRef {
@@ -40,7 +48,14 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
   eventHandlers,
   className,
   style,
-  fillViewport = false
+  fillViewport = false,
+  onCollapseAll,
+  onExpandAll,
+  onFitView,
+  autoFit = false,
+  onAutoFitToggle,
+  onLoadFile,
+  showLoadFile = false
 }, ref) => {
   const {
     reactFlowData,
@@ -208,7 +223,20 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
           maxZoom={2}
         >
           <Background color="#ccc" />
-          {config.enableControls !== false && <Controls />}
+          {config.enableControls !== false && (
+            <CustomControls 
+              visualizationState={visualizationState}
+              onCollapseAll={onCollapseAll}
+              onExpandAll={onExpandAll}
+              showPackUnpack={true}
+              onFitView={onFitView || fitOnce}
+              autoFit={autoFit}
+              onAutoFitToggle={onAutoFitToggle}
+              onLoadFile={onLoadFile}
+              showLoadFile={showLoadFile}
+              position="bottom-left"
+            />
+          )}
           {config.enableMiniMap !== false && (
             <MiniMap 
               nodeColor="#666"

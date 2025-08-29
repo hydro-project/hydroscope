@@ -151,9 +151,10 @@ export function InfoPanel({
       onClose={() => onOpenChange?.(false)}
       width={300}
       className={className}
-      style={style}
+      rootClassName="hydro-custom-drawer"
+      style={{ ...style, zIndex: 1100, height: 'auto', maxHeight: 'none', boxShadow: 'none', background: 'transparent' }}
+      bodyStyle={{ height: 'auto', maxHeight: '90vh', overflow: 'auto', background: '#fff', boxShadow: 'none' }}
       mask={false}
-      getContainer={false}
     >
       <div style={{ fontSize: TYPOGRAPHY.INFOPANEL_BASE }}> {/* Increased from 10px to 14px */}
         {/* Grouping & Hierarchy Section */}

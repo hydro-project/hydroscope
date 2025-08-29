@@ -62,6 +62,8 @@ export function HydroscopeMini({
 
   // Default interactive node click handler
   const handleNodeClick = useCallback(async (event: any, node: any) => {
+    console.log('🖱️ Node clicked!', { nodeId: node.id, event, node });
+    
     if (!visualizationState) {
       console.warn('⚠️ No visualization state available for node click');
       return;
@@ -69,15 +71,16 @@ export function HydroscopeMini({
 
     if (onNodeClick) {
       // User provided custom handler - use that instead
+      console.log('🔄 Using custom onNodeClick handler');
       onNodeClick(event, node, visualizationState);
       return;
     }
 
-    if (!enableCollapse) return;
-
-    // Built-in container collapse/expand logic
+    // Check if this is a container first
     const container = visualizationState.getContainer(node.id);
-    if (container) {
+    if (container && enableCollapse) {
+      console.log('🏗️ Handling container click for:', node.id);
+      // Built-in container collapse/expand logic
       try {
         setIsLayoutRunning(true);
         
@@ -107,6 +110,41 @@ export function HydroscopeMini({
       } finally {
         setIsLayoutRunning(false);
       }
+      return; // Exit early after handling container
+    }
+
+    // Handle regular graph node label toggle
+    const graphNode = visualizationState.getGraphNode(node.id);
+    console.log('🏷️ Checking for label toggle...', { 
+      nodeId: node.id, 
+      hasGraphNode: !!graphNode,
+      hasFullLabel: !!graphNode?.fullLabel,
+      hasShortLabel: !!graphNode?.shortLabel,
+      labelsAreDifferent: graphNode?.fullLabel !== graphNode?.shortLabel
+    });
+    
+    if (graphNode && graphNode.fullLabel && graphNode.shortLabel && graphNode.fullLabel !== graphNode.shortLabel) {
+      // Toggle between short and full label (only if they're actually different)
+      const currentLabel = graphNode.label || graphNode.shortLabel;
+      const isShowingShort = currentLabel === graphNode.shortLabel;
+      const newLabel = isShowingShort ? graphNode.fullLabel : graphNode.shortLabel;
+      
+      console.log(`🏷️ Toggling label for node ${node.id}: "${currentLabel}" -> "${newLabel}"`);
+      
+      // Update the node's label field
+      visualizationState.updateNode(node.id, { label: newLabel });
+      
+      // Trigger a refresh to update the display
+      try {
+        if (hydroscopeRef.current?.refreshLayout) {
+          // Use refreshLayout to force a re-conversion of the visualization state
+          await hydroscopeRef.current.refreshLayout(false);
+        }
+      } catch (err) {
+        console.error('❌ Error refreshing after label toggle:', err);
+      }
+    } else {
+      console.log('🏷️ No label toggle performed - conditions not met');
     }
   }, [visualizationState, enableCollapse, autoFit, onNodeClick, onContainerCollapse, onContainerExpand]);
 

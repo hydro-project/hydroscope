@@ -2,7 +2,7 @@
  * @fileoverview Standard graph node component
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { generateNodeColors } from '../shared/colorUtils';
 import { truncateLabel } from '../shared/textUtils';
@@ -53,7 +53,24 @@ function generateContainerColors(containerId: string, palette: string) {
 }
 
 export function StandardNode({ id, data }: NodeProps) {
+  // Click animation state
+  const [isClicked, setIsClicked] = useState(false);
+  
   const styleCfg = useStyleConfig();
+  
+  // Handle click animation
+  const handleClick = useCallback((event: React.MouseEvent) => {
+    // Trigger the visual pop-out effect
+    setIsClicked(true);
+    
+    // Reset the animation after a short duration
+    setTimeout(() => {
+      setIsClicked(false);
+    }, 200); // 200ms animation duration
+    
+    // Don't prevent the event from bubbling up to ReactFlow
+    // This ensures the onNodeClick handler still fires
+  }, []);
   
   // Check if this is a collapsed container
   const isCollapsedContainer = data.collapsed === true;
@@ -139,14 +156,18 @@ export function StandardNode({ id, data }: NodeProps) {
   // Determine which label to display for regular nodes
   // Priority: data.label (if set by toggle) > data.shortLabel > id
   const displayLabel = data.label || data.shortLabel || id;
+  
+  // Check if showing long label
+  const isShowingLongLabel = data.label === data.fullLabel && data.fullLabel && data.shortLabel && data.fullLabel !== data.shortLabel;
 
   // Regular node styling
   return (
     <div
+      onClick={handleClick}
       style={{
         padding: `${styleCfg.nodePadding ?? 12}px 16px`,
         backgroundColor: colors.primary,
-        border: `1px solid ${colors.border}`,
+        border: `2px solid ${isShowingLongLabel ? '#2563eb' : colors.border}`,
         borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
         fontSize: `${styleCfg.nodeFontSize ?? 12}px`,
         textAlign: 'center',
@@ -156,9 +177,20 @@ export function StandardNode({ id, data }: NodeProps) {
         transition: 'all 0.2s ease',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        // Click animation styles
+        transform: isClicked ? 'scale(1.05) translateY(-2px)' : 'scale(1) translateY(0px)',
+        boxShadow: isClicked 
+          ? '0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1)' 
+          : '0 2px 4px rgba(0, 0, 0, 0.05)',
+        // Z-index priority: clicked animation (20) > showing long label (10) > default (1)
+        zIndex: isClicked ? 20 : (isShowingLongLabel ? 10 : 1),
       }}
-      title={data.fullLabel ? `Click to toggle between:\n"${data.shortLabel || id}"\n"${data.fullLabel}"` : undefined}
+      title={
+        data.fullLabel && data.shortLabel && data.fullLabel !== data.shortLabel 
+          ? `Click to toggle between:\n"${data.shortLabel || id}"\n"${data.fullLabel}"`
+          : undefined
+      }
     >
       <HandlesRenderer />
       {String(displayLabel)}

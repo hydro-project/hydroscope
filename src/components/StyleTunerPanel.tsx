@@ -4,6 +4,15 @@ import { ReloadOutlined } from '@ant-design/icons';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
+// Layout algorithm options (matching ELK's available algorithms)
+const layoutOptions = {
+  'mrtree': 'MR Tree (Default)',
+  'layered': 'Layered',
+  'force': 'Force-Directed',
+  'stress': 'Stress Minimization',
+  'radial': 'Radial'
+};
+
 // Color palette options
 const paletteOptions = {
   'Set2': 'Set2',
@@ -25,6 +34,8 @@ export interface StyleTunerPanelProps {
   onChange: (next: StyleTunerPanelProps['value']) => void;
   colorPalette?: string;
   onPaletteChange?: (palette: string) => void;
+  currentLayout?: string;
+  onLayoutChange?: (layout: string) => void;
   onResetToDefaults?: () => void;
   defaultCollapsed?: boolean;
   open?: boolean;
@@ -36,6 +47,8 @@ export function StyleTunerPanel({
   onChange, 
   colorPalette = 'Set2',
   onPaletteChange,
+  currentLayout = 'layered',
+  onLayoutChange,
   onResetToDefaults,
   defaultCollapsed = false,
   open = true,
@@ -77,9 +90,24 @@ export function StyleTunerPanel({
       onClose={() => onOpenChange?.(false)}
       width={300}
       mask={false}
-      getContainer={false}
+      rootClassName="hydro-custom-drawer"
+      style={{ zIndex: 1100, height: 'auto', maxHeight: 'none', boxShadow: 'none', background: 'transparent' }}
+      bodyStyle={{ height: 'auto', maxHeight: '90vh', overflow: 'auto', background: '#fff', boxShadow: 'none' }}
     >
       <div style={{ fontSize: '12px' }}>
+        <div style={rowStyle}>
+          <label>Layout Algorithm</label>
+          <select
+            value={currentLayout}
+            style={inputStyle}
+            onChange={(e) => onLayoutChange?.(e.target.value)}
+          >
+            {Object.entries(layoutOptions).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
+
         <div style={rowStyle}>
           <label>Edge Style</label>
           <select
@@ -108,39 +136,6 @@ export function StyleTunerPanel({
         </div>
 
         <hr />
-
-        <div style={rowStyle}>
-          <label>Node Padding</label>
-          <input
-            type="range" min={4} max={32}
-            value={local.nodePadding ?? 12}
-            onChange={(e) => {
-              update({ nodePadding: parseInt(e.target.value, 10) });
-            }}
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label>Node Font Size</label>
-          <input
-            type="range" min={10} max={20}
-            value={local.nodeFontSize ?? 12}
-            onChange={(e) => {
-              update({ nodeFontSize: parseInt(e.target.value, 10) });
-            }}
-          />
-        </div>
-
-        <hr />
-
-        <div style={rowStyle}>
-          <label>Container Border Width</label>
-          <input
-            type="range" min={1} max={6}
-            value={local.containerBorderWidth ?? 2}
-            onChange={(e) => update({ containerBorderWidth: parseInt(e.target.value, 10) })}
-          />
-        </div>
 
         {/* Reset to Defaults Button */}
         <Divider style={{ margin: '16px 0 12px 0' }} />

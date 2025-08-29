@@ -212,6 +212,7 @@ export function useFlowGraphController({
 
   // Event handlers
   const onNodeClick = useCallback((event: any, node: any) => {
+    console.log('🖱️ useFlowGraphController: onNodeClick called', { nodeId: node?.id, hasEventHandlers: !!eventHandlers, hasOnNodeClick: !!eventHandlers?.onNodeClick });
     eventHandlers?.onNodeClick?.(event, node);
   }, [eventHandlers]);
 

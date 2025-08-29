@@ -15,6 +15,13 @@ export interface HydroscopeProps {
   fillViewport?: boolean;                // Fill the entire viewport
   onParsed?: (metadata: any, visualizationState: VisualizationState) => void;    // Callback with parse metadata and state
   onError?: (error: string) => void;     // Callback on parse error
+  onCollapseAll?: () => void;            // Pack/unpack callbacks
+  onExpandAll?: () => void;
+  onFitView?: () => void;                // Fit view callback
+  autoFit?: boolean;                     // Auto-fit state
+  onAutoFitToggle?: (enabled: boolean) => void; // Auto-fit toggle callback
+  onLoadFile?: () => void;               // Load file callback
+  showLoadFile?: boolean;                // Show load file button
 }
 
 export interface HydroscopeRef {
@@ -38,6 +45,13 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   fillViewport,
   onParsed,
   onError,
+  onCollapseAll,
+  onExpandAll,
+  onFitView,
+  autoFit,
+  onAutoFitToggle,
+  onLoadFile,
+  showLoadFile,
 }, ref) => {
   const flowGraphRef = React.useRef<any>(null);
   
@@ -112,6 +126,13 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
       className={className}
       style={style}
       fillViewport={fillViewport}
+      onCollapseAll={onCollapseAll}
+      onExpandAll={onExpandAll}
+      onFitView={onFitView}
+      autoFit={autoFit}
+      onAutoFitToggle={onAutoFitToggle}
+      onLoadFile={onLoadFile}
+      showLoadFile={showLoadFile}
     />
   );
 });

@@ -1,43 +1,38 @@
-  // ...existing code...
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Layout, Card, Button, message, Divider } from 'antd';
+import { Card, Button, message } from 'antd';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
 import { FileDropZone } from './FileDropZone';
-import { LayoutControls } from './LayoutControls';
 import { StyleTunerPanel } from './StyleTunerPanel';
 import { InfoPanel } from './InfoPanel';
-import { GroupingControls } from './GroupingControls';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
 import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
-import { 
-  saveToStorage, 
-  loadFromStorage, 
+import {
+  saveToStorage,
+  loadFromStorage,
   clearHydroscopeStorage,
-  STORAGE_KEYS, 
-  isStorageAvailable 
+  STORAGE_KEYS,
+  isStorageAvailable
 } from '../utils/persistence';
-
-const { Content } = Layout;
 
 export interface HydroscopeFullProps extends Omit<HydroscopeProps, 'eventHandlers' | 'onParsed'> {
   // Layout and styling
   showFileUpload?: boolean;        // Show file upload area (default: true)
   showInfoPanel?: boolean;         // Show control sidebar (default: true)
   showStylePanel?: boolean;        // Show styling sidebar (default: true)
-  
+
   // Feature toggles
   enableCollapse?: boolean;        // Enable container interaction (default: true)
   autoFit?: boolean;              // Auto-fit after operations (default: true)
-  
+
   // Initial state
   initialLayoutAlgorithm?: string; // Initial layout algorithm
   initialColorPalette?: string;    // Initial color palette
-  
+
   // Large-file support: display a generated file path to load from disk
   generatedFilePath?: string;
-  
+
   // Callbacks
   onFileUpload?: (data: any, filename: string) => void;
   onNodeClick?: (event: any, node: any, visualizationState: VisualizationState) => void;
@@ -120,20 +115,20 @@ export function HydroscopeFull({
       }));
     }
   }, [graphData]);
-  
+
   // Sync internal data state with prop changes
   useEffect(() => {
     // Sync internal data only when the prop changes; do not override local resets
     setData(initialData);
   }, [initialData]);
-  
+
   // Configuration state with persistence
   const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
   const [colorPalette, setColorPalette] = useState(persistedColorPalette);
   const [layoutAlgorithm, setLayoutAlgorithm] = useState(persistedLayoutAlgorithm);
   const [renderConfig, setRenderConfig] = useState<RenderConfig>(persistedRenderConfig);
   const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(persistedAutoFit);
-  
+
   const hydroscopeRef = useRef<HydroscopeRef>(null);
 
   // Update render config when settings change
@@ -182,7 +177,7 @@ export function HydroscopeFull({
     setColorPalette(defaultColorPalette);
     setLayoutAlgorithm(defaultLayoutAlgorithm);
     setAutoFitEnabled(defaultAutoFit);
-    
+
     // Clear persisted storage
     if (storageAvailable) {
       clearHydroscopeStorage();
@@ -199,14 +194,14 @@ export function HydroscopeFull({
   const handleParsed = useCallback((parsedMetadata: any, visState: VisualizationState) => {
     setVisualizationState(visState);
     setMetadata(parsedMetadata);
-    
+
     // Initialize collapsed containers state
-  const initialCollapsedContainers = new Set(visState.visibleContainers
+    const initialCollapsedContainers = new Set(visState.visibleContainers
       .filter(container => container.collapsed)
       .map(container => container.id));
     setCollapsedContainers(initialCollapsedContainers);
-  initialCollapsedCountRef.current = initialCollapsedContainers.size;
-    
+    initialCollapsedCountRef.current = initialCollapsedContainers.size;
+
     onParsed?.(parsedMetadata, visState);
   }, [onParsed]);
 
@@ -225,7 +220,7 @@ export function HydroscopeFull({
           setCollapsedContainers(new Set(currentCollapsed));
           smartCollapseToastShownRef.current = true;
         }
-      } catch {}
+      } catch { }
     }, 900);
     return () => clearTimeout(t);
   }, [visualizationState]);
@@ -290,14 +285,13 @@ export function HydroscopeFull({
       return;
     }
 
-    if (!enableCollapse) return;
-
-    // Built-in container collapse/expand logic
+    // Check if this is a container first
     const container = visualizationState.getContainer(node.id);
-    if (container) {
+    if (container && enableCollapse) {
+      // Built-in container collapse/expand logic
       try {
         setIsLayoutRunning(true);
-        
+
         if (container.collapsed) {
           visualizationState.expandContainer(node.id);
           onContainerExpand?.(node.id, visualizationState);
@@ -312,7 +306,7 @@ export function HydroscopeFull({
         }
 
         // Auto-fit after layout completes
-  if (autoFitEnabled && hydroscopeRef.current?.fitView) {
+        if (autoFitEnabled && hydroscopeRef.current?.fitView) {
           setTimeout(() => {
             hydroscopeRef.current?.fitView();
           }, 300);
@@ -322,24 +316,49 @@ export function HydroscopeFull({
       } finally {
         setIsLayoutRunning(false);
       }
+      return; // Exit early after handling container
+    }
+
+    // Handle regular graph node label toggle
+    const graphNode = visualizationState.getGraphNode(node.id);
+    
+    if (graphNode && graphNode.fullLabel && graphNode.shortLabel && graphNode.fullLabel !== graphNode.shortLabel) {
+      // Toggle between short and full label (only if they're actually different)
+      const currentLabel = graphNode.label || graphNode.shortLabel;
+      const isShowingShort = currentLabel === graphNode.shortLabel;
+      const newLabel = isShowingShort ? graphNode.fullLabel : graphNode.shortLabel;
+      
+      // Update the node's label field
+      visualizationState.updateNode(node.id, { label: newLabel });
+      
+      // Trigger a refresh to update the display
+      try {
+        if (hydroscopeRef.current?.refreshLayout) {
+          // Use refreshLayout to force a re-conversion of the visualization state
+          await hydroscopeRef.current.refreshLayout(false);
+        }
+      } catch (err) {
+        console.error('❌ Error refreshing after label toggle:', err);
+      }
+    } else {
     }
   }, [visualizationState, enableCollapse, autoFitEnabled, onNodeClick, onContainerCollapse, onContainerExpand]);
 
   // Pack all containers (collapse all)
   const handlePackAll = useCallback(async () => {
     if (!visualizationState) return;
-    
+
     try {
-      setIsLayoutRunning(true);      
+      setIsLayoutRunning(true);
       visualizationState.collapseAllContainers();
-      
+
       // Trigger layout refresh
       if (hydroscopeRef.current?.refreshLayout) {
         await hydroscopeRef.current.refreshLayout();
       }
 
       // Auto-fit after packing
-  if (autoFitEnabled && hydroscopeRef.current?.fitView) {
+      if (autoFitEnabled && hydroscopeRef.current?.fitView) {
         setTimeout(() => {
           hydroscopeRef.current?.fitView();
         }, 500);
@@ -354,18 +373,18 @@ export function HydroscopeFull({
   // Unpack all containers (expand all)
   const handleUnpackAll = useCallback(async () => {
     if (!visualizationState) return;
-    
+
     try {
       setIsLayoutRunning(true);
       visualizationState.expandAllContainers();
-      
+
       // Trigger layout refresh
       if (hydroscopeRef.current?.refreshLayout) {
         await hydroscopeRef.current.refreshLayout();
       }
 
       // Auto-fit after unpacking
-  if (autoFitEnabled && hydroscopeRef.current?.fitView) {
+      if (autoFitEnabled && hydroscopeRef.current?.fitView) {
         setTimeout(() => {
           hydroscopeRef.current?.fitView();
         }, 500);
@@ -392,292 +411,264 @@ export function HydroscopeFull({
 
   // Handle grouping change
   const handleGroupingChange = useCallback((newGrouping: string | undefined) => {
-    
+
     setGrouping(newGrouping);
-    
+
     // Re-create edge style config with new grouping, like vis.js handleGroupingChange
     if (graphData) {
       try {
         const parsedData = parseGraphJSON(graphData, newGrouping);
-        
+
         const renderConfig = createRenderConfig(parsedData);
-        
+
         setEdgeStyleConfig(renderConfig);
       } catch (e) {
         console.error('Failed to update render config for grouping change:', e);
       }
     }
-    
+
   }, [graphData]);
+
+  // Handle load another file
+  const handleLoadFile = useCallback(() => {
+    // Clean URL: drop any hash and ?file param
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.hash = '';
+        url.searchParams.delete('file');
+        window.history.replaceState(null, '', url.toString());
+      } catch { }
+    }
+    // Reset to file drop zone
+    setHasParsedData(false);
+    setGraphData(null);
+    setVisualizationState(null);
+    setMetadata(null);
+    setCollapsedContainers(new Set());
+    smartCollapseToastShownRef.current = false;
+    initialCollapsedCountRef.current = 0;
+    // If we have a generated file path, restore it; else clear data
+    const nextData = hydroscopeProps.generatedFilePath || null;
+    setData(nextData as any);
+    // Optional: notify and propagate config if needed
+    message.info('Ready to load another file');
+  }, [hydroscopeProps.generatedFilePath]);
 
   const layoutConfig = {
     algorithm: layoutAlgorithm as any,
-  enableSmartCollapse: true,
+    enableSmartCollapse: true,
   };
 
   const mainContentStyle: React.CSSProperties = {
-    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '600px',
+    height: '100vh',
     width: '100%',
     overflow: 'hidden',
   };
 
-  const contentStyle: React.CSSProperties = {
-    height: '100%',
+  const graphAreaStyle: React.CSSProperties = {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
+    flex: 1,
+    minHeight: '500px',
+    height: '100%',
+    width: '100%',
     overflow: 'hidden',
+    position: 'relative'
   };
-
-  const graphContainerStyle: React.CSSProperties = {
-  flex: 1,
-  minHeight: 0,
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-  };
-  
-  // Instrument the graph container size once to confirm parent-provided height
-  const graphContainerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = graphContainerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    console.log(`[HydroscopeFull] graph container size: ${Math.round(rect.width)}x${Math.round(rect.height)}`);
-  }, []);
 
   // Diagnostic: log props passed to InfoPanel and Hydroscope on each render
 
   return (
-    <Layout style={mainContentStyle}>
-      <Content style={contentStyle}>
-  {/* File Upload Area: show when no parsed data is available */}
-  {showFileUpload && !hasParsedData && (
-          <Card style={{ margin: '16px', flexShrink: 0 }}>
-            <FileDropZone
-              onFileUpload={handleFileUpload}
-              acceptedTypes={['.json']}
-      generatedFilePath={hydroscopeProps.generatedFilePath}
-            />
-          </Card>
-        )}
+    <div style={mainContentStyle}>
+      {/* File Upload Area: show when no parsed data is available */}
+      {showFileUpload && !hasParsedData && (
+        <Card style={{ flexShrink: 0 }}>
+          <FileDropZone
+            onFileUpload={handleFileUpload}
+            acceptedTypes={['.json']}
+            generatedFilePath={hydroscopeProps.generatedFilePath}
+          />
+        </Card>
+      )}
 
-        {/* Main Graph Area with horizontal layout like vis.js */}
-        {hasParsedData && data && (
-          <div ref={graphContainerRef} style={{ ...graphContainerStyle }}>
-            {/* Layout Controls - Horizontal bar above graph like vis.js */}
-            {visualizationState && (
-              <div style={{ 
-                marginBottom: '8px', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '0 16px'
-              }}>
-                <LayoutControls
-                  visualizationState={visualizationState}
-                  currentLayout={layoutAlgorithm}
-                  onLayoutChange={handleLayoutChange}
-                  onCollapseAll={handlePackAll}
-                  onExpandAll={handleUnpackAll}
-                  autoFit={autoFitEnabled}
-                  onAutoFitToggle={(enabled) => {
-                    setAutoFitEnabled(enabled);
-                    setRenderConfig(prev => ({ ...prev, fitView: enabled }));
-                  }}
-                  onFitView={() => hydroscopeRef.current?.fitView?.()}
-                />
-                {showFileUpload && (
-                  <Button
-                    onClick={() => {
-                      // Clean URL: drop any hash and ?file param
-                      if (typeof window !== 'undefined') {
-                        try {
-                          const url = new URL(window.location.href);
-                          url.hash = '';
-                          url.searchParams.delete('file');
-                          window.history.replaceState(null, '', url.toString());
-                        } catch {}
-                      }
-                      // Reset to file drop zone
-                      setHasParsedData(false);
-                      setGraphData(null);
-                      setVisualizationState(null);
-                      setMetadata(null);
-                      setCollapsedContainers(new Set());
-                      smartCollapseToastShownRef.current = false;
-                      initialCollapsedCountRef.current = 0;
-                      // If we have a generated file path, restore it; else clear data
-                      const nextData = hydroscopeProps.generatedFilePath || null;
-                      setData(nextData as any);
-                      // Optional: notify and propagate config if needed
-                      message.info('Ready to load another file');
-                    }}
-                  >
-                    Load another file
-                  </Button>
-                )}
-              </div>
-            )}
-            
-            {/* Subtle divider below layout controls */}
-            <div style={{ 
-              height: '1px', 
-              backgroundColor: '#f0f0f0', 
-              margin: '8px 16px',
-              borderRadius: '0.5px'
-            }} />
-
-            {/* Graph container with horizontal layout */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'row',
-              flex: 1,
-              minHeight: 0,
-              height: '100%',
-              overflow: 'hidden'
-            }}>
-              {/* Info Panel - Left side */}
-              {showInfoPanel && visualizationState && (
-                  <InfoPanel
-                    visualizationState={visualizationState}
-                    legendData={graphData && graphData.legend ? graphData.legend : {}}
-                    edgeStyleConfig={graphData && graphData.edgeStyleConfig ? graphData.edgeStyleConfig : undefined}
-                    hierarchyChoices={metadata?.availableGroupings || []}
-                    currentGrouping={grouping}
-                    onGroupingChange={handleGroupingChange}
-                    open={infoPanelOpen}
-                    onOpenChange={setInfoPanelOpen}
-                    onToggleContainer={async (containerId) => {
-                      try {
-                        const container = visualizationState.getContainer(containerId);
-                        if (container) {
-                          if (container.collapsed) {
-                            visualizationState.expandContainer(containerId);
-                            onContainerExpand?.(containerId, visualizationState);
-                          } else {
-                            visualizationState.collapseContainer(containerId);
-                            onContainerCollapse?.(containerId, visualizationState);
-                          }
-                          // Update collapsed containers state
-                          const newCollapsedContainers = new Set(visualizationState.visibleContainers
-                            .filter(container => container.collapsed)
-                            .map(container => container.id));
-                          setCollapsedContainers(newCollapsedContainers);
-                          if (hydroscopeRef.current?.refreshLayout) {
-                            await hydroscopeRef.current.refreshLayout();
-                          }
-                        }
-                      } catch (err) {
-                        console.error('❌ Error toggling container:', err);
-                      }
-                    }}
-                    collapsedContainers={collapsedContainers}
-                    colorPalette={colorPalette}
-                  />
-              )}
-              
-              {/* Flow Graph - Takes remaining space */}
-              <div style={{ 
-                flex: 1,
-                minHeight: 0,
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <Hydroscope
-                    ref={hydroscopeRef}
-                    data={data}
-                    grouping={grouping}
-                    config={renderConfig}
-                    layoutConfig={layoutConfig}
-                    onParsed={handleParsed}
-                    eventHandlers={{
-                      onNodeClick: handleNodeClick,
-                    }}
-                    fillViewport={false}
-                    style={{ width: '100%', height: '100%' }}
-                    {...hydroscopeProps}
-                  />
-                
-                {/* Floating Action Buttons */}
-                {/* Info Panel Button - Left */}
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  left: '12px',
-                  zIndex: 1000
-                }}>
-                  <Button
-                    type="primary"
-                    shape="circle"
-                    icon={<InfoCircleOutlined />}
-                    onClick={() => setInfoPanelOpen(true)}
-                    title="Show Info Panel"
-                    size="large"
-                    style={{ 
-                      backgroundColor: infoPanelOpen ? '#1890ff' : '#ffffff',
-                      borderColor: '#1890ff',
-                      color: infoPanelOpen ? '#ffffff' : '#1890ff',
-                      width: '56px',
-                      height: '56px',
-                      fontSize: '20px'
-                    }}
-                  />
-                </div>
-                
-                {/* Style Panel Button - Right */}
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  zIndex: 1000
-                }}>
-                  <Button
-                    type="primary"
-                    shape="circle"
-                    icon={<SettingOutlined />}
-                    onClick={() => setStylePanelOpen(true)}
-                    title="Show Style Panel"
-                    size="large"
-                    style={{ 
-                      backgroundColor: stylePanelOpen ? '#1890ff' : '#ffffff',
-                      borderColor: '#1890ff',
-                      color: stylePanelOpen ? '#ffffff' : '#1890ff',
-                      width: '56px',
-                      height: '56px',
-                      fontSize: '20px'
-                    }}
-                  />
-                </div>
-
-                {/* Style Tuner Panel - Drawer */}
-                <StyleTunerPanel
-                  open={stylePanelOpen}
-                  onOpenChange={setStylePanelOpen}
-                  value={renderConfig}
-                  onChange={(newStyles) => {
-                    const newConfig = {
-                      ...renderConfig,
-                      ...newStyles,
-                    };
-                    setRenderConfig(newConfig);
-
-                    if (visualizationState) {
-                      visualizationState.updateNodeDimensions(newConfig);
-                      hydroscopeRef.current?.refreshLayout(true); // Force relayout
+      {/* Main Graph Area with horizontal layout like vis.js */}
+      {hasParsedData && data && (
+        <div style={graphAreaStyle}>
+          {/* Info Panel - Left side */}
+          {showInfoPanel && visualizationState && (
+            <InfoPanel
+              visualizationState={visualizationState}
+              legendData={graphData && graphData.legend ? graphData.legend : {}}
+              edgeStyleConfig={graphData && graphData.edgeStyleConfig ? graphData.edgeStyleConfig : undefined}
+              hierarchyChoices={metadata?.availableGroupings || []}
+              currentGrouping={grouping}
+              onGroupingChange={handleGroupingChange}
+              open={infoPanelOpen}
+              onOpenChange={setInfoPanelOpen}
+              onToggleContainer={async (containerId) => {
+                try {
+                  const container = visualizationState.getContainer(containerId);
+                  if (container) {
+                    if (container.collapsed) {
+                      visualizationState.expandContainer(containerId);
+                      onContainerExpand?.(containerId, visualizationState);
+                    } else {
+                      visualizationState.collapseContainer(containerId);
+                      onContainerCollapse?.(containerId, visualizationState);
                     }
-                  }}
-                  colorPalette={colorPalette}
-                  onPaletteChange={setColorPalette}
-                  onResetToDefaults={handleResetToDefaults}
-                />
-              </div>
-            </div>
+                    // Update collapsed containers state
+                    const newCollapsedContainers = new Set(visualizationState.visibleContainers
+                      .filter(container => container.collapsed)
+                      .map(container => container.id));
+                    setCollapsedContainers(newCollapsedContainers);
+                    if (hydroscopeRef.current?.refreshLayout) {
+                      await hydroscopeRef.current.refreshLayout();
+                    }
+                  }
+                } catch (err) {
+                  console.error('❌ Error toggling container:', err);
+                }
+              }}
+              collapsedContainers={collapsedContainers}
+              colorPalette={colorPalette}
+            />
+          )}
+
+          {/* Hydroscope - Takes remaining space */}
+          <Hydroscope
+            ref={hydroscopeRef}
+            data={data}
+            grouping={grouping}
+            config={renderConfig}
+            layoutConfig={layoutConfig}
+            onParsed={handleParsed}
+            eventHandlers={{
+              onNodeClick: handleNodeClick,
+            }}
+            fillViewport={false}
+            style={{ 
+              flex: 1,
+              minHeight: '500px',
+              height: '100%',
+              width: '100%',
+              minWidth: '400px'
+            }}
+            onCollapseAll={handlePackAll}
+            onExpandAll={handleUnpackAll}
+            onFitView={() => hydroscopeRef.current?.fitView?.()}
+            autoFit={autoFitEnabled}
+            onAutoFitToggle={(enabled) => {
+              setAutoFitEnabled(enabled);
+              setRenderConfig(prev => ({ ...prev, fitView: enabled }));
+            }}
+            onLoadFile={showFileUpload ? handleLoadFile : undefined}
+            showLoadFile={showFileUpload}
+            {...hydroscopeProps}
+          />
+
+          {/* Floating Action Buttons */}
+          {/* Info Panel Button - Left */}
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            zIndex: 100,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+            borderRadius: '6px',
+            background: '#fff',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // border: '0px solid #444'
+          }}>
+            <Button
+              type="default"
+              icon={<InfoCircleOutlined style={{ color: '#222', fontSize: '20px' }} />}
+              onClick={() => setInfoPanelOpen(true)}
+              title="Show Info Panel"
+              size="small"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                width: '32px',
+                height: '32px',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            />
           </div>
-        )}
-      </Content>
-    </Layout>
+
+          {/* Style Panel Button - Right */}
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            zIndex: 100,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+            borderRadius: '6px',
+            background: '#fff',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // border: '1px solid #444'
+          }}>
+            <Button
+              type="default"
+              icon={<SettingOutlined style={{ color: '#222', fontSize: '20px' }} />}
+              onClick={() => setStylePanelOpen(true)}
+              title="Show Style Panel"
+              size="small"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                width: '32px',
+                height: '32px',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            />
+          </div>
+
+          {/* Style Tuner Panel - Drawer */}
+          <StyleTunerPanel
+            open={stylePanelOpen}
+            onOpenChange={setStylePanelOpen}
+            value={renderConfig}
+            onChange={(newStyles) => {
+              const newConfig = {
+                ...renderConfig,
+                ...newStyles,
+              };
+              setRenderConfig(newConfig);
+
+              if (visualizationState) {
+                visualizationState.updateNodeDimensions(newConfig);
+                hydroscopeRef.current?.refreshLayout(true); // Force relayout
+              }
+            }}
+            colorPalette={colorPalette}
+            onPaletteChange={setColorPalette}
+            currentLayout={layoutAlgorithm}
+            onLayoutChange={handleLayoutChange}
+            onResetToDefaults={handleResetToDefaults}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

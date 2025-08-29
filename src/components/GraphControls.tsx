@@ -1,8 +1,8 @@
 /**
- * Layout Controls Component for Vis System
+ * Graph Controls Component for Vis System
  * 
- * Ported from the visualizer system and adapted for the new VisualizationState architecture.
- * Provides controls for layout, color palette, container operations, and viewport management.
+ * Provides controls for container operations (collapse/expand all) and viewport management (fit view, auto fit).
+ * Layout algorithm selection has been moved to StyleTunerPanel.
  */
 
 import React from 'react';
@@ -28,19 +28,10 @@ const FitIcon = () => (
   </svg>
 );
 
-// Layout algorithm options (matching ELK's available algorithms)
-const layoutOptions = {
-  'mrtree': 'MR Tree (Default)',
-  'layered': 'Layered',
-  'force': 'Force-Directed',
-  'stress': 'Stress Minimization',
-  'radial': 'Radial'
-};
 
-export interface LayoutControlsProps {
+
+export interface GraphControlsProps {
   visualizationState: VisualizationState | null;
-  currentLayout?: string;
-  onLayoutChange?: (layout: string) => void;
   onCollapseAll?: () => void;
   onExpandAll?: () => void;
   autoFit?: boolean;
@@ -50,10 +41,8 @@ export interface LayoutControlsProps {
   style?: React.CSSProperties;
 }
 
-export function LayoutControls({
+export function GraphControls({
   visualizationState,
-  currentLayout = 'layered',
-  onLayoutChange,
   onCollapseAll,
   onExpandAll,
   autoFit = false,
@@ -61,7 +50,7 @@ export function LayoutControls({
   onFitView,
   className,
   style
-}: LayoutControlsProps): JSX.Element {
+}: GraphControlsProps): JSX.Element {
   
   // Check if there are any containers that can be collapsed/expanded
   const hasContainers = (visualizationState?.visibleContainers?.length ?? 0) > 0;
@@ -83,26 +72,7 @@ export function LayoutControls({
         ...style
       }}
     >
-      {/* Layout Algorithm Selector */}
-      <select 
-        value={currentLayout} 
-        onChange={(e) => onLayoutChange?.(e.target.value)}
-        style={{
-          padding: '4px 8px',
-          border: '1px solid #ced4da',
-          borderRadius: '4px',
-          backgroundColor: '#fff',
-          fontSize: '14px'
-        }}
-        title="Layout Algorithm"
-      >
-        {Object.entries(layoutOptions).map(([key, label]) => (
-          <option key={key} value={key}>{label}</option>
-        ))}
-      </select>
-      
       {/* Container Controls */}
-      <div style={{ width: '1px', height: '20px', backgroundColor: '#dee2e6', margin: '0 4px' }} />
       
       {/* Collapse All Button - always visible */}
       <button 
