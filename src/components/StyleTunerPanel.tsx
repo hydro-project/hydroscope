@@ -46,6 +46,7 @@ export interface StyleTunerPanelProps {
   onPaletteChange?: (palette: string) => void;
   currentLayout?: string;
   onLayoutChange?: (layout: string) => void;
+  onControlsScaleChange?: (scale: number) => void;
   onResetToDefaults?: () => void;
   defaultCollapsed?: boolean;
   open?: boolean;
@@ -59,6 +60,7 @@ export function StyleTunerPanel({
   onPaletteChange,
   currentLayout = 'layered',
   onLayoutChange,
+  onControlsScaleChange,
   onResetToDefaults,
   defaultCollapsed = false,
   open = true,
@@ -195,7 +197,16 @@ export function StyleTunerPanel({
             max="1.9"
             step="0.1"
             value={local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE}
-            onChange={(e) => update({ reactFlowControlsScale: parseFloat(e.target.value) })}
+            onChange={(e) => {
+              const newScale = parseFloat(e.target.value);
+              if (onControlsScaleChange) {
+                // Use separate callback to avoid relayout
+                onControlsScaleChange(newScale);
+              } else {
+                // Fallback to main onChange if no separate callback
+                update({ reactFlowControlsScale: newScale });
+              }
+            }}
             style={{ ...inputStyle, cursor: 'pointer' }}
             title={`Scale: ${(local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE).toFixed(1)}x`}
           />

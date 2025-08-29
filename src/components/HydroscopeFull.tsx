@@ -187,6 +187,14 @@ export function HydroscopeFull({
     }
   }, [defaultRenderConfig, defaultColorPalette, defaultLayoutAlgorithm, defaultAutoFit, storageAvailable]);
 
+  // Handle layout algorithm changes - trigger relayout when algorithm changes
+  useEffect(() => {
+    // Only refresh layout if we have a visualization state and this isn't the initial render
+    if (visualizationState && hydroscopeRef.current?.refreshLayout) {
+      hydroscopeRef.current.refreshLayout(true);
+    }
+  }, [layoutAlgorithm, visualizationState]);
+
   // Handle file upload
   const handleFileUpload = useCallback((uploadedData: any, filename: string) => {
     setData(uploadedData);
@@ -653,6 +661,14 @@ export function HydroscopeFull({
                 visualizationState.updateNodeDimensions(newConfig);
                 hydroscopeRef.current?.refreshLayout(true); // Force relayout
               }
+            }}
+            currentLayout={layoutAlgorithm}
+            onLayoutChange={(newLayout) => {
+              setLayoutAlgorithm(newLayout);
+            }}
+            colorPalette={colorPalette}
+            onPaletteChange={(newPalette) => {
+              setColorPalette(newPalette);
             }}
             onResetToDefaults={handleResetToDefaults}
           />
