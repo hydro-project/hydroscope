@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import { Card, Button, message } from 'antd';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
@@ -81,7 +81,27 @@ export function HydroscopeFull({
   const [graphData, setGraphData] = useState<any>(null); // Raw parsed JSON data like vis.js
   const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null); // Processed edge style config
   const [isLayoutRunning, setIsLayoutRunning] = useState(false);
-  const [collapsedContainers, setCollapsedContainers] = useState<Set<string>>(new Set());
+  // Derive collapsed containers from visualization state instead of maintaining separate state
+  // Force re-computation when any layout refresh happens
+  const [layoutRefreshCounter, setLayoutRefreshCounter] = useState(0);
+  const collapsedContainersFromState = useMemo(() => {
+    if (!visualizationState) return new Set<string>();
+    const collapsedSet = new Set(visualizationState.visibleContainers
+      .filter(container => container.collapsed)
+      .map(container => container.id));
+    
+    console.log('🏗️ HydroscopeFull: collapsedContainersFromState recalculated', {
+      refreshCounter: layoutRefreshCounter,
+      allContainers: visualizationState.visibleContainers.map(c => ({ 
+        id: c.id, 
+        collapsed: c.collapsed,
+        label: c.label || c.id
+      })),
+      collapsedSet: Array.from(collapsedSet)
+    });
+    
+    return collapsedSet;
+  }, [visualizationState, layoutRefreshCounter]);
   const [hasParsedData, setHasParsedData] = useState<boolean>(false);
   const initialCollapsedCountRef = useRef<number>(0);
   const smartCollapseToastShownRef = useRef<boolean>(false);
@@ -195,12 +215,9 @@ export function HydroscopeFull({
     setVisualizationState(visState);
     setMetadata(parsedMetadata);
 
-    // Initialize collapsed containers state
-    const initialCollapsedContainers = new Set(visState.visibleContainers
-      .filter(container => container.collapsed)
-      .map(container => container.id));
-    setCollapsedContainers(initialCollapsedContainers);
-    initialCollapsedCountRef.current = initialCollapsedContainers.size;
+    // Initialize collapsed containers are handled automatically by VisualizationState
+    // No need to manually track them here
+    initialCollapsedCountRef.current = visState.visibleContainers.filter(c => c.collapsed).length;
 
     onParsed?.(parsedMetadata, visState);
   }, [onParsed]);
@@ -216,8 +233,7 @@ export function HydroscopeFull({
         const collapsedCount = currentCollapsed.length;
         if (collapsedCount > initialCollapsedCountRef.current) {
           message.success(`Smart Collapse applied: ${collapsedCount} containers collapsed`);
-          // Keep InfoPanel in sync with actual collapsed state
-          setCollapsedContainers(new Set(currentCollapsed));
+          // No need to manually sync - collapsedContainersFromState will automatically update
           smartCollapseToastShownRef.current = true;
         }
       } catch { }
@@ -304,6 +320,9 @@ export function HydroscopeFull({
         if (hydroscopeRef.current?.refreshLayout) {
           await hydroscopeRef.current.refreshLayout();
         }
+
+        // Force re-computation of collapsed containers state for InfoPanel
+        setLayoutRefreshCounter(prev => prev + 1);
 
         // Auto-fit after layout completes
         if (autoFitEnabled && hydroscopeRef.current?.fitView) {
@@ -445,7 +464,7 @@ export function HydroscopeFull({
     setGraphData(null);
     setVisualizationState(null);
     setMetadata(null);
-    setCollapsedContainers(new Set());
+    // collapsedContainers will be automatically derived from visualizationState
     smartCollapseToastShownRef.current = false;
     initialCollapsedCountRef.current = 0;
     // If we have a generated file path, restore it; else clear data
@@ -510,30 +529,32 @@ export function HydroscopeFull({
               open={infoPanelOpen}
               onOpenChange={setInfoPanelOpen}
               onToggleContainer={async (containerId) => {
+                console.log('🏗️ HydroscopeFull: onToggleContainer called with', containerId);
                 try {
                   const container = visualizationState.getContainer(containerId);
+                  console.log('🏗️ HydroscopeFull: container found', { containerId, collapsed: container?.collapsed });
                   if (container) {
                     if (container.collapsed) {
+                      console.log('🏗️ HydroscopeFull: expanding container', containerId);
                       visualizationState.expandContainer(containerId);
                       onContainerExpand?.(containerId, visualizationState);
                     } else {
+                      console.log('🏗️ HydroscopeFull: collapsing container', containerId);
                       visualizationState.collapseContainer(containerId);
                       onContainerCollapse?.(containerId, visualizationState);
                     }
-                    // Update collapsed containers state
-                    const newCollapsedContainers = new Set(visualizationState.visibleContainers
-                      .filter(container => container.collapsed)
-                      .map(container => container.id));
-                    setCollapsedContainers(newCollapsedContainers);
+                    // No need to manually update collapsed containers - it's derived from visualizationState
                     if (hydroscopeRef.current?.refreshLayout) {
                       await hydroscopeRef.current.refreshLayout();
                     }
+                    // Force re-computation of collapsed containers state for InfoPanel
+                    setLayoutRefreshCounter(prev => prev + 1);
                   }
                 } catch (err) {
                   console.error('❌ Error toggling container:', err);
                 }
               }}
-              collapsedContainers={collapsedContainers}
+              collapsedContainers={collapsedContainersFromState}
               colorPalette={colorPalette}
             />
           )}

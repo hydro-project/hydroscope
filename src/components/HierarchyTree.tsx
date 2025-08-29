@@ -6,6 +6,7 @@
 
 import React, { useMemo } from 'react';
 import { Tree } from 'antd';
+import { CaretRightOutlined, CaretDownOutlined } from '@ant-design/icons';
 import type { TreeDataNode } from 'antd';
 import { HierarchyTreeProps, HierarchyTreeNode } from './types';
 import { TYPOGRAPHY } from '../shared/config';
@@ -34,9 +35,34 @@ export function HierarchyTree({
       const leafChildrenCount = Math.max(0, node.nodeCount - (node.children?.length || 0));
       const hasChildren = node.children && node.children.length > 0;
       const hasLeafChildren = leafChildrenCount > 0;
+      const isCollapsed = collapsedContainers.has(node.id);
+      
+      // For collapsed containers that have content, add a virtual child to show the expand icon
+      // For expanded containers, show real children or no children
+      let children: TreeDataNode[] | undefined = undefined;
+      
+      if (hasChildren) {
+        // Container has child containers - recurse
+        children = convertToTreeData(node.children);
+      } else if (hasLeafChildren) {
+        // Container has leaf nodes
+        if (isCollapsed) {
+          // Add virtual child to show expand icon
+          children = [{
+            key: `${node.id}__virtual__`,
+            title: `Loading...`, // This should never be visible
+            isLeaf: true,
+            style: { display: 'none' } // Hide the virtual child
+          }];
+        } else {
+          // Expanded - don't show virtual child, show nothing (leaf nodes aren't shown in tree)
+          children = undefined;
+        }
+      }
       
       // Create display title with better formatting
       let displayTitle: React.ReactNode = truncatedLabel;
+      
       if (showNodeCounts && (hasChildren || hasLeafChildren)) {
         const count = hasChildren ? node.children.length : leafChildrenCount;
         const countText = hasChildren ? `${count} containers` : `${count} nodes`;
@@ -44,9 +70,9 @@ export function HierarchyTree({
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <span style={{ 
               fontWeight: hasChildren ? '500' : '400',
-              color: COMPONENT_COLORS.TEXT_PRIMARY, // Same color for both container and leaf nodes
+              color: COMPONENT_COLORS.TEXT_PRIMARY,
               ...(hasLeafChildren && !hasChildren ? {
-                // Subtle gray background for leaf nodes instead of bullet
+                // Subtle gray background for leaf nodes
                 backgroundColor: 'rgba(0, 0, 0, 0.04)',
                 padding: '1px 4px',
                 borderRadius: '3px',
@@ -86,8 +112,8 @@ export function HierarchyTree({
       return {
         key: node.id,
         title: displayTitle,
-        children: hasChildren ? convertToTreeData(node.children) : undefined,
-        isLeaf: !hasChildren, // Explicitly mark leaf nodes
+        children: children,
+        isLeaf: !hasChildren && !hasLeafChildren, // Only true leaf nodes (no children at all)
         // Add custom properties for styling
         data: {
           originalLabel: labelToUse,
@@ -117,17 +143,52 @@ export function HierarchyTree({
     collectKeys(hierarchyTree || []);
     
     // Return keys that are NOT in collapsedContainers (i.e., expanded keys)
-    return allKeys.filter(key => !collapsedContainers.has(key));
+    const expandedKeysArray = allKeys.filter(key => !collapsedContainers.has(key));
+    
+    console.log('🌳 HierarchyTree: expandedKeys calculated', { 
+      allKeys, 
+      collapsedContainers: Array.from(collapsedContainers), 
+      expandedKeys: expandedKeysArray 
+    });
+    
+    return expandedKeysArray;
   }, [hierarchyTree, collapsedContainers]);
 
   const treeData = useMemo(() => {
-    return convertToTreeData(hierarchyTree || []);
+    const data = convertToTreeData(hierarchyTree || []);
+    console.log('🌳 HierarchyTree: treeData computed', { 
+      hierarchyTreeLength: hierarchyTree?.length, 
+      treeDataLength: data.length,
+      treeData: data.map(node => ({ key: node.key, title: node.title, children: node.children?.length }))
+    });
+    return data;
   }, [hierarchyTree, maxLabelLength, showNodeCounts, truncateLabels]);
 
   const handleExpand = (expandedKeys: React.Key[], info: any) => {
+    console.log('🌳 HierarchyTree: handleExpand called', { 
+      expandedKeys, 
+      nodeKey: info.node?.key, 
+      hasOnToggleContainer: !!onToggleContainer 
+    });
+    
     if (onToggleContainer && info.node) {
       // Ant Design expansion is the opposite of our collapse state
       const nodeKey = info.node.key as string;
+      console.log('🌳 HierarchyTree: calling onToggleContainer with', nodeKey);
+      onToggleContainer(nodeKey);
+    }
+  };
+
+  const handleSelect = (selectedKeys: React.Key[], info: any) => {
+    console.log('🌳 HierarchyTree: handleSelect called', { 
+      selectedKeys, 
+      nodeKey: info.node?.key, 
+      hasOnToggleContainer: !!onToggleContainer 
+    });
+    
+    if (onToggleContainer && info.node) {
+      const nodeKey = info.node.key as string;
+      console.log('🌳 HierarchyTree: calling onToggleContainer from select with', nodeKey);
       onToggleContainer(nodeKey);
     }
   };
@@ -161,13 +222,29 @@ export function HierarchyTree({
         </div>
       )}
       
+      <style>
+        {`
+          /* Hide virtual children in the tree */
+          .ant-tree-treenode[data-key*="__virtual__"] {
+            display: none !important;
+          }
+        `}
+      </style>
+      
       <Tree
         treeData={treeData}
         expandedKeys={expandedKeys}
         onExpand={handleExpand}
-        showLine={{ 
-          showLeafIcon: false // No leaf icons, just clean lines
+        onSelect={handleSelect}
+        switcherIcon={({ expanded, isLeaf }) => {
+          if (isLeaf) return null;
+          return expanded ? (
+            <CaretDownOutlined style={{ color: COMPONENT_COLORS.TEXT_SECONDARY, fontSize: '12px' }} />
+          ) : (
+            <CaretRightOutlined style={{ color: COMPONENT_COLORS.TEXT_SECONDARY, fontSize: '12px' }} />
+          );
         }}
+        showLine={false} // Remove lines since we have custom icons
         showIcon={false}
         blockNode
         style={{

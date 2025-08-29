@@ -498,7 +498,7 @@ testSuite('Comprehensive Visualizer Fuzz Testing', () => {
     console.log('============================================\n');
     
     // Load paxos-flipped.json as specified
-    const paxosFilePath = join(__dirname, '../test-data/paxos-flipped.json');
+    const paxosFilePath = join(__dirname, '../../test-data/paxos-flipped.json');
     const paxosJsonString = readFileSync(paxosFilePath, 'utf-8');
     
     // Validate the data first
@@ -532,7 +532,7 @@ testSuite('Comprehensive Visualizer Fuzz Testing', () => {
   
   it('should validate individual fuzz operations work correctly', async () => {
     // Load test data
-    const paxosFilePath = join(__dirname, '../test-data/paxos-flipped.json');
+    const paxosFilePath = join(__dirname, '../../test-data/paxos-flipped.json');
     const paxosJsonString = readFileSync(paxosFilePath, 'utf-8');
     const data = JSON.parse(paxosJsonString);
     
