@@ -6,7 +6,6 @@
 
 import React, { useMemo } from 'react';
 import { Tree } from 'antd';
-import { CaretRightOutlined, CaretDownOutlined } from '@ant-design/icons';
 import type { TreeDataNode } from 'antd';
 import { HierarchyTreeProps, HierarchyTreeNode } from './types';
 import { TYPOGRAPHY } from '../shared/config';
@@ -129,66 +128,40 @@ export function HierarchyTree({
 
   // Convert collapsed containers Set to expanded keys array (Ant Design uses expanded, not collapsed)
   const expandedKeys = useMemo(() => {
+    // Efficiently collect all container IDs from the hierarchy tree
     const allKeys: string[] = [];
     
     const collectKeys = (nodes: HierarchyTreeNode[]) => {
-      nodes.forEach(node => {
+      for (const node of nodes) {
         allKeys.push(node.id);
         if (node.children) {
           collectKeys(node.children);
         }
-      });
+      }
     };
     
     collectKeys(hierarchyTree || []);
     
     // Return keys that are NOT in collapsedContainers (i.e., expanded keys)
-    const expandedKeysArray = allKeys.filter(key => !collapsedContainers.has(key));
-    
-    console.log('🌳 HierarchyTree: expandedKeys calculated', { 
-      allKeys, 
-      collapsedContainers: Array.from(collapsedContainers), 
-      expandedKeys: expandedKeysArray 
-    });
-    
-    return expandedKeysArray;
+    return allKeys.filter(key => !collapsedContainers.has(key));
   }, [hierarchyTree, collapsedContainers]);
 
   const treeData = useMemo(() => {
     const data = convertToTreeData(hierarchyTree || []);
-    console.log('🌳 HierarchyTree: treeData computed', { 
-      hierarchyTreeLength: hierarchyTree?.length, 
-      treeDataLength: data.length,
-      treeData: data.map(node => ({ key: node.key, title: node.title, children: node.children?.length }))
-    });
     return data;
-  }, [hierarchyTree, maxLabelLength, showNodeCounts, truncateLabels]);
+  }, [hierarchyTree, maxLabelLength, showNodeCounts, truncateLabels, collapsedContainers]);
 
-  const handleExpand = (expandedKeys: React.Key[], info: any) => {
-    console.log('🌳 HierarchyTree: handleExpand called', { 
-      expandedKeys, 
-      nodeKey: info.node?.key, 
-      hasOnToggleContainer: !!onToggleContainer 
-    });
-    
+  const handleExpand = (expandedKeys: React.Key[], info: any) => {    
     if (onToggleContainer && info.node) {
       // Ant Design expansion is the opposite of our collapse state
       const nodeKey = info.node.key as string;
-      console.log('🌳 HierarchyTree: calling onToggleContainer with', nodeKey);
       onToggleContainer(nodeKey);
     }
   };
 
   const handleSelect = (selectedKeys: React.Key[], info: any) => {
-    console.log('🌳 HierarchyTree: handleSelect called', { 
-      selectedKeys, 
-      nodeKey: info.node?.key, 
-      hasOnToggleContainer: !!onToggleContainer 
-    });
-    
     if (onToggleContainer && info.node) {
       const nodeKey = info.node.key as string;
-      console.log('🌳 HierarchyTree: calling onToggleContainer from select with', nodeKey);
       onToggleContainer(nodeKey);
     }
   };
@@ -232,19 +205,12 @@ export function HierarchyTree({
       </style>
       
       <Tree
+        key={Array.from(collapsedContainers).sort().join(',')}
         treeData={treeData}
         expandedKeys={expandedKeys}
         onExpand={handleExpand}
         onSelect={handleSelect}
-        switcherIcon={({ expanded, isLeaf }) => {
-          if (isLeaf) return null;
-          return expanded ? (
-            <CaretDownOutlined style={{ color: COMPONENT_COLORS.TEXT_SECONDARY, fontSize: '12px' }} />
-          ) : (
-            <CaretRightOutlined style={{ color: COMPONENT_COLORS.TEXT_SECONDARY, fontSize: '12px' }} />
-          );
-        }}
-        showLine={false} // Remove lines since we have custom icons
+        showLine={false}
         showIcon={false}
         blockNode
         style={{

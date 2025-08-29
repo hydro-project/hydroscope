@@ -84,28 +84,9 @@ export function HydroscopeFull({
   // Derive collapsed containers from visualization state instead of maintaining separate state
   // Force re-computation when any layout refresh happens
   const [layoutRefreshCounter, setLayoutRefreshCounter] = useState(0);
-  const collapsedContainersFromState = useMemo(() => {
-    if (!visualizationState) return new Set<string>();
-    const collapsedSet = new Set(visualizationState.visibleContainers
-      .filter(container => container.collapsed)
-      .map(container => container.id));
-    
-    console.log('🏗️ HydroscopeFull: collapsedContainersFromState recalculated', {
-      refreshCounter: layoutRefreshCounter,
-      allContainers: visualizationState.visibleContainers.map(c => ({ 
-        id: c.id, 
-        collapsed: c.collapsed,
-        label: c.label || c.id
-      })),
-      collapsedSet: Array.from(collapsedSet)
-    });
-    
-    return collapsedSet;
-  }, [visualizationState, layoutRefreshCounter]);
   const [hasParsedData, setHasParsedData] = useState<boolean>(false);
   const initialCollapsedCountRef = useRef<number>(0);
-  const smartCollapseToastShownRef = useRef<boolean>(false);
-
+  
   // Drawer states
   const [infoPanelOpen, setInfoPanelOpen] = useState(false); // Start collapsed
   const [stylePanelOpen, setStylePanelOpen] = useState(false); // Start collapsed
@@ -215,31 +196,17 @@ export function HydroscopeFull({
     setVisualizationState(visState);
     setMetadata(parsedMetadata);
 
+    // Set the grouping to the selectedGrouping from parsing
+    if (parsedMetadata?.selectedGrouping) {
+      setGrouping(parsedMetadata.selectedGrouping);
+    }
+
     // Initialize collapsed containers are handled automatically by VisualizationState
     // No need to manually track them here
-    initialCollapsedCountRef.current = visState.visibleContainers.filter(c => c.collapsed).length;
+    initialCollapsedCountRef.current = visState.getCollapsedContainers().length;
 
     onParsed?.(parsedMetadata, visState);
   }, [onParsed]);
-
-  // Show a small toast once if Smart Collapse collapsed any containers on initial layout
-  useEffect(() => {
-    if (!visualizationState || smartCollapseToastShownRef.current) return;
-    const t = setTimeout(() => {
-      try {
-        const currentCollapsed = visualizationState.visibleContainers
-          .filter(c => c.collapsed)
-          .map(c => c.id);
-        const collapsedCount = currentCollapsed.length;
-        if (collapsedCount > initialCollapsedCountRef.current) {
-          message.success(`Smart Collapse applied: ${collapsedCount} containers collapsed`);
-          // No need to manually sync - collapsedContainersFromState will automatically update
-          smartCollapseToastShownRef.current = true;
-        }
-      } catch { }
-    }, 900);
-    return () => clearTimeout(t);
-  }, [visualizationState]);
 
   // Initialize graph data and edge style config when data first loads
   useEffect(() => {
@@ -465,7 +432,6 @@ export function HydroscopeFull({
     setVisualizationState(null);
     setMetadata(null);
     // collapsedContainers will be automatically derived from visualizationState
-    smartCollapseToastShownRef.current = false;
     initialCollapsedCountRef.current = 0;
     // If we have a generated file path, restore it; else clear data
     const nextData = hydroscopeProps.generatedFilePath || null;
@@ -526,20 +492,17 @@ export function HydroscopeFull({
               hierarchyChoices={metadata?.availableGroupings || []}
               currentGrouping={grouping}
               onGroupingChange={handleGroupingChange}
+              collapsedContainers={new Set(visualizationState.getCollapsedContainers().map(c => c.id))}
               open={infoPanelOpen}
               onOpenChange={setInfoPanelOpen}
               onToggleContainer={async (containerId) => {
-                console.log('🏗️ HydroscopeFull: onToggleContainer called with', containerId);
                 try {
                   const container = visualizationState.getContainer(containerId);
-                  console.log('🏗️ HydroscopeFull: container found', { containerId, collapsed: container?.collapsed });
                   if (container) {
                     if (container.collapsed) {
-                      console.log('🏗️ HydroscopeFull: expanding container', containerId);
                       visualizationState.expandContainer(containerId);
                       onContainerExpand?.(containerId, visualizationState);
                     } else {
-                      console.log('🏗️ HydroscopeFull: collapsing container', containerId);
                       visualizationState.collapseContainer(containerId);
                       onContainerCollapse?.(containerId, visualizationState);
                     }
@@ -554,7 +517,6 @@ export function HydroscopeFull({
                   console.error('❌ Error toggling container:', err);
                 }
               }}
-              collapsedContainers={collapsedContainersFromState}
               colorPalette={colorPalette}
             />
           )}

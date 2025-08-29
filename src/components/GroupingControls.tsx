@@ -99,14 +99,8 @@ export function GroupingControls({
         options={selectOptions}
         size="small"
         style={selectStyle}
-        styles={{
-          popup: {
-            root: {
-              fontSize: compact ? '9px' : '10px',
-            }
-          }
-        }}
         popupMatchSelectWidth={true}
+        getPopupContainer={(triggerNode) => triggerNode.parentNode}
       />
     </div>
   );

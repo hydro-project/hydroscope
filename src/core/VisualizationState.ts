@@ -277,6 +277,14 @@ export class VisualizationState {
   }
 
   /**
+   * Get collapsed containers (safe read-only access)
+   * Bridges should ONLY use this method, never access internal maps directly
+   */
+  getCollapsedContainers(): ReadonlyArray<any> {
+    return Array.from(this._collections.collapsedContainers.values());
+  }
+
+  /**
    * Container hierarchy access (backwards compatibility)
    */
   getContainerChildren(containerId: string): ReadonlySet<string> {

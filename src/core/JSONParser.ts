@@ -254,18 +254,20 @@ export function getAvailableGroupings(jsonData: RawGraphData | string): Grouping
   
   // Check for new format (hierarchyChoices)
   if (data.hierarchyChoices && Array.isArray(data.hierarchyChoices)) {
-    return data.hierarchyChoices.map(choice => ({
+    const groupings = data.hierarchyChoices.map(choice => ({
       id: choice.id,
       name: choice.name || choice.id
     }));
+    return groupings;
   }
   
   // Check for old format (hierarchies)
   if (data.hierarchies && Array.isArray(data.hierarchies)) {
-    return data.hierarchies.map(hierarchy => ({
+    const groupings = data.hierarchies.map(hierarchy => ({
       id: hierarchy.id,
       name: hierarchy.name || hierarchy.id
     }));
+    return groupings;
   }
   
   return [];
