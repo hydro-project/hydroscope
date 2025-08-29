@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
+import { LAYOUT_CONSTANTS } from '../shared/config';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
@@ -30,6 +31,7 @@ export interface StyleTunerPanelProps {
     nodePadding?: number;
     nodeFontSize?: number;
     containerBorderWidth?: number;
+    reactFlowControlsScale?: number;
   };
   onChange: (next: {
     edgeStyle?: EdgeStyleKind;
@@ -38,6 +40,7 @@ export interface StyleTunerPanelProps {
     nodePadding?: number;
     nodeFontSize?: number;
     containerBorderWidth?: number;
+    reactFlowControlsScale?: number;
   }) => void;
   colorPalette?: string;
   onPaletteChange?: (palette: string) => void;
@@ -183,6 +186,19 @@ export function StyleTunerPanel({
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
+        </div>
+        <div style={rowStyle}>
+          <label>Controls Scale</label>
+          <input
+            type="range"
+            min="0.8"
+            max="1.9"
+            step="0.1"
+            value={local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE}
+            onChange={(e) => update({ reactFlowControlsScale: parseFloat(e.target.value) })}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+            title={`Scale: ${(local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE).toFixed(1)}x`}
+          />
         </div>
         <Divider style={{ margin: '16px 0 12px 0' }} />
         <Button 

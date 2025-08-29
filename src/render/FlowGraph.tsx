@@ -33,6 +33,7 @@ export interface FlowGraphProps {
   onAutoFitToggle?: (enabled: boolean) => void; // Auto-fit toggle callback
   onLoadFile?: () => void; // Load file callback
   showLoadFile?: boolean; // Show load file button
+  reactFlowControlsScale?: number; // Controls scale factor
 }
 
 export interface FlowGraphRef {
@@ -55,7 +56,8 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
   autoFit = false,
   onAutoFitToggle,
   onLoadFile,
-  showLoadFile = false
+  showLoadFile = false,
+  reactFlowControlsScale
 }, ref) => {
   const {
     reactFlowData,
@@ -243,6 +245,7 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
               onLoadFile={onLoadFile}
               showLoadFile={showLoadFile}
               position="bottom-left"
+              reactFlowControlsScale={reactFlowControlsScale}
             />
           )}
           {config.enableMiniMap !== false && (

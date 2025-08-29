@@ -22,6 +22,7 @@ export interface HydroscopeProps {
   onAutoFitToggle?: (enabled: boolean) => void; // Auto-fit toggle callback
   onLoadFile?: () => void;               // Load file callback
   showLoadFile?: boolean;                // Show load file button
+  reactFlowControlsScale?: number;       // Controls scale factor
 }
 
 export interface HydroscopeRef {
@@ -52,6 +53,7 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   onAutoFitToggle,
   onLoadFile,
   showLoadFile,
+  reactFlowControlsScale,
 }, ref) => {
   const flowGraphRef = React.useRef<any>(null);
   
@@ -133,6 +135,7 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
       onAutoFitToggle={onAutoFitToggle}
       onLoadFile={onLoadFile}
       showLoadFile={showLoadFile}
+      reactFlowControlsScale={reactFlowControlsScale}
     />
   );
 });

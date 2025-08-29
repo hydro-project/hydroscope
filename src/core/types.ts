@@ -177,6 +177,7 @@ export interface RenderConfig {
   containerBorderRadius?: number;
   containerBorderWidth?: number;
   containerShadow?: 'LIGHT' | 'MEDIUM' | 'LARGE' | 'NONE';
+  reactFlowControlsScale?: number;
 }
 
 export interface FlowGraphEventHandlers {

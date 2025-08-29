@@ -8,6 +8,7 @@ import { InfoPanel } from './InfoPanel';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
 import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
+import { LAYOUT_CONSTANTS } from '../shared/config';
 import {
   saveToStorage,
   loadFromStorage,
@@ -94,7 +95,8 @@ export function HydroscopeFull({
   // Default values for reset functionality
   const defaultRenderConfig = {
     ...hydroscopeProps.config,
-    edgeStyleConfig: (initialData && typeof initialData === 'object' && (initialData as any).edgeStyleConfig) || undefined
+    edgeStyleConfig: (initialData && typeof initialData === 'object' && (initialData as any).edgeStyleConfig) || undefined,
+    reactFlowControlsScale: LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE
   };
   const defaultColorPalette = initialColorPalette;
   const defaultLayoutAlgorithm = initialLayoutAlgorithm;
@@ -533,6 +535,7 @@ export function HydroscopeFull({
               onNodeClick: handleNodeClick,
             }}
             fillViewport={false}
+            reactFlowControlsScale={renderConfig.reactFlowControlsScale}
             style={{ 
               flex: 1,
               minHeight: '500px',
@@ -638,6 +641,7 @@ export function HydroscopeFull({
               nodePadding?: number;
               nodeFontSize?: number;
               containerBorderWidth?: number;
+              reactFlowControlsScale?: number;
             }) => {
               const newConfig = {
                 ...renderConfig,
@@ -650,6 +654,7 @@ export function HydroscopeFull({
                 hydroscopeRef.current?.refreshLayout(true); // Force relayout
               }
             }}
+            onResetToDefaults={handleResetToDefaults}
           />
         </div>
       )}

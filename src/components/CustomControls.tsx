@@ -1,12 +1,19 @@
 /**
  * Custom ReactFlow Controls with Pack/Unpack buttons
  * 
- * Extends ReactFlow's default zoom controls to include container pack/unpack functionality
+ * Extends ReactFlow's }: CustomControlsProps) {
+  const standardControlsRef = useRef<HTMLDivElement>(null);
+  const [standardControlsHeight, setStandardControlsHeight] = useState(0); // No fallback - will be calculated
+  
+  // Scale factors - use prop if provided, otherwise fall back to shared config
+  const standardControlsScale = reactFlowControlsScale ?? LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE;
+  const customControlsScale = standardControlsScale * 1.04; // Slightly larger than standard controls zoom controls to include container pack/unpack functionality
  */
 
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Controls, ControlButton } from '@xyflow/react';
 import type { VisualizationState } from '../core/VisualizationState';
+import { LAYOUT_CONSTANTS } from '../shared/config';
 
 // SVG Icons for pack/unpack operations (same as GraphControls)
 const PackIcon = () => (
@@ -67,6 +74,7 @@ export interface CustomControlsProps {
   onLoadFile?: () => void;
   showLoadFile?: boolean;
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  reactFlowControlsScale?: number;
 }
 
 export function CustomControls({
@@ -79,8 +87,16 @@ export function CustomControls({
   onAutoFitToggle,
   onLoadFile,
   showLoadFile = false,
-  position = 'bottom-left'
+  position = 'bottom-left',
+  reactFlowControlsScale
 }: CustomControlsProps) {
+  const standardControlsRef = useRef<HTMLDivElement>(null);
+  const [standardControlsHeight, setStandardControlsHeight] = useState(40); // fallback value - much lower to test
+  
+  // Scale factors - use prop if provided, otherwise fall back to shared config
+  const standardControlsScale = reactFlowControlsScale ?? LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE;
+  const customControlsScale = standardControlsScale * 1.0; // Sae size as standard controls for now
+
   // Check if there are any containers that can be collapsed/expanded
   const hasContainers = (visualizationState?.visibleContainers?.length ?? 0) > 0;
   const hasCollapsedContainers = visualizationState?.visibleContainers?.some(container => container.collapsed) ?? false;
@@ -89,19 +105,97 @@ export function CustomControls({
   // Calculate if we have any custom controls to show
   const hasCustomControls = showPackUnpack || onFitView || onAutoFitToggle || showLoadFile;
 
+  // Dynamically measure the standard controls height
+  useEffect(() => {
+    const updateHeight = () => {
+      if (standardControlsRef.current) {
+        // Try to find the actual controls container within the ReactFlow Controls
+        const controlsContainer = standardControlsRef.current.querySelector('.react-flow__controls');
+        const elementToMeasure = controlsContainer || standardControlsRef.current;
+        
+        const rect = elementToMeasure.getBoundingClientRect();
+        const baseHeight = rect.height;
+        
+        // Use the actual measured height directly (no scaling needed)
+        const finalHeight = baseHeight;
+        
+        // Only update if we got a reasonable height measurement
+        if (baseHeight > 0 && baseHeight < 200) { // Sanity check
+          setStandardControlsHeight(finalHeight);
+        }
+      } else {
+        console.log('📏 CustomControls: standardControlsRef not available yet');
+      }
+    };
+
+    // Delay initial measurement to ensure DOM is ready
+    const timeoutId = setTimeout(updateHeight, 100);
+
+    // Create a ResizeObserver to watch for changes
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updateHeight();
+      });
+      
+      // Only observe if ref is available
+      if (standardControlsRef.current) {
+        resizeObserver.observe(standardControlsRef.current);
+      }
+    }
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [hasCustomControls, standardControlsScale]); // Re-run when custom controls visibility changes OR scale changes
+
   return (
     <>
-      {/* Custom Controls - positioned directly above standard controls */}
+      {/* Custom Controls - positioned dynamically above standard controls */}
       {hasCustomControls && (
         <div
           style={{
             position: 'absolute',
-            top: '50%', // Vertically center
+            bottom: `${standardControlsHeight}px`, // Dynamic positioning based on standard controls height
             left: '0px', // Same left alignment as standard controls
-            zIndex: 5
+            zIndex: 10,
+            // Add shadow back to custom controls
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+            borderRadius: '6px',
+            backgroundColor: 'white'
           }}
         >
-          <Controls showZoom={false} showFitView={false} showInteractive={false} style={{ transform: 'scale(1.35)', transformOrigin: 'left bottom' }}>
+          <Controls showZoom={false} showFitView={false} showInteractive={false} style={{ 
+            transform: `scale(${customControlsScale})`, 
+            transformOrigin: 'left bottom',
+            borderRadius: '6px'
+          }}>
+            {/* Auto Fit Toggle Button - always show when callback provided */}
+            {onAutoFitToggle && (
+              <ControlButton
+                onClick={() => onAutoFitToggle(!autoFit)}
+                title={autoFit ? "Auto-fit enabled: Automatically fits view after layout changes" : "Auto-fit disabled: Click to enable automatic view fitting"}
+                style={{
+                  backgroundColor: autoFit ? 'rgba(59, 130, 246, 0.1)' : undefined,
+                  borderColor: autoFit ? '#3b82f6' : undefined
+                }}
+              >
+                <AutoFitIcon enabled={autoFit} />
+              </ControlButton>
+            )}
+            {/* Fit View Button - always show when callback provided */}
+            {onFitView && (
+              <ControlButton
+                onClick={onFitView}
+                title="Fit graph to viewport"
+              >
+                <FitIcon />
+              </ControlButton>
+            )}
             {/* Load File Button - at the top when enabled */}
             {showLoadFile && onLoadFile && (
               <ControlButton
@@ -144,33 +238,19 @@ export function CustomControls({
                 </ControlButton>
               </>
             )}
-            {/* Fit View Button - always show when callback provided */}
-            {onFitView && (
-              <ControlButton
-                onClick={onFitView}
-                title="Fit graph to viewport"
-              >
-                <FitIcon />
-              </ControlButton>
-            )}
-            {/* Auto Fit Toggle Button - always show when callback provided */}
-            {onAutoFitToggle && (
-              <ControlButton
-                onClick={() => onAutoFitToggle(!autoFit)}
-                title={autoFit ? "Auto-fit enabled: Automatically fits view after layout changes" : "Auto-fit disabled: Click to enable automatic view fitting"}
-                style={{
-                  backgroundColor: autoFit ? 'rgba(59, 130, 246, 0.1)' : undefined,
-                  borderColor: autoFit ? '#3b82f6' : undefined
-                }}
-              >
-                <AutoFitIcon enabled={autoFit} />
-              </ControlButton>
-            )}
           </Controls>
         </div>
       )}
-      {/* Standard ReactFlow Controls - at the bottom in their usual position */}
-      <Controls position={position} style={{ transform: 'scale(1.3)', transformOrigin: 'left bottom' }} />
+      
+      {/* Standard ReactFlow Controls - at the bottom */}
+      <div ref={standardControlsRef}>
+        <Controls position={position} style={{ 
+          transform: `scale(${standardControlsScale})`, 
+          transformOrigin: 'left bottom',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Restore shadow to standard controls
+          borderRadius: '6px'
+        }} />
+      </div>
     </>
   );
 }

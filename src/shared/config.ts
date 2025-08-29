@@ -78,6 +78,9 @@ export const LAYOUT_CONSTANTS = {
   // Validation and warning thresholds
   MAX_HYPEREDGE_WARNINGS: 10,           // Maximum hyperEdge warnings before summary
   
+  // ReactFlow controls scaling
+  REACTFLOW_CONTROLS_SCALE: 1.3,        // Scale factor for ReactFlow control buttons
+  
   // Large container detection thresholds (derived from base constants)
   get LARGE_CONTAINER_WIDTH_THRESHOLD() { 
     return this.MIN_CONTAINER_WIDTH * 1.5; // 300 (1.5x minimum width)
