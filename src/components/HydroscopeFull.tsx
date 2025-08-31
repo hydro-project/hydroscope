@@ -4,7 +4,7 @@ import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
 import { FileDropZone } from './FileDropZone';
 import { StyleTunerPanel } from './StyleTunerPanel';
-import { InfoPanel } from './InfoPanel';
+import { InfoPanel, type InfoPanelRef } from './InfoPanel';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
 import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
@@ -133,6 +133,12 @@ export function HydroscopeFull({
   const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(persistedAutoFit);
 
   const hydroscopeRef = useRef<HydroscopeRef>(null);
+  const infoPanelRef = useRef<InfoPanelRef>(null);
+
+  // Search highlight state (mirrors InfoPanel search)
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchMatches, setSearchMatches] = useState<Array<{ id: string; label: string; type: 'container' | 'node' }>>([]);
+  const [currentSearchMatchId, setCurrentSearchMatchId] = useState<string | undefined>(undefined);
 
   // Update render config when settings change
   useEffect(() => {
@@ -173,6 +179,19 @@ export function HydroscopeFull({
       saveToStorage(STORAGE_KEYS.AUTO_FIT, autoFitEnabled);
     }
   }, [autoFitEnabled, storageAvailable]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        infoPanelRef.current?.focusSearch();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Reset to defaults function
   const handleResetToDefaults = useCallback(() => {
@@ -493,9 +512,10 @@ export function HydroscopeFull({
       {/* Main Graph Area with horizontal layout like vis.js */}
       {hasParsedData && data && (
         <div style={graphAreaStyle}>
-          {/* Info Panel - Left side */}
+          {/* Info Panel - Right side */}
           {showInfoPanel && visualizationState && (
             <InfoPanel
+              ref={infoPanelRef}
               visualizationState={visualizationState}
               legendData={graphData && graphData.legend ? graphData.legend : {}}
               edgeStyleConfig={graphData && graphData.edgeStyleConfig ? graphData.edgeStyleConfig : undefined}
@@ -505,6 +525,11 @@ export function HydroscopeFull({
               collapsedContainers={new Set(visualizationState.getCollapsedContainers().map(c => c.id))}
               open={infoPanelOpen}
               onOpenChange={setInfoPanelOpen}
+              onSearchUpdate={(q, matches, current) => {
+                setSearchQuery(q);
+                setSearchMatches(matches);
+                setCurrentSearchMatchId(current?.id);
+              }}
               onToggleContainer={async (containerId) => {
                 try {
                   const container = visualizationState.getContainer(containerId);
@@ -561,80 +586,85 @@ export function HydroscopeFull({
             }}
             onLoadFile={showFileUpload ? handleLoadFile : undefined}
             showLoadFile={showFileUpload}
+            // search highlight props
+            searchQuery={searchQuery}
+            searchMatches={searchMatches}
+            currentSearchMatchId={currentSearchMatchId}
             {...hydroscopeProps}
           />
 
           {/* Floating Action Buttons */}
-          {/* Info Panel Button - Left */}
-          <div style={{
-            position: 'absolute',
-            top: '16px',
-            left: '16px',
-            zIndex: 100,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-            borderRadius: '1px',
-            background: '#fff',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            // border: '0px solid #444'
-          }}>
-            <Button
-              type="default"
-              icon={<InfoCircleOutlined style={{ color: '#222', fontSize: '20px' }} />}
-              onClick={() => setInfoPanelOpen(true)}
-              title="Show Info Panel"
-              size="small"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                width: '32px',
-                height: '32px',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            />
-          </div>
-
-          {/* Style Panel Button - Right */}
+          {/* Control Buttons - Right side vertically stacked */}
           <div style={{
             position: 'absolute',
             top: '16px',
             right: '16px',
             zIndex: 100,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-            borderRadius: '1px',
-            background: '#fff',
-            width: '40px',
-            height: '40px',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            // border: '1px solid #444'
+            flexDirection: 'column',
+            gap: '8px'
           }}>
-            <Button
-              type="default"
-              icon={<SettingOutlined style={{ color: '#222', fontSize: '20px' }} />}
-              onClick={() => setStylePanelOpen(true)}
-              title="Show Style Panel"
-              size="small"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                width: '32px',
-                height: '32px',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            />
+            {/* Info Panel Button */}
+            <div style={{
+              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              borderRadius: '1px',
+              background: '#fff',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Button
+                type="default"
+                icon={<InfoCircleOutlined style={{ color: '#222', fontSize: '20px' }} />}
+                onClick={() => setInfoPanelOpen(true)}
+                title="Show Info Panel"
+                size="small"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  width: '32px',
+                  height: '32px',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              />
+            </div>
+
+            {/* Style Panel Button */}
+            <div style={{
+              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              borderRadius: '1px',
+              background: '#fff',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Button
+                type="default"
+                icon={<SettingOutlined style={{ color: '#222', fontSize: '20px' }} />}
+                onClick={() => setStylePanelOpen(true)}
+                title="Show Style Panel"
+                size="small"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  width: '32px',
+                  height: '32px',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              />
+            </div>
           </div>
 
           {/* Style Tuner Panel - Drawer */}

@@ -13,6 +13,13 @@ export function ContainerNode({ id, data }: NodeProps) {
   const width = data.width || 180;
   const height = data.height || (data.collapsed ? 100 : 120);
 
+  // DEBUG: Log all ContainerNode renders with search highlight status
+  const searchHighlight = (data as any).searchHighlight;
+  const searchHighlightStrong = (data as any).searchHighlightStrong;
+  if (searchHighlight || searchHighlightStrong) {
+    console.log(`🔍 ContainerNode ${id} RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, data:`, data);
+  }
+
   const colorPalette = String(data.colorPalette || 'Set3');
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
@@ -56,9 +63,23 @@ export function ContainerNode({ id, data }: NodeProps) {
   };
 
   if (data.collapsed) {
+    console.log(`🔍 ContainerNode ${id} COLLAPSED RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, label="${data.label}"`);
     const containerColors = generateContainerColors(id, colorPalette);
     return (
-      <div
+      <>
+        <style>
+          {`
+            @keyframes searchPulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.02); }
+            }
+            @keyframes searchPulseStrong {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+          `}
+        </style>
+        <div
         style={{
           width: `${width}px`,
           height: `${height}px`,
@@ -72,15 +93,26 @@ export function ContainerNode({ id, data }: NodeProps) {
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow:
-            styleCfg.containerShadow === 'NONE'
-              ? 'none'
-              : styleCfg.containerShadow === 'LARGE'
-              ? '0 10px 15px -3px rgba(0,0,0,0.2)'
-              : styleCfg.containerShadow === 'MEDIUM'
-              ? '0 4px 6px -1px rgba(0,0,0,0.15)'
-              : '0 2px 8px rgba(0,0,0,0.15)',
-          transition: 'all 0.2s ease'
+          boxShadow: (() => {
+            if (searchHighlightStrong) {
+              return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
+            } else if (searchHighlight) {
+              return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+            } else {
+              return styleCfg.containerShadow === 'NONE'
+                ? 'none'
+                : styleCfg.containerShadow === 'LARGE'
+                ? '0 10px 15px -3px rgba(0,0,0,0.2)'
+                : styleCfg.containerShadow === 'MEDIUM'
+                ? '0 4px 6px -1px rgba(0,0,0,0.15)'
+                : '0 2px 8px rgba(0,0,0,0.15)';
+            }
+          })(),
+          transition: 'all 0.2s ease',
+          // Add subtle animation for search highlights
+          animation: searchHighlight 
+            ? (searchHighlightStrong ? 'searchPulseStrong 2s ease-in-out infinite' : 'searchPulse 3s ease-in-out infinite')
+            : undefined,
         }}
       >
         <HandlesRenderer />
@@ -104,23 +136,51 @@ export function ContainerNode({ id, data }: NodeProps) {
           {nodeCount} node{nodeCount !== 1 ? 's' : ''}
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div
-      style={{
-        padding: `${Math.max((styleCfg.nodePadding ?? 12) + 4, 8)}px`,
-        background: 'rgba(25, 118, 210, 0.1)',
-        border: `${styleCfg.containerBorderWidth ?? 2}px solid #1976d2`,
-        borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
-        width: `${width}px`,
-        height: `${height}px`,
-        position: 'relative',
-        boxSizing: 'border-box',
-        cursor: 'pointer'
-      }}
-    >
+    <>
+      <style>
+        {`
+          @keyframes searchPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+          }
+          @keyframes searchPulseStrong {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}
+      </style>
+      <div
+        style={{
+          padding: `${Math.max((styleCfg.nodePadding ?? 12) + 4, 8)}px`,
+          background: 'rgba(25, 118, 210, 0.1)',
+          border: `${styleCfg.containerBorderWidth ?? 2}px solid #1976d2`,
+          borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
+          width: `${width}px`,
+          height: `${height}px`,
+          position: 'relative',
+          boxSizing: 'border-box',
+          cursor: 'pointer',
+          boxShadow: (() => {
+            if (searchHighlightStrong) {
+              return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
+            } else if (searchHighlight) {
+              return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+            } else {
+              return 'none';
+            }
+          })(),
+          transition: 'all 0.2s ease',
+          // Add subtle animation for search highlights
+          animation: searchHighlight 
+            ? (searchHighlightStrong ? 'searchPulseStrong 2s ease-in-out infinite' : 'searchPulse 3s ease-in-out infinite')
+            : undefined,
+        }}
+      >
       <HandlesRenderer />
       <div
         style={{
@@ -143,6 +203,7 @@ export function ContainerNode({ id, data }: NodeProps) {
         {truncateLabel(containerLabel, { maxLength: Math.floor((Number(width) - 36) / 8), preferDelimiters: true, leftTruncate: false })}
       </div>
     </div>
+    </>
   );
 }
 

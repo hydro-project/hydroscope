@@ -59,11 +59,8 @@ export interface InfoPanelProps extends BaseComponentProps {
 
 export interface HierarchyTreeNode {
   id: string;
-  label: string;
-  shortLabel?: string; // Optional for backward compatibility
   children: HierarchyTreeNode[];
-  nodeCount: number;
-  isCollapsed?: boolean;
+  // Removed: label, shortLabel, nodeCount - these come from visualizationState
 }
 
 export interface HierarchyTreeProps extends BaseComponentProps {

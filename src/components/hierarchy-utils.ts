@@ -15,50 +15,33 @@ export function buildHierarchyTree(visualizationState: any, grouping: string = '
     return [];
   }
 
-  // Get all visible containers and build a map
+  // Get all visible containers and build parent relationships
   const containers = visualizationState.visibleContainers || [];
-  const containerMap = new Map<string, {
-    id: string;
-    label: string;
-    children: HierarchyTreeNode[];
-    nodeCount: number;
-    parentId: string | null;
-  }>();
+  const parentMap = new Map<string, string>();
 
-  // Build initial container map with parent relationships
+  // Build parent relationships by scanning container children  
   containers.forEach((container: any) => {
-    // Find parent by checking which container has this container as a child
-    let parentId: string | null = null;
-    for (const potentialParent of containers) {
-      if (potentialParent.id !== container.id && 
-          potentialParent.children && 
-          potentialParent.children.has && 
-          potentialParent.children.has(container.id)) {
-        parentId = potentialParent.id;
-        break;
-      }
+    const children = visualizationState.getContainerChildren?.(container.id);
+    if (children) {
+      children.forEach((childId: string) => {
+        const childContainer = visualizationState.getContainer?.(childId);
+        if (childContainer) {
+          parentMap.set(childId, container.id);
+        }
+      });
     }
-    
-    containerMap.set(container.id, {
-      id: container.id,
-      label: (container as any).data?.label || (container as any).label || container.id,
-      children: [],
-      nodeCount: container.children ? container.children.size : 0,
-      parentId: parentId,
-    });
   });
 
   // Recursively build tree structure 
   const buildTree = (parentId: string | null): HierarchyTreeNode[] => {
     const children: HierarchyTreeNode[] = [];
-    for (const container of containerMap.values()) {
-      if (container.parentId === parentId) {
+    for (const container of containers) {
+      const containerParent = parentMap.get(container.id) || null;
+      if (containerParent === parentId) {
         const grandchildren = buildTree(container.id);
         children.push({
           id: container.id,
-          label: container.label,
           children: grandchildren,
-          nodeCount: container.nodeCount
         });
       }
     }

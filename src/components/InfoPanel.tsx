@@ -5,7 +5,7 @@
  * with collapsible sections for organizing the interface.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Button } from 'antd';
 import { InfoPanelProps, HierarchyTreeNode, LegendData } from './types';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -13,9 +13,19 @@ import { GroupingControls } from './GroupingControls';
 import { HierarchyTree } from './HierarchyTree';
 import { Legend } from './Legend';
 import { EdgeStyleLegend } from './EdgeStyleLegend';
+import { SearchControls, type SearchMatch, type SearchControlsRef } from './SearchControls';
 import { COMPONENT_COLORS, TYPOGRAPHY } from '../shared/config';
 
-export function InfoPanel({
+export interface InfoPanelRef {
+  focusSearch: () => void;
+  clearSearch: () => void;
+}
+
+export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & { 
+  open?: boolean; 
+  onOpenChange?: (open: boolean) => void; 
+  onSearchUpdate?: (query: string, matches: SearchMatch[], current?: SearchMatch) => void 
+}>(({
   visualizationState,
   legendData,
   edgeStyleConfig,
@@ -29,11 +39,22 @@ export function InfoPanel({
   className = '',
   style,
   open = true,
-  onOpenChange
-}: InfoPanelProps & { open?: boolean; onOpenChange?: (open: boolean) => void }) {
+  onOpenChange,
+  onSearchUpdate
+}, ref) => {
   const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
   const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
   const [groupingCollapsed, setGroupingCollapsed] = useState(false);
+  // Search state (containers-only to start)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
+  const [currentSearchMatch, setCurrentSearchMatch] = useState<SearchMatch | undefined>(undefined);
+  const searchControlsRef = useRef<SearchControlsRef>(null);
+
+  useImperativeHandle(ref, () => ({
+    focusSearch: () => searchControlsRef.current?.focus(),
+    clearSearch: () => searchControlsRef.current?.clear(),
+  }));
 
   // Get default legend data if none provided
   const defaultLegendData: LegendData = {
@@ -74,58 +95,50 @@ export function InfoPanel({
   // Get the current grouping name for the section title
   const currentGroupingName = safeHierarchyChoices.find(choice => choice.id === currentGrouping)?.name || 'Container';
 
-    // Build hierarchy tree structure from visualization state
-  const hierarchyTree = useMemo((): HierarchyTreeNode[] => {
-    if (!visualizationState) {
-      return [];
-    }
+  // Index all containers (including nested, even if hidden due to collapse)
+  // Build parent relationships from visualizationState
+  const parentMap = useMemo(() => {
+    const result = new Map<string, string>();
+    if (!visualizationState) return result;
 
-    const containers = visualizationState.visibleContainers;
-    if (containers.length === 0) {
-      return [];
-    }
-
-    // Create a map of container ID to container info with proper parent detection
-    const containerMap = new Map<string, HierarchyTreeNode & { parentId: string | null }>();
-    
-    containers.forEach(container => {
-      // Find parent by checking which container has this container as a child
-      let parentId: string | null = null;
-      for (const potentialParent of containers) {
-        if (potentialParent.id !== container.id && potentialParent.children && potentialParent.children.has && potentialParent.children.has(container.id)) {
-          parentId = potentialParent.id;
-          break;
-        }
+    // Build parent relationships by scanning container children
+    visualizationState.visibleContainers.forEach((container: any) => {
+      const children = visualizationState.getContainerChildren?.(container.id);
+      if (children) {
+        children.forEach((childId: string) => {
+          const childContainer = visualizationState.getContainer?.(childId);
+          if (childContainer) {
+            // Record parent relationship based on actual container graph
+            result.set(childId, container.id);
+          }
+        });
       }
-      
-      containerMap.set(container.id, {
-        id: container.id,
-        label: (container as any).data?.label || (container as any).label || container.id, // Try data.label, then label, then fallback to id
-        children: [],
-        nodeCount: container.children ? container.children.size : 0,
-        parentId: parentId,
-      });
     });
+    return result;
+  }, [visualizationState]);
 
-    // Recursively build tree structure 
-    const buildTree = (parentId: string | null): HierarchyTreeNode[] => {
-      const children: HierarchyTreeNode[] = [];
-      for (const container of containerMap.values()) {
-        if (container.parentId === parentId) {
-          const grandchildren = buildTree(container.id);
-          children.push({
-            id: container.id,
-            label: container.label,
-            children: grandchildren,
-            nodeCount: container.nodeCount
-          });
-        }
-      }
-      return children;
+  // Build hierarchy tree from full container graph starting at roots (parent=null)
+  const hierarchyTree = useMemo((): HierarchyTreeNode[] => {
+    if (!visualizationState || visualizationState.visibleContainers.length === 0) return [];
+
+    const buildNode = (containerId: string): HierarchyTreeNode => {
+      // Only build the container hierarchy structure - all display data comes from visualizationState
+      const childrenIds: string[] = [];
+      const cc = visualizationState.getContainerChildren?.(containerId);
+      cc?.forEach((childId: string) => {
+        if (visualizationState.getContainer?.(childId)) childrenIds.push(childId);
+      });
+      const children: HierarchyTreeNode[] = childrenIds.map(buildNode);
+      return { id: containerId, children };
     };
 
-    return buildTree(null); // Start with root containers (no parent)
-  }, [visualizationState, collapsedContainers]); // Add collapsedContainers as dependency
+    // Find root containers (containers with no parent)
+    const roots: string[] = [];
+    visualizationState.visibleContainers.forEach((container: any) => {
+      if (!parentMap.has(container.id)) roots.push(container.id);
+    });
+    return roots.map(buildNode);
+  }, [visualizationState, parentMap]);
 
   // Count immediate leaf (non-container) children of a container
   const countLeafChildren = (containerId: string): number => {
@@ -143,11 +156,86 @@ export function InfoPanel({
     return leafCount;
   };
 
+  // Build searchable items from hierarchy (containers) and visible nodes
+  const searchableItems = useMemo(() => {
+    const items: Array<{ id: string; label: string; type: 'container' | 'node' }> = [];
+    // Containers from visualizationState
+    if (visualizationState) {
+      visualizationState.visibleContainers.forEach((container: any) => {
+        const label = container?.data?.label || container?.label || container.id;
+        items.push({ id: container.id, label, type: 'container' });
+      });
+      // Visible nodes from visualization state
+      visualizationState.visibleNodes.forEach((node: any) => {
+        const label = node?.data?.label || node?.label || node?.id;
+        items.push({ id: node.id, label, type: 'node' });
+      });
+    }
+    return items;
+  }, [visualizationState]);
+
+  // Map node matches to their parent container matches for tree highlighting
+  const toContainerMatches = useMemo(() => {
+    // Build reverse index of node -> parent containers by scanning container children
+    const nodeParents = new Map<string, Set<string>>();
+    if (visualizationState) {
+      visualizationState.visibleContainers.forEach((container: any) => {
+        const cc = visualizationState.getContainerChildren?.(container.id);
+        cc?.forEach((childId: string) => {
+          // if child is NOT a container, treat as node
+          const isContainer = !!visualizationState.getContainer?.(childId);
+          if (!isContainer) {
+            if (!nodeParents.has(childId)) nodeParents.set(childId, new Set());
+            nodeParents.get(childId)!.add(container.id);
+          }
+        });
+      });
+    }
+    return (matches: SearchMatch[]): SearchMatch[] => {
+      const out: SearchMatch[] = [];
+      const seen = new Set<string>();
+      for (const m of matches) {
+        if (m.type === 'container') {
+          if (!seen.has(m.id)) { out.push(m); seen.add(m.id); }
+        } else {
+          const parents = Array.from(nodeParents.get(m.id) || []);
+          parents.forEach(cid => {
+            if (!seen.has(cid)) { out.push({ id: cid, label: cid, type: 'container' }); seen.add(cid); }
+          });
+        }
+      }
+      return out;
+    };
+  }, [visualizationState]);
+
+  // Handlers from SearchControls
+  const handleSearch = (query: string, matches: SearchMatch[]) => {
+    // DEBUG: Log search results to help debug highlighting issues
+    console.log('🔍 InfoPanel handleSearch:', { query, matches });
+    console.log('🔍 Container matches:', matches.filter(m => m.type === 'container'));
+    console.log('🔍 Node matches:', matches.filter(m => m.type === 'node'));
+    
+    setSearchQuery(query);
+    setSearchMatches(matches);
+    setCurrentSearchMatch(matches.length ? matches[0] : undefined);
+  onSearchUpdate?.(query, matches, matches.length ? matches[0] : undefined);
+  };
+  const handleSearchClear = () => {
+    setSearchQuery('');
+    setSearchMatches([]);
+    setCurrentSearchMatch(undefined);
+  onSearchUpdate?.('', [], undefined);
+  };
+  const handleSearchNavigate = (_dir: 'prev' | 'next', current: SearchMatch) => {
+    setCurrentSearchMatch(current);
+  onSearchUpdate?.(searchQuery, searchMatches, current);
+  };
+
   // Panel style
   const panelStyle: React.CSSProperties = {
     position: 'absolute',
     top: 10, // position to occlude the button
-    left: 8, // nearly flush with edge
+    right: 8, // right side instead of left
     zIndex: 1200,
     minWidth: 280,
     maxWidth: 340,
@@ -157,7 +245,7 @@ export function InfoPanel({
     border: '1px solid #eee',
     padding: 20,
     transition: 'transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s',
-    transform: open ? 'translateX(0)' : 'translateX(-120%)', // slide from left
+    transform: open ? 'translateX(0)' : 'translateX(120%)', // slide from right
     opacity: open ? 1 : 0,
     pointerEvents: open ? 'auto' : 'none',
   };
@@ -223,17 +311,38 @@ export function InfoPanel({
                 />
               </div>
             )}
-            {/* Hierarchy Tree */}
+            {/* Search + Hierarchy Tree */}
             {hierarchyTree.length > 0 && (
-              <HierarchyTree
-                hierarchyTree={hierarchyTree}
-                collapsedContainers={collapsedContainers}
-                onToggleContainer={onToggleContainer}
-                title={`${currentGroupingName} Hierarchy`}
-                showNodeCounts={true}
-                truncateLabels={true}
-                maxLabelLength={15}
-              />
+              <div>
+                <SearchControls
+                  ref={searchControlsRef}
+                  searchableItems={searchableItems}
+                  onSearch={handleSearch}
+                  onClear={handleSearchClear}
+                  onNavigate={handleSearchNavigate}
+                  placeholder="Search containers (wildcards: * ?)"
+                  compact
+                />
+                <HierarchyTree
+                  hierarchyTree={hierarchyTree}
+                  collapsedContainers={collapsedContainers}
+                  visualizationState={visualizationState}
+                  onToggleContainer={(containerId) => {
+                    // Ensure both tree and graph stay in sync
+                    if (onToggleContainer) {
+                      onToggleContainer(containerId);
+                    }
+                  }}
+                  title={`${currentGroupingName} Hierarchy`}
+                  showNodeCounts={true}
+                  truncateLabels={true}
+                  maxLabelLength={15}
+                  // search integration - pass ALL matches (containers + nodes), not just containers
+                  searchQuery={searchQuery}
+                  searchMatches={searchMatches}
+                  currentSearchMatch={currentSearchMatch}
+                />
+              </div>
             )}
           </CollapsibleSection>
         )}
@@ -265,7 +374,7 @@ export function InfoPanel({
       </div>
     </div>
   );
-}
+});
 
 // Re-export sub-components for individual use
 export { Legend } from './Legend';

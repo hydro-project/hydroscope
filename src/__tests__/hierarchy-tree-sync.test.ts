@@ -104,7 +104,6 @@ describe('HierarchyTree State Synchronization', () => {
     
     expect(hierarchyTree).toHaveLength(1); // Should have one root container
     expect(hierarchyTree[0].id).toBe('root_container');
-    expect(hierarchyTree[0].label).toBe('Root Container');
     expect(hierarchyTree[0].children).toHaveLength(2); // child_container_1 and child_container_2
     
     // Find child_container_1

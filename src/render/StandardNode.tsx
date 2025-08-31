@@ -103,32 +103,61 @@ export function StandardNode({ id, data }: NodeProps) {
   // Different styling for collapsed containers vs regular nodes
   if (isCollapsedContainer) {
     const containerColors = generateContainerColors(id, colorPalette);
+    
+    // Extract search highlighting flags
+    const searchHighlight = (data as any).searchHighlight;
+    const searchHighlightStrong = (data as any).searchHighlightStrong;
+    
     return (
-      <div
-        style={{
-          width: `${width}px`,
-          height: `${height}px`,
-          background: containerColors.background,
-          border: `${styleCfg.containerBorderWidth ?? 2}px solid ${containerColors.border}`,
-          borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
-          position: 'relative',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow:
-            styleCfg.containerShadow === 'NONE'
-              ? 'none'
-              : styleCfg.containerShadow === 'LARGE'
-                ? '0 10px 15px -3px rgba(0,0,0,0.2)'
-                : styleCfg.containerShadow === 'MEDIUM'
+      <>
+        <style>
+          {`
+            @keyframes searchPulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.02); }
+            }
+            @keyframes searchPulseStrong {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+          `}
+        </style>
+        <div
+          style={{
+            width: `${width}px`,
+            height: `${height}px`,
+            background: containerColors.background,
+            border: `${styleCfg.containerBorderWidth ?? 2}px solid ${containerColors.border}`,
+            borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
+            position: 'relative',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: (() => {
+              if (searchHighlightStrong) {
+                return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
+              } else if (searchHighlight) {
+                return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+              } else {
+                return styleCfg.containerShadow === 'NONE'
+                  ? 'none'
+                  : styleCfg.containerShadow === 'LARGE'
+                  ? '0 10px 15px -3px rgba(0,0,0,0.2)'
+                  : styleCfg.containerShadow === 'MEDIUM'
                   ? '0 4px 6px -1px rgba(0,0,0,0.15)'
-                  : '0 2px 8px rgba(0,0,0,0.15)',
-          transition: 'all 0.2s ease'
-        }}
-      >
+                  : '0 2px 8px rgba(0,0,0,0.15)';
+              }
+            })(),
+            transition: 'all 0.2s ease',
+            // Add subtle animation for search highlights
+            animation: searchHighlight 
+              ? (searchHighlightStrong ? 'searchPulseStrong 2s ease-in-out infinite' : 'searchPulse 3s ease-in-out infinite')
+              : undefined,
+          }}
+        >
         <HandlesRenderer />
         <div
           style={{
@@ -150,6 +179,7 @@ export function StandardNode({ id, data }: NodeProps) {
           {nodeCount} node{nodeCount !== 1 ? 's' : ''}
         </div>
       </div>
+      </>
     );
   }
 
@@ -162,9 +192,22 @@ export function StandardNode({ id, data }: NodeProps) {
 
   // Regular node styling
   return (
-    <div
-      onClick={handleClick}
-      style={{
+    <>
+      <style>
+        {`
+          @keyframes searchPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+          }
+          @keyframes searchPulseStrong {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}
+      </style>
+      <div
+        onClick={handleClick}
+        style={{
         padding: `${styleCfg.nodePadding ?? 12}px 16px`,
         backgroundColor: colors.primary,
         border: `2px solid ${isShowingLongLabel ? '#2563eb' : colors.border}`,
@@ -180,11 +223,31 @@ export function StandardNode({ id, data }: NodeProps) {
         justifyContent: 'center',
         // Click animation styles
         transform: isClicked ? 'scale(1.05) translateY(-2px)' : 'scale(1) translateY(0px)',
-        boxShadow: isClicked 
-          ? '0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1)' 
-          : '0 2px 4px rgba(0, 0, 0, 0.05)',
+        boxShadow: (() => {
+          const searchHighlight = (data as any).searchHighlight;
+          const searchHighlightStrong = (data as any).searchHighlightStrong;
+          
+          // DEBUG: Log standard node search highlighting
+          if (searchHighlight || searchHighlightStrong) {
+            console.log(`🔍 StandardNode ${id}: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}`);
+          }
+          
+          if (searchHighlightStrong) {
+            return '0 0 0 4px rgba(255, 107, 53, 0.35), 0 8px 20px rgba(0,0,0,0.15)';
+          } else if (searchHighlight) {
+            return '0 0 0 3px rgba(255, 193, 7, 0.28), 0 2px 6px rgba(0,0,0,0.1)';
+          } else if (isClicked) {
+            return '0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1)';
+          } else {
+            return '0 2px 4px rgba(0, 0, 0, 0.05)';
+          }
+        })(),
         // Z-index priority: clicked animation (20) > showing long label (10) > default (1)
-        zIndex: isClicked ? 20 : (isShowingLongLabel ? 10 : 1),
+        zIndex: (data as any).searchHighlightStrong ? 30 : (isClicked ? 20 : (isShowingLongLabel ? 10 : 1)),
+        // Add subtle animation for search highlights
+        animation: (data as any).searchHighlight 
+          ? ((data as any).searchHighlightStrong ? 'searchPulseStrong 2s ease-in-out infinite' : 'searchPulse 3s ease-in-out infinite')
+          : undefined,
       }}
       title={
         data.fullLabel && data.shortLabel && data.fullLabel !== data.shortLabel 
@@ -195,6 +258,7 @@ export function StandardNode({ id, data }: NodeProps) {
       <HandlesRenderer />
       {String(displayLabel)}
     </div>
+    </>
   );
 }
 

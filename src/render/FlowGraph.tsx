@@ -34,6 +34,10 @@ export interface FlowGraphProps {
   onLoadFile?: () => void; // Load file callback
   showLoadFile?: boolean; // Show load file button
   reactFlowControlsScale?: number; // Controls scale factor
+  // Search highlight integration
+  searchQuery?: string;
+  searchMatches?: Array<{ id: string; label: string; type: 'container' | 'node' }>;
+  currentSearchMatchId?: string;
 }
 
 export interface FlowGraphRef {
@@ -57,7 +61,10 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
   onAutoFitToggle,
   onLoadFile,
   showLoadFile = false,
-  reactFlowControlsScale
+  reactFlowControlsScale,
+  // search
+  searchMatches,
+  currentSearchMatchId
 }, ref) => {
   const {
     reactFlowData,
@@ -207,13 +214,50 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
         nodes={(() => {
           // Sort nodes so clicked nodes are rendered last (on top)
           const nodes = reactFlowData?.nodes || [];
-          return nodes.slice().sort((a, b) => {
+          // Apply search highlighting by setting flags on matching nodes/containers
+          const matchSet = new Set((Array.isArray(searchMatches) ? searchMatches : [])
+            .filter(m => m && (m.type === 'node' || m.type === 'container'))
+            .map(m => m.id));
+          const currentId = currentSearchMatchId;
+          
+          // DEBUG: Log search matches and node IDs to help debug highlighting issues
+          if (searchMatches && searchMatches.length > 0) {
+            console.log('🔍 Search matches:', searchMatches);
+            console.log('🔍 Match IDs:', Array.from(matchSet));
+            console.log('🔍 Available node IDs:', nodes.map(n => n.id));
+            console.log('🔍 Current search match ID:', currentId);
+          }
+          
+          const styled = nodes.map(n => {
+            const isMatch = matchSet.has(n.id);
+            const isCurrent = currentId && n.id === currentId;
+            if (!isMatch && !isCurrent) return n;
+            
+            // DEBUG: Log when we're applying highlights
+            console.log(`🔍 Highlighting node ${n.id}, isMatch: ${isMatch}, isCurrent: ${isCurrent}`);
+            
+            // Attach flags; node components will render glow
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                searchHighlight: isMatch,
+                searchHighlightStrong: isCurrent
+              }
+            };
+          });
+          return styled.slice().sort((a, b) => {
             const aClicked = a.data?.isClicked ? 1 : 0;
             const bClicked = b.data?.isClicked ? 1 : 0;
             return aClicked - bClicked;
           });
         })()}
-        edges={reactFlowData?.edges || []}
+        edges={(() => {
+          const edges = reactFlowData?.edges || [];
+          // DISABLED: Edge highlighting during search causes confusion
+          // Only highlight the actual nodes and containers, not their edges
+          return edges;
+        })()}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={onNodeClick}

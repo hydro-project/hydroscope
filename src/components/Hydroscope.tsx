@@ -23,6 +23,10 @@ export interface HydroscopeProps {
   onLoadFile?: () => void;               // Load file callback
   showLoadFile?: boolean;                // Show load file button
   reactFlowControlsScale?: number;       // Controls scale factor
+  // Search highlight integration (optional)
+  searchQuery?: string;
+  searchMatches?: Array<{ id: string; label: string; type: 'container' | 'node' }>;
+  currentSearchMatchId?: string;
 }
 
 export interface HydroscopeRef {
@@ -54,6 +58,10 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
   onLoadFile,
   showLoadFile,
   reactFlowControlsScale,
+  // search highlight
+  searchQuery,
+  searchMatches,
+  currentSearchMatchId,
 }, ref) => {
   const flowGraphRef = React.useRef<any>(null);
   
@@ -136,6 +144,10 @@ export const Hydroscope = forwardRef<HydroscopeRef, HydroscopeProps>(({
       onLoadFile={onLoadFile}
       showLoadFile={showLoadFile}
       reactFlowControlsScale={reactFlowControlsScale}
+  // pass through search highlight props
+  searchQuery={searchQuery}
+  searchMatches={searchMatches}
+  currentSearchMatchId={currentSearchMatchId}
     />
   );
 });
