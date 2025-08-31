@@ -3,19 +3,68 @@
  * 
  * Tests that ensure the HierarchyTree component's expand/collapse state
  * stays synchronized with the actual container states in VisualizationState.
+ * 
+ * Updated to use direct VisualizationState accessors instead of hierarchy-utils.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../VisualizationState';
-import { 
-  buildHierarchyTree, 
-  getCollapsedContainersSet,
-  getExpandedKeysForHierarchyTree,
-  validateHierarchyTreeSync
-} from '../../components/hierarchy-utils';
-// Correct path to hierarchy utils lives in components directory one level up from core
-// (core/__tests__ -> components)
-// Note: adjust relative import to '../../components/hierarchy-utils' if needed by TS path config
+
+// Helper functions that replicate hierarchy-utils logic using VisualizationState directly
+function buildHierarchyTreeDirect(visualizationState: any): Array<{ id: string; children: any[] }> {
+  if (!visualizationState) return [];
+  
+  const buildNode = (containerId: string): { id: string; children: any[] } => {
+    // Check if this container is collapsed - if so, don't include its children in the tree
+    const container = visualizationState.getContainer(containerId);
+    if (container && container.collapsed) {
+      // Collapsed containers show as leaf nodes in the tree (no children displayed)
+      return { id: containerId, children: [] };
+    }
+    
+    const childrenIds: string[] = [];
+    const containerChildren = visualizationState.getContainerChildren(containerId);
+    containerChildren?.forEach((childId: string) => {
+      if (visualizationState.getContainer(childId)) childrenIds.push(childId);
+    });
+    const children = childrenIds.map(buildNode);
+    return { id: containerId, children };
+  };
+
+  const rootContainers = visualizationState.getTopLevelContainers();
+  return rootContainers.map(container => buildNode(container.id));
+}
+
+function getCollapsedContainersSetDirect(visualizationState: any): Set<string> {
+  if (!visualizationState) return new Set();
+  
+  return new Set(
+    visualizationState.visibleContainers
+      .filter((container: any) => container.collapsed)
+      .map((container: any) => container.id)
+  );
+}
+
+function getExpandedKeysForHierarchyTreeDirect(
+  hierarchyTree: Array<{ id: string; children: any[] }>, 
+  collapsedContainers: Set<string>
+): string[] {
+  const allKeys: string[] = [];
+  
+  const collectKeys = (nodes: Array<{ id: string; children: any[] }>) => {
+    nodes.forEach(node => {
+      allKeys.push(node.id);
+      if (node.children) {
+        collectKeys(node.children);
+      }
+    });
+  };
+  
+  collectKeys(hierarchyTree);
+  
+  // Return keys that are NOT in collapsedContainers (i.e., expanded keys)
+  return allKeys.filter(key => !collapsedContainers.has(key));
+}
 
 describe('HierarchyTree State Synchronization', () => {
   let visState;
@@ -70,8 +119,8 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should compute collapsedContainers set correctly from visState', () => {
-    // Get the actual collapsed containers from VisState using utility
-    const collapsedContainers = getCollapsedContainersSet(visState);
+    // Get the actual collapsed containers from VisualizationState using utility
+    const collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // Should only contain child_container_2 which we set as collapsed
     expect(collapsedContainers.has('child_container_2')).toBe(true);
@@ -83,7 +132,7 @@ describe('HierarchyTree State Synchronization', () => {
 
   it('should reflect container state changes in collapsedContainers set', () => {
     // Initial state: child_container_2 is collapsed
-    let collapsedContainers = getCollapsedContainersSet(visState);
+    let collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('child_container_2')).toBe(true);
     expect(collapsedContainers.has('root_container')).toBe(false);
     
@@ -91,7 +140,7 @@ describe('HierarchyTree State Synchronization', () => {
     visState.collapseContainer('root_container');
     
     // Recompute collapsed containers
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // Now only root_container should be collapsed (child_container_2 becomes hidden, not collapsed)
     expect(collapsedContainers.has('child_container_2')).toBe(false); // Hidden, not in visibleContainers
@@ -103,7 +152,7 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should build hierarchy tree correctly', () => {
-    const hierarchyTree = buildHierarchyTree(visState, 'default');
+    const hierarchyTree = buildHierarchyTreeDirect(visState);
     
     expect(hierarchyTree).toHaveLength(1); // Should have one root container
     expect(hierarchyTree[0].id).toBe('root_container');
@@ -120,12 +169,12 @@ describe('HierarchyTree State Synchronization', () => {
     expect(nestedContainer.children).toHaveLength(0); // No child containers (node_5 is a leaf)
   });
 
-  it('should synchronize HierarchyTree expandedKeys with VisState collapsed state', () => {
-    const hierarchyTree = buildHierarchyTree(visState, 'default');
-    const collapsedContainers = getCollapsedContainersSet(visState);
+  it('should synchronize HierarchyTree expandedKeys with VisualizationState collapsed state', () => {
+    const hierarchyTree = buildHierarchyTreeDirect(visState);
+    const collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // Use utility to get expanded keys
-    const expandedKeys = getExpandedKeysForHierarchyTree(hierarchyTree, collapsedContainers);
+    const expandedKeys = getExpandedKeysForHierarchyTreeDirect(hierarchyTree, collapsedContainers);
     
     // child_container_2 is collapsed, so it should NOT be in expandedKeys
     expect(expandedKeys.includes('child_container_2')).toBe(false);
@@ -137,12 +186,12 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should maintain synchronization after multiple expand/collapse operations', () => {
-    const hierarchyTree = buildHierarchyTree(visState, 'default');
+    const hierarchyTree = buildHierarchyTreeDirect(visState);
     
     // Start by collapsing root container
     visState.collapseContainer('root_container');
     
-    let collapsedContainers = getCollapsedContainersSet(visState);
+    let collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // Only root_container should be collapsed (children become hidden)
     expect(collapsedContainers.has('root_container')).toBe(true);
@@ -152,7 +201,7 @@ describe('HierarchyTree State Synchronization', () => {
     // Expand root container
     visState.expandContainer('root_container');
     
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // child_container_2 should reappear as collapsed, and child_container_1 is also collapsed
     // (the collapse/expand operation may affect child container states)
@@ -165,10 +214,10 @@ describe('HierarchyTree State Synchronization', () => {
     // Expand child_container_2
     visState.expandContainer('child_container_2');
     
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // After expanding child_container_2, child_container_1 may still be collapsed
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // Check if child_container_1 is still collapsed after the root collapse/expand cycle
     const isChild1Collapsed = collapsedContainers.has('child_container_1');
@@ -178,7 +227,7 @@ describe('HierarchyTree State Synchronization', () => {
     // Collapse nested container (note: nested_container might be hidden if child_container_1 is collapsed)
     visState.collapseContainer('nested_container');
     
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     
     // The result depends on the parent-child visibility
     // If child_container_1 is still collapsed, nested_container will be hidden
@@ -192,7 +241,7 @@ describe('HierarchyTree State Synchronization', () => {
     // This test simulates the actual UI flow where:
     // 1. User clicks in HierarchyTree
     // 2. handleHierarchyToggle is called
-    // 3. VisState is updated
+    // 3. VisualizationState is updated
     // 4. Component re-renders with new collapsedContainers
     
     const simulateHierarchyTreeClick = (containerId: string) => {
@@ -207,28 +256,28 @@ describe('HierarchyTree State Synchronization', () => {
     };
     
     // Initial state: child_container_2 is collapsed
-    let collapsedContainers = getCollapsedContainersSet(visState);
+    let collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('child_container_2')).toBe(true);
     
     // Simulate user clicking to expand child_container_2 in HierarchyTree
     simulateHierarchyTreeClick('child_container_2');
     
     // After click, collapsedContainers should update
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('child_container_2')).toBe(false);
     expect(collapsedContainers.size).toBe(0);
     
     // Simulate user clicking to collapse root_container
     simulateHierarchyTreeClick('root_container');
     
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('root_container')).toBe(true);
     expect(collapsedContainers.size).toBe(1);
   });
 
   it('should handle container state changes without losing sync', () => {
     // Initial state: child_container_2 is collapsed
-    let collapsedContainers = getCollapsedContainersSet(visState);
+    let collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('child_container_2')).toBe(true);
     expect(collapsedContainers.size).toBe(1);
     
@@ -236,7 +285,7 @@ describe('HierarchyTree State Synchronization', () => {
     visState.expandContainer('child_container_2');
     
     // Should now have no collapsed containers
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('child_container_2')).toBe(false);
     expect(collapsedContainers.size).toBe(0);
     
@@ -244,14 +293,14 @@ describe('HierarchyTree State Synchronization', () => {
     visState.collapseContainer('root_container');
     
     // Should now have root_container collapsed
-    collapsedContainers = getCollapsedContainersSet(visState);
+    collapsedContainers = getCollapsedContainersSetDirect(visState);
     expect(collapsedContainers.has('root_container')).toBe(true);
     expect(collapsedContainers.has('child_container_2')).toBe(false);
     expect(collapsedContainers.size).toBe(1);
     
     // Test that the hierarchy tree would show correct expanded keys
-    const hierarchyTree = buildHierarchyTree(visState, 'default');
-    const expandedKeys = getExpandedKeysForHierarchyTree(hierarchyTree, collapsedContainers);
+    const hierarchyTree = buildHierarchyTreeDirect(visState);
+    const expandedKeys = getExpandedKeysForHierarchyTreeDirect(hierarchyTree, collapsedContainers);
     
     // root_container should NOT be in expandedKeys (since it's collapsed)
     expect(expandedKeys.includes('root_container')).toBe(false);

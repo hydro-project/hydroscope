@@ -95,67 +95,6 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
   // Get the current grouping name for the section title
   const currentGroupingName = safeHierarchyChoices.find(choice => choice.id === currentGrouping)?.name || 'Container';
 
-  // Index all containers (including nested, even if hidden due to collapse)
-  // Build parent relationships from visualizationState
-  const parentMap = useMemo(() => {
-    const result = new Map<string, string>();
-    if (!visualizationState) return result;
-
-    // Build parent relationships by scanning container children
-    visualizationState.visibleContainers.forEach((container: any) => {
-      const children = visualizationState.getContainerChildren?.(container.id);
-      if (children) {
-        children.forEach((childId: string) => {
-          const childContainer = visualizationState.getContainer?.(childId);
-          if (childContainer) {
-            // Record parent relationship based on actual container graph
-            result.set(childId, container.id);
-          }
-        });
-      }
-    });
-    return result;
-  }, [visualizationState]);
-
-  // Build hierarchy tree from full container graph starting at roots (parent=null)
-  const hierarchyTree = useMemo((): HierarchyTreeNode[] => {
-    if (!visualizationState || visualizationState.visibleContainers.length === 0) return [];
-
-    const buildNode = (containerId: string): HierarchyTreeNode => {
-      // Only build the container hierarchy structure - all display data comes from visualizationState
-      const childrenIds: string[] = [];
-      const cc = visualizationState.getContainerChildren?.(containerId);
-      cc?.forEach((childId: string) => {
-        if (visualizationState.getContainer?.(childId)) childrenIds.push(childId);
-      });
-      const children: HierarchyTreeNode[] = childrenIds.map(buildNode);
-      return { id: containerId, children };
-    };
-
-    // Find root containers (containers with no parent)
-    const roots: string[] = [];
-    visualizationState.visibleContainers.forEach((container: any) => {
-      if (!parentMap.has(container.id)) roots.push(container.id);
-    });
-    return roots.map(buildNode);
-  }, [visualizationState, parentMap]);
-
-  // Count immediate leaf (non-container) children of a container
-  const countLeafChildren = (containerId: string): number => {
-    const children = visualizationState?.getContainerChildren(containerId);
-    if (!children) return 0;
-    
-    // Count children that are not containers themselves
-    let leafCount = 0;
-    children.forEach(childId => {
-      const isContainer = visualizationState.getContainer(childId) !== undefined;
-      if (!isContainer) {
-        leafCount++;
-      }
-    });
-    return leafCount;
-  };
-
   // Build searchable items from hierarchy (containers) and visible nodes
   const searchableItems = useMemo(() => {
     const items: Array<{ id: string; label: string; type: 'container' | 'node' }> = [];
@@ -176,21 +115,6 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
 
   // Map node matches to their parent container matches for tree highlighting
   const toContainerMatches = useMemo(() => {
-    // Build reverse index of node -> parent containers by scanning container children
-    const nodeParents = new Map<string, Set<string>>();
-    if (visualizationState) {
-      visualizationState.visibleContainers.forEach((container: any) => {
-        const cc = visualizationState.getContainerChildren?.(container.id);
-        cc?.forEach((childId: string) => {
-          // if child is NOT a container, treat as node
-          const isContainer = !!visualizationState.getContainer?.(childId);
-          if (!isContainer) {
-            if (!nodeParents.has(childId)) nodeParents.set(childId, new Set());
-            nodeParents.get(childId)!.add(container.id);
-          }
-        });
-      });
-    }
     return (matches: SearchMatch[]): SearchMatch[] => {
       const out: SearchMatch[] = [];
       const seen = new Set<string>();
@@ -198,10 +122,12 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
         if (m.type === 'container') {
           if (!seen.has(m.id)) { out.push(m); seen.add(m.id); }
         } else {
-          const parents = Array.from(nodeParents.get(m.id) || []);
-          parents.forEach(cid => {
-            if (!seen.has(cid)) { out.push({ id: cid, label: cid, type: 'container' }); seen.add(cid); }
-          });
+          // Use efficient O(1) parent lookup instead of rebuilding map
+          const parentId = visualizationState?.getNodeParent(m.id);
+          if (parentId && !seen.has(parentId)) { 
+            out.push({ id: parentId, label: parentId, type: 'container' }); 
+            seen.add(parentId); 
+          }
         }
       }
       return out;
@@ -294,7 +220,7 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
       </div>
       <div style={{ fontSize: TYPOGRAPHY.INFOPANEL_BASE, maxHeight: '68vh', overflowY: 'auto', paddingRight: 4 }}>
         {/* Grouping & Hierarchy Section */}
-        {(safeHierarchyChoices.length > 0 || hierarchyTree.length > 0) && (
+        {(safeHierarchyChoices.length > 0 || (visualizationState && visualizationState.visibleContainers.length > 0)) && (
           <CollapsibleSection
             title="Grouping"
             isCollapsed={groupingCollapsed}
@@ -312,7 +238,7 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
               </div>
             )}
             {/* Search + Hierarchy Tree */}
-            {hierarchyTree.length > 0 && (
+            {visualizationState && visualizationState.visibleContainers.length > 0 && (
               <div>
                 <SearchControls
                   ref={searchControlsRef}
@@ -324,7 +250,6 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
                   compact
                 />
                 <HierarchyTree
-                  hierarchyTree={hierarchyTree}
                   collapsedContainers={collapsedContainers}
                   visualizationState={visualizationState}
                   onToggleContainer={(containerId) => {
