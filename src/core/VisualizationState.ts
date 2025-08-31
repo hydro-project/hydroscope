@@ -61,6 +61,11 @@ export class VisualizationState {
     _containerChildren: new Map<string, Set<string>>(),
     _nodeContainers: new Map<string, string>(),
     
+    // Efficient O(1) lookup caches for HierarchyTree (maintained incrementally)
+    _nodeParentMap: new Map<string, string>(), // nodeId -> parentContainerId (O(1) parent lookup)
+    _containerLeafCounts: new Map<string, number>(), // containerId -> immediate leaf node count
+    _containerLeafNodes: new Map<string, GraphNode[]>(), // containerId -> immediate leaf nodes array
+    
     // Track active keys to prevent duplicates at React rendering level
     _activeRenderKeys: new Set<string>()
   };
@@ -89,6 +94,9 @@ export class VisualizationState {
 
   // Track the most recently changed container for selective layout
   private _lastChangedContainer: string | null = null;
+
+  // Lazy initialization flags for efficient caches
+  private _cacheInitialized = false;
 
   // ============ PROTECTED ACCESSORS (Internal use only) ============
   // These provide controlled access to collections for internal methods
@@ -301,6 +309,356 @@ export class VisualizationState {
     return this._collections._nodeContainers.get(nodeId);
   }
 
+  // ============ EFFICIENT HIERARCHY ACCESSORS (O(1) lookups for HierarchyTree) ============
+  
+  /**
+   * Lazy initialization of efficient lookup caches
+   * Called automatically on first access to any cache-dependent method
+   */
+  private _initializeCaches(): void {
+    if (this._cacheInitialized) return;
+    
+    // Initialize node parent cache from existing _nodeContainers
+    this._collections._nodeParentMap.clear();
+    for (const [nodeId, containerId] of this._collections._nodeContainers) {
+      this._collections._nodeParentMap.set(nodeId, containerId);
+    }
+    
+    // Initialize container leaf caches
+    this._collections._containerLeafCounts.clear();
+    this._collections._containerLeafNodes.clear();
+    
+    for (const [containerId, children] of this._collections._containerChildren) {
+      const leafNodes: GraphNode[] = [];
+      let leafCount = 0;
+      
+      for (const childId of children) {
+        // Check if child is a node (not a container)
+        const childNode = this._collections.graphNodes.get(childId);
+        if (childNode && !this._collections.containers.has(childId)) {
+          leafNodes.push(childNode);
+          leafCount++;
+        }
+      }
+      
+      this._collections._containerLeafCounts.set(containerId, leafCount);
+      this._collections._containerLeafNodes.set(containerId, leafNodes);
+    }
+    
+    this._cacheInitialized = true;
+  }
+  
+  /**
+   * Get parent container of a node (O(1) lookup)
+   * @param nodeId - The node ID to find parent for
+   * @returns Parent container ID or null if node has no parent
+   */
+  getNodeParent(nodeId: string): string | null {
+    this._initializeCaches();
+    return this._collections._nodeParentMap.get(nodeId) || null;
+  }
+  
+  /**
+   * Get immediate leaf node count for container (O(1) lookup)
+   * Only counts direct child nodes, not recursive descendants
+   * @param containerId - The container ID
+   * @returns Number of immediate leaf node children
+   */
+  getContainerLeafNodeCount(containerId: string): number {
+    this._initializeCaches();
+    return this._collections._containerLeafCounts.get(containerId) || 0;
+  }
+  
+  /**
+   * Get immediate leaf nodes for container (O(1) lookup)
+   * Only returns direct child nodes, not recursive descendants
+   * @param containerId - The container ID
+   * @returns ReadonlyArray of immediate leaf node children
+   */
+  getContainerLeafNodes(containerId: string): ReadonlyArray<GraphNode> {
+    this._initializeCaches();
+    return this._collections._containerLeafNodes.get(containerId) || [];
+  }
+  
+  /**
+   * Get visible node data efficiently (O(1) lookup)
+   * @param nodeId - The node ID to look up
+   * @returns GraphNode if visible, undefined otherwise
+   */
+  getVisibleNode(nodeId: string): GraphNode | undefined {
+    return this._collections._visibleNodes.get(nodeId);
+  }
+  
+  /**
+   * Get search expansion keys efficiently
+   * Determines which containers should be expanded to show search matches
+   * @param searchMatches - Array of search match results
+   * @param currentCollapsed - Set of currently collapsed container IDs
+   * @returns Array of container IDs that should be expanded
+   */
+  getSearchExpansionKeys(
+    searchMatches: Array<{ id: string; type: 'container' | 'node' }>,
+    currentCollapsed: Set<string>
+  ): string[] {
+    if (!searchMatches || searchMatches.length === 0) {
+      // No search - return all non-collapsed containers
+      const allContainerIds: string[] = [];
+      for (const container of this._collections.containers.keys()) {
+        allContainerIds.push(container);
+      }
+      return allContainerIds.filter(id => !currentCollapsed.has(id));
+    }
+    
+    this._initializeCaches();
+    const toExpand = new Set<string>();
+    
+    const addAncestors = (containerId: string) => {
+      let current: string | null = containerId;
+      while (current) {
+        toExpand.add(current);
+        // Find parent container of this container
+        let parent: string | null = null;
+        for (const [parentId, children] of this._collections._containerChildren) {
+          if (children.has(current)) {
+            parent = parentId;
+            break;
+          }
+        }
+        current = parent;
+      }
+    };
+    
+    searchMatches.forEach(match => {
+      if (match.type === 'container') {
+        // For container matches, add ancestors (but not the match itself)
+        let parent: string | null = null;
+        for (const [parentId, children] of this._collections._containerChildren) {
+          if (children.has(match.id)) {
+            parent = parentId;
+            break;
+          }
+        }
+        if (parent) {
+          addAncestors(parent);
+        }
+      } else if (match.type === 'node') {
+        // For node matches, find parent container and add its ancestors
+        const parentContainer = this.getNodeParent(match.id);
+        if (parentContainer) {
+          addAncestors(parentContainer);
+        }
+      }
+    });
+    
+    return Array.from(toExpand);
+  }
+
+  // ============ TREE DATA GENERATION FOR HIERARCHY TREE ============
+  
+  /**
+   * Generate tree data structure optimized for HierarchyTree rendering
+   * Combines container hierarchy with leaf nodes in an efficient structure
+   * @param hierarchyTree - Array of root HierarchyTreeNode objects
+   * @param collapsedContainers - Set of collapsed container IDs
+   * @param searchMatches - Optional search matches for highlighting
+   * @param currentSearchMatch - Optional current search match for highlighting
+   * @param truncateLabels - Whether to truncate labels
+   * @param maxLabelLength - Maximum label length before truncation
+   * @returns Array of TreeDataNode objects for Ant Design Tree
+   */
+  getTreeDataStructure(
+    hierarchyTree: Array<{ id: string; children: Array<{ id: string; children: any[] }> }>,
+    collapsedContainers: Set<string>,
+    searchMatches?: Array<{ id: string; label: string; type: 'container' | 'node'; matchIndices?: number[][] }>,
+    currentSearchMatch?: { id: string } | undefined,
+    truncateLabels: boolean = true,
+    maxLabelLength: number = 20
+  ): any[] {
+    this._initializeCaches();
+    
+    const convertToTreeData = (nodes: Array<{ id: string; children: any[] }>): any[] => {
+      return nodes.map(node => {
+        // Get container data directly from visualizationState
+        const containerData = this.getContainer(node.id);
+        const containerLabel = containerData?.label || `Container ${node.id}`;
+        
+        // Get efficient leaf node count (O(1) lookup)
+        const leafChildrenCount = this.getContainerLeafNodeCount(node.id);
+        
+        // Get container metadata for shortLabel
+        const containerShortLabel = containerData?.data?.shortLabel || containerData?.shortLabel;
+        
+        const labelToUse = containerShortLabel || containerLabel;
+        const truncatedLabel = truncateLabels 
+          ? this._truncateLabel(labelToUse, maxLabelLength, true)
+          : labelToUse;
+          
+        // Get efficient leaf nodes (O(1) lookup)
+        const leafNodes = this.getContainerLeafNodes(node.id);
+        
+        const hasChildren = node.children && node.children.length > 0;
+        const hasLeafChildren = leafChildrenCount > 0;
+        const isCollapsed = collapsedContainers.has(node.id);
+        
+        // For collapsed containers that have content, add a virtual child to show the expand icon
+        // For expanded containers, show real children AND actual leaf nodes
+        let children: any[] | undefined = undefined;
+      
+        if (hasChildren) {
+          // Container has child containers - recurse and add leaf nodes if expanded
+          children = convertToTreeData(node.children);
+          if (!isCollapsed && hasLeafChildren) {
+            // Add actual leaf nodes when expanded
+            const leafTreeNodes = leafNodes.map((leafNode: any) => {
+              const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node') ? true : false;
+              const isCurrent = !!(currentSearchMatch && currentSearchMatch.id === leafNode.id);
+              
+              return {
+                key: leafNode.id,
+                title: this._createSearchHighlightDiv(
+                  truncateLabels 
+                    ? this._truncateLabel(leafNode.label, maxLabelLength - 2, true)
+                    : leafNode.label,
+                  match,
+                  isCurrent,
+                  { fontSize: '11px', opacity: 0.8 }
+                ),
+                isLeaf: true,
+                data: {
+                  isGraphNode: true,
+                  originalLabel: leafNode.label,
+                  fullLabel: leafNode.fullLabel,
+                  shortLabel: leafNode.shortLabel
+                }
+              };
+            });
+            children = [...children, ...leafTreeNodes];
+          }
+        } else if (hasLeafChildren) {
+          // Container has only leaf nodes
+          if (isCollapsed) {
+            // Add virtual child to show expand icon
+            children = [{
+              key: `${node.id}__virtual__`,
+              title: `Loading...`, // This should never be visible
+              isLeaf: true,
+              style: { display: 'none' } // Hide the virtual child
+            }];
+          } else {
+            // Expanded - show actual leaf nodes
+            children = leafNodes.map((leafNode: any) => {
+              const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node') ? true : false;
+              const isCurrent = !!(currentSearchMatch && currentSearchMatch.id === leafNode.id);
+              
+              return {
+                key: leafNode.id,
+                title: this._createSearchHighlightDiv(
+                  truncateLabels 
+                    ? this._truncateLabel(leafNode.label, maxLabelLength - 2, true)
+                    : leafNode.label,
+                  match,
+                  isCurrent,
+                  { fontSize: '11px', opacity: 0.8 }
+                ),
+                isLeaf: true,
+                data: {
+                  isGraphNode: true,
+                  originalLabel: leafNode.label,
+                  fullLabel: leafNode.fullLabel,
+                  shortLabel: leafNode.shortLabel
+                }
+              };
+            });
+          }
+        }
+      
+        // Create display title with better formatting + optional search highlight
+        const match = searchMatches?.some(m => m.id === node.id) ? true : false;
+        const isCurrent = !!(currentSearchMatch && currentSearchMatch.id === node.id);
+        
+        const displayTitle = this._createContainerDisplayTitle(
+          truncatedLabel, 
+          hasChildren, 
+          hasLeafChildren, 
+          node.children.length, 
+          leafChildrenCount,
+          match,
+          isCurrent
+        );
+
+        return {
+          key: node.id,
+          title: displayTitle,
+          children: children,
+          isLeaf: !hasChildren && !hasLeafChildren, // Only true leaf nodes (no children at all)
+          // Add custom properties for styling
+          data: {
+            originalLabel: labelToUse,
+            truncatedLabel,
+            nodeCount: leafChildrenCount,
+            leafChildrenCount,
+            hasLeafChildren: hasLeafChildren && !hasChildren,
+            isContainer: hasChildren
+          }
+        };
+      });
+    };
+
+    return convertToTreeData(hierarchyTree || []);
+  }
+
+  /**
+   * Helper method to truncate labels with consistent logic
+   */
+  private _truncateLabel(text: string, maxLength: number, leftTruncate: boolean = false): string {
+    if (text.length <= maxLength) return text;
+    
+    if (leftTruncate) {
+      return '...' + text.slice(text.length - maxLength + 3);
+    } else {
+      return text.slice(0, maxLength - 3) + '...';
+    }
+  }
+
+  /**
+   * Helper method to create search highlight div
+   */
+  private _createSearchHighlightDiv(text: string, match: boolean, isCurrent: boolean, baseStyle: any): any {
+    // Note: This returns a simple object that can be converted to React element in HierarchyTree
+    return {
+      type: 'highlight',
+      text,
+      match,
+      isCurrent,
+      baseStyle
+    };
+  }
+
+  /**
+   * Helper method to create container display title
+   */
+  private _createContainerDisplayTitle(
+    truncatedLabel: string,
+    hasChildren: boolean,
+    hasLeafChildren: boolean,
+    childrenCount: number,
+    leafChildrenCount: number,
+    match: boolean,
+    isCurrent: boolean
+  ): any {
+    // Note: This returns a simple object that can be converted to React element in HierarchyTree
+    return {
+      type: 'container',
+      truncatedLabel,
+      hasChildren,
+      hasLeafChildren,
+      childrenCount,
+      leafChildrenCount,
+      match,
+      isCurrent
+    };
+  }
+
   // ============ COVERED EDGES INDEX API ============
   
   /**
@@ -485,6 +843,19 @@ export class VisualizationState {
     // Update edge mappings if needed
     this._collections._nodeToEdges.set(nodeId, new Set());
     
+    // Update efficient lookup caches incrementally
+    if (this._cacheInitialized && parentContainer) {
+      // Update node parent cache
+      this._collections._nodeParentMap.set(nodeId, parentContainer);
+      
+      // Update container leaf caches
+      const existingLeafNodes = this._collections._containerLeafNodes.get(parentContainer) || [];
+      const existingCount = this._collections._containerLeafCounts.get(parentContainer) || 0;
+      
+      this._collections._containerLeafNodes.set(parentContainer, [...existingLeafNodes, processedData]);
+      this._collections._containerLeafCounts.set(parentContainer, existingCount + 1);
+    }
+    
     // Invalidate covered edges index since graph structure changed
     this.invalidateCoveredEdgesIndex();
   }
@@ -551,6 +922,36 @@ export class VisualizationState {
       this._collections._containerChildren.set(containerId, new Set(containerData.children));
       for (const childId of containerData.children) {
         this._collections._nodeContainers.set(childId, containerId);
+        
+        // Update efficient lookup caches incrementally for new children
+        if (this._cacheInitialized) {
+          const childNode = this._collections.graphNodes.get(childId);
+          const isChildContainer = this._collections.containers.has(childId);
+          
+          if (childNode && !isChildContainer) {
+            // Child is a node, update caches
+            this._collections._nodeParentMap.set(childId, containerId);
+          }
+        }
+      }
+      
+      // Update container leaf caches for this new container
+      if (this._cacheInitialized) {
+        const leafNodes: GraphNode[] = [];
+        let leafCount = 0;
+        
+        for (const childId of containerData.children) {
+          const childNode = this._collections.graphNodes.get(childId);
+          const isChildContainer = this._collections.containers.has(childId);
+          
+          if (childNode && !isChildContainer) {
+            leafNodes.push(childNode);
+            leafCount++;
+          }
+        }
+        
+        this._collections._containerLeafCounts.set(containerId, leafCount);
+        this._collections._containerLeafNodes.set(containerId, leafNodes);
       }
     }
     
@@ -1026,6 +1427,23 @@ export class VisualizationState {
     children.add(childId);
     this._collections._containerChildren.set(containerId, children);
     this._collections._nodeContainers.set(childId, containerId);
+    
+    // Update efficient lookup caches incrementally
+    if (this._cacheInitialized) {
+      const childNode = this._collections.graphNodes.get(childId);
+      const isChildContainer = this._collections.containers.has(childId);
+      
+      if (childNode && !isChildContainer) {
+        // Child is a node, update parent and leaf caches
+        this._collections._nodeParentMap.set(childId, containerId);
+        
+        const existingLeafNodes = this._collections._containerLeafNodes.get(containerId) || [];
+        const existingCount = this._collections._containerLeafCounts.get(containerId) || 0;
+        
+        this._collections._containerLeafNodes.set(containerId, [...existingLeafNodes, childNode]);
+        this._collections._containerLeafCounts.set(containerId, existingCount + 1);
+      }
+    }
   }
 
   removeContainerChild(containerId: string, childId: string): void {
@@ -1037,6 +1455,24 @@ export class VisualizationState {
       }
     }
     this._collections._nodeContainers.delete(childId);
+    
+    // Update efficient lookup caches incrementally
+    if (this._cacheInitialized) {
+      const childNode = this._collections.graphNodes.get(childId);
+      const isChildContainer = this._collections.containers.has(childId);
+      
+      if (childNode && !isChildContainer) {
+        // Child is a node, update parent and leaf caches
+        this._collections._nodeParentMap.delete(childId);
+        
+        const existingLeafNodes = this._collections._containerLeafNodes.get(containerId) || [];
+        const existingCount = this._collections._containerLeafCounts.get(containerId) || 0;
+        
+        const updatedLeafNodes = existingLeafNodes.filter(node => node.id !== childId);
+        this._collections._containerLeafNodes.set(containerId, updatedLeafNodes);
+        this._collections._containerLeafCounts.set(containerId, Math.max(0, existingCount - 1));
+      }
+    }
   }
 
   updateNode(nodeId: string, updates: any): void {
@@ -1056,10 +1492,29 @@ export class VisualizationState {
   }
 
   removeGraphNode(nodeId: string): void {
+    // Get parent container before removal for cache maintenance
+    const parentContainer = this._collections._nodeContainers.get(nodeId);
+    
     this._collections.graphNodes.delete(nodeId);
     this._collections._visibleNodes.delete(nodeId);
     this._collections._nodeToEdges.delete(nodeId);
     this._collections._nodeContainers.delete(nodeId);
+    
+    // Update efficient lookup caches incrementally
+    if (this._cacheInitialized) {
+      // Update node parent cache
+      this._collections._nodeParentMap.delete(nodeId);
+      
+      // Update container leaf caches
+      if (parentContainer) {
+        const existingLeafNodes = this._collections._containerLeafNodes.get(parentContainer) || [];
+        const existingCount = this._collections._containerLeafCounts.get(parentContainer) || 0;
+        
+        const updatedLeafNodes = existingLeafNodes.filter(node => node.id !== nodeId);
+        this._collections._containerLeafNodes.set(parentContainer, updatedLeafNodes);
+        this._collections._containerLeafCounts.set(parentContainer, Math.max(0, existingCount - 1));
+      }
+    }
   }
 
   removeGraphEdge(edgeId: string): void {

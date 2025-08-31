@@ -38,13 +38,12 @@ export function HierarchyTree({
   // Convert HierarchyTreeNode to Ant Design TreeDataNode format
   const convertToTreeData = (nodes: HierarchyTreeNode[]): TreeDataNode[] => {
     return nodes.map(node => {
-              // Get container data directly from visualizationState
+        // Get container data directly from visualizationState
         const containerData = visualizationState?.getContainer(node.id);
         const containerLabel = containerData?.label || `Container ${node.id}`;
         
-        // Calculate node count dynamically from visualizationState
-        const containerChildren = visualizationState?.getContainerChildren(node.id);
-        const nodeCount = containerChildren ? Array.from(containerChildren).filter((childId) => !visualizationState?.getContainer(childId)).length : 0;
+        // ✅ EFFICIENT: Use O(1) lookup instead of Array.from().filter()
+        const leafChildrenCount = visualizationState?.getContainerLeafNodeCount(node.id) || 0;
         
         // Get container metadata for shortLabel
         const containerShortLabel = containerData?.data?.shortLabel || containerData?.shortLabel;
@@ -54,27 +53,9 @@ export function HierarchyTree({
           ? truncateLabel(labelToUse, { maxLength: maxLabelLength, leftTruncate: true })
           : labelToUse;
           
-        // Get actual leaf nodes from visualization state (SSOT)
-        const getLeafNodes = (containerId: string) => {
-          if (!visualizationState) return [];
-          const containerChildren = visualizationState.getContainerChildren?.(containerId);
-          if (!containerChildren) return [];
-          
-          return Array.from(containerChildren)
-            .filter((childId) => !visualizationState.getContainer?.(childId))
-            .map((nodeId) => {
-              const nodeData = visualizationState.visibleNodes?.find((n: any) => n.id === nodeId);
-              return {
-                id: nodeId,
-                label: nodeData?.label || nodeData?.shortLabel || nodeId,
-                fullLabel: nodeData?.fullLabel,
-                shortLabel: nodeData?.shortLabel
-              };
-            });
-        };
+        // ✅ EFFICIENT: Use O(1) lookup instead of Array.from().filter().map().find()
+        const leafNodes = visualizationState?.getContainerLeafNodes(node.id) || [];
         
-        const leafNodes = getLeafNodes(node.id);
-        const leafChildrenCount = leafNodes.length;
         const hasChildren = node.children && node.children.length > 0;
         const hasLeafChildren = leafChildrenCount > 0;
         const isCollapsed = collapsedContainers.has(node.id);
@@ -105,14 +86,14 @@ export function HierarchyTree({
                   fontSize: '11px'
                 } : { fontSize: '11px', opacity: 0.8 }}>
                   {truncateLabels 
-                    ? truncateLabel(leafNode.label, { maxLength: maxLabelLength - 2, leftTruncate: true })
-                    : leafNode.label}
+                    ? truncateLabel(leafNode.label || leafNode.shortLabel || leafNode.id, { maxLength: maxLabelLength - 2, leftTruncate: true })
+                    : (leafNode.label || leafNode.shortLabel || leafNode.id)}
                 </div>
               ),
               isLeaf: true,
               data: {
                 isGraphNode: true,
-                originalLabel: leafNode.label,
+                originalLabel: leafNode.label || leafNode.shortLabel || leafNode.id,
                 fullLabel: leafNode.fullLabel,
                 shortLabel: leafNode.shortLabel
               }
@@ -149,14 +130,14 @@ export function HierarchyTree({
                   fontSize: '11px'
                 } : { fontSize: '11px', opacity: 0.8 }}>
                   {truncateLabels 
-                    ? truncateLabel(leafNode.label, { maxLength: maxLabelLength - 2, leftTruncate: true })
-                    : leafNode.label}
+                    ? truncateLabel(leafNode.label || leafNode.shortLabel || leafNode.id, { maxLength: maxLabelLength - 2, leftTruncate: true })
+                    : (leafNode.label || leafNode.shortLabel || leafNode.id)}
                 </div>
               ),
               isLeaf: true,
               data: {
                 isGraphNode: true,
-                originalLabel: leafNode.label,
+                originalLabel: leafNode.label || leafNode.shortLabel || leafNode.id,
                 fullLabel: leafNode.fullLabel,
                 shortLabel: leafNode.shortLabel
               }
@@ -235,7 +216,7 @@ export function HierarchyTree({
         data: {
           originalLabel: labelToUse,
           truncatedLabel,
-          nodeCount: nodeCount,
+          nodeCount: leafChildrenCount, // Use efficient leaf children count
           leafChildrenCount,
           hasLeafChildren: hasLeafChildren && !hasChildren,
           isContainer: hasChildren
@@ -244,68 +225,29 @@ export function HierarchyTree({
     });
   };
 
-  // Convert collapsed containers Set to expanded keys array (Ant Design uses expanded, not collapsed)
+  // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic instead of complex useMemo
   const derivedExpandedKeys = useMemo(() => {
-    // Efficiently collect all container IDs from the hierarchy tree
-    const allKeys: string[] = [];
-    const parentMap = new Map<string, string | null>();
-    
-    const collectKeys = (nodes: HierarchyTreeNode[], parent: string | null = null) => {
-      for (const node of nodes) {
-        allKeys.push(node.id);
-        parentMap.set(node.id, parent);
-        if (node.children) {
-          collectKeys(node.children, node.id);
-        }
-      }
-    };
-    
-    collectKeys(hierarchyTree || []);
-    
-    let baseExpanded = allKeys.filter(key => !collapsedContainers.has(key));
-    
-    // If searching, override expansion to show ancestors of matches (including nodes)
-    if (searchQuery && searchQuery.trim() && searchMatches && searchMatches.length) {
-      const toExpand = new Set<string>();
-      
-      const addAncestors = (id: string) => {
-        let cur: string | null | undefined = id;
-        while (cur) {
-          toExpand.add(cur);
-          cur = parentMap.get(cur) ?? null;
-        }
-      };
-      
-      // Handle both container and node matches
-      searchMatches.forEach(match => {
-        if (match.type === 'container') {
-          // For container matches, add ancestors
-          addAncestors(match.id);
-        } else if (match.type === 'node') {
-          // For node matches, find parent container and add its ancestors
-          // Also add the parent container itself so the node becomes visible
-          const findNodeParent = (nodeId: string): string | null => {
-            if (!visualizationState) return null;
-            for (const containerId of allKeys) {
-              const children = visualizationState.getContainerChildren?.(containerId);
-              if (children && children.has(nodeId)) {
-                return containerId;
-              }
-            }
-            return null;
-          };
-          
-          const parentContainer = findNodeParent(match.id);
-          if (parentContainer) {
-            addAncestors(parentContainer);
+    if (!visualizationState) {
+      // Fallback: simple expansion based on collapsed containers
+      const allKeys: string[] = [];
+      const collectKeys = (nodes: HierarchyTreeNode[]) => {
+        for (const node of nodes) {
+          allKeys.push(node.id);
+          if (node.children) {
+            collectKeys(node.children);
           }
         }
-      });
-      
-      baseExpanded = Array.from(toExpand);
+      };
+      collectKeys(hierarchyTree || []);
+      return allKeys.filter(key => !collapsedContainers.has(key));
     }
-    return baseExpanded;
-  }, [hierarchyTree, collapsedContainers, searchQuery, searchMatches]);
+    
+    // Use VisualizationState's efficient search expansion method
+    return visualizationState.getSearchExpansionKeys(
+      searchMatches || [],
+      collapsedContainers
+    );
+  }, [visualizationState, hierarchyTree, collapsedContainers, searchQuery, searchMatches]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -319,7 +261,7 @@ export function HierarchyTree({
       // For container matches, avoid expanding the matches themselves
       // For node matches, expand their parent containers to make nodes visible
       const containerMatches = new Set(searchMatches.filter(m => m.type === 'container').map(m => m.id));
-      const shouldBeExpanded = new Set(derivedExpandedKeys.map(k => String(k)));
+      const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
       
       currentlyCollapsed.forEach(containerId => {
@@ -330,7 +272,7 @@ export function HierarchyTree({
       });
     } else if ((!searchQuery || !searchQuery.trim() || !searchMatches || !searchMatches.length) && onToggleContainer) {
       // When not searching, sync normally
-      const shouldBeExpanded = new Set(derivedExpandedKeys.map(k => String(k)));
+      const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
       
       currentlyCollapsed.forEach(containerId => {
@@ -344,7 +286,7 @@ export function HierarchyTree({
   const treeData = useMemo(() => {
     const data = convertToTreeData(hierarchyTree || []);
     return data;
-  }, [hierarchyTree, maxLabelLength, showNodeCounts, truncateLabels, collapsedContainers]);
+  }, [hierarchyTree, maxLabelLength, showNodeCounts, truncateLabels, collapsedContainers, searchMatches, currentSearchMatch]);
 
   const handleExpand = (nextExpandedKeys: React.Key[], info: any) => {
     // Update UI immediately
