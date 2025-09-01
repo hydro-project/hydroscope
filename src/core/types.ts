@@ -2,6 +2,12 @@
 
 import type { NodeStyle, EdgeStyle, ContainerStyle } from '../shared/config';
 import type { ExternalContainer } from '../shared/types';
+import type { 
+  Node as ReactFlowNode, 
+  Edge as ReactFlowEdge, 
+  NodeMouseHandler, 
+  EdgeMouseHandler
+} from '@xyflow/react';
 
 // Re-export style types from config and ExternalContainer from shared/types
 export type { NodeStyle, EdgeStyle, ContainerStyle } from '../shared/config';
@@ -181,8 +187,8 @@ export interface RenderConfig {
 }
 
 export interface FlowGraphEventHandlers {
-  onNodeClick?: (event: any, node: any) => void;
-  onEdgeClick?: (event: any, edge: any) => void;
-  onNodeDrag?: (event: any, node: any) => void;
+  onNodeClick?: NodeMouseHandler<ReactFlowNode>;
+  onEdgeClick?: EdgeMouseHandler<ReactFlowEdge>;
+  onNodeDrag?: NodeMouseHandler<ReactFlowNode>;
   onFitViewRequested?: () => void;
 }
