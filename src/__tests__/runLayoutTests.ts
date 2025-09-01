@@ -11,8 +11,7 @@ async function runAllTests(): Promise<void> {
   const startTime = Date.now();
   
   try {
-    const endTime = Date.now();
-    const duration = (endTime - startTime) / 1000;
+    // Tests would run here
     
   } catch (error) {
     const endTime = Date.now();

@@ -4,6 +4,14 @@
  * AUTO-GENERATED - DO NOT EDIT MANUALLY
  * Last updated: 2025-08-21T23:14:19.441Z
  * Source: JSONParser.ts interfaces
+ *
+ * Example usage:
+ * import { Hydroscope } from '@hydro-project/hydroscope';
+ * <Hydroscope data={example} />
+ *
+ * For minimal rendering:
+ * import { HydroscopeCore } from '@hydro-project/hydroscope';
+ * <HydroscopeCore data={example} />
  */
 
 // Generated from JSONParser.ts interfaces
@@ -22,9 +30,6 @@ export interface ParseResultSchema {
   availableGroupings: any[];
   edgeStyleConfig?: {
   propertyMappings: Record<string, any>;
-  singlePropertyMappings?: Record<string, string>;
-  booleanPropertyPairs?: Array<{ pair: [string, string]; defaultStyle: string; altStyle: string; description?: string }>;
-  combinationRules?: any;
   };
   nodeTypeConfig?: {
   defaultType?: string;
@@ -64,7 +69,6 @@ export interface RawEdgeSchema {
   source: string;
   target: string;
   semanticTags?: string[];
-  edgeProperties?: string[];
   [key: string]: any;
 }
 
@@ -89,22 +93,18 @@ export interface RawHierarchyItemSchema {
 export interface RawGraphDataSchema {
   nodes: RawNodeSchema[];
   edges: RawEdgeSchema[];
-  hierarchies?: RawHierarchySchema[];
   hierarchyChoices?: RawHierarchyChoiceSchema[];
   nodeAssignments?: Record<string, Record<string, string>>;
   edgeStyleConfig?: {
-  propertyMappings: Record<string, any>;
-  singlePropertyMappings?: Record<string, string>;
-  booleanPropertyPairs?: Array<{ pair: [string, string]; defaultStyle: string; altStyle: string; description?: string }>;
-  combinationRules?: any;
+    propertyMappings: Record<string, any>;
   };
   nodeTypeConfig?: {
-  defaultType?: string;
-  types?: Array<{
-  id: string;
-  label: string;
-  colorIndex: number;
-  }>;
+    defaultType?: string;
+    types?: Array<{
+      id: string;
+      label: string;
+      colorIndex: number;
+    }>;
   };
   metadata?: Record<string, any>;
 }
@@ -122,72 +122,47 @@ export function generateSchemaDocumentation(): {
   // These examples are derived from the actual TypeScript interfaces
   const requiredExample = `{
   "nodes": [
-    {
-      "id": "string",           // Required: unique identifier
-      "nodeType": "string",     // Optional: node type for styling
-      "fullLabel": "string",    // Optional: detailed label
-      "shortLabel": "string",   // Optional: abbreviated label
-      "semanticTags": ["..."],  // Optional: to be mapped to styling below
-      "data": {                 // Optional: application-specific metadata
-                                // For example, Hydro stores code locations and function backtrace info for rendering
-      }
-      ...                       // Additional properties preserved
-    }
+    { "id": "0", "nodeType": "Source", "shortLabel": "source_iter", "fullLabel": "source_iter" },
+    { "id": "1", "nodeType": "Transform", "shortLabel": "persist", "fullLabel": "persist [state storage]" },
+    { "id": "2", "nodeType": "Network", "shortLabel": "network(recv)", "fullLabel": "network(ser + deser)" }
   ],
   "edges": [
-    {
-      "id": "string",           // Required: unique identifier  
-      "source": "string",       // Required: source node id
-      "target": "string",       // Required: target node id
-      "label": "string",        // Optional: edge label
-      "semanticTags": ["..."],  // Optional: to be mapped to styling below
-      "edgeProperties": ["..."], // Optional: edge properties (alternative to semanticTags)
-      ...                       // Additional properties preserved
-    }
+    { "id": "e0", "source": "0", "target": "1", "semanticTags": ["Unbounded", "TotalOrder"] },
+    { "id": "e1", "source": "1", "target": "2", "semanticTags": ["TotalOrder", "Unbounded", "Network"] }
   ]
 }`;
 
   const optionalExample = `{
-  "hierarchyChoices": [         // Supports multiple hierarchies, to be chosen from a menu
+  "hierarchyChoices": [
     {
-      "id": "string",
-      "name": "string",
-      "children": [              // nest your hierarchy here
-        { "id": "string", "name": "string", "children": [...] }
+      "id": "location",
+      "name": "Location",
+      "children": [
+        { "id": "loc_0", "name": "Clients" },
+        { "id": "loc_1", "name": "Server" }
       ]
     }
   ],
-  "nodeAssignments": {          // Node-to-hierarchy id mappings; place the node in each hierarchy separately
-    "hierarchyId": { "nodeId": "groupId" }
+  "nodeAssignments": {
+    "location": {
+      "0": "loc_0",
+      "1": "loc_0",
+      "2": "loc_1"
+    }
   },
-  "edgeStyleConfig": {          // Edge styling (semantics-only via styleTag)
+  "edgeStyleConfig": {
     "propertyMappings": {
-      "Network": { "styleTag": "edge_style_3_alt" },
-      "Bounded": "edge_style_2"
-    },
-    "singlePropertyMappings": {
-      "TotalOrder": "edge_style_4"
-    },
-    "booleanPropertyPairs": [
-      {
-        "pair": ["Loop", "Acyclic"],
-        "defaultStyle": "edge_style_2",
-        "altStyle": "edge_style_2_alt",
-        "description": "Choose alternate when Acyclic"
-      }
-    ],
-    "combinationRules": { "priority": ["Network", "TotalOrder"] }
+      "Unbounded": "thin-stroke",
+      "TotalOrder": "smooth-line",
+      "Network": "dashed-animated"
+    }
   },
-  "nodeTypeConfig": {           // Node type configuration
-    "defaultType": "default",
+  "nodeTypeConfig": {
+    "defaultType": "Transform",
     "types": [
-      { "id": "string", "label": "string", "colorIndex": 0 }
-    ]
-  },
-  "legend": {                   // Legend configuration (display only)
-    "title": "string",
-    "items": [
-      { "label": "string", "type": "string" }
+      { "id": "Source", "label": "Source", "colorIndex": 0 },
+      { "id": "Transform", "label": "Transform", "colorIndex": 1 },
+      { "id": "Network", "label": "Network", "colorIndex": 2 }
     ]
   }
 }`;
@@ -199,8 +174,8 @@ The schema is automatically maintained to stay in sync with the JSONParser imple
 Key features:
 - Nodes and edges are required (minimal: id, source, target)
 - Your own rich node metadata via 'data' field (nodeType, labels, backtrace, location info)
-- Edge properties and styling via semanticTags or edgeProperties
-- Support for multiple nesting hierarchies
+- Edge styling via semanticTags
+- Support for multiple nesting hierarchies via hierarchyChoices
 - Extensive styling and configuration options
 - Node type configuration for visual categorization
 - Legend support for documentation (display only)
@@ -355,10 +330,6 @@ export function generateCompleteExample() {
         "NoOrder": "wavy-line",
         "TotalOrder": "smooth-line",
         "Unbounded": "thin-stroke"
-      },
-      "combinationRules": {
-        "mutualExclusions": [],
-        "visualGroups": {}
       }
     },
     "nodeTypeConfig": {
@@ -383,27 +354,6 @@ export function generateCompleteExample() {
           "id": "Network",
           "label": "Network",
           "colorIndex": 3
-        }
-      ]
-    },
-    "legend": {
-      "title": "Node Types",
-      "items": [
-        {
-          "label": "Source",
-          "type": "Source"
-        },
-        {
-          "label": "Transform",
-          "type": "Transform"
-        },
-        {
-          "label": "Sink",
-          "type": "Sink"
-        },
-        {
-          "label": "Network",
-          "type": "Network"
         }
       ]
     }

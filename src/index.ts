@@ -31,9 +31,6 @@ export type { HydroscopeProps, HydroscopeRef } from './components/Hydroscope';
 export { HydroscopeMini } from './components/HydroscopeMini';
 export type { HydroscopeMiniProps } from './components/HydroscopeMini';
 
-// Tier 3: Full-featured (complete /vis experience)
-export { HydroscopeFull } from './components/HydroscopeFull';
-export type { HydroscopeFullProps } from './components/HydroscopeFull';
 
 // === DIY TOOLKIT ===
 

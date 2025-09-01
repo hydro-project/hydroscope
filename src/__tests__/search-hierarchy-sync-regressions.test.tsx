@@ -7,8 +7,7 @@
  * 3. Search-driven auto-expansion not triggering graph container expansion
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import React from 'react';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../core/VisualizationState';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { HierarchyTreeNode } from '../components/types';
@@ -18,57 +17,41 @@ import type { SearchableItem, SearchMatch } from '../components/SearchControls';
 const createMockHierarchy = (): HierarchyTreeNode[] => [
   {
     id: 'runtime',
-    label: 'runtime/park.rs',
     children: [
       {
         id: 'poll',
-        label: 'poll',
         children: [
           {
             id: 'closure1',
-            label: '{{closure}}',
             children: [
               {
                 id: 'chat_server1',
-                label: 'chat_server',
-                children: [],
-                nodeCount: 2
+                children: []
               }
-            ],
-            nodeCount: 1
+            ]
           }
-        ],
-        nodeCount: 1
+        ]
       }
-    ],
-    nodeCount: 1
+    ]
   },
   {
     id: 'coop',
-    label: 'coop/mod.rs',
     children: [
       {
-        id: 'closure2',
-        label: '{{closure}}',
+        id: 'poll2',
         children: [
           {
-            id: 'poll2',
-            label: 'poll',
+            id: 'closure2',
             children: [
               {
                 id: 'closure3',
-                label: '{{closure}}',
-                children: [],
-                nodeCount: 1
+                children: []
               }
-            ],
-            nodeCount: 1
+            ]
           }
-        ],
-        nodeCount: 1
+        ]
       }
-    ],
-    nodeCount: 1
+    ]
   }
 ];
 
@@ -148,11 +131,11 @@ describe('Search Highlight Visibility Regression', () => {
     expect(parentMap.get('runtime')).toBeNull(); // Root
     expect(parentMap.get('coop')).toBeNull(); // Root
     expect(parentMap.get('poll')).toBe('runtime');
-    expect(parentMap.get('poll2')).toBe('closure2');
+    expect(parentMap.get('poll2')).toBe('coop');
     expect(parentMap.get('chat_server1')).toBe('closure1');
     expect(parentMap.get('closure1')).toBe('poll');
-    expect(parentMap.get('closure2')).toBe('coop');
-    expect(parentMap.get('closure3')).toBe('poll2');
+    expect(parentMap.get('closure2')).toBe('poll2');
+    expect(parentMap.get('closure3')).toBe('closure2');
   });
 
   it('should compute correct ancestor expansion for nested search matches', () => {
@@ -363,7 +346,7 @@ describe('Search Integration with Node/Container Mapping', () => {
     // Build reverse mapping from nodes to their parent containers
     const nodeParents = new Map<string, Set<string>>();
     
-    mockContainers.forEach((container, containerId) => {
+    mockContainers.forEach((_container, containerId) => {
       const children = mockGetContainerChildren(containerId);
       children.forEach(childId => {
         const isContainer = !!mockGetContainer(childId);

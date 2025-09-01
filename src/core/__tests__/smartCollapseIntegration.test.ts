@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../VisualizationState';
 import { VisualizationEngine } from '../VisualizationEngine';
-import { ELKBridge } from '../../bridges/ELKBridge';
 
 const LOTS_OF_KIDS = 50;
 

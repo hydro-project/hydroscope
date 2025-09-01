@@ -1,7 +1,16 @@
 /**
  * @fileoverview HierarchyTree Component
  * 
- * Displays an interactive tree view of container hierarchy for navigation using Ant Design Tree.
+ * Displays an interactifunction formatHierarchyNodeTitle(
+  truncatedLabel: string,
+  _hasChildren: boolean,
+  hasLeafChildren: boolean,
+  _childrenCount: number,
+  leafChildrenCount: number,
+  match: boolean,
+  isCurrent: boolean,
+  showNodeCounts: boolean
+): React.ReactNode {ew of container hierarchy for navigation using Ant Design Tree.
  */
 
 import React, { useMemo, useEffect, useState } from 'react';
@@ -10,7 +19,6 @@ import type { TreeDataNode } from 'antd';
 import { HierarchyTreeProps, HierarchyTreeNode } from './types';
 import { TYPOGRAPHY } from '../shared/config';
 import { COMPONENT_COLORS } from '../shared/config';
-import { truncateLabel } from '../shared/textUtils';
 
 // ============ TREE DATA FORMATTING UTILITIES ============
 
@@ -345,7 +353,7 @@ export function HierarchyTree({
     }
   };
 
-  const handleSelect = (selectedKeys: React.Key[], info: any) => {
+  const handleSelect = (_selectedKeys: React.Key[], info: any) => {
     if (onToggleContainer && info.node) {
       const nodeKey = info.node.key as string;
       onToggleContainer(nodeKey);

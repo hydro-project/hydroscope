@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
+import React, { useCallback, useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, Button, message } from 'antd';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import HydroscopeCore, { type HydroscopeCoreProps as CoreProps, type HydroscopeCoreRef } from './HydroscopeCore';
@@ -73,11 +73,11 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(({
   const [visualizationState, setVisualizationState] = useState<VisualizationState | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
   const [graphData, setGraphData] = useState<any>(null); // Raw parsed JSON data like vis.js
-  const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null); // Processed edge style config
-  const [isLayoutRunning, setIsLayoutRunning] = useState(false);
+  const [_edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null); // Processed edge style config
+  const [_isLayoutRunning, setIsLayoutRunning] = useState(false);
   // Derive collapsed containers from visualization state instead of maintaining separate state
   // Force re-computation when any layout refresh happens
-  const [layoutRefreshCounter, setLayoutRefreshCounter] = useState(0);
+  const [_layoutRefreshCounter, setLayoutRefreshCounter] = useState(0);
   const [hasParsedData, setHasParsedData] = useState<boolean>(false);
   const initialCollapsedCountRef = useRef<number>(0);
   
@@ -412,7 +412,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(({
   }, [visualizationState, autoFitEnabled]);
 
   // Handle layout algorithm change
-  const handleLayoutChange = useCallback(async (algorithm: string) => {
+  const _handleLayoutChange = useCallback(async (algorithm: string) => {
     setLayoutAlgorithm(algorithm);
     if (hydroscopeRef.current?.refreshLayout) {
       setIsLayoutRunning(true);

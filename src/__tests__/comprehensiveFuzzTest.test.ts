@@ -12,7 +12,6 @@ import { fileURLToPath } from 'url';
 import { parseGraphJSON, validateGraphJSON } from '../core/JSONParser';
 import { VisualizationState } from '../core/VisualizationState';
 import { VisualizationEngine } from '../core/VisualizationEngine';
-import { GraphNode, GraphEdge, Container, HyperEdge } from '../shared/types';
 import type { LayoutConfig } from '../core/types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -158,7 +157,7 @@ class ComprehensiveFuzzTester {
     console.log(`🎲 Starting comprehensive fuzz test: ${this.testName} (grouping: ${groupingId || 'default'})`);
     
     // Parse the data
-    const result = parseGraphJSON(this.testData, groupingId);
+    const result = parseGraphJSON(this.testData, groupingId ?? undefined);
     const state = result.state;
     
     // Extract available hierarchies
@@ -193,7 +192,7 @@ class ComprehensiveFuzzTester {
       console.log(`\n🔄 FUZZ ITERATION ${iteration + 1}/${FUZZ_ITERATIONS}: Planning ${operationsThisIteration} operations...`);
       
       for (let op = 0; op < operationsThisIteration; op++) {
-        const operation = this.generateRandomOperation(state, engine);
+        const operation = this.generateRandomOperation(state);
         
         if (operation) {
           const beforeState = this.captureStateSnapshot(state, engine);
@@ -302,7 +301,7 @@ class ComprehensiveFuzzTester {
   /**
    * Generate a random operation from all available visualizer controls
    */
-  private generateRandomOperation(state: VisualizationState, engine: VisualizationEngine): FuzzOperation | null {
+  private generateRandomOperation(state: VisualizationState): FuzzOperation | null {
     const allContainers = state.getVisibleContainers();
     // Get only containers that can actually be expanded (all ancestors are expanded)
     const expandableContainers = allContainers.filter(c => c.collapsed && this.canExpandContainer(state, c.id));
@@ -430,8 +429,9 @@ class ComprehensiveFuzzTester {
         break;
         
       case 'changeHierarchy':
-        // Parse data with new hierarchy
-        const result = parseGraphJSON(this.testData, operation.hierarchyId);
+        // Parse data with new hierarchy (for validation, but result not used)
+        // const _result = parseGraphJSON(this.testData, operation.hierarchyId);
+        parseGraphJSON(this.testData, operation.hierarchyId);
         // This would require engine reinitialization - for now, just log
         console.log(`   🔄 Hierarchy change simulated: ${operation.hierarchyId}`);
         break;

@@ -8,12 +8,6 @@
  */
 
 import { VisualizationState } from '../core/VisualizationState';
-import type { 
-  GraphNode, 
-  GraphEdge, 
-  Container,
-  HyperEdge
-} from '../shared/types';
 import type { LayoutConfig } from '../core/types';
 import { getELKLayoutOptions, createFixedPositionOptions } from '../shared/config';
 
@@ -122,7 +116,6 @@ export class ELKBridge {
         const gap = (sortedByX[i].x || 0) - ((sortedByX[i-1].x || 0) + (sortedByX[i-1].width || 0));
         gaps.push(gap);
       }
-      const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
     }
     
     // 5. Yield control again before applying results
@@ -172,10 +165,11 @@ export class ELKBridge {
   // Debug and Validation Methods
   // ============================================================================
 
+  /*
   /**
    * Log ELK graph structure for debugging layout issues
    */
-  private logELKGraphStructure(elkGraph: ElkGraph): void {
+  /*private logELKGraphStructure(elkGraph: ElkGraph): void {
     
     // Log container positions if they exist (this might be the issue)
     const containersWithPositions = (elkGraph.children || []).filter(child => 
@@ -194,7 +188,7 @@ export class ELKBridge {
     }
     
     // CRITICAL: Log the exact layout options being sent
-  }
+  }*/
 
   /**
    * Validate ELK input data to prevent null reference errors
@@ -399,7 +393,7 @@ export class ELKBridge {
       if (container.id === 'bt_81' || container.id === 'bt_98') {
         if (hasVisibleParent) {
           // Find the parent
-          const parent = visState.visibleContainers.find(otherContainer => 
+          visState.visibleContainers.find(otherContainer => 
             visState.getContainerChildren(otherContainer.id).has(container.id)
           );
         }
@@ -734,7 +728,7 @@ export class ELKBridge {
    * Get containers requiring layout (moved from VisualizationState)
    * This is ELK-specific logic for determining which containers need layout
    */
-  getContainersRequiringLayout(visState: VisualizationState, changedContainerId?: string): ReadonlyArray<any> {
+  getContainersRequiringLayout(visState: VisualizationState, _changedContainerId?: string): ReadonlyArray<any> {
     // Return all visible containers that need layout
     return visState.visibleContainers.filter(container => !container.hidden);
   }

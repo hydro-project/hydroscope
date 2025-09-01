@@ -20,7 +20,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
   });
 
   it('should correctly use ELK-calculated dimensions in ReactFlow conversion', async () => {
-    console.log((('\n=== Testing ReactFlowBridge Dimensions Fix ===')));
+    console.log('\n=== Testing ReactFlowBridge Dimensions Fix ===');
 
     // 1. Create a simple hierarchy with containers using fluent API
     visState
@@ -74,12 +74,12 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     expect(reactFlowContainer.style?.width).toBe(expectedDimensions.width);
     expect(reactFlowContainer.style?.height).toBe(expectedDimensions.height);
 
-    console.log((('✅ All dimension checks passed - ReactFlowBridge correctly uses ELK-calculated dimensions!')));
-    console.log((('=== Test Complete ===\n')));
+    console.log('✅ All dimension checks passed - ReactFlowBridge correctly uses ELK-calculated dimensions!');
+    console.log('=== Test Complete ===\n');
   });
 
   it('should handle multiple containers with different sizes', async () => {
-    console.log((('\n=== Testing Multiple Container Dimensions ===')));
+    console.log('\n=== Testing Multiple Container Dimensions ===');
 
     // Create containers with different numbers of children (should get different sizes)
     visState
@@ -126,7 +126,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
       expect(reactFlowContainer.position.y).toBe(visStateContainer.y);
     }
 
-    console.log((('✅ Multiple container dimension test passed!')));
-    console.log((('=== Test Complete ===\n')));
+    console.log('✅ Multiple container dimension test passed!');
+    console.log('=== Test Complete ===\n');
   });
 });

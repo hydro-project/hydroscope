@@ -40,7 +40,7 @@ describe('Container Collapse/Expand Tests', () => {
     const initialHyperEdges = state.visibleEdges.filter(e => isHyperEdge(e));
     expect(initialHyperEdges.length).toBe(0);
     
-    console.log((('  Initial state verified')));
+    console.log('  Initial state verified');
     
     // Collapse the container
     state.collapseContainer('container1');
@@ -62,7 +62,7 @@ describe('Container Collapse/Expand Tests', () => {
     const hyperEdge = hyperEdges[0];
     expect(hyperEdge.id).toBe('hyper_container1_to_external');
     
-    console.log((('  Collapsed state verified')));
+    console.log('  Collapsed state verified');
     
     // Expand the container
     state.expandContainer('container1');
@@ -79,8 +79,8 @@ describe('Container Collapse/Expand Tests', () => {
     const finalHyperEdges = state.visibleEdges.filter(e => isHyperEdge(e));
     expect(finalHyperEdges.length).toBe(0);
     
-    console.log((('  Expanded state verified')));
-    console.log((('✓ Simple grounding test passed')));
+    console.log('  Expanded state verified');
+    console.log('✓ Simple grounding test passed');
   });
 
   /**
@@ -152,7 +152,7 @@ describe('Container Collapse/Expand Tests', () => {
     // const finalHyperEdges = state.visibleEdges.filter(e => isHyperEdge(e));
     // expect(finalHyperEdges.length).toBe(0);
     
-    console.log((('✓ Multiple containers grounding test passed')));
+    console.log('✓ Multiple containers grounding test passed');
   });
 
   /**
@@ -199,7 +199,7 @@ describe('Container Collapse/Expand Tests', () => {
     const finalHyperEdges = state.visibleHyperEdges;
     expect(finalHyperEdges.length).toBe(0);
     
-    console.log((('✓ Nested container grounding test passed')));
+    console.log('✓ Nested container grounding test passed');
   });
 
   /**
@@ -251,7 +251,7 @@ describe('Container Collapse/Expand Tests', () => {
     const initialHyperEdges = state.visibleEdges.filter(e => isHyperEdge(e));
     expect(initialHyperEdges.length).toBe(0);
     
-    console.log((('  Initial state: 4 nodes, 5 edges, 0 hyperedges')));
+    console.log('  Initial state: 4 nodes, 5 edges, 0 hyperedges');
     
     // Step 1: Collapse containerA
     state.collapseContainer('containerA');
@@ -308,8 +308,8 @@ describe('Container Collapse/Expand Tests', () => {
     expect(crossEdge2?.hidden).toBe(false);
     expect(reverseEdge1?.hidden).toBe(false);
     
-    console.log((('  Final state: fully restored to original')));
-    console.log((('✓ Cross-container hyperedge preservation test passed')));
+    console.log('  Final state: fully restored to original');
+    console.log('✓ Cross-container hyperedge preservation test passed');
   });
 
   /**
@@ -360,11 +360,11 @@ describe('Container Collapse/Expand Tests', () => {
     const initialHyperEdges = state.visibleEdges.filter(e => isHyperEdge(e));
     expect(initialHyperEdges.length).toBe(0);
     
-    console.log((('  Initial state: 4 nodes, 6 edges (4 cross-container bidirectional), 0 hyperedges')));
+    console.log('  Initial state: 4 nodes, 6 edges (4 cross-container bidirectional), 0 hyperedges');
     
     // Run the collapse/expand cycle TWICE to detect accumulation bugs
     for (let iteration = 1; iteration <= 2; iteration++) {
-      console.log(((`  \n=== ITERATION ${iteration} ===`)));
+      console.log(`  \n=== ITERATION ${iteration} ===`);
       
       // Step 1: Collapse containerA
       state.collapseContainer('containerA');
@@ -372,7 +372,7 @@ describe('Container Collapse/Expand Tests', () => {
       const afterCollapseA = state.visibleEdges.filter(e => isHyperEdge(e));
       expect(afterCollapseA.length).toBe(4); // Should have hyperEdges for both A→B and B→A directions
       
-      console.log(((`  Iter ${iteration} - After collapsing A: found ${afterCollapseA.length} hyperedges`)));
+      console.log(`  Iter ${iteration} - After collapsing A: found ${afterCollapseA.length} hyperedges`);
       
       // Step 2: Collapse containerB (this creates cross-container hyperedges)
       state.collapseContainer('containerB');
@@ -387,8 +387,8 @@ describe('Container Collapse/Expand Tests', () => {
       );
       expect(crossContainerHyperEdges.length).toBe(2); // Both A→B and B→A
       
-      console.log(((`  Iter ${iteration} - After collapsing B: found ${afterCollapseB.length} hyperedges`)));
-      console.log(((`  Iter ${iteration} - Cross-container hyperedges:`, crossContainerHyperEdges.map(e => `${e.source}→${e.target}`))));
+      console.log(`  Iter ${iteration} - After collapsing B: found ${afterCollapseB.length} hyperedges`);
+      console.log(`  Iter ${iteration} - Cross-container hyperedges:`, crossContainerHyperEdges.map(e => `${e.source}→${e.target}`));
       
       // Step 3: Expand containerA (critical test point)
       state.expandContainer('containerA');
@@ -408,8 +408,8 @@ describe('Container Collapse/Expand Tests', () => {
       );
       expect(nodeToContainerHyperEdges.length).toBeGreaterThan(0);
       
-      console.log(((`  Iter ${iteration} - After expanding A: found ${afterExpandA.length} hyperedges`)));
-      console.log(((`  Iter ${iteration} - Node-to-container hyperedges:`, nodeToContainerHyperEdges.map(e => `${e.source}→${e.target}`))));
+      console.log(`  Iter ${iteration} - After expanding A: found ${afterExpandA.length} hyperedges`);
+      console.log(`  Iter ${iteration} - Node-to-container hyperedges:`, nodeToContainerHyperEdges.map(e => `${e.source}→${e.target}`));
       
       // Step 4: Expand containerB to fully restore original state
       state.expandContainer('containerB');
@@ -432,7 +432,7 @@ describe('Container Collapse/Expand Tests', () => {
       expect(B1_to_A1?.hidden).toBe(false);
       expect(B2_to_A2?.hidden).toBe(false);
       
-      console.log(((`  Iter ${iteration} - Final state: fully restored to original`)));
+      console.log(`  Iter ${iteration} - Final state: fully restored to original`);
       
       // Critical check: Verify no hyperedge accumulation between iterations
       if (iteration === 2) {
@@ -440,11 +440,11 @@ describe('Container Collapse/Expand Tests', () => {
         // or corrupted state from the first iteration
         const allVisibleHyperEdges = state.visibleEdges.filter(e => isHyperEdge(e));
         expect(allVisibleHyperEdges.length).toBe(0);
-        console.log(((`  Iter ${iteration} - ✅ No hyperedge accumulation detected`)));
+        console.log(`  Iter ${iteration} - ✅ No hyperedge accumulation detected`);
       }
     }
     
-    console.log((('✓ Bidirectional cross-container hyperedge test passed through multiple iterations')));
+    console.log('✓ Bidirectional cross-container hyperedge test passed through multiple iterations');
   });
 
   /**
@@ -487,7 +487,7 @@ describe('Container Collapse/Expand Tests', () => {
     expect(state.visibleNodes.length).toBe(5);
     expect(state.visibleEdges.length).toBe(6);
     
-    console.log((('  Complex scenario: 5 nodes, 6 edges with potential ID conflicts')));
+    console.log('  Complex scenario: 5 nodes, 6 edges with potential ID conflicts');
     
     // Perform a complex sequence of operations that could reveal bugs
     
@@ -496,25 +496,25 @@ describe('Container Collapse/Expand Tests', () => {
     state.collapseContainer('containerB');
     
     const afterBothCollapsed = state.visibleEdges.filter(e => isHyperEdge(e));
-    console.log((('  After collapsing both:', afterBothCollapsed.map(e => e.id))));
+    console.log('  After collapsing both:', afterBothCollapsed.map(e => e.id));
     
     // Step 2: Expand A, then immediately collapse A again (potential state corruption)
     state.expandContainer('containerA');
     const afterExpandA = state.visibleEdges.filter(e => isHyperEdge(e));
-    console.log((('  After expanding A:', afterExpandA.map(e => e.id))));
+    console.log('  After expanding A:', afterExpandA.map(e => e.id));
     
     state.collapseContainer('containerA'); // This might reuse IDs or create conflicts
     const afterRecollapseA = state.visibleEdges.filter(e => isHyperEdge(e));
-    console.log((('  After re-collapsing A:', afterRecollapseA.map(e => e.id))));
+    console.log('  After re-collapsing A:', afterRecollapseA.map(e => e.id));
     
     // Step 3: Now expand B, then expand A (different order)
     state.expandContainer('containerB');
     const afterExpandB = state.visibleEdges.filter(e => isHyperEdge(e));
-    console.log((('  After expanding B:', afterExpandB.map(e => e.id))));
+    console.log('  After expanding B:', afterExpandB.map(e => e.id));
     
     state.expandContainer('containerA');
     const afterExpandBothNew = state.visibleEdges.filter(e => isHyperEdge(e));
-    console.log((('  After expanding both (new order):', afterExpandBothNew.map(e => e.id))));
+    console.log('  After expanding both (new order):', afterExpandBothNew.map(e => e.id));
     
     // Step 4: Verify final state is correct
     expect(state.visibleNodes.length).toBe(5);
@@ -536,6 +536,6 @@ describe('Container Collapse/Expand Tests', () => {
     expect(A1_to_ext?.hidden).toBe(false);
     expect(B1_to_ext?.hidden).toBe(false);
     
-    console.log((('✓ Complex expansion patterns and ID conflict test passed')));
+    console.log('✓ Complex expansion patterns and ID conflict test passed');
   });
 });

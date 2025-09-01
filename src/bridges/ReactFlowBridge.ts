@@ -9,8 +9,8 @@ import type { VisualizationState } from '../core/VisualizationState';
 import type { GraphNode, GraphEdge, Container } from '../shared/types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
 import { generateNodeColors } from '../shared/colorUtils';
-import { MarkerType, Edge as ReactFlowEdge } from '@xyflow/react';
-import { getHandleConfig, CURRENT_HANDLE_STRATEGY } from '../render/handleConfig';
+import { Edge as ReactFlowEdge } from '@xyflow/react';
+import { CURRENT_HANDLE_STRATEGY } from '../render/handleConfig';
 import { convertEdgesToReactFlow, EdgeConverterOptions } from './EdgeConverter';
 import {
   buildParentMap as buildParentMapUtil,
@@ -166,7 +166,6 @@ export class ReactFlowBridge {
       const parentId = parentMap.get(container.id);
 
       // Get position and dimensions from ELK layout (stored in VisualizationState)
-      const containerLayout = visState.getContainerLayout(container.id);
       let position: { x: number; y: number };
 
       if (parentId) {
@@ -224,7 +223,6 @@ export class ReactFlowBridge {
       const parentId = parentMap.get(node.id);
 
       // Get position from ELK layout (stored in VisualizationState)
-      const nodeLayout = visState.getNodeLayout(node.id);
       const position: { x: number; y: number } = computeNodePosition(visState, node, parentId);
 
       const nodeType: string = (node as any).nodeType || (node as any).type || 'default';

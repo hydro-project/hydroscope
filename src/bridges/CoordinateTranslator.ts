@@ -161,10 +161,10 @@ export class CoordinateTranslator {
    * Logs detailed information about coordinate systems for debugging
    */
   static debugCoordinates(
-    elementId: string,
-    elkCoords: ELKCoordinates,
-    reactFlowCoords: ReactFlowCoordinates,
-    parentContainer?: ContainerInfo
+    _elementId: string,
+    _elkCoords: ELKCoordinates,
+    _reactFlowCoords: ReactFlowCoordinates,
+    _parentContainer?: ContainerInfo
   ): void {
     // Debug logging removed for performance
   }

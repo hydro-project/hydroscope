@@ -72,7 +72,7 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setGraphNode('child2', { label: 'Child 2', hidden: false });
 
       // Test expand/collapse cycle maintains consistency
-      const testCycle = (containerId: string, description: string) => {
+      const testCycle = (containerId: string) => {
         // Collapse
         visState.collapseContainer(containerId);
         expect(visState.getContainer(containerId)?.collapsed).toBe(true);
@@ -82,9 +82,9 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
         expect(visState.getContainer(containerId)?.collapsed).toBe(false);
       };
 
-      testCycle('parent', 'parent container');
-      testCycle('grandparent', 'grandparent container');
-      testCycle('parent', 'parent container again');
+      testCycle('parent');
+      testCycle('grandparent');
+      testCycle('parent');
     });
   });
 

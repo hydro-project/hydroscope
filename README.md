@@ -1,9 +1,8 @@
 # Hydroscope
 
-React-based graph visualization for Hydro dataflow graphs. Built on React and @xyflow/react (React Flow) with ELK for layout. Ships with a minimal component for effortless rendering plus interactive variants and helpful UI panels.
+React-based graph visualization with hierarchical subgraphs. Originally designed for Hydro dataflow graphs, but has no dependencies on Hydro. Built on React and @xyflow/react (React Flow) with ELK for layout. Ships with a minimal component for effortless rendering plus interactive variants and helpful UI panels.
 
 • Package: `@hydro-project/hydroscope`
-• Peer deps: `react`, `react-dom` (>=17; tested with React 18)
 • Runtime deps (installed for you): `@xyflow/react`, `elkjs`, `antd`
 
 ## Install
@@ -25,9 +24,6 @@ import '@hydro-project/hydroscope/style.css';
 - Hydroscope uses React Flow (@xyflow/react), ELK (elkjs), and Ant Design (antd) under the hood.
   - These are regular dependencies and will be installed automatically with Hydroscope.
   - You must import their base styles in your app (see below).
-
-### Styles you need to import
-
 Add these once at your app entry (order not critical):
 
 ```ts
@@ -36,31 +32,22 @@ import '@xyflow/react/dist/style.css';
 import 'antd/dist/reset.css'; // Ant Design v5
 ```
 
+
 ## API at a glance
 
-- Hydroscope: minimal, read-only visualization
-- HydroscopeMini: interactive (click to collapse/expand, pack/unpack, refresh)
-- HydroscopeFull: full UI (file upload, layout controls, style tuner, info panel)
+- HydroscopeCore: minimal, read-only visualization (imperative API, no UI)
+- Hydroscope: full-featured UI (file upload, info panel, style tuner, grouping controls, search)
+- HydroscopeMini: interactive, compact controls (collapse/expand, pack/unpack, refresh)
 - FileDropZone: drag-and-drop JSON uploader with inline docs/example
 
-Utilities and types:
-- parseGraphJSON, createRenderConfig
-- VisualizationState, VisualizationEngine, createVisualizationEngine
-- generateCompleteExample, SCHEMA_VERSION, LAST_UPDATED
-- RenderConfig, LayoutConfig, FlowGraphEventHandlers
-
-## Quick start
-
-Basic render (minimal API):
-
 ```tsx
-import { Hydroscope } from '@hydro-project/hydroscope';
+import { HydroscopeCore } from '@hydro-project/hydroscope';
 import '@hydro-project/hydroscope/style.css';
 
 export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
-      <Hydroscope
+      <HydroscopeCore
         data={yourGraphJson}
         grouping="location"           // optional grouping id
         fillViewport
@@ -72,6 +59,7 @@ export default function App() {
 }
 ```
 
+
 Interactive (small controls built-in):
 
 ```tsx
@@ -80,12 +68,13 @@ import { HydroscopeMini } from '@hydro-project/hydroscope';
 <HydroscopeMini data={yourGraphJson} showControls enableCollapse />
 ```
 
-Full experience (sidebar, upload, controls):
+
+Full-featured UI (sidebar, upload, controls):
 
 ```tsx
-import { HydroscopeFull } from '@hydro-project/hydroscope';
+import { Hydroscope } from '@hydro-project/hydroscope';
 
-<HydroscopeFull
+<Hydroscope
   data={yourGraphJson}
   showFileUpload
   showInfoPanel
@@ -93,11 +82,12 @@ import { HydroscopeFull } from '@hydro-project/hydroscope';
 />
 ```
 
+
 ## Props (essentials)
 
-Hydroscope
+HydroscopeCore (minimal renderer)
 - data: object | string — graph JSON
-- grouping?: string — hierarchy id to apply
+- grouping?: string — hierarchy id to apply (from `hierarchyChoices`)
 - config?: RenderConfig — visual/style options
 - layoutConfig?: LayoutConfig — layout options
 - eventHandlers?: FlowGraphEventHandlers — callbacks (e.g., onNodeClick)
@@ -114,16 +104,16 @@ HydroscopeMini
 - width?: number | string — explicit graph width (default: '100%')
 - defaultHeight?: number | string — fallback height when none provided (default: 600)
 - innerStyle?: React.CSSProperties — style applied to inner graph container
-- Plus all non-conflicting Hydroscope props (data, grouping, config, ...)
+- Plus all non-conflicting HydroscopeCore props (data, grouping, config, ...)
 
-HydroscopeFull
+Hydroscope (full-featured UI)
 - showFileUpload?: boolean (default: true)
 - showInfoPanel?: boolean (default: true)
 - initialLayoutAlgorithm?: string (default: 'mrtree')
 - initialColorPalette?: string (default: 'Set3')
 - autoFit?: boolean (default: true)
 - onFileUpload? / onNodeClick? / onContainerCollapse? / onContainerExpand? / onParsed? / onConfigChange?
-- Plus all non-conflicting Hydroscope props (data, grouping, config, ...)
+- Plus all non-conflicting HydroscopeCore props (data, grouping, config, ...)
 
 FileDropZone
 - onFileUpload?: (data, filename) => void
@@ -131,26 +121,14 @@ FileDropZone
 
 ## Data format and helpers
 
-- The parser accepts an object or JSON string with nodes, edges, and optional hierarchy/style sections.
+- The parser accepts an object or JSON string with nodes, edges, and optional `hierarchyChoices`/style sections. Edges use `semanticTags` for all semantics and styling.
 - Exported helpers:
-  - `SCHEMA_VERSION` and `LAST_UPDATED` for display or tooling
-  - `generateCompleteExample()` returns a working sample JSON
-
-```ts
-import { SCHEMA_VERSION, LAST_UPDATED, generateCompleteExample } from '@hydro-project/hydroscope';
 
 console.log('Schema', SCHEMA_VERSION, 'Updated', LAST_UPDATED);
 const sample = generateCompleteExample();
 ```
-
 ## Layout algorithms and fallback
 
-`layoutConfig.algorithm` accepts any string. Supported ELK values include:
-`mrtree`, `layered`, `force`, `stress`, `radial`.
-
-- Unknown strings are safely normalized to `mrtree` internally.
-
-```tsx
 <Hydroscope data={data} layoutConfig={{ algorithm: 'layered' }} />
 // If you pass 'my-custom', Hydroscope falls back to 'mrtree'.
 ```
@@ -161,16 +139,17 @@ const sample = generateCompleteExample();
 - Set `fillViewport` to have the graph fill the viewport (`100vw`/`100vh`).
 - HydroscopeMini also accepts `height`, `width`, `defaultHeight`, and `innerStyle` for precise sizing control.
 
+
 ## Imperative API (ref)
 
-You can capture a ref to call:
+You can capture a ref to HydroscopeCore to call:
 - getVisualizationState(): VisualizationState | null
 - refreshLayout(): Promise<void>
 - fitView(): void
 
 ```tsx
-const ref = useRef<HydroscopeRef>(null);
-<Hydroscope ref={ref} data={data} />
+const ref = useRef<HydroscopeCoreRef>(null);
+<HydroscopeCore ref={ref} data={data} />
 // later
 await ref.current?.refreshLayout();
 ref.current?.fitView();
@@ -181,7 +160,7 @@ ref.current?.fitView();
 - Nothing renders: Ensure you imported the CSS and provided a size (e.g., parent div has width/height).
 - Container size errors: Defaults now apply a 600px height when unspecified. You can override via `height` or `defaultHeight` on HydroscopeMini, or set an explicit height on the container.
 - Parse error: Check your JSON structure; see the complete example via `generateCompleteExample()`.
-- Clicks don’t collapse: Use HydroscopeMini/HydroscopeFull or provide `eventHandlers.onNodeClick` in Hydroscope.
+- Clicks don’t collapse: Use HydroscopeMini/Hydroscope or provide `eventHandlers.onNodeClick` in HydroscopeCore.
 - Layout looks odd: Try `layoutConfig={{ algorithm: 'layered' }}` or call `refreshLayout()`.
 
 ## Development
@@ -202,7 +181,7 @@ Repo structure (high level)
 ```
 src/
   index.ts            # Public API
-  components/         # Hydroscope, HydroscopeMini, HydroscopeFull, panels
+  components/         # HydroscopeCore, HydroscopeMini, Hydroscope, panels
   core/               # VisualizationState, JSON parser
   layout/             # ELK layout integration
   render/             # ReactFlow rendering

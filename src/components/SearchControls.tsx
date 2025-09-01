@@ -65,7 +65,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(({
   const [matches, setMatches] = useState<SearchMatch[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [_showHistory, _setShowHistory] = useState(false);
   const timerRef = useRef<number | null>(null);
   const inputRef = useRef<any>(null);
 

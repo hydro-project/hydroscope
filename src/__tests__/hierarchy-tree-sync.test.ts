@@ -32,7 +32,7 @@ function buildHierarchyTreeDirect(visualizationState: any): Array<{ id: string; 
   };
 
   const rootContainers = visualizationState.getTopLevelContainers();
-  return rootContainers.map(container => buildNode(container.id));
+  return rootContainers.map((container: any) => buildNode(container.id));
 }
 
 function getCollapsedContainersSetDirect(visualizationState: any): Set<string> {
@@ -67,7 +67,7 @@ function getExpandedKeysForHierarchyTreeDirect(
 }
 
 describe('HierarchyTree State Synchronization', () => {
-  let visState;
+  let visState: any;
 
   beforeEach(() => {
     visState = createVisualizationState();
@@ -164,7 +164,7 @@ describe('HierarchyTree State Synchronization', () => {
     expect(childContainer1.children).toHaveLength(1); // nested_container (node_2 doesn't appear as it's a leaf)
     
     // Find nested container
-    const nestedContainer = childContainer1.children.find(c => c.id === 'nested_container');
+    const nestedContainer = childContainer1.children.find((c: any) => c.id === 'nested_container');
     expect(nestedContainer).toBeDefined();
     expect(nestedContainer.children).toHaveLength(0); // No child containers (node_5 is a leaf)
   });
@@ -186,7 +186,8 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should maintain synchronization after multiple expand/collapse operations', () => {
-    const hierarchyTree = buildHierarchyTreeDirect(visState);
+    // Build the hierarchy tree for structure validation
+    buildHierarchyTreeDirect(visState);
     
     // Start by collapsing root container
     visState.collapseContainer('root_container');

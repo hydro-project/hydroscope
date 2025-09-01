@@ -243,7 +243,7 @@ describe('ELKBridge', () => {
         expect(child.height).toBeGreaterThan(0);
       }
       
-      console.log(((`✅ Container hierarchy test: ${children.length} children positioned within container bounds`)));
+      console.log(`✅ Container hierarchy test: ${children.length} children positioned within container bounds`);
     });
 
     it('should preserve and store edge sections from ELK layout', async () => {
@@ -281,7 +281,7 @@ describe('ELKBridge', () => {
       
       // ELK should provide sections for simple edges within the same container
       if (edgeLayout?.sections && edgeLayout.sections.length > 0) {
-        console.log(((`✅ Edge ${testEdge.id} has ${edgeLayout.sections.length} sections`)));
+        console.log(`✅ Edge ${testEdge.id} has ${edgeLayout.sections.length} sections`);
         
         // Validate section structure
         for (const section of edgeLayout.sections) {
@@ -294,7 +294,7 @@ describe('ELKBridge', () => {
         }
       } else {
         // Some edge configurations might not get sections from ELK
-        console.log(((`ℹ️  Edge ${testEdge.id} has no sections (may be cross-container or simple direct connection)`)));
+        console.log(`ℹ️  Edge ${testEdge.id} has no sections (may be cross-container or simple direct connection)`);
       }
       
       // The key requirement is that the getEdgeLayout method works

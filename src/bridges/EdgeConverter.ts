@@ -24,28 +24,15 @@ export function convertEdgeToReactFlow(
 ): ReactFlowEdge {
   const { edgeStyleConfig, showPropertyLabels = true, enableAnimations = true } = options;
   
-  // Extract edge properties (mapped from semantic tags) for styling
-  const edgeProperties = (edge as any).edgeProperties || [];
+  // Extract edge properties from semanticTags for styling
+  const edgeProperties = (edge as any).semanticTags || [];
   const originalLabel = (edge as any).label;
   
   // Process the edge style based on properties
-  const processedStyle = processEdgeStyle(edgeProperties, edgeStyleConfig);
+  const processedStyle = processEdgeStyle(edgeProperties, edgeStyleConfig, originalLabel);
 
-  // Defensive: If processedStyle didn't mark as animated, infer from styleTag mappings
-  let animatedFlag = enableAnimations && processedStyle.animated;
-  if (enableAnimations && !animatedFlag && edgeStyleConfig && edgeStyleConfig.propertyMappings) {
-    try {
-      const animatedTags = new Set<string>(['edge_style_3_alt', 'edge_style_5']);
-      for (const prop of edgeProperties) {
-        const mapping = (edgeStyleConfig as any).propertyMappings?.[prop];
-        const tag = typeof mapping === 'string' ? mapping : mapping?.styleTag;
-        if (tag && animatedTags.has(tag)) {
-          animatedFlag = true;
-          break;
-        }
-      }
-    } catch {}
-  }
+  // Use processedStyle.animated directly
+  const animatedFlag = enableAnimations && processedStyle.animated;
   
   // Create label if requested
   const label = showPropertyLabels 

@@ -12,8 +12,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import React from 'react';
-import type { SearchableItem, SearchMatch } from '../components/SearchControls';
+import type { SearchableItem } from '../components/SearchControls';
 
 const mockSearchableItems: SearchableItem[] = [
   { id: 'container1', label: 'Frontend Service', type: 'container' },
@@ -53,7 +52,6 @@ describe('SearchControls Render Loop Fix', () => {
     // updating search history doesn't trigger additional searches.
 
     const mockOnSearch = vi.fn();
-    const mockAddToHistory = vi.fn();
     
     // Simulate the fixed behavior: addToHistory uses setState callback
     // instead of depending on current searchHistory state

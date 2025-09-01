@@ -27,7 +27,7 @@ export function loadChatJsonTestData(grouping: string | null = null): TestDataRe
     const chatJsonContent = fs.readFileSync(chatJsonPath, 'utf8');
     const rawData = JSON.parse(chatJsonContent);
     
-    const result = parseGraphJSON(rawData, grouping);
+    const result = parseGraphJSON(rawData, grouping ?? undefined);
     
     return {
       rawData,
@@ -45,7 +45,7 @@ export function loadChatJsonTestData(grouping: string | null = null): TestDataRe
  */
 export function skipIfNoTestData(testData: TestDataResult | null, testName: string = 'test') {
   if (!testData) {
-    console.log(((`⚠️  Skipping ${testName}: chat.json not available`)));
+    console.log(`⚠️  Skipping ${testName}: chat.json not available`);
     return true;
   }
   return false;
