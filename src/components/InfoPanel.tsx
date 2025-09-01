@@ -14,7 +14,7 @@ import { HierarchyTree } from './HierarchyTree';
 import { Legend } from './Legend';
 import { EdgeStyleLegend } from './EdgeStyleLegend';
 import { SearchControls, type SearchMatch, type SearchControlsRef } from './SearchControls';
-import { TYPOGRAPHY } from '../shared/config';
+import { TYPOGRAPHY, PANEL_CONSTANTS } from '../shared/config';
 
 interface VisualizationNode {
   id: string;
@@ -183,16 +183,16 @@ export const InfoPanel = forwardRef<
     // Panel style
     const panelStyle: React.CSSProperties = {
       position: 'absolute',
-      top: 10, // position to occlude the button
-      right: 8, // right side instead of left
+      top: PANEL_CONSTANTS.PANEL_TOP,
+      right: PANEL_CONSTANTS.PANEL_RIGHT, 
       zIndex: 1200,
-      minWidth: 280,
-      maxWidth: 340,
+      minWidth: PANEL_CONSTANTS.INFO_PANEL_MIN_WIDTH,
+      maxWidth: PANEL_CONSTANTS.INFO_PANEL_MAX_WIDTH,
       background: '#fff',
       boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
       borderRadius: 2,
       border: '1px solid #eee',
-      padding: 20,
+      padding: PANEL_CONSTANTS.INFO_PANEL_PADDING,
       transition: 'transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s',
       transform: open ? 'translateX(0)' : 'translateX(120%)', // slide from right
       opacity: open ? 1 : 0,
@@ -201,12 +201,12 @@ export const InfoPanel = forwardRef<
 
     // Custom button style for open/close, matching CustomControls
     const controlButtonStyle: React.CSSProperties = {
-      fontSize: 18,
+      fontSize: PANEL_CONSTANTS.FONT_SIZE_LARGE,
       color: '#222',
-      marginLeft: 8,
+      marginLeft: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5, // 8px
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
       border: '1px solid #3b82f6',
-      borderRadius: 4,
+      borderRadius: PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS,
       boxShadow: '0 1px 4px rgba(59,130,246,0.08)',
       transition: 'background 0.18s, box-shadow 0.18s',
       padding: '2px 8px',
@@ -236,7 +236,7 @@ export const InfoPanel = forwardRef<
             marginBottom: 12,
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: 16 }}>Graph Info</span>
+          <span style={{ fontWeight: 600, fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM }}>Graph Info</span>
           <Button
             type="text"
             size="small"
@@ -268,7 +268,7 @@ export const InfoPanel = forwardRef<
             >
               {/* Grouping Controls */}
               {safeHierarchyChoices.length > 0 && (
-                <div style={{ marginBottom: '8px' }}>
+                <div style={{ marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5 }}>  {/* 8px */}
                   <GroupingControls
                     hierarchyChoices={safeHierarchyChoices}
                     currentGrouping={currentGrouping}

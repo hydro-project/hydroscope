@@ -5,7 +5,22 @@
  * This encapsulates handle behavior so it can be easily changed across the entire system.
  */
 
-import { Position } from '@xyflow/react';
+import { Position, type Handle } from '@xyflow/react';
+import { UI_CONSTANTS } from '../shared/config';
+
+// Helper styles for handles
+const CONTINUOUS_HANDLE_STYLE = {
+  opacity: UI_CONSTANTS.HANDLE_OPACITY_VISIBLE,
+  width: `${UI_CONSTANTS.HANDLE_SIZE_SMALL}px`,
+  height: `${UI_CONSTANTS.HANDLE_SIZE_SMALL}px`,
+  background: '#666'
+};
+
+const FLOATING_HANDLE_STYLE = {
+  opacity: UI_CONSTANTS.HANDLE_OPACITY_HIDDEN,
+  width: `${UI_CONSTANTS.HANDLE_SIZE}px`,
+  height: `${UI_CONSTANTS.HANDLE_SIZE}px`
+};
 
 export interface HandleConfig {
   id: string;
@@ -30,16 +45,16 @@ export const HANDLE_STYLES = {
   },
   discrete: {
     background: '#555',
-    border: '2px solid #222',
-    width: '8px',
-    height: '8px',
+    border: `${UI_CONSTANTS.BORDER_WIDTH_DEFAULT}px solid #222`,
+    width: `${UI_CONSTANTS.HANDLE_SIZE}px`,
+    height: `${UI_CONSTANTS.HANDLE_SIZE}px`,
   },
   floating: {
     background: 'transparent',
     border: 'none',
-    width: '8px',
-    height: '8px',
-    opacity: 0, // Invisible handles for floating edges
+    width: `${UI_CONSTANTS.HANDLE_SIZE}px`,
+    height: `${UI_CONSTANTS.HANDLE_SIZE}px`,
+    opacity: UI_CONSTANTS.HANDLE_OPACITY_HIDDEN, // Invisible handles for floating edges
   },
 } as const;
 
@@ -68,44 +83,44 @@ export const HANDLE_STRATEGIES = {
       {
         id: 'out-top',
         position: Position.Top,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
       {
         id: 'out-right',
         position: Position.Right,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
       {
         id: 'out-bottom',
         position: Position.Bottom,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
       {
         id: 'out-left',
         position: Position.Left,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
     ] as HandleConfig[],
     targetHandles: [
       {
         id: 'in-top',
         position: Position.Top,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
       {
         id: 'in-right',
         position: Position.Right,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
       {
         id: 'in-bottom',
         position: Position.Bottom,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
       {
         id: 'in-left',
         position: Position.Left,
-        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+        style: CONTINUOUS_HANDLE_STYLE,
       },
     ] as HandleConfig[],
   },
@@ -118,39 +133,39 @@ export const HANDLE_STRATEGIES = {
   floating: {
     enableContinuousHandles: false,
     sourceHandles: [
-      { id: 'out-top', position: Position.Top, style: { opacity: 0, width: '8px', height: '8px' } },
+      { id: 'out-top', position: Position.Top, style: FLOATING_HANDLE_STYLE },
       {
         id: 'out-right',
         position: Position.Right,
-        style: { opacity: 0, width: '8px', height: '8px' },
+        style: FLOATING_HANDLE_STYLE,
       },
       {
         id: 'out-bottom',
         position: Position.Bottom,
-        style: { opacity: 0, width: '8px', height: '8px' },
+        style: FLOATING_HANDLE_STYLE,
       },
       {
         id: 'out-left',
         position: Position.Left,
-        style: { opacity: 0, width: '8px', height: '8px' },
+        style: FLOATING_HANDLE_STYLE,
       },
     ] as HandleConfig[],
     targetHandles: [
-      { id: 'in-top', position: Position.Top, style: { opacity: 0, width: '8px', height: '8px' } },
+      { id: 'in-top', position: Position.Top, style: FLOATING_HANDLE_STYLE },
       {
         id: 'in-right',
         position: Position.Right,
-        style: { opacity: 0, width: '8px', height: '8px' },
+        style: FLOATING_HANDLE_STYLE,
       },
       {
         id: 'in-bottom',
         position: Position.Bottom,
-        style: { opacity: 0, width: '8px', height: '8px' },
+        style: FLOATING_HANDLE_STYLE,
       },
       {
         id: 'in-left',
         position: Position.Left,
-        style: { opacity: 0, width: '8px', height: '8px' },
+        style: FLOATING_HANDLE_STYLE,
       },
     ] as HandleConfig[],
   },

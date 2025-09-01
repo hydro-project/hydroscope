@@ -8,7 +8,7 @@ import { ReactFlow, Background, MiniMap, ReactFlowProvider } from '@xyflow/react
 import '@xyflow/react/dist/style.css';
 import { CustomControls } from '../components/CustomControls';
 
-import { DEFAULT_RENDER_CONFIG } from '../shared/config';
+import { DEFAULT_RENDER_CONFIG, UI_CONSTANTS } from '../shared/config';
 import { nodeTypes } from './nodes';
 import { edgeTypes } from './edges';
 import { StyleConfigProvider } from './StyleConfigContext';
@@ -284,7 +284,10 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
             onNodeDragStop={onNodeDragStop}
             onNodesChange={onNodesChange}
             fitView={false}
-            fitViewOptions={{ padding: 0.1, maxZoom: 1.2 }}
+            fitViewOptions={{ 
+              padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
+              maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM 
+            }}
             attributionPosition="bottom-left"
             nodesDraggable={config.nodesDraggable !== false}
             nodesConnectable={config.nodesConnectable !== false}
@@ -292,7 +295,7 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
             panOnDrag={config.enablePan !== false}
             zoomOnScroll={config.enableZoom !== false}
             minZoom={0.1}
-            maxZoom={2}
+            maxZoom={UI_CONSTANTS.MAX_ZOOM}
           >
             <Background color="#ccc" />
             {config.enableControls !== false && (
@@ -311,7 +314,11 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
               />
             )}
             {config.enableMiniMap !== false && (
-              <MiniMap nodeColor="#666" nodeStrokeWidth={2} position="bottom-right" />
+              <MiniMap 
+                nodeColor="#666" 
+                nodeStrokeWidth={UI_CONSTANTS.MINIMAP_STROKE_WIDTH} 
+                position="bottom-right" 
+              />
             )}
           </ReactFlow>
 

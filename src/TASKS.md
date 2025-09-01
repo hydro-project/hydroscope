@@ -1,6 +1,4 @@
 TASKS:
-- address overuse of `any`
-- Centralize any stray constants
 - Add search to the comprehensive fuzz test
 - spinner covering up rendering
 - efficiency of rendering and esp. search on big files

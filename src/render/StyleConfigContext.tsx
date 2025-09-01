@@ -1,4 +1,5 @@
 import React, { createContext, useContext } from 'react';
+import { UI_CONSTANTS, PANEL_CONSTANTS } from '../shared/config';
 
 export type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
@@ -20,15 +21,15 @@ export interface StyleConfig {
 const defaultStyleConfig: StyleConfig = {
   edgeStyle: 'bezier',
   edgeColor: '#1976d2',
-  edgeWidth: 2,
+  edgeWidth: UI_CONSTANTS.EDGE_STROKE_WIDTH,
   edgeDashed: false,
 
-  nodeBorderRadius: 4,
-  nodePadding: 12,
-  nodeFontSize: 12,
+  nodeBorderRadius: PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS,
+  nodePadding: PANEL_CONSTANTS.COMPONENT_PADDING,
+  nodeFontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL,
 
-  containerBorderRadius: 8,
-  containerBorderWidth: 2,
+  containerBorderRadius: 8, // Keep as 8 since it's different from general component border radius
+  containerBorderWidth: UI_CONSTANTS.BORDER_WIDTH_DEFAULT,
   containerShadow: 'LIGHT',
 };
 

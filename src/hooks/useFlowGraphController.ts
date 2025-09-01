@@ -9,6 +9,7 @@ import { useReactFlow, applyNodeChanges, type NodeMouseHandler, type EdgeMouseHa
 import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import { useManualPositions } from './useManualPositions';
+import { UI_CONSTANTS } from '../shared/config';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { ReactFlowData } from '../bridges/ReactFlowBridge';
 import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core/types';
@@ -78,7 +79,11 @@ export function useFlowGraphController({
 
   const fitOnce = useCallback(() => {
     try {
-      fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
+      fitView({ 
+        padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
+        maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
+        duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+      });
       lastFitTimeRef.current = Date.now();
     } catch (err) {
       console.warn('[FlowGraph] ⚠️ fitOnce failed:', err);
@@ -116,7 +121,11 @@ export function useFlowGraphController({
         if (config.fitView !== false) {
           setTimeout(() => {
             try {
-              fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
+              fitView({ 
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
               console.warn('[FlowGraph] ⚠️ Auto-fit failed during refresh:', err);
@@ -211,10 +220,16 @@ export function useFlowGraphController({
           const now = Date.now();
           const since = now - lastFitTimeRef.current;
           if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
-          const delay = since > 500 ? 100 : 300;
+          const delay = since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD 
+            ? UI_CONSTANTS.LAYOUT_DELAY_SHORT 
+            : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
+              fitView({ 
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
               console.warn('[FlowGraph] ⚠️ Auto-fit failed:', err);
@@ -300,10 +315,14 @@ export function useFlowGraphController({
         const now = Date.now();
         const since = now - lastFitTimeRef.current;
         if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
-        if (since > 500) {
+        if (since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD) {
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
+              fitView({ 
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
               console.warn('[FlowGraph] ⚠️ Auto-fit after drag failed:', err);

@@ -90,6 +90,80 @@ export const LAYOUT_CONSTANTS = {
   },
 } as const;
 
+// UI Animation and Interaction Constants
+export const UI_CONSTANTS = {
+  // ReactFlow viewport animation
+  FIT_VIEW_PADDING: 0.1,
+  FIT_VIEW_MAX_ZOOM: 1.2,
+  FIT_VIEW_DURATION: 300, // milliseconds
+  
+  // Timing constants
+  LAYOUT_DELAY_THRESHOLD: 500, // milliseconds - when to apply shorter delay
+  LAYOUT_DELAY_SHORT: 100, // milliseconds
+  LAYOUT_DELAY_NORMAL: 300, // milliseconds
+  
+  // Handle dimensions (ReactFlow connection points)
+  HANDLE_SIZE: 8, // pixels - width and height for handles
+  HANDLE_SIZE_SMALL: 6, // pixels - for continuous/floating handles
+  HANDLE_OPACITY_HIDDEN: 0, // completely transparent
+  HANDLE_OPACITY_VISIBLE: 0.1, // barely visible
+  
+  // Border and stroke widths
+  BORDER_WIDTH_DEFAULT: 2, // pixels
+  BORDER_WIDTH_THICK: 3, // pixels
+  EDGE_STROKE_WIDTH: 2, // pixels
+  MINIMAP_STROKE_WIDTH: 2, // pixels
+  
+  // Node sizing constants (fallback values when not specified)
+  NODE_WIDTH_DEFAULT: 120, // pixels
+  NODE_WIDTH_CONTAINER: 180, // pixels - for collapsed containers
+  NODE_HEIGHT_DEFAULT: 40, // pixels  
+  NODE_HEIGHT_CONTAINER: 100, // pixels - for collapsed containers
+  
+  // Zoom limits
+  MAX_ZOOM: 2, // maximum zoom level for ReactFlow
+} as const;
+
+// Panel and Component Sizing Constants
+export const PANEL_CONSTANTS = {
+  // Panel positioning
+  PANEL_TOP: 10, // pixels - position to occlude the button
+  PANEL_RIGHT: 8, // pixels - right side positioning
+  
+  // Info Panel dimensions
+  INFO_PANEL_MIN_WIDTH: 280, // pixels
+  INFO_PANEL_MAX_WIDTH: 340, // pixels
+  INFO_PANEL_PADDING: 20, // pixels
+  INFO_PANEL_BORDER_RADIUS: 2, // pixels
+  
+  // Style Tuner Panel dimensions (matches Info Panel)
+  STYLE_TUNER_MIN_WIDTH: 280, // pixels
+  STYLE_TUNER_MAX_WIDTH: 340, // pixels
+  STYLE_TUNER_PADDING: 20, // pixels
+  STYLE_TUNER_BORDER_RADIUS: 2, // pixels
+  
+  // General component styling
+  COMPONENT_BORDER_RADIUS: 4, // pixels - for buttons, inputs, etc.
+  COMPONENT_PADDING: 12, // pixels - general padding
+  
+  // Search controls
+  SEARCH_MIN_WIDTH: 52, // pixels - for search result counter
+  
+  // Typography
+  FONT_SIZE_TINY: 11, // pixels - for secondary text 
+  FONT_SIZE_SMALL: 12, // pixels
+  FONT_SIZE_LABEL: 13, // pixels - for node/container labels
+  FONT_SIZE_MEDIUM: 16, // pixels
+  FONT_SIZE_LARGE: 18, // pixels
+} as const;
+
+// Color manipulation constants (for generateContainerColors function)
+export const COLOR_CONSTANTS = {
+  LIGHTEN_FACTOR: 0.8, // factor for lightening colors (0-1)
+  DARKEN_FACTOR: 0.2, // factor for darkening colors (0-1)
+  CONTRAST_FACTOR: 0.4, // factor for text contrast (0-1)
+} as const;
+
 // HyperEdge constants
 export const HYPEREDGE_CONSTANTS = {
   PREFIX: 'hyper_', // Prefix for hyperEdge IDs

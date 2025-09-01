@@ -19,6 +19,7 @@
 
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { Input, Button, Tooltip, AutoComplete } from 'antd';
+import { PANEL_CONSTANTS } from '../shared/config';
 
 export type SearchableItem = { id: string; label: string; type: 'container' | 'node' };
 export type SearchMatch = {
@@ -213,7 +214,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             style={{ height: compact ? 28 : undefined }}
           />
         </AutoComplete>
-        <span style={{ minWidth: 52, textAlign: 'center', fontSize: 12, color: '#666' }}>
+        <span style={{ minWidth: PANEL_CONSTANTS.SEARCH_MIN_WIDTH, textAlign: 'center', fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL, color: '#666' }}>
           {countText}
         </span>
         <Tooltip title="Previous match">

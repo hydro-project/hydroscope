@@ -8,6 +8,8 @@ import { generateNodeColors, type NodeColor } from '../shared/colorUtils';
 import { truncateLabel } from '../shared/textUtils';
 import { useStyleConfig } from './StyleConfigContext';
 import { HandlesRenderer } from './handles';
+import { PANEL_CONSTANTS } from '../shared/config';
+import { UI_CONSTANTS, COLOR_CONSTANTS } from '../shared/config';
 
 // Container color generation (copied from ContainerNode for consistency)
 function generateContainerColors(containerId: string, palette: string) {
@@ -46,9 +48,9 @@ function generateContainerColors(containerId: string, palette: string) {
   };
 
   return {
-    background: lighten(baseColor, 0.8),
-    border: darken(baseColor, 0.2),
-    text: darken(baseColor, 0.4),
+    background: lighten(baseColor, COLOR_CONSTANTS.LIGHTEN_FACTOR),
+    border: darken(baseColor, COLOR_CONSTANTS.DARKEN_FACTOR),
+    text: darken(baseColor, COLOR_CONSTANTS.CONTRAST_FACTOR),
   };
 }
 
@@ -93,8 +95,8 @@ export function StandardNode({ id, data }: NodeProps) {
     : { backgroundColor: rawColors.background, borderColor: rawColors.border };
 
   // For collapsed containers, get the same variables as ContainerNode
-  const width = data.width || (isCollapsedContainer ? 180 : 120);
-  const height = data.height || (isCollapsedContainer ? 100 : 40);
+  const width = data.width || (isCollapsedContainer ? UI_CONSTANTS.NODE_WIDTH_CONTAINER : UI_CONSTANTS.NODE_WIDTH_DEFAULT);
+  const height = data.height || (isCollapsedContainer ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
 
@@ -171,7 +173,7 @@ export function StandardNode({ id, data }: NodeProps) {
           <HandlesRenderer />
           <div
             style={{
-              fontSize: '13px',
+              fontSize: PANEL_CONSTANTS.FONT_SIZE_LABEL,
               fontWeight: '600',
               color: containerColors.text,
               textAlign: 'center',
@@ -191,7 +193,7 @@ export function StandardNode({ id, data }: NodeProps) {
           </div>
           <div
             style={{
-              fontSize: '11px',
+              fontSize: PANEL_CONSTANTS.FONT_SIZE_TINY,
               color: containerColors.text,
               opacity: 0.8,
               textAlign: 'center',

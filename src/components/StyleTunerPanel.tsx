@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
-import { LAYOUT_CONSTANTS } from '../shared/config';
+import { LAYOUT_CONSTANTS, PANEL_CONSTANTS } from '../shared/config';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
@@ -78,9 +78,9 @@ export function StyleTunerPanel({
   const inputStyle: React.CSSProperties = {
     padding: '4px 8px',
     border: '1px solid #ced4da',
-    borderRadius: '4px',
+    borderRadius: `${PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS}px`,
     backgroundColor: '#fff',
-    fontSize: '12px',
+    fontSize: `${PANEL_CONSTANTS.FONT_SIZE_SMALL}px`,
     width: '100%',
   };
 
@@ -89,17 +89,17 @@ export function StyleTunerPanel({
     gridTemplateColumns: '1fr 120px',
     alignItems: 'center',
     gap: '8px',
-    marginBottom: '8px',
+    marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5, // 8px
   };
 
   // Custom button style for open/close, matching CustomControls
   const controlButtonStyle: React.CSSProperties = {
-    fontSize: 18,
+    fontSize: PANEL_CONSTANTS.FONT_SIZE_LARGE,
     color: '#222',
-    marginLeft: 8,
+    marginLeft: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5, // 8px
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     border: '1px solid #3b82f6',
-    borderRadius: 4,
+    borderRadius: PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS,
     boxShadow: '0 1px 4px rgba(59,130,246,0.08)',
     transition: 'background 0.18s, box-shadow 0.18s',
     padding: '2px 8px',
@@ -123,16 +123,16 @@ export function StyleTunerPanel({
     <div
       style={{
         position: 'absolute',
-        top: 10, // position to occlude the button
-        right: 8, // further right, nearly flush with edge
+        top: PANEL_CONSTANTS.PANEL_TOP,
+        right: PANEL_CONSTANTS.PANEL_RIGHT,
         zIndex: 1200, // higher than button
-        minWidth: 280,
-        maxWidth: 340,
+        minWidth: PANEL_CONSTANTS.STYLE_TUNER_MIN_WIDTH,
+        maxWidth: PANEL_CONSTANTS.STYLE_TUNER_MAX_WIDTH,
         background: '#fff',
         boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
-        borderRadius: 2,
+        borderRadius: PANEL_CONSTANTS.STYLE_TUNER_BORDER_RADIUS,
         border: '1px solid #eee',
-        padding: 20,
+        padding: PANEL_CONSTANTS.STYLE_TUNER_PADDING,
         transition: 'transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s',
         transform: open ? 'translateX(0)' : 'translateX(120%)', // slide from right
         opacity: open ? 1 : 0,
@@ -144,10 +144,10 @@ export function StyleTunerPanel({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 12,
+          marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING,
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 16 }}>Style Tuner</span>
+        <span style={{ fontWeight: 600, fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM }}>Style Tuner</span>
         <Button
           type="text"
           size="small"
@@ -161,7 +161,7 @@ export function StyleTunerPanel({
           ×
         </Button>
       </div>
-      <div style={{ fontSize: '12px' }}>
+      <div style={{ fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL }}>
         <div style={rowStyle}>
           <label>Layout Algorithm</label>
           <select
