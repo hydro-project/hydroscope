@@ -6,6 +6,7 @@
  */
 
 import type { GraphNode, GraphEdge, Container, LayoutState } from '../shared/types';
+import type { NodeStyle, EdgeStyle } from '../shared/config';
 
 import type { Edge, HyperEdge } from './types';
 import { LAYOUT_CONSTANTS, SIZES } from '../shared/config';
@@ -17,6 +18,50 @@ import { ContainerOperations } from './operations/ContainerOperations';
 import { VisibilityManager } from './operations/VisibilityManager';
 import { CoveredEdgesIndex } from './CoveredEdgesIndex';
 import { LayoutOperations } from './operations/LayoutOperations';
+
+// Raw data interfaces for external input (before processing into GraphNode/GraphEdge/Container)
+interface RawNodeData {
+  id?: string;
+  label?: string;
+  shortLabel?: string;
+  fullLabel?: string;
+  style?: string;
+  hidden?: boolean;
+  width?: number;
+  height?: number;
+  [key: string]: unknown; // Allow additional properties from external sources
+}
+
+interface RawEdgeData {
+  id?: string;
+  source?: string;
+  target?: string;
+  style?: string;
+  hidden?: boolean;
+  type?: string;
+  edgeProperties?: string[];
+  [key: string]: unknown;
+}
+
+interface RawContainerData {
+  id?: string;
+  label?: string;
+  collapsed?: boolean;
+  hidden?: boolean;
+  children?: string[] | Set<string>;
+  [key: string]: unknown;
+}
+
+interface RawHyperEdgeData {
+  id?: string;
+  source?: string;
+  target?: string;
+  style?: string;
+  hidden?: boolean;
+  type?: 'hyper';
+  edgeProperties?: string[];
+  [key: string]: unknown;
+}
 
 /**
  * Core visualization state class that manages all graph elements including nodes, edges,
@@ -184,10 +229,10 @@ export class VisualizationState {
    * Get visible edges for rendering (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
    */
-  get visibleEdges(): ReadonlyArray<any> {
+  get visibleEdges(): ReadonlyArray<Edge> {
     // Include both regular visible edges and visible hyperEdges
     const regularEdges = Array.from(this._collections._visibleEdges.values());
-    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: any) => {
+    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
       return !edge.hidden;
     });
 
@@ -586,7 +631,7 @@ export class VisualizationState {
   /**
    * Add a graph node directly (for JSONParser and initial data loading)
    */
-  addGraphNode(nodeId: string, nodeData: any): void {
+  addGraphNode(nodeId: string, nodeData: RawNodeData): void {
     // Check if node belongs to a collapsed container and should be hidden
     const parentContainer = this._collections._nodeContainers.get(nodeId);
     let shouldBeHidden = nodeData.hidden || false;
@@ -607,14 +652,15 @@ export class VisualizationState {
     const derivedFullLabel = nodeData.fullLabel ?? nodeData.label ?? derivedShortLabel;
     const derivedDisplayLabel = nodeData.label ?? derivedShortLabel;
 
-    // Ensure all nodes have default dimensions
-    const processedData = {
+    // Ensure all nodes have default dimensions and proper typing
+    const processedData: GraphNode = {
       ...nodeData,
       id: nodeId,
       // Provide derived labels if not explicitly set
       label: nodeData.label ?? derivedDisplayLabel,
       shortLabel: nodeData.shortLabel ?? derivedShortLabel,
       fullLabel: nodeData.fullLabel ?? derivedFullLabel,
+      style: (nodeData.style as NodeStyle) || 'default' as NodeStyle,
       hidden: shouldBeHidden,
       width: nodeData.width || LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH,
       height: nodeData.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT,
@@ -653,22 +699,29 @@ export class VisualizationState {
   /**
    * Add a graph edge directly (for JSONParser and initial data loading)
    */
-  addGraphEdge(edgeId: string, edgeData: any): void {
-    const processedData = {
+  addGraphEdge(edgeId: string, edgeData: RawEdgeData): void {
+    const processedData: GraphEdge = {
       ...edgeData,
       id: edgeId,
+      source: edgeData.source || '',
+      target: edgeData.target || '',
+      type: 'graph' as const,
       hidden: edgeData.hidden || false,
     };
     this._collections.graphEdges.set(edgeId, processedData);
 
     // Update node-to-edge mappings
-    const sourceSet = this._collections._nodeToEdges.get(edgeData.source) || new Set();
-    sourceSet.add(edgeId);
-    this._collections._nodeToEdges.set(edgeData.source, sourceSet);
+    if (processedData.source) {
+      const sourceSet = this._collections._nodeToEdges.get(processedData.source) || new Set();
+      sourceSet.add(edgeId);
+      this._collections._nodeToEdges.set(processedData.source, sourceSet);
+    }
 
-    const targetSet = this._collections._nodeToEdges.get(edgeData.target) || new Set();
-    targetSet.add(edgeId);
-    this._collections._nodeToEdges.set(edgeData.target, targetSet);
+    if (processedData.target) {
+      const targetSet = this._collections._nodeToEdges.get(processedData.target) || new Set();
+      targetSet.add(edgeId);
+      this._collections._nodeToEdges.set(processedData.target, targetSet);
+    }
 
     // Update CoveredEdgesIndex if it exists
     if (this._coveredEdgesIndex) {
@@ -676,8 +729,8 @@ export class VisualizationState {
     }
 
     // Update visibility cache if edge should be visible
-    const sourceExists = this._isEndpointVisible(edgeData.source);
-    const targetExists = this._isEndpointVisible(edgeData.target);
+    const sourceExists = this._isEndpointVisible(processedData.source);
+    const targetExists = this._isEndpointVisible(processedData.target);
     if (!processedData.hidden && sourceExists && targetExists) {
       this._collections._visibleEdges.set(edgeId, processedData);
     }
@@ -686,20 +739,24 @@ export class VisualizationState {
   /**
    * Add a container directly (for JSONParser and initial data loading)
    */
-  addContainer(containerId: string, containerData: any): void {
+  addContainer(containerId: string, containerData: RawContainerData): void {
     // Check existing state BEFORE making changes
     const existingContainer = this._collections.containers.get(containerId);
     const wasCollapsed = existingContainer?.collapsed === true;
 
     // Ensure proper defaults
-    const processedData = {
+    const processedData: Container = {
       ...containerData,
       id: containerId,
       collapsed: containerData.collapsed || false,
       hidden: containerData.hidden || false,
       children: new Set(containerData.children || []),
-      width: containerData.width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH,
-      height: containerData.height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT,
+      width: (containerData.width as number) || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH,
+      height: (containerData.height as number) || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT,
+      expandedDimensions: {
+        width: (containerData.width as number) || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH,
+        height: (containerData.height as number) || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT,
+      },
     };
 
     this._collections.containers.set(containerId, processedData);
@@ -844,7 +901,7 @@ export class VisualizationState {
    * Set a graph node (legacy compatibility - forwards to addGraphNode)
    * @deprecated Use addGraphNode() for new code
    */
-  setGraphNode(nodeId: string, nodeData: any): VisualizationState {
+  setGraphNode(nodeId: string, nodeData: RawNodeData): VisualizationState {
     this.addGraphNode(nodeId, nodeData);
     return this;
   }
@@ -853,7 +910,7 @@ export class VisualizationState {
    * Set a graph edge (legacy compatibility - forwards to addGraphEdge)
    * @deprecated Use addGraphEdge() for new code
    */
-  setGraphEdge(edgeId: string, edgeData: any): VisualizationState {
+  setGraphEdge(edgeId: string, edgeData: RawEdgeData): VisualizationState {
     this.addGraphEdge(edgeId, edgeData);
     return this;
   }
@@ -862,10 +919,10 @@ export class VisualizationState {
    * Set a container (legacy compatibility - forwards to addContainer)
    * @deprecated Use addContainer() for new code
    */
-  setContainer(containerIdOrData: string | any, containerData?: any): VisualizationState {
+  setContainer(containerIdOrData: string | (RawContainerData & { id: string }), containerData?: RawContainerData): VisualizationState {
     if (typeof containerIdOrData === 'string') {
       // Old API: setContainer('id', { ... })
-      this.addContainer(containerIdOrData, containerData);
+      this.addContainer(containerIdOrData, containerData || {});
     } else {
       // New API: setContainer({ id: 'id', ... })
       const { id, ...data } = containerIdOrData;
@@ -1036,7 +1093,7 @@ export class VisualizationState {
   /**
    * Update container properties (legacy compatibility method)
    */
-  updateContainer(containerId: string, updates: any): void {
+  updateContainer(containerId: string, updates: Partial<Container>): void {
     const container = this._collections.containers.get(containerId);
     if (container) {
       Object.assign(container, updates);
@@ -1170,7 +1227,7 @@ export class VisualizationState {
   /**
    * Update edge properties (legacy compatibility method)
    */
-  updateEdge(edgeId: string, updates: any): void {
+  updateEdge(edgeId: string, updates: Partial<GraphEdge>): void {
     const edge = this._collections.graphEdges.get(edgeId);
     if (edge) {
       Object.assign(edge, updates);
@@ -1190,16 +1247,25 @@ export class VisualizationState {
 
   // ============ MINIMAL COMPATIBILITY METHODS ============
 
-  setHyperEdge(hyperEdgeId: string, hyperEdgeData: any): this {
-    this._collections.hyperEdges.set(hyperEdgeId, hyperEdgeData);
+  setHyperEdge(hyperEdgeId: string, hyperEdgeData: RawHyperEdgeData): this {
+    const processedData: HyperEdge = {
+      ...hyperEdgeData,
+      id: hyperEdgeId,
+      source: hyperEdgeData.source || '',
+      target: hyperEdgeData.target || '',
+      type: 'hyper' as const,
+      hidden: hyperEdgeData.hidden || false,
+    };
+    
+    this._collections.hyperEdges.set(hyperEdgeId, processedData);
     // Update node-to-edge mappings
-    const sourceSet = this._collections._nodeToEdges.get(hyperEdgeData.source) || new Set();
+    const sourceSet = this._collections._nodeToEdges.get(processedData.source) || new Set();
     sourceSet.add(hyperEdgeId);
-    this._collections._nodeToEdges.set(hyperEdgeData.source, sourceSet);
+    this._collections._nodeToEdges.set(processedData.source, sourceSet);
 
-    const targetSet = this._collections._nodeToEdges.get(hyperEdgeData.target) || new Set();
+    const targetSet = this._collections._nodeToEdges.get(processedData.target) || new Set();
     targetSet.add(hyperEdgeId);
-    this._collections._nodeToEdges.set(hyperEdgeData.target, targetSet);
+    this._collections._nodeToEdges.set(processedData.target, targetSet);
 
     // Note: Visibility cache updates could be added here if needed for hyperEdges
 
@@ -1259,7 +1325,7 @@ export class VisualizationState {
     }
   }
 
-  updateNode(nodeId: string, updates: any): void {
+  updateNode(nodeId: string, updates: Partial<GraphNode>): void {
     const node = this._collections.graphNodes.get(nodeId);
     if (node) {
       Object.assign(node, updates);
@@ -1451,7 +1517,7 @@ export class VisualizationState {
     return this.containerOps;
   }
 
-  _updateContainerVisibilityCaches(containerId: string, container: any): void {
+  _updateContainerVisibilityCaches(containerId: string, container: Container): void {
     this.visibilityManager.updateContainerVisibilityCaches(containerId, container);
   }
 
@@ -1482,7 +1548,7 @@ export class VisualizationState {
    * Validate render keys to prevent React duplicate key warnings
    * This method checks for duplicate IDs in the edge collection that would cause React warnings
    */
-  private _validateRenderKeys(edges: any[]): void {
+  private _validateRenderKeys(edges: Edge[]): void {
     const seenKeys = new Set<string>();
     const duplicateKeys = new Set<string>();
 
@@ -1503,7 +1569,7 @@ export class VisualizationState {
       // Check for ID overlap between regular and hyperEdges
       const regularEdges = Array.from(this._collections._visibleEdges.values());
       const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter(
-        (edge: any) => !edge.hidden
+        (edge: HyperEdge) => !edge.hidden
       );
       const regularIds = new Set(regularEdges.map(e => e.id));
       const hyperIds = new Set(hyperEdges.map(e => e.id));
@@ -1534,7 +1600,7 @@ export class VisualizationState {
     }
   }
 
-  public updateNodeDimensions(config: any) {
+  public updateNodeDimensions(config: Record<string, unknown>) {
     for (const node of this._collections.graphNodes.values()) {
       const { width, height } = this.layoutOps.calculateNodeDimensions(node, config);
       node.width = width;

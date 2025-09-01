@@ -9,6 +9,8 @@
  * Plus DIY Toolkit - Individual components for custom layouts
  */
 
+import type { VisualizationState } from '../core/VisualizationState';
+
 // === THREE-TIER API ===
 
 // Tier 1: Basic (read-only)
@@ -85,7 +87,7 @@ export function createDefaultLegendData() {
 
 // Container interaction helpers
 export function createContainerClickHandler(
-  visualizationState: any,
+  visualizationState: VisualizationState,
   refreshLayout: () => Promise<void>,
   options: {
     enableCollapse?: boolean;
@@ -96,7 +98,7 @@ export function createContainerClickHandler(
 ) {
   const { enableCollapse = true, autoFit: _autoFit = true, onExpand, onCollapse } = options;
 
-  return async (_event: any, node: any) => {
+  return async (_event: MouseEvent, node: { id: string; type?: string }) => {
     if (!enableCollapse) return;
 
     const container = visualizationState.getContainer(node.id);

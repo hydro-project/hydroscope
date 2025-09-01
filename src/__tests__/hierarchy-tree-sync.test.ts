@@ -1,7 +1,10 @@
 /**
- * @fileoverview HierarchyTree Synchronization Test
- *
- * Tests that ensure the HierarchyTree component's expand/collapse state
+ * @fileoverview HierarchyTree Synchronization Tefunction checkTreeStructure(
+  hierarchyTree: HierarchyNode[],
+  collapsedContainers: Set<string>,
+  testName: string
+) {
+  const collectKeys = (nodes: HierarchyNode[]) => {ensure the HierarchyTree component's expand/collapse state
  * stays synchronized with the actual container states in VisualizationState.
  *
  * Updated to use direct VisualizationState accessors instead of hierarchy-utils.
@@ -9,12 +12,18 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../core/VisualizationState';
+import type { VisualizationState } from '../core/VisualizationState';
+
+interface HierarchyNode {
+  id: string;
+  children: HierarchyNode[];
+}
 
 // Helper functions that replicate hierarchy-utils logic using VisualizationState directly
-function buildHierarchyTreeDirect(visualizationState: any): Array<{ id: string; children: any[] }> {
+function buildHierarchyTreeDirect(visualizationState: VisualizationState): HierarchyNode[] {
   if (!visualizationState) return [];
 
-  const buildNode = (containerId: string): { id: string; children: any[] } => {
+  const buildNode = (containerId: string): HierarchyNode => {
     // Check if this container is collapsed - if so, don't include its children in the tree
     const container = visualizationState.getContainer(containerId);
     if (container && container.collapsed) {
@@ -32,16 +41,16 @@ function buildHierarchyTreeDirect(visualizationState: any): Array<{ id: string; 
   };
 
   const rootContainers = visualizationState.getTopLevelContainers();
-  return rootContainers.map((container: any) => buildNode(container.id));
+  return rootContainers.map((container) => buildNode(container.id));
 }
 
-function getCollapsedContainersSetDirect(visualizationState: any): Set<string> {
+function getCollapsedContainersSetDirect(visualizationState: VisualizationState): Set<string> {
   if (!visualizationState) return new Set();
 
   return new Set(
     visualizationState.visibleContainers
-      .filter((container: any) => container.collapsed)
-      .map((container: any) => container.id)
+      .filter((container) => container.collapsed)
+      .map((container) => container.id)
   );
 }
 
@@ -67,7 +76,7 @@ function getExpandedKeysForHierarchyTreeDirect(
 }
 
 describe('HierarchyTree State Synchronization', () => {
-  let visState: any;
+  let visState: VisualizationState;
 
   beforeEach(() => {
     visState = createVisualizationState();
@@ -164,7 +173,7 @@ describe('HierarchyTree State Synchronization', () => {
     expect(childContainer1.children).toHaveLength(1); // nested_container (node_2 doesn't appear as it's a leaf)
 
     // Find nested container
-    const nestedContainer = childContainer1.children.find((c: any) => c.id === 'nested_container');
+    const nestedContainer = childContainer1.children.find((c) => c.id === 'nested_container');
     expect(nestedContainer).toBeDefined();
     expect(nestedContainer.children).toHaveLength(0); // No child containers (node_5 is a leaf)
   });

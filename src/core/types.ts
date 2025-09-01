@@ -45,6 +45,7 @@ export interface GraphEdge {
   target: string;
   hidden?: boolean;
   style?: EdgeStyle | string;
+  edgeProperties?: string[];
 }
 
 export interface Container {
@@ -62,6 +63,7 @@ export interface HyperEdge {
   style?: EdgeStyle | string;
   hidden?: boolean;
   type: 'hyper';
+  edgeProperties?: string[];
 }
 
 // Union type for all edge types

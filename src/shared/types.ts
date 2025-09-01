@@ -26,10 +26,16 @@ export interface Position {
   y: number;
 }
 
+export interface ElkEdgeSection {
+  startPoint: Position;
+  endPoint: Position;
+  bendPoints?: Position[]; // Optional bend points for complex routing
+}
+
 export interface LayoutState {
   position?: Position;
   dimensions?: Dimensions;
-  sections?: any[]; // ELK edge routing sections
+  sections?: ElkEdgeSection[]; // ELK edge routing sections
   elkFixed?: boolean; // Whether ELK should fix this element's position
   elkLayoutOptions?: Record<string, string>; // ELK-specific layout options
 }
@@ -50,14 +56,17 @@ export interface GraphEdge {
   style?: EdgeStyle | string;
   hidden?: boolean;
   type: 'graph';
+  edgeProperties?: string[];
 }
 
 export interface Container {
   id: string;
-  expandedDimensions: Dimensions;
   collapsed: boolean;
   hidden: boolean;
   children: Set<string>;
+  width?: number;
+  height?: number;
+  expandedDimensions?: Dimensions;
   layout?: LayoutState; // Layout-related properties
   [key: string]: any; // Allow custom properties
 }
@@ -68,6 +77,7 @@ export interface HyperEdge {
   target: string;
   style: EdgeStyle;
   type: 'hyper';
+  edgeProperties?: string[];
   [key: string]: any; // Allow custom properties
 }
 

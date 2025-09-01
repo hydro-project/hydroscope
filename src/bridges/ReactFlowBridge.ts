@@ -145,7 +145,7 @@ export class ReactFlowBridge {
   /**
    * Sort containers by hierarchy level to ensure parents are processed before children
    */
-  private sortContainersByHierarchy(containers: any[], parentMap: Map<string, string>): any[] {
+  private sortContainersByHierarchy(containers: Container[], parentMap: Map<string, string>): Container[] {
     return sortContainersByHierarchyUtil(containers, parentMap);
   }
 
@@ -398,7 +398,7 @@ export class ReactFlowBridge {
   static recalculateHandlesAfterLayoutStatic(
     visState: VisualizationState,
     reactFlowData: ReactFlowData,
-    colorPalette?: any,
+    colorPalette?: string,
     edgeStyleConfig?: any
   ): ReactFlowData {
     // Create a temporary bridge instance to use the handle calculation logic

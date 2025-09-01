@@ -3,6 +3,7 @@
  */
 
 import type { VisualizationState } from '../core/VisualizationState';
+import type { Container, GraphNode } from '../shared/types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
 
 /** Build parent-child relationship map for visible elements */
@@ -32,9 +33,9 @@ export function buildParentMap(visState: VisualizationState): Map<string, string
 
 /** Sort containers by hierarchy level so parents appear before children */
 export function sortContainersByHierarchy(
-  containers: any[],
+  containers: Container[],
   parentMap: Map<string, string>
-): any[] {
+): Container[] {
   const getHierarchyLevel = (containerId: string): number => {
     let level = 0;
     let currentId = containerId;
@@ -49,12 +50,12 @@ export function sortContainersByHierarchy(
 }
 
 /** Ensure a coordinate is a finite number, else 0 */
-export function safeNum(n: any): number {
+export function safeNum(n: unknown): number {
   return typeof n === 'number' && !isNaN(n) && isFinite(n) ? n : 0;
 }
 
 /** Check if ELK layout has meaningful non-zero coordinates */
-export function hasMeaningfulELKPosition(layout: any | undefined): boolean {
+export function hasMeaningfulELKPosition(layout: { position?: { x?: number; y?: number } } | undefined): boolean {
   const x = layout?.position?.x;
   const y = layout?.position?.y;
   if (x === undefined || y === undefined) return false;
@@ -63,7 +64,7 @@ export function hasMeaningfulELKPosition(layout: any | undefined): boolean {
 }
 
 /** Compute relative (child) position from absolute child and parent absolute */
-export function toRelativePosition(childAbs: { x: any; y: any }, parentAbs: { x: any; y: any }) {
+export function toRelativePosition(childAbs: { x: unknown; y: unknown }, parentAbs: { x: unknown; y: unknown }) {
   const cx = safeNum(childAbs.x);
   const cy = safeNum(childAbs.y);
   const px = safeNum(parentAbs.x);
@@ -72,14 +73,14 @@ export function toRelativePosition(childAbs: { x: any; y: any }, parentAbs: { x:
 }
 
 /** Compute absolute/root position safely */
-export function toAbsolutePosition(abs: { x: any; y: any }) {
+export function toAbsolutePosition(abs: { x: unknown; y: unknown }) {
   return { x: safeNum(abs.x), y: safeNum(abs.y) };
 }
 
 /** Compute child-container position using ELK when available, else grid fallback */
 export function computeChildContainerPosition(
   visState: VisualizationState,
-  container: any,
+  container: Container,
   parentId: string
 ) {
   const containerLayout = visState.getContainerLayout(container.id);
@@ -113,7 +114,7 @@ export function computeChildContainerPosition(
 }
 
 /** Compute root container absolute position safely */
-export function computeRootContainerPosition(visState: VisualizationState, container: any) {
+export function computeRootContainerPosition(visState: VisualizationState, container: Container) {
   const containerLayout = visState.getContainerLayout(container.id);
   const rootX = containerLayout?.position?.x ?? container.x ?? 0;
   const rootY = containerLayout?.position?.y ?? container.y ?? 0;
@@ -123,7 +124,7 @@ export function computeRootContainerPosition(visState: VisualizationState, conta
 /** Compute node position from ELK; relative to parent if nested */
 export function computeNodePosition(
   visState: VisualizationState,
-  node: any,
+  node: GraphNode,
   parentId: string | undefined
 ) {
   const nodeLayout = visState.getNodeLayout(node.id);

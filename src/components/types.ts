@@ -66,7 +66,7 @@ export interface HierarchyTreeNode {
 export interface HierarchyTreeProps extends BaseComponentProps {
   // Data - hierarchyTree removed, built internally from visualizationState
   collapsedContainers?: Set<string>;
-  visualizationState?: any; // Required for building tree structure
+  visualizationState?: VisualizationState; // Required for building tree structure
 
   // Interaction
   onToggleContainer?: (containerId: string) => void;

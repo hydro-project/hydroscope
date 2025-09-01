@@ -9,11 +9,12 @@ import path from 'path';
 import { parseGraphJSON } from '../core/JSONParser';
 import { createVisualizationState } from '../core/VisualizationState';
 import type { VisualizationState } from '../core/VisualizationState';
+import type { ParseResult } from '../core/JSONParser';
 
 export interface TestDataResult {
-  rawData: any;
+  rawData: unknown; // Raw JSON data from file
   state: VisualizationState;
-  metadata: any;
+  metadata: ParseResult['metadata'];
 }
 
 /**

@@ -377,6 +377,7 @@ export function HierarchyTree({
   }, [derivedExpandedKeys, searchQuery, searchMatches, collapsedContainers, onToggleContainer]);
 
   const treeData = useMemo(() => {
+    if (!visualizationState) return [];
     return getTreeDataStructure(
       visualizationState,
       collapsedContainers,

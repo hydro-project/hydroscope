@@ -12,7 +12,7 @@ export const STORAGE_KEYS = {
 /**
  * Safely save data to localStorage with error handling
  */
-export const saveToStorage = (key: string, value: any): boolean => {
+export const saveToStorage = (key: string, value: unknown): boolean => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return true;

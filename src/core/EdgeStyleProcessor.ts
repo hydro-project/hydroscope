@@ -608,9 +608,11 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
 /*
 function combineStyleTagsWithPriority(styleTags: string[], originalProperties: string[], styleConfig: EdgeStyleConfig): ProcessedEdgeStyle {
   // Start with default style
-  let combinedStyle: any = {
-    stroke: '#666666',
-    strokeWidth: 2
+  let combinedStyle: Partial<ProcessedEdgeStyle> = {
+    style: {
+      stroke: '#666666',
+      strokeWidth: 2
+    }
   };
   let animated = false;
   let labels: string[] = [];
@@ -679,9 +681,11 @@ function combineStyleTagsWithPriority(styleTags: string[], originalProperties: s
 /*
 function combineStyleTags(styleTags: string[], originalProperties: string[]): ProcessedEdgeStyle {
   // Start with default style
-  let combinedStyle: any = {
-    stroke: '#666666',
-    strokeWidth: 2
+  let combinedStyle: Partial<ProcessedEdgeStyle> = {
+    style: {
+      stroke: '#666666',
+      strokeWidth: 2
+    }
   };
   let animated = false;
   let labels: string[] = [];

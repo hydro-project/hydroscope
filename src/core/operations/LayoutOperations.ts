@@ -5,6 +5,17 @@
  */
 
 import { LAYOUT_CONSTANTS } from '../../shared/config';
+import type { ElkEdgeSection, GraphNode, Position, Dimensions } from '../../shared/types';
+
+interface LayoutInfo {
+  position?: Position;
+  dimensions?: Dimensions;
+}
+
+interface NodeDimensionConfig {
+  nodePadding?: number;
+  nodeFontSize?: number;
+}
 
 export class LayoutOperations {
   private readonly state: any;
@@ -37,7 +48,7 @@ export class LayoutOperations {
   /**
    * Set container layout (applies padding and caches as expandedDimensions)
    */
-  setContainerLayout(containerId: string, layout: any): void {
+  setContainerLayout(containerId: string, layout: LayoutInfo): void {
     const container = this.state._collections.containers.get(containerId);
     if (container) {
       container.layout = layout;
@@ -48,6 +59,11 @@ export class LayoutOperations {
       if (layout.dimensions) {
         container.width = layout.dimensions.width;
         container.height = layout.dimensions.height;
+        // Cache as expandedDimensions for adjusted dimension calculations
+        container.expandedDimensions = {
+          width: layout.dimensions.width,
+          height: layout.dimensions.height,
+        };
       }
     }
   }
@@ -55,7 +71,7 @@ export class LayoutOperations {
   /**
    * Set node layout
    */
-  setNodeLayout(nodeId: string, layout: any): void {
+  setNodeLayout(nodeId: string, layout: LayoutInfo): void {
     const node = this.state._collections.graphNodes.get(nodeId);
     if (node) {
       node.layout = layout;
@@ -73,11 +89,7 @@ export class LayoutOperations {
   /**
    * Get container layout information
    */
-  getContainerLayout(
-    containerId: string
-  ):
-    | { position?: { x: number; y: number }; dimensions?: { width: number; height: number } }
-    | undefined {
+  getContainerLayout(containerId: string): LayoutInfo | undefined {
     const container = this.state._collections.containers.get(containerId);
     if (!container) return undefined;
 
@@ -96,11 +108,7 @@ export class LayoutOperations {
   /**
    * Get node layout information
    */
-  getNodeLayout(
-    nodeId: string
-  ):
-    | { position?: { x: number; y: number }; dimensions?: { width: number; height: number } }
-    | undefined {
+  getNodeLayout(nodeId: string): LayoutInfo | undefined {
     const node = this.state._collections.graphNodes.get(nodeId);
     if (!node) return undefined;
 
@@ -176,7 +184,7 @@ export class LayoutOperations {
   /**
    * Get edge layout information (sections, routing)
    */
-  getEdgeLayout(edgeId: string): { sections?: any[]; [key: string]: any } | undefined {
+  getEdgeLayout(edgeId: string): { sections?: ElkEdgeSection[]; [key: string]: any } | undefined {
     const edge = this.state._collections.graphEdges.get(edgeId);
     if (!edge) return undefined;
 
@@ -189,7 +197,7 @@ export class LayoutOperations {
   /**
    * Set edge layout information
    */
-  setEdgeLayout(edgeId: string, layout: { sections?: any[]; [key: string]: any }): void {
+  setEdgeLayout(edgeId: string, layout: { sections?: ElkEdgeSection[]; [key: string]: any }): void {
     const edge = this.state._collections.graphEdges.get(edgeId);
     if (!edge) return;
 
@@ -199,7 +207,7 @@ export class LayoutOperations {
   /**
    * Calculate node dimensions based on its content and styling
    */
-  calculateNodeDimensions(node: any, config: any = {}): { width: number; height: number } {
+  calculateNodeDimensions(node: GraphNode, config: NodeDimensionConfig = {}): Dimensions {
     const padding = config.nodePadding ?? LAYOUT_CONSTANTS.defaultNodePadding;
     const fontSize = config.nodeFontSize ?? LAYOUT_CONSTANTS.defaultNodeFontSize;
 
