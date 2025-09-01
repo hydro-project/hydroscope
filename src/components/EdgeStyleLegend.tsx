@@ -418,7 +418,7 @@ function EdgeStyleLegendInner({
   const renderSinglePropertyBoxes = () => {
     if (!edgeStyleConfig.singlePropertyMappings) return null;
 
-    return Object.entries(edgeStyleConfig.singlePropertyMappings).map(([property, styleTag], index) => {
+    return Object.entries(edgeStyleConfig.singlePropertyMappings).map(([property, styleTag], _index) => {
       const sample = EDGE_STYLE_SAMPLES[styleTag as keyof typeof EDGE_STYLE_SAMPLES];
       const styleNumber = styleTag.replace('edge_style_', '');
       

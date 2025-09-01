@@ -9,12 +9,10 @@
  */
 
 import ELK from 'elkjs';
-import { LayoutConfig } from './types';
-import { GraphNode, GraphEdge, Container, HyperEdge, Dimensions } from '../shared/types';
+import { GraphNode, GraphEdge, Container, HyperEdge } from '../shared/types';
 import { 
   ELK_ALGORITHMS, 
   LAYOUT_SPACING, 
-  ELK_LAYOUT_OPTIONS, 
   ELKAlgorithm, 
   getELKLayoutOptions,
   createFixedPositionOptions,
@@ -110,62 +108,6 @@ interface ELKGraph {
  * Encapsulated dimension cache with consistent interface
  * Enhanced to support context-aware caching based on container expansion states
  */
-class DimensionCache {
-  private cache = new Map<string, LayoutDimensions>();
-
-  /**
-   * Generate a cache key that includes the expansion state of children
-   */
-  private generateCacheKey(containerId: string, containers: Container[]): string {
-    const container = containers.find(c => c.id === containerId);
-    if (!container) return containerId;
-
-    // Find all direct children of this container
-    const children = containers.filter(c => c.parentId === containerId);
-    
-    if (children.length === 0) {
-      // No children, simple key
-      return containerId;
-    }
-
-    // Create key based on children's collapsed state
-    const childStates = children
-      .map(child => `${child.id}:${child.collapsed ? 'C' : 'E'}`)
-      .sort() // Ensure consistent ordering
-      .join('|');
-      
-    return `${containerId}#${childStates}`;
-  }
-
-  set(id: string, dimensions: LayoutDimensions, containers?: Container[]): void {
-    const key = containers ? this.generateCacheKey(id, containers) : id;
-    this.cache.set(key, { ...dimensions });
-  }
-
-  get(id: string, containers?: Container[]): LayoutDimensions | undefined {
-    const key = containers ? this.generateCacheKey(id, containers) : id;
-    const cached = this.cache.get(key);
-    return cached ? { ...cached } : undefined;
-  }
-
-  has(id: string, containers?: Container[]): boolean {
-    const key = containers ? this.generateCacheKey(id, containers) : id;
-    return this.cache.has(key);
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  size(): number {
-    return this.cache.size;
-  }
-
-  keys(): IterableIterator<string> {
-    return this.cache.keys();
-  }
-}
-
 // ============ ELK State Manager Interface ============
 
 export interface ELKStateManager {

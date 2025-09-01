@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createVisualizationState } from '../VisualizationState';
+import { createVisualizationState, VisualizationState } from '../VisualizationState';
 
 // Helper functions that replicate hierarchy-utils logic using VisualizationState directly
 function buildHierarchyTreeDirect(visualizationState: any): Array<{ id: string; children: any[] }> {
@@ -32,7 +32,7 @@ function buildHierarchyTreeDirect(visualizationState: any): Array<{ id: string; 
   };
 
   const rootContainers = visualizationState.getTopLevelContainers();
-  return rootContainers.map(container => buildNode(container.id));
+  return rootContainers.map((container: { id: string; }) => buildNode(container.id));
 }
 
 function getCollapsedContainersSetDirect(visualizationState: any): Set<string> {
@@ -67,7 +67,7 @@ function getExpandedKeysForHierarchyTreeDirect(
 }
 
 describe('HierarchyTree State Synchronization', () => {
-  let visState;
+  let visState: VisualizationState;
 
   beforeEach(() => {
     visState = createVisualizationState();

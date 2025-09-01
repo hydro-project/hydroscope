@@ -1,11 +1,10 @@
+  // DEBUG: Log mapping resolution (removed duplicate, see below for correct placement)
 /**
  * Edge Style Processor
  * 
  * Processes edge properties and applies appropriate visual styles based on
  * the edgeStyleConfig from the JSON data.
  */
-
-import { EdgeStyle } from '../shared/config';
 
 export interface EdgeStyleConfig {
   semanticMappings?: Record<string, Record<string, Record<string, string | number>>>;
@@ -59,7 +58,8 @@ export interface ProcessedEdgeStyle {
  */
 export function processEdgeStyle(
   edgeProperties: string[],
-  styleConfig?: EdgeStyleConfig
+  styleConfig?: EdgeStyleConfig,
+  originalLabel?: string
 ): ProcessedEdgeStyle {
   if (!edgeProperties || edgeProperties.length === 0) {
     return getDefaultStyle();
@@ -67,7 +67,7 @@ export function processEdgeStyle(
 
   // If we have a style config from JSON, use it to map semantic tags to style tags
   if (styleConfig && (styleConfig.semanticMappings || styleConfig.propertyMappings)) {
-    return processWithMappings(edgeProperties, styleConfig);
+    return processWithMappings(edgeProperties, styleConfig, originalLabel);
   }
 
   // Otherwise, in semantics-only mode do not interpret properties as style tags
@@ -79,16 +79,17 @@ export function processEdgeStyle(
  */
 function processWithMappings(
   edgeProperties: string[],
-  styleConfig: EdgeStyleConfig
-): ProcessedEdgeStyle {
+  styleConfig: EdgeStyleConfig,
+  originalLabel?: string
+  ): ProcessedEdgeStyle {
   // Handle new semantic mappings system
   if (styleConfig.semanticMappings) {
-    return processWithSemanticMappings(edgeProperties, styleConfig);
+    return processWithSemanticMappings(edgeProperties, styleConfig, originalLabel);
   }
 
   // Handle legacy boolean property pair system
   if (styleConfig.booleanPropertyPairs || styleConfig.singlePropertyMappings) {
-    return processWithBooleanPairs(edgeProperties, styleConfig);
+    return processWithBooleanPairs(edgeProperties, styleConfig, originalLabel);
   }
 
   // Legacy fallback: handle old propertyMappings format
@@ -97,7 +98,7 @@ function processWithMappings(
   }
 
   // Final fallback
-  return processDirectStyleTags(edgeProperties);
+  return processDirectStyleTags();
 }
 
 /**
@@ -112,7 +113,7 @@ function validateSemanticMappings(semanticMappings: Record<string, Record<string
     const groupStyleProperties = new Set<string>();
     
     // Collect all style properties used in this group
-    for (const [optionName, styleMapping] of Object.entries(group)) {
+    for (const [, styleMapping] of Object.entries(group)) {
       for (const styleProperty of Object.keys(styleMapping)) {
         groupStyleProperties.add(styleProperty);
       }
@@ -145,8 +146,9 @@ function validateSemanticMappings(semanticMappings: Record<string, Record<string
  */
 function processWithSemanticMappings(
   edgeProperties: string[],
-  styleConfig: EdgeStyleConfig
-): ProcessedEdgeStyle {
+  styleConfig: EdgeStyleConfig,
+  originalLabel?: string
+  ): ProcessedEdgeStyle {
   if (!styleConfig.semanticMappings) {
     return getDefaultStyle();
   }
@@ -159,7 +161,7 @@ function processWithSemanticMappings(
   const appliedProperties: string[] = [];
 
   // Process each group
-  for (const [groupName, group] of Object.entries(styleConfig.semanticMappings)) {
+  for (const [, group] of Object.entries(styleConfig.semanticMappings)) {
     // Find which option in this group matches our edge properties (if any)
     for (const [optionName, styleMapping] of Object.entries(group)) {
       if (edgeProperties.includes(optionName)) {
@@ -173,7 +175,7 @@ function processWithSemanticMappings(
 
   // Convert style settings to ReactFlow format
   if (Object.keys(styleSettings).length > 0) {
-    return convertStyleSettingsToReactFlow(styleSettings, appliedProperties);
+    return convertStyleSettingsToReactFlow(styleSettings, appliedProperties, originalLabel);
   }
 
   return getDefaultStyle();
@@ -184,11 +186,12 @@ function processWithSemanticMappings(
  */
 function convertStyleSettingsToReactFlow(
   styleSettings: Record<string, string | number>,
-  appliedProperties: string[]
-): ProcessedEdgeStyle {
+  appliedProperties: string[],
+  originalLabel?: string
+  ): ProcessedEdgeStyle {
   let style: Record<string, any> = {};
   let animated = false;
-  let label = appliedProperties.join(',');
+  let label = createEdgeLabel(appliedProperties, undefined, originalLabel);
   let markerEndSpec: any | undefined = undefined;
 
   // Apply line-pattern
@@ -297,8 +300,9 @@ function convertStyleSettingsToReactFlow(
  */
 function processWithBooleanPairs(
   edgeProperties: string[],
-  styleConfig: EdgeStyleConfig
-): ProcessedEdgeStyle {
+  styleConfig: EdgeStyleConfig,
+  originalLabel?: string
+  ): ProcessedEdgeStyle {
   const styleTags: string[] = [];
   const appliedProperties: string[] = [];
 
@@ -330,7 +334,7 @@ function processWithBooleanPairs(
 
   // Combine all style tags
   if (styleTags.length > 0) {
-    return combineStyleTagsIntelligently(styleTags, appliedProperties);
+    return combineStyleTagsIntelligently(styleTags, appliedProperties, styleConfig, originalLabel);
   }
 
   // Fallback to default
@@ -342,7 +346,8 @@ function processWithBooleanPairs(
  */
 function processLegacyMappings(
   edgeProperties: string[],
-  styleConfig: EdgeStyleConfig
+  styleConfig: EdgeStyleConfig,
+  originalLabel?: string
 ): ProcessedEdgeStyle {
   if (!styleConfig.propertyMappings) {
     return getDefaultStyle();
@@ -364,7 +369,7 @@ function processLegacyMappings(
   
   // If we have style tags, combine them with intelligent CSS property handling
   if (styleTags.length > 0) {
-    return combineStyleTagsIntelligently(styleTags, edgeProperties);
+    return combineStyleTagsIntelligently(styleTags, edgeProperties, styleConfig, originalLabel);
   }
   
   // Fallback: find the first property with any mapping
@@ -386,13 +391,13 @@ function processLegacyMappings(
   }
 
   // Fallback to treating semantic properties as direct style tags
-  return processDirectStyleTags(edgeProperties);
+  return processDirectStyleTags();
 }
 
 /**
  * Process edge properties as direct style tag names
  */
-function processDirectStyleTags(edgeProperties: string[]): ProcessedEdgeStyle {
+function processDirectStyleTags(): ProcessedEdgeStyle {
   // Disabled in semantics-only mode: return neutral default
   return getDefaultStyle();
 }
@@ -580,6 +585,12 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
 /**
  * Combine style tags using intelligent merging rules to handle conflicts
  */
+/**
+ * Combine style tags with priority resolution
+ * 
+ * NOTE: This function is currently unused but kept for potential future use
+ */
+/*
 function combineStyleTagsWithPriority(styleTags: string[], originalProperties: string[], styleConfig: EdgeStyleConfig): ProcessedEdgeStyle {
   // Start with default style
   let combinedStyle: any = {
@@ -644,10 +655,13 @@ function combineStyleTagsWithPriority(styleTags: string[], originalProperties: s
     appliedProperties: originalProperties
   };
 }
+*/
 
 /**
  * Combine multiple style tags into a single visual style (old method - kept for fallback)
+ * NOTE: This function is currently unused but kept for potential future use
  */
+/*
 function combineStyleTags(styleTags: string[], originalProperties: string[]): ProcessedEdgeStyle {
   // Start with default style
   let combinedStyle: any = {
@@ -683,6 +697,7 @@ function combineStyleTags(styleTags: string[], originalProperties: string[]): Pr
     appliedProperties: originalProperties
   };
 }
+*/
 
 /**
  * Get default style for edges with no properties
@@ -704,7 +719,7 @@ function getDefaultStyle(): ProcessedEdgeStyle {
  */
 export function createEdgeLabel(
   edgeProperties: string[],
-  styleConfig?: EdgeStyleConfig,
+  _styleConfig?: EdgeStyleConfig,
   originalLabel?: string
 ): string | undefined {
   if (!edgeProperties || edgeProperties.length === 0) {
@@ -738,7 +753,7 @@ export function createEdgeLabel(
  */
 export function getEdgePropertiesDescription(
   edgeProperties: string[],
-  styleConfig?: EdgeStyleConfig
+  _styleConfig?: EdgeStyleConfig
 ): string {
   if (!edgeProperties || edgeProperties.length === 0) {
     return 'No properties';
@@ -762,45 +777,83 @@ export function getEdgePropertiesDescription(
 /**
  * Combine style tags intelligently - properties affecting same CSS attribute are mutually exclusive
  */
-function combineStyleTagsIntelligently(styleTags: string[], originalProperties: string[]): ProcessedEdgeStyle {
+function combineStyleTagsIntelligently(styleTags: string[], originalProperties: string[], styleConfig?: EdgeStyleConfig, originalLabel?: string): ProcessedEdgeStyle {
   // Start with default style
   let combinedStyle: any = {
     stroke: '#666666',
     strokeWidth: 2
   };
   let animated = false;
-  let labels: string[] = [];
-  
-  // Group style effects by CSS property they affect
-  const cssPropertyEffects: Record<string, string> = {};
-  
-  // Process each style tag and collect its effects
-  for (const tag of styleTags) {
-    const tagStyle = mapStyleTagToVisual(tag, []);
-    
-    // For each CSS property this tag affects, track the latest value
-    // This naturally handles mutual exclusion (later tags override earlier ones)
-    for (const [cssProp, value] of Object.entries(tagStyle.style)) {
-      cssPropertyEffects[cssProp] = value;
+  let label = '';
+
+  // Use priority from combinationRules if available
+  let priorityOrder: string[] = [];
+  if (styleConfig && styleConfig.combinationRules && Array.isArray((styleConfig.combinationRules as any).priority)) {
+    priorityOrder = (styleConfig.combinationRules as any).priority;
+  }
+
+  // Determine highest-priority property
+  let winningProp = originalProperties[0];
+  if (priorityOrder.length > 0) {
+    for (const p of priorityOrder) {
+      if (originalProperties.includes(p)) {
+        winningProp = p;
+        break;
+      }
     }
+  }
+
+  // Robustly resolve the mapping for the winning property
+  let reactFlowType = 'standard';
+  let mapping = undefined;
+  if (styleConfig && styleConfig.propertyMappings && styleConfig.propertyMappings[winningProp]) {
+    let propMap = styleConfig.propertyMappings[winningProp];
     
-    // Handle non-style properties
-    if (tagStyle.animated) {
-      animated = true;
+    // If propMap has style/animated directly, use it
+    if (typeof propMap === 'object' && (propMap.animated !== undefined || propMap.style !== undefined)) {
+      mapping = propMap;
     }
-    if (tagStyle.label) {
-      labels.push(tagStyle.label);
+    // If propMap has styleTag, resolve it via mapStyleTagToVisual
+    else if (typeof propMap === 'object' && propMap.styleTag) {
+      const tagStyle = mapStyleTagToVisual(propMap.styleTag, originalProperties);
+      mapping = {
+        reactFlowType: tagStyle.reactFlowType || 'standard',
+        style: tagStyle.style,
+        animated: tagStyle.animated
+      };
     }
   }
   
-  // Apply all collected CSS effects
-  combinedStyle = { ...combinedStyle, ...cssPropertyEffects };
-  
+  if (mapping && typeof mapping === 'object') {
+    if (mapping.reactFlowType) {
+      reactFlowType = mapping.reactFlowType;
+    }
+    if (mapping.style) {
+      combinedStyle = { ...combinedStyle, ...mapping.style };
+    }
+    if (typeof mapping.animated === 'boolean') {
+      animated = mapping.animated;
+    }
+  } else {
+    // Fallback to styleTag if available
+    const tag = styleTags[originalProperties.indexOf(winningProp)];
+    if (tag) {
+      const tagStyle = mapStyleTagToVisual(tag, originalProperties);
+      combinedStyle = { ...combinedStyle, ...tagStyle.style };
+      animated = tagStyle.animated;
+    }
+  }
+
+  // Use property abbreviations for label
+  label = createEdgeLabel(originalProperties, styleConfig, originalLabel) || '';
+
   return {
-    reactFlowType: 'standard',
+    reactFlowType,
     style: combinedStyle,
     animated: animated,
-    label: labels.join(''),
+    label: label,
     appliedProperties: originalProperties
   };
 }
+
+// (No changes needed here; duplicate logic removed)

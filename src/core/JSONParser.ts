@@ -7,6 +7,7 @@
 
 import { createVisualizationState, VisualizationState } from './VisualizationState';
 import { NODE_STYLES, EDGE_STYLES, NodeStyle, EdgeStyle } from '../shared/config';
+import type { RenderConfig } from './types';
 
 // ============ Type Definitions ============
 
@@ -30,14 +31,6 @@ export interface ParseResult {
       // - booleanPropertyPairs: pairs with semantic tags (no raw styles)
       // - combinationRules: metadata only
       propertyMappings?: Record<string, string | { styleTag: string }>;
-      singlePropertyMappings?: Record<string, string>;
-      booleanPropertyPairs?: Array<{
-        pair: [string, string];
-        defaultStyle: string; // styleTag
-        altStyle: string;     // styleTag
-        description?: string;
-      }>;
-      combinationRules?: any;
     };
     nodeTypeConfig?: {
       defaultType?: string;
@@ -78,14 +71,8 @@ interface RawEdge {
   source: string;
   target: string;
   semanticTags?: string[];
-  edgeProperties?: string[];
+  // edgeProperties?: string[]; // Removed for uniformity
   [key: string]: any;
-}
-
-interface RawHierarchy {
-  id: string;
-  name: string;
-  groups: Record<string, string[]>;
 }
 
 interface RawHierarchyChoice {
@@ -103,24 +90,18 @@ interface RawHierarchyItem {
 interface RawGraphData {
   nodes: RawNode[];
   edges: RawEdge[];
-  hierarchies?: RawHierarchy[];
   hierarchyChoices?: RawHierarchyChoice[];
   nodeAssignments?: Record<string, Record<string, string>>;
   edgeStyleConfig?: {
-    // Input may contain legacy/raw fields, but the parser will ignore/drop
-    // anything that isn't semantics-only.
     propertyMappings?: Record<string, string | { styleTag: string } | any>;
-    singlePropertyMappings?: Record<string, string>;
     booleanPropertyPairs?: Array<{
       pair: [string, string];
       defaultStyle: string; // styleTag
       altStyle: string;     // styleTag
       description?: string;
-      // Any additional fields will be ignored by sanitizer
       [key: string]: any;
     }>;
-    combinationRules?: any;
-    // Note: fields like style, reactFlowType, animated, defaultStyle, etc. are ignored
+    // combinationRules?: any; // combinationRules removed
     [key: string]: any;
   };
   nodeTypeConfig?: {
@@ -145,8 +126,47 @@ interface RawGraphData {
  * ```javascript
  * const { state, metadata } = parseGraphJSON(graphData, 'myGrouping');
  * // // console.log((('Parsed', metadata.nodeCount, 'nodes')));
- * ```
  */
+
+/**
+ * Sanitize edge style config to only allow semantic configurations
+ * This prevents raw style objects from being passed through and ensures
+ * only semantic mapping configurations are used
+ */
+function sanitizeEdgeStyleConfig(edgeStyleConfig: any): any {
+  if (!edgeStyleConfig) return undefined;
+  
+  // Only allow semantic mapping properties, filter out raw style configurations
+  const sanitized: any = {};
+  
+  if (edgeStyleConfig.semanticMappings) {
+    sanitized.semanticMappings = edgeStyleConfig.semanticMappings;
+  }
+  
+  if (edgeStyleConfig.booleanPropertyPairs) {
+    sanitized.booleanPropertyPairs = edgeStyleConfig.booleanPropertyPairs;
+  }
+  
+  if (edgeStyleConfig.combinationRules) {
+    sanitized.combinationRules = edgeStyleConfig.combinationRules;
+  }
+  
+  // Do not include propertyMappings with raw style objects - only allow styleTag references
+  if (edgeStyleConfig.propertyMappings) {
+    const sanitizedPropertyMappings: any = {};
+    Object.entries(edgeStyleConfig.propertyMappings).forEach(([key, value]) => {
+      if (typeof value === 'string' || (typeof value === 'object' && value && 'styleTag' in value)) {
+        sanitizedPropertyMappings[key] = value;
+      }
+    });
+    if (Object.keys(sanitizedPropertyMappings).length > 0) {
+      sanitized.propertyMappings = sanitizedPropertyMappings;
+    }
+  }
+  
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+}
+
 export function parseGraphJSON(
   jsonData: RawGraphData | string,
   selectedGrouping?: string
@@ -216,9 +236,7 @@ export function parseGraphJSON(
 export function createGraphParser(options: ParserOptions = {}): { parse: (data: RawGraphData | string, grouping?: string) => ParseResult } {
   const {
     validateData = true,
-    strictMode = false,
-    defaultNodeStyle = NODE_STYLES.DEFAULT,
-    defaultEdgeStyle = EDGE_STYLES.DEFAULT
+    strictMode = false
   } = options;
 
   return {
@@ -251,25 +269,12 @@ export function createGraphParser(options: ParserOptions = {}): { parse: (data: 
  */
 export function getAvailableGroupings(jsonData: RawGraphData | string): GroupingOption[] {
   const data: RawGraphData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-  
-  // Check for new format (hierarchyChoices)
   if (data.hierarchyChoices && Array.isArray(data.hierarchyChoices)) {
-    const groupings = data.hierarchyChoices.map(choice => ({
+    return data.hierarchyChoices.map(choice => ({
       id: choice.id,
       name: choice.name || choice.id
     }));
-    return groupings;
   }
-  
-  // Check for old format (hierarchies)
-  if (data.hierarchies && Array.isArray(data.hierarchies)) {
-    const groupings = data.hierarchies.map(hierarchy => ({
-      id: hierarchy.id,
-      name: hierarchy.name || hierarchy.id
-    }));
-    return groupings;
-  }
-  
   return [];
 }
 
@@ -294,7 +299,6 @@ export function getAvailableGroupings(jsonData: RawGraphData | string): Grouping
 export function validateGraphJSON(jsonData: RawGraphData | string): ValidationResult {
   try {
     const data: RawGraphData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-    
     const errors: string[] = [];
     const warnings: string[] = [];
     
@@ -307,7 +311,6 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
     // 🔥 VALIDATE: JSON must NOT contain mutable state fields
     // These fields represent UI state and should be managed by VisualizationState only
     const forbiddenFields = ['collapsed', 'hidden', 'style'];
-    const allowedSemanticFields = ['semanticTags']; // Allow semantic tags for styling configuration
     
     // Check nodes for forbidden fields
     if (Array.isArray(data.nodes)) {
@@ -340,29 +343,6 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
           // Validate semanticTags if present
           if ('semanticTags' in edge && !Array.isArray(edge.semanticTags)) {
             errors.push(`Edge '${edge.id || `at index ${i}`}' has invalid semanticTags - must be an array of strings.`);
-          }
-          // Validate edgeProperties if present
-          if ('edgeProperties' in edge && !Array.isArray(edge.edgeProperties)) {
-            errors.push(`Edge '${edge.id || `at index ${i}`}' has invalid edgeProperties - must be an array of strings.`);
-          }
-        }
-      }
-    }
-    
-    // Check hierarchies for forbidden fields
-    if (data.hierarchies) {
-      for (const hierarchy of data.hierarchies) {
-        if (hierarchy.groups) {
-          // Old format: check if groups contain forbidden fields
-          for (const [containerId, nodeIds] of Object.entries(hierarchy.groups)) {
-            // Groups in old format are just arrays, but check if accidentally object with state
-            if (typeof nodeIds === 'object' && !Array.isArray(nodeIds)) {
-              for (const forbiddenField of forbiddenFields) {
-                if (forbiddenField in nodeIds) {
-                  errors.push(`Container '${containerId}' in hierarchy '${hierarchy.id}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`);
-                }
-              }
-            }
           }
         }
       }
@@ -441,25 +421,25 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
       }
     }
     
-    // Validate hierarchies (optional)
+    // Validate hierarchyChoices (optional)
     let hierarchyCount = 0;
-    if (data.hierarchies) {
-      if (!Array.isArray(data.hierarchies)) {
-        warnings.push('Hierarchies should be an array');
+    if (data.hierarchyChoices) {
+      if (!Array.isArray(data.hierarchyChoices)) {
+        warnings.push('hierarchyChoices should be an array');
       } else {
-        hierarchyCount = data.hierarchies.length;
-        for (let i = 0; i < data.hierarchies.length; i++) {
-          const hierarchy = data.hierarchies[i];
-          if (!hierarchy) {
-            warnings.push(`Hierarchy at index ${i} is null or undefined`);
+        hierarchyCount = data.hierarchyChoices.length;
+        for (let i = 0; i < data.hierarchyChoices.length; i++) {
+          const choice = data.hierarchyChoices[i];
+          if (!choice) {
+            warnings.push(`Hierarchy choice at index ${i} is null or undefined`);
             continue;
           }
-          if (!hierarchy.id || typeof hierarchy.id !== 'string') {
-            warnings.push(`Hierarchy at index ${i} missing or invalid id`);
+          if (!choice.id || typeof choice.id !== 'string') {
+            warnings.push(`Hierarchy choice at index ${i} missing or invalid id`);
             continue;
           }
-          if (!hierarchy.groups || typeof hierarchy.groups !== 'object') {
-            warnings.push(`Hierarchy '${hierarchy.id}' missing or invalid groups`);
+          if (!choice.children || !Array.isArray(choice.children)) {
+            warnings.push(`Hierarchy choice '${choice.id}' missing or invalid children`);
           }
         }
       }
@@ -504,14 +484,14 @@ function extractMetadata(data: RawGraphData): Record<string, any> {
   return {
     nodeCount: data.nodes.length,
     edgeCount: data.edges.length,
-    hasHierarchies: !!(data.hierarchies && data.hierarchies.length > 0),
+    hasHierarchies: !!(data.hierarchyChoices && data.hierarchyChoices.length > 0),
     nodeTypeConfig: data.nodeTypeConfig || null,
+    nodeTypeItems: data.nodeTypeConfig?.types?.map(t => ({ label: t.label, type: t.id })) || [],
     ...data.metadata
   };
 }
 
 function selectGrouping(data: RawGraphData, selectedGrouping: string | null | undefined): string | null {
-  // Check for new format (hierarchyChoices)
   if (data.hierarchyChoices && data.hierarchyChoices.length > 0) {
     if (selectedGrouping) {
       const found = data.hierarchyChoices.find(h => h.id === selectedGrouping);
@@ -520,17 +500,6 @@ function selectGrouping(data: RawGraphData, selectedGrouping: string | null | un
     }
     return data.hierarchyChoices[0].id;
   }
-  
-  // Check for old format (hierarchies) 
-  if (data.hierarchies && data.hierarchies.length > 0) {
-    if (selectedGrouping) {
-      const found = data.hierarchies.find(h => h.id === selectedGrouping);
-      if (found) return selectedGrouping;
-      console.warn(`Grouping '${selectedGrouping}' not found, using first available`);
-    }
-    return data.hierarchies[0].id;
-  }
-  
   return null;
 }
 
@@ -563,16 +532,14 @@ function parseEdges(edges: RawEdge[], state: VisualizationState): void {
   for (const rawEdge of edges) {
     try {
       // Extract immutable properties and filter out UI state fields
-      const { id, source, target, semanticTags, edgeProperties, style, hidden, animated, ...safeProps } = rawEdge;
+      const { id, source, target, semanticTags, style, hidden, animated, ...safeProps } = rawEdge;
       
       state.addGraphEdge(id, {
         source,
         target,
         style: EDGE_STYLES.DEFAULT, // Default style - will be applied by bridge based on properties
-        // ✅ All edges start visible - VisualizationState manages visibility
         hidden: false,
         semanticTags: semanticTags || [],
-        edgeProperties: edgeProperties || semanticTags || [], // Use edgeProperties or fall back to semanticTags
         ...safeProps // Only include non-UI-state properties
       });
     } catch (error) {
@@ -583,74 +550,26 @@ function parseEdges(edges: RawEdge[], state: VisualizationState): void {
 
 function parseHierarchy(data: RawGraphData, groupingId: string, state: VisualizationState): number {
   let containerCount = 0;
-  
-  // Find the requested hierarchy - check both new and old formats
-  let hierarchyChoice: any = null;
-  let groupsData: any = null;
-  
-  // Check new format (hierarchyChoices)
-  if (data.hierarchyChoices) {
-    hierarchyChoice = data.hierarchyChoices.find(choice => choice.id === groupingId);
-  }
-  
-  // Check old format (hierarchies) if not found in new format
-  if (!hierarchyChoice && data.hierarchies) {
-    const oldHierarchy = data.hierarchies.find(h => h.id === groupingId);
-    if (oldHierarchy) {
-      // Convert old format to expected structure
-      hierarchyChoice = oldHierarchy;
-      groupsData = oldHierarchy.groups; // Old format has groups object
-    }
-  }
-  
+  const hierarchyChoice = data.hierarchyChoices?.find(choice => choice.id === groupingId);
   if (!hierarchyChoice) {
     console.warn(`Hierarchy choice '${groupingId}' not found`);
     return 0;
   }
-  
-  // Handle both old and new formats
-  if (groupsData) {
-    // Old format: groups is an object { containerID: [nodeID1, nodeID2, ...] }
-    for (const [containerId, nodeIds] of Object.entries(groupsData)) {
-      if (Array.isArray(nodeIds)) {
-        state.addContainer(containerId, {
-          label: containerId,
-          children: nodeIds,
-          collapsed: false
-        });
-        containerCount++;
-        
-        // Add nodes to container children
-        for (const nodeId of nodeIds) {
-          if (state.getGraphNode(nodeId)) {
-            state.addContainerChild(containerId, nodeId);
-          }
-        }
-      }
-    }
-  } else if (hierarchyChoice.children) {
-    // New format: hierarchical structure
-    // Create containers from the hierarchy structure
+  if (hierarchyChoice.children) {
     function createContainersFromHierarchy(hierarchyItems: any[], parentId?: string): void {
       for (const item of hierarchyItems) {
-        // Create the container
         const children: string[] = [];
-        
-        // Add child containers if they exist
         if (item.children && Array.isArray(item.children)) {
           for (const childItem of item.children) {
             children.push(childItem.id);
           }
         }
-        
         state.addContainer(item.id, {
           label: item.name || item.id,
           children,
           collapsed: false
         });
         containerCount++;
-        
-        // If this container has a parent, add it to the parent's children
         if (parentId) {
           const parent = state.getContainer(parentId);
           if (parent) {
@@ -663,24 +582,17 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
             }
           }
         }
-        
-        // Recursively create child containers
         if (item.children && Array.isArray(item.children)) {
           createContainersFromHierarchy(item.children, item.id);
         }
       }
     }
-    
-    // Create all containers first
     createContainersFromHierarchy(hierarchyChoice.children);
-    
-    // Assign nodes to containers based on nodeAssignments
     const assignments = data.nodeAssignments?.[groupingId];
     if (assignments) {
       for (const [nodeId, containerId] of Object.entries(assignments)) {
         const container = state.getContainer(containerId);
         if (container && state.getGraphNode(nodeId)) {
-          // Add node to container's children
           const currentChildren = state.getContainerChildren(containerId);
           if (!currentChildren.has(nodeId)) {
             state.addContainer(containerId, {
@@ -692,114 +604,21 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
       }
     }
   }
-  
   return containerCount;
 }
 
 /**
- * Sanitize edgeStyleConfig from JSON to only allow semantic mappings.
- * - Keep propertyMappings where values are string styleTags or objects with a styleTag string.
- * - Keep singlePropertyMappings (property -> styleTag) if values are strings.
- * - Keep booleanPropertyPairs but only their semantic fields (pair/defaultStyle/altStyle/description).
- * - Keep combinationRules metadata.
- * - Drop any raw style objects, reactFlowType, animated flags, semanticMappings, and defaultStyle objects.
+ * Create a RenderConfig from a ParseResult
+ * Combines metadata from parsing with optional overrides
  */
-function sanitizeEdgeStyleConfig(raw: any): any | undefined {
-  if (!raw || typeof raw !== 'object') return undefined;
-
-  const sanitized: any = {};
-
-  // propertyMappings: { prop: string | { styleTag?: string } }
-  if (raw.propertyMappings && typeof raw.propertyMappings === 'object') {
-    const pm: Record<string, any> = {};
-    for (const [prop, val] of Object.entries(raw.propertyMappings)) {
-      if (typeof val === 'string') {
-        pm[prop] = val; // assume styleTag
-      } else if (val && typeof val === 'object') {
-        // Preserve legacy fields (style, reactFlowType, animated, label, styleTag)
-        const { styleTag, style, reactFlowType, animated, label } = val as any;
-        const entry: any = {};
-        if (typeof styleTag === 'string') entry.styleTag = styleTag;
-        if (style && typeof style === 'object') entry.style = style;
-        if (reactFlowType && typeof reactFlowType === 'string') entry.reactFlowType = reactFlowType;
-        if (typeof animated === 'boolean') entry.animated = animated;
-        if (typeof label === 'string') entry.label = label;
-        if (Object.keys(entry).length > 0) pm[prop] = entry;
-      }
-    }
-    if (Object.keys(pm).length > 0) sanitized.propertyMappings = pm;
-  }
-
-  // singlePropertyMappings: { prop: styleTag }
-  if (raw.singlePropertyMappings && typeof raw.singlePropertyMappings === 'object') {
-    const spm: Record<string, string> = {};
-    for (const [prop, val] of Object.entries(raw.singlePropertyMappings)) {
-      if (typeof val === 'string') spm[prop] = val;
-    }
-    if (Object.keys(spm).length > 0) sanitized.singlePropertyMappings = spm;
-  }
-
-  // booleanPropertyPairs: [{ pair, defaultStyle, altStyle, description }]
-  if (Array.isArray(raw.booleanPropertyPairs)) {
-    const pairs = raw.booleanPropertyPairs
-      .map((p: any) => {
-        if (!p || !Array.isArray(p.pair) || p.pair.length !== 2) return null;
-        const defaultStyle = typeof p.defaultStyle === 'string' ? p.defaultStyle : undefined;
-        const altStyle = typeof p.altStyle === 'string' ? p.altStyle : undefined;
-        const description = typeof p.description === 'string' ? p.description : undefined;
-        if (!defaultStyle || !altStyle) return null;
-        return { pair: [p.pair[0], p.pair[1]], defaultStyle, altStyle, ...(description ? { description } : {}) };
-      })
-      .filter(Boolean);
-    if (pairs.length > 0) sanitized.booleanPropertyPairs = pairs;
-  }
-
-  // combinationRules (kept as metadata, not direct styles)
-  if (raw.combinationRules && typeof raw.combinationRules === 'object') {
-    sanitized.combinationRules = { ...raw.combinationRules };
-  }
-
-  // Explicitly do NOT pass through: defaultStyle at root level (tests don't depend on it here)
-  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
-}
-
-function mapStyleConstant(
-  rawStyle: string | undefined, 
-  styleConstants: Record<string, string>, 
-  defaultStyle: string
-): string {
-  if (!rawStyle || typeof rawStyle !== 'string') {
-    return defaultStyle;
-  }
-  
-  // Try exact match first
-  const upperStyle = rawStyle.toUpperCase();
-  for (const [key, value] of Object.entries(styleConstants)) {
-    if (key === upperStyle) {
-      return value;
-    }
-  }
-  
-  // Try value match
-  for (const value of Object.values(styleConstants)) {
-    if (value === rawStyle.toLowerCase()) {
-      return value;
-    }
-  }
-  
-  console.warn(`Unknown style '${rawStyle}', using default`);
-  return defaultStyle;
-}
-
-/**
- * Create a RenderConfig from ParseResult metadata
- * This helper makes it easy to pass edgeStyleConfig and other metadata to FlowGraph
- */
-export function createRenderConfig(parseResult: ParseResult, baseConfig: any = {}): any {
+export function createRenderConfig(
+  parseResult: ParseResult, 
+  overrides: Partial<RenderConfig> = {}
+): RenderConfig {
   return {
-    ...baseConfig,
-  edgeStyleConfig: parseResult.metadata.edgeStyleConfig,
-  // Include other metadata as needed
-    nodeTypeConfig: parseResult.metadata.nodeTypeConfig
+    // Include edge style config from parsing
+    edgeStyleConfig: parseResult.metadata.edgeStyleConfig,
+    // Apply any overrides
+    ...overrides
   };
 }

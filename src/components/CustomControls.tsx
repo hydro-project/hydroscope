@@ -10,7 +10,7 @@
   const customControlsScale = standardControlsScale * 1.04; // Slightly larger than standard controls zoom controls to include container pack/unpack functionality
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Controls, ControlButton } from '@xyflow/react';
 import type { VisualizationState } from '../core/VisualizationState';
 import { LAYOUT_CONSTANTS } from '../shared/config';

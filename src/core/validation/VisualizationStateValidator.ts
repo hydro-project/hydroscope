@@ -8,7 +8,7 @@
  */
 
 import { LAYOUT_CONSTANTS, HYPEREDGE_CONSTANTS } from '../../shared/config';
-import { isHyperEdge } from '../types';
+import type { VisualizationState } from '../VisualizationState';
 
 export interface InvariantViolation {
   type: string;
@@ -128,7 +128,7 @@ export class VisualizationStateInvariantValidator {
   private validateContainerStates(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [containerId, container] of this.state.containers) {
+    for (const [containerId, container] of this.state._collections.containers) {
       const { collapsed, hidden } = container;
       
       // Check for illegal Expanded/Hidden state
@@ -148,7 +148,7 @@ export class VisualizationStateInvariantValidator {
   private validateContainerHierarchy(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [containerId, container] of this.state.containers) {
+    for (const [containerId, container] of this.state._collections.containers) {
       // If container is collapsed, all descendants must be collapsed/hidden
       if (container.collapsed) {
         this.validateDescendantsCollapsed(containerId, violations);
@@ -225,7 +225,7 @@ export class VisualizationStateInvariantValidator {
   private validateNodeContainerRelationships(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [nodeId, node] of this.state.graphNodes) {
+    for (const [nodeId, node] of this.state._collections.graphNodes) {
       const containerName = this.state.getNodeContainer(nodeId);
       
       if (containerName) {
@@ -262,7 +262,7 @@ export class VisualizationStateInvariantValidator {
     const violations: InvariantViolation[] = [];
 
     // Check all non-hidden edges for references to non-existent or hidden entities
-    for (const edge of this.state.graphEdges.values()) {
+    for (const edge of this.state._collections.graphEdges.values()) {
       // Skip hidden edges - they're allowed to reference anything
       if (edge.hidden) continue;
       // Skip hyperEdges - they have different rules
@@ -321,7 +321,7 @@ export class VisualizationStateInvariantValidator {
   private validateEdgeNodeConsistency(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [edgeId, edge] of this.state.graphEdges) {
+    for (const [edgeId, edge] of this.state._collections.graphEdges) {
       // Check source exists
       const sourceExists = this.state.getGraphNode(edge.source) || this.state.getContainer(edge.source);
       if (!sourceExists) {
@@ -351,7 +351,7 @@ export class VisualizationStateInvariantValidator {
   public validateHyperedgeValidity(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [hyperEdgeId, hyperEdge] of this.state.hyperEdges) {
+    for (const [hyperEdgeId, hyperEdge] of this.state._collections.hyperEdges) {
       if (hyperEdge.hidden) continue;
 
       // Check that both endpoints exist
@@ -410,7 +410,7 @@ export class VisualizationStateInvariantValidator {
   public validateDanglingHyperedges(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [hyperEdgeId, hyperEdge] of this.state.hyperEdges) {
+    for (const [hyperEdgeId, hyperEdge] of this.state._collections.hyperEdges) {
       if (hyperEdge.hidden) continue;
 
       // Check if endpoints exist and their visibility state
@@ -472,7 +472,7 @@ export class VisualizationStateInvariantValidator {
   private validateCollapsedContainerDimensions(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [containerId, container] of this.state.containers) {
+    for (const [containerId, container] of this.state._collections.containers) {
       if (!container.collapsed) continue;
 
       // Check if collapsed container has suspiciously large dimensions
@@ -497,7 +497,7 @@ export class VisualizationStateInvariantValidator {
   private validatePositionedContainerConsistency(): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    for (const [containerId, container] of this.state.containers) {
+    for (const [containerId, container] of this.state._collections.containers) {
       if (container.hidden) continue;
 
       // Check if container has position but no dimensions (can cause layout issues)

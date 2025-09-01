@@ -29,7 +29,7 @@ export class ValidationTracker {
     this.enabled = false;
   }
 
-  static track(validationType: 'validateInvariants' | 'validateAllInvariants') {
+  static track(_validationType: 'validateInvariants' | 'validateAllInvariants') {
     if (!this.enabled) return;
 
     const stack = new Error().stack || '';

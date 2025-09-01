@@ -16,9 +16,9 @@ export interface HydroscopeMiniProps extends Omit<HydroscopeProps, 'eventHandler
   innerStyle?: React.CSSProperties; // Optional style override for inner Hydroscope container
   
   // Callbacks for extensibility
-  onNodeClick?: (event: any, node: any, visualizationState: VisualizationState) => void;
-  onContainerCollapse?: (containerId: string, visualizationState: VisualizationState) => void;
-  onContainerExpand?: (containerId: string, visualizationState: VisualizationState) => void;
+  onNodeClick?: (event: any, node: any, visualizationState?: VisualizationState) => void;
+  onContainerCollapse?: (containerId: string, visualizationState?: VisualizationState) => void;
+  onContainerExpand?: (containerId: string, visualizationState?: VisualizationState) => void;
   onParsed?: (metadata: any, visualizationState: VisualizationState) => void;
 }
 
@@ -31,7 +31,7 @@ export interface HydroscopeMiniProps extends Omit<HydroscopeProps, 'eventHandler
  * - Auto-fit after operations
  * - Zero configuration required - just pass data
  * 
- * This bridges the gap between basic Hydroscope (read-only) and HydroscopeFull (full UI).
+ * This bridges the gap between basic HydroscopeCore (read-only) and Hydroscope (full UI).
  */
 export function HydroscopeMini({
   showControls = true,

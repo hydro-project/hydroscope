@@ -5,15 +5,14 @@
  * Maintains identical API while using the new VisualizationEngine internally.
  */
 
-import { VisualizationEngine, createVisualizationEngine } from '../core/VisualizationEngine';
+import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { createVisualizationState } from '../core/VisualizationState';
-import type { GraphNode, GraphEdge, ExternalContainer, HyperEdge } from '../shared/types';
+import type { GraphNode, GraphEdge, ExternalContainer } from '../shared/types';
 import type { NodeStyle, EdgeStyle } from '../shared/config';
 import type {
   PositionedNode,
   PositionedEdge, 
   PositionedContainer,
-  PositionedHyperEdge,
   LayoutResult,
   LayoutEngine,
   LayoutConfig,
@@ -41,7 +40,6 @@ export class ELKLayoutEngine implements LayoutEngine {
   ): Promise<LayoutResult> {
     // ...existing code...
     
-    const finalConfig = { ...this.config, ...config };
     const startTime = Date.now();
     
     try {
@@ -136,8 +134,8 @@ export class ELKLayoutEngine implements LayoutEngine {
     edges: GraphEdge[],
     containers: ExternalContainer[],
     config?: LayoutConfig,
-    changedContainerId?: string | null,
-    visualizationState?: any
+    _changedContainerId?: string | null,
+    _visualizationState?: any
   ): Promise<LayoutResult> {
     // For now, just call regular layout - the bridge architecture handles changes efficiently
     return this.layout(nodes, edges, containers, config);
@@ -210,7 +208,7 @@ export class ELKLayoutEngine implements LayoutEngine {
   /**
    * Remove event listener  
    */
-  off(event: string, callback: LayoutEventCallback): void {
+  off(event: string, _callback: LayoutEventCallback): void {
     this.callbacks.delete(event);
   }
 }

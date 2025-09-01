@@ -5,7 +5,6 @@
  * while keeping a controlled open state via props.
  */
 
-import React from 'react';
 import { CollapsibleSectionProps } from './types';
 import { COMPONENT_COLORS, TYPOGRAPHY } from '../shared/config';
 

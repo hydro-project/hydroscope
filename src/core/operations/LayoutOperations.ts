@@ -146,12 +146,12 @@ export class LayoutOperations {
   clearLayoutPositions(): void {
     // Clear positions for all visible containers
     const containers = this.state._collections.containers;
-    for (const [containerId, container] of containers) {
+    for (const [containerId] of containers) {
       this.setContainerLayout(containerId, { position: undefined });
     }
     
     // CRITICAL: Clear positions for ALL nodes (both visible and hidden)
-    for (const [nodeId, node] of this.state._collections.graphNodes) {
+    for (const [nodeId] of this.state._collections.graphNodes) {
       this.setNodeLayout(nodeId, { position: undefined });
     }
   }

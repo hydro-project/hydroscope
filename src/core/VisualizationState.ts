@@ -12,8 +12,7 @@ import type {
 } from '../shared/types';
 
 import type { Edge, HyperEdge } from './types';
-import { LAYOUT_CONSTANTS, HYPEREDGE_CONSTANTS, SIZES } from '../shared/config';
-import { ContainerPadding } from './ContainerPadding';
+import { LAYOUT_CONSTANTS, SIZES } from '../shared/config';
 
 // Import specialized operation classes
 import { VisualizationStateInvariantValidator } from './validation/VisualizationStateValidator';
@@ -79,9 +78,6 @@ export class VisualizationState {
   // Track containers in transition state to suppress spurious warnings
   private readonly _recentlyCollapsedContainers = new Set<string>();
 
-  // Flag to track recursive operations
-  private _inRecursiveOperation = false;
-  
   // Flag to control validation during transitions
   public _validationEnabled = true;
   public _validationLevel: 'strict' | 'normal' | 'minimal' | 'silent' = 'normal';
@@ -97,21 +93,6 @@ export class VisualizationState {
 
   // Lazy initialization flags for efficient caches
   private _cacheInitialized = false;
-
-  // ============ PROTECTED ACCESSORS (Internal use only) ============
-  // These provide controlled access to collections for internal methods
-  
-  private get graphNodes(): Map<string, GraphNode> { return this._collections.graphNodes; }
-  private get graphEdges(): Map<string, GraphEdge> { return this._collections.graphEdges; }
-  private get containers(): Map<string, Container> { return this._collections.containers; }
-  private get hyperEdges(): Map<string, HyperEdge> { return this._collections.hyperEdges; }
-  private get _visibleNodes(): Map<string, GraphNode> { return this._collections._visibleNodes; }
-  private get _visibleEdges(): Map<string, Edge> { return this._collections._visibleEdges; }
-  private get _visibleContainers(): Map<string, Container> { return this._collections._visibleContainers; }
-  private get _expandedContainers(): Map<string, Container> { return this._collections._expandedContainers; }
-  private get _collapsedContainers(): Map<string, Container> { return this._collections._collapsedContainers; }
-  private get _nodeToEdges(): Map<string, Set<string>> { return this._collections._nodeToEdges; }
-  private get _manualPositions(): Map<string, {x: number, y: number}> { return this._collections._manualPositions; }
 
   // ============ BRIDGE PATTERN ACCESSORS ============
   // These provide indirect access for specialized operations classes
@@ -307,6 +288,13 @@ export class VisualizationState {
   
   getNodeContainer(nodeId: string): string | undefined {
     return this._collections._nodeContainers.get(nodeId);
+  }
+
+  /** 
+  * Get all hyperEdges (safe read-only access for tests and debugging)
+  */
+  public get hyperEdges(): ReadonlyMap<string, HyperEdge> {
+    return this._collections.hyperEdges;
   }
 
   // ============ EFFICIENT HIERARCHY ACCESSORS (O(1) lookups for HierarchyTree) ============
@@ -888,7 +876,6 @@ export class VisualizationState {
       throw new Error(`Cannot collapse non-existent container: ${containerId}`);
     }
     
-    this._inRecursiveOperation = true;
     try {
       this._recentlyCollapsedContainers.add(containerId);
       this._lastChangedContainer = containerId; // Track for selective layout
@@ -899,7 +886,7 @@ export class VisualizationState {
       }, 2000);
       
     } finally {
-      this._inRecursiveOperation = false;
+      // Cleanup if needed
     }
   }
   
@@ -979,7 +966,7 @@ export class VisualizationState {
       
       for (const [parentId, children] of this._containerChildren) {
         if (children.has(container.id)) {
-          const parent = this.containers.get(parentId);
+          const parent = this._collections.containers.get(parentId);
           if (parent && !parent.collapsed && !parent.hidden) {
             hasVisibleParent = true;
             break;
@@ -1209,9 +1196,7 @@ export class VisualizationState {
     targetSet.add(hyperEdgeId);
     this._collections._nodeToEdges.set(hyperEdgeData.target, targetSet);
     
-    // Update visibility cache if edge should be visible
-    const sourceExists = this._isEndpointVisible(hyperEdgeData.source);
-    const targetExists = this._isEndpointVisible(hyperEdgeData.target);
+    // Note: Visibility cache updates could be added here if needed for hyperEdges
 
     return this;
   }
@@ -1465,7 +1450,7 @@ export class VisualizationState {
     this.visibilityManager.updateContainerVisibilityCaches(containerId, container);
   }
 
-  _cascadeNodeVisibilityToEdges(nodeId: string, visible: boolean): void {
+  _cascadeNodeVisibilityToEdges(nodeId: string): void {
     const connectedEdges = this._collections._nodeToEdges.get(nodeId) || new Set();
     
     for (const edgeId of Array.from(connectedEdges)) {

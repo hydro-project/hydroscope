@@ -21,7 +21,7 @@ export class CoveredEdgesIndex {
   initialize(
     containers: Map<string, Container>,
     edges: Map<string, GraphEdge>,
-    containerChildren: Map<string, Set<string>>,
+    _containerChildren: Map<string, Set<string>>,
     nodeContainers: Map<string, string>
   ): void {
     this.containerToEdges.clear();

@@ -22,7 +22,6 @@ export class VisibilityManager {
       return;
     }
     
-    const wasVisible = !node.hidden;
     node.hidden = !visible;
     
     // Update visibility cache atomically
@@ -33,7 +32,7 @@ export class VisibilityManager {
     }
     
     // Cascade visibility to connected edges
-    this.cascadeNodeVisibilityToEdges(nodeId, visible);
+    this.cascadeNodeVisibilityToEdges(nodeId);
   }
 
   /**
@@ -95,7 +94,7 @@ export class VisibilityManager {
   /**
    * Cascade node visibility to connected edges
    */
-  private cascadeNodeVisibilityToEdges(nodeId: string, nodeVisible: boolean): void {
+  private cascadeNodeVisibilityToEdges(nodeId: string): void {
     const connectedEdges = this.state.getAdjacentEdges(nodeId) || new Set();
     
     for (const edgeId of Array.from(connectedEdges)) {
@@ -155,7 +154,7 @@ export class VisibilityManager {
       if (node) {
         node.hidden = true;
         this.state._collections._visibleNodes.delete(childId);
-        this.cascadeNodeVisibilityToEdges(childId, false);
+        this.cascadeNodeVisibilityToEdges(childId);
       }
     }
   }

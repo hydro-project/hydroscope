@@ -383,7 +383,6 @@ export class VisualizationEngine {
   // ============ Internal Methods ============
 
   private updateState(phase: VisualizationPhase): void {
-    const previousPhase = this.state.phase;
     this.state.phase = phase;
     this.state.lastUpdate = Date.now();
     

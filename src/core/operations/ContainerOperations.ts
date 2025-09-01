@@ -5,7 +5,7 @@
  * hyperEdge management, and visibility cascading.
  */
 
-import { GraphNode, Container, GraphEdge, HyperEdge, Edge, isGraphEdge, isHyperEdge } from '../types';
+import { GraphEdge } from '../types';
 import { createHyperEdge } from '../EdgeFactory';
 import { HYPEREDGE_CONSTANTS } from '../../shared/config';
 
@@ -125,7 +125,7 @@ export class ContainerOperations {
     const crossingEdges: GraphEdge[] = [];
     
     // Check all edges in the state (access via private collections)
-    for (const [edgeId, edge] of this.state._collections.graphEdges.entries()) {
+    for (const [, edge] of this.state._collections.graphEdges.entries()) {
       const sourceInContainer = this.isNodeInContainerRecursive(edge.source, containerId);
       const targetInContainer = this.isNodeInContainerRecursive(edge.target, containerId);
       
@@ -160,7 +160,6 @@ export class ContainerOperations {
     
     for (const edge of crossingEdges) {
       const sourceInContainer = this.isNodeInContainerRecursive(edge.source, containerId);
-      const targetInContainer = this.isNodeInContainerRecursive(edge.target, containerId);
       
       // Determine external endpoint
       const externalEndpoint = sourceInContainer ? edge.target : edge.source;

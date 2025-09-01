@@ -11,7 +11,6 @@ import {
   getAvailableGroupings,
   validateGraphJSON 
 } from '../JSONParser';
-import { NODE_STYLES, EDGE_STYLES } from '../../shared/config';
 import type { ParseResult, ValidationResult, GroupingOption } from '../JSONParser';
 
 describe('JSONParser', () => {
@@ -73,7 +72,7 @@ describe('JSONParser', () => {
 
     it('should handle empty graph data', () => {
       const emptyData = { nodes: [], edges: [] };
-      const result = parseGraphJSON(emptyData, null);
+      const result = parseGraphJSON(emptyData, undefined);
       
       expect(result.state.visibleNodes.length).toBe(0);
       expect(result.state.visibleEdges.length).toBe(0);
@@ -168,7 +167,7 @@ describe('JSONParser', () => {
     it('should handle null input gracefully', () => {
       // The implementation throws for null input, which is expected behavior
       expect(() => {
-        parseGraphJSON(null as any, null);
+        parseGraphJSON(null as any, undefined);
       }).toThrow();
     });
 
@@ -180,7 +179,7 @@ describe('JSONParser', () => {
       
       // The implementation throws for invalid data, which is expected behavior
       expect(() => {
-        parseGraphJSON(malformedData as any, null);
+                    parseGraphJSON(malformedData as any, undefined);
       }).toThrow();
     });
   });

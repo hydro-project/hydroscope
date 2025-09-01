@@ -256,10 +256,6 @@
 ],
   "edges": [
   {
-    "edgeProperties": [
-      "Unbounded",
-      "TotalOrder"
-    ],
     "id": "e0",
     "semanticTags": [
       "Unbounded",
@@ -269,11 +265,6 @@
     "target": "1"
   },
   {
-    "edgeProperties": [
-      "TotalOrder",
-      "Unbounded",
-      "Network"
-    ],
     "id": "e1",
     "label": "to Some(1)",
     "semanticTags": [
@@ -285,11 +276,6 @@
     "target": "2"
   },
   {
-    "edgeProperties": [
-      "TotalOrder",
-      "Network",
-      "Unbounded"
-    ],
     "id": "e2",
     "semanticTags": [
       "TotalOrder",
@@ -300,11 +286,6 @@
     "target": "3"
   },
   {
-    "edgeProperties": [
-      "Stream",
-      "Unbounded",
-      "NoOrder"
-    ],
     "id": "e3",
     "semanticTags": [
       "Stream",
@@ -315,11 +296,6 @@
     "target": "4"
   },
   {
-    "edgeProperties": [
-      "Stream",
-      "Unbounded",
-      "NoOrder"
-    ],
     "id": "e4",
     "semanticTags": [
       "Stream",
@@ -330,11 +306,6 @@
     "target": "5"
   },
   {
-    "edgeProperties": [
-      "NoOrder",
-      "Unbounded",
-      "Stream"
-    ],
     "id": "e5",
     "semanticTags": [
       "NoOrder",
@@ -345,12 +316,6 @@
     "target": "6"
   },
   {
-    "edgeProperties": [
-      "Stream",
-      "Unbounded",
-      "NoOrder",
-      "Network"
-    ],
     "id": "e6",
     "label": "to Some(0)",
     "semanticTags": [
@@ -363,11 +328,6 @@
     "target": "7"
   },
   {
-    "edgeProperties": [
-      "Unbounded",
-      "NoOrder",
-      "Stream"
-    ],
     "id": "e7",
     "semanticTags": [
       "Unbounded",
@@ -577,38 +537,5 @@
       "label": "Tee"
     }
   ]
-},
-  "legend": {
-  "items": [
-    {
-      "label": "Source",
-      "type": "Source"
-    },
-    {
-      "label": "Transform",
-      "type": "Transform"
-    },
-    {
-      "label": "Join",
-      "type": "Join"
-    },
-    {
-      "label": "Aggregation",
-      "type": "Aggregation"
-    },
-    {
-      "label": "Network",
-      "type": "Network"
-    },
-    {
-      "label": "Sink",
-      "type": "Sink"
-    },
-    {
-      "label": "Tee",
-      "type": "Tee"
-    }
-  ],
-  "title": "Node Types"
 }
 }
