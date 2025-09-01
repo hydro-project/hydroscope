@@ -51,10 +51,10 @@ describe('Debug Smart Collapse', () => {
     console.log('[TEST] Layout complete, checking container state');
     
     const container = visState.getContainer('large_container');
-    console.log(`[TEST] Container collapsed: ${container.collapsed}`);
-    console.log(`[TEST] Container dimensions: ${container.width}x${container.height}`);
+    console.log(`[TEST] Container collapsed: ${container?.collapsed}`);
+    console.log(`[TEST] Container dimensions: ${container?.width}x${container?.height}`);
     
     // With 50 children, the container should be large enough to trigger smart collapse
-    expect(container.collapsed).toBe(true);
+    expect(container?.collapsed).toBe(true);
   });
 });

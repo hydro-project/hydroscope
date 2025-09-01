@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect } from 'vitest';
 import { NODE_STYLES, EDGE_STYLES, CONTAINER_STYLES, LAYOUT_CONSTANTS } from '../config';
 
 describe('Constants', () => {

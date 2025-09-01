@@ -17,9 +17,8 @@
         allowClearcount display and clear
  */
 
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { Input, Button, Tooltip, AutoComplete } from 'antd';
-import { SearchOutlined, ClearOutlined, UpOutlined, DownOutlined } from '@ant-design/icons';
 
 export type SearchableItem = { id: string; label: string; type: 'container' | 'node' };
 export type SearchMatch = { id: string; label: string; type: 'container' | 'node'; matchIndices?: number[][] };

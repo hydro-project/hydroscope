@@ -98,9 +98,6 @@ describe('Bridge Migration Validation', () => {
 
       // Execute: Get top-level nodes like original ELKBridge would
       const topLevelNodes = visState.getTopLevelNodes();
-      const collapsedContainerIds = new Set(
-        visState.visibleContainers.filter(c => c.collapsed).map(c => c.id)
-      );
 
       // Verify: Should match original ELKBridge filtering logic
       const topLevelIds = topLevelNodes.map(n => n.id);
@@ -207,7 +204,7 @@ describe('Bridge Migration Validation', () => {
       const parentMap = visState.getParentChildMap(); // ReactFlow Bridge
       const topLevelNodes = visState.getTopLevelNodes(); // ELK Bridge
       const reactFlowBridge = new ReactFlowBridge();
-      const edgeHandles = reactFlowBridge.getEdgeHandles(visState, 'sharedEdge'); // ReactFlow Bridge
+  const edgeHandles = reactFlowBridge.getEdgeHandles(visState, 'sharedEdge', []); // ReactFlow Bridge
 
       // Verify: Consistent view of the same data
       // ELK would see collapsed container as a node

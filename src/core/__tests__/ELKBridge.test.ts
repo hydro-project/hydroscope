@@ -4,7 +4,7 @@
  * Tests for the ELK bridge that handles VisState ↔ ELK conversion and layout
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ELKBridge } from '../../bridges/ELKBridge';
 import { createVisualizationState } from '../VisualizationState';
 
@@ -230,10 +230,10 @@ describe('ELKBridge', () => {
         // Child should be within parent bounds
         // Note: In ELK, child coordinates are relative to root, not parent
         // So we need to check if child is within the parent's absolute bounds
-        const childRight = child.x + child.width;
-        const childBottom = child.y + child.height;
-        const parentRight = parentContainer!.x + parentContainer!.width;
-        const parentBottom = parentContainer!.y + parentContainer!.height;
+  // const _childRight = child.x + child.width;
+  // const _childBottom = child.y + child.height;
+  // const _parentRight = parentContainer!.x + parentContainer!.width;
+  // const _parentBottom = parentContainer!.y + parentContainer!.height;
         
         // Log positions for debugging
         // // console.log(`[Container Test] Parent: (${parentContainer!.x}, ${parentContainer!.y}) ${parentContainer!.width}x${parentContainer!.height}`);

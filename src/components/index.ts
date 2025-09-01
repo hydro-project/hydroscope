@@ -94,9 +94,9 @@ export function createContainerClickHandler(
     onCollapse?: (containerId: string) => void;
   } = {}
 ) {
-  const { enableCollapse = true, autoFit = true, onExpand, onCollapse } = options;
+  const { enableCollapse = true, autoFit: _autoFit = true, onExpand, onCollapse } = options;
   
-  return async (event: any, node: any) => {
+  return async (_event: any, node: any) => {
     if (!enableCollapse) return;
     
     const container = visualizationState.getContainer(node.id);

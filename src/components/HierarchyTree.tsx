@@ -82,9 +82,9 @@ function createSearchHighlightDiv(text: string, match: boolean, isCurrent: boole
  */
 function createContainerDisplayTitle(
   truncatedLabel: string,
-  hasChildren: boolean,
+  _hasChildren: boolean,
   hasLeafChildren: boolean,
-  childrenCount: number,
+  _childrenCount: number,
   leafChildrenCount: number,
   match: boolean,
   isCurrent: boolean,

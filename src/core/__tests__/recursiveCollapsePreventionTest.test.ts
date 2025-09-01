@@ -43,7 +43,7 @@ describe('Recursive Collapse Prevention', () => {
         state.setContainerState('bt_6', { collapsed: true });
         console.log('✅ bt_6 collapsed successfully without recursive collapse error');
       } catch (error) {
-        console.error('❌ Recursive collapse error:', error.message);
+        console.error('❌ Recursive collapse error:', (error as Error).message);
         throw error;
       }
       

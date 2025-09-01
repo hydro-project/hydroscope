@@ -30,7 +30,7 @@ export function getContrastColor(backgroundColor: string): string {
 }
 
 // Function expected by Legend component
-export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3', nodeTypeConfig?: any): any {
+export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'): any {
   // Get the selected palette, fallback to Set3 if not found
   const palettes = COLOR_PALETTES as unknown as Record<string, Array<{ primary: string; secondary?: string }>>;
   const selectedPalette = palettes[palette] || palettes['Set3'] || [];

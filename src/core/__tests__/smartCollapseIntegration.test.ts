@@ -13,8 +13,8 @@ async function validateEdgeIntegrity(visState: any, phase: string) {
   // Get all visible entities using public API
   const visibleNodes = visState.getVisibleNodes();
   const visibleContainers = visState.getVisibleContainers();
-  const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
-  const visibleContainerIds = new Set(visibleContainers.map(c => c.id));
+  const visibleNodeIds = new Set(visibleNodes.map((n: any) => n.id));
+  const visibleContainerIds = new Set(visibleContainers.map((c: any) => c.id));
   const allVisibleEntityIds = new Set([...visibleNodeIds, ...visibleContainerIds]);
   
   // Check hyperEdges using public API
@@ -58,7 +58,7 @@ async function validateEdgeIntegrity(visState: any, phase: string) {
   try {
     visState.validateInvariants();
   } catch (error) {
-    throw new Error(`❌ Invariant validation failed in ${phase}: ${error.message}`);
+    throw new Error(`❌ Invariant validation failed in ${phase}: ${(error as Error).message}`);
   }
   
   console.log(`      ✅ Edge integrity OK: ${visibleHyperEdges.length} hyperEdges all valid`);
@@ -204,7 +204,7 @@ describe('Smart Collapse Integration - Failure Prevention', () => {
       } catch (error) {
         layoutError = error;
         // If it fails, it should fail gracefully, not crash the entire system
-        expect(error.message).not.toContain('hyper_');
+        expect((error as Error).message).not.toContain('hyper_');
       }
 
       expect(layoutCompleted).toBe(true);
@@ -585,12 +585,11 @@ describe('Smart Collapse Integration - Failure Prevention', () => {
       ];
 
       // Create the containers with many children to make them naturally large
-      for (const { id, width, height, expected } of problematicContainers) {
+      for (const { id } of problematicContainers) {
         const childNodes = [];
         
         // Calculate how many children needed to reach the expected area
-        const expectedArea = width * height;
-        const childArea = 180 * 60; // Default node size
+  // Removed unused variables expectedArea and childArea
         const childrenNeeded = LOTS_OF_KIDS;
         
         // Create enough children to make container naturally large
@@ -680,7 +679,7 @@ describe('Smart Collapse Integration - Failure Prevention', () => {
       // but ensures the failure is visible, not silent
       
       // Create many child nodes to make the container genuinely massive
-      const giantChildren = [];
+      const giantChildren: string[] = [];
       for (let i = 0; i < LOTS_OF_KIDS; i++) {
         const childId = `giant_child_${i}`;
         visState.setGraphNode(childId, { label: `Giant Child ${i}` });

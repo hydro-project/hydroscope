@@ -28,7 +28,7 @@ import type { LayoutConfig } from '../core/types';
 import { DEFAULT_LAYOUT_CONFIG } from './ELKLayoutEngine';
 
 // Configuration helpers
-export function getLayoutConfig(name: string): LayoutConfig {
+export function getLayoutConfig(): LayoutConfig {
   return DEFAULT_LAYOUT_CONFIG;
 }
 

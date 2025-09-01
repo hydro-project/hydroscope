@@ -4,7 +4,6 @@
  * Renders ReactFlow handles based on the current handle configuration.
  */
 
-import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { getHandleConfig, HANDLE_STYLES } from './handleConfig';
 

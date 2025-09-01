@@ -7,7 +7,6 @@
 import {
   parseGraphJSON,
   createRenderConfig,
-  FlowGraph,
   VisualizationEngine
 } from '../../index';
 import { convertEdgesToReactFlow } from '../../bridges/EdgeConverter';
@@ -63,9 +62,12 @@ describe('Edge Styling Integration', () => {
     const parseResult = parseGraphJSON(testJSON);
     
   expect(parseResult.metadata.edgeStyleConfig).toBeDefined();
-  expect(parseResult.metadata.edgeStyleConfig.propertyMappings).toBeDefined();
-  expect(parseResult.metadata.edgeStyleConfig.propertyMappings['Network']).toBeDefined();
-  expect(parseResult.metadata.edgeStyleConfig.propertyMappings['Network'].styleTag).toBe('edge_style_3_alt');
+  expect(parseResult.metadata.edgeStyleConfig?.propertyMappings).toBeDefined();
+  expect(parseResult.metadata.edgeStyleConfig?.propertyMappings?.['Network']).toBeDefined();
+  const networkMapping = parseResult.metadata.edgeStyleConfig?.propertyMappings?.['Network'];
+  if (networkMapping && typeof networkMapping === 'object' && 'styleTag' in networkMapping) {
+    expect(networkMapping.styleTag).toBe('edge_style_3_alt');
+  }
   });
 
   test('createRenderConfig includes edgeStyleConfig', () => {
@@ -92,30 +94,36 @@ describe('Edge Styling Integration', () => {
   // Edge 1: Network + Bounded
   const edge1 = reactFlowEdges.find(e => e.id === 'e1');
   expect(edge1).toBeDefined();
-  expect(edge1.type).toBe('standard');
-  expect(edge1.animated).toBe(false); // Update to match actual behavior
-  expect(edge1.label).toContain('test edge');
-  expect(edge1.data?.edgeProperties).toContain('Network');
-  expect(edge1.data?.edgeProperties).toContain('Bounded');
+  if (edge1) {
+    expect(edge1.type).toBe('standard');
+    expect(edge1.animated).toBe(false); // Update to match actual behavior
+    expect(edge1.label).toContain('test edge');
+    expect(edge1.data?.edgeProperties).toContain('Network');
+    expect(edge1.data?.edgeProperties).toContain('Bounded');
+  }
 
   // Edge 2: Cycle + Unbounded + Keyed
   const edge2 = reactFlowEdges.find(e => e.id === 'e2');
   expect(edge2).toBeDefined();
-  expect(edge2.type).toBe('standard');
-  expect(edge2.animated).toBe(false); // Update to match actual behavior
-  expect(edge2.label).toContain('cycle edge');
-  expect(edge2.data?.edgeProperties).toContain('Cycle');
-  expect(edge2.data?.edgeProperties).toContain('Unbounded');
-  expect(edge2.data?.edgeProperties).toContain('Keyed');
+  if (edge2) {
+    expect(edge2.type).toBe('standard');
+    expect(edge2.animated).toBe(false); // Update to match actual behavior
+    expect(edge2.label).toContain('cycle edge');
+    expect(edge2.data?.edgeProperties).toContain('Cycle');
+    expect(edge2.data?.edgeProperties).toContain('Unbounded');
+    expect(edge2.data?.edgeProperties).toContain('Keyed');
+  }
 
   // Edge 3: NoOrder + TotalOrder
   const edge3 = reactFlowEdges.find(e => e.id === 'e3');
   expect(edge3).toBeDefined();
-  expect(edge3.type).toBe('standard');
-  expect(edge3.animated).toBe(false); // Dotted/solid style tags are not animated
-  expect(edge3.label).toContain('order edge');
-  expect(edge3.data?.edgeProperties).toContain('NoOrder');
-  expect(edge3.data?.edgeProperties).toContain('TotalOrder');
+  if (edge3) {
+    expect(edge3.type).toBe('standard');
+    expect(edge3.animated).toBe(false); // Dotted/solid style tags are not animated
+    expect(edge3.label).toContain('order edge');
+    expect(edge3.data?.edgeProperties).toContain('NoOrder');
+    expect(edge3.data?.edgeProperties).toContain('TotalOrder');
+  }
   });
 
   test('Edge priority system works correctly', () => {

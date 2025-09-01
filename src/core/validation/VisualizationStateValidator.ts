@@ -8,7 +8,6 @@
  */
 
 import { LAYOUT_CONSTANTS, HYPEREDGE_CONSTANTS } from '../../shared/config';
-import type { VisualizationState } from '../VisualizationState';
 
 export interface InvariantViolation {
   type: string;

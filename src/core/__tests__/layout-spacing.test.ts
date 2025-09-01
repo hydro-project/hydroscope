@@ -3,7 +3,7 @@
  * This prevents the ELKBridge position corruption bug from recurring
  */
 
-import { VisualizationState } from '../VisualizationState';
+// Removed unused import VisualizationState
 import { parseGraphJSON } from '../JSONParser';
 import { ELKBridge } from '../../bridges/ELKBridge';
 import { readFileSync } from 'fs';

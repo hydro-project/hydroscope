@@ -7,14 +7,14 @@
 
 import React, { useState, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Button } from 'antd';
-import { InfoPanelProps, HierarchyTreeNode, LegendData } from './types';
+import { InfoPanelProps, LegendData } from './types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { GroupingControls } from './GroupingControls';
 import { HierarchyTree } from './HierarchyTree';
 import { Legend } from './Legend';
 import { EdgeStyleLegend } from './EdgeStyleLegend';
 import { SearchControls, type SearchMatch, type SearchControlsRef } from './SearchControls';
-import { COMPONENT_COLORS, TYPOGRAPHY } from '../shared/config';
+import { TYPOGRAPHY } from '../shared/config';
 
 export interface InfoPanelRef {
   focusSearch: () => void;
@@ -35,9 +35,9 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
   collapsedContainers = new Set(),
   onToggleContainer,
   colorPalette = 'Set3',
-  defaultCollapsed = false,
-  className = '',
-  style,
+  defaultCollapsed: _defaultCollapsed = false,
+  className: _className = '',
+  style: _style,
   open = true,
   onOpenChange,
   onSearchUpdate
@@ -111,27 +111,6 @@ export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps & {
       });
     }
     return items;
-  }, [visualizationState]);
-
-  // Map node matches to their parent container matches for tree highlighting
-  const toContainerMatches = useMemo(() => {
-    return (matches: SearchMatch[]): SearchMatch[] => {
-      const out: SearchMatch[] = [];
-      const seen = new Set<string>();
-      for (const m of matches) {
-        if (m.type === 'container') {
-          if (!seen.has(m.id)) { out.push(m); seen.add(m.id); }
-        } else {
-          // Use efficient O(1) parent lookup instead of rebuilding map
-          const parentId = visualizationState?.getNodeParent(m.id);
-          if (parentId && !seen.has(parentId)) { 
-            out.push({ id: parentId, label: parentId, type: 'container' }); 
-            seen.add(parentId); 
-          }
-        }
-      }
-      return out;
-    };
   }, [visualizationState]);
 
   // Handlers from SearchControls

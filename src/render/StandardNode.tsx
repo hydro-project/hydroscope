@@ -59,7 +59,7 @@ export function StandardNode({ id, data }: NodeProps) {
   const styleCfg = useStyleConfig();
   
   // Handle click animation
-  const handleClick = useCallback((event: React.MouseEvent) => {
+  const handleClick = useCallback(() => {
     // Trigger the visual pop-out effect
     setIsClicked(true);
     

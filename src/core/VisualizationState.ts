@@ -97,7 +97,6 @@ export class VisualizationState {
   // ============ BRIDGE PATTERN ACCESSORS ============
   // These provide indirect access for specialized operations classes
   private get _containerChildren(): Map<string, Set<string>> { return this._collections._containerChildren; }
-  private get _nodeContainers(): Map<string, string> { return this._collections._nodeContainers; }
   
   // ============ CONSTRUCTOR ============
 

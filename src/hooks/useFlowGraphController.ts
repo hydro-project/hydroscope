@@ -260,7 +260,7 @@ export function useFlowGraphController({
     eventHandlers?.onNodeDrag?.(event, node);
   }, [eventHandlers]);
 
-  const onNodeDragStop = useCallback((event: any, node: any) => {
+  const onNodeDragStop = useCallback((node: any) => {
     visualizationState.setManualPosition(node.id, node.position.x, node.position.y);
 
     if (config.fitView !== false) {

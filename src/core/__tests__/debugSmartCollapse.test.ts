@@ -2,7 +2,7 @@
  * Debug Smart Collapse - Debug the missing hyperedge issue
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, test } from 'vitest';
 import { parseGraphJSON } from '../JSONParser';
 import { VisualizationEngine } from '../VisualizationEngine';
 
@@ -10,7 +10,7 @@ describe('Debug Smart Collapse', () => {
   test('should debug missing hyperedges during smart collapse', async () => {
     // Load the paxos data that's causing issues
     const mockJsonData = require('../../test-data/paxos-flipped.json');
-    const result = parseGraphJSON(mockJsonData, null);
+  const result = parseGraphJSON(mockJsonData, undefined);
     const state = result.state;
     
     console.log('\n=== INITIAL STATE ===');
@@ -59,15 +59,14 @@ describe('Debug Smart Collapse', () => {
     try {
       state.validateInvariants();
       console.log('✅ Validation passed - no missing hyperEdges!');
-    } catch (error) {
-      const message = error.message;
-      const missingCount = (message.match(/Edge \w+ crosses collapsed container/g) || []).length;
-      console.log(`❌ Validation failed - ${missingCount} missing hyperEdges`);
-      
-      // Show first few error messages for analysis
-      const errorLines = message.split(';').slice(0, 3);
-      console.log('First few errors:');
-      errorLines.forEach(line => console.log('  ', line.trim()));
+      } catch (error) {
+        const message = (error as Error).message;
+        const missingCount = (message.match(/Edge \w+ crosses collapsed container/g) || []).length;
+        console.log(`❌ Validation failed - ${missingCount} missing hyperEdges`);
+        // Show first few error messages for analysis
+        const errorLines: string[] = message.split(';').slice(0, 3);
+        console.log('First few errors:');
+    errorLines.forEach((line: string) => console.log('  ', line.trim()));
     }
   });
 });

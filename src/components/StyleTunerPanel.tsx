@@ -62,7 +62,7 @@ export function StyleTunerPanel({
   onLayoutChange,
   onControlsScaleChange,
   onResetToDefaults,
-  defaultCollapsed = false,
+  defaultCollapsed: _defaultCollapsed = false,
   open = true,
   onOpenChange
 }: StyleTunerPanelProps) {

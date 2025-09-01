@@ -14,10 +14,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { VisualizationState } from '../VisualizationState';
 import { parseGraphJSON } from '../JSONParser';
-import { GraphEdge, HyperEdge } from '../types';
+import { GraphEdge } from '../types';
 import { join } from 'path';
 import { readFileSync } from 'fs';
-import { isHyperEdge } from '../types';
 
 interface ConnectivityReport {
   totalGraphEdges: number;

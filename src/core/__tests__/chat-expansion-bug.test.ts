@@ -63,7 +63,7 @@ describe('Chat Expansion Bug Tests', () => {
     console.log('After loc_0 expansion - hyperEdges:', afterLoc0Expansion.length);
 
     // Check for duplicate hyperEdge IDs
-    const hyperEdgeIds = afterLoc0Expansion.map((he: HyperEdge) => he.id);
+  const hyperEdgeIds = (afterLoc0Expansion as HyperEdge[]).map(he => he.id);
     const uniqueIds = new Set(hyperEdgeIds);
     
     console.log('HyperEdge IDs:', hyperEdgeIds);

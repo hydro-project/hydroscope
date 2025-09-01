@@ -107,9 +107,17 @@ describe('ELK Spacing Debug', () => {
     ];
     
     for (const config of testConfigs) {
+      // Filter out undefined values and ensure all layoutOptions are strings
+      const filteredOptions: Record<string, string> = {};
+      for (const key in config.options) {
+        const value = config.options[key as keyof typeof config.options];
+        if (typeof value === 'string') {
+          filteredOptions[key] = value;
+        }
+      }
       const testInput = {
         ...elkInput,
-        layoutOptions: config.options
+        layoutOptions: filteredOptions
       };
       
       try {

@@ -89,7 +89,6 @@ describe('ChatJsonIntegration', () => {
       if (skipIfNoTestData(testData, 'data integrity test')) return;
 
       // Check that all edges reference valid nodes
-      const nodeIds = new Set(testData!.state.visibleNodes.map(n => n.id));
       const edges = testData!.state.visibleEdges;
       
       for (const edge of edges) {

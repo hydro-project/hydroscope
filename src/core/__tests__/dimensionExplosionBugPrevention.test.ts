@@ -105,7 +105,6 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../VisualizationState';
 import type { VisualizationState } from '../VisualizationState';
 import { parseGraphJSON, validateGraphJSON } from '../JSONParser';
-import { ELKLayoutEngine } from '../../layout/ELKLayoutEngine';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -208,7 +207,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         loadedVisualizationState.validateInvariants();
         console.log('✅ All invariants passed after smart collapse');
       } catch (error) {
-        throw new Error(`❌ Invariant violations detected after smart collapse: ${error.message}`);
+    throw new Error(`❌ Invariant violations detected after smart collapse: ${(error as Error).message}`);
       }
       
       // CRITICAL: Check specifically for DANGLING_HYPEREDGE issues
@@ -219,13 +218,13 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         throw new Error(
           `❌ Found ${danglingHyperEdges.length} DANGLING_HYPEREDGE violations! ` +
           `These hyperEdges connect hidden containers and should not exist. ` +
-          `Examples: ${danglingHyperEdges.slice(0, 3).map(v => v.entityId).join(', ')}`
+      `Examples: ${danglingHyperEdges.slice(0, 3).map((v: any) => v.entityId).join(', ')}`
         );
       }
       
       // STEP 4: Verify that smart collapse prevented dimension explosion
       const visibleNodes = loadedVisualizationState.visibleNodes;
-      const visibleEdges = loadedVisualizationState.visibleEdges;
+  // const _visibleEdges = loadedVisualizationState.visibleEdges; // Removed unused variable
       const expandedContainers = loadedVisualizationState.getExpandedContainers();
       const allVisibleContainers = loadedVisualizationState.visibleContainers;
       const collapsedContainers = allVisibleContainers.filter(container => container.collapsed);
@@ -511,8 +510,10 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       // Verify that the container properly hides its children
       const container = visState.getContainer('bt_26');
       expect(container).toBeDefined();
-      expect(container.collapsed).toBe(true);
-      expect(container.children.size).toBe(23);
+      if (container) {
+        expect(container.collapsed).toBe(true);
+        expect(container.children.size).toBe(23);
+      }
       
       console.log(`✅ bt_26 dimension explosion prevented: 23 children hidden, only 6 elements visible to ELK`);
     });
@@ -700,7 +701,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
       expect(collapsedContainerIds).toContain('parent_container');
       
       // child_container might or might not appear as collapsed node depending on implementation
-      // The key test is that parent_container is the primary collapsed container
+      // The key test is that the parent_container is the primary collapsed container
       const parentCollapsed = collapsedContainers.find(c => c.id === 'parent_container');
       expect(parentCollapsed).toBeDefined();
       
@@ -726,12 +727,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
         console.log(`Found hyperEdge from external to parent_container`);
       } else {
         // Alternative: verify that the original edge is properly handled
-        const originalEdge = visibleEdges.find(edge => 
-          edge.source === 'external' && edge.target === 'grandchild1'
-        );
-        console.log(`No direct hyperEdge found, checking original edge handling`);
-        // Either the original edge exists (and will be processed by ELK) or it's hidden
-        // Both are acceptable behaviors for this implementation
+  // No direct hyperEdge found, checking original edge handling (removed unused variable and incomplete function)
       }
     });
   });
@@ -897,7 +893,7 @@ describe('ELK Dimension Explosion Bug Prevention (Regression Tests)', () => {
             
           } catch (error) {
             console.error(`🚨 BUG DETECTED: Edge integrity failure on container ${container.id}!`);
-            console.error(`   Error: ${error.message}`);
+            console.error(`   Error: ${(error as Error).message}`);
             disconnectedEdgeCount++;
             
             // Continue testing to find all issues

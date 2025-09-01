@@ -3,7 +3,6 @@
  * This prevents bugs like the spacing issue where ELKBridge couldn't distinguish containers from nodes
  */
 
-import { VisualizationState } from '../VisualizationState';
 import { parseGraphJSON } from '../JSONParser';
 
 describe('Data Integrity: Container vs Node Collections', () => {

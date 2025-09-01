@@ -107,11 +107,18 @@ describe('ELK Spacing Debug', () => {
     ];
     
     for (const config of testConfigs) {
+      // Filter out undefined values in layoutOptions
+      const filteredOptions: Record<string, string> = {};
+      for (const key in config.options) {
+        const value = (config.options as Record<string, string | undefined>)[key];
+        if (typeof value === 'string') {
+          filteredOptions[key] = value;
+        }
+      }
       const testInput = {
         ...elkInput,
-        layoutOptions: config.options
+        layoutOptions: filteredOptions
       };
-      
       try {
         const testResult = await elk.layout(testInput);
         const testPositions = testResult.children?.map(child => ({

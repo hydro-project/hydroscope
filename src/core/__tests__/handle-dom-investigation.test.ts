@@ -83,7 +83,7 @@ describe('Handle DOM Investigation', () => {
       regularNodeWidth,
       regularNodeHeight,
       edge.sourceHandle!,
-      regularNode.parentId
+  // regularNode.parentId (removed extra argument)
     );
 
     const targetHandlePos = calculateReactFlowHandlePosition(
@@ -91,7 +91,7 @@ describe('Handle DOM Investigation', () => {
       containerWidth,
       containerHeight,
       edge.targetHandle!,
-      collapsedContainer.parentId
+  // collapsedContainer.parentId (removed extra argument)
     );
 
     console.log('\n=== CALCULATED HANDLE POSITIONS ===');
@@ -149,7 +149,7 @@ describe('Handle DOM Investigation', () => {
       regularNodeEffectiveWidth,
       regularNodeEffectiveHeight,
       edge.sourceHandle!,
-      regularNode.parentId
+  // regularNode.parentId (removed extra argument)
     );
 
     const effectiveTargetPos = calculateReactFlowHandlePosition(
@@ -157,7 +157,7 @@ describe('Handle DOM Investigation', () => {
       containerEffectiveWidth,
       containerEffectiveHeight,
       edge.targetHandle!,
-      collapsedContainer.parentId
+  // collapsedContainer.parentId (removed extra argument)
     );
 
     console.log('\nHandle positions with effective dimensions:');
@@ -262,7 +262,6 @@ function calculateReactFlowHandlePosition(
   nodeWidth: number,
   nodeHeight: number,
   handleId: string,
-  parentId?: string
 ): { x: number; y: number } {
   const { x, y } = nodePosition;
 

@@ -95,7 +95,7 @@ describe('ReactFlowBridge', () => {
     // Add the getNodeLayout method that the bridge expects
     getNodeLayout: (id: string) => {
       // Mock node layout data based on the mock nodes
-      const nodeLayoutMap = {
+      const nodeLayoutMap: Record<string, { position: { x: number; y: number }; dimensions: { width: number; height: number } } | null> = {
         'node1': { position: { x: 120, y: 180 }, dimensions: { width: 180, height: 60 } },
         'node2': { position: { x: 300, y: 240 }, dimensions: { width: 180, height: 60 } }
       };
@@ -110,7 +110,7 @@ describe('ReactFlowBridge', () => {
     },
     // Add the getGraphEdge method that the bridge expects
     getGraphEdge: (id: string) => {
-      const edgeLayoutMap = {
+      const edgeLayoutMap: Record<string, any> = {
         'edge1': { 
           id: 'edge1', 
           source: 'node1', 
@@ -130,7 +130,7 @@ describe('ReactFlowBridge', () => {
     },
     // Add the getGraphNode method that the bridge expects for handle calculation
     getGraphNode: (id: string) => {
-      const nodeMap = {
+      const nodeMap: Record<string, any> = {
         'node1': { 
           id: 'node1', 
           layout: { position: { x: 120, y: 180 }, dimensions: { width: 180, height: 60 } }

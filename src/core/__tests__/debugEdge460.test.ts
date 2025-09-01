@@ -2,7 +2,7 @@
  * Debug Edge e460 - Investigate the specific failing edge
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, test } from 'vitest';
 import { parseGraphJSON } from '../JSONParser';
 import { VisualizationEngine } from '../VisualizationEngine';
 
@@ -10,7 +10,7 @@ describe('Debug Edge e460', () => {
   test('should investigate edge e460 and its relationship to containers bt_29 and bt_187', async () => {
     // Load the paxos data
     const mockJsonData = require('../../test-data/paxos-flipped.json');
-    const result = parseGraphJSON(mockJsonData, null);
+  const result = parseGraphJSON(mockJsonData, undefined);
     const state = result.state;
     
     // Create engine and run smart collapse

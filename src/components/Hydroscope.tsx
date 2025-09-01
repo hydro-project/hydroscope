@@ -411,19 +411,6 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(({
     }
   }, [visualizationState, autoFitEnabled]);
 
-  // Handle layout algorithm change
-  const _handleLayoutChange = useCallback(async (algorithm: string) => {
-    setLayoutAlgorithm(algorithm);
-    if (hydroscopeRef.current?.refreshLayout) {
-      setIsLayoutRunning(true);
-      try {
-        await hydroscopeRef.current.refreshLayout();
-      } finally {
-        setIsLayoutRunning(false);
-      }
-    }
-  }, []);
-
   // Handle grouping change
   const handleGroupingChange = useCallback((newGrouping: string | undefined) => {
 

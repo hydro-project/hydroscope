@@ -2,7 +2,7 @@
  * Debug test to check container collapse states and visibility
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import { parseGraphJSON } from '../JSONParser';
 import paxosFlippedData from '../../test-data/paxos-flipped.json';
 
@@ -24,7 +24,7 @@ describe('Debug Container States', () => {
     // Check their initial states
     for (const containerId of containersToCollapse) {
       const container = visState.getContainer(containerId);
-      console.log(`Container ${containerId} BEFORE: collapsed=${container.collapsed}, hidden=${container.hidden}`);
+      console.log(`Container ${containerId} BEFORE: collapsed=${container?.collapsed}, hidden=${container?.hidden}`);
     }
     
     // Collapse them
@@ -33,7 +33,7 @@ describe('Debug Container States', () => {
       visState.setContainerState(containerId, { collapsed: true });
       
       const container = visState.getContainer(containerId);
-      console.log(`Container ${containerId} AFTER: collapsed=${container.collapsed}, hidden=${container.hidden}`);
+      console.log(`Container ${containerId} AFTER: collapsed=${container?.collapsed}, hidden=${container?.hidden}`);
     }
     
     console.log('🔍 AFTER COLLAPSE:');

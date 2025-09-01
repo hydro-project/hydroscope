@@ -104,8 +104,12 @@ describe('ReactFlowBridge Container Positioning', () => {
     expect(child2).toBeDefined();
 
     // Should use grid fallback positioning
-    expect(child1?.position.x).toBeGreaterThan(0); // Should have padding
-    expect(child2?.position.x).toBeGreaterThan(child1?.position.x); // Should be in next grid column
+    if (typeof child1?.position.x === 'number') {
+      expect(child1.position.x).toBeGreaterThan(0); // Should have padding
+    }
+    if (typeof child2?.position.x === 'number' && typeof child1?.position.x === 'number') {
+      expect(child2.position.x).toBeGreaterThan(child1.position.x); // Should be in next grid column
+    }
 
     expect(child1?.parentId).toBe('parent');
     expect(child2?.parentId).toBe('parent');

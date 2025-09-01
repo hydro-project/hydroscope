@@ -144,7 +144,6 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(({
     if (!reactFlowData) return;
     const el = containerRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
   }, [reactFlowData]);
 
   useImperativeHandle(ref, () => ({

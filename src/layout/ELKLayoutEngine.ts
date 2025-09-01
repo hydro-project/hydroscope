@@ -21,13 +21,8 @@ import type {
 } from '../core/types';
 
 export class ELKLayoutEngine implements LayoutEngine {
-  private config: LayoutConfig;
   private callbacks: Map<string, LayoutEventCallback> = new Map();
   private lastStatistics: LayoutStatistics | null = null;
-
-  constructor(config: LayoutConfig = {}) {
-    this.config = { ...DEFAULT_LAYOUT_CONFIG, ...config };
-  }
 
   /**
    * Run layout - SAME API as alpha
@@ -36,7 +31,6 @@ export class ELKLayoutEngine implements LayoutEngine {
     nodes: GraphNode[],
     edges: GraphEdge[],
     containers: ExternalContainer[],
-    config?: LayoutConfig
   ): Promise<LayoutResult> {
     // ...existing code...
     
@@ -133,12 +127,12 @@ export class ELKLayoutEngine implements LayoutEngine {
     nodes: GraphNode[],
     edges: GraphEdge[],
     containers: ExternalContainer[],
-    config?: LayoutConfig,
+    _config?: LayoutConfig,
     _changedContainerId?: string | null,
     _visualizationState?: any
   ): Promise<LayoutResult> {
     // For now, just call regular layout - the bridge architecture handles changes efficiently
-    return this.layout(nodes, edges, containers, config);
+    return this.layout(nodes, edges, containers);
   }
 
   /**

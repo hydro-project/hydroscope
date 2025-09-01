@@ -12,8 +12,7 @@ import { fileURLToPath } from 'url';
 import { parseGraphJSON, validateGraphJSON } from '../JSONParser';
 import { VisualizationState } from '../VisualizationState';
 import { VisualizationEngine } from '../VisualizationEngine';
-import { GraphNode, GraphEdge, Container, HyperEdge } from '../shared/types';
-import type { LayoutConfig } from '../core/types';
+import type { LayoutConfig } from '../../core/types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -155,10 +154,9 @@ class ComprehensiveFuzzTester {
    * Run comprehensive fuzz test
    */
   async runTest(groupingId: string | null = null): Promise<void> {
-    console.log(`🎲 Starting comprehensive fuzz test: ${this.testName} (grouping: ${groupingId || 'default'})`);
-    
+    console.log(`🎲 Starting comprehensive fuzz test: ${this.testName} (grouping: ${groupingId ?? 'default'})`);
     // Parse the data
-    const result = parseGraphJSON(this.testData, groupingId);
+    const result = parseGraphJSON(this.testData, groupingId === null ? undefined : groupingId);
     const state = result.state;
     
     // Extract available hierarchies
@@ -302,7 +300,7 @@ class ComprehensiveFuzzTester {
   /**
    * Generate a random operation from all available visualizer controls
    */
-  private generateRandomOperation(state: VisualizationState, engine: VisualizationEngine): FuzzOperation | null {
+  private generateRandomOperation(state: VisualizationState, _engine: VisualizationEngine): FuzzOperation | null {
     const allContainers = state.getVisibleContainers();
     // Get only containers that can actually be expanded (all ancestors are expanded)
     const expandableContainers = allContainers.filter(c => c.collapsed && this.canExpandContainer(state, c.id));
@@ -429,8 +427,22 @@ class ComprehensiveFuzzTester {
       case 'changeHierarchy':
         // Parse data with new hierarchy
         const result = parseGraphJSON(this.testData, operation.hierarchyId);
-        // This would require engine reinitialization - for now, just log
-        console.log(`   🔄 Hierarchy change simulated: ${operation.hierarchyId}`);
+        const newState = result.state;
+        
+        // Replace the engine's state with the new hierarchy state
+        // This is a bit of a hack but necessary since VisualizationEngine doesn't have a replaceState method
+        (engine as any).visState = newState;
+        
+        // Clear layout positions to force fresh layout with new hierarchy
+        newState.clearLayoutPositions();
+        
+        console.log(`   🔄 Hierarchy changed to: ${operation.hierarchyId} (${newState.getVisibleNodes().length} nodes, ${newState.getVisibleContainers().length} containers)`);
+        
+        // Run layout to apply the new hierarchy
+        await engine.runLayout();
+        
+        // Update the state reference in our test loop for subsequent operations
+        Object.assign(state, newState);
         break;
         
       case 'changeLayout':

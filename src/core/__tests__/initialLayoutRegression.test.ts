@@ -72,7 +72,10 @@ describe('Initial Layout Regression Tests', () => {
     
     // All containers should be expanded initially
     expandedContainers.forEach(container => {
-      expect(container.collapsed).toBe(false);
+      expect(container).toBeDefined();
+      if (container) {
+        expect(container.collapsed).toBe(false);
+      }
     });
 
     // Mock the ELK Bridge layoutVisualizationState method to capture calls
@@ -100,7 +103,7 @@ describe('Initial Layout Regression Tests', () => {
     expect(expandedContainersForElk.length).toBeGreaterThan(0);
     
     // REGRESSION TEST: Ensure no containers are collapsed in initial ELK call
-    expandedContainersForElk.forEach(container => {
+  expandedContainersForElk.forEach((container: any) => {
       expect(container.collapsed).toBe(false);
     });
 
@@ -211,7 +214,7 @@ describe('Initial Layout Regression Tests', () => {
     allContainers.forEach(containerId => {
       const container = visState.getContainer(containerId);
       expect(container).toBeTruthy();
-      expect(container.collapsed).toBe(false);
+      expect(container?.collapsed).toBe(false);
     });
 
     // The expandedContainers getter should initially return all containers  

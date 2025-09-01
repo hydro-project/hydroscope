@@ -152,7 +152,7 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should build hierarchy tree correctly', () => {
-    const hierarchyTree = buildHierarchyTreeDirect(visState);
+  const hierarchyTree = buildHierarchyTreeDirect(visState);
     
     expect(hierarchyTree).toHaveLength(1); // Should have one root container
     expect(hierarchyTree[0].id).toBe('root_container');
@@ -164,20 +164,18 @@ describe('HierarchyTree State Synchronization', () => {
     expect(childContainer1.children).toHaveLength(1); // nested_container (node_2 doesn't appear as it's a leaf)
     
     // Find nested container
-    const nestedContainer = childContainer1.children.find(c => c.id === 'nested_container');
+  const nestedContainer = childContainer1.children.find((c: any) => c.id === 'nested_container');
     expect(nestedContainer).toBeDefined();
     expect(nestedContainer.children).toHaveLength(0); // No child containers (node_5 is a leaf)
   });
 
   it('should synchronize HierarchyTree expandedKeys with VisualizationState collapsed state', () => {
-    const hierarchyTree = buildHierarchyTreeDirect(visState);
-    const collapsedContainers = getCollapsedContainersSetDirect(visState);
-    
-    // Use utility to get expanded keys
-    const expandedKeys = getExpandedKeysForHierarchyTreeDirect(hierarchyTree, collapsedContainers);
-    
-    // child_container_2 is collapsed, so it should NOT be in expandedKeys
-    expect(expandedKeys.includes('child_container_2')).toBe(false);
+  const hierarchyTree = buildHierarchyTreeDirect(visState);
+  const collapsedContainers = getCollapsedContainersSetDirect(visState);
+  // Use utility to get expanded keys
+  const expandedKeys = getExpandedKeysForHierarchyTreeDirect(hierarchyTree, collapsedContainers);
+  // child_container_2 is collapsed, so it should NOT be in expandedKeys
+  expect(expandedKeys.includes('child_container_2')).toBe(false);
     
     // All other containers should be expanded
     expect(expandedKeys.includes('root_container')).toBe(true);
@@ -186,7 +184,7 @@ describe('HierarchyTree State Synchronization', () => {
   });
 
   it('should maintain synchronization after multiple expand/collapse operations', () => {
-    const hierarchyTree = buildHierarchyTreeDirect(visState);
+  // (removed unused variable hierarchyTree)
     
     // Start by collapsing root container
     visState.collapseContainer('root_container');

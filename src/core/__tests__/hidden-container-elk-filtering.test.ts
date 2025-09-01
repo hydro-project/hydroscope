@@ -4,15 +4,13 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { VisualizationState } from '../VisualizationState';
-import { ELKBridge } from '../../bridges/ELKBridge';
+// Removed unused import ELKBridge
 
 describe('Hidden Container ELK Filtering', () => {
   let state: VisualizationState;
-  let elkBridge: ELKBridge;
 
   beforeEach(() => {
     state = new VisualizationState();
-    elkBridge = new ELKBridge();
   });
 
   it('should exclude hidden collapsed containers from ELK layout', async () => {

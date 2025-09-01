@@ -23,7 +23,7 @@ describe('Simple Recursive Collapse Test', () => {
       state.setContainerState('parent', { collapsed: true });
       console.log('✅ Parent collapsed without recursive error');
     } catch (error) {
-      console.error('❌ Recursive collapse error:', error.message);
+      console.error('❌ Recursive collapse error:', (error as Error).message);
       throw error;
     }
     

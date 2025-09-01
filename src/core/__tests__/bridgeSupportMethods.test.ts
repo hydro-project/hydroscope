@@ -255,7 +255,7 @@ describe('VisualizationState Bridge Support Methods', () => {
 
       // Execute
       const reactFlowBridge = new ReactFlowBridge();
-      const handles = reactFlowBridge.getEdgeHandles(visState, 'edge1');
+  const handles = reactFlowBridge.getEdgeHandles(visState, 'edge1', []);
 
       // Verify
       expect(handles).toEqual({
@@ -278,7 +278,7 @@ describe('VisualizationState Bridge Support Methods', () => {
 
       // Execute
       const reactFlowBridge2 = new ReactFlowBridge();
-      const handles = reactFlowBridge2.getEdgeHandles(visState, 'edge2');
+  const handles = reactFlowBridge2.getEdgeHandles(visState, 'edge2', []);
 
       // Verify
       expect(handles).toEqual({
@@ -290,7 +290,7 @@ describe('VisualizationState Bridge Support Methods', () => {
     test('should return empty object for non-existent edge', () => {
       // Execute
       const reactFlowBridge3 = new ReactFlowBridge();
-      const handles = reactFlowBridge3.getEdgeHandles(visState, 'nonexistent');
+  const handles = reactFlowBridge3.getEdgeHandles(visState, 'nonexistent', []);
 
       // Verify
       expect(handles).toEqual({});
@@ -311,7 +311,7 @@ describe('VisualizationState Bridge Support Methods', () => {
 
       // Execute
       const reactFlowBridge4 = new ReactFlowBridge();
-      const handles = reactFlowBridge4.getEdgeHandles(visState, 'edge3');
+  const handles = reactFlowBridge4.getEdgeHandles(visState, 'edge3', []);
 
       // Verify
       expect(handles).toEqual({
@@ -357,7 +357,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       const parentMap = visState.getParentChildMap();
       const topLevelNodes = visState.getTopLevelNodes();
       const reactFlowBridge5 = new ReactFlowBridge();
-      const edgeHandles = reactFlowBridge5.getEdgeHandles(visState, 'edge1');
+  const edgeHandles = reactFlowBridge5.getEdgeHandles(visState, 'edge1', []);
 
       // Verify: Consistent bridge data
       expect(collapsedAsNodes).toHaveLength(1);

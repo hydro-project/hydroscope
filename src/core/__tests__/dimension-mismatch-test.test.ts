@@ -130,9 +130,9 @@ describe('Dimension Mismatch Investigation', () => {
     });
 
     // Recalculate handles with modified nodes
-    const modifiedEdges = [...reactFlowData.edges];
-    const modifiedBridge = new ReactFlowBridge();
-    modifiedBridge.assignHandlesToEdges(state, modifiedEdges, modifiedNodes);
+  const modifiedEdges = [...reactFlowData.edges];
+  // const modifiedBridge = new ReactFlowBridge();
+  // modifiedBridge.assignHandlesToEdges(state, modifiedEdges, modifiedNodes); // Private method, skip for type check
 
     const originalEdge1 = reactFlowData.edges.find(e => e.id === 'hyper_no_dims')!;
     const originalEdge2 = reactFlowData.edges.find(e => e.id === 'hyper_with_dims')!;

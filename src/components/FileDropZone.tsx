@@ -326,7 +326,7 @@ function FileDropZone({
 }: FileDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [dragCounter, setDragCounter] = useState(0);
+  const [_dragCounter, setDragCounter] = useState(0);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();

@@ -2,7 +2,7 @@
  * Debug Collapsed Containers - Find which containers are collapsed and why edges are missing hyperEdges
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, test } from 'vitest';
 import { parseGraphJSON } from '../JSONParser';
 import { VisualizationEngine } from '../VisualizationEngine';
 
@@ -10,7 +10,7 @@ describe('Debug Collapsed Containers', () => {
   test('should debug which containers are collapsed and analyze missing hyperEdges', async () => {
     // Load the paxos data
     const mockJsonData = require('../../test-data/paxos-flipped.json');
-    const result = parseGraphJSON(mockJsonData, null);
+  const result = parseGraphJSON(mockJsonData, undefined);
     const state = result.state;
     
     // Create engine and run smart collapse

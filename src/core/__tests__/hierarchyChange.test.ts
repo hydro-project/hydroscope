@@ -71,7 +71,10 @@ describe('Hierarchy Change Functionality', () => {
     // Verify the right container was created
     const container = result.state.getContainer('container2');
     expect(container).toBeDefined();
-    expect(Array.from(container.children)).toEqual(['node2', 'node3']);
+    expect(container).toBeDefined();
+    if (container) {
+      expect(Array.from(container.children)).toEqual(['node2', 'node3']);
+    }
   });
 
   it('should switch between groupings with different container structures', () => {
@@ -79,13 +82,19 @@ describe('Hierarchy Change Functionality', () => {
     const result1 = parseGraphJSON(mockGraphData, 'grouping1');
     const container1 = result1.state.getContainer('container1');
     expect(container1).toBeDefined();
-    expect(Array.from(container1.children)).toEqual(['node1', 'node2']);
+    expect(container1).toBeDefined();
+    if (container1) {
+      expect(Array.from(container1.children)).toEqual(['node1', 'node2']);
+    }
     
     // Re-parse with second grouping (simulating hierarchy change)
     const result2 = parseGraphJSON(mockGraphData, 'grouping2');
     const container2 = result2.state.getContainer('container2');
     expect(container2).toBeDefined();
-    expect(Array.from(container2.children)).toEqual(['node2', 'node3']);
+    expect(container2).toBeDefined();
+    if (container2) {
+      expect(Array.from(container2.children)).toEqual(['node2', 'node3']);
+    }
     
     // Verify the first container doesn't exist in the second grouping
     const nonExistentContainer = result2.state.getContainer('container1');

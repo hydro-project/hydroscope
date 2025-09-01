@@ -14,10 +14,6 @@ import {
   ELK_ALGORITHMS, 
   LAYOUT_SPACING, 
   ELKAlgorithm, 
-  getELKLayoutOptions,
-  createFixedPositionOptions,
-  createFreePositionOptions,
-  SIZES
 } from '../shared/config';
 
 // ============ Constants ============
@@ -127,7 +123,6 @@ export interface ELKStateManager {
     containers: Container[],
     hyperEdges: HyperEdge[],
     layoutType?: ELKAlgorithm,
-    dimensionsCache?: Map<string, LayoutDimensions>
   ): Promise<{
     nodes: any[];
     edges: GraphEdge[];
@@ -274,6 +269,10 @@ class ContainmentValidator {
   private logContainerValidation(container: Container, containerNode: any, childNodes: any[]): void {
     // Only log detailed container validation in debug mode
     if (process.env.NODE_ENV === 'development') {
+      console.groupCollapsed(`${LOG_PREFIXES.STATE_MANAGER} Validating container ${container.id}`);
+      console.log('Container node:', containerNode);
+      console.log('Child nodes:', childNodes);
+      console.groupEnd();
     }
   }
 
@@ -286,6 +285,9 @@ class ContainmentValidator {
   }
 
   private logSuccess(message: string): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`${LOG_PREFIXES.STATE_MANAGER} ${LOG_PREFIXES.SUCCESS} ${message}`);
+    }
   }
 }
 
@@ -448,11 +450,6 @@ class ELKHierarchyBuilder {
       targets: [edge.target],
     }));
     
-    // Log what edges are being sent to ELK
-    
-    elkEdges.forEach(edge => {
-    });
-    
     return elkEdges;
   }
 }
@@ -577,17 +574,11 @@ export function createELKStateManager(): ELKStateManager {
     edges: GraphEdge[];
   }> {
     
-    logLayoutSummary(nodes, edges, containers);
-
     try {
       const hierarchyBuilder = new ELKHierarchyBuilder(nodes, containers, edges, configManager);
       const elkGraph = hierarchyBuilder.buildElkGraph(layoutType);
 
-      logELKInput(elkGraph);
-      
       const layoutResult = await elk.layout(elkGraph);
-
-      logELKOutput(layoutResult);
 
       // Apply positions back to nodes
       const layoutedNodes = positionApplicator.applyPositions(layoutResult.children || [], nodes, containers);
@@ -625,7 +616,6 @@ export function createELKStateManager(): ELKStateManager {
     containers: Container[],
     hyperEdges: HyperEdge[],
     layoutType: ELKAlgorithm = ELK_ALGORITHMS.LAYERED,
-    dimensionsCache?: Map<string, LayoutDimensions>,
     changedContainerId?: string | null,
     visualizationState?: any // VisualizationState reference for centralized state management
   ): Promise<{
@@ -681,129 +671,8 @@ export function createELKStateManager(): ELKStateManager {
     }
   }
 
-  /**
-   * Simple container repositioning with position fixing - ALL DATA FROM VISSTATE
-   */
-  async function calculateContainerLayout(
-    containers: Container[],
-    layoutType: ELKAlgorithm,
-    dimensionsCache?: Map<string, LayoutDimensions>,
-    changedContainerId?: string | null
-  ): Promise<{
-    nodes: any[];
-    edges: GraphEdge[];
-    elkResult: any;
-  }> {
-    const visibleContainers = containers.filter(c => !c.hidden);
-    
-    if (visibleContainers.length === 0) {
-      return { nodes: [], edges: [], elkResult: null };
-    }
-
-    // Create ELK nodes - ALL configuration comes from VisualizationState
-    const elkContainers = visibleContainers.map(container => {
-      
-      // Get dimensions from VisualizationState layout (handles collapsed/expanded automatically)
-      const layout = container.layout || {};
-      const dimensions = layout.dimensions || { 
-        width: container.collapsed ? SIZES.COLLAPSED_CONTAINER_WIDTH : (dimensionsCache?.get(container.id)?.width || 400),
-        height: container.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : (dimensionsCache?.get(container.id)?.height || 300)
-      };
-
-      // Get position from VisualizationState layout
-      const position = layout.position || { x: 0, y: 0 };
-
-      // Get ELK options from VisualizationState (handles fixed/free automatically)  
-      const elkFixed = layout.elkFixed;
-      const layoutOptions = elkFixed 
-        ? createFixedPositionOptions(position.x, position.y)
-        : createFreePositionOptions();
-
-      return {
-        id: container.id,
-        width: dimensions.width,
-        height: dimensions.height,
-        layoutOptions
-      };
-    });
-
-    const elkGraph = {
-      id: 'container_layout',
-      layoutOptions: getELKLayoutOptions(layoutType),
-      children: elkContainers,
-      edges: []
-    };
-    const layoutResult = await elk.layout(elkGraph);
-
-    return {
-      nodes: [], // Container layout doesn't affect regular nodes
-      edges: [],
-      elkResult: layoutResult,
-    };
-  }
-
   return {
     calculateFullLayout,
     calculateVisualLayout,
   };
-}
-
-// ============ Logging Utilities ============
-
-function logLayoutSummary(nodes: GraphNode[], edges: GraphEdge[], containers: Container[]): void {
-  // Only log summary in debug mode
-  if (process.env.NODE_ENV === 'development') {
-    containers.forEach(container => {
-    });
-  }
-}
-
-function logELKInput(elkGraph: ELKGraph): void {
-  // Only log ELK input in debug mode
-  if (process.env.NODE_ENV === 'development') {
-    logELKContainerHierarchy(elkGraph.children, 0, LOG_PREFIXES.INPUT);
-  }
-}
-
-function logELKOutput(layoutResult: any): void {
-  // Always log ELK output for hyperedge debugging
-  if (layoutResult.children) {
-    logELKContainerHierarchy(layoutResult.children, 0, LOG_PREFIXES.OUTPUT);
-  }
-  
-  // FOCUSED HYPEREDGE LOGGING: Check for ELK edge routing information
-  if (layoutResult.edges && layoutResult.edges.length > 0) {
-    layoutResult.edges.forEach((edge: any) => {
-      
-      if (edge.sections && edge.sections.length > 0) {
-        edge.sections.forEach((section: any, i: number) => {
-          if (section.startPoint) {
-          }
-          if (section.endPoint) {
-          }
-          if (section.bendPoints && section.bendPoints.length > 0) {
-          }
-        });
-      } else {
-      }
-    });
-  } else {
-  }
-}
-
-function logELKContainerHierarchy(nodes: any[], depth: number, type: string): void {
-  const indent = '  '.repeat(depth);
-  nodes.forEach(node => {
-    if (node.children && node.children.length > 0) {
-      // This is a container
-      const dimensionInfo = type === LOG_PREFIXES.INPUT 
-        ? `width=${node.width || 'undefined'}, height=${node.height || 'undefined'}`
-        : `x=${node.x}, y=${node.y}, width=${node.width}, height=${node.height}`;
-      
-      if (type === LOG_PREFIXES.INPUT && node.layoutOptions) {
-      }
-      
-      logELKContainerHierarchy(node.children, depth + 1, type);
-    }
-  });
 }
