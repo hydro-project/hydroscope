@@ -1,8 +1,16 @@
 # Hydroscope
 
-[![CI](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml)
+A React library for visualizing graphs with hierarchical subgraphs. Originally created for Hydro dataflow programs, but works with any graph data structure. Built on React Flow with automatic layout using ELK algorithms.
 
-React-based graph visualization with hierarchical subgraphs. Originally designed for Hydro dataflow graphs, but has no dependencies on Hydro. Built on React and @xyflow/react (React Flow) with ELK for layout. Ships with a minimal component for simple rendering plus interactive variants and helpful UI panels.
+## What does it do?
+
+Hydroscope helps you display and navigate complex directed graphs. It automatically organizes nodes into groups and subgraphs, handles layout calculations, and provides ready-to-use components for different use cases:
+
+- **HydroscopeCore**: Basic graph rendering without UI controls
+- **HydroscopeMini**: Interactive graph with simple collapse/expand controls  
+- **Hydroscope**: Full-featured interface with file upload, styling options, search and info panels
+
+Common use cases include visualizing dataflow programs, data pipelines, system architectures, network topologies, or any connected flows where directional relationships matter.
 
 • Package: `@hydro-project/hydroscope`
 • Runtime deps (installed for you): `@xyflow/react`, `elkjs`, `antd`
@@ -34,48 +42,61 @@ import '@xyflow/react/dist/style.css';
 import 'antd/dist/reset.css'; // Ant Design v5
 ```
 
+## Basic Example
 
-## API at a glance
-
-- HydroscopeCore: minimal, read-only visualization (imperative API, no UI)
-- Hydroscope: full-featured UI (file upload, info panel, style tuner, grouping controls, search)
-- HydroscopeMini: interactive, compact controls (collapse/expand, pack/unpack, refresh)
-- FileDropZone: drag-and-drop JSON uploader with inline docs/example
+Here's a minimal graph to get you started:
 
 ```tsx
 import { HydroscopeCore } from '@hydro-project/hydroscope';
 import '@hydro-project/hydroscope/style.css';
 
+const graphData = {
+  nodes: [
+    { id: "a", label: "Start" },
+    { id: "b", label: "Process" },
+    { id: "c", label: "End" }
+  ],
+  edges: [
+    { from: "a", to: "b" },
+    { from: "b", to: "c" }
+  ]
+};
+
 export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
-      <HydroscopeCore
-        data={yourGraphJson}
-        grouping="location"           // optional grouping id
-        fillViewport
-        onParsed={(meta, vs) => console.log('Parsed', meta)}
-        onError={(msg) => console.error(msg)}
-      />
+      <HydroscopeCore data={graphData} fillViewport />
     </div>
   );
 }
 ```
 
+## Components Overview
 
-Interactive (small controls built-in):
+Each component serves different needs:
 
+**HydroscopeCore** - Basic graph rendering:
 ```tsx
-import { HydroscopeMini } from '@hydro-project/hydroscope';
-
-<HydroscopeMini data={yourGraphJson} showControls enableCollapse />
+<HydroscopeCore 
+  data={yourGraphJson}
+  grouping="location"           // optional: group nodes by this property
+  fillViewport
+  onParsed={(meta, vs) => console.log('Parsed', meta)}
+  onError={(msg) => console.error(msg)}
+/>
 ```
 
-
-Full-featured UI (sidebar, upload, controls):
-
+**HydroscopeMini** - Interactive with simple controls:
 ```tsx
-import { Hydroscope } from '@hydro-project/hydroscope';
+<HydroscopeMini 
+  data={yourGraphJson} 
+  showControls 
+  enableCollapse 
+/>
+```
 
+**Hydroscope** - Full-featured interface:
+```tsx
 <Hydroscope
   data={yourGraphJson}
   showFileUpload

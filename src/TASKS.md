@@ -1,5 +1,4 @@
 TASKS:
-- idiomatic "clean" TS CI script
 - address overuse of `any`
 - Centralize any stray constants
 - Add search to the comprehensive fuzz test
