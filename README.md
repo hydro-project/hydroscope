@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml/badge.svg)](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml)
 
-React-based graph visualization with hierarchical subgraphs. Originally designed for Hydro dataflow graphs, but has no dependencies on Hydro. Built on React and @xyflow/react (React Flow) with ELK for layout. Ships with a minimal component for effortless rendering plus interactive variants and helpful UI panels.
+React-based graph visualization with hierarchical subgraphs. Originally designed for Hydro dataflow graphs, but has no dependencies on Hydro. Built on React and @xyflow/react (React Flow) with ELK for layout. Ships with a minimal component for simple rendering plus interactive variants and helpful UI panels.
 
 • Package: `@hydro-project/hydroscope`
 • Runtime deps (installed for you): `@xyflow/react`, `elkjs`, `antd`
