@@ -1,6 +1,6 @@
 # Hydroscope
 
-[![CI](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml/badge.svg)](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml)
+[![CI](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml)
 
 React-based graph visualization with hierarchical subgraphs. Originally designed for Hydro dataflow graphs, but has no dependencies on Hydro. Built on React and @xyflow/react (React Flow) with ELK for layout. Ships with a minimal component for simple rendering plus interactive variants and helpful UI panels.
 
