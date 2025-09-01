@@ -8,7 +8,7 @@
 interface BaseNode {
   id: string;
   type?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   position: { x: number; y: number };
 }
 

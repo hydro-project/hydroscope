@@ -9,6 +9,16 @@ import type { GraphNode, GraphEdge, Container, LayoutState } from '../shared/typ
 import type { NodeStyle, EdgeStyle } from '../shared/config';
 
 import type { Edge, HyperEdge } from './types';
+
+// Specific interface for collapsed containers rendered as nodes
+interface CollapsedContainerNode extends Container {
+  x: number;
+  y: number;
+  label: string;
+  style: string;
+  type: 'container-node';
+  collapsed: true;
+}
 import { LAYOUT_CONSTANTS, SIZES } from '../shared/config';
 
 // Import specialized operation classes
@@ -213,7 +223,7 @@ export class VisualizationState {
    * Get visible nodes for rendering (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
    */
-  get visibleNodes(): ReadonlyArray<any> {
+  get visibleNodes(): ReadonlyArray<GraphNode> {
     return Array.from(this._collections._visibleNodes.values());
   }
 
@@ -267,7 +277,7 @@ export class VisualizationState {
    * Bridges should ONLY use this method, never access internal maps directly
    * Returns containers with dimensions adjusted for labels.
    */
-  get visibleContainers(): ReadonlyArray<any> {
+  get visibleContainers(): ReadonlyArray<Container> {
     const containers = Array.from(this._collections._visibleContainers.values());
 
     return containers.map(container => {
@@ -309,7 +319,7 @@ export class VisualizationState {
    * Get expanded containers (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
    */
-  getExpandedContainers(): ReadonlyArray<any> {
+  getExpandedContainers(): ReadonlyArray<Container> {
     return Array.from(this._collections._expandedContainers.values());
   }
 
@@ -317,7 +327,7 @@ export class VisualizationState {
    * Get collapsed containers (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
    */
-  getCollapsedContainers(): ReadonlyArray<any> {
+  getCollapsedContainers(): ReadonlyArray<Container> {
     return Array.from(this._collections._collapsedContainers.values());
   }
 
@@ -1148,8 +1158,8 @@ export class VisualizationState {
   /**
    * Get collapsed containers as nodes for ELK bridge
    */
-  getCollapsedContainersAsNodes(): ReadonlyArray<any> {
-    const collapsedAsNodes = [];
+  getCollapsedContainersAsNodes(): ReadonlyArray<CollapsedContainerNode> {
+    const collapsedAsNodes: CollapsedContainerNode[] = [];
 
     for (const container of this._collections.containers.values()) {
       if (container.collapsed && !container.hidden) {
@@ -1171,8 +1181,8 @@ export class VisualizationState {
   /**
    * Get top-level nodes (nodes not in any expanded container)
    */
-  getTopLevelNodes(): ReadonlyArray<any> {
-    const topLevelNodes = [];
+  getTopLevelNodes(): ReadonlyArray<GraphNode> {
+    const topLevelNodes: GraphNode[] = [];
 
     for (const node of this.visibleNodes) {
       // Check if node is in any expanded container
@@ -1199,8 +1209,8 @@ export class VisualizationState {
   /**
    * Get top-level containers (containers with no visible parent container)
    */
-  getTopLevelContainers(): ReadonlyArray<any> {
-    const topLevelContainers = [];
+  getTopLevelContainers(): ReadonlyArray<Container> {
+    const topLevelContainers: Container[] = [];
 
     for (const container of this.visibleContainers) {
       // Check if this container has a parent container
@@ -1438,7 +1448,7 @@ export class VisualizationState {
     this.setContainerState(containerId, { collapsed });
   }
 
-  get expandedContainers(): ReadonlyArray<any> {
+  get expandedContainers(): ReadonlyArray<Container> {
     return this.getExpandedContainers();
   }
 

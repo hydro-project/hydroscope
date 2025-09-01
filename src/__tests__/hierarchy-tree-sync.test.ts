@@ -55,12 +55,12 @@ function getCollapsedContainersSetDirect(visualizationState: VisualizationState)
 }
 
 function getExpandedKeysForHierarchyTreeDirect(
-  hierarchyTree: Array<{ id: string; children: any[] }>,
+  hierarchyTree: HierarchyNode[],
   collapsedContainers: Set<string>
 ): string[] {
   const allKeys: string[] = [];
 
-  const collectKeys = (nodes: Array<{ id: string; children: any[] }>) => {
+  const collectKeys = (nodes: HierarchyNode[]) => {
     nodes.forEach(node => {
       allKeys.push(node.id);
       if (node.children) {

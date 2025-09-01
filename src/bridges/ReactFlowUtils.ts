@@ -23,8 +23,9 @@ export function buildParentMap(visState: VisualizationState): Map<string, string
   });
 
   visState.visibleNodes.forEach(node => {
-    if ((node as any).containerId && visibleContainerIds.has((node as any).containerId)) {
-      parentMap.set(node.id, (node as any).containerId);
+    const nodeWithContainer = node as GraphNode & { containerId?: string };
+    if (nodeWithContainer.containerId && visibleContainerIds.has(nodeWithContainer.containerId)) {
+      parentMap.set(node.id, nodeWithContainer.containerId);
     }
   });
 
@@ -146,7 +147,7 @@ export function getAdjustedContainerDimensionsSafe(
   visState: VisualizationState,
   containerId: string
 ) {
-  const adjusted = visState.getContainerAdjustedDimensions(containerId) || ({} as any);
+  const adjusted = visState.getContainerAdjustedDimensions(containerId) || { width: 0, height: 0 };
   const width =
     safeNum(adjusted.width) > 0 ? adjusted.width : LAYOUT_CONSTANTS.DEFAULT_PARENT_CONTAINER_WIDTH;
   const height =

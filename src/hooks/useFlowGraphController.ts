@@ -4,7 +4,7 @@
  * config updates, ReactFlow data, and event handlers. Behavior-preserving.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactFlow, applyNodeChanges } from '@xyflow/react';
+import { useReactFlow, applyNodeChanges, type NodeMouseHandler, type EdgeMouseHandler } from '@xyflow/react';
 
 import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
@@ -27,10 +27,10 @@ export interface UseFlowGraphControllerReturn {
   refreshLayout: (force?: boolean) => Promise<void>;
   fitOnce: () => void;
   // Handlers
-  onNodeClick: (event: any, node: any) => void;
-  onEdgeClick: (event: any, edge: any) => void;
-  onNodeDrag: (event: any, node: any) => void;
-  onNodeDragStop: (event: any, node: any) => void;
+  onNodeClick: NodeMouseHandler;
+  onEdgeClick: EdgeMouseHandler;
+  onNodeDrag: NodeMouseHandler;
+  onNodeDragStop: NodeMouseHandler;
   onNodesChange: (changes: any[]) => void;
 }
 
@@ -245,8 +245,8 @@ export function useFlowGraphController({
   }, [visualizationState, applyManualPositions]);
 
   // Event handlers
-  const onNodeClick = useCallback(
-    (event: any, node: any) => {
+  const onNodeClick: NodeMouseHandler = useCallback(
+    (event, node) => {
       // Check if this is a container node
       const container = visualizationState.getContainer(node.id);
 
@@ -278,22 +278,22 @@ export function useFlowGraphController({
     [eventHandlers, visualizationState, refreshLayout]
   );
 
-  const onEdgeClick = useCallback(
-    (event: any, edge: any) => {
+  const onEdgeClick: EdgeMouseHandler = useCallback(
+    (event, edge) => {
       eventHandlers?.onEdgeClick?.(event, edge);
     },
     [eventHandlers]
   );
 
-  const onNodeDrag = useCallback(
-    (event: any, node: any) => {
+  const onNodeDrag: NodeMouseHandler = useCallback(
+    (event, node) => {
       eventHandlers?.onNodeDrag?.(event, node);
     },
     [eventHandlers]
   );
 
-  const onNodeDragStop = useCallback(
-    (node: any) => {
+  const onNodeDragStop: NodeMouseHandler = useCallback(
+    (event, node) => {
       visualizationState.setManualPosition(node.id, node.position.x, node.position.y);
 
       if (config.fitView !== false) {

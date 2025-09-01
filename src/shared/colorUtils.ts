@@ -31,8 +31,20 @@ export function getContrastColor(backgroundColor: string): string {
   return brightness > 128 ? '#000000' : '#ffffff';
 }
 
+interface NodeColor {
+  primary: string;
+  border: string;
+  gradient: string;
+}
+
+export type { NodeColor };
+
+type NodeColorResult = NodeColor | Record<string, NodeColor>;
+
 // Function expected by Legend component
-export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'): any {
+export function generateNodeColors(nodeTypes: [string], palette?: string): NodeColor;
+export function generateNodeColors(nodeTypes: string[], palette?: string): Record<string, NodeColor>;
+export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'): NodeColorResult {
   // Get the selected palette, fallback to Set3 if not found
   const palettes = COLOR_PALETTES as unknown as Record<
     string,
@@ -57,7 +69,7 @@ export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'
   }
 
   // Multiple node types - return a map
-  const colors: Record<string, any> = {};
+  const colors: Record<string, NodeColor> = {};
   nodeTypes.forEach((nodeType, index) => {
     const paletteColor = selectedPalette[index % selectedPalette.length] || { primary: '#8dd3c7' };
     colors[nodeType] = {

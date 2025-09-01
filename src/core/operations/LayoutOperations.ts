@@ -5,7 +5,7 @@
  */
 
 import { LAYOUT_CONSTANTS } from '../../shared/config';
-import type { ElkEdgeSection, GraphNode, Position, Dimensions } from '../../shared/types';
+import type { ElkEdgeSection, GraphNode, GraphEdge, Container, Position, Dimensions } from '../../shared/types';
 
 interface LayoutInfo {
   position?: Position;
@@ -17,8 +17,23 @@ interface NodeDimensionConfig {
   nodeFontSize?: number;
 }
 
+interface EdgeLayoutInfo {
+  sections?: ElkEdgeSection[];
+  [key: string]: unknown; // Allow additional layout properties from ELK
+}
+
+// Interface for the minimal state access needed by LayoutOperations
+interface LayoutOperationsState {
+  _collections: {
+    _manualPositions: Map<string, { x: number; y: number }>;
+    containers: Map<string, Container>;
+    graphNodes: Map<string, GraphNode>;
+    graphEdges: Map<string, GraphEdge>;
+  };
+}
+
 export class LayoutOperations {
-  private readonly state: any;
+  private readonly state: any; // Keep as any for now to avoid circular dependency issues
 
   constructor(state: any) {
     this.state = state;
@@ -34,7 +49,7 @@ export class LayoutOperations {
   /**
    * Get all manual positions for nodes and containers
    */
-  getAllManualPositions(): Map<string, { x: number; y: number }> {
+  getAllManualPositions(): Map<string, Position> {
     return new Map(this.state._collections._manualPositions);
   }
 
@@ -184,12 +199,12 @@ export class LayoutOperations {
   /**
    * Get edge layout information (sections, routing)
    */
-  getEdgeLayout(edgeId: string): { sections?: ElkEdgeSection[]; [key: string]: any } | undefined {
+  getEdgeLayout(edgeId: string): EdgeLayoutInfo | undefined {
     const edge = this.state._collections.graphEdges.get(edgeId);
     if (!edge) return undefined;
 
     return {
-      sections: edge.sections || [],
+      sections: (edge as any).sections || [], // sections may be added during layout
       ...edge,
     };
   }
@@ -197,7 +212,7 @@ export class LayoutOperations {
   /**
    * Set edge layout information
    */
-  setEdgeLayout(edgeId: string, layout: { sections?: ElkEdgeSection[]; [key: string]: any }): void {
+  setEdgeLayout(edgeId: string, layout: EdgeLayoutInfo): void {
     const edge = this.state._collections.graphEdges.get(edgeId);
     if (!edge) return;
 

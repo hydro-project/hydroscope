@@ -290,8 +290,8 @@ export class VisualizationEngine {
     const containerAreas = containers
       .map(container => {
         // Get dimensions from ELK layout results (stored as width/height on container)
-        const width = (container as any).width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
-        const height = (container as any).height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
+        const width = container.width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
+        const height = container.height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
         const area = width * height;
 
         return {

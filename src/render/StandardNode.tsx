@@ -4,7 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import { generateNodeColors } from '../shared/colorUtils';
+import { generateNodeColors, type NodeColor } from '../shared/colorUtils';
 import { truncateLabel } from '../shared/textUtils';
 import { useStyleConfig } from './StyleConfigContext';
 import { HandlesRenderer } from './handles';
@@ -83,9 +83,14 @@ export function StandardNode({ id, data }: NodeProps) {
   const colorPalette = String(data.colorPalette || 'Set3');
 
   // Use different color generation for collapsed containers
-  const colors = isCollapsedContainer
+  const rawColors = isCollapsedContainer
     ? generateContainerColors(id, colorPalette)
-    : generateNodeColors([nodeType], colorPalette);
+    : (generateNodeColors([nodeType], colorPalette) as NodeColor);
+
+  // Unified colors interface - normalize different color formats
+  const colors = 'primary' in rawColors
+    ? { backgroundColor: rawColors.primary, borderColor: rawColors.border }
+    : { backgroundColor: rawColors.background, borderColor: rawColors.border };
 
   // For collapsed containers, get the same variables as ContainerNode
   const width = data.width || (isCollapsedContainer ? 180 : 120);
@@ -229,8 +234,8 @@ export function StandardNode({ id, data }: NodeProps) {
         onClick={handleClick}
         style={{
           padding: `${styleCfg.nodePadding ?? 12}px 16px`,
-          backgroundColor: colors.primary,
-          border: `2px solid ${isShowingLongLabel ? '#2563eb' : colors.border}`,
+          backgroundColor: colors.backgroundColor,
+          border: `2px solid ${isShowingLongLabel ? '#2563eb' : colors.borderColor}`,
           borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
           fontSize: `${styleCfg.nodeFontSize ?? 12}px`,
           textAlign: 'center',

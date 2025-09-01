@@ -32,6 +32,12 @@ export interface LegendData {
   items: LegendItem[];
 }
 
+interface NodeTypeConfig {
+  color?: string;
+  style?: string;
+  [key: string]: unknown;
+}
+
 export interface InfoPanelProps extends BaseComponentProps {
   // Data
   visualizationState: VisualizationState;
@@ -86,7 +92,7 @@ export interface LegendProps extends BaseComponentProps {
 
   // Styling
   colorPalette?: string;
-  nodeTypeConfig?: Record<string, any>;
+  nodeTypeConfig?: Record<string, NodeTypeConfig>;
 
   // Display
   title?: string;

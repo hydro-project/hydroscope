@@ -1,10 +1,26 @@
 /**
- * JSON Schema Documentation Generator
+ * @fileoverview JSON Schema generation for graph data structures
  *
- * AUTO-GENERATED - DO NOT EDIT MANUALLY
- * Last updated: 2025-08-19T20:20:04.673Z
- * Source: JSONParser.ts interfaces
+ * Generates TypeScript interfaces and JSON schemas for documentation.
  */
+
+import type { NodeStyle, EdgeStyle } from '../shared/types';
+
+// Specific types for schema generation
+interface PropertyMappings {
+  [propertyName: string]: unknown;
+}
+
+interface CombinationRules {
+  [ruleName: string]: unknown;
+}
+
+interface BooleanPropertyPair {
+  pair: [string, string];
+  defaultStyle: string;
+  altStyle: string;
+  description?: string;
+}
 
 // Generated from JSONParser.ts interfaces
 export interface GroupingOptionSchema {
@@ -13,15 +29,15 @@ export interface GroupingOptionSchema {
 }
 
 export interface ParseResultSchema {
-  state: any;
+  state: Record<string, unknown>; // VisualizationState serialized
   metadata: {
     selectedGrouping: string | null;
     nodeCount: number;
     edgeCount: number;
     containerCount: number;
-    availableGroupings: any[];
+    availableGroupings: GroupingOptionSchema[];
     edgeStyleConfig?: {
-      propertyMappings: Record<string, any>;
+      propertyMappings: Record<string, string | { styleTag: string }>;
       singlePropertyMappings?: Record<string, string>;
       booleanPropertyPairs?: Array<{
         pair: [string, string];
@@ -29,7 +45,7 @@ export interface ParseResultSchema {
         altStyle: string;
         description?: string;
       }>;
-      combinationRules?: any;
+      combinationRules?: Record<string, unknown>;
     };
     nodeTypeConfig?: {
       defaultType?: string;
@@ -54,14 +70,14 @@ export interface ValidationResultSchema {
 export interface ParserOptionsSchema {
   validateData?: boolean;
   strictMode?: boolean;
-  defaultNodeStyle?: any;
-  defaultEdgeStyle?: any;
+  defaultNodeStyle?: NodeStyle;
+  defaultEdgeStyle?: EdgeStyle;
 }
 
 export interface RawNodeSchema {
   id: string;
   semanticTags?: string[];
-  [key: string]: any;
+  [key: string]: unknown; // Allow additional properties
 }
 
 export interface RawEdgeSchema {
@@ -70,7 +86,7 @@ export interface RawEdgeSchema {
   target: string;
   semanticTags?: string[];
   edgeProperties?: string[];
-  [key: string]: any;
+  [key: string]: unknown; // Allow additional properties
 }
 
 export interface RawHierarchySchema {
@@ -98,15 +114,10 @@ export interface RawGraphDataSchema {
   hierarchyChoices?: RawHierarchyChoiceSchema[];
   nodeAssignments?: Record<string, Record<string, string>>;
   edgeStyleConfig?: {
-    propertyMappings: Record<string, any>;
+    propertyMappings: PropertyMappings;
     singlePropertyMappings?: Record<string, string>;
-    booleanPropertyPairs?: Array<{
-      pair: [string, string];
-      defaultStyle: string;
-      altStyle: string;
-      description?: string;
-    }>;
-    combinationRules?: any;
+    booleanPropertyPairs?: BooleanPropertyPair[];
+    combinationRules?: CombinationRules;
   };
   nodeTypeConfig?: {
     defaultType?: string;
@@ -116,7 +127,7 @@ export interface RawGraphDataSchema {
       colorIndex: number;
     }>;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**

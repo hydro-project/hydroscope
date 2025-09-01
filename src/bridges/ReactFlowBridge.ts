@@ -8,7 +8,7 @@
 import type { VisualizationState } from '../core/VisualizationState';
 import type { GraphNode, GraphEdge, Container } from '../shared/types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
-import { generateNodeColors } from '../shared/colorUtils';
+import { generateNodeColors, type NodeColor } from '../shared/colorUtils';
 import { Edge as ReactFlowEdge } from '@xyflow/react';
 import { CURRENT_HANDLE_STRATEGY } from '../render/handleConfig';
 import { convertEdgesToReactFlow, EdgeConverterOptions } from './EdgeConverter';
@@ -225,7 +225,7 @@ export class ReactFlowBridge {
       const position: { x: number; y: number } = computeNodePosition(visState, node, parentId);
 
       const nodeType: string = (node as any).nodeType || (node as any).type || 'default';
-      const nodeColors = generateNodeColors([nodeType], this.colorPalette);
+      const nodeColors = generateNodeColors([nodeType], this.colorPalette) as NodeColor;
 
       // HANDLE FIX: Add explicit dimensions to regular nodes to match collapsed container behavior
       // This ensures ReactFlow uses consistent dimension sources for handle positioning
