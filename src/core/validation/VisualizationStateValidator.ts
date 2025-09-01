@@ -9,6 +9,12 @@
 
 import { LAYOUT_CONSTANTS, HYPEREDGE_CONSTANTS } from '../../shared/config';
 
+// Minimal interface to avoid circular dependencies
+interface VisualizationStateForValidation {
+  // This will be expanded as needed without circular imports
+  [key: string]: unknown;
+}
+
 export interface InvariantViolation {
   type: string;
   message: string;
@@ -23,9 +29,9 @@ export interface InvariantViolation {
  * to ensure the state remains consistent and catch bugs early.
  */
 export class VisualizationStateInvariantValidator {
-  private readonly state: any;
+  private readonly state: any; // TODO: Replace with proper VisualizationState interface to avoid circular dependency
 
-  constructor(state: any) {
+  constructor(state: any) { // TODO: Type this properly once circular dependency is resolved
     this.state = state;
   }
 
@@ -526,10 +532,10 @@ export class VisualizationStateInvariantValidator {
     return violations;
   }
 
-  private _isEntityVisible(entityId: string, container?: any, node?: any): boolean {
+  private _isEntityVisible(entityId: string, container?: unknown, node?: unknown): boolean {
     // Check if entity is hidden
-    if (container && container.hidden) return false;
-    if (node && node.hidden) return false;
+    if (container && typeof container === 'object' && container !== null && 'hidden' in container && (container as any).hidden) return false;
+    if (node && typeof node === 'object' && node !== null && 'hidden' in node && (node as any).hidden) return false;
 
     // Check if node is inside a collapsed container
     if (node) {

@@ -23,8 +23,8 @@ const DEFAULT_CONFIG: ValidationConfig = {
 /**
  * Wraps a method with before/after validation
  */
-export function withValidation<T extends any[], R>(
-  instance: any,
+export function withValidation<T extends unknown[], R>(
+  instance: any, // TODO: Type this properly to avoid any - needs VisualizationState interface
   methodName: string,
   originalMethod: (...args: T) => R,
   config: ValidationConfig = DEFAULT_CONFIG
@@ -101,7 +101,7 @@ export const ValidationConfigs = {
 /**
  * Helper to wrap multiple methods at once
  */
-export function wrapPublicMethods(instance: any, methodConfigs: Record<string, ValidationConfig>) {
+export function wrapPublicMethods(instance: any, methodConfigs: Record<string, ValidationConfig>) { // TODO: Type instance properly
   for (const [methodName, config] of Object.entries(methodConfigs)) {
     const originalMethod = instance[methodName];
     if (typeof originalMethod === 'function') {

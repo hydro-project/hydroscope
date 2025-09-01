@@ -2,12 +2,18 @@
 
 import type { NodeStyle, EdgeStyle, ContainerStyle } from '../shared/config';
 import type { ExternalContainer } from '../shared/types';
+import type { EdgeStyleConfig } from './EdgeStyleProcessor';
 import type { 
   Node as ReactFlowNode, 
   Edge as ReactFlowEdge, 
   NodeMouseHandler, 
   EdgeMouseHandler
 } from '@xyflow/react';
+
+// Forward declaration to avoid circular imports
+export interface VisualizationStateInterface {
+  // This will be filled in later to avoid circular dependency
+}
 
 // Re-export style types from config and ExternalContainer from shared/types
 export type { NodeStyle, EdgeStyle, ContainerStyle } from '../shared/config';
@@ -135,7 +141,7 @@ export interface LayoutEngine {
     containers: ExternalContainer[],
     config?: LayoutConfig,
     changedContainerId?: string | null,
-    visualizationState?: any
+    visualizationState?: VisualizationStateInterface
   ): Promise<LayoutResult>;
 }
 
@@ -171,7 +177,7 @@ export interface RenderConfig {
   enableSelection?: boolean;
   colorPalette?: string;
   // Edge style configuration from JSON
-  edgeStyleConfig?: any; // Will be EdgeStyleConfig from EdgeStyleProcessor
+  edgeStyleConfig?: EdgeStyleConfig;
   // Visual style overrides (non-layout)
   edgeStyle?: 'bezier' | 'straight' | 'smoothstep';
   edgeColor?: string;

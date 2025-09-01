@@ -19,6 +19,8 @@ import type { TreeDataNode } from 'antd';
 import { HierarchyTreeProps, HierarchyTreeNode } from './types';
 import { TYPOGRAPHY } from '../shared/config';
 import { COMPONENT_COLORS } from '../shared/config';
+import type { VisualizationState } from '../core/VisualizationState';
+import type { Container, GraphNode } from '../shared/types';
 
 // ============ TREE DATA FORMATTING UTILITIES ============
 
@@ -26,7 +28,7 @@ import { COMPONENT_COLORS } from '../shared/config';
  * Build hierarchy tree structure from VisualizationState
  * This replaces the redundant hierarchyTree prop that was being passed from InfoPanel
  */
-function buildHierarchyTreeFromState(visualizationState: any): HierarchyTreeNode[] {
+function buildHierarchyTreeFromState(visualizationState: VisualizationState): HierarchyTreeNode[] {
   if (!visualizationState || visualizationState.visibleContainers.length === 0) return [];
 
   const buildNode = (containerId: string): HierarchyTreeNode => {
@@ -42,7 +44,7 @@ function buildHierarchyTreeFromState(visualizationState: any): HierarchyTreeNode
 
   // Use existing getTopLevelContainers() instead of building parentMap
   const rootContainers = visualizationState.getTopLevelContainers();
-  return rootContainers.map((container: any) => buildNode(container.id));
+  return rootContainers.map((container: Container) => buildNode(container.id));
 }
 
 /**
@@ -69,7 +71,7 @@ function createSearchHighlightDiv(
   text: string,
   match: boolean,
   isCurrent: boolean,
-  baseStyle: any
+  baseStyle: React.CSSProperties
 ): React.ReactNode {
   return (
     <div
@@ -141,7 +143,7 @@ function createContainerDisplayTitle(
  * This function handles all UI formatting concerns for the Ant Design Tree
  */
 function getTreeDataStructure(
-  visualizationState: any,
+  visualizationState: VisualizationState,
   collapsedContainers: Set<string>,
   searchMatches?: Array<{
     id: string;
@@ -190,7 +192,7 @@ function getTreeDataStructure(
         children = convertToTreeData(node.children);
         if (!isCollapsed && hasLeafChildren) {
           // Add actual leaf nodes when expanded
-          const leafTreeNodes = leafNodes.map((leafNode: any) => {
+          const leafTreeNodes = leafNodes.map((leafNode: GraphNode) => {
             const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node')
               ? true
               : false;
@@ -231,7 +233,7 @@ function getTreeDataStructure(
           ];
         } else {
           // Expanded - show actual leaf nodes
-          children = leafNodes.map((leafNode: any) => {
+          children = leafNodes.map((leafNode: GraphNode) => {
             const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node')
               ? true
               : false;
@@ -394,7 +396,7 @@ export function HierarchyTree({
     showNodeCounts,
   ]);
 
-  const handleExpand = (nextExpandedKeys: React.Key[], info: any) => {
+  const handleExpand = (nextExpandedKeys: React.Key[], info: { node: TreeDataNode }) => {
     // Update UI immediately
     setExpandedKeys(nextExpandedKeys);
     // Then toggle corresponding container in the visualization
@@ -411,7 +413,7 @@ export function HierarchyTree({
     }
   };
 
-  const handleSelect = (_selectedKeys: React.Key[], info: any) => {
+  const handleSelect = (_selectedKeys: React.Key[], info: { node: TreeDataNode }) => {
     if (onToggleContainer && info.node) {
       const nodeKey = info.node.key as string;
       onToggleContainer(nodeKey);

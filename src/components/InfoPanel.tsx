@@ -16,6 +16,29 @@ import { EdgeStyleLegend } from './EdgeStyleLegend';
 import { SearchControls, type SearchMatch, type SearchControlsRef } from './SearchControls';
 import { TYPOGRAPHY } from '../shared/config';
 
+interface VisualizationNode {
+  id: string;
+  nodeType?: string;
+  style?: string;
+  label?: string;
+  data?: {
+    nodeType?: string;
+    label?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface VisualizationContainer {
+  id: string;
+  label?: string;
+  data?: {
+    label?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
@@ -78,12 +101,12 @@ export const InfoPanel = forwardRef<
       const nodeTypes = new Set<string>();
 
       // Collect all unique node types from visible nodes
-      visualizationState.visibleNodes.forEach(node => {
+      visualizationState.visibleNodes.forEach((node: VisualizationNode) => {
         // Support nodeType possibly nested under a data field
         const nodeType =
-          (node as any).nodeType ||
-          (node as any)?.data?.nodeType ||
-          (node as any).style ||
+          node.nodeType ||
+          node?.data?.nodeType ||
+          node.style ||
           'default';
         nodeTypes.add(nodeType);
       });
@@ -115,12 +138,12 @@ export const InfoPanel = forwardRef<
       const items: Array<{ id: string; label: string; type: 'container' | 'node' }> = [];
       // Containers from visualizationState
       if (visualizationState) {
-        visualizationState.visibleContainers.forEach((container: any) => {
+        visualizationState.visibleContainers.forEach((container: VisualizationContainer) => {
           const label = container?.data?.label || container?.label || container.id;
           items.push({ id: container.id, label, type: 'container' });
         });
         // Visible nodes from visualization state
-        visualizationState.visibleNodes.forEach((node: any) => {
+        visualizationState.visibleNodes.forEach((node: VisualizationNode) => {
           const label = node?.data?.label || node?.label || node?.id;
           items.push({ id: node.id, label, type: 'node' });
         });

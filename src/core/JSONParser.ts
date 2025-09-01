@@ -63,7 +63,11 @@ export interface ParserOptions {
 interface RawNode {
   id: string;
   semanticTags?: string[];
-  [key: string]: any;
+  shortLabel?: string;
+  fullLabel?: string;
+  label?: string;
+  type?: string;
+  [key: string]: unknown;
 }
 
 interface RawEdge {
@@ -71,8 +75,10 @@ interface RawEdge {
   source: string;
   target: string;
   semanticTags?: string[];
+  label?: string;
+  type?: string;
   // edgeProperties?: string[]; // Removed for uniformity
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface RawHierarchyChoice {
@@ -87,23 +93,30 @@ interface RawHierarchyItem {
   children?: RawHierarchyItem[];
 }
 
-interface RawGraphData {
+interface EdgeStylePropertyMapping {
+  styleTag: string;
+}
+
+interface EdgeStyleBooleanPair {
+  pair: [string, string];
+  defaultStyle: string; // styleTag
+  altStyle: string; // styleTag
+  description?: string;
+  [key: string]: unknown;
+}
+
+interface EdgeStyleConfig {
+  propertyMappings?: Record<string, string | EdgeStylePropertyMapping>;
+  booleanPropertyPairs?: EdgeStyleBooleanPair[];
+  [key: string]: unknown;
+}
+
+export interface RawGraphData {
   nodes: RawNode[];
   edges: RawEdge[];
   hierarchyChoices?: RawHierarchyChoice[];
   nodeAssignments?: Record<string, Record<string, string>>;
-  edgeStyleConfig?: {
-    propertyMappings?: Record<string, string | { styleTag: string } | any>;
-    booleanPropertyPairs?: Array<{
-      pair: [string, string];
-      defaultStyle: string; // styleTag
-      altStyle: string; // styleTag
-      description?: string;
-      [key: string]: any;
-    }>;
-    // combinationRules?: any; // combinationRules removed
-    [key: string]: any;
-  };
+  edgeStyleConfig?: EdgeStyleConfig;
   nodeTypeConfig?: {
     defaultType?: string;
     types?: Array<{
@@ -112,7 +125,7 @@ interface RawGraphData {
       colorIndex: number;
     }>;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -133,11 +146,11 @@ interface RawGraphData {
  * This prevents raw style objects from being passed through and ensures
  * only semantic mapping configurations are used
  */
-function sanitizeEdgeStyleConfig(edgeStyleConfig: any): any {
+function sanitizeEdgeStyleConfig(edgeStyleConfig: EdgeStyleConfig | undefined): EdgeStyleConfig | undefined {
   if (!edgeStyleConfig) return undefined;
 
   // Only allow semantic mapping properties, filter out raw style configurations
-  const sanitized: any = {};
+  const sanitized: EdgeStyleConfig = {};
 
   if (edgeStyleConfig.semanticMappings) {
     sanitized.semanticMappings = edgeStyleConfig.semanticMappings;
@@ -153,7 +166,7 @@ function sanitizeEdgeStyleConfig(edgeStyleConfig: any): any {
 
   // Do not include propertyMappings with raw style objects - only allow styleTag references
   if (edgeStyleConfig.propertyMappings) {
-    const sanitizedPropertyMappings: any = {};
+    const sanitizedPropertyMappings: Record<string, string | EdgeStylePropertyMapping> = {};
     Object.entries(edgeStyleConfig.propertyMappings).forEach(([key, value]) => {
       if (
         typeof value === 'string' ||
@@ -362,7 +375,7 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
       for (const choice of data.hierarchyChoices) {
         if (choice.children) {
           // Recursively check hierarchy items
-          function validateHierarchyItems(items: any[], hierarchyId: string): void {
+          function validateHierarchyItems(items: RawHierarchyItem[], hierarchyId: string): void {
             for (const item of items) {
               for (const forbiddenField of forbiddenFields) {
                 if (forbiddenField in item) {
@@ -483,16 +496,27 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
  * @param data - Input data to validate
  * @returns true if data has valid graph structure (nodes and edges arrays)
  */
-function isValidGraphData(data: any): data is RawGraphData {
-  return data && typeof data === 'object' && Array.isArray(data.nodes) && Array.isArray(data.edges);
+function isValidGraphData(data: unknown): data is RawGraphData {
+  return data !== null && typeof data === 'object' && 
+         Array.isArray((data as RawGraphData).nodes) && 
+         Array.isArray((data as RawGraphData).edges);
 }
 
-function extractMetadata(data: RawGraphData): Record<string, any> {
+interface ParseMetadata {
+  nodeCount: number;
+  edgeCount: number;
+  hasHierarchies: boolean;
+  nodeTypeConfig: RawGraphData['nodeTypeConfig'];
+  nodeTypeItems: Array<{ label: string; type: string }>;
+  [key: string]: unknown;
+}
+
+function extractMetadata(data: RawGraphData): ParseMetadata {
   return {
     nodeCount: data.nodes.length,
     edgeCount: data.edges.length,
     hasHierarchies: !!(data.hierarchyChoices && data.hierarchyChoices.length > 0),
-    nodeTypeConfig: data.nodeTypeConfig || null,
+    nodeTypeConfig: data.nodeTypeConfig,
     nodeTypeItems: data.nodeTypeConfig?.types?.map(t => ({ label: t.label, type: t.id })) || [],
     ...data.metadata,
   };
@@ -580,7 +604,7 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
     return 0;
   }
   if (hierarchyChoice.children) {
-    function createContainersFromHierarchy(hierarchyItems: any[], parentId?: string): void {
+    function createContainersFromHierarchy(hierarchyItems: RawHierarchyItem[], parentId?: string): void {
       for (const item of hierarchyItems) {
         const children: string[] = [];
         if (item.children && Array.isArray(item.children)) {

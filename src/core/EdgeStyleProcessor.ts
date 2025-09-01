@@ -6,6 +6,14 @@
  * the edgeStyleConfig from the JSON data.
  */
 
+interface EdgeStyleMapping {
+  reactFlowType?: string;
+  style?: Record<string, unknown>;
+  animated?: boolean;
+  label?: string;
+  styleTag?: string;
+}
+
 export interface EdgeStyleConfig {
   semanticMappings?: Record<string, Record<string, Record<string, string | number>>>;
   // Legacy support for backward compatibility
@@ -17,21 +25,12 @@ export interface EdgeStyleConfig {
   }>;
   singlePropertyMappings?: Record<string, string>;
   combinationRules?: {
+    priority?: string[];
     description?: string;
     mutualExclusions?: string[][];
     visualGroups?: Record<string, string[]>;
   };
-  propertyMappings?: Record<
-    string,
-    | string
-    | {
-        reactFlowType?: string;
-        style?: Record<string, any>;
-        animated?: boolean;
-        label?: string;
-        styleTag?: string;
-      }
-  >;
+  propertyMappings?: Record<string, string | EdgeStyleMapping>;
 }
 
 // Fixed style categories defined by the visualizer
@@ -47,13 +46,21 @@ export const EDGE_STYLE_CATEGORIES = {
   waviness: ['none', 'wavy'],
 } as const;
 
+import type { CSSProperties } from 'react';
+import { MarkerType } from '@xyflow/react';
+import type { EdgeMarker } from '@xyflow/react';
+
+// Use ReactFlow's EdgeMarker type directly for better compatibility
+export type MarkerSpec = EdgeMarker;
+
+// Enhanced ProcessedEdgeStyle with proper typing
 export interface ProcessedEdgeStyle {
   reactFlowType: string;
-  style: Record<string, any>;
+  style: CSSProperties & Record<string, unknown>;
   animated: boolean;
   label?: string;
   appliedProperties: string[];
-  markerEndSpec?: any;
+  markerEndSpec?: MarkerSpec | string; // Can be object or URL string
   lineStyle?: 'single' | 'double';
 }
 
@@ -197,10 +204,10 @@ function convertStyleSettingsToReactFlow(
   appliedProperties: string[],
   originalLabel?: string
 ): ProcessedEdgeStyle {
-  let style: Record<string, any> = {};
+  let style: Record<string, unknown> = {};
   let animated = false;
   let label = createEdgeLabel(appliedProperties, undefined, originalLabel);
-  let markerEndSpec: any | undefined = undefined;
+  let markerEndSpec: MarkerSpec | string | undefined = undefined;
 
   // Apply line-pattern
   const linePattern = styleSettings['line-pattern'] as string;
@@ -271,10 +278,10 @@ function convertStyleSettingsToReactFlow(
     // Map to React Flow marker types including custom markers
     switch (arrowhead) {
       case 'triangle-open':
-        markerEndSpec = { type: 'arrow' }; // Built-in open triangle
+        markerEndSpec = { type: MarkerType.Arrow }; // Built-in open triangle
         break;
       case 'triangle-filled':
-        markerEndSpec = { type: 'arrowclosed' }; // Built-in filled triangle
+        markerEndSpec = { type: MarkerType.ArrowClosed }; // Built-in filled triangle
         break;
       case 'circle-filled':
         // Use custom SVG marker for filled circles (Singleton)
@@ -414,7 +421,7 @@ function processDirectStyleTags(): ProcessedEdgeStyle {
  * Map a style tag name to actual ReactFlow visual style
  */
 function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): ProcessedEdgeStyle {
-  const styleTagMappings: Record<string, any> = {
+  const styleTagMappings: Record<string, Partial<ProcessedEdgeStyle>> = {
     // New numbered edge style system with boolean pairs
     // Each pair uses different visual properties that can merge cleanly
 
@@ -571,7 +578,7 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
         strokeWidth: 2, // Default width
         ...visualStyle.style,
       },
-      animated: visualStyle.animated,
+      animated: visualStyle.animated ?? false,
       label: visualStyle.label,
       appliedProperties: originalProperties,
     };
@@ -788,7 +795,7 @@ function combineStyleTagsIntelligently(
   originalLabel?: string
 ): ProcessedEdgeStyle {
   // Start with default style
-  let combinedStyle: any = {
+  let combinedStyle: CSSProperties & Record<string, unknown> = {
     stroke: '#666666',
     strokeWidth: 2,
   };
@@ -800,9 +807,9 @@ function combineStyleTagsIntelligently(
   if (
     styleConfig &&
     styleConfig.combinationRules &&
-    Array.isArray((styleConfig.combinationRules as any).priority)
+    Array.isArray(styleConfig.combinationRules.priority)
   ) {
-    priorityOrder = (styleConfig.combinationRules as any).priority;
+    priorityOrder = styleConfig.combinationRules.priority;
   }
 
   // Determine highest-priority property

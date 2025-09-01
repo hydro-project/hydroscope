@@ -11,11 +11,11 @@ import {
   getAvailableGroupings,
   validateGraphJSON,
 } from '../JSONParser';
-import type { ParseResult, ValidationResult, GroupingOption } from '../JSONParser';
+import type { ParseResult, ValidationResult, GroupingOption, RawGraphData } from '../JSONParser';
 
 describe('JSONParser', () => {
   // Sample test data based on the chat.json structure
-  const sampleGraphData: any = {
+  const sampleGraphData: RawGraphData = {
     nodes: [
       {
         id: '0',

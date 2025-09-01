@@ -5,7 +5,7 @@
  * Provides efficient access to visible/non-hidden elements through Maps and collections.
  */
 
-import type { GraphNode, GraphEdge, Container } from '../shared/types';
+import type { GraphNode, GraphEdge, Container, LayoutState } from '../shared/types';
 
 import type { Edge, HyperEdge } from './types';
 import { LAYOUT_CONSTANTS, SIZES } from '../shared/config';
@@ -176,7 +176,7 @@ export class VisualizationState {
    * Get visible nodes as mutable array (legacy compatibility)
    * @deprecated Use visibleNodes getter for new code
    */
-  getVisibleNodes(): any[] {
+  getVisibleNodes(): GraphNode[] {
     return Array.from(this._collections._visibleNodes.values());
   }
 
@@ -203,9 +203,9 @@ export class VisualizationState {
    * Get visible edges as mutable array (legacy compatibility)
    * @deprecated Use visibleEdges getter for new code
    */
-  getVisibleEdges(): any[] {
+  getVisibleEdges(): Edge[] {
     const regularEdges = Array.from(this._collections._visibleEdges.values());
-    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: any) => {
+    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
       return !edge.hidden;
     });
 
@@ -239,7 +239,7 @@ export class VisualizationState {
    * Get visible containers as mutable array (legacy compatibility)
    * @deprecated Use visibleContainers getter for new code
    */
-  getVisibleContainers(): any[] {
+  getVisibleContainers(): Container[] {
     return Array.from(this._collections._visibleContainers.values()).map(container => {
       const adjustedDimensions = this.layoutOps.getContainerAdjustedDimensions(container.id);
       return {
@@ -254,8 +254,8 @@ export class VisualizationState {
    * Get visible hyperEdges for rendering (safe read-only access)
    * Used by tests and debugging - filters out hidden hyperEdges
    */
-  get visibleHyperEdges(): ReadonlyArray<any> {
-    return Array.from(this._collections.hyperEdges.values()).filter((edge: any) => {
+  get visibleHyperEdges(): ReadonlyArray<HyperEdge> {
+    return Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
       return !edge.hidden;
     });
   }
@@ -506,11 +506,11 @@ export class VisualizationState {
     this.layoutOps.setManualPosition(entityId, x, y);
   }
 
-  setContainerLayout(containerId: string, layout: any): void {
+  setContainerLayout(containerId: string, layout: Partial<LayoutState> & Record<string, unknown>): void {
     this.layoutOps.setContainerLayout(containerId, layout);
   }
 
-  setNodeLayout(nodeId: string, layout: any): void {
+  setNodeLayout(nodeId: string, layout: Partial<LayoutState> & Record<string, unknown>): void {
     this.layoutOps.setNodeLayout(nodeId, layout);
   }
 
@@ -538,11 +538,11 @@ export class VisualizationState {
     this.layoutOps.clearLayoutPositions();
   }
 
-  getEdgeLayout(edgeId: string): { sections?: any[]; [key: string]: any } | undefined {
+  getEdgeLayout(edgeId: string): Partial<LayoutState> & Record<string, unknown> | undefined {
     return this.layoutOps.getEdgeLayout(edgeId);
   }
 
-  setEdgeLayout(edgeId: string, layout: { sections?: any[]; [key: string]: any }): void {
+  setEdgeLayout(edgeId: string, layout: Partial<LayoutState> & Record<string, unknown>): void {
     this.layoutOps.setEdgeLayout(edgeId, layout);
   }
 
@@ -551,14 +551,14 @@ export class VisualizationState {
   /**
    * Get a graph node by ID (core API)
    */
-  getGraphNode(nodeId: string): any | undefined {
+  getGraphNode(nodeId: string): GraphNode | undefined {
     return this._collections.graphNodes.get(nodeId);
   }
 
   /**
    * Get a graph edge by ID (core API)
    */
-  getGraphEdge(edgeId: string): any | undefined {
+  getGraphEdge(edgeId: string): GraphEdge | undefined {
     return this._collections.graphEdges.get(edgeId);
   }
 

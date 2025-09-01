@@ -404,7 +404,7 @@ export class VisualizationEngine {
     }
   }
 
-  private handleError(message: string, error: any): void {
+  private handleError(message: string, error: unknown): void {
     const errorMessage = `${message}: ${error instanceof Error ? error.message : String(error)}`;
     this.state.error = errorMessage;
     this.updateState('error');
