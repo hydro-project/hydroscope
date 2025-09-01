@@ -1,6 +1,6 @@
 /**
  * @fileoverview Render Color Utils
- * 
+ *
  * Color utilities for render components
  */
 

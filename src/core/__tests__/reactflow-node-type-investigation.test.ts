@@ -1,6 +1,6 @@
 /**
  * ReactFlow Node Type Investigation
- * 
+ *
  * The key finding is that ReactFlow treats 'standard' vs 'container' node types differently.
  * This test investigates exactly how ReactFlow handles different node types and whether
  * this affects handle positioning and edge connections.
@@ -11,7 +11,6 @@ import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
 import { ELKBridge } from '../../bridges/ELKBridge';
 
 describe('ReactFlow Node Type Investigation', () => {
-
   test('NODE TYPE EXPERIMENT: Test if using same node type fixes handle connections', async () => {
     console.log('\n=== NODE TYPE EXPERIMENT ===');
 
@@ -19,14 +18,20 @@ describe('ReactFlow Node Type Investigation', () => {
 
     // Create test nodes
     state.addGraphNode('regular_node', {
-      x: 100, y: 100, width: 120, height: 40,
-      label: 'Regular Node'
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 40,
+      label: 'Regular Node',
     });
 
     state.addContainer('collapsed_container', {
-      x: 300, y: 100, width: 120, height: 40,
+      x: 300,
+      y: 100,
+      width: 120,
+      height: 40,
       label: 'Collapsed Container',
-      collapsed: true
+      collapsed: true,
     });
 
     state.setHyperEdge('test_hyper', {
@@ -34,7 +39,7 @@ describe('ReactFlow Node Type Investigation', () => {
       id: 'test_hyper',
       source: 'regular_node',
       target: 'collapsed_container',
-      hidden: false
+      hidden: false,
     });
 
     // Run layout
@@ -51,59 +56,70 @@ describe('ReactFlow Node Type Investigation', () => {
 
     console.log('Regular node type:', originalRegular.type);
     console.log('Container node type:', originalContainer.type);
-    console.log('Edge handles:', { source: originalEdge.sourceHandle, target: originalEdge.targetHandle });
+    console.log('Edge handles:', {
+      source: originalEdge.sourceHandle,
+      target: originalEdge.targetHandle,
+    });
 
     // EXPERIMENT 1: Make both nodes use 'standard' type
     console.log('\n=== EXPERIMENT 1: Both nodes as "standard" type ===');
-    
+
     // Use public API to get fresh data
     const standardBridge = new ReactFlowBridge();
     const standardTypeResult = standardBridge.convertVisualizationState(state);
     // Override nodes to make them all "standard" type
-    standardTypeResult.nodes = standardTypeResult.nodes.map(node => ({ ...node, type: 'standard' as const }));
-    
+    standardTypeResult.nodes = standardTypeResult.nodes.map(node => ({
+      ...node,
+      type: 'standard' as const,
+    }));
+
     const standardEdge = standardTypeResult.edges.find(e => e.id === 'test_hyper')!;
-    console.log('Handles with both as "standard":', { 
-      source: standardEdge.sourceHandle, 
+    console.log('Handles with both as "standard":', {
+      source: standardEdge.sourceHandle,
       target: standardEdge.targetHandle,
-      changed: standardEdge.sourceHandle !== originalEdge.sourceHandle || 
-               standardEdge.targetHandle !== originalEdge.targetHandle
+      changed:
+        standardEdge.sourceHandle !== originalEdge.sourceHandle ||
+        standardEdge.targetHandle !== originalEdge.targetHandle,
     });
 
     // EXPERIMENT 2: Make both nodes use 'container' type
     console.log('\n=== EXPERIMENT 2: Both nodes as "container" type ===');
-    
+
     const containerBridge = new ReactFlowBridge();
     const containerTypeResult = containerBridge.convertVisualizationState(state);
     // Override nodes to make them all "container" type
-    containerTypeResult.nodes = containerTypeResult.nodes.map(node => ({ ...node, type: 'container' as const }));
-    
+    containerTypeResult.nodes = containerTypeResult.nodes.map(node => ({
+      ...node,
+      type: 'container' as const,
+    }));
+
     const containerEdge = containerTypeResult.edges.find(e => e.id === 'test_hyper')!;
-    console.log('Handles with both as "container":', { 
-      source: containerEdge.sourceHandle, 
+    console.log('Handles with both as "container":', {
+      source: containerEdge.sourceHandle,
       target: containerEdge.targetHandle,
-      changed: containerEdge.sourceHandle !== originalEdge.sourceHandle || 
-               containerEdge.targetHandle !== originalEdge.targetHandle
+      changed:
+        containerEdge.sourceHandle !== originalEdge.sourceHandle ||
+        containerEdge.targetHandle !== originalEdge.targetHandle,
     });
 
     // EXPERIMENT 3: Test with identical properties except type
     console.log('\n=== EXPERIMENT 3: Identical properties, different types ===');
-    
+
     // Create two identical nodes with only type difference
     const identicalNodeA = {
       id: 'node_a',
       type: 'standard' as const,
       position: { x: 100, y: 100 },
       data: { width: 120, height: 40, label: 'Node A' },
-      style: { width: 120, height: 40 }
+      style: { width: 120, height: 40 },
     };
 
     const identicalNodeB = {
-      id: 'node_b', 
+      id: 'node_b',
       type: 'container' as const,
       position: { x: 300, y: 100 },
       data: { width: 120, height: 40, label: 'Node B' },
-      style: { width: 120, height: 40 }
+      style: { width: 120, height: 40 },
     };
 
     // Removed unused variable identicalEdge
@@ -112,12 +128,12 @@ describe('ReactFlow Node Type Investigation', () => {
     console.log('Node A (standard):', {
       type: identicalNodeA.type,
       position: identicalNodeA.position,
-      dimensions: { width: identicalNodeA.data.width, height: identicalNodeA.data.height }
+      dimensions: { width: identicalNodeA.data.width, height: identicalNodeA.data.height },
     });
     console.log('Node B (container):', {
       type: identicalNodeB.type,
       position: identicalNodeB.position,
-      dimensions: { width: identicalNodeB.data.width, height: identicalNodeB.data.height }
+      dimensions: { width: identicalNodeB.data.width, height: identicalNodeB.data.height },
     });
 
     // Calculate handle positions for identical nodes
@@ -140,22 +156,23 @@ describe('ReactFlow Node Type Investigation', () => {
     console.log('  Node B (container) in-left:', handlePosB);
 
     const distance = Math.sqrt(
-      Math.pow(handlePosB.x - handlePosA.x, 2) +
-      Math.pow(handlePosB.y - handlePosA.y, 2)
+      Math.pow(handlePosB.x - handlePosA.x, 2) + Math.pow(handlePosB.y - handlePosA.y, 2)
     );
     console.log('  Distance:', distance.toFixed(2), 'pixels');
 
     console.log('\n=== CONCLUSION ===');
-    if (standardEdge.sourceHandle !== originalEdge.sourceHandle || 
-        standardEdge.targetHandle !== originalEdge.targetHandle ||
-        containerEdge.sourceHandle !== originalEdge.sourceHandle || 
-        containerEdge.targetHandle !== originalEdge.targetHandle) {
+    if (
+      standardEdge.sourceHandle !== originalEdge.sourceHandle ||
+      standardEdge.targetHandle !== originalEdge.targetHandle ||
+      containerEdge.sourceHandle !== originalEdge.sourceHandle ||
+      containerEdge.targetHandle !== originalEdge.targetHandle
+    ) {
       console.log('🎯 NODE TYPE AFFECTS HANDLE ASSIGNMENT!');
       console.log('   Different ReactFlow node types result in different handle assignments');
       console.log('   This is likely the root cause of the floating hyperedge issue');
     } else {
       console.log('❓ Node type does not affect handle assignment');
-      console.log('   The issue must be in ReactFlow\'s rendering or DOM positioning logic');
+      console.log("   The issue must be in ReactFlow's rendering or DOM positioning logic");
     }
 
     expect(true).toBe(true);
@@ -166,7 +183,7 @@ describe('ReactFlow Node Type Investigation', () => {
 
     // This test examines how our nodeTypes mapping works
     const { nodeTypes } = await import('../../render/nodes');
-    
+
     console.log('Our nodeTypes mapping:');
     console.log('  standard ->', typeof nodeTypes.standard);
     console.log('  container ->', typeof nodeTypes.container);
@@ -196,14 +213,20 @@ describe('ReactFlow Node Type Investigation', () => {
     const state = createVisualizationState();
 
     state.addGraphNode('regular_node', {
-      x: 100, y: 100, width: 120, height: 40,
-      label: 'Regular Node'
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 40,
+      label: 'Regular Node',
     });
 
     state.addContainer('collapsed_container', {
-      x: 300, y: 100, width: 120, height: 40,
+      x: 300,
+      y: 100,
+      width: 120,
+      height: 40,
       label: 'Collapsed Container',
-      collapsed: true
+      collapsed: true,
     });
 
     state.setHyperEdge('test_hyper', {
@@ -211,7 +234,7 @@ describe('ReactFlow Node Type Investigation', () => {
       id: 'test_hyper',
       source: 'regular_node',
       target: 'collapsed_container',
-      hidden: false
+      hidden: false,
     });
 
     // Run layout
@@ -232,7 +255,7 @@ describe('ReactFlow Node Type Investigation', () => {
       if (node.id === 'regular_node') {
         return { ...node, type: 'standard' as const };
       }
-      if (node.id === 'collapsed_container') {  
+      if (node.id === 'collapsed_container') {
         return { ...node, type: 'container' as const };
       }
       return node;
@@ -245,22 +268,27 @@ describe('ReactFlow Node Type Investigation', () => {
 
     const fixedRegular = fixedResult.nodes.find(n => n.id === 'regular_node')!;
     const fixedContainer = fixedResult.nodes.find(n => n.id === 'collapsed_container')!;
-    const fixedEdge = fixedResult.edges.find(e => e.id === 'test_hyper')!;;
+    const fixedEdge = fixedResult.edges.find(e => e.id === 'test_hyper')!;
 
     console.log('\nOriginal:');
     console.log('  Regular node type:', originalRegular.type);
     console.log('  Container node type:', originalContainer.type);
-    console.log('  Edge handles:', { source: originalEdge.sourceHandle, target: originalEdge.targetHandle });
+    console.log('  Edge handles:', {
+      source: originalEdge.sourceHandle,
+      target: originalEdge.targetHandle,
+    });
 
     console.log('\nFixed (collapsed containers as "standard"):');
     console.log('  Regular node type:', fixedRegular.type);
     console.log('  Container node type:', fixedContainer.type);
-    console.log('  Edge handles:', { source: fixedEdge.sourceHandle, target: fixedEdge.targetHandle });
+    console.log('  Edge handles:', {
+      source: fixedEdge.sourceHandle,
+      target: fixedEdge.targetHandle,
+    });
 
-    const handlesChanged = (
+    const handlesChanged =
       fixedEdge.sourceHandle !== originalEdge.sourceHandle ||
-      fixedEdge.targetHandle !== originalEdge.targetHandle
-    );
+      fixedEdge.targetHandle !== originalEdge.targetHandle;
 
     console.log('\nResult:');
     console.log('  Handles changed:', handlesChanged);

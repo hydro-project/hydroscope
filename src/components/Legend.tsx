@@ -1,6 +1,6 @@
 /**
  * @fileoverview Legend Component
- * 
+ *
  * Displays a color-coded legend for different node types.
  */
 
@@ -17,17 +17,19 @@ function LegendInner({
   title,
   compact = false,
   className = '',
-  style
+  style,
 }: LegendProps) {
   // Safety check for legendData and items
   if (!legendData || !legendData.items || !Array.isArray(legendData.items)) {
     return (
       <div className={`legend-empty ${className}`} style={style}>
-        <span style={{ 
-          color: COMPONENT_COLORS.TEXT_DISABLED,
-          fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-          fontStyle: 'italic'
-        }}>
+        <span
+          style={{
+            color: COMPONENT_COLORS.TEXT_DISABLED,
+            fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
+            fontStyle: 'italic',
+          }}
+        >
           No legend data available
         </span>
       </div>
@@ -35,7 +37,8 @@ function LegendInner({
   }
 
   const displayTitle = title || legendData.title || 'Legend';
-  const paletteKey = (colorPalette in COLOR_PALETTES) ? colorPalette as keyof typeof COLOR_PALETTES : 'Set3';
+  const paletteKey =
+    colorPalette in COLOR_PALETTES ? (colorPalette as keyof typeof COLOR_PALETTES) : 'Set3';
 
   // Precompute colors for all legend items using a memoized map
   const colorsByType = useMemo(() => {
@@ -48,17 +51,23 @@ function LegendInner({
     return map;
   }, [legendData.items, paletteKey, nodeTypeConfig]);
 
-  const legendStyle: React.CSSProperties = useMemo(() => ({
-    fontSize: compact ? '9px' : '10px',
-    ...style
-  }), [compact, style]);
+  const legendStyle: React.CSSProperties = useMemo(
+    () => ({
+      fontSize: compact ? '9px' : '10px',
+      ...style,
+    }),
+    [compact, style]
+  );
 
-  const itemStyle: React.CSSProperties = useMemo(() => ({
-    display: 'flex',
-    alignItems: 'center',
-    margin: compact ? '2px 0' : '3px 0',
-    fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-  }), [compact]);
+  const itemStyle: React.CSSProperties = useMemo(
+    () => ({
+      display: 'flex',
+      alignItems: 'center',
+      margin: compact ? '2px 0' : '3px 0',
+      fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
+    }),
+    [compact]
+  );
 
   const colorBoxStyle = (colors: any): React.CSSProperties => ({
     width: compact ? '10px' : '12px',
@@ -68,32 +77,28 @@ function LegendInner({
     border: `1px solid ${COMPONENT_COLORS.BORDER_MEDIUM}`,
     flexShrink: 0,
     backgroundColor: colors.primary,
-    borderColor: colors.border
+    borderColor: colors.border,
   });
 
   return (
     <div className={`legend ${className}`} style={legendStyle}>
       {!compact && displayTitle && (
-        <div style={{
-          fontWeight: 'bold',
-          marginBottom: '6px',
-          color: COMPONENT_COLORS.TEXT_PRIMARY,
-          fontSize: TYPOGRAPHY.UI_SMALL,
-        }}>
+        <div
+          style={{
+            fontWeight: 'bold',
+            marginBottom: '6px',
+            color: COMPONENT_COLORS.TEXT_PRIMARY,
+            fontSize: TYPOGRAPHY.UI_SMALL,
+          }}
+        >
           {displayTitle}
         </div>
       )}
-      
+
       {legendData.items.map(item => (
-        <div 
-          key={item.type} 
-          style={itemStyle}
-          title={item.description || `${item.label} nodes`}
-        >
+        <div key={item.type} style={itemStyle} title={item.description || `${item.label} nodes`}>
           <div style={colorBoxStyle(colorsByType.get(item.type)!)} />
-          <span style={{ color: COMPONENT_COLORS.TEXT_PRIMARY }}>
-            {item.label}
-          </span>
+          <span style={{ color: COMPONENT_COLORS.TEXT_PRIMARY }}>{item.label}</span>
         </div>
       ))}
     </div>

@@ -1,6 +1,6 @@
 /**
  * @fileoverview InfoPanel Component Types
- * 
+ *
  * TypeScript interfaces for the InfoPanel system components.
  */
 
@@ -37,19 +37,19 @@ export interface InfoPanelProps extends BaseComponentProps {
   visualizationState: VisualizationState;
   legendData?: LegendData;
   edgeStyleConfig?: EdgeStyleConfig;
-  
+
   // Grouping & Hierarchy
   hierarchyChoices?: GroupingOption[];
   currentGrouping?: string | null;
   onGroupingChange?: (groupingId: string) => void;
-  
+
   // Container Interaction
   collapsedContainers?: Set<string>;
   onToggleContainer?: (containerId: string) => void;
-  
+
   // Panel Control
   onPositionChange?: (panelId: string, position: PanelPosition) => void;
-  
+
   // Styling
   colorPalette?: string;
   defaultCollapsed?: boolean;
@@ -67,10 +67,10 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   // Data - hierarchyTree removed, built internally from visualizationState
   collapsedContainers?: Set<string>;
   visualizationState?: any; // Required for building tree structure
-  
+
   // Interaction
   onToggleContainer?: (containerId: string) => void;
-  
+
   // Display
   title?: string;
   showNodeCounts?: boolean;
@@ -83,11 +83,11 @@ export interface HierarchyTreeProps extends BaseComponentProps {
 export interface LegendProps extends BaseComponentProps {
   // Data
   legendData: LegendData;
-  
+
   // Styling
   colorPalette?: string;
   nodeTypeConfig?: Record<string, any>;
-  
+
   // Display
   title?: string;
   compact?: boolean;
@@ -100,26 +100,26 @@ export const PANEL_POSITIONS = {
   TOP_RIGHT: 'top-right',
   BOTTOM_LEFT: 'bottom-left',
   BOTTOM_RIGHT: 'bottom-right',
-  FLOATING: 'floating'
+  FLOATING: 'floating',
 } as const;
 
-export type PanelPosition = typeof PANEL_POSITIONS[keyof typeof PANEL_POSITIONS];
+export type PanelPosition = (typeof PANEL_POSITIONS)[keyof typeof PANEL_POSITIONS];
 
 export interface DockablePanelProps extends BaseComponentProps {
   id: string;
   title: string;
   children: React.ReactNode;
-  
+
   // Position & State
   defaultPosition?: PanelPosition;
   defaultDocked?: boolean;
   defaultCollapsed?: boolean;
-  
+
   // Callbacks
   onPositionChange?: (panelId: string, position: PanelPosition) => void;
   onDockChange?: (panelId: string, docked: boolean) => void;
   onCollapseChange?: (panelId: string, collapsed: boolean) => void;
-  
+
   // Sizing
   minWidth?: number;
   minHeight?: number;
@@ -134,7 +134,7 @@ export interface CollapsibleSectionProps extends BaseComponentProps {
   isCollapsed: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-  
+
   // Styling
   level?: number; // For nested sections
   showIcon?: boolean;

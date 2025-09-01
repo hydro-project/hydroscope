@@ -7,19 +7,19 @@ type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
 // Layout algorithm options (matching ELK's available algorithms)
 const layoutOptions = {
-  'mrtree': 'MR Tree (Default)',
-  'layered': 'Layered',
-  'force': 'Force-Directed',
-  'stress': 'Stress Minimization',
-  'radial': 'Radial'
+  mrtree: 'MR Tree (Default)',
+  layered: 'Layered',
+  force: 'Force-Directed',
+  stress: 'Stress Minimization',
+  radial: 'Radial',
 };
 
 // Color palette options
 const paletteOptions = {
-  'Set2': 'Set2',
-  'Set3': 'Set3', 
-  'Pastel1': 'Pastel1',
-  'Dark2': 'Dark2'
+  Set2: 'Set2',
+  Set3: 'Set3',
+  Pastel1: 'Pastel1',
+  Dark2: 'Dark2',
 };
 
 export interface StyleTunerPanelProps {
@@ -53,7 +53,7 @@ export interface StyleTunerPanelProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function StyleTunerPanel({ 
+export function StyleTunerPanel({
   value,
   onChange,
   colorPalette = 'Set2',
@@ -64,7 +64,7 @@ export function StyleTunerPanel({
   onResetToDefaults,
   defaultCollapsed: _defaultCollapsed = false,
   open = true,
-  onOpenChange
+  onOpenChange,
 }: StyleTunerPanelProps) {
   const [local, setLocal] = useState(value);
   useEffect(() => setLocal(value), [value]);
@@ -81,7 +81,7 @@ export function StyleTunerPanel({
     borderRadius: '4px',
     backgroundColor: '#fff',
     fontSize: '12px',
-    width: '100%'
+    width: '100%',
   };
 
   const rowStyle: React.CSSProperties = {
@@ -89,7 +89,7 @@ export function StyleTunerPanel({
     gridTemplateColumns: '1fr 120px',
     alignItems: 'center',
     gap: '8px',
-    marginBottom: '8px'
+    marginBottom: '8px',
   };
 
   // Custom button style for open/close, matching CustomControls
@@ -112,8 +112,10 @@ export function StyleTunerPanel({
   const [btnFocus, setBtnFocus] = useState(false);
   const mergedButtonStyle = {
     ...controlButtonStyle,
-    backgroundColor: btnHover || btnFocus ? 'rgba(59,130,246,0.18)' : controlButtonStyle.backgroundColor,
-    boxShadow: btnHover || btnFocus ? '0 2px 8px rgba(59,130,246,0.16)' : controlButtonStyle.boxShadow,
+    backgroundColor:
+      btnHover || btnFocus ? 'rgba(59,130,246,0.18)' : controlButtonStyle.backgroundColor,
+    boxShadow:
+      btnHover || btnFocus ? '0 2px 8px rgba(59,130,246,0.16)' : controlButtonStyle.boxShadow,
     borderColor: btnHover || btnFocus ? '#2563eb' : '#3b82f6',
   };
 
@@ -137,7 +139,14 @@ export function StyleTunerPanel({
         pointerEvents: open ? 'auto' : 'none',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+        }}
+      >
         <span style={{ fontWeight: 600, fontSize: 16 }}>Style Tuner</span>
         <Button
           type="text"
@@ -158,10 +167,12 @@ export function StyleTunerPanel({
           <select
             value={currentLayout}
             style={inputStyle}
-            onChange={(e) => onLayoutChange?.(e.target.value)}
+            onChange={e => onLayoutChange?.(e.target.value)}
           >
             {Object.entries(layoutOptions).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+              <option key={key} value={key}>
+                {label}
+              </option>
             ))}
           </select>
         </div>
@@ -170,7 +181,7 @@ export function StyleTunerPanel({
           <select
             value={local.edgeStyle || 'bezier'}
             style={inputStyle}
-            onChange={(e) => update({ edgeStyle: e.target.value as EdgeStyleKind })}
+            onChange={e => update({ edgeStyle: e.target.value as EdgeStyleKind })}
           >
             <option value="bezier">Bezier</option>
             <option value="straight">Straight</option>
@@ -179,13 +190,15 @@ export function StyleTunerPanel({
         </div>
         <div style={rowStyle}>
           <label>Color Palette</label>
-          <select 
-            value={colorPalette} 
-            onChange={(e) => onPaletteChange?.(e.target.value)}
+          <select
+            value={colorPalette}
+            onChange={e => onPaletteChange?.(e.target.value)}
             style={inputStyle}
           >
             {Object.entries(paletteOptions).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+              <option key={key} value={key}>
+                {label}
+              </option>
             ))}
           </select>
         </div>
@@ -197,7 +210,7 @@ export function StyleTunerPanel({
             max="1.9"
             step="0.1"
             value={local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE}
-            onChange={(e) => {
+            onChange={e => {
               const newScale = parseFloat(e.target.value);
               if (onControlsScaleChange) {
                 // Use separate callback to avoid relayout
@@ -212,7 +225,7 @@ export function StyleTunerPanel({
           />
         </div>
         <Divider style={{ margin: '16px 0 12px 0' }} />
-        <Button 
+        <Button
           type="default"
           icon={<ReloadOutlined />}
           onClick={onResetToDefaults}

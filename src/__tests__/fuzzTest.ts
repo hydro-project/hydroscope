@@ -1,6 +1,6 @@
 /**
  * Fuzz Testing for VisualizationState (TypeScript Version)
- * 
+ *
  * Performs randomized collapse/expand operations on parsed JSON data
  * and validates all system invariants throughout the process.
  */
@@ -16,9 +16,9 @@ import { isHyperEdge } from '../core/types';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Fuzz test configuration
-const FUZZ_ITERATIONS = 100;  // Number of random operations per test
-const MAX_OPERATIONS_PER_ITERATION = 50;  // Max operations in a single iteration
-const OPERATION_SEED = 42;  // For reproducible randomness
+const FUZZ_ITERATIONS = 100; // Number of random operations per test
+const MAX_OPERATIONS_PER_ITERATION = 50; // Max operations in a single iteration
+const OPERATION_SEED = 42; // For reproducible randomness
 
 // Operation type definition
 interface Operation {
@@ -42,16 +42,16 @@ class SimpleRandom {
   constructor(seed: number) {
     this.seed = seed;
   }
-  
+
   next(): number {
     this.seed = (this.seed * 9301 + 49297) % 233280;
     return this.seed / 233280;
   }
-  
+
   choice<T>(array: T[]): T {
     return array[Math.floor(this.next() * array.length)];
   }
-  
+
   boolean(probability: number = 0.5): boolean {
     return this.next() < probability;
   }
@@ -62,7 +62,7 @@ class SimpleRandom {
  */
 class InvariantChecker {
   constructor(private state: VisualizationState) {}
-  
+
   /**
    * Check all invariants and throw if any are violated
    */
@@ -73,13 +73,13 @@ class InvariantChecker {
     this.checkHyperEdgeConsistency(context);
     this.checkCollectionConsistency(context);
   }
-  
+
   /**
    * Invariant: A node is visible iff it's not hidden and no parent container is collapsed
    */
   private checkNodeVisibilityInvariant(context: string): void {
     const visibleNodes = this.state.visibleNodes;
-    
+
     // Check all nodes through public API
     for (const node of visibleNodes) {
       // If a node is in visibleNodes, it should not be hidden and not in collapsed container
@@ -88,7 +88,7 @@ class InvariantChecker {
         false,
         `${context}: Visible node ${node.id} should not be hidden`
       );
-      
+
       const container = this.state.getNodeContainer(node.id);
       if (container) {
         const containerData = this.state.getContainer(container);
@@ -100,7 +100,7 @@ class InvariantChecker {
       }
     }
   }
-  
+
   /**
    * Invariant: An edge is visible iff both its endpoints are visible
    */
@@ -108,7 +108,7 @@ class InvariantChecker {
     const visibleEdges = this.state.visibleEdges;
     const visibleNodes = this.state.visibleNodes;
     const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
-    
+
     for (const edge of visibleEdges) {
       // Both endpoints of visible edges must be visible
       assert(
@@ -119,7 +119,7 @@ class InvariantChecker {
         visibleNodeIds.has(edge.target),
         `${context}: Edge ${edge.id} target ${edge.target} should be visible`
       );
-      
+
       // Edge should not be hidden
       assert.strictEqual(
         edge.hidden,
@@ -128,16 +128,16 @@ class InvariantChecker {
       );
     }
   }
-  
+
   /**
    * Invariant: Container hierarchy relationships are consistent
    */
   private checkContainerHierarchyInvariant(context: string): void {
     const allContainers = this.state.visibleContainers;
-    
+
     for (const container of allContainers) {
       const children = this.state.getContainerChildren(container.id);
-      
+
       // Check that all children reference this container as parent
       for (const childId of children) {
         const nodeContainer = this.state.getNodeContainer(childId);
@@ -151,7 +151,7 @@ class InvariantChecker {
       }
     }
   }
-  
+
   /**
    * Invariant: HyperEdges exist only for visible, collapsed containers and connect to visible endpoints
    * NOTE: HyperEdges are now encapsulated within VisualizationState - external code should not see them
@@ -160,18 +160,18 @@ class InvariantChecker {
     // HyperEdges are now completely encapsulated within VisualizationState
     // External code should never see hyperedges in visibleEdges
     // This invariant check is no longer needed as hyperedges are internal implementation
-    
+
     // Instead, we can verify that the visible edges only contain regular edges
     const visibleEdges = this.state.visibleEdges;
-  for (const edge of visibleEdges) {
+    for (const edge of visibleEdges) {
       // All visible edges should be regular edges (no hyperedges exposed)
       assert(
-    !isHyperEdge(edge),
+        !isHyperEdge(edge),
         `${context}: Found hyperedge ${edge.id} in visibleEdges - hyperedges should be encapsulated!`
       );
     }
   }
-  
+
   /**
    * Invariant: Visible collections contain exactly the items that should be visible
    */
@@ -185,7 +185,7 @@ class InvariantChecker {
       expandedContainers.length,
       expectedExpandedCount,
       `${context}: Expanded containers collection size mismatch. Expected: ${expectedExpandedCount}, Actual: ${expandedContainers.length}`
-    );    // Check that all expanded containers are indeed not collapsed
+    ); // Check that all expanded containers are indeed not collapsed
     for (const container of expandedContainers) {
       assert.strictEqual(
         container.collapsed,
@@ -208,50 +208,56 @@ class FuzzTester {
   ) {
     this.random = new SimpleRandom(OPERATION_SEED);
   }
-  
+
   /**
    * Run the fuzz test with the given grouping
    */
   async runTest(groupingId: string | null = null): Promise<void> {
-    console.log(`🎲 Running simple fuzz test on ${this.testName} with grouping: ${groupingId || 'default'}`);
-    
+    console.log(
+      `🎲 Running simple fuzz test on ${this.testName} with grouping: ${groupingId || 'default'}`
+    );
+
     // Parse the data
     const result = parseGraphJSON(this.testData, groupingId ?? undefined);
     const state = result.state;
     const checker = new InvariantChecker(state);
-    
+
     const containers = state.visibleContainers;
     if (containers.length === 0) {
       console.log(`⚠️  No containers found, skipping simple fuzz test for ${this.testName}`);
       return;
     }
-    
-    console.log(`   📊 Initial state: ${state.visibleNodes.length} nodes, ${state.visibleEdges.length} edges, ${containers.length} containers`);
-    
+
+    console.log(
+      `   📊 Initial state: ${state.visibleNodes.length} nodes, ${state.visibleEdges.length} edges, ${containers.length} containers`
+    );
+
     // Check initial invariants
     checker.checkAll('Initial state');
-    
+
     let totalOperations = 0;
-    
+
     // Run fuzz iterations
     for (let iteration = 0; iteration < FUZZ_ITERATIONS; iteration++) {
-      const operationsThisIteration = Math.floor(this.random.next() * MAX_OPERATIONS_PER_ITERATION) + 1;
-      
+      const operationsThisIteration =
+        Math.floor(this.random.next() * MAX_OPERATIONS_PER_ITERATION) + 1;
+
       for (let op = 0; op < operationsThisIteration; op++) {
         const operation = this.generateRandomOperation(state);
-        
+
         if (operation) {
           // Record state before operation
           const beforeState = this.captureStateSnapshot(state);
-          
+
           try {
             // Execute operation
             this.executeOperation(state, operation);
             totalOperations++;
-            
+
             // Check invariants after operation
-            checker.checkAll(`After operation ${totalOperations}: ${operation.type} ${operation.containerId}`);
-            
+            checker.checkAll(
+              `After operation ${totalOperations}: ${operation.type} ${operation.containerId}`
+            );
           } catch (error: unknown) {
             console.error(`❌ Operation ${totalOperations} failed:`, operation);
             console.error(`   Before:`, beforeState);
@@ -260,33 +266,39 @@ class FuzzTester {
           }
         }
       }
-      
+
       // Periodic progress update
       if ((iteration + 1) % 20 === 0) {
-        console.log(`   ⚡ Completed ${iteration + 1}/${FUZZ_ITERATIONS} iterations (${totalOperations} operations)`);
+        console.log(
+          `   ⚡ Completed ${iteration + 1}/${FUZZ_ITERATIONS} iterations (${totalOperations} operations)`
+        );
       }
     }
-    
-    console.log(`✅ Simple fuzz test completed: ${totalOperations} operations, all invariants maintained`);
-    
+
+    console.log(
+      `✅ Simple fuzz test completed: ${totalOperations} operations, all invariants maintained`
+    );
+
     // Final state summary
     const finalNodes = state.visibleNodes.length;
     const finalEdges = state.visibleEdges.length;
     const collapsedContainers = state.visibleContainers.filter(c => c.collapsed).length;
-    
-    console.log(`   📈 Final state: ${finalNodes} visible nodes, ${finalEdges} visible edges, ${collapsedContainers} collapsed containers`);
+
+    console.log(
+      `   📈 Final state: ${finalNodes} visible nodes, ${finalEdges} visible edges, ${collapsedContainers} collapsed containers`
+    );
   }
-  
+
   /**
    * Generate a random collapse or expand operation
    */
   private generateRandomOperation(state: VisualizationState): Operation | null {
     const allContainers = state.visibleContainers;
     if (allContainers.length === 0) return null;
-    
+
     const expandedContainers = allContainers.filter(c => !c.collapsed);
     const collapsedContainers = allContainers.filter(c => c.collapsed);
-    
+
     // Choose operation type based on available containers
     let operationType: 'collapse' | 'expand';
     if (expandedContainers.length === 0) {
@@ -296,19 +308,20 @@ class FuzzTester {
     } else {
       operationType = this.random.boolean() ? 'collapse' : 'expand';
     }
-    
+
     // Choose container
-    const targetContainers = operationType === 'collapse' ? expandedContainers : collapsedContainers;
+    const targetContainers =
+      operationType === 'collapse' ? expandedContainers : collapsedContainers;
     if (targetContainers.length === 0) return null;
-    
+
     const container = this.random.choice(targetContainers);
-    
+
     return {
       type: operationType,
-      containerId: container.id
+      containerId: container.id,
     };
   }
-  
+
   /**
    * Execute a collapse or expand operation
    */
@@ -319,7 +332,7 @@ class FuzzTester {
       state.expandContainer(operation.containerId);
     }
   }
-  
+
   /**
    * Capture a snapshot of the current state for debugging
    */
@@ -329,7 +342,7 @@ class FuzzTester {
       visibleEdges: state.visibleEdges.length,
       hyperEdges: 0, // HyperEdges are now internal - not counted externally
       expandedContainers: state.getExpandedContainers().length,
-      collapsedContainers: state.visibleContainers.filter(c => c.collapsed).length
+      collapsedContainers: state.visibleContainers.filter(c => c.collapsed).length,
     };
   }
 }
@@ -340,51 +353,57 @@ class FuzzTester {
 async function runFuzzTests(): Promise<void> {
   console.log('🧪 Starting Simple Fuzz Testing Suite\n');
   console.log('==============================\n');
-  
+
   const testFiles = ['chat.json', 'paxos.json'];
-  
+
   for (const filename of testFiles) {
     try {
       console.log(`📁 Loading ${filename}...`);
-      
+
       const filePath = join(__dirname, '../test-data', filename);
       const jsonData = await readFile(filePath, 'utf-8');
-      
+
       // Validate the data first
       const validation = validateGraphJSON(jsonData);
       if (!validation.isValid) {
         console.error(`❌ ${filename} failed validation:`, validation.errors);
         continue;
       }
-      
-      console.log(`✅ ${filename} loaded and validated (${validation.nodeCount} nodes, ${validation.edgeCount} edges)`);
-      
+
+      console.log(
+        `✅ ${filename} loaded and validated (${validation.nodeCount} nodes, ${validation.edgeCount} edges)`
+      );
+
       // Parse to get available groupings
       const data = JSON.parse(jsonData);
       const groupings = data.hierarchyChoices || [];
-      
+
       if (groupings.length === 0) {
         console.log(`⚠️  No groupings found in ${filename}, testing with flat structure`);
         const tester = new FuzzTester(data, filename);
         await tester.runTest();
       } else {
-        console.log(`📊 Found ${groupings.length} groupings: ${groupings.map((g: any) => g.name).join(', ')}`);
-        
+        console.log(
+          `📊 Found ${groupings.length} groupings: ${groupings.map((g: any) => g.name).join(', ')}`
+        );
+
         // Test each grouping
         for (const grouping of groupings) {
           const tester = new FuzzTester(data, filename);
           await tester.runTest(grouping.id);
         }
       }
-      
+
       console.log(''); // Blank line between files
-      
     } catch (error: unknown) {
-      console.error(`❌ Error testing ${filename}:`, error instanceof Error ? error.message : String(error));
+      console.error(
+        `❌ Error testing ${filename}:`,
+        error instanceof Error ? error.message : String(error)
+      );
       throw error;
     }
   }
-  
+
   console.log('🎉 All fuzz tests completed successfully!');
 }
 
@@ -392,9 +411,9 @@ async function runFuzzTests(): Promise<void> {
  * Run a focused fuzz test on specific data
  */
 export async function runFuzzTest(
-  testData: any, 
-  testName: string = 'Custom', 
-  groupingId: string | null = null, 
+  testData: any,
+  testName: string = 'Custom',
+  groupingId: string | null = null,
   _iterations: number = FUZZ_ITERATIONS
 ): Promise<void> {
   const tester = new FuzzTester(testData, testName);

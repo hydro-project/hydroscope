@@ -21,7 +21,7 @@ export function HyperEdge(props: EdgeProps) {
   const isWavy = isWavyEdge(props);
 
   let edgePath: string;
-  
+
   if (isWavy) {
     // Use custom wavy path generation for hyper edges
     edgePath = getWavyPath({
@@ -30,7 +30,7 @@ export function HyperEdge(props: EdgeProps) {
       targetX: props.targetX,
       targetY: props.targetY,
       amplitude: WAVY_EDGE_CONFIG.hyperEdge.amplitude,
-      frequency: WAVY_EDGE_CONFIG.hyperEdge.frequency
+      frequency: WAVY_EDGE_CONFIG.hyperEdge.frequency,
     });
   } else {
     [edgePath] = getStraightPath({
@@ -51,18 +51,19 @@ export function HyperEdge(props: EdgeProps) {
 
   // Simple rendering for edges without halos
   if (!haloColor) {
-    const markerEnd = (typeof props.markerEnd === 'object' && props.markerEnd)
-      ? { ...(props.markerEnd as any), color: stroke }
-      : props.markerEnd;
+    const markerEnd =
+      typeof props.markerEnd === 'object' && props.markerEnd
+        ? { ...(props.markerEnd as any), color: stroke }
+        : props.markerEnd;
     return (
       <BaseEdge
         path={edgePath}
         markerEnd={markerEnd}
-        style={{ 
-          stroke, 
-          strokeWidth, 
+        style={{
+          stroke,
+          strokeWidth,
           strokeDasharray,
-          ...props.style
+          ...props.style,
         }}
       />
     );
@@ -75,24 +76,28 @@ export function HyperEdge(props: EdgeProps) {
       <BaseEdge
         path={edgePath}
         markerEnd={undefined}
-        style={{ 
-          stroke: haloColor, 
-          strokeWidth: strokeWidth + 4, 
-          strokeDasharray, 
+        style={{
+          stroke: haloColor,
+          strokeWidth: strokeWidth + 4,
+          strokeDasharray,
           strokeLinecap: 'round',
-          opacity: 0.6
+          opacity: 0.6,
         }}
       />
-      
+
       {/* Render main edge */}
       <BaseEdge
         path={edgePath}
-        markerEnd={(typeof props.markerEnd === 'object' && props.markerEnd) ? { ...(props.markerEnd as any), color: stroke } : props.markerEnd}
-        style={{ 
-          stroke, 
-          strokeWidth, 
+        markerEnd={
+          typeof props.markerEnd === 'object' && props.markerEnd
+            ? { ...(props.markerEnd as any), color: stroke }
+            : props.markerEnd
+        }
+        style={{
+          stroke,
+          strokeWidth,
           strokeDasharray,
-          ...(stripHaloStyle(props.style))
+          ...stripHaloStyle(props.style),
         }}
       />
     </g>

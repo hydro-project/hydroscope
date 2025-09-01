@@ -48,9 +48,13 @@ function buildHierarchyTreeFromState(visualizationState: any): HierarchyTreeNode
 /**
  * Helper function to truncate labels with consistent logic
  */
-function truncateHierarchyLabel(text: string, maxLength: number, leftTruncate: boolean = false): string {
+function truncateHierarchyLabel(
+  text: string,
+  maxLength: number,
+  leftTruncate: boolean = false
+): string {
   if (text.length <= maxLength) return text;
-  
+
   if (leftTruncate) {
     return '...' + text.slice(text.length - maxLength + 3);
   } else {
@@ -61,17 +65,30 @@ function truncateHierarchyLabel(text: string, maxLength: number, leftTruncate: b
 /**
  * Helper function to create search highlight element
  */
-function createSearchHighlightDiv(text: string, match: boolean, isCurrent: boolean, baseStyle: any): React.ReactNode {
+function createSearchHighlightDiv(
+  text: string,
+  match: boolean,
+  isCurrent: boolean,
+  baseStyle: any
+): React.ReactNode {
   return (
-    <div style={match ? {
-      backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-      borderRadius: 4,
-      padding: '2px 4px',
-      margin: '-1px -2px',
-      fontWeight: isCurrent ? '600' : '500',
-      border: isCurrent ? '1px solid rgba(255,107,53,0.4)' : '1px solid rgba(251,191,36,0.3)',
-      ...baseStyle
-    } : baseStyle}>
+    <div
+      style={
+        match
+          ? {
+              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
+              borderRadius: 4,
+              padding: '2px 4px',
+              margin: '-1px -2px',
+              fontWeight: isCurrent ? '600' : '500',
+              border: isCurrent
+                ? '1px solid rgba(255,107,53,0.4)'
+                : '1px solid rgba(251,191,36,0.3)',
+              ...baseStyle,
+            }
+          : baseStyle
+      }
+    >
       {text}
     </div>
   );
@@ -91,19 +108,29 @@ function createContainerDisplayTitle(
   showNodeCounts: boolean
 ): React.ReactNode {
   const countText = showNodeCounts && hasLeafChildren ? ` (${leafChildrenCount})` : '';
-  
+
   return (
-    <div style={match ? {
-      backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-      borderRadius: 4,
-      padding: '2px 4px',
-      margin: '-1px -2px',
-      fontWeight: isCurrent ? '600' : '500',
-      border: isCurrent ? '1px solid rgba(255,107,53,0.4)' : '1px solid rgba(251,191,36,0.3)'
-    } : {}}>
+    <div
+      style={
+        match
+          ? {
+              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
+              borderRadius: 4,
+              padding: '2px 4px',
+              margin: '-1px -2px',
+              fontWeight: isCurrent ? '600' : '500',
+              border: isCurrent
+                ? '1px solid rgba(255,107,53,0.4)'
+                : '1px solid rgba(251,191,36,0.3)',
+            }
+          : {}
+      }
+    >
       <span style={{ fontWeight: 500 }}>
         {truncatedLabel}
-        {countText && <span style={{ fontSize: '10px', opacity: 0.75, fontWeight: 400 }}>{countText}</span>}
+        {countText && (
+          <span style={{ fontSize: '10px', opacity: 0.75, fontWeight: 400 }}>{countText}</span>
+        )}
       </span>
     </div>
   );
@@ -116,7 +143,12 @@ function createContainerDisplayTitle(
 function getTreeDataStructure(
   visualizationState: any,
   collapsedContainers: Set<string>,
-  searchMatches?: Array<{ id: string; label: string; type: 'container' | 'node'; matchIndices?: number[][] }>,
+  searchMatches?: Array<{
+    id: string;
+    label: string;
+    type: 'container' | 'node';
+    matchIndices?: number[][];
+  }>,
   currentSearchMatch?: { id: string } | undefined,
   truncateLabels: boolean = true,
   maxLabelLength: number = 20,
@@ -124,48 +156,50 @@ function getTreeDataStructure(
 ): TreeDataNode[] {
   // Build hierarchy tree structure from VisualizationState
   const hierarchyTree = buildHierarchyTreeFromState(visualizationState);
-  
+
   const convertToTreeData = (nodes: HierarchyTreeNode[]): TreeDataNode[] => {
     return nodes.map(node => {
       // Get container data using VisualizationState accessors
       const containerData = visualizationState?.getContainer(node.id);
       const containerLabel = containerData?.label || `Container ${node.id}`;
-      
+
       // Get efficient leaf node count (O(1) lookup)
       const leafChildrenCount = visualizationState?.getContainerLeafNodeCount(node.id) || 0;
-      
+
       // Get container metadata for shortLabel
       const containerShortLabel = containerData?.data?.shortLabel || containerData?.shortLabel;
-      
+
       const labelToUse = containerShortLabel || containerLabel;
-      const truncatedLabel = truncateLabels 
+      const truncatedLabel = truncateLabels
         ? truncateHierarchyLabel(labelToUse, maxLabelLength, true)
         : labelToUse;
-        
+
       // Get efficient leaf nodes (O(1) lookup)
       const leafNodes = visualizationState?.getContainerLeafNodes(node.id) || [];
-      
+
       const hasChildren = node.children && node.children.length > 0;
       const hasLeafChildren = leafChildrenCount > 0;
       const isCollapsed = collapsedContainers.has(node.id);
-      
+
       // For collapsed containers that have content, add a virtual child to show the expand icon
       // For expanded containers, show real children AND actual leaf nodes
       let children: TreeDataNode[] | undefined = undefined;
-    
+
       if (hasChildren) {
         // Container has child containers - recurse and add leaf nodes if expanded
         children = convertToTreeData(node.children);
         if (!isCollapsed && hasLeafChildren) {
           // Add actual leaf nodes when expanded
           const leafTreeNodes = leafNodes.map((leafNode: any) => {
-            const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node') ? true : false;
+            const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node')
+              ? true
+              : false;
             const isCurrent = !!(currentSearchMatch && currentSearchMatch.id === leafNode.id);
-            
+
             return {
               key: leafNode.id,
               title: createSearchHighlightDiv(
-                truncateLabels 
+                truncateLabels
                   ? truncateHierarchyLabel(leafNode.label, maxLabelLength - 2, true)
                   : leafNode.label,
                 match,
@@ -177,8 +211,8 @@ function getTreeDataStructure(
                 isGraphNode: true,
                 originalLabel: leafNode.label,
                 fullLabel: leafNode.fullLabel,
-                shortLabel: leafNode.shortLabel
-              }
+                shortLabel: leafNode.shortLabel,
+              },
             };
           });
           children = [...children, ...leafTreeNodes];
@@ -187,22 +221,26 @@ function getTreeDataStructure(
         // Container has only leaf nodes
         if (isCollapsed) {
           // Add virtual child to show expand icon
-          children = [{
-            key: `${node.id}__virtual__`,
-            title: `Loading...`, // This should never be visible
-            isLeaf: true,
-            style: { display: 'none' } // Hide the virtual child
-          }];
+          children = [
+            {
+              key: `${node.id}__virtual__`,
+              title: `Loading...`, // This should never be visible
+              isLeaf: true,
+              style: { display: 'none' }, // Hide the virtual child
+            },
+          ];
         } else {
           // Expanded - show actual leaf nodes
           children = leafNodes.map((leafNode: any) => {
-            const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node') ? true : false;
+            const match = searchMatches?.some(m => m.id === leafNode.id && m.type === 'node')
+              ? true
+              : false;
             const isCurrent = !!(currentSearchMatch && currentSearchMatch.id === leafNode.id);
-            
+
             return {
               key: leafNode.id,
               title: createSearchHighlightDiv(
-                truncateLabels 
+                truncateLabels
                   ? truncateHierarchyLabel(leafNode.label, maxLabelLength - 2, true)
                   : leafNode.label,
                 match,
@@ -214,22 +252,22 @@ function getTreeDataStructure(
                 isGraphNode: true,
                 originalLabel: leafNode.label,
                 fullLabel: leafNode.fullLabel,
-                shortLabel: leafNode.shortLabel
-              }
+                shortLabel: leafNode.shortLabel,
+              },
             };
           });
         }
       }
-    
+
       // Create display title with better formatting + optional search highlight
       const match = searchMatches?.some(m => m.id === node.id) ? true : false;
       const isCurrent = !!(currentSearchMatch && currentSearchMatch.id === node.id);
-      
+
       const displayTitle = createContainerDisplayTitle(
-        truncatedLabel, 
-        hasChildren, 
-        hasLeafChildren, 
-        node.children.length, 
+        truncatedLabel,
+        hasChildren,
+        hasLeafChildren,
+        node.children.length,
         leafChildrenCount,
         match,
         isCurrent,
@@ -248,8 +286,8 @@ function getTreeDataStructure(
           nodeCount: leafChildrenCount,
           leafChildrenCount,
           hasLeafChildren: hasLeafChildren && !hasChildren,
-          isContainer: hasChildren
-        }
+          isContainer: hasChildren,
+        },
       };
     });
   };
@@ -270,24 +308,25 @@ export function HierarchyTree({
   // optional search wiring
   searchQuery,
   searchMatches,
-  currentSearchMatch
+  currentSearchMatch,
 }: HierarchyTreeProps & {
   searchQuery?: string;
-  searchMatches?: Array<{ id: string; label: string; type: 'container' | 'node'; matchIndices?: number[][] }>;
+  searchMatches?: Array<{
+    id: string;
+    label: string;
+    type: 'container' | 'node';
+    matchIndices?: number[][];
+  }>;
   currentSearchMatch?: { id: string } | undefined;
 }) {
-
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic instead of complex useMemo
   const derivedExpandedKeys = useMemo(() => {
     if (!visualizationState) {
       return [];
     }
-    
+
     // Use VisualizationState's efficient search expansion method
-    return visualizationState.getSearchExpansionKeys(
-      searchMatches || [],
-      collapsedContainers
-    );
+    return visualizationState.getSearchExpansionKeys(searchMatches || [], collapsedContainers);
   }, [visualizationState, collapsedContainers, searchQuery, searchMatches]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
@@ -296,26 +335,37 @@ export function HierarchyTree({
   // Sync local expanded state whenever the derived value changes (e.g., collapse/expand in vis, search)
   useEffect(() => {
     setExpandedKeys(derivedExpandedKeys);
-    
+
     // During search, expand containers that are ancestors of matches (including node matches)
-    if (searchQuery && searchQuery.trim() && searchMatches && searchMatches.length && onToggleContainer) {
+    if (
+      searchQuery &&
+      searchQuery.trim() &&
+      searchMatches &&
+      searchMatches.length &&
+      onToggleContainer
+    ) {
       // For container matches, avoid expanding the matches themselves
       // For node matches, expand their parent containers to make nodes visible
-      const containerMatches = new Set(searchMatches.filter(m => m.type === 'container').map(m => m.id));
+      const containerMatches = new Set(
+        searchMatches.filter(m => m.type === 'container').map(m => m.id)
+      );
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
-      
+
       currentlyCollapsed.forEach(containerId => {
         if (shouldBeExpanded.has(containerId) && !containerMatches.has(containerId)) {
           // This container should be expanded to show the path to matches or to reveal matching nodes
           onToggleContainer(containerId);
         }
       });
-    } else if ((!searchQuery || !searchQuery.trim() || !searchMatches || !searchMatches.length) && onToggleContainer) {
+    } else if (
+      (!searchQuery || !searchQuery.trim() || !searchMatches || !searchMatches.length) &&
+      onToggleContainer
+    ) {
       // When not searching, sync normally
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
-      
+
       currentlyCollapsed.forEach(containerId => {
         if (shouldBeExpanded.has(containerId)) {
           onToggleContainer(containerId);
@@ -334,7 +384,15 @@ export function HierarchyTree({
       maxLabelLength,
       showNodeCounts
     );
-  }, [visualizationState, collapsedContainers, searchMatches, currentSearchMatch, truncateLabels, maxLabelLength, showNodeCounts]);
+  }, [
+    visualizationState,
+    collapsedContainers,
+    searchMatches,
+    currentSearchMatch,
+    truncateLabels,
+    maxLabelLength,
+    showNodeCounts,
+  ]);
 
   const handleExpand = (nextExpandedKeys: React.Key[], info: any) => {
     // Update UI immediately
@@ -345,7 +403,7 @@ export function HierarchyTree({
       // Check if we're expanding or collapsing by comparing current state
       const wasExpanded = expandedKeys.includes(nodeKey);
       const isNowExpanded = nextExpandedKeys.includes(nodeKey);
-      
+
       // Only call onToggleContainer if the state actually changed
       if (wasExpanded !== isNowExpanded) {
         onToggleContainer(nodeKey);
@@ -364,11 +422,13 @@ export function HierarchyTree({
   if (!visualizationState || visualizationState.visibleContainers.length === 0) {
     return (
       <div className={`hierarchy-tree-empty ${className}`} style={style}>
-        <span style={{ 
-          color: COMPONENT_COLORS.TEXT_DISABLED,
-          fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
-          fontStyle: 'italic'
-        }}>
+        <span
+          style={{
+            color: COMPONENT_COLORS.TEXT_DISABLED,
+            fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
+            fontStyle: 'italic',
+          }}
+        >
           No hierarchy available
         </span>
       </div>
@@ -378,18 +438,20 @@ export function HierarchyTree({
   return (
     <div className={`hierarchy-tree ${className}`} style={style}>
       {title && (
-        <div style={{
-          fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_NODE,
-          fontWeight: 'bold',
-          color: COMPONENT_COLORS.TEXT_PRIMARY,
-          marginBottom: '8px',
-          paddingBottom: '4px',
-          borderBottom: `1px solid ${COMPONENT_COLORS.BORDER_LIGHT}`,
-        }}>
+        <div
+          style={{
+            fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_NODE,
+            fontWeight: 'bold',
+            color: COMPONENT_COLORS.TEXT_PRIMARY,
+            marginBottom: '8px',
+            paddingBottom: '4px',
+            borderBottom: `1px solid ${COMPONENT_COLORS.BORDER_LIGHT}`,
+          }}
+        >
           {title}
         </div>
       )}
-      
+
       <style>
         {`
           /* Hide virtual children in the tree */
@@ -398,7 +460,7 @@ export function HierarchyTree({
           }
         `}
       </style>
-      
+
       <Tree
         key={Array.from(collapsedContainers).sort().join(',')}
         treeData={treeData}
@@ -414,17 +476,19 @@ export function HierarchyTree({
           backgroundColor: 'transparent',
           // Ensure proper rendering in Card layout
           minHeight: '20px',
-          width: '100%'
+          width: '100%',
         }}
         // Enhanced styling through CSS variables for better hierarchy
-        rootStyle={{
-          '--antd-tree-node-hover-bg': COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
-          '--antd-tree-node-selected-bg': COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
-          '--antd-tree-indent-size': '16px', // Reduce indent for better space usage
-          '--antd-tree-node-padding': '2px 4px', // Better padding
-          width: '100%',
-          overflow: 'visible'
-        } as React.CSSProperties}
+        rootStyle={
+          {
+            '--antd-tree-node-hover-bg': COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
+            '--antd-tree-node-selected-bg': COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
+            '--antd-tree-indent-size': '16px', // Reduce indent for better space usage
+            '--antd-tree-node-padding': '2px 4px', // Better padding
+            width: '100%',
+            overflow: 'visible',
+          } as React.CSSProperties
+        }
       />
     </div>
   );

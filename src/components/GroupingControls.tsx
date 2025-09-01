@@ -1,6 +1,6 @@
 /**
  * @fileoverview GroupingControls Component
- * 
+ *
  * Provides controls for selecting different hierarchical groupings.
  */
 
@@ -26,17 +26,18 @@ export function GroupingControls({
   compact = false,
   disabled = false,
   className = '',
-  style
+  style,
 }: GroupingControlsProps) {
-  
   if (!hierarchyChoices || hierarchyChoices.length === 0) {
     return (
       <div className={`grouping-controls-empty ${className}`} style={style}>
-        <span style={{ 
-          color: COMPONENT_COLORS.TEXT_DISABLED,
-          fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-          fontStyle: 'italic'
-        }}>
+        <span
+          style={{
+            color: COMPONENT_COLORS.TEXT_DISABLED,
+            fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
+            fontStyle: 'italic',
+          }}
+        >
           No grouping options available
         </span>
       </div>
@@ -46,11 +47,13 @@ export function GroupingControls({
   if (hierarchyChoices.length === 1) {
     return (
       <div className={`grouping-controls-single ${className}`} style={style}>
-        <span style={{ 
-          color: COMPONENT_COLORS.TEXT_PRIMARY,
-          fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-          fontWeight: 'bold'
-        }}>
+        <span
+          style={{
+            color: COMPONENT_COLORS.TEXT_PRIMARY,
+            fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
+            fontWeight: 'bold',
+          }}
+        >
           Grouping: {hierarchyChoices[0].name}
         </span>
       </div>
@@ -85,12 +88,8 @@ export function GroupingControls({
 
   return (
     <div className={`grouping-controls ${className}`} style={style}>
-      {!compact && (
-        <label style={labelStyle}>
-          Grouping:
-        </label>
-      )}
-      
+      {!compact && <label style={labelStyle}>Grouping:</label>}
+
       <Select
         value={currentGrouping || undefined}
         onChange={handleChange}
@@ -100,7 +99,7 @@ export function GroupingControls({
         size="small"
         style={selectStyle}
         popupMatchSelectWidth={true}
-        getPopupContainer={(triggerNode) => triggerNode.parentNode}
+        getPopupContainer={triggerNode => triggerNode.parentNode}
       />
     </div>
   );

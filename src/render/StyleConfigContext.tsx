@@ -29,12 +29,18 @@ const defaultStyleConfig: StyleConfig = {
 
   containerBorderRadius: 8,
   containerBorderWidth: 2,
-  containerShadow: 'LIGHT'
+  containerShadow: 'LIGHT',
 };
 
 const StyleConfigContext = createContext<StyleConfig>(defaultStyleConfig);
 
-export function StyleConfigProvider({ value, children }: { value?: StyleConfig; children: React.ReactNode }) {
+export function StyleConfigProvider({
+  value,
+  children,
+}: {
+  value?: StyleConfig;
+  children: React.ReactNode;
+}) {
   return (
     <StyleConfigContext.Provider value={{ ...defaultStyleConfig, ...(value || {}) }}>
       {children}

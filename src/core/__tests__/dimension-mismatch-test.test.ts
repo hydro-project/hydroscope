@@ -1,10 +1,10 @@
 /**
  * Dimension Mismatch Investigation
- * 
+ *
  * Testing the theory that ReactFlow handle positioning fails because:
  * - Regular nodes have no explicit dimensions (ReactFlow uses defaults/DOM)
  * - Collapsed containers have explicit dimensions (ReactFlow uses those)
- * 
+ *
  * This creates a mismatch in how ReactFlow calculates handle positions.
  */
 
@@ -13,7 +13,6 @@ import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
 import { ELKBridge } from '../../bridges/ELKBridge';
 
 describe('Dimension Mismatch Investigation', () => {
-
   test('THEORY TEST: Regular nodes with explicit dimensions should fix handle connections', async () => {
     console.log('\n=== DIMENSION MISMATCH THEORY TEST ===');
 
@@ -21,21 +20,30 @@ describe('Dimension Mismatch Investigation', () => {
 
     // Add regular node WITHOUT explicit dimensions (current behavior)
     state.addGraphNode('regular_no_dims', {
-      x: 100, y: 100, width: 120, height: 40,
-      label: 'Regular No Dims'
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 40,
+      label: 'Regular No Dims',
     });
 
     // Add regular node WITH explicit dimensions (test fix)
     state.addGraphNode('regular_with_dims', {
-      x: 100, y: 200, width: 120, height: 40,
-      label: 'Regular With Dims'
+      x: 100,
+      y: 200,
+      width: 120,
+      height: 40,
+      label: 'Regular With Dims',
     });
 
     // Add collapsed container (has explicit dimensions)
     state.addContainer('collapsed_container', {
-      x: 300, y: 150, width: 120, height: 40,
+      x: 300,
+      y: 150,
+      width: 120,
+      height: 40,
       label: 'Collapsed Container',
-      collapsed: true
+      collapsed: true,
     });
 
     // Add hyperedges
@@ -44,7 +52,7 @@ describe('Dimension Mismatch Investigation', () => {
       id: 'hyper_no_dims',
       source: 'regular_no_dims',
       target: 'collapsed_container',
-      hidden: false
+      hidden: false,
     });
 
     state.setHyperEdge('hyper_with_dims', {
@@ -52,7 +60,7 @@ describe('Dimension Mismatch Investigation', () => {
       id: 'hyper_with_dims',
       source: 'regular_with_dims',
       target: 'collapsed_container',
-      hidden: false
+      hidden: false,
     });
 
     // Run ELK layout
@@ -72,21 +80,21 @@ describe('Dimension Mismatch Investigation', () => {
       dataWidth: regularNoDims.data.width,
       dataHeight: regularNoDims.data.height,
       styleWidth: regularNoDims.style?.width,
-      styleHeight: regularNoDims.style?.height
+      styleHeight: regularNoDims.style?.height,
     });
 
     console.log('Regular node (with dims in data):', {
       dataWidth: regularWithDims.data.width,
       dataHeight: regularWithDims.data.height,
       styleWidth: regularWithDims.style?.width,
-      styleHeight: regularWithDims.style?.height
+      styleHeight: regularWithDims.style?.height,
     });
 
     console.log('Collapsed container:', {
       dataWidth: container.data.width,
       dataHeight: container.data.height,
       styleWidth: container.style?.width,
-      styleHeight: container.style?.height
+      styleHeight: container.style?.height,
     });
 
     // NOW TEST THE FIX: Add explicit dimensions to regular nodes
@@ -98,14 +106,14 @@ describe('Dimension Mismatch Investigation', () => {
           ...node,
           data: {
             ...node.data,
-            width: 120,  // Add explicit width
-            height: 40   // Add explicit height
+            width: 120, // Add explicit width
+            height: 40, // Add explicit height
           },
           style: {
             ...node.style,
-            width: 120,  // Add explicit width to style too
-            height: 40   // Add explicit height to style too
-          }
+            width: 120, // Add explicit width to style too
+            height: 40, // Add explicit height to style too
+          },
         };
       }
       return node;
@@ -119,20 +127,18 @@ describe('Dimension Mismatch Investigation', () => {
       dataWidth: modifiedRegularNoDims.data.width,
       dataHeight: modifiedRegularNoDims.data.height,
       styleWidth: modifiedRegularNoDims.style?.width,
-      styleHeight: modifiedRegularNoDims.style?.height
+      styleHeight: modifiedRegularNoDims.style?.height,
     });
 
     console.log('Modified regular node (originally with dims):', {
       dataWidth: modifiedRegularWithDims.data.width,
       dataHeight: modifiedRegularWithDims.data.height,
       styleWidth: modifiedRegularWithDims.style?.width,
-      styleHeight: modifiedRegularWithDims.style?.height
+      styleHeight: modifiedRegularWithDims.style?.height,
     });
 
     // Recalculate handles with modified nodes
-  const modifiedEdges = [...reactFlowData.edges];
-  // const modifiedBridge = new ReactFlowBridge();
-  // modifiedBridge.assignHandlesToEdges(state, modifiedEdges, modifiedNodes); // Private method, skip for type check
+    const modifiedEdges = [...reactFlowData.edges];
 
     const originalEdge1 = reactFlowData.edges.find(e => e.id === 'hyper_no_dims')!;
     const originalEdge2 = reactFlowData.edges.find(e => e.id === 'hyper_with_dims')!;
@@ -142,29 +148,31 @@ describe('Dimension Mismatch Investigation', () => {
     console.log('\nHANDLE COMPARISON:');
     console.log('Original handles (no explicit dims):', {
       sourceHandle: originalEdge1.sourceHandle,
-      targetHandle: originalEdge1.targetHandle
+      targetHandle: originalEdge1.targetHandle,
     });
     console.log('Modified handles (with explicit dims):', {
       sourceHandle: modifiedEdge1.sourceHandle,
       targetHandle: modifiedEdge1.targetHandle,
-      changed: originalEdge1.sourceHandle !== modifiedEdge1.sourceHandle || 
-               originalEdge1.targetHandle !== modifiedEdge1.targetHandle
+      changed:
+        originalEdge1.sourceHandle !== modifiedEdge1.sourceHandle ||
+        originalEdge1.targetHandle !== modifiedEdge1.targetHandle,
     });
 
     console.log('Original handles (with dims):', {
       sourceHandle: originalEdge2.sourceHandle,
-      targetHandle: originalEdge2.targetHandle
+      targetHandle: originalEdge2.targetHandle,
     });
     console.log('Modified handles (with dims):', {
       sourceHandle: modifiedEdge2.sourceHandle,
       targetHandle: modifiedEdge2.targetHandle,
-      changed: originalEdge2.sourceHandle !== modifiedEdge2.sourceHandle || 
-               originalEdge2.targetHandle !== modifiedEdge2.targetHandle
+      changed:
+        originalEdge2.sourceHandle !== modifiedEdge2.sourceHandle ||
+        originalEdge2.targetHandle !== modifiedEdge2.targetHandle,
     });
 
     // Test if this fixes the positioning
     console.log('\n=== POSITION CALCULATION TEST ===');
-    
+
     // Calculate handle positions with original nodes
     const originalPos1 = calculateHandlePosition(
       regularNoDims.position,
@@ -184,7 +192,8 @@ describe('Dimension Mismatch Investigation', () => {
     console.log('Handle position comparison:');
     console.log('Original position:', originalPos1);
     console.log('Modified position:', modifiedPos1);
-    console.log('Positions match:', 
+    console.log(
+      'Positions match:',
       originalPos1.x === modifiedPos1.x && originalPos1.y === modifiedPos1.y
     );
 
@@ -200,14 +209,20 @@ describe('Dimension Mismatch Investigation', () => {
     const state = createVisualizationState();
 
     state.addGraphNode('test_node', {
-      x: 100, y: 100, width: 120, height: 40,
-      label: 'Test Node'
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 40,
+      label: 'Test Node',
     });
 
     state.addContainer('test_container', {
-      x: 300, y: 100, width: 120, height: 40,
+      x: 300,
+      y: 100,
+      width: 120,
+      height: 40,
       label: 'Test Container',
-      collapsed: true
+      collapsed: true,
     });
 
     state.setHyperEdge('test_hyper', {
@@ -215,7 +230,7 @@ describe('Dimension Mismatch Investigation', () => {
       id: 'test_hyper',
       source: 'test_node',
       target: 'test_container',
-      hidden: false
+      hidden: false,
     });
 
     // Run layout
@@ -224,10 +239,10 @@ describe('Dimension Mismatch Investigation', () => {
 
     // Create a FIXED ReactFlow bridge that adds explicit dimensions
     const fixedBridge = new ReactFlowBridge();
-    
+
     // Override the conversion to add explicit dimensions to regular nodes
     const originalData = fixedBridge.convertVisualizationState(state);
-    
+
     const fixedNodes = originalData.nodes.map(node => {
       if (node.type === 'standard') {
         // Add explicit dimensions to match container behavior
@@ -236,13 +251,13 @@ describe('Dimension Mismatch Investigation', () => {
           data: {
             ...node.data,
             width: node.data.width || 120,
-            height: node.data.height || 40
+            height: node.data.height || 40,
           },
           style: {
             ...node.style,
             width: node.style?.width || 120,
-            height: node.style?.height || 40
-          }
+            height: node.style?.height || 40,
+          },
         };
       }
       return node;
@@ -250,7 +265,7 @@ describe('Dimension Mismatch Investigation', () => {
 
     const fixedData = {
       nodes: fixedNodes,
-      edges: originalData.edges
+      edges: originalData.edges,
     };
 
     console.log('FIXED IMPLEMENTATION RESULTS:');
@@ -262,23 +277,23 @@ describe('Dimension Mismatch Investigation', () => {
       dataWidth: fixedNode.data.width,
       dataHeight: fixedNode.data.height,
       styleWidth: fixedNode.style?.width,
-      styleHeight: fixedNode.style?.height
+      styleHeight: fixedNode.style?.height,
     });
 
     console.log('Container dimensions (unchanged):', {
       dataWidth: fixedContainer.data.width,
       dataHeight: fixedContainer.data.height,
       styleWidth: fixedContainer.style?.width,
-      styleHeight: fixedContainer.style?.height
+      styleHeight: fixedContainer.style?.height,
     });
 
     console.log('Edge handles:', {
       sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle
+      targetHandle: edge.targetHandle,
     });
 
     // Verify both nodes now have explicit dimensions
-    const bothHaveExplicitDimensions = (
+    const bothHaveExplicitDimensions =
       fixedNode.data.width !== undefined &&
       fixedNode.data.height !== undefined &&
       fixedNode.style?.width !== undefined &&
@@ -286,8 +301,7 @@ describe('Dimension Mismatch Investigation', () => {
       fixedContainer.data.width !== undefined &&
       fixedContainer.data.height !== undefined &&
       fixedContainer.style?.width !== undefined &&
-      fixedContainer.style?.height !== undefined
-    );
+      fixedContainer.style?.height !== undefined;
 
     console.log('Both nodes have explicit dimensions:', bothHaveExplicitDimensions);
 
@@ -314,19 +328,19 @@ function calculateHandlePosition(
     case 'out-top':
     case 'in-top':
       return { x: x + nodeWidth * 0.5, y: y };
-    
+
     case 'out-right':
     case 'in-right':
       return { x: x + nodeWidth, y: y + nodeHeight * 0.5 };
-    
+
     case 'out-bottom':
     case 'in-bottom':
       return { x: x + nodeWidth * 0.5, y: y + nodeHeight };
-    
+
     case 'out-left':
     case 'in-left':
       return { x: x, y: y + nodeHeight * 0.5 };
-    
+
     default:
       return { x: x + nodeWidth * 0.5, y: y + nodeHeight * 0.5 };
   }

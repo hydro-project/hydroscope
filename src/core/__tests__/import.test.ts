@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('Import test', () => {
   it('should import shared constants', async () => {
-    // Test importing shared constants 
+    // Test importing shared constants
     try {
       const constants = await import('../../shared/config');
       expect(constants).toBeDefined();

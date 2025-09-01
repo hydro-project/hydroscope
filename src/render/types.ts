@@ -1,6 +1,6 @@
 /**
  * @fileoverview Render Types
- * 
+ *
  * Type definitions for render components
  */
 

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Edge Utils
- * 
+ *
  * Utility functions for edge processing
  */
 

@@ -1,20 +1,16 @@
 /**
  * ELK State Manager (TypeScript port from working visualizer)
- * 
+ *
  * This module provides wrapper functions that ensure all ELK layout interactions
  * are consistent with visualization state management as the single source of truth.
- * 
+ *
  * Key principle: ELK should only ever calculate layouts based on the exact
  * visual state requirements, and return results that perfectly match those requirements.
  */
 
 import ELK from 'elkjs';
 import { GraphNode, GraphEdge, Container, HyperEdge } from '../shared/types';
-import { 
-  ELK_ALGORITHMS, 
-  LAYOUT_SPACING, 
-  ELKAlgorithm, 
-} from '../shared/config';
+import { ELK_ALGORITHMS, LAYOUT_SPACING, ELKAlgorithm } from '../shared/config';
 
 // ============ Constants ============
 
@@ -116,13 +112,13 @@ export interface ELKStateManager {
     nodes: any[];
     edges: GraphEdge[];
   }>;
-  
+
   calculateVisualLayout(
     nodes: GraphNode[],
     edges: GraphEdge[],
     containers: Container[],
     hyperEdges: HyperEdge[],
-    layoutType?: ELKAlgorithm,
+    layoutType?: ELKAlgorithm
   ): Promise<{
     nodes: any[];
     edges: GraphEdge[];
@@ -143,18 +139,18 @@ class ContainmentValidator {
    */
   validateContainment(layoutedNodes: any[], containers: Container[]): ContainmentValidationResult {
     this.violations = [];
-    
+
     this.logValidationStart();
-    
+
     containers.forEach(container => {
       this.validateSingleContainer(container, layoutedNodes);
     });
-    
+
     this.logValidationResults();
-    
+
     return {
       isValid: this.violations.length === 0,
-      violations: [...this.violations]
+      violations: [...this.violations],
     };
   }
 
@@ -185,13 +181,22 @@ class ContainmentValidator {
     const childBounds = this.calculateNodeBounds(childNode);
     const containerBounds = this.calculateContainerBounds(containerNode);
 
-    const fitsHorizontally = childBounds.x >= VALIDATION_CONSTANTS.COORDINATE_ORIGIN && 
-                           childBounds.right <= containerBounds.width;
-    const fitsVertically = childBounds.y >= VALIDATION_CONSTANTS.COORDINATE_ORIGIN && 
-                         childBounds.bottom <= containerBounds.height;
+    const fitsHorizontally =
+      childBounds.x >= VALIDATION_CONSTANTS.COORDINATE_ORIGIN &&
+      childBounds.right <= containerBounds.width;
+    const fitsVertically =
+      childBounds.y >= VALIDATION_CONSTANTS.COORDINATE_ORIGIN &&
+      childBounds.bottom <= containerBounds.height;
 
     if (!fitsHorizontally || !fitsVertically) {
-      this.addViolation(childNode.id, containerId, childBounds, containerBounds, fitsHorizontally, fitsVertically);
+      this.addViolation(
+        childNode.id,
+        containerId,
+        childBounds,
+        containerBounds,
+        fitsHorizontally,
+        fitsVertically
+      );
     } else {
       this.logSuccess(`Node ${childNode.id} fits in container ${containerId}`);
     }
@@ -209,7 +214,7 @@ class ContainmentValidator {
       width,
       height,
       right: x + width,
-      bottom: y + height
+      bottom: y + height,
     };
   }
 
@@ -225,31 +230,38 @@ class ContainmentValidator {
       width,
       height,
       right: x + width,
-      bottom: y + height
+      bottom: y + height,
     };
   }
 
   private addViolation(
-    childId: string, 
-    containerId: string, 
-    childBounds: LayoutBounds, 
+    childId: string,
+    containerId: string,
+    childBounds: LayoutBounds,
     containerBounds: LayoutBounds,
     fitsHorizontally: boolean,
     fitsVertically: boolean
   ): void {
-    const issue = `Does not fit ${!fitsHorizontally ? 'horizontally' : ''} ${!fitsVertically ? 'vertically' : ''}`.trim();
-    
+    const issue =
+      `Does not fit ${!fitsHorizontally ? 'horizontally' : ''} ${!fitsVertically ? 'vertically' : ''}`.trim();
+
     this.violations.push({
       childId,
       containerId,
       issue,
       childBounds,
-      containerBounds
+      containerBounds,
     });
 
-    this.logError(`CONTAINMENT VIOLATION: Node ${childId} does not fit in container ${containerId}`);
-    this.logError(`  Child (relative): (${childBounds.x}, ${childBounds.y}) ${childBounds.width}x${childBounds.height} -> (${childBounds.right}, ${childBounds.bottom})`);
-    this.logError(`  Container bounds: (${containerBounds.x}, ${containerBounds.y}) ${containerBounds.width}x${containerBounds.height} -> (${containerBounds.right}, ${containerBounds.bottom})`);
+    this.logError(
+      `CONTAINMENT VIOLATION: Node ${childId} does not fit in container ${containerId}`
+    );
+    this.logError(
+      `  Child (relative): (${childBounds.x}, ${childBounds.y}) ${childBounds.width}x${childBounds.height} -> (${childBounds.right}, ${childBounds.bottom})`
+    );
+    this.logError(
+      `  Container bounds: (${containerBounds.x}, ${containerBounds.y}) ${containerBounds.width}x${containerBounds.height} -> (${containerBounds.right}, ${containerBounds.bottom})`
+    );
     this.logError(`  Fits horizontally: ${fitsHorizontally}, Fits vertically: ${fitsVertically}`);
   }
 
@@ -261,12 +273,18 @@ class ContainmentValidator {
 
   private logValidationResults(): void {
     if (this.violations.length > 0) {
-      console.error(`${LOG_PREFIXES.STATE_MANAGER} ${LOG_PREFIXES.ERROR} Found ${this.violations.length} containment violations!`);
+      console.error(
+        `${LOG_PREFIXES.STATE_MANAGER} ${LOG_PREFIXES.ERROR} Found ${this.violations.length} containment violations!`
+      );
     } else if (process.env.NODE_ENV === 'development') {
     }
   }
 
-  private logContainerValidation(container: Container, containerNode: any, childNodes: any[]): void {
+  private logContainerValidation(
+    container: Container,
+    containerNode: any,
+    childNodes: any[]
+  ): void {
     // Only log detailed container validation in debug mode
     if (process.env.NODE_ENV === 'development') {
       console.groupCollapsed(`${LOG_PREFIXES.STATE_MANAGER} Validating container ${container.id}`);
@@ -303,13 +321,14 @@ class ELKConfigurationManager {
   getConfig(layoutType: ELKAlgorithm, context: 'root' | 'container' = 'root'): Record<string, any> {
     const baseConfig = this.getBaseConfig(layoutType);
     const contextConfig = this.getContextConfig(context);
-    
+
     return { ...baseConfig, ...contextConfig };
   }
 
   private getBaseConfig(layoutType: ELKAlgorithm): Record<string, any> {
-    const algorithm = ELK_ALGORITHMS[layoutType as keyof typeof ELK_ALGORITHMS] || ELK_ALGORITHMS.LAYERED;
-    
+    const algorithm =
+      ELK_ALGORITHMS[layoutType as keyof typeof ELK_ALGORITHMS] || ELK_ALGORITHMS.LAYERED;
+
     return {
       'elk.algorithm': algorithm,
       'elk.direction': 'DOWN',
@@ -322,9 +341,8 @@ class ELKConfigurationManager {
   }
 
   private getContextConfig(context: 'root' | 'container'): Record<string, any> {
-    const padding = context === 'root' 
-      ? LAYOUT_SPACING.ROOT_PADDING 
-      : LAYOUT_SPACING.CONTAINER_PADDING;
+    const padding =
+      context === 'root' ? LAYOUT_SPACING.ROOT_PADDING : LAYOUT_SPACING.CONTAINER_PADDING;
 
     return {
       'elk.padding.left': padding.toString(),
@@ -359,7 +377,7 @@ class ELKHierarchyBuilder {
 
   private buildHierarchy(parentId: string | null, layoutType: ELKAlgorithm): ELKNode[] {
     const children: ELKNode[] = [];
-    
+
     // Add containers at this level
     const levelContainers = this.findContainersAtLevel(parentId);
     levelContainers.forEach(container => {
@@ -379,9 +397,7 @@ class ELKHierarchyBuilder {
     return this.containers.filter(container => {
       if (parentId === null) {
         // Root level - containers not contained by any other container
-        return !this.containers.some(otherContainer => 
-          otherContainer.children.has(container.id)
-        );
+        return !this.containers.some(otherContainer => otherContainer.children.has(container.id));
       } else {
         // Non-root level - containers contained by the parent
         const parentContainer = this.containers.find(c => c.id === parentId);
@@ -392,13 +408,11 @@ class ELKHierarchyBuilder {
 
   private findNodesAtLevel(parentId: string | null): GraphNode[] {
     const regularNodes = this.nodes.filter(node => node.type !== 'container');
-    
+
     return regularNodes.filter(node => {
       if (parentId === null) {
         // Root level - nodes not contained by any container
-        return !this.containers.some(container => 
-          container.children.has(node.id)
-        );
+        return !this.containers.some(container => container.children.has(node.id));
       } else {
         // Non-root level - nodes contained by the parent
         const parentContainer = this.containers.find(c => c.id === parentId);
@@ -434,7 +448,7 @@ class ELKHierarchyBuilder {
   private buildRegularNode(node: GraphNode): ELKNode {
     const width = node.dimensions?.width || VALIDATION_CONSTANTS.DEFAULT_NODE_WIDTH;
     const height = node.dimensions?.height || VALIDATION_CONSTANTS.DEFAULT_NODE_HEIGHT;
-    
+
     return {
       id: node.id,
       width,
@@ -449,7 +463,7 @@ class ELKHierarchyBuilder {
       sources: [edge.source],
       targets: [edge.target],
     }));
-    
+
     return elkEdges;
   }
 }
@@ -464,29 +478,40 @@ class PositionApplicator {
     return this.processElkNodes(elkNodes, originalNodes, containers, 0);
   }
 
-  private processElkNodes(elkNodes: ELKNode[], originalNodes: GraphNode[], containers: Container[], depth: number): any[] {
+  private processElkNodes(
+    elkNodes: ELKNode[],
+    originalNodes: GraphNode[],
+    containers: Container[],
+    depth: number
+  ): any[] {
     const layoutedNodes: any[] = [];
-    
+
     elkNodes.forEach(elkNode => {
       const processedNode = this.processElkNode(elkNode, originalNodes, containers);
       if (processedNode) {
         layoutedNodes.push(processedNode);
       }
-      
+
       // Recursively process children
       if (elkNode.children) {
-        layoutedNodes.push(...this.processElkNodes(elkNode.children, originalNodes, containers, depth + 1));
+        layoutedNodes.push(
+          ...this.processElkNodes(elkNode.children, originalNodes, containers, depth + 1)
+        );
       }
     });
-    
+
     return layoutedNodes;
   }
 
-  private processElkNode(elkNode: ELKNode, originalNodes: GraphNode[], containers: Container[]): any | null {
+  private processElkNode(
+    elkNode: ELKNode,
+    originalNodes: GraphNode[],
+    containers: Container[]
+  ): any | null {
     const originalNode = originalNodes.find(n => n.id === elkNode.id);
     const originalContainer = containers.find(c => c.id === elkNode.id);
     const original = originalNode || originalContainer;
-    
+
     if (!original) {
       return null;
     }
@@ -517,33 +542,33 @@ class NodeSorter {
     const sortedNodes: any[] = [];
     const nodeMap = new Map(layoutedNodes.map(node => [node.id, node]));
     const visited = new Set<string>();
-    
-    layoutedNodes.forEach(node => this.addNodeAndParents(node.id, nodeMap, containers, visited, sortedNodes));
-    
+
+    layoutedNodes.forEach(node =>
+      this.addNodeAndParents(node.id, nodeMap, containers, visited, sortedNodes)
+    );
+
     return sortedNodes;
   }
 
   private addNodeAndParents(
-    nodeId: string, 
-    nodeMap: Map<string, any>, 
-    containers: Container[], 
-    visited: Set<string>, 
+    nodeId: string,
+    nodeMap: Map<string, any>,
+    containers: Container[],
+    visited: Set<string>,
     sortedNodes: any[]
   ): void {
     if (visited.has(nodeId)) return;
-    
+
     const node = nodeMap.get(nodeId);
     if (!node) return;
-    
+
     // Find parent container
-    const parentContainer = containers.find(container => 
-      container.children.has(nodeId)
-    );
-    
+    const parentContainer = containers.find(container => container.children.has(nodeId));
+
     if (parentContainer && !visited.has(parentContainer.id)) {
       this.addNodeAndParents(parentContainer.id, nodeMap, containers, visited, sortedNodes);
     }
-    
+
     visited.add(nodeId);
     sortedNodes.push(node);
   }
@@ -573,7 +598,6 @@ export function createELKStateManager(): ELKStateManager {
     nodes: any[];
     edges: GraphEdge[];
   }> {
-    
     try {
       const hierarchyBuilder = new ELKHierarchyBuilder(nodes, containers, edges, configManager);
       const elkGraph = hierarchyBuilder.buildElkGraph(layoutType);
@@ -581,23 +605,28 @@ export function createELKStateManager(): ELKStateManager {
       const layoutResult = await elk.layout(elkGraph);
 
       // Apply positions back to nodes
-      const layoutedNodes = positionApplicator.applyPositions(layoutResult.children || [], nodes, containers);
+      const layoutedNodes = positionApplicator.applyPositions(
+        layoutResult.children || [],
+        nodes,
+        containers
+      );
 
       // Validate containment relationships
       const validationResult = validator.validateContainment(layoutedNodes, containers);
-      
+
       if (!validationResult.isValid) {
-        console.warn(`${LOG_PREFIXES.STATE_MANAGER} Layout validation found issues, but proceeding with layout.`);
+        console.warn(
+          `${LOG_PREFIXES.STATE_MANAGER} Layout validation found issues, but proceeding with layout.`
+        );
       }
 
       // Sort nodes so parents come before children (ReactFlow requirement)
       const sortedNodes = nodeSorter.sortNodesForReactFlow(layoutedNodes, containers);
-      
+
       return {
         nodes: sortedNodes,
         edges: edges,
       };
-
     } catch (error) {
       console.error(`${LOG_PREFIXES.STATE_MANAGER} Full layout failed:`, error);
       throw error;
@@ -624,13 +653,13 @@ export function createELKStateManager(): ELKStateManager {
     elkResult: any;
   }> {
     const isSelectiveLayout = changedContainerId !== undefined && changedContainerId !== null;
-    
+
     // For selective layout: Use full hierarchical layout with position fixing
     if (isSelectiveLayout && visualizationState) {
-      
       // Use VisualizationState method to set up position fixing - CENTRALIZED LOGIC
-      const containersWithFixing = visualizationState.getContainersRequiringLayout(changedContainerId);
-      
+      const containersWithFixing =
+        visualizationState.getContainersRequiringLayout(changedContainerId);
+
       // Combine regular edges and hyperEdges for ELK layout
       // Convert hyperEdges to GraphEdge shape for ELK (ELK doesn't distinguish types)
       const hyperAsGraph: GraphEdge[] = hyperEdges.map(he => ({
@@ -639,13 +668,13 @@ export function createELKStateManager(): ELKStateManager {
         target: he.target,
         hidden: false,
         style: he.style,
-        type: 'graph'
+        type: 'graph',
       }));
       const allEdges: GraphEdge[] = [...edges, ...hyperAsGraph];
-      
+
       // Run full hierarchical layout but with position constraints
       const result = await calculateFullLayout(nodes, allEdges, containersWithFixing, layoutType);
-      
+
       return {
         ...result,
         elkResult: null, // No separate ELK result for hierarchical layout
@@ -659,10 +688,10 @@ export function createELKStateManager(): ELKStateManager {
         target: he.target,
         hidden: false,
         style: he.style,
-        type: 'graph'
+        type: 'graph',
       }));
       const allEdges: GraphEdge[] = [...edges, ...hyperAsGraph];
-      
+
       const result = await calculateFullLayout(nodes, allEdges, containers, layoutType);
       return {
         ...result,

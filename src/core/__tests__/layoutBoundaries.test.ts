@@ -37,15 +37,15 @@ describe('LayoutBoundaries', () => {
     it('should calculate optimal boundaries', () => {
       // Test boundary calculation using container dimension adjustment
       const state = createVisualizationState();
-      
+
       // Create container with initial dimensions
-      state.setContainer('container2', { 
-        label: 'Container 2', 
+      state.setContainer('container2', {
+        label: 'Container 2',
         collapsed: false,
         position: { x: 0, y: 0 },
-        dimensions: { width: 200, height: 200 }
+        dimensions: { width: 200, height: 200 },
       });
-      
+
       // Verify initial dimensions
       const container = state.visibleContainers.find(c => c.id === 'container2');
       expect(container).toBeDefined();

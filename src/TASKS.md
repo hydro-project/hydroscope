@@ -1,6 +1,4 @@
 TASKS:
-- clean up `npx tsc --noEmit`
-- remove commented-out code
 - idiomatic "clean" TS CI script
 - spinner covering up rendering
 - efficiency of rendering and esp. search on big files

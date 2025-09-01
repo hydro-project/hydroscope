@@ -31,7 +31,10 @@ export function buildParentMap(visState: VisualizationState): Map<string, string
 }
 
 /** Sort containers by hierarchy level so parents appear before children */
-export function sortContainersByHierarchy(containers: any[], parentMap: Map<string, string>): any[] {
+export function sortContainersByHierarchy(
+  containers: any[],
+  parentMap: Map<string, string>
+): any[] {
   const getHierarchyLevel = (containerId: string): number => {
     let level = 0;
     let currentId = containerId;
@@ -105,7 +108,7 @@ export function computeChildContainerPosition(
 
   return {
     x: padding + col * (LAYOUT_CONSTANTS.CHILD_CONTAINER_WIDTH + padding),
-    y: titleHeight + row * (LAYOUT_CONSTANTS.CHILD_CONTAINER_HEIGHT + padding)
+    y: titleHeight + row * (LAYOUT_CONSTANTS.CHILD_CONTAINER_HEIGHT + padding),
   };
 }
 
@@ -138,9 +141,16 @@ export function computeNodePosition(
 }
 
 /** Get adjusted container dimensions, falling back to defaults when invalid */
-export function getAdjustedContainerDimensionsSafe(visState: VisualizationState, containerId: string) {
-  const adjusted = visState.getContainerAdjustedDimensions(containerId) || {} as any;
-  const width = safeNum(adjusted.width) > 0 ? adjusted.width : LAYOUT_CONSTANTS.DEFAULT_PARENT_CONTAINER_WIDTH;
-  const height = safeNum(adjusted.height) > 0 ? adjusted.height : LAYOUT_CONSTANTS.DEFAULT_PARENT_CONTAINER_HEIGHT;
+export function getAdjustedContainerDimensionsSafe(
+  visState: VisualizationState,
+  containerId: string
+) {
+  const adjusted = visState.getContainerAdjustedDimensions(containerId) || ({} as any);
+  const width =
+    safeNum(adjusted.width) > 0 ? adjusted.width : LAYOUT_CONSTANTS.DEFAULT_PARENT_CONTAINER_WIDTH;
+  const height =
+    safeNum(adjusted.height) > 0
+      ? adjusted.height
+      : LAYOUT_CONSTANTS.DEFAULT_PARENT_CONTAINER_HEIGHT;
   return { width, height };
 }

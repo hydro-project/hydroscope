@@ -1,6 +1,6 @@
 /**
  * JSON Schema Documentation Generator
- * 
+ *
  * AUTO-GENERATED - DO NOT EDIT MANUALLY
  * Last updated: 2025-08-19T20:20:04.673Z
  * Source: JSONParser.ts interfaces
@@ -15,25 +15,30 @@ export interface GroupingOptionSchema {
 export interface ParseResultSchema {
   state: any;
   metadata: {
-  selectedGrouping: string | null;
-  nodeCount: number;
-  edgeCount: number;
-  containerCount: number;
-  availableGroupings: any[];
-  edgeStyleConfig?: {
-  propertyMappings: Record<string, any>;
-  singlePropertyMappings?: Record<string, string>;
-  booleanPropertyPairs?: Array<{ pair: [string, string]; defaultStyle: string; altStyle: string; description?: string }>;
-  combinationRules?: any;
-  };
-  nodeTypeConfig?: {
-  defaultType?: string;
-  types?: Array<{
-  id: string;
-  label: string;
-  colorIndex: number;
-  }>;
-  };
+    selectedGrouping: string | null;
+    nodeCount: number;
+    edgeCount: number;
+    containerCount: number;
+    availableGroupings: any[];
+    edgeStyleConfig?: {
+      propertyMappings: Record<string, any>;
+      singlePropertyMappings?: Record<string, string>;
+      booleanPropertyPairs?: Array<{
+        pair: [string, string];
+        defaultStyle: string;
+        altStyle: string;
+        description?: string;
+      }>;
+      combinationRules?: any;
+    };
+    nodeTypeConfig?: {
+      defaultType?: string;
+      types?: Array<{
+        id: string;
+        label: string;
+        colorIndex: number;
+      }>;
+    };
   };
 }
 
@@ -77,7 +82,7 @@ export interface RawHierarchySchema {
 export interface RawHierarchyChoiceSchema {
   id: string;
   name: string;
-  children?: RawHierarchyItemSchema[];  // Direct children, no wrapper
+  children?: RawHierarchyItemSchema[]; // Direct children, no wrapper
 }
 
 export interface RawHierarchyItemSchema {
@@ -93,18 +98,23 @@ export interface RawGraphDataSchema {
   hierarchyChoices?: RawHierarchyChoiceSchema[];
   nodeAssignments?: Record<string, Record<string, string>>;
   edgeStyleConfig?: {
-  propertyMappings: Record<string, any>;
-  singlePropertyMappings?: Record<string, string>;
-  booleanPropertyPairs?: Array<{ pair: [string, string]; defaultStyle: string; altStyle: string; description?: string }>;
-  combinationRules?: any;
+    propertyMappings: Record<string, any>;
+    singlePropertyMappings?: Record<string, string>;
+    booleanPropertyPairs?: Array<{
+      pair: [string, string];
+      defaultStyle: string;
+      altStyle: string;
+      description?: string;
+    }>;
+    combinationRules?: any;
   };
   nodeTypeConfig?: {
-  defaultType?: string;
-  types?: Array<{
-  id: string;
-  label: string;
-  colorIndex: number;
-  }>;
+    defaultType?: string;
+    types?: Array<{
+      id: string;
+      label: string;
+      colorIndex: number;
+    }>;
   };
   metadata?: Record<string, any>;
 }
@@ -216,7 +226,7 @@ Generated: 2025-08-19T20:20:04.673Z
     requiredExample,
     optionalExample,
     completeExample,
-    description: description.trim()
+    description: description.trim(),
   };
 }
 
@@ -225,193 +235,193 @@ Generated: 2025-08-19T20:20:04.673Z
  */
 export function generateCompleteExample() {
   return {
-    "nodes": [
+    nodes: [
       {
-        "id": "web_server",
-        "nodeType": "Transform",
-        "fullLabel": "Web Server (HTTP Handler)",
-        "shortLabel": "WebSrv",
-        "semanticTags": ["critical", "backend"],
-        "data": {
-          "locationId": 1,
-          "locationType": "Process",
-          "backtrace": [
+        id: 'web_server',
+        nodeType: 'Transform',
+        fullLabel: 'Web Server (HTTP Handler)',
+        shortLabel: 'WebSrv',
+        semanticTags: ['critical', 'backend'],
+        data: {
+          locationId: 1,
+          locationType: 'Process',
+          backtrace: [
             {
-              "file": "src/server.rs",
-              "fn": "handle_request",
-              "line": 42
+              file: 'src/server.rs',
+              fn: 'handle_request',
+              line: 42,
             },
             {
-              "file": "main.rs",
-              "fn": "main",
-              "line": 15
-            }
-          ]
-        }
+              file: 'main.rs',
+              fn: 'main',
+              line: 15,
+            },
+          ],
+        },
       },
       {
-        "id": "database",
-        "nodeType": "Sink",
-        "fullLabel": "PostgreSQL Database",
-        "shortLabel": "DB",
-        "label": "Database",
-        "semanticTags": ["critical", "storage"],
-        "data": {
-          "locationId": 2,
-          "locationType": "Process"
-        }
+        id: 'database',
+        nodeType: 'Sink',
+        fullLabel: 'PostgreSQL Database',
+        shortLabel: 'DB',
+        label: 'Database',
+        semanticTags: ['critical', 'storage'],
+        data: {
+          locationId: 2,
+          locationType: 'Process',
+        },
       },
       {
-        "id": "cache",
-        "nodeType": "Transform",
-        "fullLabel": "Redis Cache (In-Memory)",
-        "shortLabel": "Cache",
-        "semanticTags": ["performance", "storage"],
+        id: 'cache',
+        nodeType: 'Transform',
+        fullLabel: 'Redis Cache (In-Memory)',
+        shortLabel: 'Cache',
+        semanticTags: ['performance', 'storage'],
       },
       {
-        "id": "load_balancer",
-        "nodeType": "Source",
-        "fullLabel": "HAProxy Load Balancer",
-        "shortLabel": "LB",
-        "semanticTags": ["network", "frontend"],
-      }
+        id: 'load_balancer',
+        nodeType: 'Source',
+        fullLabel: 'HAProxy Load Balancer',
+        shortLabel: 'LB',
+        semanticTags: ['network', 'frontend'],
+      },
     ],
-    "edges": [
+    edges: [
       {
-        "id": "e1",
-        "source": "load_balancer",
-        "target": "web_server",
-        "label": "HTTP",
-        "semanticTags": ["Network", "TotalOrder", "Unbounded"]
+        id: 'e1',
+        source: 'load_balancer',
+        target: 'web_server',
+        label: 'HTTP',
+        semanticTags: ['Network', 'TotalOrder', 'Unbounded'],
       },
       {
-        "id": "e2", 
-        "source": "web_server",
-        "target": "database",
-        "label": "SQL Query",
-        "semanticTags": ["Bounded", "TotalOrder"]
+        id: 'e2',
+        source: 'web_server',
+        target: 'database',
+        label: 'SQL Query',
+        semanticTags: ['Bounded', 'TotalOrder'],
       },
       {
-        "id": "e3",
-        "source": "web_server", 
-        "target": "cache",
-        "label": "Cache Check",
-        "semanticTags": ["Keyed", "NoOrder", "Unbounded"]
-      }
+        id: 'e3',
+        source: 'web_server',
+        target: 'cache',
+        label: 'Cache Check',
+        semanticTags: ['Keyed', 'NoOrder', 'Unbounded'],
+      },
     ],
-    "hierarchyChoices": [
+    hierarchyChoices: [
       {
-        "id": "by_layer",
-        "name": "Architecture Layer",
-        "children": [
+        id: 'by_layer',
+        name: 'Architecture Layer',
+        children: [
           {
-            "id": "frontend",
-            "name": "Frontend Layer"
+            id: 'frontend',
+            name: 'Frontend Layer',
           },
           {
-            "id": "backend", 
-            "name": "Backend Layer"
+            id: 'backend',
+            name: 'Backend Layer',
           },
           {
-            "id": "storage",
-            "name": "Storage Layer"
-          }
-        ]
+            id: 'storage',
+            name: 'Storage Layer',
+          },
+        ],
       },
       {
-        "id": "by_criticality",
-        "name": "Criticality",
-        "children": [
+        id: 'by_criticality',
+        name: 'Criticality',
+        children: [
           {
-            "id": "critical_services",
-            "name": "Critical Services"
+            id: 'critical_services',
+            name: 'Critical Services',
           },
           {
-            "id": "support_services",
-            "name": "Support Services"
-          }
-        ]
-      }
+            id: 'support_services',
+            name: 'Support Services',
+          },
+        ],
+      },
     ],
-    "nodeAssignments": {
-      "by_layer": {
-        "load_balancer": "frontend",
-        "web_server": "backend",
-        "database": "storage",
-        "cache": "storage"
+    nodeAssignments: {
+      by_layer: {
+        load_balancer: 'frontend',
+        web_server: 'backend',
+        database: 'storage',
+        cache: 'storage',
       },
-      "by_criticality": {
-        "web_server": "critical_services",
-        "database": "critical_services", 
-        "cache": "support_services",
-        "load_balancer": "support_services"
-      }
-    },
-    "edgeStyleConfig": {
-      "propertyMappings": {
-        "Bounded": "thick-stroke",
-        "Keyed": "double-line",
-        "Network": "dashed-animated",
-        "NoOrder": "wavy-line",
-        "TotalOrder": "smooth-line",
-        "Unbounded": "thin-stroke"
+      by_criticality: {
+        web_server: 'critical_services',
+        database: 'critical_services',
+        cache: 'support_services',
+        load_balancer: 'support_services',
       },
-      "combinationRules": {
-        "mutualExclusions": [],
-        "visualGroups": {}
-      }
     },
-    "nodeTypeConfig": {
-      "defaultType": "Transform",
-      "types": [
-        {
-          "id": "Source",
-          "label": "Source",
-          "colorIndex": 0
-        },
-        {
-          "id": "Transform",
-          "label": "Transform",
-          "colorIndex": 1
-        },
-        {
-          "id": "Sink",
-          "label": "Sink", 
-          "colorIndex": 2
-        },
-        {
-          "id": "Network",
-          "label": "Network",
-          "colorIndex": 3
-        }
-      ]
+    edgeStyleConfig: {
+      propertyMappings: {
+        Bounded: 'thick-stroke',
+        Keyed: 'double-line',
+        Network: 'dashed-animated',
+        NoOrder: 'wavy-line',
+        TotalOrder: 'smooth-line',
+        Unbounded: 'thin-stroke',
+      },
+      combinationRules: {
+        mutualExclusions: [],
+        visualGroups: {},
+      },
     },
-    "legend": {
-      "title": "Node Types",
-      "items": [
+    nodeTypeConfig: {
+      defaultType: 'Transform',
+      types: [
         {
-          "label": "Source",
-          "type": "Source"
+          id: 'Source',
+          label: 'Source',
+          colorIndex: 0,
         },
         {
-          "label": "Transform",
-          "type": "Transform"
+          id: 'Transform',
+          label: 'Transform',
+          colorIndex: 1,
         },
         {
-          "label": "Sink",
-          "type": "Sink"
+          id: 'Sink',
+          label: 'Sink',
+          colorIndex: 2,
         },
         {
-          "label": "Network",
-          "type": "Network"
-        }
-      ]
-    }
+          id: 'Network',
+          label: 'Network',
+          colorIndex: 3,
+        },
+      ],
+    },
+    legend: {
+      title: 'Node Types',
+      items: [
+        {
+          label: 'Source',
+          type: 'Source',
+        },
+        {
+          label: 'Transform',
+          type: 'Transform',
+        },
+        {
+          label: 'Sink',
+          type: 'Sink',
+        },
+        {
+          label: 'Network',
+          type: 'Network',
+        },
+      ],
+    },
   };
 }
 
 /**
  * Version information for schema tracking
  */
-export const SCHEMA_VERSION = "v4.0.0";
-export const LAST_UPDATED = "2025-08-19T20:20:04.673Z";
+export const SCHEMA_VERSION = 'v4.0.0';
+export const LAST_UPDATED = '2025-08-19T20:20:04.673Z';

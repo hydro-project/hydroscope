@@ -15,20 +15,20 @@ describe('Selective Layout for Individual Container Operations', () => {
     visState = new VisualizationState();
     engine = createVisualizationEngine(visState, {
       enableLogging: false,
-      layoutConfig: { algorithm: 'mrtree', direction: 'DOWN' }
+      layoutConfig: { algorithm: 'mrtree', direction: 'DOWN' },
     });
 
     // Set up a test scenario with multiple containers
     visState.setContainer('container1', {
       collapsed: false,
       hidden: false,
-      children: ['node1', 'node2']
+      children: ['node1', 'node2'],
     });
-    
+
     visState.setContainer('container2', {
       collapsed: false,
       hidden: false,
-      children: ['node3', 'node4']
+      children: ['node3', 'node4'],
     });
 
     visState.setGraphNode('node1', { label: 'Node 1', hidden: false });
@@ -61,7 +61,7 @@ describe('Selective Layout for Individual Container Operations', () => {
     // Record initial positions
     const container1Layout = visState.getContainerLayout('container1');
     const container2Layout = visState.getContainerLayout('container2');
-    
+
     console.log('📍 Initial positions:');
     console.log('  container1:', container1Layout?.position);
     console.log('  container2:', container2Layout?.position);
@@ -72,14 +72,14 @@ describe('Selective Layout for Individual Container Operations', () => {
     // Simulate the selective layout that refreshLayout would trigger
     const changedContainer = visState.getLastChangedContainer();
     expect(changedContainer).toBe('container1');
-    
+
     console.log('🔄 Running selective layout for:', changedContainer);
     await engine.runSelectiveLayout(changedContainer!);
 
     // Container1 should have new dimensions (collapsed)
     const newContainer1Layout = visState.getContainerLayout('container1');
     expect(newContainer1Layout).toBeDefined();
-    
+
     console.log('📍 Final positions:');
     console.log('  container1:', newContainer1Layout?.position);
 
@@ -92,16 +92,16 @@ describe('Selective Layout for Individual Container Operations', () => {
 
   test('ELKBridge should apply position fixing for unchanged containers', async () => {
     const elkBridge = new ELKBridge();
-    
+
     // Set up initial positions
     visState.setContainerLayout('container1', {
       position: { x: 100, y: 100 },
-      dimensions: { width: 300, height: 200 }
+      dimensions: { width: 300, height: 200 },
     });
-    
+
     visState.setContainerLayout('container2', {
       position: { x: 500, y: 100 },
-      dimensions: { width: 300, height: 200 }
+      dimensions: { width: 300, height: 200 },
     });
 
     // Test selective layout with container1 as changed

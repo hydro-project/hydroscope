@@ -1,6 +1,6 @@
 /**
  * JSON Parser for Graph Data
- * 
+ *
  * Framework-independent JSON parser that converts graph data into a VisualizationState.
  * Handles nodes, edges, hierarchies, grouping assignments and styling based on semantic tags.
  */
@@ -78,7 +78,7 @@ interface RawEdge {
 interface RawHierarchyChoice {
   id: string;
   name: string;
-  children?: RawHierarchyItem[];  // Direct children, no wrapper
+  children?: RawHierarchyItem[]; // Direct children, no wrapper
 }
 
 interface RawHierarchyItem {
@@ -97,7 +97,7 @@ interface RawGraphData {
     booleanPropertyPairs?: Array<{
       pair: [string, string];
       defaultStyle: string; // styleTag
-      altStyle: string;     // styleTag
+      altStyle: string; // styleTag
       description?: string;
       [key: string]: any;
     }>;
@@ -117,11 +117,11 @@ interface RawGraphData {
 
 /**
  * Parse graph JSON and populate a VisualizationState
- * 
+ *
  * @param jsonData - Raw graph data or JSON string
  * @param grouping - Optional hierarchy grouping to apply
  * @returns Object containing the populated state and parsing metadata
- * 
+ *
  * @example
  * ```javascript
  * const { state, metadata } = parseGraphJSON(graphData, 'myGrouping');
@@ -135,27 +135,30 @@ interface RawGraphData {
  */
 function sanitizeEdgeStyleConfig(edgeStyleConfig: any): any {
   if (!edgeStyleConfig) return undefined;
-  
+
   // Only allow semantic mapping properties, filter out raw style configurations
   const sanitized: any = {};
-  
+
   if (edgeStyleConfig.semanticMappings) {
     sanitized.semanticMappings = edgeStyleConfig.semanticMappings;
   }
-  
+
   if (edgeStyleConfig.booleanPropertyPairs) {
     sanitized.booleanPropertyPairs = edgeStyleConfig.booleanPropertyPairs;
   }
-  
+
   if (edgeStyleConfig.combinationRules) {
     sanitized.combinationRules = edgeStyleConfig.combinationRules;
   }
-  
+
   // Do not include propertyMappings with raw style objects - only allow styleTag references
   if (edgeStyleConfig.propertyMappings) {
     const sanitizedPropertyMappings: any = {};
     Object.entries(edgeStyleConfig.propertyMappings).forEach(([key, value]) => {
-      if (typeof value === 'string' || (typeof value === 'object' && value && 'styleTag' in value)) {
+      if (
+        typeof value === 'string' ||
+        (typeof value === 'object' && value && 'styleTag' in value)
+      ) {
         sanitizedPropertyMappings[key] = value;
       }
     });
@@ -163,7 +166,7 @@ function sanitizeEdgeStyleConfig(edgeStyleConfig: any): any {
       sanitized.propertyMappings = sanitizedPropertyMappings;
     }
   }
-  
+
   return Object.keys(sanitized).length > 0 ? sanitized : undefined;
 }
 
@@ -171,35 +174,34 @@ export function parseGraphJSON(
   jsonData: RawGraphData | string,
   selectedGrouping?: string
 ): ParseResult {
-  
   // Parse JSON if it's a string
   const data: RawGraphData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-  
+
   // Validate basic structure
   if (!isValidGraphData(data)) {
     throw new Error('Invalid graph data: missing nodes or edges');
   }
-  
+
   const state = createVisualizationState();
-  
+
   // Parse metadata
   const metadata = extractMetadata(data);
-  
+
   // Determine which grouping to use
   const grouping = selectGrouping(data, selectedGrouping);
-  
+
   // Parse nodes first (base graph nodes)
   parseNodes(data.nodes, state);
-  
+
   // Parse edges
   parseEdges(data.edges, state);
-  
+
   // Parse hierarchy and create containers
   let containerCount = 0;
   if (grouping) {
     containerCount = parseHierarchy(data, grouping, state);
   }
-  
+
   return {
     state,
     metadata: {
@@ -208,36 +210,35 @@ export function parseGraphJSON(
       selectedGrouping: grouping,
       containerCount,
       availableGroupings: getAvailableGroupings(data),
-  // Do not pass through raw styleConfig – visuals are controlled by renderer.
-  // Only allow semantic edge style config with styleTag/propertyMappings.
-  edgeStyleConfig: sanitizeEdgeStyleConfig(data.edgeStyleConfig),
-      nodeTypeConfig: metadata.nodeTypeConfig
-    }
+      // Do not pass through raw styleConfig – visuals are controlled by renderer.
+      // Only allow semantic edge style config with styleTag/propertyMappings.
+      edgeStyleConfig: sanitizeEdgeStyleConfig(data.edgeStyleConfig),
+      nodeTypeConfig: metadata.nodeTypeConfig,
+    },
   };
 }
 
 /**
  * Create a reusable parser instance for processing multiple graph datasets.
- * 
+ *
  * @param options - Parser configuration options
  * @returns Configured parser instance with parse method
- * 
+ *
  * @example
  * ```javascript
  * const parser = createGraphParser({
  *   enableValidation: true,
  *   defaultStyle: 'highlighted'
  * });
- * 
+ *
  * const result1 = parser.parse(data1);
  * const result2 = parser.parse(data2);
  * ```
  */
-export function createGraphParser(options: ParserOptions = {}): { parse: (data: RawGraphData | string, grouping?: string) => ParseResult } {
-  const {
-    validateData = true,
-    strictMode = false
-  } = options;
+export function createGraphParser(options: ParserOptions = {}): {
+  parse: (data: RawGraphData | string, grouping?: string) => ParseResult;
+} {
+  const { validateData = true, strictMode = false } = options;
 
   return {
     parse: (data: RawGraphData | string, grouping?: string): ParseResult => {
@@ -251,16 +252,16 @@ export function createGraphParser(options: ParserOptions = {}): { parse: (data: 
           }
         }
       }
-      
+
       return parseGraphJSON(data, grouping);
-    }
+    },
   };
-}/**
+} /**
  * Extract available hierarchical groupings from graph JSON data.
- * 
+ *
  * @param jsonData - Raw graph data or JSON string
  * @returns Array of available grouping options
- * 
+ *
  * @example
  * ```javascript
  * const groupings = getAvailableGroupings(graphData);
@@ -272,7 +273,7 @@ export function getAvailableGroupings(jsonData: RawGraphData | string): Grouping
   if (data.hierarchyChoices && Array.isArray(data.hierarchyChoices)) {
     return data.hierarchyChoices.map(choice => ({
       id: choice.id,
-      name: choice.name || choice.id
+      name: choice.name || choice.id,
     }));
   }
   return [];
@@ -281,7 +282,7 @@ export function getAvailableGroupings(jsonData: RawGraphData | string): Grouping
 /**
  * Validate Hydro graph JSON data structure and content.
  * Provides detailed validation results including errors and warnings.
- * 
+ *
  * @param jsonData - The JSON data (object or JSON string)
  * @returns Validation result object
  * @example
@@ -301,17 +302,17 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
     const data: RawGraphData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
     const errors: string[] = [];
     const warnings: string[] = [];
-    
+
     // Check basic structure
     if (!data || typeof data !== 'object') {
       errors.push('Data must be an object');
       return { isValid: false, errors, warnings, nodeCount: 0, edgeCount: 0, hierarchyCount: 0 };
     }
-    
+
     // 🔥 VALIDATE: JSON must NOT contain mutable state fields
     // These fields represent UI state and should be managed by VisualizationState only
     const forbiddenFields = ['collapsed', 'hidden', 'style'];
-    
+
     // Check nodes for forbidden fields
     if (Array.isArray(data.nodes)) {
       for (let i = 0; i < data.nodes.length; i++) {
@@ -319,17 +320,21 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
         if (node) {
           for (const forbiddenField of forbiddenFields) {
             if (forbiddenField in node) {
-              errors.push(`Node '${node.id || `at index ${i}`}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`);
+              errors.push(
+                `Node '${node.id || `at index ${i}`}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`
+              );
             }
           }
           // Validate semanticTags if present
           if ('semanticTags' in node && !Array.isArray(node.semanticTags)) {
-            errors.push(`Node '${node.id || `at index ${i}`}' has invalid semanticTags - must be an array of strings.`);
+            errors.push(
+              `Node '${node.id || `at index ${i}`}' has invalid semanticTags - must be an array of strings.`
+            );
           }
         }
       }
     }
-    
+
     // Check edges for forbidden fields
     if (Array.isArray(data.edges)) {
       for (let i = 0; i < data.edges.length; i++) {
@@ -337,17 +342,21 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
         if (edge) {
           for (const forbiddenField of forbiddenFields) {
             if (forbiddenField in edge) {
-              errors.push(`Edge '${edge.id || `at index ${i}`}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`);
+              errors.push(
+                `Edge '${edge.id || `at index ${i}`}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`
+              );
             }
           }
           // Validate semanticTags if present
           if ('semanticTags' in edge && !Array.isArray(edge.semanticTags)) {
-            errors.push(`Edge '${edge.id || `at index ${i}`}' has invalid semanticTags - must be an array of strings.`);
+            errors.push(
+              `Edge '${edge.id || `at index ${i}`}' has invalid semanticTags - must be an array of strings.`
+            );
           }
         }
       }
     }
-    
+
     // Check hierarchyChoices for forbidden fields
     if (data.hierarchyChoices) {
       for (const choice of data.hierarchyChoices) {
@@ -357,7 +366,9 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
             for (const item of items) {
               for (const forbiddenField of forbiddenFields) {
                 if (forbiddenField in item) {
-                  errors.push(`Container '${item.id}' in hierarchy '${hierarchyId}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`);
+                  errors.push(
+                    `Container '${item.id}' in hierarchy '${hierarchyId}' contains forbidden mutable state field '${forbiddenField}'. JSON should only contain immutable graph structure.`
+                  );
                 }
               }
               if (item.children && Array.isArray(item.children)) {
@@ -369,7 +380,7 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
         }
       }
     }
-    
+
     // Validate nodes
     if (!Array.isArray(data.nodes)) {
       errors.push('Missing or invalid nodes array');
@@ -392,7 +403,7 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
         }
       }
     }
-    
+
     // Validate edges
     if (!Array.isArray(data.edges)) {
       errors.push('Missing or invalid edges array');
@@ -420,7 +431,7 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
         }
       }
     }
-    
+
     // Validate hierarchyChoices (optional)
     let hierarchyCount = 0;
     if (data.hierarchyChoices) {
@@ -444,16 +455,15 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
         }
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors,
       warnings,
       nodeCount: data.nodes?.length || 0,
       edgeCount: data.edges?.length || 0,
-      hierarchyCount
+      hierarchyCount,
     };
-    
   } catch (error) {
     return {
       isValid: false,
@@ -461,7 +471,7 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
       warnings: [],
       nodeCount: 0,
       edgeCount: 0,
-      hierarchyCount: 0
+      hierarchyCount: 0,
     };
   }
 }
@@ -474,10 +484,7 @@ export function validateGraphJSON(jsonData: RawGraphData | string): ValidationRe
  * @returns true if data has valid graph structure (nodes and edges arrays)
  */
 function isValidGraphData(data: any): data is RawGraphData {
-  return data && 
-         typeof data === 'object' && 
-         Array.isArray(data.nodes) && 
-         Array.isArray(data.edges);
+  return data && typeof data === 'object' && Array.isArray(data.nodes) && Array.isArray(data.edges);
 }
 
 function extractMetadata(data: RawGraphData): Record<string, any> {
@@ -487,11 +494,14 @@ function extractMetadata(data: RawGraphData): Record<string, any> {
     hasHierarchies: !!(data.hierarchyChoices && data.hierarchyChoices.length > 0),
     nodeTypeConfig: data.nodeTypeConfig || null,
     nodeTypeItems: data.nodeTypeConfig?.types?.map(t => ({ label: t.label, type: t.id })) || [],
-    ...data.metadata
+    ...data.metadata,
   };
 }
 
-function selectGrouping(data: RawGraphData, selectedGrouping: string | null | undefined): string | null {
+function selectGrouping(
+  data: RawGraphData,
+  selectedGrouping: string | null | undefined
+): string | null {
   if (data.hierarchyChoices && data.hierarchyChoices.length > 0) {
     if (selectedGrouping) {
       const found = data.hierarchyChoices.find(h => h.id === selectedGrouping);
@@ -507,10 +517,24 @@ function parseNodes(nodes: RawNode[], state: VisualizationState): void {
   for (const rawNode of nodes) {
     try {
       // Extract immutable properties and filter out UI state fields
-      const { id, shortLabel, fullLabel, nodeType, semanticTags, position, type, expanded, collapsed, hidden, style, ...safeProps } = rawNode;
+      const {
+        id,
+        shortLabel,
+        fullLabel,
+        nodeType,
+        semanticTags,
+        position,
+        type,
+        expanded,
+        collapsed,
+        hidden,
+        style,
+        ...safeProps
+      } = rawNode;
       // Resolve nodeType with fallbacks: explicit nodeType > legacy 'type' > default
-      const resolvedNodeType = (nodeType ?? (typeof type === 'string' ? type : undefined) ?? 'default');
-      
+      const resolvedNodeType =
+        nodeType ?? (typeof type === 'string' ? type : undefined) ?? 'default';
+
       state.addGraphNode(id, {
         label: shortLabel || id, // Initial display label (starts with short, can be toggled to full)
         shortLabel: shortLabel || id,
@@ -520,7 +544,7 @@ function parseNodes(nodes: RawNode[], state: VisualizationState): void {
         hidden: false,
         nodeType: resolvedNodeType,
         semanticTags: semanticTags || [],
-        ...safeProps // Only include non-UI-state properties
+        ...safeProps, // Only include non-UI-state properties
       });
     } catch (error) {
       console.warn(`Failed to parse node '${rawNode.id}':`, error);
@@ -533,14 +557,14 @@ function parseEdges(edges: RawEdge[], state: VisualizationState): void {
     try {
       // Extract immutable properties and filter out UI state fields
       const { id, source, target, semanticTags, style, hidden, animated, ...safeProps } = rawEdge;
-      
+
       state.addGraphEdge(id, {
         source,
         target,
         style: EDGE_STYLES.DEFAULT, // Default style - will be applied by bridge based on properties
         hidden: false,
         semanticTags: semanticTags || [],
-        ...safeProps // Only include non-UI-state properties
+        ...safeProps, // Only include non-UI-state properties
       });
     } catch (error) {
       console.warn(`Failed to parse edge '${rawEdge.id}':`, error);
@@ -567,7 +591,7 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
         state.addContainer(item.id, {
           label: item.name || item.id,
           children,
-          collapsed: false
+          collapsed: false,
         });
         containerCount++;
         if (parentId) {
@@ -577,7 +601,7 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
             if (!parentChildren.has(item.id)) {
               state.addContainer(parentId, {
                 ...parent,
-                children: [...parentChildren, item.id]
+                children: [...parentChildren, item.id],
               });
             }
           }
@@ -597,7 +621,7 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
           if (!currentChildren.has(nodeId)) {
             state.addContainer(containerId, {
               ...container,
-              children: [...currentChildren, nodeId]
+              children: [...currentChildren, nodeId],
             });
           }
         }
@@ -612,13 +636,13 @@ function parseHierarchy(data: RawGraphData, groupingId: string, state: Visualiza
  * Combines metadata from parsing with optional overrides
  */
 export function createRenderConfig(
-  parseResult: ParseResult, 
+  parseResult: ParseResult,
   overrides: Partial<RenderConfig> = {}
 ): RenderConfig {
   return {
     // Include edge style config from parsing
     edgeStyleConfig: parseResult.metadata.edgeStyleConfig,
     // Apply any overrides
-    ...overrides
+    ...overrides,
   };
 }

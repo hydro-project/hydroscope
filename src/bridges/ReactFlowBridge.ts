@@ -1,6 +1,6 @@
 /**
  * @fileoverview ReactFlow Bridge - Converts VisualizationState to ReactFlow format
- * 
+ *
  * This bridge converts VisualizationState to ReactFlow's expected data structures.
  * ReactFlow only sees unified edges (hyperedges are included transparently).
  */
@@ -18,7 +18,7 @@ import {
   computeChildContainerPosition,
   computeRootContainerPosition,
   computeNodePosition,
-  getAdjustedContainerDimensionsSafe
+  getAdjustedContainerDimensionsSafe,
 } from './ReactFlowUtils';
 
 // ReactFlow types
@@ -84,7 +84,7 @@ export class ReactFlowBridge {
   /**
    * Main conversion method: Convert VisualizationState to ReactFlow format
    * This is the primary public interface, symmetric with ELKBridge.layoutVisualizationState()
-   * 
+   *
    * IMPORTANT: This method ALWAYS recalculates handles fresh from current positions
    * to ensure handles are correct after any layout operations (collapse/expand/ELK layout)
    */
@@ -100,7 +100,7 @@ export class ReactFlowBridge {
   }
 
   // ============================================================================
-  // Core Conversion Logic  
+  // Core Conversion Logic
   // ============================================================================
 
   /**
@@ -117,7 +117,7 @@ export class ReactFlowBridge {
     // Convert containers using ELK positions
     this.convertContainersFromELK(visState, nodes, parentMap);
 
-    // Convert regular nodes using ELK positions  
+    // Convert regular nodes using ELK positions
     this.convertNodesFromELK(visState, nodes, parentMap);
 
     // Convert edges using smart handle selection
@@ -129,7 +129,7 @@ export class ReactFlowBridge {
 
     return { nodes, edges };
   }
-  
+
   // ============================================================================
   // Utility Methods
   // ============================================================================
@@ -177,8 +177,7 @@ export class ReactFlowBridge {
       // Get adjusted dimensions that include label space (matches test expectations)
       const { width, height } = getAdjustedContainerDimensionsSafe(visState, container.id);
 
-      const nodeCount = container.collapsed ?
-        visState.countRecursiveLeafNodes(container.id) : 0;
+      const nodeCount = container.collapsed ? visState.countRecursiveLeafNodes(container.id) : 0;
 
       // HANDLE FIX: Use 'standard' type for collapsed containers to match regular nodes
       // This ensures ReactFlow treats both node types identically for handle positioning
@@ -196,14 +195,14 @@ export class ReactFlowBridge {
           colorPalette: this.colorPalette,
           width,
           height,
-          nodeCount: nodeCount
+          nodeCount: nodeCount,
         },
         style: {
           width,
-          height
+          height,
         },
         parentId: parentId,
-        extent: parentId ? 'parent' : undefined // Constrain to parent if nested
+        extent: parentId ? 'parent' : undefined, // Constrain to parent if nested
       };
 
       nodes.push(containerNode);
@@ -248,19 +247,19 @@ export class ReactFlowBridge {
           // HANDLE FIX: Add explicit dimensions to data (like collapsed containers)
           width: nodeWidth,
           height: nodeHeight,
-          ...this.extractCustomProperties(node)
+          ...this.extractCustomProperties(node),
         },
         style: {
           backgroundColor: nodeColors.primary,
           border: `1px solid ${nodeColors.border}`,
           // HANDLE FIX: Add explicit dimensions to style (like collapsed containers)
           width: nodeWidth,
-          height: nodeHeight
+          height: nodeHeight,
         },
         parentId,
         connectable: CURRENT_HANDLE_STRATEGY === 'floating',
         // ReactFlow sub-flow: constrain children within parent bounds
-        extent: parentId ? 'parent' : undefined
+        extent: parentId ? 'parent' : undefined,
       };
 
       nodes.push(standardNode);
@@ -276,7 +275,7 @@ export class ReactFlowBridge {
     const edgeConverterOptions: EdgeConverterOptions = {
       edgeStyleConfig: this.edgeStyleConfig,
       showPropertyLabels: true,
-      enableAnimations: true
+      enableAnimations: true,
     };
     const convertedEdges = convertEdgesToReactFlow(visibleEdges, edgeConverterOptions);
 
@@ -304,7 +303,11 @@ export class ReactFlowBridge {
    * SIMPLIFIED: Get edge handles using a fixed strategy
    * Instead of complex coordinate calculations, use a simple rule-based approach
    */
-  getEdgeHandles(visState: VisualizationState, edgeId: string, reactFlowNodes: ReactFlowNode[]): { sourceHandle?: string; targetHandle?: string } {
+  getEdgeHandles(
+    visState: VisualizationState,
+    edgeId: string,
+    reactFlowNodes: ReactFlowNode[]
+  ): { sourceHandle?: string; targetHandle?: string } {
     const edge = visState.getGraphEdge(edgeId) || visState.getHyperEdge(edgeId);
     if (!edge) {
       return {};
@@ -315,8 +318,10 @@ export class ReactFlowBridge {
       const targetReactFlowNode = reactFlowNodes?.find(n => n.id === edge.target);
 
       if (sourceReactFlowNode && targetReactFlowNode) {
-        const sourceCenterX = sourceReactFlowNode.position.x + (sourceReactFlowNode.data?.width || 120) / 2;
-        const targetCenterX = targetReactFlowNode.position.x + (targetReactFlowNode.data?.width || 120) / 2;
+        const sourceCenterX =
+          sourceReactFlowNode.position.x + (sourceReactFlowNode.data?.width || 120) / 2;
+        const targetCenterX =
+          targetReactFlowNode.position.x + (targetReactFlowNode.data?.width || 120) / 2;
         const deltaX = targetCenterX - sourceCenterX;
 
         if (Math.abs(deltaX) > 50) {
@@ -329,7 +334,7 @@ export class ReactFlowBridge {
 
     return {
       sourceHandle: 'out-bottom',
-      targetHandle: 'in-top'
+      targetHandle: 'in-top',
     };
   }
 
@@ -337,10 +342,15 @@ export class ReactFlowBridge {
    * Assign handles to edges after all nodes are created
    * This ensures handle calculation uses the same coordinate system as ReactFlow rendering
    */
-  private assignHandlesToEdges(visState: VisualizationState, edges: ReactFlowEdge[], nodes: ReactFlowNode[]): void {
+  private assignHandlesToEdges(
+    visState: VisualizationState,
+    edges: ReactFlowEdge[],
+    nodes: ReactFlowNode[]
+  ): void {
     edges.forEach(reactFlowEdge => {
       // Find the original edge to get its ID
-      const originalEdge = visState.getGraphEdge(reactFlowEdge.id) || visState.getHyperEdge(reactFlowEdge.id);
+      const originalEdge =
+        visState.getGraphEdge(reactFlowEdge.id) || visState.getHyperEdge(reactFlowEdge.id);
       if (originalEdge) {
         const smartHandles = this.getEdgeHandles(visState, reactFlowEdge.id, nodes);
         reactFlowEdge.sourceHandle = smartHandles.sourceHandle || 'out-bottom';
@@ -353,7 +363,10 @@ export class ReactFlowBridge {
    * Recalculate handles for existing ReactFlow data after layout changes
    * This is the aggressive approach to ensure handles are always correct after ELK layout
    */
-  recalculateHandlesAfterLayout(visState: VisualizationState, reactFlowData: ReactFlowData): ReactFlowData {
+  recalculateHandlesAfterLayout(
+    visState: VisualizationState,
+    reactFlowData: ReactFlowData
+  ): ReactFlowData {
     if (CURRENT_HANDLE_STRATEGY !== 'discrete') {
       return reactFlowData; // No handle recalculation needed for other strategies
     }
@@ -366,7 +379,7 @@ export class ReactFlowBridge {
         return {
           ...edge,
           sourceHandle: smartHandles.sourceHandle || edge.sourceHandle || 'out-bottom',
-          targetHandle: smartHandles.targetHandle || edge.targetHandle || 'in-top'
+          targetHandle: smartHandles.targetHandle || edge.targetHandle || 'in-top',
         };
       }
       return edge;
@@ -374,7 +387,7 @@ export class ReactFlowBridge {
 
     return {
       nodes: reactFlowData.nodes,
-      edges: updatedEdges
+      edges: updatedEdges,
     };
   }
 
@@ -382,7 +395,12 @@ export class ReactFlowBridge {
    * Static method to recalculate handles after any layout operation
    * This can be called from anywhere in the application after ELK layout
    */
-  static recalculateHandlesAfterLayoutStatic(visState: VisualizationState, reactFlowData: ReactFlowData, colorPalette?: any, edgeStyleConfig?: any): ReactFlowData {
+  static recalculateHandlesAfterLayoutStatic(
+    visState: VisualizationState,
+    reactFlowData: ReactFlowData,
+    colorPalette?: any,
+    edgeStyleConfig?: any
+  ): ReactFlowData {
     // Create a temporary bridge instance to use the handle calculation logic
     const tempBridge = new ReactFlowBridge(colorPalette, edgeStyleConfig);
     return tempBridge.recalculateHandlesAfterLayout(visState, reactFlowData);
@@ -396,9 +414,19 @@ export class ReactFlowBridge {
 
     // Filter out known properties to get custom ones
     const knownProps = new Set([
-      'id', 'label', 'style', 'hidden', 'layout',
-      'source', 'target', 'children', 'collapsed',
-      'x', 'y', 'width', 'height'
+      'id',
+      'label',
+      'style',
+      'hidden',
+      'layout',
+      'source',
+      'target',
+      'children',
+      'collapsed',
+      'x',
+      'y',
+      'width',
+      'height',
     ]);
 
     Object.entries(element).forEach(([key, value]) => {

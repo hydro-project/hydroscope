@@ -1,6 +1,6 @@
 /**
  * @fileoverview Handle Configuration for ReactFlow Nodes
- * 
+ *
  * Centralized configuration for ReactFlow v12 continuous handles to maximize layout flexibility.
  * This encapsulates handle behavior so it can be easily changed across the entire system.
  */
@@ -40,7 +40,7 @@ export const HANDLE_STYLES = {
     width: '8px',
     height: '8px',
     opacity: 0, // Invisible handles for floating edges
-  }
+  },
 } as const;
 
 /**
@@ -56,7 +56,7 @@ export const HANDLE_STRATEGIES = {
     sourceHandles: [] as HandleConfig[], // No discrete handles needed
     targetHandles: [] as HandleConfig[], // ReactFlow handles connections automatically
   },
-  
+
   /**
    * Discrete handles - specific connection points
    * More controlled but less flexible
@@ -65,19 +65,51 @@ export const HANDLE_STRATEGIES = {
   discrete: {
     enableContinuousHandles: false,
     sourceHandles: [
-      { id: 'out-top', position: Position.Top, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
-      { id: 'out-right', position: Position.Right, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
-      { id: 'out-bottom', position: Position.Bottom, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
-      { id: 'out-left', position: Position.Left, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
+      {
+        id: 'out-top',
+        position: Position.Top,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
+      {
+        id: 'out-right',
+        position: Position.Right,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
+      {
+        id: 'out-bottom',
+        position: Position.Bottom,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
+      {
+        id: 'out-left',
+        position: Position.Left,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
     ] as HandleConfig[],
     targetHandles: [
-      { id: 'in-top', position: Position.Top, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
-      { id: 'in-right', position: Position.Right, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
-      { id: 'in-bottom', position: Position.Bottom, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
-      { id: 'in-left', position: Position.Left, style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' } },
+      {
+        id: 'in-top',
+        position: Position.Top,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
+      {
+        id: 'in-right',
+        position: Position.Right,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
+      {
+        id: 'in-bottom',
+        position: Position.Bottom,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
+      {
+        id: 'in-left',
+        position: Position.Left,
+        style: { opacity: 0.1, width: '6px', height: '6px', background: '#666' },
+      },
     ] as HandleConfig[],
   },
-  
+
   /**
    * Floating handles - whole node connectivity with smart edge attachment
    * Uses custom floating edge component for continuous-handle-like UX
@@ -87,18 +119,42 @@ export const HANDLE_STRATEGIES = {
     enableContinuousHandles: false,
     sourceHandles: [
       { id: 'out-top', position: Position.Top, style: { opacity: 0, width: '8px', height: '8px' } },
-      { id: 'out-right', position: Position.Right, style: { opacity: 0, width: '8px', height: '8px' } },
-      { id: 'out-bottom', position: Position.Bottom, style: { opacity: 0, width: '8px', height: '8px' } },
-      { id: 'out-left', position: Position.Left, style: { opacity: 0, width: '8px', height: '8px' } },
+      {
+        id: 'out-right',
+        position: Position.Right,
+        style: { opacity: 0, width: '8px', height: '8px' },
+      },
+      {
+        id: 'out-bottom',
+        position: Position.Bottom,
+        style: { opacity: 0, width: '8px', height: '8px' },
+      },
+      {
+        id: 'out-left',
+        position: Position.Left,
+        style: { opacity: 0, width: '8px', height: '8px' },
+      },
     ] as HandleConfig[],
     targetHandles: [
       { id: 'in-top', position: Position.Top, style: { opacity: 0, width: '8px', height: '8px' } },
-      { id: 'in-right', position: Position.Right, style: { opacity: 0, width: '8px', height: '8px' } },
-      { id: 'in-bottom', position: Position.Bottom, style: { opacity: 0, width: '8px', height: '8px' } },
-      { id: 'in-left', position: Position.Left, style: { opacity: 0, width: '8px', height: '8px' } },
+      {
+        id: 'in-right',
+        position: Position.Right,
+        style: { opacity: 0, width: '8px', height: '8px' },
+      },
+      {
+        id: 'in-bottom',
+        position: Position.Bottom,
+        style: { opacity: 0, width: '8px', height: '8px' },
+      },
+      {
+        id: 'in-left',
+        position: Position.Left,
+        style: { opacity: 0, width: '8px', height: '8px' },
+      },
     ] as HandleConfig[],
   },
-  
+
   /**
    * No handles - let ReactFlow auto-connect
    * Simplest approach but least control
@@ -107,7 +163,7 @@ export const HANDLE_STRATEGIES = {
     enableContinuousHandles: false,
     sourceHandles: [] as HandleConfig[],
     targetHandles: [] as HandleConfig[],
-  }
+  },
 } as const;
 
 /**
@@ -126,5 +182,3 @@ export const CURRENT_HANDLE_STRATEGY: HandleStrategy = 'discrete';
 export function getHandleConfig() {
   return HANDLE_STRATEGIES[CURRENT_HANDLE_STRATEGY];
 }
-
-

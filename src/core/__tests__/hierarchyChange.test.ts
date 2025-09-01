@@ -10,11 +10,11 @@ describe('Hierarchy Change Functionality', () => {
     nodes: [
       { id: 'node1', label: 'Node 1', nodeType: 'Source' },
       { id: 'node2', label: 'Node 2', nodeType: 'Transform' },
-      { id: 'node3', label: 'Node 3', nodeType: 'Sink' }
+      { id: 'node3', label: 'Node 3', nodeType: 'Sink' },
     ],
     edges: [
       { id: 'edge1', source: 'node1', target: 'node2' },
-      { id: 'edge2', source: 'node2', target: 'node3' }
+      { id: 'edge2', source: 'node2', target: 'node3' },
     ],
     hierarchyChoices: [
       {
@@ -24,37 +24,37 @@ describe('Hierarchy Change Functionality', () => {
           {
             id: 'container1',
             name: 'Container 1',
-            children: []
-          }
-        ]
+            children: [],
+          },
+        ],
       },
       {
-        id: 'grouping2', 
+        id: 'grouping2',
         name: 'Grouping 2',
         children: [
           {
             id: 'container2',
             name: 'Container 2',
-            children: []
-          }
-        ]
-      }
+            children: [],
+          },
+        ],
+      },
     ],
     nodeAssignments: {
-      'grouping1': {
-        'node1': 'container1',
-        'node2': 'container1'
+      grouping1: {
+        node1: 'container1',
+        node2: 'container1',
       },
-      'grouping2': {
-        'node2': 'container2',
-        'node3': 'container2'
-      }
-    }
+      grouping2: {
+        node2: 'container2',
+        node3: 'container2',
+      },
+    },
   };
 
   it('should parse graph with default grouping', () => {
     const result = parseGraphJSON(mockGraphData);
-    
+
     expect(result.state).toBeDefined();
     expect(result.metadata.selectedGrouping).toBe('grouping1'); // First available
     expect(result.metadata.availableGroupings).toHaveLength(2);
@@ -63,11 +63,11 @@ describe('Hierarchy Change Functionality', () => {
 
   it('should parse graph with specific grouping', () => {
     const result = parseGraphJSON(mockGraphData, 'grouping2');
-    
+
     expect(result.state).toBeDefined();
     expect(result.metadata.selectedGrouping).toBe('grouping2');
     expect(result.metadata.containerCount).toBe(1); // One container from grouping2
-    
+
     // Verify the right container was created
     const container = result.state.getContainer('container2');
     expect(container).toBeDefined();
@@ -86,7 +86,7 @@ describe('Hierarchy Change Functionality', () => {
     if (container1) {
       expect(Array.from(container1.children)).toEqual(['node1', 'node2']);
     }
-    
+
     // Re-parse with second grouping (simulating hierarchy change)
     const result2 = parseGraphJSON(mockGraphData, 'grouping2');
     const container2 = result2.state.getContainer('container2');
@@ -95,7 +95,7 @@ describe('Hierarchy Change Functionality', () => {
     if (container2) {
       expect(Array.from(container2.children)).toEqual(['node2', 'node3']);
     }
-    
+
     // Verify the first container doesn't exist in the second grouping
     const nonExistentContainer = result2.state.getContainer('container1');
     expect(nonExistentContainer).toBeUndefined();

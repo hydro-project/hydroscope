@@ -24,7 +24,9 @@ export function getStroke(styleCfg: StyleCfg, style: any, defaults: StrokeDefaul
   const stroke = (style?.stroke ?? styleCfg.edgeColor ?? defaults.color ?? '#1976d2') as string;
   const strokeWidth = (style?.strokeWidth ?? styleCfg.edgeWidth ?? defaults.width ?? 2) as number;
   // Priority: explicit style -> explicit default dash -> cfg-based dash -> undefined
-  const strokeDasharray = (style?.strokeDasharray ?? defaults.dash ?? (styleCfg.edgeDashed ? '6,6' : undefined)) as string | undefined;
+  const strokeDasharray = (style?.strokeDasharray ??
+    defaults.dash ??
+    (styleCfg.edgeDashed ? '6,6' : undefined)) as string | undefined;
   return { stroke, strokeWidth, strokeDasharray } as const;
 }
 
@@ -51,5 +53,9 @@ export function isDoubleLineEdge(props: EdgeProps): boolean {
 /** Whether this edge should render with a wavy path. */
 export function isWavyEdge(props: EdgeProps): boolean {
   const style: any = props.style as any;
-  return Boolean(style?.filter?.includes('edge-wavy') || (props as any).data?.processedStyle?.waviness || style?.waviness);
+  return Boolean(
+    style?.filter?.includes('edge-wavy') ||
+      (props as any).data?.processedStyle?.waviness ||
+      style?.waviness
+  );
 }

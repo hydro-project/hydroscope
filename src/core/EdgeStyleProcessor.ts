@@ -1,7 +1,7 @@
-  // DEBUG: Log mapping resolution (removed duplicate, see below for correct placement)
+// DEBUG: Log mapping resolution (removed duplicate, see below for correct placement)
 /**
  * Edge Style Processor
- * 
+ *
  * Processes edge properties and applies appropriate visual styles based on
  * the edgeStyleConfig from the JSON data.
  */
@@ -21,26 +21,30 @@ export interface EdgeStyleConfig {
     mutualExclusions?: string[][];
     visualGroups?: Record<string, string[]>;
   };
-  propertyMappings?: Record<string, string | {
-    reactFlowType?: string;
-    style?: Record<string, any>;
-    animated?: boolean;
-    label?: string;
-    styleTag?: string;
-  }>;
+  propertyMappings?: Record<
+    string,
+    | string
+    | {
+        reactFlowType?: string;
+        style?: Record<string, any>;
+        animated?: boolean;
+        label?: string;
+        styleTag?: string;
+      }
+  >;
 }
 
 // Fixed style categories defined by the visualizer
 export const EDGE_STYLE_CATEGORIES = {
-  "line-pattern": ["solid", "dashed", "dotted", "dash-dot"],
-  "line-width": [1, 2, 3, 4],
-  "animation": ["static", "animated"],
-  "line-style": ["single", "double"],
-  "halo": ["none", "light-blue", "light-red", "light-green"],
+  'line-pattern': ['solid', 'dashed', 'dotted', 'dash-dot'],
+  'line-width': [1, 2, 3, 4],
+  animation: ['static', 'animated'],
+  'line-style': ['single', 'double'],
+  halo: ['none', 'light-blue', 'light-red', 'light-green'],
   // collection markers; we map to native React Flow markers where possible
-  "arrowhead": ["none", "triangle-open", "triangle-filled", "circle-filled", "diamond-open"],
+  arrowhead: ['none', 'triangle-open', 'triangle-filled', 'circle-filled', 'diamond-open'],
   // ordering
-  "waviness": ["none", "wavy"]
+  waviness: ['none', 'wavy'],
 } as const;
 
 export interface ProcessedEdgeStyle {
@@ -81,7 +85,7 @@ function processWithMappings(
   edgeProperties: string[],
   styleConfig: EdgeStyleConfig,
   originalLabel?: string
-  ): ProcessedEdgeStyle {
+): ProcessedEdgeStyle {
   // Handle new semantic mappings system
   if (styleConfig.semanticMappings) {
     return processWithSemanticMappings(edgeProperties, styleConfig, originalLabel);
@@ -105,13 +109,15 @@ function processWithMappings(
  * Validate semantic mappings to ensure no style property appears in multiple groups
  * (but it's OK for the same style property to appear in different options within the same group)
  */
-function validateSemanticMappings(semanticMappings: Record<string, Record<string, Record<string, string | number>>>): void {
+function validateSemanticMappings(
+  semanticMappings: Record<string, Record<string, Record<string, string | number>>>
+): void {
   const stylePropertyToGroups: Record<string, string[]> = {};
 
   // Track which groups use each style property
   for (const [groupName, group] of Object.entries(semanticMappings)) {
     const groupStyleProperties = new Set<string>();
-    
+
     // Collect all style properties used in this group
     for (const [, styleMapping] of Object.entries(group)) {
       for (const styleProperty of Object.keys(styleMapping)) {
@@ -132,7 +138,9 @@ function validateSemanticMappings(semanticMappings: Record<string, Record<string
   const conflicts: string[] = [];
   for (const [styleProperty, groups] of Object.entries(stylePropertyToGroups)) {
     if (groups.length > 1) {
-      conflicts.push(`Style property "${styleProperty}" is used in multiple groups: ${groups.join(', ')}`);
+      conflicts.push(
+        `Style property "${styleProperty}" is used in multiple groups: ${groups.join(', ')}`
+      );
     }
   }
 
@@ -148,7 +156,7 @@ function processWithSemanticMappings(
   edgeProperties: string[],
   styleConfig: EdgeStyleConfig,
   originalLabel?: string
-  ): ProcessedEdgeStyle {
+): ProcessedEdgeStyle {
   if (!styleConfig.semanticMappings) {
     return getDefaultStyle();
   }
@@ -188,7 +196,7 @@ function convertStyleSettingsToReactFlow(
   styleSettings: Record<string, string | number>,
   appliedProperties: string[],
   originalLabel?: string
-  ): ProcessedEdgeStyle {
+): ProcessedEdgeStyle {
   let style: Record<string, any> = {};
   let animated = false;
   let label = createEdgeLabel(appliedProperties, undefined, originalLabel);
@@ -243,21 +251,21 @@ function convertStyleSettingsToReactFlow(
   const halo = styleSettings['halo'] as string;
   let strokeColor = '#666666'; // default color
   let haloColor: string | undefined = undefined;
-  
+
   if (halo && halo !== 'none') {
     // Map halo types to colors
     const haloColors = {
       'light-blue': '#4a90e2',
       'light-red': '#e74c3c',
-      'light-green': '#27ae60'
+      'light-green': '#27ae60',
     };
-    
+
     // Store halo color for edge component to use
     haloColor = haloColors[halo as keyof typeof haloColors];
     // Keep default stroke color for the main edge
   }
 
-    // Apply arrowhead
+  // Apply arrowhead
   const arrowhead = styleSettings['arrowhead'] as string;
   if (arrowhead && arrowhead !== 'none') {
     // Map to React Flow marker types including custom markers
@@ -285,13 +293,13 @@ function convertStyleSettingsToReactFlow(
       stroke: strokeColor,
       strokeWidth: 2,
       ...(haloColor && { haloColor }), // Pass halo color to edge component
-      ...style
+      ...style,
     },
     animated,
     label,
     appliedProperties,
-  markerEndSpec,
-  lineStyle: (lineStyle === 'double' ? 'double' : 'single')
+    markerEndSpec,
+    lineStyle: lineStyle === 'double' ? 'double' : 'single',
   };
 }
 
@@ -302,7 +310,7 @@ function processWithBooleanPairs(
   edgeProperties: string[],
   styleConfig: EdgeStyleConfig,
   originalLabel?: string
-  ): ProcessedEdgeStyle {
+): ProcessedEdgeStyle {
   const styleTags: string[] = [];
   const appliedProperties: string[] = [];
 
@@ -310,7 +318,7 @@ function processWithBooleanPairs(
   if (styleConfig.booleanPropertyPairs) {
     for (const pairConfig of styleConfig.booleanPropertyPairs) {
       const [defaultProp, altProp] = pairConfig.pair;
-      
+
       if (edgeProperties.includes(altProp)) {
         styleTags.push(pairConfig.altStyle);
         appliedProperties.push(altProp);
@@ -355,7 +363,7 @@ function processLegacyMappings(
 
   // Collect all style tags from the properties
   const styleTags: string[] = [];
-  
+
   for (const property of edgeProperties) {
     const mapping = styleConfig.propertyMappings[property];
     if (mapping) {
@@ -366,18 +374,18 @@ function processLegacyMappings(
       }
     }
   }
-  
+
   // If we have style tags, combine them with intelligent CSS property handling
   if (styleTags.length > 0) {
     return combineStyleTagsIntelligently(styleTags, edgeProperties, styleConfig, originalLabel);
   }
-  
+
   // Fallback: find the first property with any mapping
   const selectedProperty = edgeProperties.find(prop => styleConfig.propertyMappings![prop]) || null;
 
   if (selectedProperty && styleConfig.propertyMappings[selectedProperty]) {
     const mapping = styleConfig.propertyMappings[selectedProperty];
-    
+
     // Handle backward compatibility with full style objects
     if (typeof mapping === 'object' && mapping.style) {
       return {
@@ -385,7 +393,7 @@ function processLegacyMappings(
         style: { ...mapping.style },
         animated: mapping.animated || false,
         label: mapping.label,
-        appliedProperties: [selectedProperty]
+        appliedProperties: [selectedProperty],
       };
     }
   }
@@ -409,163 +417,163 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
   const styleTagMappings: Record<string, any> = {
     // New numbered edge style system with boolean pairs
     // Each pair uses different visual properties that can merge cleanly
-    
+
     // Style 1 pair: Line pattern (ordering)
-    'edge_style_1': {
+    edge_style_1: {
       style: { strokeDasharray: undefined }, // solid line
       animated: false,
-      label: '1'
+      label: '1',
     },
-    'edge_style_1_alt': {
-      style: { strokeDasharray: '4,4' }, // dashed line  
+    edge_style_1_alt: {
+      style: { strokeDasharray: '4,4' }, // dashed line
       animated: false,
-      label: '1*'
+      label: '1*',
     },
-    
+
     // Style 2 pair: Line thickness (bounds)
-    'edge_style_2': {
+    edge_style_2: {
       style: { strokeWidth: 1 }, // thin
       animated: false,
-      label: '2'
+      label: '2',
     },
-    'edge_style_2_alt': {
+    edge_style_2_alt: {
       style: { strokeWidth: 3 }, // thick
       animated: false,
-      label: '2*'
+      label: '2*',
     },
-    
+
     // Style 3 pair: Animation (scope)
-    'edge_style_3': {
+    edge_style_3: {
       style: {},
       animated: false,
-      label: '3'
+      label: '3',
     },
-    'edge_style_3_alt': {
+    edge_style_3_alt: {
       style: {},
       animated: true,
-      label: '3*'
+      label: '3*',
     },
-    
+
     // Single properties: Double line (keyed), wavy (cycle)
-    'edge_style_4': {
+    edge_style_4: {
       style: { strokeDasharray: '8,2,2,2' }, // double-line pattern
       animated: false,
-      label: '4'
+      label: '4',
     },
-    'edge_style_5': {
+    edge_style_5: {
       style: { strokeDasharray: '2,2' }, // dotted for cycles
       animated: true,
-      label: '5'
+      label: '5',
     },
-    
+
     // Legacy compound visual styles (for backward compatibility)
     'dashed-animated': {
       style: { strokeDasharray: '8,4' },
       animated: true,
-      label: '- ->'
+      label: '- ->',
     },
     'thin-stroke': {
       style: { strokeWidth: 1 },
       animated: false,
-      label: 'thin'
+      label: 'thin',
     },
     'thick-stroke': {
       style: { strokeWidth: 3 },
       animated: false,
-      label: 'thick'
+      label: 'thick',
     },
     'wavy-line': {
       style: { strokeDasharray: '5,5' },
       animated: true,
-      label: '~'
+      label: '~',
     },
     'smooth-line': {
       style: { strokeDasharray: undefined },
       animated: false,
-      label: '—'
+      label: '—',
     },
     'double-line': {
       style: { strokeDasharray: '10,2,2,2' },
       animated: false,
-      label: '='
+      label: '=',
     },
-    
+
     // Basic line patterns
-    'solid': {
+    solid: {
       style: { strokeDasharray: undefined },
       animated: false,
-      label: '—'
+      label: '—',
     },
-    'dashed': {
+    dashed: {
       style: { strokeDasharray: '8,4' },
       animated: false,
-      label: '- -'
+      label: '- -',
     },
-    'dotted': {
+    dotted: {
       style: { strokeDasharray: '2,2' },
       animated: false,
-      label: '...'
+      label: '...',
     },
-    'wavy': {
+    wavy: {
       style: { strokeDasharray: '5,5' },
       animated: true,
-      label: '~'
+      label: '~',
     },
-    'double': {
+    double: {
       style: { strokeDasharray: '10,2,2,2' },
       animated: false,
-      label: '='
+      label: '=',
     },
-    
+
     // Line thickness
-    'thin': {
+    thin: {
       style: { strokeWidth: 1 },
       animated: false,
-      label: 'T'
+      label: 'T',
     },
-    'normal': {
+    normal: {
       style: { strokeWidth: 2 },
       animated: false,
-      label: 'N'
+      label: 'N',
     },
-    'thick': {
+    thick: {
       style: { strokeWidth: 3 },
       animated: false,
-      label: 'B'
+      label: 'B',
     },
     'extra-thick': {
       style: { strokeWidth: 4 },
       animated: false,
-      label: 'BB'
+      label: 'BB',
     },
-    
+
     // Animation
-    'animated': {
+    animated: {
       style: {},
       animated: true,
-      label: '>'
+      label: '>',
     },
-    'static': {
+    static: {
       style: {},
       animated: false,
-      label: ''
-  }
+      label: '',
+    },
   };
 
   const normalizedTag = styleTag.toLowerCase().replace(/[_\s]/g, '-');
   const visualStyle = styleTagMappings[normalizedTag];
-  
+
   if (visualStyle) {
     return {
       reactFlowType: 'standard',
-      style: { 
+      style: {
         stroke: '#666666', // Default color
-        strokeWidth: 2,    // Default width
-        ...visualStyle.style 
+        strokeWidth: 2, // Default width
+        ...visualStyle.style,
       },
       animated: visualStyle.animated,
       label: visualStyle.label,
-      appliedProperties: originalProperties
+      appliedProperties: originalProperties,
     };
   }
 
@@ -574,11 +582,11 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
     reactFlowType: 'standard',
     style: {
       stroke: '#666666',
-      strokeWidth: 2
+      strokeWidth: 2,
     },
     animated: false,
     label: '',
-    appliedProperties: originalProperties
+    appliedProperties: originalProperties,
   };
 }
 
@@ -587,7 +595,7 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
  */
 /**
  * Combine style tags with priority resolution
- * 
+ *
  * NOTE: This function is currently unused but kept for potential future use
  */
 /*
@@ -707,10 +715,10 @@ function getDefaultStyle(): ProcessedEdgeStyle {
     reactFlowType: 'standard',
     style: {
       stroke: '#999999',
-      strokeWidth: 2
+      strokeWidth: 2,
     },
     animated: false,
-    appliedProperties: []
+    appliedProperties: [],
   };
 }
 
@@ -728,18 +736,16 @@ export function createEdgeLabel(
 
   // Create abbreviated labels for common properties
   const abbreviations: Record<string, string> = {
-    'Network': 'N',
-    'Cycle': 'C',
-    'Bounded': 'B',
-    'Unbounded': 'U',
-    'NoOrder': '~',
-    'TotalOrder': 'O',
-    'Keyed': 'K'
+    Network: 'N',
+    Cycle: 'C',
+    Bounded: 'B',
+    Unbounded: 'U',
+    NoOrder: '~',
+    TotalOrder: 'O',
+    Keyed: 'K',
   };
 
-  const propertyLabels = edgeProperties
-    .map(prop => abbreviations[prop] || prop.charAt(0))
-    .join('');
+  const propertyLabels = edgeProperties.map(prop => abbreviations[prop] || prop.charAt(0)).join('');
 
   if (originalLabel) {
     return `${originalLabel} [${propertyLabels}]`;
@@ -760,35 +766,42 @@ export function getEdgePropertiesDescription(
   }
 
   const descriptions: Record<string, string> = {
-    'Network': 'Network communication',
-    'Cycle': 'Cyclic data flow',
-    'Bounded': 'Finite data stream',
-    'Unbounded': 'Infinite data stream',
-    'NoOrder': 'Unordered data',
-    'TotalOrder': 'Ordered data',
-    'Keyed': 'Key-value pairs'
+    Network: 'Network communication',
+    Cycle: 'Cyclic data flow',
+    Bounded: 'Finite data stream',
+    Unbounded: 'Infinite data stream',
+    NoOrder: 'Unordered data',
+    TotalOrder: 'Ordered data',
+    Keyed: 'Key-value pairs',
   };
 
-  return edgeProperties
-    .map(prop => descriptions[prop] || prop)
-    .join(', ');
+  return edgeProperties.map(prop => descriptions[prop] || prop).join(', ');
 }
 
 /**
  * Combine style tags intelligently - properties affecting same CSS attribute are mutually exclusive
  */
-function combineStyleTagsIntelligently(styleTags: string[], originalProperties: string[], styleConfig?: EdgeStyleConfig, originalLabel?: string): ProcessedEdgeStyle {
+function combineStyleTagsIntelligently(
+  styleTags: string[],
+  originalProperties: string[],
+  styleConfig?: EdgeStyleConfig,
+  originalLabel?: string
+): ProcessedEdgeStyle {
   // Start with default style
   let combinedStyle: any = {
     stroke: '#666666',
-    strokeWidth: 2
+    strokeWidth: 2,
   };
   let animated = false;
   let label = '';
 
   // Use priority from combinationRules if available
   let priorityOrder: string[] = [];
-  if (styleConfig && styleConfig.combinationRules && Array.isArray((styleConfig.combinationRules as any).priority)) {
+  if (
+    styleConfig &&
+    styleConfig.combinationRules &&
+    Array.isArray((styleConfig.combinationRules as any).priority)
+  ) {
     priorityOrder = (styleConfig.combinationRules as any).priority;
   }
 
@@ -808,9 +821,12 @@ function combineStyleTagsIntelligently(styleTags: string[], originalProperties: 
   let mapping = undefined;
   if (styleConfig && styleConfig.propertyMappings && styleConfig.propertyMappings[winningProp]) {
     let propMap = styleConfig.propertyMappings[winningProp];
-    
+
     // If propMap has style/animated directly, use it
-    if (typeof propMap === 'object' && (propMap.animated !== undefined || propMap.style !== undefined)) {
+    if (
+      typeof propMap === 'object' &&
+      (propMap.animated !== undefined || propMap.style !== undefined)
+    ) {
       mapping = propMap;
     }
     // If propMap has styleTag, resolve it via mapStyleTagToVisual
@@ -819,11 +835,11 @@ function combineStyleTagsIntelligently(styleTags: string[], originalProperties: 
       mapping = {
         reactFlowType: tagStyle.reactFlowType || 'standard',
         style: tagStyle.style,
-        animated: tagStyle.animated
+        animated: tagStyle.animated,
       };
     }
   }
-  
+
   if (mapping && typeof mapping === 'object') {
     if (mapping.reactFlowType) {
       reactFlowType = mapping.reactFlowType;
@@ -852,7 +868,7 @@ function combineStyleTagsIntelligently(styleTags: string[], originalProperties: 
     style: combinedStyle,
     animated: animated,
     label: label,
-    appliedProperties: originalProperties
+    appliedProperties: originalProperties,
   };
 }
 

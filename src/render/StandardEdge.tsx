@@ -5,7 +5,13 @@
  */
 
 import React from 'react';
-import { BaseEdge, EdgeProps, getStraightPath, getBezierPath, getSmoothStepPath } from '@xyflow/react';
+import {
+  BaseEdge,
+  EdgeProps,
+  getStraightPath,
+  getBezierPath,
+  getSmoothStepPath,
+} from '@xyflow/react';
 import { useStyleConfig } from './StyleConfigContext';
 import { getWavyPath } from './edgePaths';
 import { getStroke, getHaloColor, stripHaloStyle, isDoubleLineEdge, isWavyEdge } from './edgeStyle';
@@ -22,7 +28,7 @@ export function StandardEdge(props: EdgeProps) {
   const isWavy = isWavyEdge(props);
 
   let edgePath: string;
-  
+
   if (isWavy) {
     // Use custom wavy path generation
     edgePath = getWavyPath({
@@ -31,7 +37,7 @@ export function StandardEdge(props: EdgeProps) {
       targetX: props.targetX,
       targetY: props.targetY,
       amplitude: WAVY_EDGE_CONFIG.standardEdge.amplitude,
-      frequency: WAVY_EDGE_CONFIG.standardEdge.frequency
+      frequency: WAVY_EDGE_CONFIG.standardEdge.frequency,
     });
   } else if (styleCfg.edgeStyle === 'straight') {
     [edgePath] = getStraightPath({
@@ -67,9 +73,10 @@ export function StandardEdge(props: EdgeProps) {
   // Use simple rendering for regular edges (no halo, no double line)
   if (!isDouble && !haloColor) {
     // Ensure arrowhead color matches the computed stroke
-    const markerEnd = typeof props.markerEnd === 'object' && props.markerEnd
-      ? { ...(props.markerEnd as any), color: stroke }
-      : props.markerEnd;
+    const markerEnd =
+      typeof props.markerEnd === 'object' && props.markerEnd
+        ? { ...(props.markerEnd as any), color: stroke }
+        : props.markerEnd;
     return (
       <BaseEdge
         path={edgePath}
@@ -87,24 +94,28 @@ export function StandardEdge(props: EdgeProps) {
         <BaseEdge
           path={edgePath}
           markerEnd={undefined}
-          style={{ 
-            stroke: haloColor, 
-            strokeWidth: strokeWidth + 4, 
-            strokeDasharray, 
+          style={{
+            stroke: haloColor,
+            strokeWidth: strokeWidth + 4,
+            strokeDasharray,
             strokeLinecap: 'round',
-            opacity: 0.6
+            opacity: 0.6,
           }}
         />
       )}
-      
+
       {/* Render main edge - always render this */}
       {/* Main edge with matching arrowhead color */}
       <BaseEdge
         path={edgePath}
-        markerEnd={(typeof props.markerEnd === 'object' && props.markerEnd) ? { ...(props.markerEnd as any), color: stroke } : props.markerEnd}
-        style={{ stroke, strokeWidth, strokeDasharray, ...(stripHaloStyle(props.style)) }}
+        markerEnd={
+          typeof props.markerEnd === 'object' && props.markerEnd
+            ? { ...(props.markerEnd as any), color: stroke }
+            : props.markerEnd
+        }
+        style={{ stroke, strokeWidth, strokeDasharray, ...stripHaloStyle(props.style) }}
       />
-      
+
       {/* Render additional rails for double lines */}
       {isDouble && (
         <>

@@ -1,9 +1,9 @@
 /**
  * @fileoverview TreeHierarchy and VisualizationState Synchronization Tests
- * 
+ *
  * These tests ensure that the TreeHierarchy display in the InfoPanel
  * accurately reflects the collapsed/expanded state in VisualizationState.
- * 
+ *
  * This is critical because mismatched states can cause:
  * - Confusing UI (hierarchy shows expanded but containers are collapsed)
  * - Layout issues (ELK gets wrong container dimensions)
@@ -28,15 +28,15 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setContainer('parent', {
         children: ['child1', 'child2'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setGraphNode('child1', { label: 'Child 1', hidden: false });
       visState.setGraphNode('child2', { label: 'Child 2', hidden: false });
 
       // Initially expanded - TreeHierarchy should show expanded
       expect(visState.getContainer('parent')?.collapsed).toBe(false);
-      
+
       // Children should be visible when parent is expanded
       const visibleNodes = visState.visibleNodes;
       expect(visibleNodes.some(n => n.id === 'child1')).toBe(true);
@@ -44,10 +44,10 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
 
       // Collapse the container
       visState.collapseContainer('parent');
-      
+
       // VisualizationState should show collapsed
       expect(visState.getContainer('parent')?.collapsed).toBe(true);
-      
+
       // Children should be hidden when parent is collapsed
       const visibleNodesAfterCollapse = visState.visibleNodes;
       expect(visibleNodesAfterCollapse.some(n => n.id === 'child1')).toBe(false);
@@ -59,15 +59,15 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setContainer('grandparent', {
         children: ['parent'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setContainer('parent', {
         children: ['child1', 'child2'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setGraphNode('child1', { label: 'Child 1', hidden: false });
       visState.setGraphNode('child2', { label: 'Child 2', hidden: false });
 
@@ -76,7 +76,7 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
         // Collapse
         visState.collapseContainer(containerId);
         expect(visState.getContainer(containerId)?.collapsed).toBe(true);
-        
+
         // Expand
         visState.expandContainer(containerId);
         expect(visState.getContainer(containerId)?.collapsed).toBe(false);
@@ -94,47 +94,47 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setContainer('root', {
         children: ['level1A', 'level1B'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setContainer('level1A', {
         children: ['level2A'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setContainer('level1B', {
         children: ['level2B'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setContainer('level2A', {
         children: ['node1'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setContainer('level2B', {
         children: ['node2'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setGraphNode('node1', { label: 'Node 1', hidden: false });
       visState.setGraphNode('node2', { label: 'Node 2', hidden: false });
 
       // All containers should be visible initially
       const allContainerIds = ['root', 'level1A', 'level1B', 'level2A', 'level2B'];
       const visibleContainerIds = visState.visibleContainers.map(c => c.id);
-      
+
       for (const containerId of allContainerIds) {
         expect(visibleContainerIds).toContain(containerId);
       }
 
       // Collapse root - descendants should become hidden
       visState.collapseContainer('root');
-      
+
       const visibleAfterCollapse = visState.visibleContainers.map(c => c.id);
       expect(visibleAfterCollapse).toContain('root');
       expect(visibleAfterCollapse).not.toContain('level1A');
@@ -148,9 +148,9 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setContainer('container1', {
         children: ['node1'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setGraphNode('node1', { label: 'Node 1', hidden: false });
 
       // Manually corrupt the state (simulating a bug)
@@ -170,7 +170,7 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
         // In production, just check the inconsistency exists
         const containerCollapsed = visState.getContainer('container1')?.collapsed;
         const nodeVisible = visState.visibleNodes.some(n => n.id === 'node1');
-        
+
         // If container is collapsed, child nodes should not be visible (this indicates the bug)
         expect(containerCollapsed).toBe(true);
         expect(nodeVisible).toBe(true); // This is the bug condition we're detecting
@@ -184,22 +184,22 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setContainer('container1', {
         children: ['node1'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setContainer('container2', {
         children: ['node2'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setGraphNode('node1', { label: 'Node 1', hidden: false });
       visState.setGraphNode('node2', { label: 'Node 2', hidden: false });
 
       // Simulate the getContainersRequiringLayout call (what ELK bridge uses)
       const elkBridge = new ELKBridge();
       const containersForLayout = elkBridge.getContainersRequiringLayout(visState);
-      
+
       // All containers should be elkFixed=false for fresh layout
       for (const container of containersForLayout) {
         const isFixed = elkBridge.getContainerELKFixed(visState, container.id);
@@ -211,15 +211,18 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       visState.setContainer('interactive', {
         children: ['node1'],
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.setGraphNode('node1', { label: 'Node 1', hidden: false });
 
       // Simulate interactive collapse with one container changing
       const elkBridge2 = new ELKBridge();
-      const containersForInteractiveLayout = elkBridge2.getContainersRequiringLayout(visState, 'interactive');
-      
+      const containersForInteractiveLayout = elkBridge2.getContainersRequiringLayout(
+        visState,
+        'interactive'
+      );
+
       // The changed container should be elkFixed=false, others should be elkFixed=true
       for (const container of containersForInteractiveLayout) {
         const isFixed = elkBridge2.getContainerELKFixed(visState, container.id);
@@ -239,7 +242,7 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
         { id: 'bt_1', children: ['node1', 'node2'] },
         { id: 'bt_2', children: ['node3', 'node4'] },
         { id: 'bt_3', children: ['node5', 'node6'] },
-        { id: 'root', children: ['bt_1', 'bt_2', 'bt_3'] }
+        { id: 'root', children: ['bt_1', 'bt_2', 'bt_3'] },
       ];
 
       // Setup hierarchy
@@ -247,7 +250,7 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
         visState.setContainer(id, {
           children: children,
           collapsed: false,
-          hidden: false
+          hidden: false,
         });
       }
 
@@ -262,7 +265,7 @@ describe('TreeHierarchy/VisualizationState Synchronization Tests', () => {
       // Leave bt_3 expanded for variety
 
       // INVARIANT CHECKS after collapse:
-      
+
       // 1. Collapsed containers should report collapsed=true
       expect(visState.getContainer('bt_1')?.collapsed).toBe(true);
       expect(visState.getContainer('bt_2')?.collapsed).toBe(true);

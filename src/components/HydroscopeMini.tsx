@@ -6,15 +6,15 @@ import type { VisualizationState } from '../core/VisualizationState';
 
 export interface HydroscopeMiniProps extends Omit<HydroscopeProps, 'eventHandlers' | 'onParsed'> {
   // Feature toggles
-  showControls?: boolean;          // Show pack/unpack/refresh buttons (default: true)
-  enableCollapse?: boolean;        // Enable click-to-collapse (default: true)
-  autoFit?: boolean;              // Auto-fit after operations (default: true)
+  showControls?: boolean; // Show pack/unpack/refresh buttons (default: true)
+  enableCollapse?: boolean; // Enable click-to-collapse (default: true)
+  autoFit?: boolean; // Auto-fit after operations (default: true)
   // Sizing (optional)
-  height?: number | string;        // Explicit graph height (e.g., 600 or '60vh')
-  width?: number | string;         // Explicit graph width (default: '100%')
+  height?: number | string; // Explicit graph height (e.g., 600 or '60vh')
+  width?: number | string; // Explicit graph width (default: '100%')
   defaultHeight?: number | string; // Fallback height when parent isn't sized (default: 600)
   innerStyle?: React.CSSProperties; // Optional style override for inner Hydroscope container
-  
+
   // Callbacks for extensibility
   onNodeClick?: (event: any, node: any, visualizationState?: VisualizationState) => void;
   onContainerCollapse?: (containerId: string, visualizationState?: VisualizationState) => void;
@@ -24,13 +24,13 @@ export interface HydroscopeMiniProps extends Omit<HydroscopeProps, 'eventHandler
 
 /**
  * HydroscopeMini: Interactive graph component with built-in container collapse/expand.
- * 
+ *
  * Features:
  * - Click containers to collapse/expand automatically
  * - Pack/Unpack all controls
  * - Auto-fit after operations
  * - Zero configuration required - just pass data
- * 
+ *
  * This bridges the gap between basic HydroscopeCore (read-only) and Hydroscope (full UI).
  */
 export function HydroscopeMini({
@@ -54,110 +54,128 @@ export function HydroscopeMini({
   const hydroscopeRef = useRef<HydroscopeRef>(null);
 
   // Handle parsing to get access to visualization state
-  const handleParsed = useCallback((metadata: any, visState: VisualizationState) => {
-    console.log('🎯 HydroscopeMini: Received visualization state');
-    setVisualizationState(visState);
-    onParsed?.(metadata, visState);
-  }, [onParsed]);
+  const handleParsed = useCallback(
+    (metadata: any, visState: VisualizationState) => {
+      console.log('🎯 HydroscopeMini: Received visualization state');
+      setVisualizationState(visState);
+      onParsed?.(metadata, visState);
+    },
+    [onParsed]
+  );
 
   // Default interactive node click handler
-  const handleNodeClick = useCallback(async (event: any, node: any) => {
-    console.log('🖱️ Node clicked!', { nodeId: node.id, event, node });
-    
-    if (!visualizationState) {
-      console.warn('⚠️ No visualization state available for node click');
-      return;
-    }
+  const handleNodeClick = useCallback(
+    async (event: any, node: any) => {
+      console.log('🖱️ Node clicked!', { nodeId: node.id, event, node });
 
-    if (onNodeClick) {
-      // User provided custom handler - use that instead
-      console.log('🔄 Using custom onNodeClick handler');
-      onNodeClick(event, node, visualizationState);
-      return;
-    }
-
-    // Check if this is a container first
-    const container = visualizationState.getContainer(node.id);
-    if (container && enableCollapse) {
-      console.log('🏗️ Handling container click for:', node.id);
-      // Built-in container collapse/expand logic
-      try {
-        setIsLayoutRunning(true);
-        
-        if (container.collapsed) {
-          console.log(`🔄 Expanding container: ${node.id}`);
-          visualizationState.expandContainer(node.id);
-          onContainerExpand?.(node.id, visualizationState);
-        } else {
-          console.log(`🔄 Collapsing container: ${node.id}`);
-          visualizationState.collapseContainer(node.id);
-          onContainerCollapse?.(node.id, visualizationState);
-        }
-
-        // Trigger layout refresh
-        if (hydroscopeRef.current?.refreshLayout) {
-          await hydroscopeRef.current.refreshLayout();
-        }
-
-        // Auto-fit after layout completes
-        if (autoFit && hydroscopeRef.current?.fitView) {
-          setTimeout(() => {
-            hydroscopeRef.current?.fitView();
-          }, 300);
-        }
-      } catch (err) {
-        console.error('❌ Error toggling container:', err);
-      } finally {
-        setIsLayoutRunning(false);
+      if (!visualizationState) {
+        console.warn('⚠️ No visualization state available for node click');
+        return;
       }
-      return; // Exit early after handling container
-    }
 
-    // Handle regular graph node label toggle
-    const graphNode = visualizationState.getGraphNode(node.id);
-    console.log('🏷️ Checking for label toggle...', { 
-      nodeId: node.id, 
-      hasGraphNode: !!graphNode,
-      hasFullLabel: !!graphNode?.fullLabel,
-      hasShortLabel: !!graphNode?.shortLabel,
-      labelsAreDifferent: graphNode?.fullLabel !== graphNode?.shortLabel
-    });
-    
-    if (graphNode && graphNode.fullLabel && graphNode.shortLabel && graphNode.fullLabel !== graphNode.shortLabel) {
-      // Toggle between short and full label (only if they're actually different)
-      const currentLabel = graphNode.label || graphNode.shortLabel;
-      const isShowingShort = currentLabel === graphNode.shortLabel;
-      const newLabel = isShowingShort ? graphNode.fullLabel : graphNode.shortLabel;
-      
-      console.log(`🏷️ Toggling label for node ${node.id}: "${currentLabel}" -> "${newLabel}"`);
-      
-      // Update the node's label field
-      visualizationState.updateNode(node.id, { label: newLabel });
-      
-      // Trigger a refresh to update the display
-      try {
-        if (hydroscopeRef.current?.refreshLayout) {
-          // Use refreshLayout to force a re-conversion of the visualization state
-          await hydroscopeRef.current.refreshLayout(false);
-        }
-      } catch (err) {
-        console.error('❌ Error refreshing after label toggle:', err);
+      if (onNodeClick) {
+        // User provided custom handler - use that instead
+        console.log('🔄 Using custom onNodeClick handler');
+        onNodeClick(event, node, visualizationState);
+        return;
       }
-    } else {
-      console.log('🏷️ No label toggle performed - conditions not met');
-    }
-  }, [visualizationState, enableCollapse, autoFit, onNodeClick, onContainerCollapse, onContainerExpand]);
+
+      // Check if this is a container first
+      const container = visualizationState.getContainer(node.id);
+      if (container && enableCollapse) {
+        console.log('🏗️ Handling container click for:', node.id);
+        // Built-in container collapse/expand logic
+        try {
+          setIsLayoutRunning(true);
+
+          if (container.collapsed) {
+            console.log(`🔄 Expanding container: ${node.id}`);
+            visualizationState.expandContainer(node.id);
+            onContainerExpand?.(node.id, visualizationState);
+          } else {
+            console.log(`🔄 Collapsing container: ${node.id}`);
+            visualizationState.collapseContainer(node.id);
+            onContainerCollapse?.(node.id, visualizationState);
+          }
+
+          // Trigger layout refresh
+          if (hydroscopeRef.current?.refreshLayout) {
+            await hydroscopeRef.current.refreshLayout();
+          }
+
+          // Auto-fit after layout completes
+          if (autoFit && hydroscopeRef.current?.fitView) {
+            setTimeout(() => {
+              hydroscopeRef.current?.fitView();
+            }, 300);
+          }
+        } catch (err) {
+          console.error('❌ Error toggling container:', err);
+        } finally {
+          setIsLayoutRunning(false);
+        }
+        return; // Exit early after handling container
+      }
+
+      // Handle regular graph node label toggle
+      const graphNode = visualizationState.getGraphNode(node.id);
+      console.log('🏷️ Checking for label toggle...', {
+        nodeId: node.id,
+        hasGraphNode: !!graphNode,
+        hasFullLabel: !!graphNode?.fullLabel,
+        hasShortLabel: !!graphNode?.shortLabel,
+        labelsAreDifferent: graphNode?.fullLabel !== graphNode?.shortLabel,
+      });
+
+      if (
+        graphNode &&
+        graphNode.fullLabel &&
+        graphNode.shortLabel &&
+        graphNode.fullLabel !== graphNode.shortLabel
+      ) {
+        // Toggle between short and full label (only if they're actually different)
+        const currentLabel = graphNode.label || graphNode.shortLabel;
+        const isShowingShort = currentLabel === graphNode.shortLabel;
+        const newLabel = isShowingShort ? graphNode.fullLabel : graphNode.shortLabel;
+
+        console.log(`🏷️ Toggling label for node ${node.id}: "${currentLabel}" -> "${newLabel}"`);
+
+        // Update the node's label field
+        visualizationState.updateNode(node.id, { label: newLabel });
+
+        // Trigger a refresh to update the display
+        try {
+          if (hydroscopeRef.current?.refreshLayout) {
+            // Use refreshLayout to force a re-conversion of the visualization state
+            await hydroscopeRef.current.refreshLayout(false);
+          }
+        } catch (err) {
+          console.error('❌ Error refreshing after label toggle:', err);
+        }
+      } else {
+        console.log('🏷️ No label toggle performed - conditions not met');
+      }
+    },
+    [
+      visualizationState,
+      enableCollapse,
+      autoFit,
+      onNodeClick,
+      onContainerCollapse,
+      onContainerExpand,
+    ]
+  );
 
   // Pack all containers (collapse all)
   const handlePackAll = useCallback(async () => {
     if (!visualizationState) return;
-    
+
     try {
       setIsLayoutRunning(true);
       console.log('📦 Packing all containers...');
-      
+
       visualizationState.collapseAllContainers();
-      
+
       // Trigger layout refresh
       if (hydroscopeRef.current?.refreshLayout) {
         await hydroscopeRef.current.refreshLayout();
@@ -179,13 +197,13 @@ export function HydroscopeMini({
   // Unpack all containers (expand all)
   const handleUnpackAll = useCallback(async () => {
     if (!visualizationState) return;
-    
+
     try {
       setIsLayoutRunning(true);
       console.log('📂 Unpacking all containers...');
-      
+
       visualizationState.expandAllContainers();
-      
+
       // Trigger layout refresh
       if (hydroscopeRef.current?.refreshLayout) {
         await hydroscopeRef.current.refreshLayout();
@@ -207,7 +225,7 @@ export function HydroscopeMini({
   // Refresh layout manually
   const handleRefresh = useCallback(async () => {
     if (!hydroscopeRef.current?.refreshLayout) return;
-    
+
     try {
       setIsLayoutRunning(true);
       console.log('🔄 Refreshing layout...');
@@ -267,7 +285,7 @@ export function HydroscopeMini({
     <div className={className} style={containerStyle}>
       {showControls && (
         <div style={controlsStyle}>
-          <Button 
+          <Button
             icon={<CompressOutlined />}
             onClick={handlePackAll}
             loading={isLayoutRunning}
@@ -277,7 +295,7 @@ export function HydroscopeMini({
           >
             Pack All
           </Button>
-          <Button 
+          <Button
             icon={<ExpandOutlined />}
             onClick={handleUnpackAll}
             loading={isLayoutRunning}
@@ -287,7 +305,7 @@ export function HydroscopeMini({
           >
             Unpack All
           </Button>
-          <Button 
+          <Button
             icon={<ReloadOutlined />}
             onClick={handleRefresh}
             loading={isLayoutRunning}
@@ -299,12 +317,12 @@ export function HydroscopeMini({
           </Button>
         </div>
       )}
-      
-    <div style={graphStyle}>
+
+      <div style={graphStyle}>
         <Hydroscope
           ref={hydroscopeRef}
           {...hydroscopeProps}
-      // Ensure inner FlowGraph fills this container
+          // Ensure inner FlowGraph fills this container
           style={{ width: '100%', height: '100%', ...(innerStyle || {}) }}
           onParsed={handleParsed}
           eventHandlers={{

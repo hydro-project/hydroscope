@@ -1,6 +1,6 @@
 /**
  * @fileoverview Bridge-Based Render Module Exports
- * 
+ *
  * Complete replacement for alpha render module using our bridge architecture.
  * Maintains identical API for seamless migration.
  */
@@ -13,17 +13,14 @@ export { StandardNode as GraphStandardNode, ContainerNode as GraphContainerNode 
 export { StandardEdge as GraphStandardEdge, HyperEdge as GraphHyperEdge } from './edges';
 
 // Event handlers (deprecated but for compatibility)
-export { 
-  createNodeEventHandlers, 
-  createEdgeEventHandlers, 
-  createContainerEventHandlers 
+export {
+  createNodeEventHandlers,
+  createEdgeEventHandlers,
+  createContainerEventHandlers,
 } from './eventHandlers';
 
 // Configuration
 export { DEFAULT_RENDER_CONFIG } from '../shared/config';
 
 // Re-export our own types
-export type {
-  RenderConfig,
-  FlowGraphEventHandlers
-} from '../core/types';
+export type { RenderConfig, FlowGraphEventHandlers } from '../core/types';

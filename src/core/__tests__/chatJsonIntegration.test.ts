@@ -1,6 +1,6 @@
 /**
  * @fileoverview Chat JSON Integration Tests
- * 
+ *
  * Integration tests for processing chat.json data
  */
 
@@ -10,7 +10,6 @@ import { ELKBridge } from '../../bridges/ELKBridge';
 import { ReactFlowBridge } from '../../bridges/ReactFlowBridge';
 import { loadChatJsonTestData, skipIfNoTestData } from '../../__tests__/testUtils';
 import { isHyperEdge } from '../types';
-
 
 describe('ChatJsonIntegration', () => {
   describe('json processing', () => {
@@ -22,28 +21,30 @@ describe('ChatJsonIntegration', () => {
     it('should parse chat.json correctly', () => {
       const testData = loadChatJsonTestData();
       if (skipIfNoTestData(testData, 'chat.json parsing')) return;
-      
+
       expect(testData!.state).toBeDefined();
       expect(testData!.metadata).toBeDefined();
-      
+
       // Chat.json should have nodes and edges
       expect(testData!.metadata.nodeCount).toBeGreaterThan(0);
       expect(testData!.metadata.edgeCount).toBeGreaterThan(0);
-      
-      console.log(`✅ Parsed chat.json: ${testData!.metadata.nodeCount} nodes, ${testData!.metadata.edgeCount} edges`);
+
+      console.log(
+        `✅ Parsed chat.json: ${testData!.metadata.nodeCount} nodes, ${testData!.metadata.edgeCount} edges`
+      );
     });
 
     it('should handle chat.json visualization with grouping', () => {
       const testData = loadChatJsonTestData('filename');
       if (skipIfNoTestData(testData, 'chat.json with grouping')) return;
-      
+
       expect(testData!.state.visibleNodes.length).toBeGreaterThan(0);
       expect(testData!.state.visibleEdges.length).toBeGreaterThan(0);
-      
+
       // Should have containers when grouped by filename
       const containers = testData!.state.visibleContainers;
       expect(Array.isArray(containers)).toBe(true);
-      
+
       console.log(`✅ Chat.json with grouping: ${containers.length} containers`);
     });
 
@@ -55,14 +56,16 @@ describe('ChatJsonIntegration', () => {
       expect(testData!.rawData).toBeDefined();
       expect(Array.isArray(testData!.rawData.nodes)).toBe(true);
       expect(Array.isArray(testData!.rawData.edges)).toBe(true);
-      
+
       // Nodes should have expected structure
       const firstNode = testData!.rawData.nodes[0];
       expect(firstNode).toBeDefined();
       expect(firstNode.id).toBeDefined();
       expect(firstNode.data).toBeDefined();
-      
-      console.log(`✅ Chat.json structure valid: ${testData!.rawData.nodes.length} nodes, ${testData!.rawData.edges.length} edges`);
+
+      console.log(
+        `✅ Chat.json structure valid: ${testData!.rawData.nodes.length} nodes, ${testData!.rawData.edges.length} edges`
+      );
     });
   });
 
@@ -74,13 +77,13 @@ describe('ChatJsonIntegration', () => {
       const startTime = performance.now();
       const result = parseGraphJSON(testData!.rawData, 'filename');
       const endTime = performance.now();
-      
+
       const parseTime = endTime - startTime;
-      
+
       // Should parse reasonably quickly (under 5 seconds for most files)
       expect(parseTime).toBeLessThan(5000);
       expect(result.state).toBeDefined();
-      
+
       console.log(`✅ Chat.json parsed in ${parseTime.toFixed(2)}ms`);
     });
 
@@ -90,7 +93,7 @@ describe('ChatJsonIntegration', () => {
 
       // Check that all edges reference valid nodes
       const edges = testData!.state.visibleEdges;
-      
+
       for (const edge of edges) {
         // Note: Some edges might reference nodes that aren't visible due to filtering
         // So we just check the structure is valid
@@ -98,7 +101,7 @@ describe('ChatJsonIntegration', () => {
         expect(edge.target).toBeDefined();
         expect(edge.id).toBeDefined();
       }
-      
+
       console.log(`✅ Data integrity verified: ${edges.length} edges checked`);
     });
   });
@@ -109,17 +112,17 @@ describe('ChatJsonIntegration', () => {
       if (skipIfNoTestData(testData, 'grouping options test')) return;
 
       const groupings = getAvailableGroupings(testData!.rawData);
-      
+
       expect(Array.isArray(groupings)).toBe(true);
       expect(groupings.length).toBeGreaterThan(0);
-      
+
       // Log available groupings to see what we actually have
       console.log(`✅ Available groupings: ${groupings.map(g => g.id).join(', ')}`);
-      
+
       // Check that we have some valid grouping options
       const groupingIds = groupings.map(g => g.id);
       expect(groupingIds.length).toBeGreaterThan(0);
-      
+
       // The actual groupings depend on the JSONParser implementation
       // So we just verify the structure is correct
       for (const grouping of groupings) {
@@ -150,12 +153,16 @@ describe('ChatJsonIntegration', () => {
 
       // Check for the specific bug: edges should have valid sourceHandle/targetHandle
       for (const edge of reactFlowData.edges) {
-        console.log(`[Bug Test] Edge ${edge.id}: sourceHandle=${edge.sourceHandle}, targetHandle=${edge.targetHandle}`);
-        
+        console.log(
+          `[Bug Test] Edge ${edge.id}: sourceHandle=${edge.sourceHandle}, targetHandle=${edge.targetHandle}`
+        );
+
         // The bug: these should NOT be null (causing the ReactFlow errors)
         // If they are null, ReactFlow can't create the edges
         if (edge.sourceHandle === null || edge.targetHandle === null) {
-          console.warn(`[Bug Found] Edge ${edge.id} has null handles: source=${edge.sourceHandle}, target=${edge.targetHandle}`);
+          console.warn(
+            `[Bug Found] Edge ${edge.id} has null handles: source=${edge.sourceHandle}, target=${edge.targetHandle}`
+          );
         }
 
         // Test that source and target exist
@@ -166,15 +173,19 @@ describe('ChatJsonIntegration', () => {
         // Verify that source and target nodes actually exist in the nodes array
         const sourceNode = reactFlowData.nodes.find(n => n.id === edge.source);
         const targetNode = reactFlowData.nodes.find(n => n.id === edge.target);
-        
+
         expect(sourceNode).toBeDefined();
         expect(targetNode).toBeDefined();
 
         if (!sourceNode) {
-          console.error(`[Bug] Edge ${edge.id} references non-existent source node: ${edge.source}`);
+          console.error(
+            `[Bug] Edge ${edge.id} references non-existent source node: ${edge.source}`
+          );
         }
         if (!targetNode) {
-          console.error(`[Bug] Edge ${edge.id} references non-existent target node: ${edge.target}`);
+          console.error(
+            `[Bug] Edge ${edge.id} references non-existent target node: ${edge.target}`
+          );
         }
       }
     });
@@ -196,13 +207,13 @@ describe('ChatJsonIntegration', () => {
       for (const container of containers) {
         const layout = state.getContainerLayout(container.id);
         console.log(`[Container Test] ${container.id}: layout=${JSON.stringify(layout)}`);
-        
+
         // Containers should have valid positions and dimensions
         if (layout?.position) {
           expect(typeof layout.position.x).toBe('number');
           expect(typeof layout.position.y).toBe('number');
         }
-        
+
         if (layout?.dimensions) {
           expect(typeof layout.dimensions.width).toBe('number');
           expect(typeof layout.dimensions.height).toBe('number');
@@ -213,7 +224,7 @@ describe('ChatJsonIntegration', () => {
           expect(layout.position.x).toBeGreaterThanOrEqual(0);
           expect(layout.position.y).toBeGreaterThanOrEqual(0);
         }
-        
+
         if (layout?.dimensions) {
           expect(layout.dimensions.width).toBeGreaterThan(0);
           expect(layout.dimensions.height).toBeGreaterThan(0);
@@ -226,11 +237,15 @@ describe('ChatJsonIntegration', () => {
 
       // Check for negative coordinates (bug seen in console: `(-224, 320)`)
       for (const node of reactFlowData.nodes) {
-        console.log(`[Node Position Test] ${node.id}: position=(${node.position.x}, ${node.position.y})`);
-        
+        console.log(
+          `[Node Position Test] ${node.id}: position=(${node.position.x}, ${node.position.y})`
+        );
+
         // Look for the negative coordinate bug from console logs
         if (node.position.x < -200 || node.position.y < -200) {
-          console.warn(`[Coordinate Bug] Node ${node.id} has suspicious negative coordinates: (${node.position.x}, ${node.position.y})`);
+          console.warn(
+            `[Coordinate Bug] Node ${node.id} has suspicious negative coordinates: (${node.position.x}, ${node.position.y})`
+          );
         }
 
         // Validate position structure
@@ -248,7 +263,7 @@ describe('ChatJsonIntegration', () => {
 
       const state = testData!.state;
 
-      // Run ELK layout 
+      // Run ELK layout
       const elkBridge = new ELKBridge();
       await elkBridge.layoutVisualizationState(state);
 
@@ -262,13 +277,13 @@ describe('ChatJsonIntegration', () => {
 
       for (const edge of edges) {
         const isEdgeHyper = isHyperEdge(edge);
-        
+
         // Check for sections in the edge layout (where ELKBridge stores them)
         const edgeLayout = state.getEdgeLayout(edge.id);
         if (edgeLayout?.sections && edgeLayout.sections.length > 0) {
           edgesWithSections++;
           console.log(`[Edge Sections] ${edge.id}: ${edgeLayout.sections.length} sections`);
-          
+
           // Validate section structure
           for (const section of edgeLayout.sections) {
             expect(section.startPoint).toBeDefined();
@@ -288,32 +303,36 @@ describe('ChatJsonIntegration', () => {
         }
       }
 
-      console.log(`✅ Edge analysis: ${edgesWithSections} with sections, ${crossContainerEdges} cross-container/hyper`);
-      
+      console.log(
+        `✅ Edge analysis: ${edgesWithSections} with sections, ${crossContainerEdges} cross-container/hyper`
+      );
+
       // Categorize edges first
       const regularEdges = edges.filter(e => !e.id.startsWith('hyper_'));
       const hyperEdges = edges.filter(e => e.id.startsWith('hyper_'));
-      
+
       // Log detailed edge analysis to understand what's happening
-      console.log(`📊 Edge Analysis:`)
-      console.log(`   Total edges: ${edges.length}`)
-      console.log(`   Edges with sections: ${edgesWithSections}`)
-      console.log(`   Cross-container/missing sections: ${crossContainerEdges}`)
-      console.log(`   Regular edges: ${regularEdges.length}`)
-      console.log(`   HyperEdges: ${hyperEdges.length}`)
-      
+      console.log(`📊 Edge Analysis:`);
+      console.log(`   Total edges: ${edges.length}`);
+      console.log(`   Edges with sections: ${edgesWithSections}`);
+      console.log(`   Cross-container/missing sections: ${crossContainerEdges}`);
+      console.log(`   Regular edges: ${regularEdges.length}`);
+      console.log(`   HyperEdges: ${hyperEdges.length}`);
+
       // Log each edge type
       edges.forEach(edge => {
         const isHyper = edge.id.startsWith('hyper_');
         const layout = state.getEdgeLayout(edge.id);
         const hasSections = layout?.sections && layout.sections.length > 0;
-        console.log(`   ${edge.id}: ${isHyper ? 'HYPER' : 'REGULAR'}, sections: ${hasSections ? 'YES' : 'NO'}`);
+        console.log(
+          `   ${edge.id}: ${isHyper ? 'HYPER' : 'REGULAR'}, sections: ${hasSections ? 'YES' : 'NO'}`
+        );
       });
-      
+
       // Simply require that we have edges and the routing system works
       // Note: Edge sections may or may not be present depending on layout algorithm
       expect(edges.length).toBeGreaterThan(0);
-      
+
       // All edges should be accounted for (either with sections or cross-container)
       expect(edgesWithSections + crossContainerEdges).toBe(edges.length);
     });

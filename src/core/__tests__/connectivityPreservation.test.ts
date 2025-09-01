@@ -1,12 +1,12 @@
 /**
  * Connectivity Preservation Validation Suite
- * 
+ *
  * This test ensures that during any container collapse/expand operations,
  * we maintain the fundamental invariant that ALL GraphEdges in the system
  * are accounted for either as:
  * 1. Visible GraphEdges, OR
  * 2. Edges covered by HyperEdges
- * 
+ *
  * This catches the critical bug where aggregated edges were being lost
  * during nested container collapse operations.
  */
@@ -83,7 +83,7 @@ function validateConnectivityPreservation(visState: VisualizationState): Connect
     aggregatedInHyperEdges: aggregatedEdgeIds.size,
     missingEdges,
     duplicateAggregations,
-    isValid: missingEdges.length === 0 && duplicateAggregations.length === 0
+    isValid: missingEdges.length === 0 && duplicateAggregations.length === 0,
   };
 }
 
@@ -100,14 +100,14 @@ describe('Connectivity Preservation Validation', () => {
       visState.addGraphNode('node1', { id: 'node1', label: 'Node 1' });
       visState.addGraphNode('node2', { id: 'node2', label: 'Node 2' });
       visState.addGraphNode('node3', { id: 'node3', label: 'Node 3' });
-      
+
       visState.addGraphEdge('edge1', {
         id: 'edge1',
         source: 'node1',
         target: 'node3',
         label: 'Edge 1->3',
         style: 'default',
-        hidden: false
+        hidden: false,
       });
       visState.addGraphEdge('edge2', {
         id: 'edge2',
@@ -115,15 +115,15 @@ describe('Connectivity Preservation Validation', () => {
         target: 'node3',
         label: 'Edge 2->3',
         style: 'default',
-        hidden: false
+        hidden: false,
       });
-      
+
       visState.addContainer('container1', {
         id: 'container1',
         label: 'Container 1',
         collapsed: false,
         hidden: false,
-        children: new Set(['node1', 'node2'])
+        children: new Set(['node1', 'node2']),
       });
 
       // Validate initial state
@@ -133,7 +133,7 @@ describe('Connectivity Preservation Validation', () => {
       console.log(`  - Visible graph edges: ${report.visibleGraphEdges}`);
       console.log(`  - Aggregated in hyperEdges: ${report.aggregatedInHyperEdges}`);
       console.log(`  - Valid: ${report.isValid}`);
-      
+
       expect(report.isValid).toBe(true);
       expect(report.totalGraphEdges).toBe(2);
       expect(report.visibleGraphEdges).toBe(2);
@@ -149,8 +149,12 @@ describe('Connectivity Preservation Validation', () => {
       console.log(`  - Total graph edges: ${report.totalGraphEdges}`);
       console.log(`  - Visible graph edges: ${report.visibleGraphEdges}`);
       console.log(`  - Aggregated in hyperEdges: ${report.aggregatedInHyperEdges}`);
-      console.log(`  - Missing edges: ${report.missingEdges.length > 0 ? report.missingEdges.join(', ') : 'none'}`);
-      console.log(`  - Duplicate aggregations: ${report.duplicateAggregations.length > 0 ? report.duplicateAggregations.join(', ') : 'none'}`);
+      console.log(
+        `  - Missing edges: ${report.missingEdges.length > 0 ? report.missingEdges.join(', ') : 'none'}`
+      );
+      console.log(
+        `  - Duplicate aggregations: ${report.duplicateAggregations.length > 0 ? report.duplicateAggregations.join(', ') : 'none'}`
+      );
       console.log(`  - Valid: ${report.isValid}`);
 
       // This is the critical test - ALL edges must be accounted for
@@ -174,7 +178,7 @@ describe('Connectivity Preservation Validation', () => {
         target: 'node3',
         label: 'Edge 1->3',
         style: 'default',
-        hidden: false
+        hidden: false,
       });
       visState.addGraphEdge('edge2', {
         id: 'edge2',
@@ -182,7 +186,7 @@ describe('Connectivity Preservation Validation', () => {
         target: 'node4',
         label: 'Edge 2->4',
         style: 'default',
-        hidden: false
+        hidden: false,
       });
       visState.addGraphEdge('edge3', {
         id: 'edge3',
@@ -190,7 +194,7 @@ describe('Connectivity Preservation Validation', () => {
         target: 'node4',
         label: 'Edge 1->4',
         style: 'default',
-        hidden: false
+        hidden: false,
       });
 
       // Create nested container hierarchy
@@ -199,23 +203,23 @@ describe('Connectivity Preservation Validation', () => {
         label: 'Container 1',
         collapsed: false,
         hidden: false,
-        children: new Set(['node1', 'node2'])
+        children: new Set(['node1', 'node2']),
       });
-      
+
       visState.addContainer('container2', {
         id: 'container2',
         label: 'Container 2',
         collapsed: false,
         hidden: false,
-        children: new Set(['node3', 'node4'])
+        children: new Set(['node3', 'node4']),
       });
-      
+
       visState.addContainer('root', {
         id: 'root',
         label: 'Root',
         collapsed: false,
         hidden: false,
-        children: new Set(['container1', 'container2'])
+        children: new Set(['container1', 'container2']),
       });
 
       // Validate initial state
@@ -229,26 +233,32 @@ describe('Connectivity Preservation Validation', () => {
       // Step 1: Collapse inner container1
       console.log('\n🔄 Step 1: Collapsing container1...');
       visState._containerOperations.handleContainerCollapse('container1');
-      
+
       report = validateConnectivityPreservation(visState);
-      console.log(`📊 After container1 collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated`);
+      console.log(
+        `📊 After container1 collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated`
+      );
       expect(report.isValid).toBe(true);
 
       // Step 2: Collapse container2
       console.log('\n🔄 Step 2: Collapsing container2...');
       visState._containerOperations.handleContainerCollapse('container2');
-      
+
       report = validateConnectivityPreservation(visState);
-      console.log(`📊 After container2 collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated`);
+      console.log(
+        `📊 After container2 collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated`
+      );
       expect(report.isValid).toBe(true);
 
       // Step 3: Collapse root (this is where orphaned edges were previously lost)
       console.log('\n🔄 Step 3: Collapsing root container...');
       visState._containerOperations.handleContainerCollapse('root');
-      
+
       report = validateConnectivityPreservation(visState);
-      console.log(`📊 After root collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated`);
-      
+      console.log(
+        `📊 After root collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated`
+      );
+
       // This is the critical test for the orphaned edge bug
       expect(report.isValid).toBe(true);
       expect(report.missingEdges).toHaveLength(0);
@@ -266,11 +276,11 @@ describe('Connectivity Preservation Validation', () => {
     it('should maintain connectivity invariant with paxos-flipped.json data', async () => {
       // Load real test data
       const testDataPath = join(__dirname, '../test-data/paxos-flipped.json');
-      
+
       try {
         const testDataRaw = readFileSync(testDataPath, 'utf-8');
         const testData = JSON.parse(testDataRaw);
-        
+
         const result = parseGraphJSON(testData, 'backtrace');
         const realVisualizationState = result.state;
 
@@ -280,38 +290,43 @@ describe('Connectivity Preservation Validation', () => {
         console.log(`  - Total graph edges: ${report.totalGraphEdges}`);
         console.log(`  - Visible graph edges: ${report.visibleGraphEdges}`);
         console.log(`  - Valid: ${report.isValid}`);
-        
+
         expect(report.isValid).toBe(true);
 
         // Perform some collapse operations and validate connectivity is maintained
         // Since we can't access containers directly, we'll test with expanded containers
         const expandedContainers = realVisualizationState.getExpandedContainers().slice(0, 5);
-        
+
         for (const container of expandedContainers) {
           const containerId = (container as any).id;
           if (containerId && !(container as any).collapsed) {
             console.log(`\n🔄 Testing collapse of container: ${containerId}`);
-            
+
             realVisualizationState._containerOperations.handleContainerCollapse(containerId);
-            
+
             report = validateConnectivityPreservation(realVisualizationState);
-            console.log(`📊 After ${containerId} collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated, valid: ${report.isValid}`);
-            
+            console.log(
+              `📊 After ${containerId} collapse: ${report.totalGraphEdges} total, ${report.visibleGraphEdges} visible, ${report.aggregatedInHyperEdges} aggregated, valid: ${report.isValid}`
+            );
+
             // For debugging, let's not fail immediately but log the issue
             if (!report.isValid) {
               console.error(`❌ Connectivity violation after collapsing ${containerId}:`);
-              console.error(`  Missing edges: ${report.missingEdges.length} (showing first 5: ${report.missingEdges.slice(0, 5).join(', ')})`);
+              console.error(
+                `  Missing edges: ${report.missingEdges.length} (showing first 5: ${report.missingEdges.slice(0, 5).join(', ')})`
+              );
               console.error(`  Duplicate aggregations: ${report.duplicateAggregations.join(', ')}`);
               console.error(`  Total should be: ${report.totalGraphEdges}`);
-              console.error(`  Actually accounted for: ${report.visibleGraphEdges + report.aggregatedInHyperEdges}`);
-              
+              console.error(
+                `  Actually accounted for: ${report.visibleGraphEdges + report.aggregatedInHyperEdges}`
+              );
+
               // For now, let's document this as a known issue rather than failing the test
-              console.warn(`⚠️ This reveals our validation needs refinement or there's a real bug to fix`);
+              console.warn(
+                `⚠️ This reveals our validation needs refinement or there's a real bug to fix`
+              );
               break;
             }
-            
-            // Comment out the expect for now to see if other containers work
-            // expect(report.isValid).toBe(true);
           }
         }
 
@@ -328,14 +343,14 @@ describe('Connectivity Preservation Validation', () => {
       // Create a scenario to test our validator
       visState.addGraphNode('node1', { id: 'node1', label: 'Node 1' });
       visState.addGraphNode('node2', { id: 'node2', label: 'Node 2' });
-      
+
       visState.addGraphEdge('edge1', {
         id: 'edge1',
         source: 'node1',
         target: 'node2',
         label: 'Edge 1->2',
         style: 'default',
-        hidden: false
+        hidden: false,
       });
 
       // Initial state should be valid
@@ -344,7 +359,7 @@ describe('Connectivity Preservation Validation', () => {
       expect(report.totalGraphEdges).toBe(1);
       expect(report.visibleGraphEdges).toBe(1);
       expect(report.aggregatedInHyperEdges).toBe(0);
-      
+
       console.log('\n✅ Validator working correctly for basic scenarios');
     });
   });

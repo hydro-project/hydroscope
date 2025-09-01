@@ -11,7 +11,7 @@ export interface ExternalContainer {
 }
 /**
  * @fileoverview Type definitions for the Vis component
- * 
+ *
  * Core TypeScript interfaces and types for the graph visualization system.
  * These types provide compile-time safety and better developer experience.
  */

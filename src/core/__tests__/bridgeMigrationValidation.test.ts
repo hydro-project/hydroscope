@@ -1,6 +1,6 @@
 /**
  * @fileoverview Bridge Migration Validation Tests
- * 
+ *
  * These tests verify that the business logic moved from bridges to VisualizationState
  * produces the same results as the original bridge implementations would have.
  * This ensures our refactoring maintains behavioral compatibility.
@@ -29,7 +29,7 @@ describe('Bridge Migration Validation', () => {
         width: 200,
         height: 150,
         x: 100,
-        y: 200
+        y: 200,
       });
 
       // Execute: Use new VisualizationState method
@@ -38,17 +38,17 @@ describe('Bridge Migration Validation', () => {
       // Verify: Should match original ELKBridge logic
       expect(collapsedAsNodes).toHaveLength(1);
       const containerAsNode = collapsedAsNodes[0];
-      
+
       // This should match the original ELKBridge containerAsNode creation
       expect(containerAsNode).toMatchObject({
         id: 'bt_26',
-        width: 200,  // Should use container dimensions, not defaults
+        width: 200, // Should use container dimensions, not defaults
         height: 150,
         x: 100,
         y: 200,
         hidden: false,
         collapsed: true,
-        type: 'container-node'
+        type: 'container-node',
       });
     });
 
@@ -57,7 +57,7 @@ describe('Bridge Migration Validation', () => {
       visState.setContainer('container_no_dims', {
         collapsed: true,
         hidden: false,
-        children: ['node1']
+        children: ['node1'],
         // No width/height specified
       });
 
@@ -71,7 +71,7 @@ describe('Bridge Migration Validation', () => {
         width: LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH,
         height: LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT,
         collapsed: true,
-        type: 'container-node'
+        type: 'container-node',
       });
     });
   });
@@ -81,19 +81,29 @@ describe('Bridge Migration Validation', () => {
       // Setup: Replicate complex hierarchy from original ELKBridge.buildELKGraph()
       visState.setGraphNode('topLevel1', { label: 'Top 1', width: 180, height: 60, hidden: false });
       visState.setGraphNode('topLevel2', { label: 'Top 2', width: 160, height: 50, hidden: false });
-      visState.setGraphNode('inExpanded', { label: 'In Expanded', width: 150, height: 45, hidden: false });
-      visState.setGraphNode('inCollapsed', { label: 'In Collapsed', width: 140, height: 40, hidden: false });
-      
+      visState.setGraphNode('inExpanded', {
+        label: 'In Expanded',
+        width: 150,
+        height: 45,
+        hidden: false,
+      });
+      visState.setGraphNode('inCollapsed', {
+        label: 'In Collapsed',
+        width: 140,
+        height: 40,
+        hidden: false,
+      });
+
       visState.setContainer('expandedContainer', {
         collapsed: false,
         hidden: false,
-        children: ['inExpanded']
+        children: ['inExpanded'],
       });
-      
+
       visState.setContainer('collapsedContainer', {
         collapsed: true,
         hidden: false,
-        children: ['inCollapsed']
+        children: ['inCollapsed'],
       });
 
       // Execute: Get top-level nodes like original ELKBridge would
@@ -101,13 +111,13 @@ describe('Bridge Migration Validation', () => {
 
       // Verify: Should match original ELKBridge filtering logic
       const topLevelIds = topLevelNodes.map(n => n.id);
-      
+
       // With our fix: nodes in collapsed containers are hidden, so only truly top-level nodes appear
       expect(topLevelIds).toContain('topLevel1'); // Not in any container
       expect(topLevelIds).toContain('topLevel2'); // Not in any container
       expect(topLevelIds).not.toContain('inCollapsed'); // In collapsed container, so hidden (not top-level)
       expect(topLevelIds).not.toContain('inExpanded'); // In expanded container
-      
+
       // Verify no collapsed containers themselves are included
       expect(topLevelIds).not.toContain('collapsedContainer');
       expect(topLevelIds).not.toContain('expandedContainer');
@@ -115,9 +125,9 @@ describe('Bridge Migration Validation', () => {
 
     test('should enforce dimension validation like improved ELKBridge', () => {
       // Setup: Node without dimensions (would have thrown error in improved bridge)
-      visState.setGraphNode('nodeMissingDims', { 
-        label: 'Missing Dims', 
-        hidden: false
+      visState.setGraphNode('nodeMissingDims', {
+        label: 'Missing Dims',
+        hidden: false,
         // No width/height
       });
 
@@ -138,19 +148,19 @@ describe('Bridge Migration Validation', () => {
       visState.setContainer('parent1', {
         collapsed: false, // Only expanded containers in original logic
         hidden: false,
-        children: ['child1', 'child2', 'nested_container']
+        children: ['child1', 'child2', 'nested_container'],
       });
-      
+
       visState.setContainer('parent2', {
         collapsed: true, // Original logic excluded collapsed containers
         hidden: false,
-        children: ['child3', 'child4']
+        children: ['child3', 'child4'],
       });
-      
+
       visState.setContainer('nested_container', {
         collapsed: false,
         hidden: false,
-        children: ['nested_child']
+        children: ['nested_child'],
       });
 
       // Execute: Use new VisualizationState method
@@ -162,11 +172,11 @@ describe('Bridge Migration Validation', () => {
       expect(parentMap.get('child2')).toBe('parent1');
       expect(parentMap.get('nested_container')).toBe('parent1');
       expect(parentMap.get('nested_child')).toBe('nested_container');
-      
+
       // Children of collapsed containers should not be mapped (original behavior)
       expect(parentMap.get('child3')).toBeUndefined();
       expect(parentMap.get('child4')).toBeUndefined();
-      
+
       expect(parentMap.size).toBe(4);
     });
   });
@@ -175,27 +185,32 @@ describe('Bridge Migration Validation', () => {
     test('should provide consistent data between ELK and ReactFlow bridge needs', () => {
       // Setup: Complex scenario that both bridges would handle
       visState.setGraphNode('external', { label: 'External' });
-      visState.setGraphNode('sharedNode', { label: 'Shared', width: 200, height: 100, hidden: false });
-      
+      visState.setGraphNode('sharedNode', {
+        label: 'Shared',
+        width: 200,
+        height: 100,
+        hidden: false,
+      });
+
       // Create the edge first, before collapsing the container
       visState.setGraphEdge('sharedEdge', {
         source: 'external',
         target: 'sharedNode',
         sourceHandle: 'out-port',
-        hidden: false
+        hidden: false,
       });
-      
+
       // Then set up the container - initially not collapsed
       visState.setContainer('sharedContainer', {
-        collapsed: false,  // Start expanded so edge creation is valid
+        collapsed: false, // Start expanded so edge creation is valid
         hidden: false,
         children: ['sharedNode'],
         width: 250,
         height: 200,
         x: 50,
-        y: 75
+        y: 75,
       });
-      
+
       // Now collapse the container
       visState.collapseContainer('sharedContainer');
 
@@ -204,18 +219,18 @@ describe('Bridge Migration Validation', () => {
       const parentMap = visState.getParentChildMap(); // ReactFlow Bridge
       const topLevelNodes = visState.getTopLevelNodes(); // ELK Bridge
       const reactFlowBridge = new ReactFlowBridge();
-  const edgeHandles = reactFlowBridge.getEdgeHandles(visState, 'sharedEdge', []); // ReactFlow Bridge
+      const edgeHandles = reactFlowBridge.getEdgeHandles(visState, 'sharedEdge', []); // ReactFlow Bridge
 
       // Verify: Consistent view of the same data
       // ELK would see collapsed container as a node
       expect(collapsedAsNodes.find(n => n.id === 'sharedContainer')).toBeDefined();
-      
+
       // ReactFlow would not map children of collapsed containers
       expect(parentMap.get('sharedNode')).toBeUndefined();
-      
+
       // With our fix: sharedNode is hidden (in collapsed container), so not in top-level
       expect(topLevelNodes.find(n => n.id === 'sharedNode')).toBeUndefined();
-      
+
       // ReactFlow would get consistent handle information
       expect(edgeHandles.sourceHandle).toBe('out-bottom');
       expect(edgeHandles.targetHandle).toBe('in-top'); // Current system uses discrete handles

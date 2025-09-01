@@ -1,6 +1,6 @@
 /**
  * @fileoverview Regression Tests for Search and HierarchyTree Sync Issues
- * 
+ *
  * These tests specifically target the issues reported:
  * 1. Search highlights not being visible enough in HierarchyTree
  * 2. Graph containers not staying in sync with HierarchyTree expansion state
@@ -26,13 +26,13 @@ const createMockHierarchy = (): HierarchyTreeNode[] => [
             children: [
               {
                 id: 'chat_server1',
-                children: []
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'coop',
@@ -45,14 +45,14 @@ const createMockHierarchy = (): HierarchyTreeNode[] => [
             children: [
               {
                 id: 'closure3',
-                children: []
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 describe('Search Highlight Visibility Regression', () => {
@@ -61,7 +61,7 @@ describe('Search Highlight Visibility Regression', () => {
 
   beforeEach(() => {
     hierarchyData = createMockHierarchy();
-    
+
     searchableItems = [
       { id: 'runtime', label: 'runtime/park.rs', type: 'container' },
       { id: 'poll', label: 'poll', type: 'container' },
@@ -92,7 +92,7 @@ describe('Search Highlight Visibility Regression', () => {
     // Test "poll*" pattern - should match both poll containers
     const pollRegex = toRegex('poll*');
     expect(pollRegex).toBeTruthy();
-    
+
     const pollMatches = searchableItems.filter(item => pollRegex!.test(item.label));
     expect(pollMatches).toHaveLength(2);
     expect(pollMatches.map(m => m.id)).toContain('poll');
@@ -101,17 +101,19 @@ describe('Search Highlight Visibility Regression', () => {
     // Test "*closure*" pattern - should match all closure containers
     const closureRegex = toRegex('*closure*');
     expect(closureRegex).toBeTruthy();
-    
+
     const closureMatches = searchableItems.filter(item => closureRegex!.test(item.label));
     expect(closureMatches).toHaveLength(3);
-    expect(closureMatches.map(m => m.id)).toEqual(expect.arrayContaining(['closure1', 'closure2', 'closure3']));
+    expect(closureMatches.map(m => m.id)).toEqual(
+      expect.arrayContaining(['closure1', 'closure2', 'closure3'])
+    );
   });
 
   it('should build proper parent map for ancestor expansion', () => {
     // This tests the logic for auto-expanding ancestors of search matches
     const buildParentMap = (hierarchy: HierarchyTreeNode[]): Map<string, string | null> => {
       const parentMap = new Map<string, string | null>();
-      
+
       const traverse = (nodes: HierarchyTreeNode[], parent: string | null = null) => {
         for (const node of nodes) {
           parentMap.set(node.id, parent);
@@ -120,13 +122,13 @@ describe('Search Highlight Visibility Regression', () => {
           }
         }
       };
-      
+
       traverse(hierarchy);
       return parentMap;
     };
 
     const parentMap = buildParentMap(hierarchyData);
-    
+
     // Verify parent relationships
     expect(parentMap.get('runtime')).toBeNull(); // Root
     expect(parentMap.get('coop')).toBeNull(); // Root
@@ -147,19 +149,19 @@ describe('Search Highlight Visibility Regression', () => {
       ['chat_server1', 'closure1'],
       ['closure2', 'coop'],
       ['poll2', 'closure2'],
-      ['closure3', 'poll2']
+      ['closure3', 'poll2'],
     ]);
 
     // Function to get all ancestors that need to be expanded
     const getAncestorsToExpand = (targetId: string): string[] => {
       const ancestors: string[] = [];
       let current: string | null | undefined = targetId;
-      
+
       while (current) {
         ancestors.push(current);
         current = parentMap.get(current) ?? null;
       }
-      
+
       return ancestors;
     };
 
@@ -180,41 +182,41 @@ describe('Graph-Tree Synchronization Logic', () => {
   beforeEach(() => {
     visState = createVisualizationState();
     mockToggleLog = [];
-    
+
     // Set up a hierarchy similar to the screenshot
     visState.setContainer('runtime', {
       children: ['poll'],
       collapsed: false,
       hidden: false,
-      data: { label: 'runtime/park.rs' }
+      data: { label: 'runtime/park.rs' },
     });
-    
+
     visState.setContainer('poll', {
       children: ['closure1'],
       collapsed: false,
       hidden: false,
-      data: { label: 'poll' }
+      data: { label: 'poll' },
     });
-    
+
     visState.setContainer('closure1', {
       children: ['chat_server1'],
       collapsed: false,
       hidden: false,
-      data: { label: '{{closure}}' }
+      data: { label: '{{closure}}' },
     });
-    
+
     visState.setContainer('chat_server1', {
       children: [],
       collapsed: false,
       hidden: false,
-      data: { label: 'chat_server' }
+      data: { label: 'chat_server' },
     });
-    
+
     visState.setContainer('coop', {
       children: ['closure2'],
       collapsed: false,
       hidden: false,
-      data: { label: 'coop/mod.rs' }
+      data: { label: 'coop/mod.rs' },
     });
   });
 
@@ -227,14 +229,14 @@ describe('Graph-Tree Synchronization Logic', () => {
     // Collapse poll container
     visState.collapseContainer('poll');
     expect(visState.getContainer('poll')?.collapsed).toBe(true);
-    
+
     // Parent should still be expanded, child states don't matter when parent is collapsed
     expect(visState.getContainer('runtime')?.collapsed).toBe(false);
-    
+
     // Get collapsed containers as would be passed to HierarchyTree
     const collapsedContainers = visState.getCollapsedContainers();
     const collapsedIds = new Set(collapsedContainers.map(c => c.id));
-    
+
     expect(collapsedIds.has('poll')).toBe(true);
     expect(collapsedIds.has('runtime')).toBe(false);
   });
@@ -242,17 +244,17 @@ describe('Graph-Tree Synchronization Logic', () => {
   it('should detect when search-driven expansion conflicts with visualization state', () => {
     // Start with some containers collapsed
     visState.collapseContainer('poll');
-    
+
     // Verify container is actually collapsed
     expect(visState.getContainer('poll')?.collapsed).toBe(true);
-    
+
     const collapsedIds = new Set(visState.getCollapsedContainers().map(c => c.id));
     expect(collapsedIds.has('poll')).toBe(true);
 
     // Simulate search requiring chat_server1 to be visible
     // This should detect that poll needs to be expanded (since chat_server1 is nested under poll)
     const searchMatches: SearchMatch[] = [
-      { id: 'chat_server1', label: 'chat_server', type: 'container' }
+      { id: 'chat_server1', label: 'chat_server', type: 'container' },
     ];
 
     // Function to detect which containers need expansion for search visibility
@@ -265,7 +267,7 @@ describe('Graph-Tree Synchronization Logic', () => {
       ]);
 
       const toExpand: string[] = [];
-      
+
       for (const match of matches) {
         let current: string | null | undefined = parentMap.get(match.id);
         while (current) {
@@ -275,7 +277,7 @@ describe('Graph-Tree Synchronization Logic', () => {
           current = parentMap.get(current) ?? null;
         }
       }
-      
+
       return [...new Set(toExpand)]; // Remove duplicates
     };
 
@@ -298,7 +300,7 @@ describe('Graph-Tree Synchronization Logic', () => {
 
     // Initial state: poll is expanded
     expect(visState.getContainer('poll')?.collapsed).toBe(false);
-    
+
     // Simulate tree click to collapse poll
     onToggleContainer('poll');
     expect(mockToggleLog).toEqual(['poll']);
@@ -321,7 +323,7 @@ describe('Graph-Tree Synchronization Logic', () => {
     if (!alreadyExpanded) {
       onToggleContainer('poll'); // This shouldn't run
     }
-    
+
     expect(mockToggleLog).toEqual([]); // No calls made
   });
 });
@@ -332,7 +334,7 @@ describe('Search Integration with Node/Container Mapping', () => {
     const mockContainers = new Map([
       ['runtime', { id: 'runtime', children: ['poll'] }],
       ['poll', { id: 'poll', children: ['node1', 'node2'] }],
-      ['coop', { id: 'coop', children: ['node3'] }]
+      ['coop', { id: 'coop', children: ['node3'] }],
     ]);
 
     const mockGetContainerChildren = (id: string) => {
@@ -345,7 +347,7 @@ describe('Search Integration with Node/Container Mapping', () => {
 
     // Build reverse mapping from nodes to their parent containers
     const nodeParents = new Map<string, Set<string>>();
-    
+
     mockContainers.forEach((_container, containerId) => {
       const children = mockGetContainerChildren(containerId);
       children.forEach(childId => {
@@ -393,7 +395,7 @@ describe('Search Integration with Node/Container Mapping', () => {
 
     const nodeMatches: SearchMatch[] = [
       { id: 'node1', label: 'worker_node', type: 'node' },
-      { id: 'node3', label: 'processor_node', type: 'node' }
+      { id: 'node3', label: 'processor_node', type: 'node' },
     ];
 
     const containerMatches = mapNodeMatchesToContainers(nodeMatches);

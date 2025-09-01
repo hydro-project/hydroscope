@@ -58,16 +58,23 @@ export function useFlowGraphController({
 
   // Create bridge and engine (stable instances)
   const bridge = useMemo(() => new ReactFlowBridge(), []);
-  const engine = useMemo(() => createVisualizationEngine(visualizationState, {
-    autoLayout: true,
-    enableLogging: false,
-    layoutConfig: layoutConfig,
-  }), [visualizationState]);
+  const engine = useMemo(
+    () =>
+      createVisualizationEngine(visualizationState, {
+        autoLayout: true,
+        enableLogging: false,
+        layoutConfig: layoutConfig,
+      }),
+    [visualizationState]
+  );
 
   // Cleanup timeout on unmount
-  useEffect(() => () => {
-    if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
+    },
+    []
+  );
 
   const fitOnce = useCallback(() => {
     try {
@@ -78,50 +85,61 @@ export function useFlowGraphController({
     }
   }, [fitView]);
 
-  const refreshLayout = useCallback(async (force?: boolean) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const refreshLayout = useCallback(
+    async (force?: boolean) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
-      // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
-      if (force && layoutConfig) {
-        engine.updateLayoutConfig({ ...layoutConfig }, false);
-      }
+        // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
+        // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
+        if (force && layoutConfig) {
+          engine.updateLayoutConfig({ ...layoutConfig }, false);
+        }
 
-      // Check if we should use selective layout
-      const lastChangedContainer = visualizationState.getLastChangedContainer();
-      if (lastChangedContainer && !force) {
-        // Use selective layout for individual container changes
-        await engine.runSelectiveLayout(lastChangedContainer);
-        visualizationState.clearLastChangedContainer();
-      } else {
-        // Use full layout for other cases
-        await engine.runLayout();
-      }
-      
-      const baseData = bridge.convertVisualizationState(visualizationState);
-      baseReactFlowDataRef.current = baseData;
-      const dataWithManual = applyManualPositions(baseData, manualPositions);
-      setReactFlowData(dataWithManual);
+        // Check if we should use selective layout
+        const lastChangedContainer = visualizationState.getLastChangedContainer();
+        if (lastChangedContainer && !force) {
+          // Use selective layout for individual container changes
+          await engine.runSelectiveLayout(lastChangedContainer);
+          visualizationState.clearLastChangedContainer();
+        } else {
+          // Use full layout for other cases
+          await engine.runLayout();
+        }
 
-      if (config.fitView !== false) {
-        setTimeout(() => {
-          try {
-            fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
-            lastFitTimeRef.current = Date.now();
-          } catch (err) {
-            console.warn('[FlowGraph] ⚠️ Auto-fit failed during refresh:', err);
-          }
-        }, 200);
+        const baseData = bridge.convertVisualizationState(visualizationState);
+        baseReactFlowDataRef.current = baseData;
+        const dataWithManual = applyManualPositions(baseData, manualPositions);
+        setReactFlowData(dataWithManual);
+
+        if (config.fitView !== false) {
+          setTimeout(() => {
+            try {
+              fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
+              lastFitTimeRef.current = Date.now();
+            } catch (err) {
+              console.warn('[FlowGraph] ⚠️ Auto-fit failed during refresh:', err);
+            }
+          }, 200);
+        }
+      } catch (err) {
+        console.error('[FlowGraph] ❌ Failed to refresh layout:', err);
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('[FlowGraph] ❌ Failed to refresh layout:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [applyManualPositions, bridge, config.fitView, engine, fitView, manualPositions, visualizationState]);
+    },
+    [
+      applyManualPositions,
+      bridge,
+      config.fitView,
+      engine,
+      fitView,
+      manualPositions,
+      visualizationState,
+    ]
+  );
 
   // Listen to layout config changes (when data already present)
   useEffect(() => {
@@ -134,7 +152,10 @@ export function useFlowGraphController({
         await engine.runLayout();
         const baseData = bridge.convertVisualizationState(visualizationState);
         baseReactFlowDataRef.current = baseData;
-        const withManual = applyManualPositions(baseData, visualizationState.getAllManualPositions());
+        const withManual = applyManualPositions(
+          baseData,
+          visualizationState.getAllManualPositions()
+        );
         setReactFlowData(withManual);
       } catch (err) {
         console.error('[FlowGraph] ❌ Failed to apply layout change:', err);
@@ -215,70 +236,84 @@ export function useFlowGraphController({
   // Update ReactFlow positions when manual positions change (no re-layout)
   useEffect(() => {
     if (baseReactFlowDataRef.current && visualizationState.hasAnyManualPositions()) {
-      const updated = applyManualPositions(baseReactFlowDataRef.current, visualizationState.getAllManualPositions());
+      const updated = applyManualPositions(
+        baseReactFlowDataRef.current,
+        visualizationState.getAllManualPositions()
+      );
       setReactFlowData(updated);
     }
   }, [visualizationState, applyManualPositions]);
 
   // Event handlers
-  const onNodeClick = useCallback((event: any, node: any) => {
-    
-    // Check if this is a container node
-    const container = visualizationState.getContainer(node.id);
-    
-    if (container) {
-      // For container nodes, call the event handler FIRST (to change container state)
-      // then do click animation logic AFTER the container state has changed
-      eventHandlers?.onNodeClick?.(event, node);
-      
-      // Set isClicked: true for the clicked node, false for all others
-      visualizationState.visibleNodes.forEach(n => {
-        visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
-      });
-      
-      // Note: Don't call refreshLayout here for containers - the container handler will do its own layout refresh
-    } else {
-      // For regular nodes, do click animation logic first, then call event handler
-      // Set isClicked: true for the clicked node, false for all others
-      visualizationState.visibleNodes.forEach(n => {
-        visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
-      });
-      
-      // Trigger a refresh to update node ordering
-      refreshLayout(false);
-      
-      // Call the original event handler if provided
-      eventHandlers?.onNodeClick?.(event, node);
-    }
-  }, [eventHandlers, visualizationState, refreshLayout]);
+  const onNodeClick = useCallback(
+    (event: any, node: any) => {
+      // Check if this is a container node
+      const container = visualizationState.getContainer(node.id);
 
-  const onEdgeClick = useCallback((event: any, edge: any) => {
-    eventHandlers?.onEdgeClick?.(event, edge);
-  }, [eventHandlers]);
+      if (container) {
+        // For container nodes, call the event handler FIRST (to change container state)
+        // then do click animation logic AFTER the container state has changed
+        eventHandlers?.onNodeClick?.(event, node);
 
-  const onNodeDrag = useCallback((event: any, node: any) => {
-    eventHandlers?.onNodeDrag?.(event, node);
-  }, [eventHandlers]);
+        // Set isClicked: true for the clicked node, false for all others
+        visualizationState.visibleNodes.forEach(n => {
+          visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
+        });
 
-  const onNodeDragStop = useCallback((node: any) => {
-    visualizationState.setManualPosition(node.id, node.position.x, node.position.y);
+        // Note: Don't call refreshLayout here for containers - the container handler will do its own layout refresh
+      } else {
+        // For regular nodes, do click animation logic first, then call event handler
+        // Set isClicked: true for the clicked node, false for all others
+        visualizationState.visibleNodes.forEach(n => {
+          visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
+        });
 
-    if (config.fitView !== false) {
-      const now = Date.now();
-      const since = now - lastFitTimeRef.current;
-      if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
-      if (since > 500) {
-        autoFitTimeoutRef.current = setTimeout(() => {
-          try {
-            fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
-            lastFitTimeRef.current = Date.now();
-          } catch (err) {
-            console.warn('[FlowGraph] ⚠️ Auto-fit after drag failed:', err);
-          }
-        }, 200);
+        // Trigger a refresh to update node ordering
+        refreshLayout(false);
+
+        // Call the original event handler if provided
+        eventHandlers?.onNodeClick?.(event, node);
       }
-    }
-  }, [visualizationState, config.fitView, fitView]);
+    },
+    [eventHandlers, visualizationState, refreshLayout]
+  );
+
+  const onEdgeClick = useCallback(
+    (event: any, edge: any) => {
+      eventHandlers?.onEdgeClick?.(event, edge);
+    },
+    [eventHandlers]
+  );
+
+  const onNodeDrag = useCallback(
+    (event: any, node: any) => {
+      eventHandlers?.onNodeDrag?.(event, node);
+    },
+    [eventHandlers]
+  );
+
+  const onNodeDragStop = useCallback(
+    (node: any) => {
+      visualizationState.setManualPosition(node.id, node.position.x, node.position.y);
+
+      if (config.fitView !== false) {
+        const now = Date.now();
+        const since = now - lastFitTimeRef.current;
+        if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
+        if (since > 500) {
+          autoFitTimeoutRef.current = setTimeout(() => {
+            try {
+              fitView({ padding: 0.1, maxZoom: 1.2, duration: 300 });
+              lastFitTimeRef.current = Date.now();
+            } catch (err) {
+              console.warn('[FlowGraph] ⚠️ Auto-fit after drag failed:', err);
+            }
+          }, 200);
+        }
+      }
+    },
+    [visualizationState, config.fitView, fitView]
+  );
 
   const onNodesChange = useCallback((changes: any[]) => {
     setReactFlowData(prev => {

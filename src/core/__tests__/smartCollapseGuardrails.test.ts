@@ -17,7 +17,7 @@ describe('Smart Collapse Guardrails', () => {
 
     const engine = createVisualizationEngine(state, {
       enableLogging: false,
-      layoutConfig: { enableSmartCollapse: true, algorithm: 'mrtree', direction: 'DOWN' }
+      layoutConfig: { enableSmartCollapse: true, algorithm: 'mrtree', direction: 'DOWN' },
     });
 
     // Initial layout runs smart collapse once
@@ -45,7 +45,7 @@ describe('Smart Collapse Guardrails', () => {
 
     const engine = createVisualizationEngine(state, {
       enableLogging: false,
-      layoutConfig: { enableSmartCollapse: true, algorithm: 'mrtree', direction: 'DOWN' }
+      layoutConfig: { enableSmartCollapse: true, algorithm: 'mrtree', direction: 'DOWN' },
     });
 
     // Initial layout + smart collapse

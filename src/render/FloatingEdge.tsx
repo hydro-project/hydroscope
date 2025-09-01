@@ -1,12 +1,18 @@
 /**
  * @fileoverview Floating Edge Component
- * 
+ *
  * Custom edge that calculates dynamic attachment points on node perimeters
  * Based on ReactFlow's Simple Floating Edges example
  */
 
 import React, { useCallback } from 'react';
-import { getBezierPath, getStraightPath, getSmoothStepPath, useStore, EdgeProps } from '@xyflow/react';
+import {
+  getBezierPath,
+  getStraightPath,
+  getSmoothStepPath,
+  useStore,
+  EdgeProps,
+} from '@xyflow/react';
 import { useStyleConfig } from './StyleConfigContext';
 import { getStroke, getHaloColor, stripHaloStyle } from './edgeStyle';
 import { getNodeIntersection, getEdgePosition } from './geometry';
@@ -33,8 +39,8 @@ function getEdgeParams(source: any, target: any) {
 
 export default function FloatingEdge({ id, source, target, style = {}, markerEnd }: EdgeProps) {
   const styleCfg = useStyleConfig();
-  const sourceNode = useStore(useCallback((store) => store.nodeLookup.get(source), [source]));
-  const targetNode = useStore(useCallback((store) => store.nodeLookup.get(target), [target]));
+  const sourceNode = useStore(useCallback(store => store.nodeLookup.get(source), [source]));
+  const targetNode = useStore(useCallback(store => store.nodeLookup.get(target), [target]));
 
   if (!sourceNode || !targetNode) {
     return null;
@@ -43,10 +49,10 @@ export default function FloatingEdge({ id, source, target, style = {}, markerEnd
   const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
 
   // Basic validation of edge coordinates
-  const safeSx = (typeof sx === 'number' && !isNaN(sx) && isFinite(sx)) ? sx : 0;
-  const safeSy = (typeof sy === 'number' && !isNaN(sy) && isFinite(sy)) ? sy : 0;
-  const safeTx = (typeof tx === 'number' && !isNaN(tx) && isFinite(tx)) ? tx : 100;
-  const safeTy = (typeof ty === 'number' && !isNaN(ty) && isFinite(ty)) ? ty : 100;
+  const safeSx = typeof sx === 'number' && !isNaN(sx) && isFinite(sx) ? sx : 0;
+  const safeSy = typeof sy === 'number' && !isNaN(sy) && isFinite(sy) ? sy : 0;
+  const safeTx = typeof tx === 'number' && !isNaN(tx) && isFinite(tx) ? tx : 100;
+  const safeTy = typeof ty === 'number' && !isNaN(ty) && isFinite(ty) ? ty : 100;
 
   let edgePath: string = '';
   if (styleCfg.edgeStyle === 'straight') {
@@ -108,10 +114,10 @@ export default function FloatingEdge({ id, source, target, style = {}, markerEnd
           strokeDasharray,
           strokeLinecap: 'round',
           opacity: 0.6,
-          fill: 'none'
+          fill: 'none',
         }}
       />
-      
+
       {/* Render main edge */}
       <path
         id={id}
@@ -119,7 +125,7 @@ export default function FloatingEdge({ id, source, target, style = {}, markerEnd
         d={edgePath}
         markerEnd={markerEnd}
         style={{
-          ...(stripHaloStyle(style)),
+          ...stripHaloStyle(style),
           stroke,
           strokeWidth,
           strokeDasharray,

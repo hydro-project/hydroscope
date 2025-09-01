@@ -1,6 +1,6 @@
 /**
  * @fileoverview Integration Tests: VisualizationState with Clean Bridges
- * 
+ *
  * These tests verify that the cleaned-up bridges work correctly with the new
  * VisualizationState business logic methods, demonstrating the complete
  * separation of concerns achieved by our refactoring.
@@ -32,7 +32,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
         hidden: false,
         children: ['child1', 'child2'],
         width: 400,
-        height: 300
+        height: 300,
       });
 
       visState.setContainer('collapsed_container', {
@@ -40,7 +40,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
         hidden: false,
         children: ['collapsed_child'],
         width: 200,
-        height: 150
+        height: 150,
       });
 
       // CRITICAL: Collapse the container to hide its children
@@ -49,7 +49,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       visState.setGraphEdge('edge1', {
         source: 'top1',
         target: 'child1',
-        hidden: false
+        hidden: false,
       });
 
       // Simulate ELKBridge.extractVisibleNodes() - now clean of business logic
@@ -81,7 +81,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
         id: 'collapsed_container',
         width: 200,
         height: 150,
-        style: 'default'
+        style: 'default',
       });
 
       // Verify: No business logic leakage - bridge would only translate formats
@@ -98,16 +98,16 @@ describe('VisualizationState + Clean Bridges Integration', () => {
         hidden: false,
         children: Array.from({ length: 23 }, (_, i) => `node_${i}`), // 23 children like original
         width: 200,
-        height: 150
+        height: 150,
       });
 
       // Add all the children nodes
       for (let i = 0; i < 23; i++) {
-        visState.setGraphNode(`node_${i}`, { 
-          label: `Node ${i}`, 
-          width: 180, 
-          height: 60, 
-          hidden: false // Will be set to hidden when container is collapsed
+        visState.setGraphNode(`node_${i}`, {
+          label: `Node ${i}`,
+          width: 180,
+          height: 60,
+          hidden: false, // Will be set to hidden when container is collapsed
         });
       }
 
@@ -126,7 +126,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       expect(collapsedAsNodes[0]).toMatchObject({
         id: 'bt_26',
         width: 200,
-        height: 150
+        height: 150,
       });
 
       // Verify: ELK would NEVER see the 23 children (preventing dimension explosion)
@@ -148,13 +148,13 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       visState.setContainer('parent_expanded', {
         collapsed: false,
         hidden: false,
-        children: ['child_a', 'child_b']
+        children: ['child_a', 'child_b'],
       });
 
       visState.setContainer('parent_collapsed', {
         collapsed: true,
         hidden: false,
-        children: ['child_c']
+        children: ['child_c'],
       });
 
       // Simulate ReactFlowBridge.buildParentMap() - now clean of business logic
@@ -175,49 +175,49 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       visState.setGraphNode('node2', { x: 100, y: 100, hidden: false });
       visState.setGraphNode('node3', { x: 200, y: 200, hidden: false });
       visState.setGraphNode('node4', { x: 300, y: 300, hidden: false });
-      
+
       // Setup: Various edge handle scenarios
       visState.setGraphEdge('edge_custom', {
         source: 'node1',
         target: 'node2',
         sourceHandle: 'out-port-1',
         targetHandle: 'in-port-2',
-        hidden: false
+        hidden: false,
       });
 
       visState.setGraphEdge('edge_partial', {
         source: 'node2',
         target: 'node3',
         sourceHandle: 'out-port-3',
-        hidden: false
+        hidden: false,
       });
 
       visState.setGraphEdge('edge_defaults', {
         source: 'node3',
         target: 'node4',
-        hidden: false
+        hidden: false,
       });
 
       // Simulate ReactFlowBridge edge handle assignment - now clean
       const reactFlowBridge = new ReactFlowBridge();
-  const handles1 = reactFlowBridge.getEdgeHandles(visState, 'edge_custom', []);
-  const handles2 = reactFlowBridge.getEdgeHandles(visState, 'edge_partial', []);
-  const handles3 = reactFlowBridge.getEdgeHandles(visState, 'edge_defaults', []);
+      const handles1 = reactFlowBridge.getEdgeHandles(visState, 'edge_custom', []);
+      const handles2 = reactFlowBridge.getEdgeHandles(visState, 'edge_partial', []);
+      const handles3 = reactFlowBridge.getEdgeHandles(visState, 'edge_defaults', []);
 
       // Verify: Consistent handle logic (no more hardcoded defaults in bridge)
       expect(handles1).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top'
+        targetHandle: 'in-top',
       });
 
       expect(handles2).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top' // Current system uses discrete handles
+        targetHandle: 'in-top', // Current system uses discrete handles
       });
 
       expect(handles3).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top'
+        targetHandle: 'in-top',
       });
     });
   });
@@ -225,15 +225,25 @@ describe('VisualizationState + Clean Bridges Integration', () => {
   describe('Cross-Bridge Data Consistency', () => {
     test('should provide consistent view of the same graph to both bridges', () => {
       // Setup: Graph that both ELK and ReactFlow bridges would process
-      visState.setGraphNode('shared_node', { label: 'Shared', width: 200, height: 100, hidden: false });
-      visState.setGraphNode('external_node', { label: 'External', width: 180, height: 80, hidden: false });
+      visState.setGraphNode('shared_node', {
+        label: 'Shared',
+        width: 200,
+        height: 100,
+        hidden: false,
+      });
+      visState.setGraphNode('external_node', {
+        label: 'External',
+        width: 180,
+        height: 80,
+        hidden: false,
+      });
 
       visState.setContainer('shared_container', {
         collapsed: false, // Start expanded
         hidden: false,
         children: ['shared_node'],
         width: 250,
-        height: 150
+        height: 150,
       });
 
       // Create the edge BEFORE collapsing so it can be properly processed
@@ -242,7 +252,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
         target: 'shared_node',
         sourceHandle: 'out-1',
         targetHandle: 'in-1',
-        hidden: false
+        hidden: false,
       });
 
       // CRITICAL: Actually collapse to trigger invariants
@@ -253,10 +263,10 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       const elkTopLevel = visState.getTopLevelNodes();
       const elkContainers = visState.getExpandedContainers();
 
-      // ReactFlow Bridge perspective  
+      // ReactFlow Bridge perspective
       const reactFlowBridge = new ReactFlowBridge();
       const reactFlowParents = visState.getParentChildMap();
-  const reactFlowHandles = reactFlowBridge.getEdgeHandles(visState, 'cross_edge', []);
+      const reactFlowHandles = reactFlowBridge.getEdgeHandles(visState, 'cross_edge', []);
 
       // Verify: Both bridges see consistent data
       // ELK sees: collapsed container as node, shared_node is hidden (not top-level anymore)
@@ -268,7 +278,7 @@ describe('VisualizationState + Clean Bridges Integration', () => {
       expect(reactFlowParents.get('shared_node')).toBeUndefined();
       expect(reactFlowHandles).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top'
+        targetHandle: 'in-top',
       });
 
       // Both see the same fundamental structure, formatted for their needs

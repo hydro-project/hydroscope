@@ -1,6 +1,6 @@
 /**
  * Operations Module Index
- * 
+ *
  * Exports all operation classes for state management
  */
 

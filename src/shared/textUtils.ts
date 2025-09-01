@@ -1,6 +1,6 @@
 /**
  * @fileoverview Text utilities for the visualizer
- * 
+ *
  * Shared text processing functions like truncation, formatting, etc.
  */
 
@@ -27,15 +27,12 @@ export const DEFAULT_DELIMITERS = ['::', '.', '_', '-', '/', ' '];
  * Smart truncation that preserves meaningful parts of labels
  * Based on the logic from HierarchyTree.tsx
  */
-export function truncateLabel(
-  label: string, 
-  options: TruncationOptions
-): string {
+export function truncateLabel(label: string, options: TruncationOptions): string {
   const {
     maxLength,
     preferDelimiters = true,
     delimiters = DEFAULT_DELIMITERS,
-    leftTruncate = false
+    leftTruncate = false,
   } = options;
 
   // Early return if no truncation needed
@@ -54,9 +51,7 @@ export function truncateLabel(
   }
 
   // Fallback to simple truncation
-  return leftTruncate 
-    ? `…${label.slice(-(maxLength - 1))}`
-    : `${label.slice(0, maxLength - 1)}…`;
+  return leftTruncate ? `…${label.slice(-(maxLength - 1))}` : `${label.slice(0, maxLength - 1)}…`;
 }
 
 /**
@@ -64,8 +59,8 @@ export function truncateLabel(
  * This is what's used for collapsed containers
  */
 function leftTruncateWithDelimiters(
-  label: string, 
-  maxLength: number, 
+  label: string,
+  maxLength: number,
   delimiters: string[]
 ): string {
   // Try each delimiter to find the best truncation
@@ -73,12 +68,12 @@ function leftTruncateWithDelimiters(
     if (label.includes(delimiter)) {
       const parts = label.split(delimiter);
       const lastPart = parts[parts.length - 1];
-      
+
       // If the last part is meaningful and fits, use it with ellipsis
       if (lastPart.length > 2 && lastPart.length <= maxLength - 2) {
         return `…${delimiter}${lastPart}`;
       }
-      
+
       // Try to keep multiple meaningful parts from the end
       if (parts.length > 1) {
         // Start with the last part and add more from the right
@@ -86,7 +81,7 @@ function leftTruncateWithDelimiters(
         for (let i = parts.length - 2; i >= 0; i--) {
           const candidate = parts[i] + delimiter + result;
           const withEllipsis = `…${delimiter}${result}`;
-          
+
           if (candidate.length <= maxLength) {
             // Can fit without ellipsis
             result = candidate;
@@ -98,14 +93,14 @@ function leftTruncateWithDelimiters(
             break;
           }
         }
-        
+
         if (result.length <= maxLength) {
           return result;
         }
       }
     }
   }
-  
+
   // Fallback: simple left truncation
   return `…${label.slice(-(maxLength - 1))}`;
 }
@@ -114,8 +109,8 @@ function leftTruncateWithDelimiters(
  * Right-truncate keeping the meaningful beginning
  */
 function rightTruncateWithDelimiters(
-  label: string, 
-  maxLength: number, 
+  label: string,
+  maxLength: number,
   delimiters: string[]
 ): string {
   // Try to split on common delimiters and keep meaningful parts
@@ -123,12 +118,12 @@ function rightTruncateWithDelimiters(
     if (label.includes(delimiter)) {
       const parts = label.split(delimiter);
       const firstPart = parts[0];
-      
+
       // If the first part is meaningful and fits, use it
       if (firstPart.length > 2 && firstPart.length <= maxLength - 1) {
         return `${firstPart}…`;
       }
-      
+
       // Try to keep multiple meaningful parts from the beginning
       if (parts.length > 1) {
         let result = firstPart;
@@ -140,24 +135,25 @@ function rightTruncateWithDelimiters(
             break;
           }
         }
-        
+
         if (result !== label && result.length <= maxLength - 1) {
           return `${result}…`;
         }
       }
     }
   }
-  
-  // Fallback: smart truncation from the end, keeping whole words when possible  
+
+  // Fallback: smart truncation from the end, keeping whole words when possible
   if (label.length > maxLength) {
     const truncated = label.slice(0, maxLength - 1);
     const lastSpaceIndex = truncated.lastIndexOf(' ');
-    if (lastSpaceIndex > maxLength * 0.7) { // Only break on word if it's not too short
+    if (lastSpaceIndex > maxLength * 0.7) {
+      // Only break on word if it's not too short
       return truncated.slice(0, lastSpaceIndex) + '…';
     }
     return truncated + '…';
   }
-  
+
   return label;
 }
 
@@ -165,15 +161,12 @@ function rightTruncateWithDelimiters(
  * Specialized truncation for container names in collapsed state
  * Optimized for Rust-style paths and hierarchical names
  */
-export function truncateContainerName(
-  name: string, 
-  maxLength: number = 22
-): string {
+export function truncateContainerName(name: string, maxLength: number = 22): string {
   return truncateLabel(name, {
     maxLength,
     preferDelimiters: true,
     delimiters: ['::', '_', '.', '-', '/'],
-    leftTruncate: true
+    leftTruncate: true,
   });
 }
 
@@ -182,7 +175,7 @@ export function truncateContainerName(
  * Assumes ~8px per character + padding
  */
 export function calculateCollapsedWidth(
-  label: string, 
+  label: string,
   minWidth: number = 200,
   charWidth: number = 8,
   padding: number = 16

@@ -1,6 +1,6 @@
 /**
  * ValidationWrapper - Provides before/after validation for public API methods
- * 
+ *
  * This approach moves validation out of internal methods and into public API boundaries,
  * reducing noise and making validation more predictable.
  */
@@ -15,9 +15,9 @@ export interface ValidationConfig {
  * Default validation configuration for public APIs
  */
 const DEFAULT_CONFIG: ValidationConfig = {
-  validateBefore: false,  // Usually not needed - assume valid state
-  validateAfter: true,    // Validate that our changes maintain invariants
-  skipValidation: false
+  validateBefore: false, // Usually not needed - assume valid state
+  validateAfter: true, // Validate that our changes maintain invariants
+  skipValidation: false,
 };
 
 /**
@@ -29,10 +29,9 @@ export function withValidation<T extends any[], R>(
   originalMethod: (...args: T) => R,
   config: ValidationConfig = DEFAULT_CONFIG
 ): (...args: T) => R {
-  
-  return function(this: any, ...args: T): R {
+  return function (this: any, ...args: T): R {
     const shouldValidate = instance._validationEnabled && !config.skipValidation;
-    
+
     // Before validation (optional)
     if (shouldValidate && config.validateBefore) {
       try {
@@ -42,7 +41,7 @@ export function withValidation<T extends any[], R>(
         throw error;
       }
     }
-    
+
     // Execute the original method
     let result: R;
     try {
@@ -51,7 +50,7 @@ export function withValidation<T extends any[], R>(
       console.error(`[ValidationWrapper] Method ${methodName} failed:`, error);
       throw error;
     }
-    
+
     // After validation (default for most public APIs)
     if (shouldValidate && config.validateAfter) {
       try {
@@ -61,7 +60,7 @@ export function withValidation<T extends any[], R>(
         throw error;
       }
     }
-    
+
     return result;
   };
 }
@@ -74,29 +73,29 @@ export const ValidationConfigs = {
   GETTER: {
     validateBefore: false,
     validateAfter: false,
-    skipValidation: false
+    skipValidation: false,
   } as ValidationConfig,
-  
+
   // State mutation methods - validate after
   MUTATOR: {
     validateBefore: false,
     validateAfter: true,
-    skipValidation: false
+    skipValidation: false,
   } as ValidationConfig,
-  
+
   // Critical operations - validate before and after
   CRITICAL: {
     validateBefore: true,
     validateAfter: true,
-    skipValidation: false
+    skipValidation: false,
   } as ValidationConfig,
-  
+
   // Internal/performance-sensitive operations - skip validation
   INTERNAL: {
     validateBefore: false,
     validateAfter: false,
-    skipValidation: true
-  } as ValidationConfig
+    skipValidation: true,
+  } as ValidationConfig,
 };
 
 /**
@@ -106,7 +105,12 @@ export function wrapPublicMethods(instance: any, methodConfigs: Record<string, V
   for (const [methodName, config] of Object.entries(methodConfigs)) {
     const originalMethod = instance[methodName];
     if (typeof originalMethod === 'function') {
-      instance[methodName] = withValidation(instance, methodName, originalMethod.bind(instance), config);
+      instance[methodName] = withValidation(
+        instance,
+        methodName,
+        originalMethod.bind(instance),
+        config
+      );
     }
   }
 }

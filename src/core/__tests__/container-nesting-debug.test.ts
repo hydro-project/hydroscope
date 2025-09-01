@@ -20,10 +20,10 @@ describe('Container Nesting Debug', () => {
       width: 400,
       height: 300,
       collapsed: false,
-      children: ['bt_3']
+      children: ['bt_3'],
     });
 
-    // Child container bt_3 at absolute position (150, 150) 
+    // Child container bt_3 at absolute position (150, 150)
     // Should become relative (50, 50) within bt_5
     visState.addContainer('bt_3', {
       id: 'bt_3',
@@ -32,7 +32,7 @@ describe('Container Nesting Debug', () => {
       width: 200,
       height: 150,
       collapsed: false,
-      children: ['bt_4']
+      children: ['bt_4'],
     });
 
     // Grandchild container bt_4 at absolute position (170, 170)
@@ -43,7 +43,7 @@ describe('Container Nesting Debug', () => {
       y: 170,
       width: 100,
       height: 80,
-      collapsed: false
+      collapsed: false,
     });
 
     // Root container bt_6 at absolute position (600, 100)
@@ -54,7 +54,7 @@ describe('Container Nesting Debug', () => {
       width: 400,
       height: 300,
       collapsed: false,
-      children: ['bt_1']
+      children: ['bt_1'],
     });
 
     // Child container bt_1 at absolute position (650, 150)
@@ -66,7 +66,7 @@ describe('Container Nesting Debug', () => {
       width: 200,
       height: 150,
       collapsed: false,
-      children: ['bt_2']
+      children: ['bt_2'],
     });
 
     // Grandchild container bt_2 at absolute position (670, 170)
@@ -77,43 +77,43 @@ describe('Container Nesting Debug', () => {
       y: 170,
       width: 100,
       height: 80,
-      collapsed: false
+      collapsed: false,
     });
 
     // Mock ELK layout data with absolute coordinates
     visState.setContainerLayout('bt_5', {
       position: { x: 100, y: 100 },
-      dimensions: { width: 400, height: 300 }
+      dimensions: { width: 400, height: 300 },
     });
 
     visState.setContainerLayout('bt_3', {
       position: { x: 150, y: 150 },
-      dimensions: { width: 200, height: 150 }
+      dimensions: { width: 200, height: 150 },
     });
 
     visState.setContainerLayout('bt_4', {
       position: { x: 170, y: 170 },
-      dimensions: { width: 100, height: 80 }
+      dimensions: { width: 100, height: 80 },
     });
 
     visState.setContainerLayout('bt_6', {
       position: { x: 600, y: 100 },
-      dimensions: { width: 400, height: 300 }
+      dimensions: { width: 400, height: 300 },
     });
 
     visState.setContainerLayout('bt_1', {
       position: { x: 650, y: 150 },
-      dimensions: { width: 200, height: 150 }
+      dimensions: { width: 200, height: 150 },
     });
 
     visState.setContainerLayout('bt_2', {
       position: { x: 670, y: 170 },
-      dimensions: { width: 100, height: 80 }
+      dimensions: { width: 100, height: 80 },
     });
 
     // Convert to ReactFlow format
     const reactFlowData = bridge.convertVisualizationState(visState);
-    
+
     // Find containers in the result
     const containers = reactFlowData.nodes.filter(n => n.type === 'container');
     const bt5 = containers.find(n => n.id === 'bt_5');
@@ -130,7 +130,7 @@ describe('Container Nesting Debug', () => {
         position: container.position,
         parentId: container.parentId,
         extent: container.extent,
-        style: container.style
+        style: container.style,
       });
     });
 
@@ -195,7 +195,7 @@ describe('Container Nesting Debug', () => {
       width: 400,
       height: 300,
       collapsed: false,
-      children: ['child1', 'child2']
+      children: ['child1', 'child2'],
     });
 
     visState.addContainer('child1', {
@@ -204,7 +204,7 @@ describe('Container Nesting Debug', () => {
       y: 0,
       width: 100,
       height: 100,
-      collapsed: false
+      collapsed: false,
     });
 
     visState.addContainer('child2', {
@@ -213,12 +213,12 @@ describe('Container Nesting Debug', () => {
       y: 0,
       width: 100,
       height: 100,
-      collapsed: false
+      collapsed: false,
     });
 
     // Convert without ELK data (should use fallback positioning)
     const reactFlowData = bridge.convertVisualizationState(visState);
-    
+
     const containers = reactFlowData.nodes.filter(n => n.type === 'container');
     const parent = containers.find(n => n.id === 'parent');
     const child1 = containers.find(n => n.id === 'child1');
@@ -230,16 +230,16 @@ describe('Container Nesting Debug', () => {
       console.log(`Container ${container.id}:`, {
         position: container.position,
         parentId: container.parentId,
-        extent: container.extent
+        extent: container.extent,
       });
     });
 
     expect(parent?.parentId).toBeUndefined();
-    
+
     expect(child1?.parentId).toBe('parent');
     expect(child1?.extent).toBe('parent');
     expect(child1?.position.x).toBeGreaterThan(0); // Should have grid padding
-    
+
     expect(child2?.parentId).toBe('parent');
     expect(child2?.extent).toBe('parent');
     if (typeof child2?.position.x === 'number' && typeof child1?.position.x === 'number') {

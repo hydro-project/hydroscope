@@ -1,15 +1,11 @@
 /**
  * Visualization State - Core Data Structure (Refactored)
- * 
+ *
  * Maintains the mutable state of the visualization including nodes, edges, containers, and hyperEdges.
  * Provides efficient access to visible/non-hidden elements through Maps and collections.
  */
 
-import type { 
-  GraphNode,
-  GraphEdge,
-  Container
-} from '../shared/types';
+import type { GraphNode, GraphEdge, Container } from '../shared/types';
 
 import type { Edge, HyperEdge } from './types';
 import { LAYOUT_CONSTANTS, SIZES } from '../shared/config';
@@ -23,18 +19,18 @@ import { CoveredEdgesIndex } from './CoveredEdgesIndex';
 import { LayoutOperations } from './operations/LayoutOperations';
 
 /**
- * Core visualization state class that manages all graph elements including nodes, edges, 
- * containers, and hyperEdges. Provides both mutable APIs for state management and 
+ * Core visualization state class that manages all graph elements including nodes, edges,
+ * containers, and hyperEdges. Provides both mutable APIs for state management and
  * read-only APIs for rendering systems.
- * 
+ *
  * Key Design Principles:
  * - Encapsulated state with controlled access via getters/setters
  * - Automatic consistency maintenance through invariant validation
  * - Separation of concerns through specialized operation classes
  * - Bridge pattern for backwards compatibility with existing systems
- * 
+ *
  * @class VisualizationState
- * 
+ *
  * @example
  * ```typescript
  * const state = new VisualizationState();
@@ -56,7 +52,7 @@ export class VisualizationState {
     _expandedContainers: new Map<string, Container>(),
     _collapsedContainers: new Map<string, Container>(),
     _nodeToEdges: new Map<string, Set<string>>(),
-    _manualPositions: new Map<string, {x: number, y: number}>(),
+    _manualPositions: new Map<string, { x: number; y: number }>(),
     _containerChildren: new Map<string, Set<string>>(),
     _nodeContainers: new Map<string, string>(),
 
@@ -64,11 +60,11 @@ export class VisualizationState {
     _nodeParentMap: new Map<string, string>(), // nodeId -> parentContainerId (O(1) parent lookup)
     _containerLeafCounts: new Map<string, number>(), // containerId -> immediate leaf node count
     _containerLeafNodes: new Map<string, GraphNode[]>(), // containerId -> immediate leaf nodes array
-    
+
     // Track active keys to prevent duplicates at React rendering level
-    _activeRenderKeys: new Set<string>()
+    _activeRenderKeys: new Set<string>(),
   };
-  
+
   // Specialized operation classes
   private readonly invariantValidator: VisualizationStateInvariantValidator;
   private readonly containerOps: ContainerOperations;
@@ -96,8 +92,10 @@ export class VisualizationState {
 
   // ============ BRIDGE PATTERN ACCESSORS ============
   // These provide indirect access for specialized operations classes
-  private get _containerChildren(): Map<string, Set<string>> { return this._collections._containerChildren; }
-  
+  private get _containerChildren(): Map<string, Set<string>> {
+    return this._collections._containerChildren;
+  }
+
   // ============ CONSTRUCTOR ============
 
   /**
@@ -110,7 +108,7 @@ export class VisualizationState {
     this.containerOps = new ContainerOperations(this);
     this.visibilityManager = new VisibilityManager(this);
     this.layoutOps = new LayoutOperations(this);
-    
+
     // Wrap public APIs with validation
     this._wrapPublicMethods();
   }
@@ -122,22 +120,22 @@ export class VisualizationState {
   private _wrapPublicMethods(): void {
     wrapPublicMethods(this, {
       // State mutation APIs - validate after changes
-      'addGraphNode': ValidationConfigs.MUTATOR,
-      'addGraphEdge': ValidationConfigs.MUTATOR,  
-      'addContainer': ValidationConfigs.MUTATOR,
-      'setContainerState': ValidationConfigs.MUTATOR,
-      'setContainerCollapsed': ValidationConfigs.MUTATOR,
-      'updateNode': ValidationConfigs.MUTATOR,
-      'removeGraphNode': ValidationConfigs.MUTATOR,
-      'removeGraphEdge': ValidationConfigs.MUTATOR,
-      
+      addGraphNode: ValidationConfigs.MUTATOR,
+      addGraphEdge: ValidationConfigs.MUTATOR,
+      addContainer: ValidationConfigs.MUTATOR,
+      setContainerState: ValidationConfigs.MUTATOR,
+      setContainerCollapsed: ValidationConfigs.MUTATOR,
+      updateNode: ValidationConfigs.MUTATOR,
+      removeGraphNode: ValidationConfigs.MUTATOR,
+      removeGraphEdge: ValidationConfigs.MUTATOR,
+
       // Internal operations called by public APIs - skip validation to prevent duplicate checks
-      'setNodeVisibility': ValidationConfigs.INTERNAL,
-      'setEdgeVisibility': ValidationConfigs.INTERNAL,
-      
+      setNodeVisibility: ValidationConfigs.INTERNAL,
+      setEdgeVisibility: ValidationConfigs.INTERNAL,
+
       // Legacy compatibility methods - validate after
-      'setGraphNode': ValidationConfigs.MUTATOR,
-      'setHyperEdge': ValidationConfigs.MUTATOR
+      setGraphNode: ValidationConfigs.MUTATOR,
+      setHyperEdge: ValidationConfigs.MUTATOR,
     });
   }
 
@@ -165,7 +163,7 @@ export class VisualizationState {
   }
 
   // ============ SAFE BRIDGE API (Read-only access for external systems) ============
-  
+
   /**
    * Get visible nodes for rendering (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
@@ -181,9 +179,9 @@ export class VisualizationState {
   getVisibleNodes(): any[] {
     return Array.from(this._collections._visibleNodes.values());
   }
-  
+
   /**
-   * Get visible edges for rendering (safe read-only access)  
+   * Get visible edges for rendering (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
    */
   get visibleEdges(): ReadonlyArray<any> {
@@ -192,12 +190,12 @@ export class VisualizationState {
     const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: any) => {
       return !edge.hidden;
     });
-    
+
     const allEdges = [...regularEdges, ...hyperEdges];
-    
+
     // Check for duplicate keys to prevent React warnings
     this._validateRenderKeys(allEdges);
-    
+
     return allEdges;
   }
 
@@ -210,15 +208,15 @@ export class VisualizationState {
     const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: any) => {
       return !edge.hidden;
     });
-    
+
     const allEdges = [...regularEdges, ...hyperEdges];
-    
+
     // Check for duplicate keys to prevent React warnings
     this._validateRenderKeys(allEdges);
-    
+
     return allEdges;
   }
-  
+
   /**
    * Get visible containers for rendering (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
@@ -226,13 +224,13 @@ export class VisualizationState {
    */
   get visibleContainers(): ReadonlyArray<any> {
     const containers = Array.from(this._collections._visibleContainers.values());
-    
+
     return containers.map(container => {
       const adjustedDimensions = this.layoutOps.getContainerAdjustedDimensions(container.id);
       return {
         ...container,
         width: adjustedDimensions.width,
-        height: adjustedDimensions.height
+        height: adjustedDimensions.height,
       };
     });
   }
@@ -247,11 +245,11 @@ export class VisualizationState {
       return {
         ...container,
         width: adjustedDimensions.width,
-        height: adjustedDimensions.height
+        height: adjustedDimensions.height,
       };
     });
   }
-  
+
   /**
    * Get visible hyperEdges for rendering (safe read-only access)
    * Used by tests and debugging - filters out hidden hyperEdges
@@ -261,7 +259,7 @@ export class VisualizationState {
       return !edge.hidden;
     });
   }
-  
+
   /**
    * Get expanded containers (safe read-only access)
    * Bridges should ONLY use this method, never access internal maps directly
@@ -284,41 +282,41 @@ export class VisualizationState {
   getContainerChildren(containerId: string): ReadonlySet<string> {
     return this._collections._containerChildren.get(containerId) || new Set();
   }
-  
+
   getNodeContainer(nodeId: string): string | undefined {
     return this._collections._nodeContainers.get(nodeId);
   }
 
-  /** 
-  * Get all hyperEdges (safe read-only access for tests and debugging)
-  */
+  /**
+   * Get all hyperEdges (safe read-only access for tests and debugging)
+   */
   public get hyperEdges(): ReadonlyMap<string, HyperEdge> {
     return this._collections.hyperEdges;
   }
 
   // ============ EFFICIENT HIERARCHY ACCESSORS (O(1) lookups for HierarchyTree) ============
-  
+
   /**
    * Lazy initialization of efficient lookup caches
    * Called automatically on first access to any cache-dependent method
    */
   private _initializeCaches(): void {
     if (this._cacheInitialized) return;
-    
+
     // Initialize node parent cache from existing _nodeContainers
     this._collections._nodeParentMap.clear();
     for (const [nodeId, containerId] of this._collections._nodeContainers) {
       this._collections._nodeParentMap.set(nodeId, containerId);
     }
-    
+
     // Initialize container leaf caches
     this._collections._containerLeafCounts.clear();
     this._collections._containerLeafNodes.clear();
-    
+
     for (const [containerId, children] of this._collections._containerChildren) {
       const leafNodes: GraphNode[] = [];
       let leafCount = 0;
-      
+
       for (const childId of children) {
         // Check if child is a node (not a container)
         const childNode = this._collections.graphNodes.get(childId);
@@ -327,14 +325,14 @@ export class VisualizationState {
           leafCount++;
         }
       }
-      
+
       this._collections._containerLeafCounts.set(containerId, leafCount);
       this._collections._containerLeafNodes.set(containerId, leafNodes);
     }
-    
+
     this._cacheInitialized = true;
   }
-  
+
   /**
    * Get parent container of a node (O(1) lookup)
    * @param nodeId - The node ID to find parent for
@@ -344,7 +342,7 @@ export class VisualizationState {
     this._initializeCaches();
     return this._collections._nodeParentMap.get(nodeId) || null;
   }
-  
+
   /**
    * Get immediate leaf node count for container (O(1) lookup)
    * Only counts direct child nodes, not recursive descendants
@@ -355,7 +353,7 @@ export class VisualizationState {
     this._initializeCaches();
     return this._collections._containerLeafCounts.get(containerId) || 0;
   }
-  
+
   /**
    * Get immediate leaf nodes for container (O(1) lookup)
    * Only returns direct child nodes, not recursive descendants
@@ -366,7 +364,7 @@ export class VisualizationState {
     this._initializeCaches();
     return this._collections._containerLeafNodes.get(containerId) || [];
   }
-  
+
   /**
    * Get visible node data efficiently (O(1) lookup)
    * @param nodeId - The node ID to look up
@@ -375,7 +373,7 @@ export class VisualizationState {
   getVisibleNode(nodeId: string): GraphNode | undefined {
     return this._collections._visibleNodes.get(nodeId);
   }
-  
+
   /**
    * Get search expansion keys efficiently
    * Determines which containers should be expanded to show search matches
@@ -395,10 +393,10 @@ export class VisualizationState {
       }
       return allContainerIds.filter(id => !currentCollapsed.has(id));
     }
-    
+
     this._initializeCaches();
     const toExpand = new Set<string>();
-    
+
     const addAncestors = (containerId: string) => {
       let current: string | null = containerId;
       while (current) {
@@ -414,7 +412,7 @@ export class VisualizationState {
         current = parent;
       }
     };
-    
+
     searchMatches.forEach(match => {
       if (match.type === 'container') {
         // For container matches, add ancestors (but not the match itself)
@@ -436,12 +434,12 @@ export class VisualizationState {
         }
       }
     });
-    
+
     return Array.from(toExpand);
   }
 
   // ============ COVERED EDGES INDEX API ============
-  
+
   /**
    * Build/rebuild the covered edges index
    * Call this after hierarchy changes (adding/removing containers or changing parent-child relationships)
@@ -465,7 +463,7 @@ export class VisualizationState {
     if (!this._coveredEdgesIndex) {
       this.buildCoveredEdgesIndex();
     }
-    
+
     const coveredEdgeIds = this._coveredEdgesIndex!.getCoveredEdges(entityId);
     return coveredEdgeIds;
   }
@@ -495,7 +493,7 @@ export class VisualizationState {
   }
 
   // ============ LAYOUT API (Delegate to LayoutOperations) ============
-  
+
   getAllManualPositions(): Map<string, { x: number; y: number }> {
     return this.layoutOps.getAllManualPositions();
   }
@@ -511,16 +509,24 @@ export class VisualizationState {
   setContainerLayout(containerId: string, layout: any): void {
     this.layoutOps.setContainerLayout(containerId, layout);
   }
-  
+
   setNodeLayout(nodeId: string, layout: any): void {
     this.layoutOps.setNodeLayout(nodeId, layout);
   }
 
-  getContainerLayout(containerId: string): { position?: { x: number; y: number }; dimensions?: { width: number; height: number } } | undefined {
+  getContainerLayout(
+    containerId: string
+  ):
+    | { position?: { x: number; y: number }; dimensions?: { width: number; height: number } }
+    | undefined {
     return this.layoutOps.getContainerLayout(containerId);
   }
 
-  getNodeLayout(nodeId: string): { position?: { x: number; y: number }; dimensions?: { width: number; height: number } } | undefined {
+  getNodeLayout(
+    nodeId: string
+  ):
+    | { position?: { x: number; y: number }; dimensions?: { width: number; height: number } }
+    | undefined {
     return this.layoutOps.getNodeLayout(nodeId);
   }
 
@@ -541,21 +547,21 @@ export class VisualizationState {
   }
 
   // ============ CORE API - Direct Entity Management ============
-  
+
   /**
    * Get a graph node by ID (core API)
    */
   getGraphNode(nodeId: string): any | undefined {
     return this._collections.graphNodes.get(nodeId);
   }
-  
+
   /**
    * Get a graph edge by ID (core API)
    */
   getGraphEdge(edgeId: string): any | undefined {
     return this._collections.graphEdges.get(edgeId);
   }
-  
+
   /**
    * Get a container by ID (core API)
    */
@@ -584,14 +590,14 @@ export class VisualizationState {
     // Check if node belongs to a collapsed container and should be hidden
     const parentContainer = this._collections._nodeContainers.get(nodeId);
     let shouldBeHidden = nodeData.hidden || false;
-    
+
     if (parentContainer) {
       const container = this._collections.containers.get(parentContainer);
       if (container && container.collapsed) {
         shouldBeHidden = true;
       }
     }
-    
+
     // Ensure label fields exist for legacy API compatibility
     // Defaults:
     // - shortLabel: prefer provided shortLabel, else label, else id
@@ -602,70 +608,73 @@ export class VisualizationState {
     const derivedDisplayLabel = nodeData.label ?? derivedShortLabel;
 
     // Ensure all nodes have default dimensions
-    const processedData = { 
-      ...nodeData, 
-      id: nodeId, 
+    const processedData = {
+      ...nodeData,
+      id: nodeId,
       // Provide derived labels if not explicitly set
       label: nodeData.label ?? derivedDisplayLabel,
       shortLabel: nodeData.shortLabel ?? derivedShortLabel,
       fullLabel: nodeData.fullLabel ?? derivedFullLabel,
       hidden: shouldBeHidden,
       width: nodeData.width || LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH,
-      height: nodeData.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT 
+      height: nodeData.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT,
     };
-    
+
     this._collections.graphNodes.set(nodeId, processedData);
-    
+
     // Update visibility cache
     if (!shouldBeHidden) {
       this._collections._visibleNodes.set(nodeId, processedData);
     }
-    
+
     // Update edge mappings if needed
     this._collections._nodeToEdges.set(nodeId, new Set());
-    
+
     // Update efficient lookup caches incrementally
     if (this._cacheInitialized && parentContainer) {
       // Update node parent cache
       this._collections._nodeParentMap.set(nodeId, parentContainer);
-      
+
       // Update container leaf caches
       const existingLeafNodes = this._collections._containerLeafNodes.get(parentContainer) || [];
       const existingCount = this._collections._containerLeafCounts.get(parentContainer) || 0;
-      
-      this._collections._containerLeafNodes.set(parentContainer, [...existingLeafNodes, processedData]);
+
+      this._collections._containerLeafNodes.set(parentContainer, [
+        ...existingLeafNodes,
+        processedData,
+      ]);
       this._collections._containerLeafCounts.set(parentContainer, existingCount + 1);
     }
-    
+
     // Invalidate covered edges index since graph structure changed
     this.invalidateCoveredEdgesIndex();
   }
-  
+
   /**
    * Add a graph edge directly (for JSONParser and initial data loading)
    */
   addGraphEdge(edgeId: string, edgeData: any): void {
-    const processedData = { 
-      ...edgeData, 
+    const processedData = {
+      ...edgeData,
       id: edgeId,
-      hidden: edgeData.hidden || false
+      hidden: edgeData.hidden || false,
     };
     this._collections.graphEdges.set(edgeId, processedData);
-    
+
     // Update node-to-edge mappings
     const sourceSet = this._collections._nodeToEdges.get(edgeData.source) || new Set();
     sourceSet.add(edgeId);
     this._collections._nodeToEdges.set(edgeData.source, sourceSet);
-    
+
     const targetSet = this._collections._nodeToEdges.get(edgeData.target) || new Set();
     targetSet.add(edgeId);
     this._collections._nodeToEdges.set(edgeData.target, targetSet);
-    
+
     // Update CoveredEdgesIndex if it exists
     if (this._coveredEdgesIndex) {
       this._coveredEdgesIndex.addEdge(edgeId, processedData, this._collections._nodeContainers);
     }
-    
+
     // Update visibility cache if edge should be visible
     const sourceExists = this._isEndpointVisible(edgeData.source);
     const targetExists = this._isEndpointVisible(edgeData.target);
@@ -673,7 +682,7 @@ export class VisualizationState {
       this._collections._visibleEdges.set(edgeId, processedData);
     }
   }
-  
+
   /**
    * Add a container directly (for JSONParser and initial data loading)
    */
@@ -681,7 +690,7 @@ export class VisualizationState {
     // Check existing state BEFORE making changes
     const existingContainer = this._collections.containers.get(containerId);
     const wasCollapsed = existingContainer?.collapsed === true;
-    
+
     // Ensure proper defaults
     const processedData = {
       ...containerData,
@@ -690,94 +699,95 @@ export class VisualizationState {
       hidden: containerData.hidden || false,
       children: new Set(containerData.children || []),
       width: containerData.width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH,
-      height: containerData.height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT
+      height: containerData.height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT,
     };
-    
+
     this._collections.containers.set(containerId, processedData);
-    
+
     // Update visibility caches
     this.visibilityManager.updateContainerVisibilityCaches(containerId, processedData);
-    
+
     // Process children relationships
     if (containerData.children) {
       this._collections._containerChildren.set(containerId, new Set(containerData.children));
       for (const childId of containerData.children) {
         this._collections._nodeContainers.set(childId, containerId);
-        
+
         // Update efficient lookup caches incrementally for new children
         if (this._cacheInitialized) {
           const childNode = this._collections.graphNodes.get(childId);
           const isChildContainer = this._collections.containers.has(childId);
-          
+
           if (childNode && !isChildContainer) {
             // Child is a node, update caches
             this._collections._nodeParentMap.set(childId, containerId);
           }
         }
       }
-      
+
       // Update container leaf caches for this new container
       if (this._cacheInitialized) {
         const leafNodes: GraphNode[] = [];
         let leafCount = 0;
-        
+
         for (const childId of containerData.children) {
           const childNode = this._collections.graphNodes.get(childId);
           const isChildContainer = this._collections.containers.has(childId);
-          
+
           if (childNode && !isChildContainer) {
             leafNodes.push(childNode);
             leafCount++;
           }
         }
-        
+
         this._collections._containerLeafCounts.set(containerId, leafCount);
         this._collections._containerLeafNodes.set(containerId, leafNodes);
       }
     }
-    
+
     // Handle state transitions and cascading
     const isNowCollapsed = processedData.collapsed === true;
     const isNowExpanded = processedData.collapsed === false;
-    
+
     if (isNowCollapsed && (!wasCollapsed || !existingContainer)) {
       // Container is being collapsed (either transition or added as collapsed)
       this.containerOps.handleContainerCollapse(containerId);
     } else if (wasCollapsed && isNowExpanded) {
       // Container is being expanded
-      // this.containerOps.handleContainerExpansion(containerId);
     }
-    
+
     // Invalidate covered edges index since hierarchy changed
     this.invalidateCoveredEdgesIndex();
   }
 
   // ============ CONTROLLED STATE MUTATION API ============
-  
+
   /**
    * Safely set node visibility with automatic cache updates and edge cascade
    */
   setNodeVisibility(nodeId: string, visible: boolean): void {
     this.visibilityManager.setNodeVisibility(nodeId, visible);
   }
-  
+
   /**
-   * Safely set container state with proper cascade and hyperEdge management  
+   * Safely set container state with proper cascade and hyperEdge management
    */
-  setContainerState(containerId: string, state: {collapsed?: boolean, hidden?: boolean}): void {
+  setContainerState(containerId: string, state: { collapsed?: boolean; hidden?: boolean }): void {
     const container = this._collections.containers.get(containerId);
     if (!container) {
-      console.warn(`[VisualizationState] Cannot set state for non-existent container: ${containerId}`);
+      console.warn(
+        `[VisualizationState] Cannot set state for non-existent container: ${containerId}`
+      );
       return;
     }
-    
+
     const wasCollapsed = container.collapsed;
     const wasHidden = container.hidden;
-    
+
     // Apply state changes
     if (state.collapsed !== undefined) {
       container.collapsed = state.collapsed;
-      
+
       // CRITICAL: Always override dimensions when collapsing
       if (state.collapsed) {
         container.width = SIZES.COLLAPSED_CONTAINER_WIDTH;
@@ -785,29 +795,27 @@ export class VisualizationState {
       }
     }
     if (state.hidden !== undefined) container.hidden = state.hidden;
-    
+
     // Update visibility caches
     this.visibilityManager.updateContainerVisibilityCaches(containerId, container);
-    
+
     // Handle collapse/expand transitions with hyperEdge management
     if (state.collapsed !== undefined && state.collapsed !== wasCollapsed) {
       if (state.collapsed) {
-        
         // Disable validation during collapse to avoid intermediate state warnings
         const originalValidation = this._validationEnabled;
         this._validationEnabled = false;
-        
+
         try {
           this.containerOps.handleContainerCollapse(containerId);
         } finally {
           this._validationEnabled = originalValidation;
         }
       } else {
-        
-        // Disable validation during expansion to avoid intermediate state warnings  
+        // Disable validation during expansion to avoid intermediate state warnings
         const originalValidation = this._validationEnabled;
         this._validationEnabled = false;
-        
+
         try {
           this.containerOps.handleContainerExpansion(containerId);
         } finally {
@@ -816,13 +824,13 @@ export class VisualizationState {
       }
     } else {
     }
-    
-    // Handle hide/show transitions  
+
+    // Handle hide/show transitions
     if (state.hidden !== undefined && state.hidden !== wasHidden) {
       this.visibilityManager.cascadeContainerVisibility(containerId, !state.hidden);
     }
   }
-  
+
   /**
    * Safely set edge visibility with endpoint validation
    */
@@ -831,7 +839,7 @@ export class VisualizationState {
   }
 
   // ============ LEGACY/COMPATIBILITY API ============
-  
+
   /**
    * Set a graph node (legacy compatibility - forwards to addGraphNode)
    * @deprecated Use addGraphNode() for new code
@@ -840,7 +848,7 @@ export class VisualizationState {
     this.addGraphNode(nodeId, nodeData);
     return this;
   }
-  
+
   /**
    * Set a graph edge (legacy compatibility - forwards to addGraphEdge)
    * @deprecated Use addGraphEdge() for new code
@@ -849,7 +857,7 @@ export class VisualizationState {
     this.addGraphEdge(edgeId, edgeData);
     return this;
   }
-  
+
   /**
    * Set a container (legacy compatibility - forwards to addContainer)
    * @deprecated Use addContainer() for new code
@@ -874,21 +882,20 @@ export class VisualizationState {
     if (!container) {
       throw new Error(`Cannot collapse non-existent container: ${containerId}`);
     }
-    
+
     try {
       this._recentlyCollapsedContainers.add(containerId);
       this._lastChangedContainer = containerId; // Track for selective layout
       this.setContainerState(containerId, { collapsed: true });
-      
+
       setTimeout(() => {
         this._recentlyCollapsedContainers.delete(containerId);
       }, 2000);
-      
     } finally {
       // Cleanup if needed
     }
   }
-  
+
   /**
    * Expand a container with proper hyperEdge cleanup
    */
@@ -897,12 +904,11 @@ export class VisualizationState {
     if (!container) {
       throw new Error(`Cannot expand non-existent container: ${containerId}`);
     }
-    
+
     this._lastChangedContainer = containerId; // Track for selective layout
-    
+
     // Just update the container's collapsed state - setContainerState will handle calling handleContainerExpansion
     this.setContainerState(containerId, { collapsed: false });
-    
   }
 
   /**
@@ -913,10 +919,10 @@ export class VisualizationState {
     if (!container) {
       throw new Error(`Cannot expand non-existent container: ${containerId}`);
     }
-    
+
     // Use the container operations method
     this.containerOps.handleContainerExpansion(containerId);
-    
+
     // Update all affected containers' collapsed state
     this._updateCollapsedStateRecursive(containerId, false);
   }
@@ -926,7 +932,7 @@ export class VisualizationState {
    */
   private _updateCollapsedStateRecursive(containerId: string, collapsed: boolean): void {
     this.setContainerState(containerId, { collapsed });
-    
+
     const children = this.getContainerChildren(containerId) || new Set();
     for (const childId of Array.from(children)) {
       if (typeof childId === 'string') {
@@ -958,11 +964,11 @@ export class VisualizationState {
   expandAllContainers(): void {
     // Get top-level containers (containers with no visible parent container)
     const topLevelContainers = [];
-    
+
     for (const container of this.visibleContainers) {
       // Check if this container has a parent container
       let hasVisibleParent = false;
-      
+
       for (const [parentId, children] of this._containerChildren) {
         if (children.has(container.id)) {
           const parent = this._collections.containers.get(parentId);
@@ -972,20 +978,20 @@ export class VisualizationState {
           }
         }
       }
-      
+
       if (!hasVisibleParent) {
         topLevelContainers.push(container);
       }
     }
-    
+
     const collapsedTopLevel = topLevelContainers.filter(c => c.collapsed);
-    
+
     if (collapsedTopLevel.length === 0) return;
-    
+
     // Disable validation during bulk expansion to avoid intermediate state issues
     const originalValidation = this._validationEnabled;
     this._validationEnabled = false;
-    
+
     try {
       // Expand each top-level collapsed container one by one using the basic method
       for (const container of collapsedTopLevel) {
@@ -1006,13 +1012,13 @@ export class VisualizationState {
   collapseAllContainers(): void {
     const topLevelContainers = this.getTopLevelContainers();
     const expandedTopLevel = topLevelContainers.filter(c => !c.collapsed);
-    
+
     if (expandedTopLevel.length === 0) return;
-    
+
     // Disable validation during bulk collapse to avoid intermediate state issues
     const originalValidation = this._validationEnabled;
     this._validationEnabled = false;
-    
+
     try {
       // Collapse each top-level expanded container (this will cascade to children)
       for (const container of expandedTopLevel) {
@@ -1039,13 +1045,13 @@ export class VisualizationState {
   }
 
   // ============ BRIDGE SUPPORT METHODS ============
-  
+
   /**
    * Get parent-child mapping for ReactFlow bridge
    */
   getParentChildMap(): Map<string, string> {
     const parentMap = new Map<string, string>();
-    
+
     // Map visible nodes to their expanded parent containers
     for (const node of this.visibleNodes) {
       const parentContainer = this._collections._nodeContainers.get(node.id);
@@ -1056,7 +1062,7 @@ export class VisualizationState {
         }
       }
     }
-    
+
     // Also handle containers defined with children arrays (for test compatibility)
     for (const [containerId, container] of this._collections.containers) {
       if (!container.collapsed && !container.hidden && container.children) {
@@ -1065,7 +1071,7 @@ export class VisualizationState {
         }
       }
     }
-    
+
     // Also map visible containers to their parent containers
     for (const container of this.visibleContainers) {
       for (const [parentId, children] of this._collections._containerChildren) {
@@ -1078,7 +1084,7 @@ export class VisualizationState {
         }
       }
     }
-    
+
     return parentMap;
   }
 
@@ -1087,7 +1093,7 @@ export class VisualizationState {
    */
   getCollapsedContainersAsNodes(): ReadonlyArray<any> {
     const collapsedAsNodes = [];
-    
+
     for (const container of this._collections.containers.values()) {
       if (container.collapsed && !container.hidden) {
         collapsedAsNodes.push({
@@ -1097,11 +1103,11 @@ export class VisualizationState {
           label: container.label || container.id,
           style: container.style || 'default',
           type: 'container-node',
-          collapsed: true
+          collapsed: true,
         });
       }
     }
-    
+
     return collapsedAsNodes;
   }
 
@@ -1110,11 +1116,11 @@ export class VisualizationState {
    */
   getTopLevelNodes(): ReadonlyArray<any> {
     const topLevelNodes = [];
-    
+
     for (const node of this.visibleNodes) {
       // Check if node is in any expanded container
       let isInExpandedContainer = false;
-      
+
       for (const container of this.visibleContainers) {
         if (!container.collapsed) {
           const children = this._collections._containerChildren.get(container.id);
@@ -1124,12 +1130,12 @@ export class VisualizationState {
           }
         }
       }
-      
+
       if (!isInExpandedContainer) {
         topLevelNodes.push(node);
       }
     }
-    
+
     return topLevelNodes;
   }
 
@@ -1138,11 +1144,11 @@ export class VisualizationState {
    */
   getTopLevelContainers(): ReadonlyArray<any> {
     const topLevelContainers = [];
-    
+
     for (const container of this.visibleContainers) {
       // Check if this container has a parent container
       let hasVisibleParent = false;
-      
+
       for (const [parentId, children] of this._collections._containerChildren) {
         if (children.has(container.id)) {
           const parent = this._collections.containers.get(parentId);
@@ -1152,15 +1158,15 @@ export class VisualizationState {
           }
         }
       }
-      
+
       if (!hasVisibleParent) {
         topLevelContainers.push(container);
       }
     }
-    
+
     return topLevelContainers;
   }
-  
+
   /**
    * Update edge properties (legacy compatibility method)
    */
@@ -1168,7 +1174,7 @@ export class VisualizationState {
     const edge = this._collections.graphEdges.get(edgeId);
     if (edge) {
       Object.assign(edge, updates);
-      
+
       // Update visibility cache
       if (updates.hidden !== undefined) {
         if (updates.hidden) {
@@ -1186,15 +1192,15 @@ export class VisualizationState {
 
   setHyperEdge(hyperEdgeId: string, hyperEdgeData: any): this {
     this._collections.hyperEdges.set(hyperEdgeId, hyperEdgeData);
-     // Update node-to-edge mappings
+    // Update node-to-edge mappings
     const sourceSet = this._collections._nodeToEdges.get(hyperEdgeData.source) || new Set();
     sourceSet.add(hyperEdgeId);
     this._collections._nodeToEdges.set(hyperEdgeData.source, sourceSet);
-    
+
     const targetSet = this._collections._nodeToEdges.get(hyperEdgeData.target) || new Set();
     targetSet.add(hyperEdgeId);
     this._collections._nodeToEdges.set(hyperEdgeData.target, targetSet);
-    
+
     // Note: Visibility cache updates could be added here if needed for hyperEdges
 
     return this;
@@ -1205,19 +1211,19 @@ export class VisualizationState {
     children.add(childId);
     this._collections._containerChildren.set(containerId, children);
     this._collections._nodeContainers.set(childId, containerId);
-    
+
     // Update efficient lookup caches incrementally
     if (this._cacheInitialized) {
       const childNode = this._collections.graphNodes.get(childId);
       const isChildContainer = this._collections.containers.has(childId);
-      
+
       if (childNode && !isChildContainer) {
         // Child is a node, update parent and leaf caches
         this._collections._nodeParentMap.set(childId, containerId);
-        
+
         const existingLeafNodes = this._collections._containerLeafNodes.get(containerId) || [];
         const existingCount = this._collections._containerLeafCounts.get(containerId) || 0;
-        
+
         this._collections._containerLeafNodes.set(containerId, [...existingLeafNodes, childNode]);
         this._collections._containerLeafCounts.set(containerId, existingCount + 1);
       }
@@ -1233,19 +1239,19 @@ export class VisualizationState {
       }
     }
     this._collections._nodeContainers.delete(childId);
-    
+
     // Update efficient lookup caches incrementally
     if (this._cacheInitialized) {
       const childNode = this._collections.graphNodes.get(childId);
       const isChildContainer = this._collections.containers.has(childId);
-      
+
       if (childNode && !isChildContainer) {
         // Child is a node, update parent and leaf caches
         this._collections._nodeParentMap.delete(childId);
-        
+
         const existingLeafNodes = this._collections._containerLeafNodes.get(containerId) || [];
         const existingCount = this._collections._containerLeafCounts.get(containerId) || 0;
-        
+
         const updatedLeafNodes = existingLeafNodes.filter(node => node.id !== childId);
         this._collections._containerLeafNodes.set(containerId, updatedLeafNodes);
         this._collections._containerLeafCounts.set(containerId, Math.max(0, existingCount - 1));
@@ -1257,7 +1263,7 @@ export class VisualizationState {
     const node = this._collections.graphNodes.get(nodeId);
     if (node) {
       Object.assign(node, updates);
-      
+
       // Update visibility cache if hidden state changed
       if (updates.hidden !== undefined) {
         if (updates.hidden) {
@@ -1272,22 +1278,22 @@ export class VisualizationState {
   removeGraphNode(nodeId: string): void {
     // Get parent container before removal for cache maintenance
     const parentContainer = this._collections._nodeContainers.get(nodeId);
-    
+
     this._collections.graphNodes.delete(nodeId);
     this._collections._visibleNodes.delete(nodeId);
     this._collections._nodeToEdges.delete(nodeId);
     this._collections._nodeContainers.delete(nodeId);
-    
+
     // Update efficient lookup caches incrementally
     if (this._cacheInitialized) {
       // Update node parent cache
       this._collections._nodeParentMap.delete(nodeId);
-      
+
       // Update container leaf caches
       if (parentContainer) {
         const existingLeafNodes = this._collections._containerLeafNodes.get(parentContainer) || [];
         const existingCount = this._collections._containerLeafCounts.get(parentContainer) || 0;
-        
+
         const updatedLeafNodes = existingLeafNodes.filter(node => node.id !== nodeId);
         this._collections._containerLeafNodes.set(parentContainer, updatedLeafNodes);
         this._collections._containerLeafCounts.set(parentContainer, Math.max(0, existingCount - 1));
@@ -1301,11 +1307,11 @@ export class VisualizationState {
       // Remove from node-to-edges mappings
       const sourceEdges = this._collections._nodeToEdges.get(edge.source);
       if (sourceEdges) sourceEdges.delete(edgeId);
-      
+
       const targetEdges = this._collections._nodeToEdges.get(edge.target);
       if (targetEdges) targetEdges.delete(edgeId);
     }
-    
+
     this._collections.graphEdges.delete(edgeId);
     this._collections._visibleEdges.delete(edgeId);
   }
@@ -1339,17 +1345,17 @@ export class VisualizationState {
 
   /**
    * Recursively count leaf nodes (graphNodes) within a container
-   * This counts all graphNodes that are descendants of the container, 
+   * This counts all graphNodes that are descendants of the container,
    * not just direct children.
    */
   countRecursiveLeafNodes(containerId: string): number {
     let leafCount = 0;
     const children = this.getContainerChildren(containerId);
-    
+
     for (const childId of children) {
       // Check if this child is a container or a leaf node
       const childContainer = this._collections.containers.get(childId);
-      
+
       if (childContainer) {
         // It's a container, recurse into it
         leafCount += this.countRecursiveLeafNodes(childId);
@@ -1358,7 +1364,7 @@ export class VisualizationState {
         leafCount += 1;
       }
     }
-    
+
     return leafCount;
   }
 
@@ -1373,18 +1379,18 @@ export class VisualizationState {
   getNodeVisibility(nodeId: string): { hidden?: boolean } {
     const node = this._collections.graphNodes.get(nodeId);
     if (!node) return {};
-    
+
     return {
-      hidden: node.hidden || !this._collections._visibleNodes.has(nodeId)
+      hidden: node.hidden || !this._collections._visibleNodes.has(nodeId),
     };
   }
 
   getEdgeVisibility(edgeId: string): { hidden?: boolean } {
     const edge = this._collections.graphEdges.get(edgeId);
     if (!edge) return {};
-    
+
     return {
-      hidden: edge.hidden || !this.visibleEdges.some(e => e.id === edgeId)
+      hidden: edge.hidden || !this.visibleEdges.some(e => e.id === edgeId),
     };
   }
 
@@ -1394,11 +1400,11 @@ export class VisualizationState {
     // Check if it's a visible node
     const node = this._collections.graphNodes.get(endpointId);
     if (node) return !node.hidden;
-    
+
     // Check if it's a visible container (collapsed containers are visible)
     const container = this._collections.containers.get(endpointId);
     if (container) return !container.hidden;
-    
+
     return false;
   }
 
@@ -1411,7 +1417,7 @@ export class VisualizationState {
     if (!this._validationEnabled) {
       return; // Skip validation during controlled transitions
     }
-    
+
     this.invariantValidator.validateInvariants();
   }
 
@@ -1451,15 +1457,15 @@ export class VisualizationState {
 
   _cascadeNodeVisibilityToEdges(nodeId: string): void {
     const connectedEdges = this._collections._nodeToEdges.get(nodeId) || new Set();
-    
+
     for (const edgeId of Array.from(connectedEdges)) {
       const edge = this._collections.graphEdges.get(edgeId);
       if (!edge) continue;
-      
+
       const sourceVisible = this._isEndpointVisible(edge.source);
       const targetVisible = this._isEndpointVisible(edge.target);
       const shouldBeVisible = sourceVisible && targetVisible;
-      
+
       this.setEdgeVisibility(edgeId as string, shouldBeVisible);
     }
   }
@@ -1479,7 +1485,7 @@ export class VisualizationState {
   private _validateRenderKeys(edges: any[]): void {
     const seenKeys = new Set<string>();
     const duplicateKeys = new Set<string>();
-    
+
     for (const edge of edges) {
       if (seenKeys.has(edge.id)) {
         duplicateKeys.add(edge.id);
@@ -1487,33 +1493,44 @@ export class VisualizationState {
         seenKeys.add(edge.id);
       }
     }
-    
+
     if (duplicateKeys.size > 0) {
-      console.error(`[DUPLICATE_KEYS] Found duplicate edge keys that will cause React warnings:`, Array.from(duplicateKeys));
-      
+      console.error(
+        `[DUPLICATE_KEYS] Found duplicate edge keys that will cause React warnings:`,
+        Array.from(duplicateKeys)
+      );
+
       // Check for ID overlap between regular and hyperEdges
       const regularEdges = Array.from(this._collections._visibleEdges.values());
-      const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: any) => !edge.hidden);
+      const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter(
+        (edge: any) => !edge.hidden
+      );
       const regularIds = new Set(regularEdges.map(e => e.id));
       const hyperIds = new Set(hyperEdges.map(e => e.id));
-      const overlap = Array.from(duplicateKeys).filter(id => regularIds.has(id) && hyperIds.has(id));
-      
+      const overlap = Array.from(duplicateKeys).filter(
+        id => regularIds.has(id) && hyperIds.has(id)
+      );
+
       if (overlap.length > 0) {
         console.error(`[DEBUG] ID OVERLAP between regular edges and hyperEdges:`, overlap);
       }
-      
+
       // In strict validation mode, throw an error to fail tests
       if (this._validationLevel === 'strict') {
         throw new Error(`Duplicate edge keys detected: ${Array.from(duplicateKeys).join(', ')}`);
       }
-      
+
       // In normal mode for fuzz tests, treat as test failure
       if (this._validationLevel === 'normal' && duplicateKeys.size > 0) {
-        throw new Error(`FUZZ TEST FAILURE: Found ${duplicateKeys.size} duplicate edge keys that will cause React warnings. This indicates a timing issue in hyperEdge creation/removal.`);
+        throw new Error(
+          `FUZZ TEST FAILURE: Found ${duplicateKeys.size} duplicate edge keys that will cause React warnings. This indicates a timing issue in hyperEdge creation/removal.`
+        );
       }
-      
+
       // Otherwise, just log the warning but let React handle it
-      console.warn(`[DUPLICATE_KEYS] React will show warnings for these duplicate keys. Check hyperEdge creation/removal timing.`);
+      console.warn(
+        `[DUPLICATE_KEYS] React will show warnings for these duplicate keys. Check hyperEdge creation/removal timing.`
+      );
     }
   }
 

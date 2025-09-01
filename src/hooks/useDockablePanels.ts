@@ -1,6 +1,6 @@
 /**
  * @fileoverview Hook for managing dockable panel state
- * 
+ *
  * Provides centralized state management for multiple dockable panels
  * with persistence and coordination between panels.
  */
@@ -27,18 +27,18 @@ const DEFAULT_PANEL_STATE: PanelState = {
   pinned: true,
   collapsed: false,
   placement: 'right',
-  width: 320
+  width: 320,
 };
 
 export function useDockablePanels(configs: PanelConfig[]) {
   const [panelStates, setPanelStates] = useState<Record<string, PanelState>>(() => {
     const initialStates: Record<string, PanelState> = {};
-    
+
     configs.forEach(config => {
       // Try to load from localStorage
       const saved = localStorage.getItem(`panel-${config.id}`);
       let state = DEFAULT_PANEL_STATE;
-      
+
       if (saved) {
         try {
           state = { ...DEFAULT_PANEL_STATE, ...JSON.parse(saved) };
@@ -46,15 +46,15 @@ export function useDockablePanels(configs: PanelConfig[]) {
           console.warn(`Failed to parse saved state for panel ${config.id}`);
         }
       }
-      
+
       // Override with config defaults
       if (config.defaultState) {
         state = { ...state, ...config.defaultState };
       }
-      
+
       initialStates[config.id] = state;
     });
-    
+
     return initialStates;
   });
 
@@ -70,28 +70,37 @@ export function useDockablePanels(configs: PanelConfig[]) {
       ...prev,
       [panelId]: {
         ...prev[panelId],
-        ...updates
-      }
+        ...updates,
+      },
     }));
   }, []);
 
-  const togglePanel = useCallback((panelId: string) => {
-    updatePanelState(panelId, { 
-      open: !panelStates[panelId]?.open 
-    });
-  }, [panelStates, updatePanelState]);
+  const togglePanel = useCallback(
+    (panelId: string) => {
+      updatePanelState(panelId, {
+        open: !panelStates[panelId]?.open,
+      });
+    },
+    [panelStates, updatePanelState]
+  );
 
-  const togglePin = useCallback((panelId: string) => {
-    updatePanelState(panelId, { 
-      pinned: !panelStates[panelId]?.pinned 
-    });
-  }, [panelStates, updatePanelState]);
+  const togglePin = useCallback(
+    (panelId: string) => {
+      updatePanelState(panelId, {
+        pinned: !panelStates[panelId]?.pinned,
+      });
+    },
+    [panelStates, updatePanelState]
+  );
 
-  const toggleCollapse = useCallback((panelId: string) => {
-    updatePanelState(panelId, { 
-      collapsed: !panelStates[panelId]?.collapsed 
-    });
-  }, [panelStates, updatePanelState]);
+  const toggleCollapse = useCallback(
+    (panelId: string) => {
+      updatePanelState(panelId, {
+        collapsed: !panelStates[panelId]?.collapsed,
+      });
+    },
+    [panelStates, updatePanelState]
+  );
 
   const closeAllPanels = useCallback(() => {
     setPanelStates(prev => {
@@ -121,6 +130,6 @@ export function useDockablePanels(configs: PanelConfig[]) {
     togglePin,
     toggleCollapse,
     closeAllPanels,
-    resetPanels
+    resetPanels,
   };
 }

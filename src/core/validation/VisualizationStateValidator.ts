@@ -18,7 +18,7 @@ export interface InvariantViolation {
 
 /**
  * Centralized VisualizationState Invariant Validation
- * 
+ *
  * All public VisualizationState APIs should call validateInvariants() before returning
  * to ensure the state remains consistent and catch bugs early.
  */
@@ -39,18 +39,18 @@ export class VisualizationStateInvariantValidator {
     // Container State Invariants
     violations.push(...this.validateContainerStates());
     violations.push(...this.validateContainerHierarchy());
-    
-    // Node State Invariants  
+
+    // Node State Invariants
     violations.push(...this.validateNodeContainerRelationships());
     violations.push(...this.validateOrphanedNodes());
-    
+
     // Edge and Hyperedge Invariants
     violations.push(...this.validateEdgeNodeConsistency());
     violations.push(...this.validateHyperedgeValidity());
     violations.push(...this.validateDanglingHyperedges());
     violations.push(...this.validateNoEdgesToInvalidOrHiddenContainers());
     violations.push(...this.validateHyperEdgeRouting());
-    
+
     // Layout Invariants
     violations.push(...this.validateCollapsedContainerDimensions());
     violations.push(...this.validatePositionedContainerConsistency());
@@ -68,54 +68,53 @@ export class VisualizationStateInvariantValidator {
     }
 
     if (errors.length > 0) {
-      console.error(`[VisualizationState] CRITICAL: Invariant violations (${errors.length}):`, errors);
-      
+      console.error(
+        `[VisualizationState] CRITICAL: Invariant violations (${errors.length}):`,
+        errors
+      );
+
       // Add stack trace for debugging
       const stackTrace = new Error().stack;
       console.error(`[VisualizationState] STACK TRACE for invariant violations:\n${stackTrace}`);
-      
-      throw new Error(`VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`);
+
+      throw new Error(
+        `VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`
+      );
     }
   }
 
   private reportWarnings(warnings: InvariantViolation[]): void {
     // Group warnings by type to reduce console noise
-    const warningsByType = warnings.reduce((acc, warning) => {
-      acc[warning.type] = (acc[warning.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    // // Special handling for smart collapse warnings that are expected
-    // const hyperEdgeWarnings = warningsByType['HYPEREDGE_TO_HIDDEN_CONTAINER'] || 0;
-    // if (hyperEdgeWarnings > 0) {
-    //   // Remove from individual logging regardless of count
-    //   delete warningsByType['HYPEREDGE_TO_HIDDEN_CONTAINER'];
-    // }
-    
-    // // Special handling for container dimension warnings during collapse transitions
-    // const dimensionWarnings = warningsByType['COLLAPSED_CONTAINER_LARGE_DIMENSIONS'] || 0;
-    // if (dimensionWarnings > 0) {
-    //   // Suppress dimension warnings during active collapse operations
-    //   // These are expected during layout transitions
-    //   delete warningsByType['COLLAPSED_CONTAINER_LARGE_DIMENSIONS'];
-    // }
-    
+    const warningsByType = warnings.reduce(
+      (acc, warning) => {
+        acc[warning.type] = (acc[warning.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
     // Log other warnings normally (excluding suppressed types)
-    const otherWarnings = warnings.filter(w => 
-      w.type !== 'HYPEREDGE_TO_HIDDEN_CONTAINER' && 
-      w.type !== 'COLLAPSED_CONTAINER_LARGE_DIMENSIONS'
+    const otherWarnings = warnings.filter(
+      w =>
+        w.type !== 'HYPEREDGE_TO_HIDDEN_CONTAINER' &&
+        w.type !== 'COLLAPSED_CONTAINER_LARGE_DIMENSIONS'
     );
     if (otherWarnings.length > 0) {
-      console.warn(`[VisualizationState] Invariant warnings (${otherWarnings.length}):`, otherWarnings);
-      
+      console.warn(
+        `[VisualizationState] Invariant warnings (${otherWarnings.length}):`,
+        otherWarnings
+      );
+
       // Add stack trace for hyperEdge routing issues to help debug
-      const hyperEdgeRoutingWarnings = otherWarnings.filter(w => w.type.includes('HYPEREDGE') || w.type.includes('ROUTING'));
+      const hyperEdgeRoutingWarnings = otherWarnings.filter(
+        w => w.type.includes('HYPEREDGE') || w.type.includes('ROUTING')
+      );
       if (hyperEdgeRoutingWarnings.length > 0) {
         const stackTrace = new Error().stack;
         console.warn(`[VisualizationState] STACK TRACE for hyperEdge warnings:\n${stackTrace}`);
       }
     }
-    
+
     // Show summary only for non-hyperEdge warnings
     if (Object.keys(warningsByType).length > 0) {
       console.warn(`[VisualizationState] Warning summary:`, warningsByType);
@@ -129,14 +128,14 @@ export class VisualizationStateInvariantValidator {
 
     for (const [containerId, container] of this.state._collections.containers) {
       const { collapsed, hidden } = container;
-      
+
       // Check for illegal Expanded/Hidden state
       if (!collapsed && hidden) {
         violations.push({
           type: 'ILLEGAL_CONTAINER_STATE',
           message: `Container ${containerId} is in illegal Expanded/Hidden state (collapsed: false, hidden: true)`,
           entityId: containerId,
-          severity: 'error'
+          severity: 'error',
         });
       }
     }
@@ -152,7 +151,7 @@ export class VisualizationStateInvariantValidator {
       if (container.collapsed) {
         this.validateDescendantsCollapsed(containerId, violations);
       }
-      
+
       // If container is visible, all ancestors must be visible
       if (!container.hidden) {
         this.validateAncestorsVisible(containerId, violations);
@@ -162,19 +161,22 @@ export class VisualizationStateInvariantValidator {
     return violations;
   }
 
-  private validateDescendantsCollapsed(containerId: string, violations: InvariantViolation[]): void {
+  private validateDescendantsCollapsed(
+    containerId: string,
+    violations: InvariantViolation[]
+  ): void {
     const children = this.state.getContainerChildren(containerId);
-    
+
     for (const childId of children) {
       const childContainer = this.state.getContainer(childId);
       if (childContainer) {
         // Child container must be collapsed and hidden
-        if (!childContainer.collapsed){
+        if (!childContainer.collapsed) {
           violations.push({
             type: 'DESCENDANT_NOT_COLLAPSED',
             message: `Container ${childId} should be collapsed/hidden because ancestor ${containerId} is collapsed`,
             entityId: childId,
-            severity: 'error'
+            severity: 'error',
           });
         }
         if (!childContainer.hidden) {
@@ -182,9 +184,9 @@ export class VisualizationStateInvariantValidator {
             type: 'DESCENDANT_NOT_HIDDEN',
             message: `Container ${childId} should be collapsed/hidden because ancestor ${containerId} is collapsed`,
             entityId: childId,
-            severity: 'error'
+            severity: 'error',
           });
-        } 
+        }
         // Recursively check descendants
         this.validateDescendantsCollapsed(childId, violations);
       } else {
@@ -195,7 +197,7 @@ export class VisualizationStateInvariantValidator {
             type: 'DESCENDANT_NODE_NOT_HIDDEN',
             message: `Node ${childId} should be hidden because container ${containerId} is collapsed`,
             entityId: childId,
-            severity: 'error'
+            severity: 'error',
           });
         }
       }
@@ -204,7 +206,7 @@ export class VisualizationStateInvariantValidator {
 
   private validateAncestorsVisible(containerId: string, violations: InvariantViolation[]): void {
     let current = this.state.getNodeContainer(containerId);
-    
+
     while (current) {
       const ancestorContainer = this.state.getContainer(current);
       if (ancestorContainer && ancestorContainer.hidden) {
@@ -212,7 +214,7 @@ export class VisualizationStateInvariantValidator {
           type: 'ANCESTOR_NOT_VISIBLE',
           message: `Container ${containerId} is visible but ancestor ${current} is hidden`,
           entityId: containerId,
-          severity: 'error'
+          severity: 'error',
         });
       }
       current = this.state.getNodeContainer(current);
@@ -226,17 +228,17 @@ export class VisualizationStateInvariantValidator {
 
     for (const [nodeId, node] of this.state._collections.graphNodes) {
       const containerName = this.state.getNodeContainer(nodeId);
-      
+
       if (containerName) {
         const container = this.state.getContainer(containerName);
-        
+
         // If node belongs to collapsed container, node must be hidden
         if (container && container.collapsed && !node.hidden) {
           violations.push({
             type: 'NODE_NOT_HIDDEN_IN_COLLAPSED_CONTAINER',
             message: `Node ${nodeId} should be hidden because it belongs to collapsed container ${containerName}`,
             entityId: nodeId,
-            severity: 'error'
+            severity: 'error',
           });
         }
       }
@@ -275,41 +277,41 @@ export class VisualizationStateInvariantValidator {
 
       // Source validation: must exist and be visible
       const sourceExists = sourceContainer || sourceNode;
-      const sourceHidden = (sourceContainer?.hidden) || (sourceNode?.hidden);
-      
+      const sourceHidden = sourceContainer?.hidden || sourceNode?.hidden;
+
       if (!sourceExists) {
         violations.push({
           type: 'EDGE_TO_NONEXISTENT_SOURCE',
           message: `Edge ${edge.id} references non-existent source ${edge.source}`,
           entityId: edge.id,
-          severity: 'error'
+          severity: 'error',
         });
       } else if (sourceHidden) {
         violations.push({
           type: 'EDGE_TO_HIDDEN_SOURCE',
           message: `Visible edge ${edge.id} references hidden source ${edge.source}`,
           entityId: edge.id,
-          severity: 'error'
+          severity: 'error',
         });
       }
 
-      // Target validation: must exist and be visible  
+      // Target validation: must exist and be visible
       const targetExists = targetContainer || targetNode;
-      const targetHidden = (targetContainer?.hidden) || (targetNode?.hidden);
-      
+      const targetHidden = targetContainer?.hidden || targetNode?.hidden;
+
       if (!targetExists) {
         violations.push({
           type: 'EDGE_TO_NONEXISTENT_TARGET',
           message: `Edge ${edge.id} references non-existent target ${edge.target}`,
           entityId: edge.id,
-          severity: 'error'
+          severity: 'error',
         });
       } else if (targetHidden) {
         violations.push({
           type: 'EDGE_TO_HIDDEN_TARGET',
           message: `Visible edge ${edge.id} references hidden target ${edge.target}`,
           entityId: edge.id,
-          severity: 'error'
+          severity: 'error',
         });
       }
     }
@@ -322,24 +324,26 @@ export class VisualizationStateInvariantValidator {
 
     for (const [edgeId, edge] of this.state._collections.graphEdges) {
       // Check source exists
-      const sourceExists = this.state.getGraphNode(edge.source) || this.state.getContainer(edge.source);
+      const sourceExists =
+        this.state.getGraphNode(edge.source) || this.state.getContainer(edge.source);
       if (!sourceExists) {
         violations.push({
           type: 'EDGE_INVALID_SOURCE',
           message: `Edge ${edgeId} references non-existent source ${edge.source}`,
           entityId: edgeId,
-          severity: 'error'
+          severity: 'error',
         });
       }
 
-      // Check target exists  
-      const targetExists = this.state.getGraphNode(edge.target) || this.state.getContainer(edge.target);
+      // Check target exists
+      const targetExists =
+        this.state.getGraphNode(edge.target) || this.state.getContainer(edge.target);
       if (!targetExists) {
         violations.push({
           type: 'EDGE_INVALID_TARGET',
           message: `Edge ${edgeId} references non-existent target ${edge.target}`,
           entityId: edgeId,
-          severity: 'error'
+          severity: 'error',
         });
       }
     }
@@ -358,43 +362,45 @@ export class VisualizationStateInvariantValidator {
       const targetContainer = this.state.getContainer(hyperEdge.target);
       const sourceNode = this.state.getGraphNode(hyperEdge.source);
       const targetNode = this.state.getGraphNode(hyperEdge.target);
-      
+
       const sourceExists = sourceContainer || sourceNode;
       const targetExists = targetContainer || targetNode;
-      
+
       if (!sourceExists || !targetExists) {
         violations.push({
           type: 'INVALID_HYPEREDGE',
           message: `Hyperedge ${hyperEdgeId} has non-existent endpoints (source exists: ${!!sourceExists}, target exists: ${!!targetExists})`,
           entityId: hyperEdgeId,
-          severity: 'error'
+          severity: 'error',
         });
         continue;
       }
-      
+
       // Check if endpoints are effectively visible
       const sourceVisible = this._isEntityVisible(hyperEdge.source, sourceContainer, sourceNode);
       const targetVisible = this._isEntityVisible(hyperEdge.target, targetContainer, targetNode);
-      
+
       if (!sourceVisible || !targetVisible) {
         violations.push({
           type: 'HYPEREDGE_TO_HIDDEN_ENDPOINT',
           message: `Hyperedge ${hyperEdgeId} connects to hidden endpoint(s) (source visible: ${sourceVisible}, target visible: ${targetVisible})`,
           entityId: hyperEdgeId,
-          severity: 'warning' // This can be expected during transitions
+          severity: 'warning', // This can be expected during transitions
         });
       }
 
       // CRITICAL: HyperEdges should have at least one collapsed container endpoint
-      const sourceIsCollapsedContainer = sourceContainer && sourceContainer.collapsed && !sourceContainer.hidden;
-      const targetIsCollapsedContainer = targetContainer && targetContainer.collapsed && !targetContainer.hidden;
-      
+      const sourceIsCollapsedContainer =
+        sourceContainer && sourceContainer.collapsed && !sourceContainer.hidden;
+      const targetIsCollapsedContainer =
+        targetContainer && targetContainer.collapsed && !targetContainer.hidden;
+
       if (!sourceIsCollapsedContainer && !targetIsCollapsedContainer) {
         violations.push({
           type: 'INVALID_HYPEREDGE_ROUTING',
           message: `Hyperedge ${hyperEdgeId} exists but neither endpoint is a collapsed container`,
           entityId: hyperEdgeId,
-          severity: 'error' // This is a fundamental hyperEdge requirement
+          severity: 'error', // This is a fundamental hyperEdge requirement
         });
       }
     }
@@ -421,8 +427,12 @@ export class VisualizationStateInvariantValidator {
       // An endpoint is invalid if it doesn't exist OR if it exists but is hidden
       const sourceExists = sourceContainer !== undefined || sourceNode !== undefined;
       const targetExists = targetContainer !== undefined || targetNode !== undefined;
-      const sourceHidden = sourceExists && ((sourceContainer && sourceContainer.hidden) || (sourceNode && sourceNode.hidden));
-      const targetHidden = targetExists && ((targetContainer && targetContainer.hidden) || (targetNode && targetNode.hidden));
+      const sourceHidden =
+        sourceExists &&
+        ((sourceContainer && sourceContainer.hidden) || (sourceNode && sourceNode.hidden));
+      const targetHidden =
+        targetExists &&
+        ((targetContainer && targetContainer.hidden) || (targetNode && targetNode.hidden));
 
       const sourceInvalid = !sourceExists || sourceHidden;
       const targetInvalid = !targetExists || targetHidden;
@@ -431,11 +441,11 @@ export class VisualizationStateInvariantValidator {
       if (sourceInvalid || targetInvalid) {
         let reason = '';
         if (!sourceExists && !targetExists) {
-          reason = 'both endpoints don\'t exist';
+          reason = "both endpoints don't exist";
         } else if (!sourceExists) {
-          reason = 'source doesn\'t exist';
+          reason = "source doesn't exist";
         } else if (!targetExists) {
-          reason = 'target doesn\'t exist';
+          reason = "target doesn't exist";
         } else if (sourceHidden && targetHidden) {
           reason = 'both endpoints are hidden';
         } else if (sourceHidden) {
@@ -448,7 +458,7 @@ export class VisualizationStateInvariantValidator {
           type: 'DANGLING_HYPEREDGE',
           message: `Hyperedge ${hyperEdgeId} should be hidden because ${reason}`,
           entityId: hyperEdgeId,
-          severity: 'warning'
+          severity: 'warning',
         });
       }
     }
@@ -485,7 +495,7 @@ export class VisualizationStateInvariantValidator {
           type: 'COLLAPSED_CONTAINER_LARGE_DIMENSIONS',
           message: `Collapsed container ${containerId} has large dimensions (${width}x${height}) that may cause layout issues`,
           entityId: containerId,
-          severity: 'warning'
+          severity: 'warning',
         });
       }
     }
@@ -508,7 +518,7 @@ export class VisualizationStateInvariantValidator {
           type: 'POSITIONED_CONTAINER_NO_DIMENSIONS',
           message: `Container ${containerId} has position but missing dimensions`,
           entityId: containerId,
-          severity: 'warning'
+          severity: 'warning',
         });
       }
     }
@@ -520,7 +530,7 @@ export class VisualizationStateInvariantValidator {
     // Check if entity is hidden
     if (container && container.hidden) return false;
     if (node && node.hidden) return false;
-    
+
     // Check if node is inside a collapsed container
     if (node) {
       const parentContainerId = this.state.getNodeContainer(entityId);
@@ -531,7 +541,7 @@ export class VisualizationStateInvariantValidator {
         }
       }
     }
-    
+
     return true;
   }
 }

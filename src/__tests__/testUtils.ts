@@ -1,6 +1,6 @@
 /**
  * @fileoverview Shared Test Utilities
- * 
+ *
  * Common utilities for testing the visualization components
  */
 
@@ -26,13 +26,13 @@ export function loadChatJsonTestData(grouping: string | null = null): TestDataRe
     const chatJsonPath = path.join(__dirname, '../test-data/chat.json');
     const chatJsonContent = fs.readFileSync(chatJsonPath, 'utf8');
     const rawData = JSON.parse(chatJsonContent);
-    
+
     const result = parseGraphJSON(rawData, grouping ?? undefined);
-    
+
     return {
       rawData,
       state: result.state,
-      metadata: result.metadata
+      metadata: result.metadata,
     };
   } catch (error) {
     console.warn('chat.json not found, skipping test that requires test data');
@@ -69,14 +69,14 @@ export function createMockVisualizationStateWithContainers() {
     .setGraphEdge('edge_2_3', { source: 'node_2', target: 'node_3' })
     .setGraphEdge('edge_3_4', { source: 'node_3', target: 'node_4' })
     // Create containers with minimal setup - let ELK calculate dimensions
-    .setContainer('container_a', { 
-      children: ['node_0', 'node_1'], 
-      collapsed: false 
+    .setContainer('container_a', {
+      children: ['node_0', 'node_1'],
+      collapsed: false,
     })
-    .setContainer('container_b', { 
-      children: ['node_2', 'node_3', 'node_4'], 
-      collapsed: false 
+    .setContainer('container_b', {
+      children: ['node_2', 'node_3', 'node_4'],
+      collapsed: false,
     });
-    
+
   return state;
 }

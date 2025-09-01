@@ -39,7 +39,7 @@ export function CollapsibleSection({
         aria-expanded={isOpen}
         aria-disabled={disabled}
         title={disabled ? undefined : `${isCollapsed ? 'Expand' : 'Collapse'} ${title}`}
-        onClick={(e) => {
+        onClick={e => {
           // Prevent the browser from toggling <details>; we control via props
           e.preventDefault();
           if (!disabled) {

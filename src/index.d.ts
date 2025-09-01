@@ -14,7 +14,7 @@
 /**
  * The current version of the vis components package.
  */
-export declare const VERSION: "2.0.0";
+export declare const VERSION: '2.0.0';
 /**
  * Core visualization state class - now powered by bridge architecture!
  */
@@ -30,7 +30,19 @@ export { NODE_STYLES } from './shared/config';
 export { EDGE_STYLES } from './shared/config';
 export { CONTAINER_STYLES } from './shared/config';
 export { LAYOUT_CONSTANTS } from './shared/config';
-export type { NodeStyle, EdgeStyle, ContainerStyle, Dimensions, GraphNode, GraphEdge, Container, HyperEdge, CreateNodeProps, CreateEdgeProps, CreateContainerProps } from './core/types';
+export type {
+  NodeStyle,
+  EdgeStyle,
+  ContainerStyle,
+  Dimensions,
+  GraphNode,
+  GraphEdge,
+  Container,
+  HyperEdge,
+  CreateNodeProps,
+  CreateEdgeProps,
+  CreateContainerProps,
+} from './core/types';
 /**
  * Parse graph JSON data - SAME API, now with bridge architecture!
  */
@@ -39,7 +51,12 @@ export { createGraphParser } from './core/JSONParser';
 export { getAvailableGroupings } from './core/JSONParser';
 export { validateGraphJSON } from './core/JSONParser';
 export { createRenderConfig } from './core/JSONParser';
-export type { ParseResult, ValidationResult, GroupingOption, ParserOptions } from './core/JSONParser';
+export type {
+  ParseResult,
+  ValidationResult,
+  GroupingOption,
+  ParserOptions,
+} from './core/JSONParser';
 /**
  * ELK layout engine - COMPLETE REPLACEMENT with hyperedge fix!
  *
@@ -53,8 +70,18 @@ export type { LayoutConfig, LayoutResult, LayoutEngine } from './layout/index';
  *
  * 🔥 KEY IMPROVEMENT: Clean coordinate translation between ELK and ReactFlow!
  */
-export { FlowGraph as FlowGraph, GraphStandardNode, GraphContainerNode, GraphStandardEdge, GraphHyperEdge, DEFAULT_RENDER_CONFIG } from './render/index';
-export type { RenderConfig, FlowGraphEventHandlers as FlowGraphEventHandlers } from './render/index';
+export {
+  FlowGraph as FlowGraph,
+  GraphStandardNode,
+  GraphContainerNode,
+  GraphStandardEdge,
+  GraphHyperEdge,
+  DEFAULT_RENDER_CONFIG,
+} from './render/index';
+export type {
+  RenderConfig,
+  FlowGraphEventHandlers as FlowGraphEventHandlers,
+} from './render/index';
 /**
  * Bridge architecture components for advanced users
  */
@@ -87,10 +114,10 @@ export type { VisualizationEngineConfig } from './core/VisualizationEngine';
  * Your existing code works exactly the same - just with better performance and no bugs!
  */
 export declare const ALPHA_REPLACEMENT_STATUS: {
-    readonly status: "COMPLETE";
-    readonly api_compatibility: "100%";
-    readonly bugs_fixed: readonly ["hyperedge_layout_overlap"];
-    readonly architecture: "bridge-based";
-    readonly performance: "improved";
+  readonly status: 'COMPLETE';
+  readonly api_compatibility: '100%';
+  readonly bugs_fixed: readonly ['hyperedge_layout_overlap'];
+  readonly architecture: 'bridge-based';
+  readonly performance: 'improved';
 };
 //# sourceMappingURL=index.d.ts.map

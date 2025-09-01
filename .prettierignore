@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Package files
+package-lock.json
+yarn.lock
+
+# Test output
+test-results/
+
+# Preserve formatting in these files
+*.md
+src/test-data/*.json
+*.css

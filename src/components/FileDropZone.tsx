@@ -18,13 +18,15 @@ function JSONFormatDocumentation() {
 
   if (!isExpanded) {
     return (
-      <div style={{ 
-        marginTop: '32px', 
-        paddingTop: '24px', 
-        borderTop: '1px solid #eee', 
-        color: '#777', 
-        fontSize: '14px' 
-      }}>
+      <div
+        style={{
+          marginTop: '32px',
+          paddingTop: '24px',
+          borderTop: '1px solid #eee',
+          color: '#777',
+          fontSize: '14px',
+        }}
+      >
         <button
           onClick={toggleExpanded}
           style={{
@@ -34,7 +36,7 @@ function JSONFormatDocumentation() {
             textDecoration: 'underline',
             cursor: 'pointer',
             fontSize: '14px',
-            padding: 0
+            padding: 0,
           }}
         >
           📖 Click here for documentation on our JSON format
@@ -44,24 +46,34 @@ function JSONFormatDocumentation() {
   }
 
   return (
-    <div style={{ 
-      marginTop: '32px', 
-      paddingTop: '24px', 
-      borderTop: '1px solid #eee', 
-      color: '#555', 
-      fontSize: '13px',
-      maxHeight: '500px',  // Fixed height instead of viewport-based
-      overflowY: 'auto',
-      border: '1px solid #e0e0e0',
-      borderRadius: '6px',
-      padding: '24px',
-      background: '#fafafa',
-      margin: '32px 10% 10% 10%',  // 10% left/right margins for 80% width
-      width: '80%'  // Use 80% of container width
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <div
+      style={{
+        marginTop: '32px',
+        paddingTop: '24px',
+        borderTop: '1px solid #eee',
+        color: '#555',
+        fontSize: '13px',
+        maxHeight: '500px', // Fixed height instead of viewport-based
+        overflowY: 'auto',
+        border: '1px solid #e0e0e0',
+        borderRadius: '6px',
+        padding: '24px',
+        background: '#fafafa',
+        margin: '32px 10% 10% 10%', // 10% left/right margins for 80% width
+        width: '80%', // Use 80% of container width
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+        }}
+      >
         <h4 style={{ margin: 0, color: '#333', fontSize: '16px' }}>
-          Hydro JSON Format Documentation <span style={{ fontSize: '12px', color: '#666' }}>({SCHEMA_VERSION})</span>
+          Hydro JSON Format Documentation{' '}
+          <span style={{ fontSize: '12px', color: '#666' }}>({SCHEMA_VERSION})</span>
         </h4>
         <button
           onClick={toggleExpanded}
@@ -71,7 +83,7 @@ function JSONFormatDocumentation() {
             borderRadius: '4px',
             padding: '4px 8px',
             cursor: 'pointer',
-            fontSize: '12px'
+            fontSize: '12px',
           }}
         >
           ✕ Close
@@ -80,35 +92,46 @@ function JSONFormatDocumentation() {
 
       <div style={{ fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace", fontSize: '13px' }}>
         <h5 style={{ color: '#333', marginTop: '0' }}>Required Structure:</h5>
-        <pre style={{ 
-          background: '#f8f8f8', 
-          padding: '16px', 
-          borderRadius: '4px', 
-          border: '1px solid #e0e0e0',
-          overflow: 'auto',
-          margin: '8px 0',
-          lineHeight: '1.4',
-          whiteSpace: 'pre',
-          textAlign: 'left',
-          tabSize: 2
-        }}>{schema.requiredExample}</pre>
+        <pre
+          style={{
+            background: '#f8f8f8',
+            padding: '16px',
+            borderRadius: '4px',
+            border: '1px solid #e0e0e0',
+            overflow: 'auto',
+            margin: '8px 0',
+            lineHeight: '1.4',
+            whiteSpace: 'pre',
+            textAlign: 'left',
+            tabSize: 2,
+          }}
+        >
+          {schema.requiredExample}
+        </pre>
 
         <h5 style={{ color: '#333', marginTop: '24px' }}>Optional Configuration:</h5>
-        <pre style={{ 
-          background: '#f8f8f8', 
-          padding: '16px', 
-          borderRadius: '4px', 
-          border: '1px solid #e0e0e0',
-          overflow: 'auto',
-          margin: '8px 0',
-          lineHeight: '1.4',
-          whiteSpace: 'pre',
-          textAlign: 'left',
-          tabSize: 2
-        }}>{schema.optionalExample}</pre>
+        <pre
+          style={{
+            background: '#f8f8f8',
+            padding: '16px',
+            borderRadius: '4px',
+            border: '1px solid #e0e0e0',
+            overflow: 'auto',
+            margin: '8px 0',
+            lineHeight: '1.4',
+            whiteSpace: 'pre',
+            textAlign: 'left',
+            tabSize: 2,
+          }}
+        >
+          {schema.optionalExample}
+        </pre>
 
         <div style={{ marginTop: '12px', fontSize: '11px', color: '#666' }}>
-          <em>This documentation is automatically synchronized with the JSON parser schema ({SCHEMA_VERSION}).</em>
+          <em>
+            This documentation is automatically synchronized with the JSON parser schema (
+            {SCHEMA_VERSION}).
+          </em>
         </div>
       </div>
     </div>
@@ -124,11 +147,13 @@ function CompleteExampleDisplay() {
 
   if (!isExpanded) {
     return (
-      <div style={{ 
-        marginTop: '16px', 
-        color: '#777', 
-        fontSize: '14px' 
-      }}>
+      <div
+        style={{
+          marginTop: '16px',
+          color: '#777',
+          fontSize: '14px',
+        }}
+      >
         <button
           onClick={toggleExpanded}
           style={{
@@ -138,7 +163,7 @@ function CompleteExampleDisplay() {
             textDecoration: 'underline',
             cursor: 'pointer',
             fontSize: '14px',
-            padding: 0
+            padding: 0,
           }}
         >
           📝 View complete working example
@@ -148,23 +173,33 @@ function CompleteExampleDisplay() {
   }
 
   return (
-    <div style={{ 
-      marginTop: '16px', 
-      paddingTop: '24px', 
-      color: '#555', 
-      fontSize: '13px',
-      maxHeight: '600px',
-      overflowY: 'auto',
-      border: '1px solid #e0e0e0',
-      borderRadius: '6px',
-      padding: '24px',
-      background: '#fafafa',
-      margin: '16px 10% 10% 10%',
-      width: '80%'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <div
+      style={{
+        marginTop: '16px',
+        paddingTop: '24px',
+        color: '#555',
+        fontSize: '13px',
+        maxHeight: '600px',
+        overflowY: 'auto',
+        border: '1px solid #e0e0e0',
+        borderRadius: '6px',
+        padding: '24px',
+        background: '#fafafa',
+        margin: '16px 10% 10% 10%',
+        width: '80%',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+        }}
+      >
         <h4 style={{ margin: 0, color: '#333', fontSize: '16px' }}>
-          Complete Working Example <span style={{ fontSize: '12px', color: '#666' }}>({SCHEMA_VERSION})</span>
+          Complete Working Example{' '}
+          <span style={{ fontSize: '12px', color: '#666' }}>({SCHEMA_VERSION})</span>
         </h4>
         <button
           onClick={toggleExpanded}
@@ -174,7 +209,7 @@ function CompleteExampleDisplay() {
             borderRadius: '4px',
             padding: '4px 8px',
             cursor: 'pointer',
-            fontSize: '12px'
+            fontSize: '12px',
           }}
         >
           ✕ Close
@@ -182,19 +217,23 @@ function CompleteExampleDisplay() {
       </div>
 
       <div style={{ fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace", fontSize: '13px' }}>
-        <pre style={{ 
-          background: '#f8f8f8', 
-          padding: '16px', 
-          borderRadius: '4px', 
-          border: '1px solid #e0e0e0',
-          overflow: 'auto',
-          margin: '8px 0',
-          lineHeight: '1.4',
-          whiteSpace: 'pre',
-          textAlign: 'left',
-          tabSize: 2,
-          maxHeight: '320px'
-        }}>{schema.completeExample}</pre>
+        <pre
+          style={{
+            background: '#f8f8f8',
+            padding: '16px',
+            borderRadius: '4px',
+            border: '1px solid #e0e0e0',
+            overflow: 'auto',
+            margin: '8px 0',
+            lineHeight: '1.4',
+            whiteSpace: 'pre',
+            textAlign: 'left',
+            tabSize: 2,
+            maxHeight: '320px',
+          }}
+        >
+          {schema.completeExample}
+        </pre>
 
         <div style={{ textAlign: 'center', margin: '16px 0' }}>
           <button
@@ -218,12 +257,12 @@ function CompleteExampleDisplay() {
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
-              transition: 'background 0.2s ease'
+              transition: 'background 0.2s ease',
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={e => {
               (e.target as HTMLElement).style.background = '#218838';
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={e => {
               (e.target as HTMLElement).style.background = '#28a745';
             }}
             title="Load this example as your starting graph"
@@ -275,7 +314,7 @@ const dragOverStyles: React.CSSProperties = {
 const dropContentStyles: React.CSSProperties = {
   textAlign: 'center',
   padding: '40px',
-  maxWidth: '90%',  // Increased to 90% for better use of space
+  maxWidth: '90%', // Increased to 90% for better use of space
   width: '100%',
   height: '100%',
   display: 'flex',
@@ -316,13 +355,13 @@ const loadingStyles: React.CSSProperties = {
   borderRadius: '8px',
 };
 
-function FileDropZone({ 
-  onFileLoad, 
+function FileDropZone({
+  onFileLoad,
   onFileUpload,
   acceptedTypes = ['.json'],
-  hasData = false, 
-  className = '', 
-  generatedFilePath 
+  hasData = false,
+  className = '',
+  generatedFilePath,
 }: FileDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -351,65 +390,74 @@ function FileDropZone({
     });
   }, []);
 
-  const processFile = useCallback(async (file: File) => {
-    setIsLoading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target?.result as string);
-          onFileLoad?.(data);
-          onFileUpload?.(data, file.name);
-        } catch (error) {
-          console.error('JSON parsing error:', error);
-          alert('Invalid JSON file: ' + (error as Error).message);
-        } finally {
+  const processFile = useCallback(
+    async (file: File) => {
+      setIsLoading(true);
+      try {
+        const reader = new FileReader();
+        reader.onload = event => {
+          try {
+            const data = JSON.parse(event.target?.result as string);
+            onFileLoad?.(data);
+            onFileUpload?.(data, file.name);
+          } catch (error) {
+            console.error('JSON parsing error:', error);
+            alert('Invalid JSON file: ' + (error as Error).message);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        reader.onerror = () => {
+          console.error('File reading error');
+          alert('Error reading file');
           setIsLoading(false);
-        }
-      };
-      reader.onerror = () => {
-        console.error('File reading error');
-        alert('Error reading file');
+        };
+        reader.readAsText(file);
+      } catch (error) {
+        console.error('File processing error:', error);
+        alert('Error processing file: ' + (error as Error).message);
         setIsLoading(false);
-      };
-      reader.readAsText(file);
-    } catch (error) {
-      console.error('File processing error:', error);
-      alert('Error processing file: ' + (error as Error).message);
-      setIsLoading(false);
-    }
-  }, [onFileLoad]);
+      }
+    },
+    [onFileLoad]
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    setDragCounter(0);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const exts = acceptedTypes.length ? acceptedTypes : ['.json'];
-    const jsonFile = files.find(file =>
-      exts.some(ext => file.name.toLowerCase().endsWith(ext.toLowerCase()))
-    );
-    
-    if (jsonFile) {
-      processFile(jsonFile);
-    } else {
-      alert('Please drop a JSON file');
-    }
-  }, [processFile, acceptedTypes]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      setDragCounter(0);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    const exts = acceptedTypes.length ? acceptedTypes : ['.json'];
-    if (file && exts.some(ext => file.name.toLowerCase().endsWith(ext.toLowerCase()))) {
-      processFile(file);
-    } else if (file) {
-      alert('Please select a JSON file');
-    }
-    // Reset the input so the same file can be selected again
-    e.target.value = '';
-  }, [processFile, acceptedTypes]);
+      const files = Array.from(e.dataTransfer.files);
+      const exts = acceptedTypes.length ? acceptedTypes : ['.json'];
+      const jsonFile = files.find(file =>
+        exts.some(ext => file.name.toLowerCase().endsWith(ext.toLowerCase()))
+      );
+
+      if (jsonFile) {
+        processFile(jsonFile);
+      } else {
+        alert('Please drop a JSON file');
+      }
+    },
+    [processFile, acceptedTypes]
+  );
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      const exts = acceptedTypes.length ? acceptedTypes : ['.json'];
+      if (file && exts.some(ext => file.name.toLowerCase().endsWith(ext.toLowerCase()))) {
+        processFile(file);
+      } else if (file) {
+        alert('Please select a JSON file');
+      }
+      // Reset the input so the same file can be selected again
+      e.target.value = '';
+    },
+    [processFile, acceptedTypes]
+  );
 
   if (hasData) {
     return null;
@@ -429,7 +477,7 @@ function FileDropZone({
   }
 
   return (
-    <div 
+    <div
       style={isDragOver ? dragOverStyles : dropZoneStyles}
       className={className}
       onDragEnter={handleDragEnter}
@@ -446,27 +494,27 @@ function FileDropZone({
           <p style={{ marginBottom: '24px', color: '#666', fontSize: '16px' }}>
             Drop a compatible JSON file here or click to choose.
           </p>
-          
-          <input 
-            type="file" 
+
+          <input
+            type="file"
             accept={acceptedTypes.join(',')}
             onChange={handleFileInput}
             style={fileInputStyles}
             id="file-input"
           />
-          <label 
-            htmlFor="file-input" 
+          <label
+            htmlFor="file-input"
             style={fileInputLabelStyles}
-            onMouseEnter={(e) => {
+            onMouseEnter={e => {
               (e.target as HTMLElement).style.background = '#005999';
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={e => {
               (e.target as HTMLElement).style.background = '#007acc';
             }}
           >
             Choose File
           </label>
-          
+
           {!generatedFilePath && (
             <>
               <JSONFormatDocumentation />
@@ -477,47 +525,54 @@ function FileDropZone({
 
         {/* Bottom section - generated file path (positioned 20% from bottom) */}
         {generatedFilePath && (
-          <div style={{ 
-            paddingTop: '24px',
-            borderTop: '1px solid #eee', 
-            color: '#555', 
-            fontSize: '14px',
-            marginTop: 'auto',
-            marginBottom: '20%' // This pushes it to 20% from bottom
-          }}>
+          <div
+            style={{
+              paddingTop: '24px',
+              borderTop: '1px solid #eee',
+              color: '#555',
+              fontSize: '14px',
+              marginTop: 'auto',
+              marginBottom: '20%', // This pushes it to 20% from bottom
+            }}
+          >
             <p style={{ marginBottom: '12px', color: '#333', fontWeight: 'bold' }}>
               📄 Generated file ready to load:
             </p>
             <div style={{ position: 'relative' }}>
-              <code style={{
-                display: 'block',
-                background: '#e8f5e8',
-                padding: '12px 50px 12px 12px', // Extra right padding for button
-                borderRadius: '6px',
-                marginTop: '8px',
-                fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-                color: '#2e7d32',
-                fontSize: '13px',
-                wordBreak: 'break-all'
-              }}>
+              <code
+                style={{
+                  display: 'block',
+                  background: '#e8f5e8',
+                  padding: '12px 50px 12px 12px', // Extra right padding for button
+                  borderRadius: '6px',
+                  marginTop: '8px',
+                  fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+                  color: '#2e7d32',
+                  fontSize: '13px',
+                  wordBreak: 'break-all',
+                }}
+              >
                 {generatedFilePath}
               </code>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(generatedFilePath).then(() => {
-                    // Visual feedback - could be enhanced with a toast
-                    const btn = document.activeElement as HTMLButtonElement;
-                    const originalText = btn.textContent;
-                    btn.textContent = '✓';
-                    btn.style.background = '#4caf50';
-                    setTimeout(() => {
-                      btn.textContent = originalText;
-                      btn.style.background = '#007acc';
-                    }, 1000);
-                  }).catch(err => {
-                    console.error('Failed to copy to clipboard:', err);
-                    alert('Failed to copy to clipboard');
-                  });
+                  navigator.clipboard
+                    .writeText(generatedFilePath)
+                    .then(() => {
+                      // Visual feedback - could be enhanced with a toast
+                      const btn = document.activeElement as HTMLButtonElement;
+                      const originalText = btn.textContent;
+                      btn.textContent = '✓';
+                      btn.style.background = '#4caf50';
+                      setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '#007acc';
+                      }, 1000);
+                    })
+                    .catch(err => {
+                      console.error('Failed to copy to clipboard:', err);
+                      alert('Failed to copy to clipboard');
+                    });
                 }}
                 style={{
                   position: 'absolute',
@@ -531,12 +586,12 @@ function FileDropZone({
                   padding: '4px 8px',
                   fontSize: '12px',
                   cursor: 'pointer',
-                  transition: 'background 0.2s ease'
+                  transition: 'background 0.2s ease',
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={e => {
                   (e.target as HTMLElement).style.background = '#005999';
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={e => {
                   if ((e.target as HTMLElement).textContent !== '✓') {
                     (e.target as HTMLElement).style.background = '#007acc';
                   }

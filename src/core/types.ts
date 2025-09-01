@@ -122,7 +122,7 @@ export interface LayoutEngine {
     containers: ExternalContainer[],
     config?: LayoutConfig
   ): Promise<LayoutResult>;
-  
+
   layoutWithChangedContainer?(
     nodes: GraphNode[],
     edges: GraphEdge[],

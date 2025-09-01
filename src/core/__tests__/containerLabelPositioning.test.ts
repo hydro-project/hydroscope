@@ -37,15 +37,15 @@ describe('Container Label Positioning & Dimensions', () => {
       // Create a container with base dimensions
       const baseWidth = 300;
       const baseHeight = 200;
-      
+
       // Create container first (without dimensions - encapsulation prevents external dimension control)
       visState.setContainer('container1', {
-        collapsed: false
+        collapsed: false,
       });
-      
+
       // Then simulate ELK layout result being applied (this sets expandedDimensions internally)
       visState.setContainerLayout('container1', {
-        dimensions: { width: baseWidth, height: baseHeight }
+        dimensions: { width: baseWidth, height: baseHeight },
       });
 
       const adjustedDims = visState.getContainerAdjustedDimensions('container1');
@@ -58,9 +58,9 @@ describe('Container Label Positioning & Dimensions', () => {
 
     test('should ensure minimum dimensions for collapsed containers', () => {
       visState.setContainer('container1', {
-        width: 50,  // Very small raw dimensions
+        width: 50, // Very small raw dimensions
         height: 20,
-        collapsed: true
+        collapsed: true,
       });
 
       const adjustedDims = visState.getContainerAdjustedDimensions('container1');
@@ -73,7 +73,7 @@ describe('Container Label Positioning & Dimensions', () => {
 
     test('should handle containers without explicit dimensions', () => {
       visState.setContainer('container1', {
-        collapsed: false
+        collapsed: false,
       });
 
       const adjustedDims = visState.getContainerAdjustedDimensions('container1');
@@ -97,7 +97,7 @@ describe('Container Label Positioning & Dimensions', () => {
       visState.setContainer('container1', {
         collapsed: false,
         children: ['node1', 'node2'],
-        label: 'Test Container'
+        label: 'Test Container',
       });
       visState.setGraphNode('node1', { container: 'container1' });
       visState.setGraphNode('node2', { container: 'container1' });
@@ -105,25 +105,29 @@ describe('Container Label Positioning & Dimensions', () => {
       // Run ELK layout through VisualizationState API
       const elkBridge = new ELKBridge();
       await elkBridge.layoutVisualizationState(visState);
-      
+
       const containers = visState.visibleContainers;
       const container = containers.find((c: any) => c.id === 'container1');
 
       expect(container).toBeDefined();
       expect(container!.width).toBeGreaterThan(0);
       expect(container!.height).toBeGreaterThan(0);
-      
+
       // Verify that dimensions include label space by checking against getContainerAdjustedDimensions
       const adjustedDims = visState.getContainerAdjustedDimensions('container1');
-      
+
       expect(container!.width).toBe(adjustedDims.width);
       expect(container!.height).toBe(adjustedDims.height);
-      
+
       // For non-collapsed containers, height should include label space
       // The exact height depends on ELK layout, but should be the ELK result + label space
       // Check that the height is greater than what ELK would return without padding
-      expect(container!.height).toBeGreaterThan(container!.height - LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT - LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING);
-      
+      expect(container!.height).toBeGreaterThan(
+        container!.height -
+          LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT -
+          LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING
+      );
+
       // More specifically, verify that the height includes the expected padding
       // (We can't predict exact ELK layout results, but we can verify padding was added)
       expect(container!.height).toBeGreaterThan(50); // Some reasonable minimum
@@ -135,7 +139,7 @@ describe('Container Label Positioning & Dimensions', () => {
       expect(LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT).toBeGreaterThan(0);
       expect(LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING).toBeGreaterThan(0);
       expect(LAYOUT_CONSTANTS.CONTAINER_LABEL_FONT_SIZE).toBeGreaterThan(0);
-      
+
       // Label height should be reasonable for 12px font
       expect(LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT).toBeGreaterThanOrEqual(16);
       expect(LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT).toBeLessThanOrEqual(32);

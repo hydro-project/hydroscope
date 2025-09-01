@@ -1,6 +1,6 @@
 /**
  * Edge Converter
- * 
+ *
  * Converts visualization state edges to ReactFlow edges with proper styling
  * based on edge properties and style configuration.
  */
@@ -23,22 +23,22 @@ export function convertEdgeToReactFlow(
   options: EdgeConverterOptions = {}
 ): ReactFlowEdge {
   const { edgeStyleConfig, showPropertyLabels = true, enableAnimations = true } = options;
-  
+
   // Extract edge properties from semanticTags for styling
   const edgeProperties = (edge as any).semanticTags || [];
   const originalLabel = (edge as any).label;
-  
+
   // Process the edge style based on properties
   const processedStyle = processEdgeStyle(edgeProperties, edgeStyleConfig, originalLabel);
 
   // Use processedStyle.animated directly
   const animatedFlag = enableAnimations && processedStyle.animated;
-  
+
   // Create label if requested
-  const label = showPropertyLabels 
+  const label = showPropertyLabels
     ? createEdgeLabel(edgeProperties, edgeStyleConfig, originalLabel)
     : originalLabel;
-  
+
   // Build the ReactFlow edge - use the type determined by style processing
   const reactFlowEdge: ReactFlowEdge = {
     id: edge.id,
@@ -46,23 +46,24 @@ export function convertEdgeToReactFlow(
     target: edge.target,
     type: processedStyle.reactFlowType || 'standard', // Use type from style processing, fallback to standard
     style: processedStyle.style,
-  animated: animatedFlag,
+    animated: animatedFlag,
     label: label,
     // Do not set color here; let renderers (StandardEdge/HyperEdge) set marker color
     // to the actual computed stroke so arrowheads always match the line color.
-    markerEnd: typeof processedStyle.markerEndSpec === 'string' 
-      ? processedStyle.markerEndSpec  // For custom URL markers like 'url(#circle-filled)'
-      : processedStyle.markerEndSpec ?? {
-          type: MarkerType.ArrowClosed,
-          width: 15,
-          height: 15
-        },
+    markerEnd:
+      typeof processedStyle.markerEndSpec === 'string'
+        ? processedStyle.markerEndSpec // For custom URL markers like 'url(#circle-filled)'
+        : (processedStyle.markerEndSpec ?? {
+            type: MarkerType.ArrowClosed,
+            width: 15,
+            height: 15,
+          }),
     data: {
       edgeProperties,
       appliedProperties: processedStyle.appliedProperties,
       originalEdge: edge,
-      processedStyle
-    }
+      processedStyle,
+    },
   };
 
   // Provide sensible default handles as fallback (will be overridden by smart algorithm)
@@ -71,14 +72,14 @@ export function convertEdgeToReactFlow(
     reactFlowEdge.sourceHandle = 'out-bottom'; // Safe default - never use out-top
   }
   if (!reactFlowEdge.targetHandle) {
-    reactFlowEdge.targetHandle = 'in-top';     // Safe default - never use in-bottom
+    reactFlowEdge.targetHandle = 'in-top'; // Safe default - never use in-bottom
   }
-  
+
   // Add any additional properties from the original edge
   if (edge.hidden) {
     reactFlowEdge.hidden = edge.hidden;
   }
-  
+
   return reactFlowEdge;
 }
 
@@ -107,30 +108,30 @@ export function getEdgeStyleStats(
   const propertyCounts: Record<string, number> = {};
   const styleCounts: Record<string, number> = {};
   const unmappedProperties = new Set<string>();
-  
+
   for (const edge of edges) {
     const edgeProperties = (edge as any).edgeProperties || [];
-    
+
     // Count properties
     for (const prop of edgeProperties) {
       propertyCounts[prop] = (propertyCounts[prop] || 0) + 1;
-      
+
       // Check if property has a mapping
-  if (edgeStyleConfig && !edgeStyleConfig.propertyMappings?.[prop]) {
+      if (edgeStyleConfig && !edgeStyleConfig.propertyMappings?.[prop]) {
         unmappedProperties.add(prop);
       }
     }
-    
+
     // Count applied styles
     const processedStyle = processEdgeStyle(edgeProperties, edgeStyleConfig);
     const styleKey = `${processedStyle.reactFlowType}:${JSON.stringify(processedStyle.style)}`;
     styleCounts[styleKey] = (styleCounts[styleKey] || 0) + 1;
   }
-  
+
   return {
     totalEdges: edges.length,
     propertyCounts,
     styleCounts,
-    unmappedProperties: Array.from(unmappedProperties)
+    unmappedProperties: Array.from(unmappedProperties),
   };
 }

@@ -1,9 +1,9 @@
 /**
  * @fileoverview Unit Tests for VisualizationState Bridge Support Methods
- * 
+ *
  * Tests the business logic methods that were moved from bridges to VisualizationState:
  * - getCollapsedContainersAsNodes()
- * - getParentChildMap() 
+ * - getParentChildMap()
  * - getTopLevelNodes()
  * - getEdgeHandles()
  */
@@ -31,21 +31,21 @@ describe('VisualizationState Bridge Support Methods', () => {
         width: 250,
         height: 180,
         x: 100,
-        y: 200
+        y: 200,
       });
-      
+
       visState.setContainer('expanded1', {
         collapsed: false,
         hidden: false,
         children: ['node3'],
         width: 300,
-        height: 250
+        height: 250,
       });
-      
+
       visState.setContainer('collapsed2', {
         collapsed: true,
         hidden: false,
-        children: ['node4']
+        children: ['node4'],
         // No explicit dimensions - should use defaults
       });
 
@@ -54,7 +54,7 @@ describe('VisualizationState Bridge Support Methods', () => {
 
       // Verify
       expect(collapsedAsNodes).toHaveLength(2);
-      
+
       const collapsed1Node = collapsedAsNodes.find(n => n.id === 'collapsed1');
       expect(collapsed1Node).toBeDefined();
       expect(collapsed1Node).toMatchObject({
@@ -65,9 +65,9 @@ describe('VisualizationState Bridge Support Methods', () => {
         x: 100,
         y: 200,
         hidden: false,
-        style: 'default'
+        style: 'default',
       });
-      
+
       const collapsed2Node = collapsedAsNodes.find(n => n.id === 'collapsed2');
       expect(collapsed2Node).toBeDefined();
       expect(collapsed2Node).toMatchObject({
@@ -78,9 +78,9 @@ describe('VisualizationState Bridge Support Methods', () => {
         x: 0,
         y: 0,
         hidden: false,
-        style: 'default'
+        style: 'default',
       });
-      
+
       // Should not include expanded containers
       expect(collapsedAsNodes.find(n => n.id === 'expanded1')).toBeUndefined();
     });
@@ -90,7 +90,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       visState.setContainer('expanded1', {
         collapsed: false,
         hidden: false,
-        children: ['node1']
+        children: ['node1'],
       });
 
       // Execute
@@ -105,7 +105,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       visState.setContainer('hiddenCollapsed', {
         collapsed: true,
         hidden: true,
-        children: ['node1']
+        children: ['node1'],
       });
 
       // Execute
@@ -122,19 +122,19 @@ describe('VisualizationState Bridge Support Methods', () => {
       visState.setContainer('parent1', {
         collapsed: false,
         hidden: false,
-        children: ['node1', 'node2', 'child_container']
+        children: ['node1', 'node2', 'child_container'],
       });
-      
+
       visState.setContainer('parent2', {
         collapsed: true, // Collapsed - children should not appear in map
         hidden: false,
-        children: ['node3', 'node4']
+        children: ['node3', 'node4'],
       });
-      
+
       visState.setContainer('child_container', {
         collapsed: false,
         hidden: false,
-        children: ['node5']
+        children: ['node5'],
       });
 
       // Execute
@@ -145,11 +145,11 @@ describe('VisualizationState Bridge Support Methods', () => {
       expect(parentMap.get('node2')).toBe('parent1');
       expect(parentMap.get('child_container')).toBe('parent1');
       expect(parentMap.get('node5')).toBe('child_container');
-      
+
       // Children of collapsed containers should not be in the map
       expect(parentMap.get('node3')).toBeUndefined();
       expect(parentMap.get('node4')).toBeUndefined();
-      
+
       expect(parentMap.size).toBe(4);
     });
 
@@ -158,7 +158,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       visState.setContainer('collapsed1', {
         collapsed: true,
         hidden: false,
-        children: ['node1', 'node2']
+        children: ['node1', 'node2'],
       });
 
       // Execute
@@ -173,7 +173,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       visState.setContainer('empty', {
         collapsed: false,
         hidden: false,
-        children: []
+        children: [],
       });
 
       // Execute
@@ -192,17 +192,17 @@ describe('VisualizationState Bridge Support Methods', () => {
       visState.setGraphNode('insideExpanded', { label: 'Inside Expanded', hidden: false });
       visState.setGraphNode('insideCollapsed', { label: 'Inside Collapsed', hidden: false });
       visState.setGraphNode('hidden', { label: 'Hidden Node', hidden: true });
-      
+
       visState.setContainer('expanded', {
         collapsed: false,
         hidden: false,
-        children: ['insideExpanded']
+        children: ['insideExpanded'],
       });
-      
+
       visState.setContainer('collapsed', {
         collapsed: true,
         hidden: false,
-        children: ['insideCollapsed']
+        children: ['insideCollapsed'],
       });
 
       // Execute
@@ -213,7 +213,7 @@ describe('VisualizationState Bridge Support Methods', () => {
       expect(topLevelIds).toContain('topLevel1');
       expect(topLevelIds).toContain('topLevel2');
       expect(topLevelIds).not.toContain('insideCollapsed'); // Nodes in collapsed containers are hidden
-      
+
       expect(topLevelIds).not.toContain('insideExpanded'); // In expanded container
       expect(topLevelIds).not.toContain('hidden'); // Hidden nodes are filtered by visibleNodes
       expect(topLevelIds).not.toContain('expanded'); // Containers are not nodes
@@ -243,24 +243,24 @@ describe('VisualizationState Bridge Support Methods', () => {
       // Setup: Create nodes first
       visState.setGraphNode('node1', { x: 0, y: 0, hidden: false });
       visState.setGraphNode('node2', { x: 100, y: 100, hidden: false });
-      
+
       // Setup: Edge with custom handles
       visState.setGraphEdge('edge1', {
         source: 'node1',
         target: 'node2',
         sourceHandle: 'custom-out',
         targetHandle: 'custom-in',
-        hidden: false
+        hidden: false,
       });
 
       // Execute
       const reactFlowBridge = new ReactFlowBridge();
-  const handles = reactFlowBridge.getEdgeHandles(visState, 'edge1', []);
+      const handles = reactFlowBridge.getEdgeHandles(visState, 'edge1', []);
 
       // Verify
       expect(handles).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top'
+        targetHandle: 'in-top',
       });
     });
 
@@ -268,29 +268,29 @@ describe('VisualizationState Bridge Support Methods', () => {
       // Setup: Create nodes first
       visState.setGraphNode('node1', { x: 0, y: 0, hidden: false });
       visState.setGraphNode('node2', { x: 100, y: 100, hidden: false });
-      
+
       // Setup: Edge without custom handles
       visState.setGraphEdge('edge2', {
         source: 'node1',
         target: 'node2',
-        hidden: false
+        hidden: false,
       });
 
       // Execute
       const reactFlowBridge2 = new ReactFlowBridge();
-  const handles = reactFlowBridge2.getEdgeHandles(visState, 'edge2', []);
+      const handles = reactFlowBridge2.getEdgeHandles(visState, 'edge2', []);
 
       // Verify
       expect(handles).toEqual({
         sourceHandle: 'out-bottom', // Current system uses discrete handles
-        targetHandle: 'in-top'
+        targetHandle: 'in-top',
       });
     });
 
     test('should return empty object for non-existent edge', () => {
       // Execute
       const reactFlowBridge3 = new ReactFlowBridge();
-  const handles = reactFlowBridge3.getEdgeHandles(visState, 'nonexistent', []);
+      const handles = reactFlowBridge3.getEdgeHandles(visState, 'nonexistent', []);
 
       // Verify
       expect(handles).toEqual({});
@@ -300,23 +300,23 @@ describe('VisualizationState Bridge Support Methods', () => {
       // Setup: Create nodes first
       visState.setGraphNode('node1', { x: 0, y: 0, hidden: false });
       visState.setGraphNode('node2', { x: 100, y: 100, hidden: false });
-      
+
       // Setup: Edge with only source handle specified
       visState.setGraphEdge('edge3', {
         source: 'node1',
         target: 'node2',
         sourceHandle: 'custom-out',
-        hidden: false
+        hidden: false,
       });
 
       // Execute
       const reactFlowBridge4 = new ReactFlowBridge();
-  const handles = reactFlowBridge4.getEdgeHandles(visState, 'edge3', []);
+      const handles = reactFlowBridge4.getEdgeHandles(visState, 'edge3', []);
 
       // Verify
       expect(handles).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top' // Current system uses discrete handles for defaults
+        targetHandle: 'in-top', // Current system uses discrete handles for defaults
       });
     });
   });
@@ -324,32 +324,47 @@ describe('VisualizationState Bridge Support Methods', () => {
   describe('Integration: Bridge Support Methods Working Together', () => {
     test('should provide consistent data for ELK Bridge workflow', () => {
       // Setup: Complex graph structure
-      visState.setGraphNode('topNode', { label: 'Top Node', width: 180, height: 60, hidden: false });
-      visState.setGraphNode('childNode1', { label: 'Child 1', width: 150, height: 50, hidden: false });
-      visState.setGraphNode('childNode2', { label: 'Child 2', width: 160, height: 55, hidden: false });
+      visState.setGraphNode('topNode', {
+        label: 'Top Node',
+        width: 180,
+        height: 60,
+        hidden: false,
+      });
+      visState.setGraphNode('childNode1', {
+        label: 'Child 1',
+        width: 150,
+        height: 50,
+        hidden: false,
+      });
+      visState.setGraphNode('childNode2', {
+        label: 'Child 2',
+        width: 160,
+        height: 55,
+        hidden: false,
+      });
       visState.setGraphNode('collapsedChild', { label: 'Collapsed Child', hidden: false });
-      
+
       visState.setContainer('expandedContainer', {
         collapsed: false,
         hidden: false,
         children: ['childNode1', 'childNode2'],
         width: 400,
-        height: 300
+        height: 300,
       });
-      
+
       visState.setContainer('collapsedContainer', {
         collapsed: true,
         hidden: false,
         children: ['collapsedChild'],
         width: 200,
-        height: 150
+        height: 150,
       });
-      
+
       visState.setGraphEdge('edge1', {
         source: 'topNode',
         target: 'childNode1',
         sourceHandle: 'out-1',
-        hidden: false
+        hidden: false,
       });
 
       // Execute: Get all bridge support data
@@ -357,27 +372,27 @@ describe('VisualizationState Bridge Support Methods', () => {
       const parentMap = visState.getParentChildMap();
       const topLevelNodes = visState.getTopLevelNodes();
       const reactFlowBridge5 = new ReactFlowBridge();
-  const edgeHandles = reactFlowBridge5.getEdgeHandles(visState, 'edge1', []);
+      const edgeHandles = reactFlowBridge5.getEdgeHandles(visState, 'edge1', []);
 
       // Verify: Consistent bridge data
       expect(collapsedAsNodes).toHaveLength(1);
       expect(collapsedAsNodes[0].id).toBe('collapsedContainer');
       expect(collapsedAsNodes[0].width).toBe(200);
       expect(collapsedAsNodes[0].height).toBe(150);
-      
+
       expect(parentMap.get('childNode1')).toBe('expandedContainer');
       expect(parentMap.get('childNode2')).toBe('expandedContainer');
       expect(parentMap.get('collapsedChild')).toBeUndefined(); // In collapsed container
-      
+
       const topLevelIds = topLevelNodes.map(n => n.id);
       expect(topLevelIds).toContain('topNode');
       expect(topLevelIds).not.toContain('collapsedChild'); // Child of collapsed container is hidden
       expect(topLevelIds).not.toContain('childNode1'); // In expanded container
       expect(topLevelIds).not.toContain('childNode2'); // In expanded container
-      
+
       expect(edgeHandles).toEqual({
         sourceHandle: 'out-bottom',
-        targetHandle: 'in-top' // Current system uses discrete handles for defaults
+        targetHandle: 'in-top', // Current system uses discrete handles for defaults
       });
 
       // Verify: All nodes have valid dimensions

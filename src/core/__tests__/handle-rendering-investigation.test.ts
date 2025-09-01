@@ -1,9 +1,9 @@
 /**
  * Handle Rendering Investigation
- * 
+ *
  * Since handle assignment is working correctly, the issue must be in how ReactFlow
  * renders and positions handles. This test investigates:
- * 
+ *
  * 1. Actual handle DOM positioning
  * 2. Handle coordinate calculations
  * 3. Edge endpoint calculations
@@ -16,7 +16,6 @@ import { ELKBridge } from '../../bridges/ELKBridge';
 import { getHandleConfig } from '../../render/handleConfig';
 
 describe('Handle Rendering Investigation', () => {
-
   test('HANDLE POSITIONING: Compare calculated handle positions for different node types', async () => {
     console.log('\n=== HANDLE POSITIONING INVESTIGATION ===');
 
@@ -24,14 +23,21 @@ describe('Handle Rendering Investigation', () => {
 
     // Create nodes at IDENTICAL positions to isolate rendering differences
     state.addGraphNode('regular_node', {
-      x: 200, y: 200, width: 120, height: 40,
-      label: 'Regular Node', nodeType: 'Source'
+      x: 200,
+      y: 200,
+      width: 120,
+      height: 40,
+      label: 'Regular Node',
+      nodeType: 'Source',
     });
 
     state.addContainer('collapsed_container', {
-      x: 200, y: 300, width: 120, height: 40, // Same width/height as regular node
+      x: 200,
+      y: 300,
+      width: 120,
+      height: 40, // Same width/height as regular node
       label: 'Collapsed Container',
-      collapsed: true
+      collapsed: true,
     });
 
     // Add hyperedges to both
@@ -40,7 +46,7 @@ describe('Handle Rendering Investigation', () => {
       id: 'hyper_to_regular',
       source: 'regular_node',
       target: 'collapsed_container',
-      hidden: false
+      hidden: false,
     });
 
     // Run ELK layout
@@ -60,13 +66,13 @@ describe('Handle Rendering Investigation', () => {
       id: regularNode.id,
       position: regularNode.position,
       width: regularNode.data.width || regularNode.style?.width || 120,
-      height: regularNode.data.height || regularNode.style?.height || 40
+      height: regularNode.data.height || regularNode.style?.height || 40,
     });
     console.log('Collapsed container:', {
       id: collapsedContainer.id,
       position: collapsedContainer.position,
       width: collapsedContainer.data.width || collapsedContainer.style?.width || 120,
-      height: collapsedContainer.data.height || collapsedContainer.style?.height || 40
+      height: collapsedContainer.data.height || collapsedContainer.style?.height || 40,
     });
 
     console.log('\nHandle Assignments:');
@@ -74,12 +80,12 @@ describe('Handle Rendering Investigation', () => {
       source: hyperEdge.source,
       target: hyperEdge.target,
       sourceHandle: hyperEdge.sourceHandle,
-      targetHandle: hyperEdge.targetHandle
+      targetHandle: hyperEdge.targetHandle,
     });
 
     // Calculate expected handle positions based on ReactFlow's logic
     console.log('\n=== HANDLE POSITION CALCULATIONS ===');
-    
+
     const handleConfig = getHandleConfig();
     console.log('Handle strategy:', handleConfig);
 
@@ -87,8 +93,10 @@ describe('Handle Rendering Investigation', () => {
     if (hyperEdge.sourceHandle && hyperEdge.targetHandle) {
       const sourceNodeWidth = regularNode.data.width || regularNode.style?.width || 120;
       const sourceNodeHeight = regularNode.data.height || regularNode.style?.height || 40;
-      const targetNodeWidth = collapsedContainer.data.width || collapsedContainer.style?.width || 120;
-      const targetNodeHeight = collapsedContainer.data.height || collapsedContainer.style?.height || 40;
+      const targetNodeWidth =
+        collapsedContainer.data.width || collapsedContainer.style?.width || 120;
+      const targetNodeHeight =
+        collapsedContainer.data.height || collapsedContainer.style?.height || 40;
 
       // Calculate handle positions based on handle IDs
       const sourceHandlePos = calculateHandlePosition(
@@ -97,7 +105,7 @@ describe('Handle Rendering Investigation', () => {
         sourceNodeHeight,
         hyperEdge.sourceHandle
       );
-      
+
       const targetHandlePos = calculateHandlePosition(
         collapsedContainer.position,
         targetNodeWidth,
@@ -112,7 +120,7 @@ describe('Handle Rendering Investigation', () => {
       // Calculate distance between handles
       const distance = Math.sqrt(
         Math.pow(targetHandlePos.x - sourceHandlePos.x, 2) +
-        Math.pow(targetHandlePos.y - sourceHandlePos.y, 2)
+          Math.pow(targetHandlePos.y - sourceHandlePos.y, 2)
       );
       console.log('Handle distance:', distance.toFixed(2), 'pixels');
 
@@ -126,7 +134,7 @@ describe('Handle Rendering Investigation', () => {
     }
 
     console.log('\n=== COORDINATE SYSTEM ANALYSIS ===');
-    
+
     // Check if nodes are using different coordinate systems
     const regularNodeAbsX = regularNode.position.x;
     const regularNodeAbsY = regularNode.position.y;
@@ -136,7 +144,7 @@ describe('Handle Rendering Investigation', () => {
     console.log('Coordinate system check:');
     console.log(`Regular node absolute position: (${regularNodeAbsX}, ${regularNodeAbsY})`);
     console.log(`Container absolute position: (${containerAbsX}, ${containerAbsY})`);
-    
+
     // Check if there's a parent offset issue
     if (regularNode.parentId) {
       const parentNode = reactFlowData.nodes.find(n => n.id === regularNode.parentId);
@@ -144,7 +152,7 @@ describe('Handle Rendering Investigation', () => {
         console.log(`Regular node parent (${regularNode.parentId}):`, parentNode.position);
         console.log('Regular node effective position:', {
           x: parentNode.position.x + regularNode.position.x,
-          y: parentNode.position.y + regularNode.position.y
+          y: parentNode.position.y + regularNode.position.y,
         });
       }
     }
@@ -159,14 +167,20 @@ describe('Handle Rendering Investigation', () => {
 
     // Add nodes
     state.addGraphNode('test_node', {
-      x: 100, y: 100, width: 120, height: 40,
-      label: 'Test Node'
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 40,
+      label: 'Test Node',
     });
 
     state.addContainer('test_container', {
-      x: 300, y: 100, width: 120, height: 40,
+      x: 300,
+      y: 100,
+      width: 120,
+      height: 40,
       label: 'Test Container',
-      collapsed: true
+      collapsed: true,
     });
 
     // Convert to ReactFlow
@@ -177,18 +191,18 @@ describe('Handle Rendering Investigation', () => {
     const testContainer = reactFlowData.nodes.find(n => n.id === 'test_container')!;
 
     console.log('\nDetailed Node Analysis:');
-    
+
     console.log('\nRegular Node (StandardNode component):');
     console.log('- Type:', testNode.type);
     console.log('- Data keys:', Object.keys(testNode.data));
     console.log('- Style keys:', testNode.style ? Object.keys(testNode.style) : 'none');
     console.log('- Has explicit dimensions in data:', {
       width: testNode.data.width !== undefined,
-      height: testNode.data.height !== undefined
+      height: testNode.data.height !== undefined,
     });
     console.log('- Has explicit dimensions in style:', {
       width: testNode.style?.width !== undefined,
-      height: testNode.style?.height !== undefined
+      height: testNode.style?.height !== undefined,
     });
 
     console.log('\nCollapsed Container (ContainerNode component):');
@@ -197,11 +211,11 @@ describe('Handle Rendering Investigation', () => {
     console.log('- Style keys:', testContainer.style ? Object.keys(testContainer.style) : 'none');
     console.log('- Has explicit dimensions in data:', {
       width: testContainer.data.width !== undefined,
-      height: testContainer.data.height !== undefined
+      height: testContainer.data.height !== undefined,
     });
     console.log('- Has explicit dimensions in style:', {
       width: testContainer.style?.width !== undefined,
-      height: testContainer.style?.height !== undefined
+      height: testContainer.style?.height !== undefined,
     });
 
     // Check handle configuration
@@ -212,13 +226,19 @@ describe('Handle Rendering Investigation', () => {
     console.log('- Target handles count:', handleConfig.targetHandles.length);
 
     if (handleConfig.sourceHandles.length > 0) {
-      console.log('- Source handle IDs:', handleConfig.sourceHandles.map(h => h.id));
-      console.log('- Target handle IDs:', handleConfig.targetHandles.map(h => h.id));
-      
+      console.log(
+        '- Source handle IDs:',
+        handleConfig.sourceHandles.map(h => h.id)
+      );
+      console.log(
+        '- Target handle IDs:',
+        handleConfig.targetHandles.map(h => h.id)
+      );
+
       // Check specific handle styles
       const outBottomHandle = handleConfig.sourceHandles.find(h => h.id === 'out-bottom');
       const inLeftHandle = handleConfig.targetHandles.find(h => h.id === 'in-left');
-      
+
       if (outBottomHandle && inLeftHandle) {
         console.log('\nHandle Styles (used by both node types):');
         console.log('out-bottom handle style:', outBottomHandle.style);
@@ -236,14 +256,20 @@ describe('Handle Rendering Investigation', () => {
 
     // Create a simple test case
     state.addGraphNode('source_node', {
-      x: 100, y: 100, width: 120, height: 40,
-      label: 'Source'
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 40,
+      label: 'Source',
     });
 
     state.addContainer('target_container', {
-      x: 300, y: 100, width: 120, height: 40,
+      x: 300,
+      y: 100,
+      width: 120,
+      height: 40,
       label: 'Target',
-      collapsed: true
+      collapsed: true,
     });
 
     state.setHyperEdge('test_edge', {
@@ -251,7 +277,7 @@ describe('Handle Rendering Investigation', () => {
       id: 'test_edge',
       source: 'source_node',
       target: 'target_container',
-      hidden: false
+      hidden: false,
     });
 
     // Run layout
@@ -272,12 +298,12 @@ describe('Handle Rendering Investigation', () => {
       target: edge.target,
       sourceHandle: edge.sourceHandle,
       targetHandle: edge.targetHandle,
-      type: edge.type
+      type: edge.type,
     });
 
     // Simulate ReactFlow's edge path calculation
     console.log('\nSimulated ReactFlow Edge Path Calculation:');
-    
+
     const sourcePos = sourceNode.position;
     const targetPos = targetContainer.position;
     const sourceWidth = sourceNode.data.width || sourceNode.style?.width || 120;
@@ -286,8 +312,18 @@ describe('Handle Rendering Investigation', () => {
     const targetHeight = targetContainer.data.height || targetContainer.style?.height || 40;
 
     // Calculate handle positions
-    const sourceHandlePos = calculateHandlePosition(sourcePos, sourceWidth, sourceHeight, edge.sourceHandle!);
-    const targetHandlePos = calculateHandlePosition(targetPos, targetWidth, targetHeight, edge.targetHandle!);
+    const sourceHandlePos = calculateHandlePosition(
+      sourcePos,
+      sourceWidth,
+      sourceHeight,
+      edge.sourceHandle!
+    );
+    const targetHandlePos = calculateHandlePosition(
+      targetPos,
+      targetWidth,
+      targetHeight,
+      edge.targetHandle!
+    );
 
     console.log('Source node bounds:', {
       x: sourcePos.x,
@@ -295,7 +331,7 @@ describe('Handle Rendering Investigation', () => {
       width: sourceWidth,
       height: sourceHeight,
       right: sourcePos.x + sourceWidth,
-      bottom: sourcePos.y + sourceHeight
+      bottom: sourcePos.y + sourceHeight,
     });
 
     console.log('Target container bounds:', {
@@ -304,42 +340,44 @@ describe('Handle Rendering Investigation', () => {
       width: targetWidth,
       height: targetHeight,
       right: targetPos.x + targetWidth,
-      bottom: targetPos.y + targetHeight
+      bottom: targetPos.y + targetHeight,
     });
 
     console.log('Calculated edge endpoints:', {
       source: sourceHandlePos,
-      target: targetHandlePos
+      target: targetHandlePos,
     });
 
     // Check if edge endpoints are within node bounds
-    const sourceWithinBounds = (
+    const sourceWithinBounds =
       sourceHandlePos.x >= sourcePos.x &&
       sourceHandlePos.x <= sourcePos.x + sourceWidth &&
       sourceHandlePos.y >= sourcePos.y &&
-      sourceHandlePos.y <= sourcePos.y + sourceHeight
-    );
+      sourceHandlePos.y <= sourcePos.y + sourceHeight;
 
-    const targetWithinBounds = (
+    const targetWithinBounds =
       targetHandlePos.x >= targetPos.x &&
       targetHandlePos.x <= targetPos.x + targetWidth &&
       targetHandlePos.y >= targetPos.y &&
-      targetHandlePos.y <= targetPos.y + targetHeight
-    );
+      targetHandlePos.y <= targetPos.y + targetHeight;
 
     console.log('Edge endpoint validation:', {
       sourceWithinBounds,
       targetWithinBounds,
-      bothValid: sourceWithinBounds && targetWithinBounds
+      bothValid: sourceWithinBounds && targetWithinBounds,
     });
 
     if (!sourceWithinBounds || !targetWithinBounds) {
       console.log('🐛 EDGE RENDERING ISSUE DETECTED:');
       if (!sourceWithinBounds) {
-        console.log(`  Source handle at (${sourceHandlePos.x}, ${sourceHandlePos.y}) is outside source node bounds`);
+        console.log(
+          `  Source handle at (${sourceHandlePos.x}, ${sourceHandlePos.y}) is outside source node bounds`
+        );
       }
       if (!targetWithinBounds) {
-        console.log(`  Target handle at (${targetHandlePos.x}, ${targetHandlePos.y}) is outside target node bounds`);
+        console.log(
+          `  Target handle at (${targetHandlePos.x}, ${targetHandlePos.y}) is outside target node bounds`
+        );
       }
       console.log('  This would cause the edge to appear "floating" or disconnected');
     } else {
@@ -365,19 +403,19 @@ function calculateHandlePosition(
     case 'out-top':
     case 'in-top':
       return { x: x + nodeWidth * 0.5, y: y };
-    
+
     case 'out-right':
     case 'in-right':
       return { x: x + nodeWidth, y: y + nodeHeight * 0.5 };
-    
+
     case 'out-bottom':
     case 'in-bottom':
       return { x: x + nodeWidth * 0.5, y: y + nodeHeight };
-    
+
     case 'out-left':
     case 'in-left':
       return { x: x, y: y + nodeHeight * 0.5 };
-    
+
     default:
       // Default to center
       return { x: x + nodeWidth * 0.5, y: y + nodeHeight * 0.5 };

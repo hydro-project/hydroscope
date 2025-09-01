@@ -38,7 +38,7 @@ export function getWavyPath({
 
   // Number of segments for smooth curve
   const segments = Math.max(
-    WAVY_EDGE_CONFIG.calculation.segments.min, 
+    WAVY_EDGE_CONFIG.calculation.segments.min,
     Math.floor(distance / WAVY_EDGE_CONFIG.calculation.segments.divisor)
   );
 
@@ -46,7 +46,7 @@ export function getWavyPath({
 
   // Calculate points for smooth curve
   const points: { x: number; y: number }[] = [];
-  
+
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
 
@@ -56,9 +56,11 @@ export function getWavyPath({
 
     // Use actual distance traveled for consistent wave density
     const distanceTraveled = distance * t;
-    const waveOffset = amplitude * Math.sin(
-      (frequency * Math.PI * distanceTraveled) / WAVY_EDGE_CONFIG.calculation.frequencyDivisor
-    );
+    const waveOffset =
+      amplitude *
+      Math.sin(
+        (frequency * Math.PI * distanceTraveled) / WAVY_EDGE_CONFIG.calculation.frequencyDivisor
+      );
 
     // Apply perpendicular offset
     const offsetX = -waveOffset * Math.sin(angle);
@@ -74,29 +76,29 @@ export function getWavyPath({
   for (let i = 1; i < points.length; i++) {
     const prevPoint = points[i - 1];
     const currentPoint = points[i];
-    
+
     if (i === 1) {
       // First curve segment
       const nextPoint = points[i + 1] || currentPoint;
-      
+
       // Control points for smooth curve
       const cp1x = prevPoint.x + (currentPoint.x - prevPoint.x) * 0.25;
       const cp1y = prevPoint.y + (currentPoint.y - prevPoint.y) * 0.25;
       const cp2x = currentPoint.x - (nextPoint.x - prevPoint.x) * 0.25;
       const cp2y = currentPoint.y - (nextPoint.y - prevPoint.y) * 0.25;
-      
+
       path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${currentPoint.x} ${currentPoint.y}`;
     } else {
       // Subsequent curve segments
       const prevPrevPoint = points[i - 2] || prevPoint;
       const nextPoint = points[i + 1] || currentPoint;
-      
+
       // Calculate smooth control points based on adjacent points
       const cp1x = prevPoint.x + (currentPoint.x - prevPrevPoint.x) * 0.25;
       const cp1y = prevPoint.y + (currentPoint.y - prevPrevPoint.y) * 0.25;
       const cp2x = currentPoint.x - (nextPoint.x - prevPoint.x) * 0.25;
       const cp2y = currentPoint.y - (nextPoint.y - prevPoint.y) * 0.25;
-      
+
       path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${currentPoint.x} ${currentPoint.y}`;
     }
   }

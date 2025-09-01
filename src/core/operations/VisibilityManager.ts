@@ -1,6 +1,6 @@
 /**
  * Visibility Management - Handles visibility state and cache updates
- * 
+ *
  * Centralizes all visibility-related operations including cache management,
  * cascading updates, and consistency checks.
  */
@@ -21,16 +21,16 @@ export class VisibilityManager {
       console.warn(`[VisibilityManager] Cannot set visibility for non-existent node: ${nodeId}`);
       return;
     }
-    
+
     node.hidden = !visible;
-    
+
     // Update visibility cache atomically
     if (visible) {
       this.state._collections._visibleNodes.set(nodeId, node);
     } else {
       this.state._collections._visibleNodes.delete(nodeId);
     }
-    
+
     // Cascade visibility to connected edges
     this.cascadeNodeVisibilityToEdges(nodeId);
   }
@@ -43,20 +43,22 @@ export class VisibilityManager {
     if (!edge) {
       throw new Error(`[VisibilityManager] Cannot set visibility for non-existent edge: ${edgeId}`);
     }
-    
+
     // Validate endpoints are visible before making edge visible
     if (visible) {
       const sourceValid = this.isEndpointVisible(edge.source);
       const targetValid = this.isEndpointVisible(edge.target);
-      
+
       if (!sourceValid || !targetValid) {
-        console.warn(`[VisibilityManager] Cannot make edge ${edgeId} visible - endpoints not visible`);
+        console.warn(
+          `[VisibilityManager] Cannot make edge ${edgeId} visible - endpoints not visible`
+        );
         return;
       }
     }
-    
+
     edge.hidden = !visible;
-    
+
     // Update visibility cache
     if (visible) {
       this.state._collections._visibleEdges.set(edgeId, edge);
@@ -75,14 +77,14 @@ export class VisibilityManager {
     } else {
       this.state._collections._visibleContainers.delete(containerId);
     }
-    
+
     // Update _expandedContainers (only non-collapsed containers)
     if (!container.hidden && !container.collapsed) {
       this.state._collections._expandedContainers.set(containerId, container);
     } else {
       this.state._collections._expandedContainers.delete(containerId);
     }
-    
+
     // Update collapsedContainers
     if (container.collapsed && !container.hidden) {
       this.state._collections._collapsedContainers.set(containerId, container);
@@ -96,16 +98,16 @@ export class VisibilityManager {
    */
   private cascadeNodeVisibilityToEdges(nodeId: string): void {
     const connectedEdges = this.state.getAdjacentEdges(nodeId) || new Set();
-    
+
     for (const edgeId of Array.from(connectedEdges)) {
       const edge = this.state._collections.graphEdges.get(edgeId);
       if (!edge) continue;
-      
+
       // Edge can only be visible if both endpoints are visible
       const sourceVisible = this.isEndpointVisible(edge.source);
       const targetVisible = this.isEndpointVisible(edge.target);
       const shouldBeVisible = sourceVisible && targetVisible;
-      
+
       this.setEdgeVisibility(edgeId as string, shouldBeVisible);
     }
   }
@@ -127,7 +129,7 @@ export class VisibilityManager {
    */
   private hideAllDescendants(containerId: string): void {
     const children = this.state._collections._containerChildren.get(containerId) || new Set();
-    
+
     for (const childId of Array.from(children)) {
       // First, recursively hide descendants
       this.hideAllDescendants(childId as string);
@@ -166,11 +168,11 @@ export class VisibilityManager {
     // Check if it's a visible node
     const node = this.state._collections.graphNodes.get(endpointId);
     if (node) return !node.hidden;
-    
+
     // Check if it's a visible container (collapsed containers are visible)
     const container = this.state._collections.containers.get(endpointId);
     if (container) return !container.hidden;
-    
+
     return false;
   }
 }

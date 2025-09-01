@@ -1,6 +1,6 @@
 /**
  * @fileoverview Layout module exports - Bridge Architecture Implementation
- * 
+ *
  * Clean layout module using our bridge architecture.
  * No dependencies on alpha.
  */
@@ -20,7 +20,7 @@ export type {
   PositionedEdge,
   PositionedContainer,
   PositionedHyperEdge,
-  Position
+  Position,
 } from '../core/types';
 
 // Import types for local use
@@ -40,5 +40,5 @@ export function createLayoutConfig(overrides: Partial<LayoutConfig>): LayoutConf
 export const LAYOUT_CONFIGS = {
   default: DEFAULT_LAYOUT_CONFIG,
   compact: { ...DEFAULT_LAYOUT_CONFIG, spacing: 50 },
-  spacious: { ...DEFAULT_LAYOUT_CONFIG, spacing: 150 }
+  spacious: { ...DEFAULT_LAYOUT_CONFIG, spacing: 150 },
 };

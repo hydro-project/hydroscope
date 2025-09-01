@@ -1,6 +1,6 @@
 /**
  * Layout Operations - Handles layout-related operations
- * 
+ *
  * Manages layout positioning, dimension updates, and manual position tracking.
  */
 
@@ -73,26 +73,43 @@ export class LayoutOperations {
   /**
    * Get container layout information
    */
-  getContainerLayout(containerId: string): { position?: { x: number; y: number }; dimensions?: { width: number; height: number } } | undefined {
+  getContainerLayout(
+    containerId: string
+  ):
+    | { position?: { x: number; y: number }; dimensions?: { width: number; height: number } }
+    | undefined {
     const container = this.state._collections.containers.get(containerId);
     if (!container) return undefined;
-    
+
     return {
-      position: (container.x !== undefined && container.y !== undefined) ? { x: container.x, y: container.y } : undefined,
-      dimensions: (container.width !== undefined && container.height !== undefined) ? { width: container.width, height: container.height } : undefined
+      position:
+        container.x !== undefined && container.y !== undefined
+          ? { x: container.x, y: container.y }
+          : undefined,
+      dimensions:
+        container.width !== undefined && container.height !== undefined
+          ? { width: container.width, height: container.height }
+          : undefined,
     };
   }
 
   /**
    * Get node layout information
    */
-  getNodeLayout(nodeId: string): { position?: { x: number; y: number }; dimensions?: { width: number; height: number } } | undefined {
+  getNodeLayout(
+    nodeId: string
+  ):
+    | { position?: { x: number; y: number }; dimensions?: { width: number; height: number } }
+    | undefined {
     const node = this.state._collections.graphNodes.get(nodeId);
     if (!node) return undefined;
-    
+
     return {
-      position: (node.x !== undefined && node.y !== undefined) ? { x: node.x, y: node.y } : undefined,
-      dimensions: (node.width !== undefined && node.height !== undefined) ? { width: node.width, height: node.height } : undefined
+      position: node.x !== undefined && node.y !== undefined ? { x: node.x, y: node.y } : undefined,
+      dimensions:
+        node.width !== undefined && node.height !== undefined
+          ? { width: node.width, height: node.height }
+          : undefined,
     };
   }
 
@@ -104,39 +121,39 @@ export class LayoutOperations {
     if (!container) {
       throw new Error(`Container ${containerId} not found`);
     }
-    
+
     // CRITICAL: Check if collapsed FIRST - collapsed containers should always use small dimensions
     if (container.collapsed) {
-      return { 
+      return {
         width: LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH,
-        height: LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT
+        height: LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT,
       };
     }
-    
+
     // Get base dimensions from various possible sources (only for expanded containers)
     let baseWidth, baseHeight;
-    
+
     if (container.expandedDimensions) {
       baseWidth = container.expandedDimensions.width;
       baseHeight = container.expandedDimensions.height;
-      
-      return { 
+
+      return {
         width: baseWidth,
-        height: baseHeight
+        height: baseHeight,
       };
     } else {
       baseWidth = container.width;
       baseHeight = container.height;
     }
-    
+
     // For expanded containers without cached dimensions, use raw dimensions
     // Let ELK layout and container components handle internal label positioning
     const width = baseWidth || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
     const height = baseHeight || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
-    
-    return { 
-      width: width, 
-      height: height
+
+    return {
+      width: width,
+      height: height,
     };
   }
 
@@ -149,7 +166,7 @@ export class LayoutOperations {
     for (const [containerId] of containers) {
       this.setContainerLayout(containerId, { position: undefined });
     }
-    
+
     // CRITICAL: Clear positions for ALL nodes (both visible and hidden)
     for (const [nodeId] of this.state._collections.graphNodes) {
       this.setNodeLayout(nodeId, { position: undefined });
@@ -162,10 +179,10 @@ export class LayoutOperations {
   getEdgeLayout(edgeId: string): { sections?: any[]; [key: string]: any } | undefined {
     const edge = this.state._collections.graphEdges.get(edgeId);
     if (!edge) return undefined;
-    
+
     return {
       sections: edge.sections || [],
-      ...edge
+      ...edge,
     };
   }
 
@@ -175,7 +192,7 @@ export class LayoutOperations {
   setEdgeLayout(edgeId: string, layout: { sections?: any[]; [key: string]: any }): void {
     const edge = this.state._collections.graphEdges.get(edgeId);
     if (!edge) return;
-    
+
     Object.assign(edge, layout);
   }
 
@@ -185,13 +202,13 @@ export class LayoutOperations {
   calculateNodeDimensions(node: any, config: any = {}): { width: number; height: number } {
     const padding = config.nodePadding ?? LAYOUT_CONSTANTS.defaultNodePadding;
     const fontSize = config.nodeFontSize ?? LAYOUT_CONSTANTS.defaultNodeFontSize;
-    
+
     // Simple estimation based on label length
     const label = node.label || node.id;
     const estimatedCharWidth = fontSize * 0.6;
     const width = label.length * estimatedCharWidth + 2 * padding;
     const height = fontSize + 2 * padding;
-    
+
     return { width, height };
   }
 }

@@ -19,34 +19,34 @@ describe('ReactFlowBridge Container Positioning', () => {
       width: 400,
       height: 300,
       collapsed: false,
-      children: ['child']  // Establish hierarchy properly
+      children: ['child'], // Establish hierarchy properly
     });
 
-    // Set up a child container at absolute position (150, 150) 
+    // Set up a child container at absolute position (150, 150)
     // Should become relative position (50, 50) within parent
     visState.setContainer({
       id: 'child',
       x: 150,
-      y: 150, 
+      y: 150,
       width: 100,
       height: 100,
-      collapsed: false
+      collapsed: false,
     });
 
-    // Mock ELK layout data  
+    // Mock ELK layout data
     visState.setContainerLayout('parent', {
       position: { x: 100, y: 100 },
-      dimensions: { width: 400, height: 300 }
+      dimensions: { width: 400, height: 300 },
     });
 
     visState.setContainerLayout('child', {
       position: { x: 150, y: 150 },
-      dimensions: { width: 100, height: 100 }
+      dimensions: { width: 100, height: 100 },
     });
 
     // Convert to ReactFlow format
     const reactFlowData = bridge.convertVisualizationState(visState);
-    
+
     // Find containers in the result
     const parentContainer = reactFlowData.nodes.find(n => n.id === 'parent');
     const childContainer = reactFlowData.nodes.find(n => n.id === 'child');
@@ -73,7 +73,7 @@ describe('ReactFlowBridge Container Positioning', () => {
       width: 400,
       height: 300,
       collapsed: false,
-      children: ['child1', 'child2']  // Establish hierarchy properly
+      children: ['child1', 'child2'], // Establish hierarchy properly
     });
 
     visState.setContainer({
@@ -82,7 +82,7 @@ describe('ReactFlowBridge Container Positioning', () => {
       y: 0,
       width: 100,
       height: 100,
-      collapsed: false
+      collapsed: false,
     });
 
     visState.setContainer({
@@ -91,12 +91,12 @@ describe('ReactFlowBridge Container Positioning', () => {
       y: 0,
       width: 100,
       height: 100,
-      collapsed: false
+      collapsed: false,
     });
 
     // Convert without ELK data
     const reactFlowData = bridge.convertVisualizationState(visState);
-    
+
     const child1 = reactFlowData.nodes.find(n => n.id === 'child1');
     const child2 = reactFlowData.nodes.find(n => n.id === 'child2');
 

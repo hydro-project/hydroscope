@@ -1,11 +1,11 @@
 /**
  * @fileoverview Components exports for the hydroscope system
- * 
+ *
  * Three-Tier API:
  * 1. Hydroscope - Basic graph rendering (read-only)
  * 2. HydroscopeMini - Interactive with container collapse/expand + basic controls
  * 3. HydroscopeFull - Complete /vis experience with full UI
- * 
+ *
  * Plus DIY Toolkit - Individual components for custom layouts
  */
 
@@ -60,7 +60,7 @@ export type {
   LegendItem,
   GroupingOption,
   PanelPosition,
-  BaseComponentProps
+  BaseComponentProps,
 } from './types';
 
 export type { StyleTunerPanelProps } from './StyleTunerPanel';
@@ -70,16 +70,16 @@ export type { StyleTunerPanelProps } from './StyleTunerPanel';
 // Default data generators
 export function createDefaultLegendData() {
   return {
-    title: "Node Types",
+    title: 'Node Types',
     items: [
-      { type: "Source", label: "Source", description: "Data input nodes" },
-      { type: "Transform", label: "Transform", description: "Data transformation nodes" },
-      { type: "Sink", label: "Sink", description: "Data output nodes" },
-      { type: "Network", label: "Network", description: "Network communication nodes" },
-      { type: "Aggregation", label: "Aggregation", description: "Data aggregation nodes" },
-      { type: "Join", label: "Join", description: "Data joining nodes" },
-      { type: "Tee", label: "Tee", description: "Data splitting nodes" }
-    ]
+      { type: 'Source', label: 'Source', description: 'Data input nodes' },
+      { type: 'Transform', label: 'Transform', description: 'Data transformation nodes' },
+      { type: 'Sink', label: 'Sink', description: 'Data output nodes' },
+      { type: 'Network', label: 'Network', description: 'Network communication nodes' },
+      { type: 'Aggregation', label: 'Aggregation', description: 'Data aggregation nodes' },
+      { type: 'Join', label: 'Join', description: 'Data joining nodes' },
+      { type: 'Tee', label: 'Tee', description: 'Data splitting nodes' },
+    ],
   };
 }
 
@@ -95,10 +95,10 @@ export function createContainerClickHandler(
   } = {}
 ) {
   const { enableCollapse = true, autoFit: _autoFit = true, onExpand, onCollapse } = options;
-  
+
   return async (_event: any, node: any) => {
     if (!enableCollapse) return;
-    
+
     const container = visualizationState.getContainer(node.id);
     if (container) {
       if (container.collapsed) {
@@ -108,7 +108,7 @@ export function createContainerClickHandler(
         visualizationState.collapseContainer(node.id);
         onCollapse?.(node.id);
       }
-      
+
       await refreshLayout();
     }
   };
@@ -124,11 +124,18 @@ export function createLayoutConfig(algorithm: string = 'mrtree') {
 
 // Color palette options
 export const COLOR_PALETTES = [
-  'Set1', 'Set2', 'Set3', 'Pastel1', 'Pastel2', 'Dark2', 
-  'Accent', 'Spectral', 'RdYlBu', 'RdYlGn', 'Viridis'
+  'Set1',
+  'Set2',
+  'Set3',
+  'Pastel1',
+  'Pastel2',
+  'Dark2',
+  'Accent',
+  'Spectral',
+  'RdYlBu',
+  'RdYlGn',
+  'Viridis',
 ];
 
-// Layout algorithm options  
-export const LAYOUT_ALGORITHMS = [
-  'mrtree', 'elkLayered', 'elkForce', 'stress', 'random'
-];
+// Layout algorithm options
+export const LAYOUT_ALGORITHMS = ['mrtree', 'elkLayered', 'elkForce', 'stress', 'random'];

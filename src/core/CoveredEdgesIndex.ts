@@ -1,11 +1,11 @@
 /**
  * CoveredEdgesIndex - Maintains an index of which GraphEdges are "covered" by each container
  * This supports efficient computation of aggregated edges for containers, especially in nested hierarchies.
- * 
+ *
  * - Each container tracks all GraphEdges that are recursively underneath it
  * - HyperEdges become simple connection representations without embedded edge data
  * - Aggregated edges are computed on-demand using this index
- * 
+ *
  * The index is maintained incrementally as the hierarchy changes.
  */
 
@@ -14,7 +14,7 @@ import { GraphEdge, Container } from './types';
 export class CoveredEdgesIndex {
   private containerToEdges = new Map<string, Set<string>>(); // container -> edge IDs
   private edgeToContainers = new Map<string, Set<string>>(); // edge ID -> container IDs that cover it
-  
+
   /**
    * Initialize the index from the current state
    */
@@ -26,50 +26,46 @@ export class CoveredEdgesIndex {
   ): void {
     this.containerToEdges.clear();
     this.edgeToContainers.clear();
-    
+
     // Initialize empty sets for all containers
     for (const containerId of containers.keys()) {
       this.containerToEdges.set(containerId, new Set());
     }
-    
+
     // For each edge, determine which containers cover it
     for (const [edgeId, edge] of edges.entries()) {
       const sourceContainers = this.getContainerAncestors(edge.source, nodeContainers);
       const targetContainers = this.getContainerAncestors(edge.target, nodeContainers);
-      
+
       // An edge is covered by a container if both its endpoints are descendants of that container
       const coveringContainers = this.intersectSets(sourceContainers, targetContainers);
-      
+
       for (const containerId of coveringContainers) {
         this.addEdgeToContainer(edgeId, containerId);
       }
     }
   }
-  
+
   /**
    * Get all edges covered by a container (including those in descendant containers)
    */
   getCoveredEdges(containerId: string): ReadonlySet<string> {
     return this.containerToEdges.get(containerId) || new Set();
   }
-  
+
   /**
    * Add a new edge to the index
    */
-  addEdge(
-    edgeId: string,
-    edge: GraphEdge,
-    nodeContainers: Map<string, string>
-  ): void {
+  addEdge(edgeId: string, edge: GraphEdge, nodeContainers: Map<string, string>): void {
     const sourceContainers = this.getContainerAncestors(edge.source, nodeContainers);
     const targetContainers = this.getContainerAncestors(edge.target, nodeContainers);
     const coveringContainers = this.intersectSets(sourceContainers, targetContainers);
-    
+
     for (const containerId of coveringContainers) {
       this.addEdgeToContainer(edgeId, containerId);
     }
   }
-  
+
   /**
    * Remove an edge from the index
    */
@@ -81,7 +77,7 @@ export class CoveredEdgesIndex {
       }
     }
   }
-  
+
   /**
    * Add a new container to the index
    */
@@ -90,7 +86,7 @@ export class CoveredEdgesIndex {
       this.containerToEdges.set(containerId, new Set());
     }
   }
-  
+
   /**
    * Remove a container from the index
    */
@@ -103,7 +99,7 @@ export class CoveredEdgesIndex {
     }
     this.containerToEdges.delete(containerId);
   }
-  
+
   /**
    * Update the index when a node moves between containers
    */
@@ -119,18 +115,18 @@ export class CoveredEdgesIndex {
         connectedEdges.push(edge);
       }
     }
-    
+
     // Update coverage for each connected edge
     for (const edge of connectedEdges) {
       this.removeEdge(edge.id);
       this.addEdge(edge.id, edge, nodeContainers);
     }
   }
-  
+
   /**
    * Private helper methods
    */
-  
+
   private addEdgeToContainer(edgeId: string, containerId: string): void {
     // Add to container -> edges mapping
     let edges = this.containerToEdges.get(containerId);
@@ -139,7 +135,7 @@ export class CoveredEdgesIndex {
       this.containerToEdges.set(containerId, edges);
     }
     edges.add(edgeId);
-    
+
     // Add to edge -> containers mapping
     let containers = this.edgeToContainers.get(edgeId);
     if (!containers) {
@@ -148,14 +144,14 @@ export class CoveredEdgesIndex {
     }
     containers.add(containerId);
   }
-  
+
   private removeEdgeFromContainer(edgeId: string, containerId: string): void {
     // Remove from container -> edges mapping
     const edges = this.containerToEdges.get(containerId);
     if (edges) {
       edges.delete(edgeId);
     }
-    
+
     // Remove from edge -> containers mapping
     const containers = this.edgeToContainers.get(edgeId);
     if (containers) {
@@ -165,14 +161,11 @@ export class CoveredEdgesIndex {
       }
     }
   }
-  
-  private getContainerAncestors(
-    nodeId: string,
-    nodeContainers: Map<string, string>
-  ): Set<string> {
+
+  private getContainerAncestors(nodeId: string, nodeContainers: Map<string, string>): Set<string> {
     const ancestors = new Set<string>();
     let currentContainer = nodeContainers.get(nodeId);
-    
+
     while (currentContainer) {
       ancestors.add(currentContainer);
       // Find parent of current container
@@ -182,7 +175,8 @@ export class CoveredEdgesIndex {
     }
 
     return ancestors;
-  }  private intersectSets<T>(set1: Set<T>, set2: Set<T>): Set<T> {
+  }
+  private intersectSets<T>(set1: Set<T>, set2: Set<T>): Set<T> {
     const intersection = new Set<T>();
     for (const item of set1) {
       if (set2.has(item)) {
@@ -191,7 +185,7 @@ export class CoveredEdgesIndex {
     }
     return intersection;
   }
-  
+
   /**
    * Debug method to get statistics about the index
    */
@@ -204,7 +198,7 @@ export class CoveredEdgesIndex {
     return {
       containers,
       totalEdges,
-      averageEdgesPerContainer: containers > 0 ? totalEdges / containers : 0
+      averageEdgesPerContainer: containers > 0 ? totalEdges / containers : 0,
     };
   }
 }

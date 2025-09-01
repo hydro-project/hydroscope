@@ -36,10 +36,10 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     // 2. Check initial state (before ELK)
     const initialContainers = visState.visibleContainers;
     expect(initialContainers).toHaveLength(1);
-    
+
     const initialContainer = initialContainers[0];
     // // console.log(`📏 Initial container dimensions: ${initialContainer.width}x${initialContainer.height} at (${initialContainer.x}, ${initialContainer.y})`);
-    
+
     // Initial dimensions should be minimum dimensions from label-adjusted calculations
     // (Our container label positioning provides minimum dimensions)
     expect(initialContainer.width).toBe(200); // MIN_CONTAINER_WIDTH
@@ -53,7 +53,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     const elkContainers = visState.visibleContainers;
     const elkContainer = elkContainers[0];
     // // console.log(`📏 ELK-calculated container dimensions: ${elkContainer.width}x${elkContainer.height} at (${elkContainer.x}, ${elkContainer.y})`);
-    
+
     // ELK should have calculated proper dimensions
     expect(elkContainer.width).toBeGreaterThan(0);
     expect(elkContainer.height).toBeGreaterThan(0);
@@ -98,7 +98,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
       .setGraphNode('node5', { label: 'Node 5', style: 'default' })
       // Small container with 2 nodes
       .setContainer('small_container', { children: ['node1', 'node2'], collapsed: false })
-      // Large container with 3 nodes  
+      // Large container with 3 nodes
       .setContainer('large_container', { children: ['node3', 'node4', 'node5'], collapsed: false })
       .setGraphEdge('edge1', { source: 'node1', target: 'node2' })
       .setGraphEdge('edge2', { source: 'node3', target: 'node4' })
@@ -130,7 +130,7 @@ describe('ReactFlowBridge Dimensions Fix', () => {
     for (const reactFlowContainer of reactFlowContainers) {
       const visStateContainer = visStateContainers.find(c => c.id === reactFlowContainer.id)!;
       const expectedDimensions = visState.getContainerAdjustedDimensions(visStateContainer.id);
-      
+
       expect(reactFlowContainer.data.width).toBe(expectedDimensions.width);
       expect(reactFlowContainer.data.height).toBe(expectedDimensions.height);
       expect(reactFlowContainer.position.x).toBe(visStateContainer.x);

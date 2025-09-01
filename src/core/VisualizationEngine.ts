@@ -15,13 +15,13 @@ import type { LayoutConfig } from './types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
 
 // Visualization states
-export type VisualizationPhase = 
-  | 'initial'       // Fresh data loaded
-  | 'laying_out'    // ELK layout in progress
-  | 'ready'         // Layout complete, ready to render
-  | 'rendering'     // ReactFlow conversion in progress
-  | 'displayed'     // ReactFlow data ready for display
-  | 'error';        // Error occurred
+export type VisualizationPhase =
+  | 'initial' // Fresh data loaded
+  | 'laying_out' // ELK layout in progress
+  | 'ready' // Layout complete, ready to render
+  | 'rendering' // ReactFlow conversion in progress
+  | 'displayed' // ReactFlow data ready for display
+  | 'error'; // Error occurred
 
 export interface VisualizationEngineState {
   phase: VisualizationPhase;
@@ -31,10 +31,10 @@ export interface VisualizationEngineState {
 }
 
 export interface VisualizationEngineConfig {
-  autoLayout: boolean;          // Automatically run layout on data changes
-  layoutDebounceMs: number;     // Debounce layout calls
-  enableLogging: boolean;       // Enable detailed logging
-  layoutConfig?: LayoutConfig;  // Layout configuration
+  autoLayout: boolean; // Automatically run layout on data changes
+  layoutDebounceMs: number; // Debounce layout calls
+  enableLogging: boolean; // Enable detailed logging
+  layoutConfig?: LayoutConfig; // Layout configuration
 }
 
 const DEFAULT_CONFIG: VisualizationEngineConfig = {
@@ -44,8 +44,8 @@ const DEFAULT_CONFIG: VisualizationEngineConfig = {
   layoutConfig: {
     enableSmartCollapse: true,
     algorithm: 'mrtree',
-    direction: 'DOWN'
-  }
+    direction: 'DOWN',
+  },
 };
 
 export class VisualizationEngine {
@@ -56,12 +56,8 @@ export class VisualizationEngine {
   private state: VisualizationEngineState;
   private layoutTimeout?: number;
   private listeners: Map<string, (state: VisualizationEngineState) => void> = new Map();
-  
 
-  constructor(
-    visState: VisualizationState, 
-    config: Partial<VisualizationEngineConfig> = {}
-  ) {
+  constructor(visState: VisualizationState, config: Partial<VisualizationEngineConfig> = {}) {
     this.visState = visState;
     // Deep-merge layoutConfig to preserve DEFAULT_CONFIG.layoutConfig values
     const mergedConfig: VisualizationEngineConfig = {
@@ -76,13 +72,12 @@ export class VisualizationEngine {
     // Initialize bridges after computing the merged config
     this.elkBridge = new ELKBridge(this.config.layoutConfig);
     this.reactFlowBridge = new ReactFlowBridge();
-    
+
     this.state = {
       phase: 'initial',
       lastUpdate: Date.now(),
-      layoutCount: 0
+      layoutCount: 0,
     };
-
   }
 
   // ============ Public API ============
@@ -107,8 +102,7 @@ export class VisualizationEngine {
   updateLayoutConfig(layoutConfig: LayoutConfig, autoReLayout: boolean = true): void {
     this.config.layoutConfig = { ...this.config.layoutConfig, ...layoutConfig };
     this.elkBridge.updateLayoutConfig(layoutConfig);
-    
-    
+
     if (autoReLayout) {
       // Reset layout count to trigger smart collapse on algorithm change
       this.state.layoutCount = 0;
@@ -128,7 +122,7 @@ export class VisualizationEngine {
    */
   resumeAutoLayout(triggerLayout: boolean = true): void {
     this.config.autoLayout = true;
-    
+
     if (triggerLayout) {
       this.scheduleLayout();
     }
@@ -138,17 +132,16 @@ export class VisualizationEngine {
    * Run layout on current VisualizationState data
    */
   async runLayout(): Promise<void> {
-    
     if (this.state.phase === 'laying_out') {
       return;
     }
 
     try {
       this.updateState('laying_out');
-      
+
       // Use ELK bridge to layout the VisualizationState
       await this.elkBridge.layoutVisualizationState(this.visState);
-            
+
       // Run smart collapse only on the first layout if enabled
       if (this.config.layoutConfig?.enableSmartCollapse && this.state.layoutCount === 0) {
         await this.runSmartCollapse();
@@ -159,7 +152,6 @@ export class VisualizationEngine {
       // layoutCount is used to avoid running smart collapse on subsequent layouts
       this.state.layoutCount++;
       this.updateState('ready');
-      
     } catch (error) {
       this.handleError('Layout failed', error);
     }
@@ -170,22 +162,20 @@ export class VisualizationEngine {
    * This is used for individual container collapse/expand operations
    */
   async runSelectiveLayout(changedContainerId: string): Promise<void> {
-    
     if (this.state.phase === 'laying_out') {
       return;
     }
 
     try {
       this.updateState('laying_out');
-      
+
       // Use ELK bridge to layout with position fixing
       await this.elkBridge.layoutVisualizationState(this.visState, changedContainerId);
-      
+
       // Don't run smart collapse for selective layouts - respect user intent
       // Don't increment layout count either - this is just a refinement
-      
+
       this.updateState('ready');
-      
     } catch (error) {
       this.handleError('Selective layout failed', error);
     }
@@ -195,22 +185,19 @@ export class VisualizationEngine {
    * Get ReactFlow data for rendering
    */
   getReactFlowData(): ReactFlowData {
-    
     if (this.state.phase === 'error') {
       throw new Error(`Cannot render in error state: ${this.state.error}`);
     }
 
     try {
       this.updateState('rendering');
-      
+
       // Use ReactFlow bridge to convert VisualizationState
       const reactFlowData = this.reactFlowBridge.convertVisualizationState(this.visState);
-      
+
       this.updateState('displayed');
-      
-      
+
       return reactFlowData;
-      
     } catch (error) {
       this.handleError('ReactFlow conversion failed', error);
       throw error;
@@ -221,12 +208,11 @@ export class VisualizationEngine {
    * Complete visualization pipeline: layout + render
    */
   async visualize(): Promise<ReactFlowData> {
-    
     // Step 1: Run layout if needed
     if (this.state.phase !== 'ready' && this.state.phase !== 'displayed') {
       await this.runLayout();
     }
-    
+
     // Step 2: Generate ReactFlow data
     return this.getReactFlowData();
   }
@@ -239,12 +225,11 @@ export class VisualizationEngine {
       return;
     }
 
-    
     // Clear existing timeout
     if (this.layoutTimeout) {
       clearTimeout(this.layoutTimeout);
     }
-    
+
     // Schedule new layout
     this.layoutTimeout = setTimeout(() => {
       this.runLayout().catch(error => {
@@ -296,43 +281,42 @@ export class VisualizationEngine {
     // Step 1: Get TOP-LEVEL containers from VisualizationState
     // This ensures we don't double-process parent and child containers
     const containers = this.visState.getTopLevelContainers();
-    
+
     if (containers.length === 0) {
       return;
     }
-    
+
     // Step 2: Calculate container areas using layout dimensions from ELK
-    const containerAreas = containers.map(container => {
-      // Get dimensions from ELK layout results (stored as width/height on container)
-      const width = (container as any).width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
-      const height = (container as any).height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
-      const area = width * height;
-      
-      
-      return {
-        container,
-        area,
-        width,
-        height
-      };
-    }).sort((a, b) => a.area - b.area); // Sort by area, smallest to largest
-    
-    
+    const containerAreas = containers
+      .map(container => {
+        // Get dimensions from ELK layout results (stored as width/height on container)
+        const width = (container as any).width || LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH;
+        const height = (container as any).height || LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT;
+        const area = width * height;
+
+        return {
+          container,
+          area,
+          width,
+          height,
+        };
+      })
+      .sort((a, b) => a.area - b.area); // Sort by area, smallest to largest
+
     // Step 3: Calculate viewport area and budget
     // Get viewport dimensions from VisualizationState, fallback to defaults if not set
     const viewport = this.visState.viewport;
     const viewportWidth = viewport?.width || 1200;
     const viewportHeight = viewport?.height || 800;
-    const viewportArea = viewportWidth * viewportHeight;    
+    const viewportArea = viewportWidth * viewportHeight;
     const containerAreaBudgetRatio = 0.7; // Use 70% of viewport for containers
     const containerAreaBudget = viewportArea * containerAreaBudgetRatio;
-    
-    
+
     // Step 4: Iterate through containers, keep expanding until budget exceeded
     let usedArea = 0;
     const containersToKeepExpanded: string[] = [];
     const containersToCollapse: string[] = [];
-    
+
     for (const { container, area } of containerAreas) {
       if (usedArea + area <= containerAreaBudget) {
         // We can afford to keep this container expanded
@@ -343,11 +327,9 @@ export class VisualizationEngine {
         containersToCollapse.push(container.id);
       }
     }
-    
-    
+
     // Step 5: Apply collapse decisions using collapseContainer
     if (containersToCollapse.length > 0) {
-      
       for (const containerId of containersToCollapse) {
         try {
           // Sanity check:
@@ -356,26 +338,26 @@ export class VisualizationEngine {
           if (!container || container.collapsed || container.hidden) {
             continue;
           }
-          
+
           // Use collapseContainer which handles all the mechanics atomically:
           // - Collapsing the container and its children
-          // - Creating hyperEdges for crossing edges  
+          // - Creating hyperEdges for crossing edges
           // - Hiding descendant containers
           this.visState.collapseContainer(containerId);
         } catch (error) {
           // Continue with other containers even if one fails
         }
       }
-      
+
       // Step 6: Re-run layout after collapse to get clean final layout
       // IMPORTANT: Clear any cached positions to force fresh layout with new collapsed dimensions
       this.visState.clearLayoutPositions();
       // Force ELK to rebuild from scratch with new dimensions
       this.elkBridge = new ELKBridge(this.config.layoutConfig);
-      
+
       // INVARIANT: All containers should be unfixed for fresh layout
       this.validateRelayoutInvariants();
-      
+
       await this.elkBridge.layoutVisualizationState(this.visState);
     }
   }
@@ -385,12 +367,11 @@ export class VisualizationEngine {
   private updateState(phase: VisualizationPhase): void {
     this.state.phase = phase;
     this.state.lastUpdate = Date.now();
-    
+
     if (phase !== 'error') {
       delete this.state.error;
     }
-    
-    
+
     // Notify listeners
     this.listeners.forEach(listener => {
       try {
@@ -405,29 +386,29 @@ export class VisualizationEngine {
    * Validate invariants before re-layout after collapse
    */
   private validateRelayoutInvariants(): void {
-    
     // INVARIANT: All containers should have elkFixed=false for fresh layout
     const containers = this.visState.visibleContainers;
     let fixedCount = 0;
-    
+
     for (const container of containers) {
       const isFixed = this.elkBridge.getContainerELKFixed(this.visState, container.id);
       if (isFixed) {
         fixedCount++;
       }
     }
-    
+
     if (fixedCount > 0) {
-      throw new Error(`Re-layout invariant violation: ${fixedCount} containers are still elkFixed=true, preventing fresh layout`);
+      throw new Error(
+        `Re-layout invariant violation: ${fixedCount} containers are still elkFixed=true, preventing fresh layout`
+      );
     }
-    
   }
 
   private handleError(message: string, error: any): void {
     const errorMessage = `${message}: ${error instanceof Error ? error.message : String(error)}`;
     this.state.error = errorMessage;
     this.updateState('error');
-    
+
     console.error(`[VisualizationEngine] ❌ ${errorMessage}`, error);
   }
 }

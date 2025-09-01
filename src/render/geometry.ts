@@ -15,19 +15,63 @@ export function getNodeIntersection(intersectionNode: any, targetNode: any) {
 
   // Validate all coordinates before calculations to prevent NaN propagation
   const safeIntersectionPos = {
-    x: typeof intersectionNodePosition?.x === 'number' && !isNaN(intersectionNodePosition.x) && isFinite(intersectionNodePosition.x) ? intersectionNodePosition.x : 0,
-    y: typeof intersectionNodePosition?.y === 'number' && !isNaN(intersectionNodePosition.y) && isFinite(intersectionNodePosition.y) ? intersectionNodePosition.y : 0,
+    x:
+      typeof intersectionNodePosition?.x === 'number' &&
+      !isNaN(intersectionNodePosition.x) &&
+      isFinite(intersectionNodePosition.x)
+        ? intersectionNodePosition.x
+        : 0,
+    y:
+      typeof intersectionNodePosition?.y === 'number' &&
+      !isNaN(intersectionNodePosition.y) &&
+      isFinite(intersectionNodePosition.y)
+        ? intersectionNodePosition.y
+        : 0,
   };
 
   const safeTargetPos = {
-    x: typeof targetPosition?.x === 'number' && !isNaN(targetPosition.x) && isFinite(targetPosition.x) ? targetPosition.x : 0,
-    y: typeof targetPosition?.y === 'number' && !isNaN(targetPosition.y) && isFinite(targetPosition.y) ? targetPosition.y : 0,
+    x:
+      typeof targetPosition?.x === 'number' &&
+      !isNaN(targetPosition.x) &&
+      isFinite(targetPosition.x)
+        ? targetPosition.x
+        : 0,
+    y:
+      typeof targetPosition?.y === 'number' &&
+      !isNaN(targetPosition.y) &&
+      isFinite(targetPosition.y)
+        ? targetPosition.y
+        : 0,
   };
 
-  const safeIntersectionWidth = typeof intersectionNodeWidth === 'number' && !isNaN(intersectionNodeWidth) && isFinite(intersectionNodeWidth) && intersectionNodeWidth > 0 ? intersectionNodeWidth : 120;
-  const safeIntersectionHeight = typeof intersectionNodeHeight === 'number' && !isNaN(intersectionNodeHeight) && isFinite(intersectionNodeHeight) && intersectionNodeHeight > 0 ? intersectionNodeHeight : 40;
-  const safeTargetWidth = typeof targetNodeWidth === 'number' && !isNaN(targetNodeWidth) && isFinite(targetNodeWidth) && targetNodeWidth > 0 ? targetNodeWidth : 120;
-  const safeTargetHeight = typeof targetNodeHeight === 'number' && !isNaN(targetNodeHeight) && isFinite(targetNodeHeight) && targetNodeHeight > 0 ? targetNodeHeight : 40;
+  const safeIntersectionWidth =
+    typeof intersectionNodeWidth === 'number' &&
+    !isNaN(intersectionNodeWidth) &&
+    isFinite(intersectionNodeWidth) &&
+    intersectionNodeWidth > 0
+      ? intersectionNodeWidth
+      : 120;
+  const safeIntersectionHeight =
+    typeof intersectionNodeHeight === 'number' &&
+    !isNaN(intersectionNodeHeight) &&
+    isFinite(intersectionNodeHeight) &&
+    intersectionNodeHeight > 0
+      ? intersectionNodeHeight
+      : 40;
+  const safeTargetWidth =
+    typeof targetNodeWidth === 'number' &&
+    !isNaN(targetNodeWidth) &&
+    isFinite(targetNodeWidth) &&
+    targetNodeWidth > 0
+      ? targetNodeWidth
+      : 120;
+  const safeTargetHeight =
+    typeof targetNodeHeight === 'number' &&
+    !isNaN(targetNodeHeight) &&
+    isFinite(targetNodeHeight) &&
+    targetNodeHeight > 0
+      ? targetNodeHeight
+      : 40;
 
   const w = safeIntersectionWidth / 2;
   const h = safeIntersectionHeight / 2;
@@ -72,12 +116,28 @@ export function getEdgePosition(node: any, intersectionPoint: any) {
     y: typeof nodePos?.y === 'number' && !isNaN(nodePos.y) && isFinite(nodePos.y) ? nodePos.y : 0,
   };
 
-  const safeWidth = typeof nodeWidth === 'number' && !isNaN(nodeWidth) && isFinite(nodeWidth) && nodeWidth > 0 ? nodeWidth : 120;
-  const safeHeight = typeof nodeHeight === 'number' && !isNaN(nodeHeight) && isFinite(nodeHeight) && nodeHeight > 0 ? nodeHeight : 40;
+  const safeWidth =
+    typeof nodeWidth === 'number' && !isNaN(nodeWidth) && isFinite(nodeWidth) && nodeWidth > 0
+      ? nodeWidth
+      : 120;
+  const safeHeight =
+    typeof nodeHeight === 'number' && !isNaN(nodeHeight) && isFinite(nodeHeight) && nodeHeight > 0
+      ? nodeHeight
+      : 40;
 
   const safeIntersectionPoint = {
-    x: typeof intersectionPoint?.x === 'number' && !isNaN(intersectionPoint.x) && isFinite(intersectionPoint.x) ? intersectionPoint.x : safeNodePos.x,
-    y: typeof intersectionPoint?.y === 'number' && !isNaN(intersectionPoint.y) && isFinite(intersectionPoint.y) ? intersectionPoint.y : safeNodePos.y,
+    x:
+      typeof intersectionPoint?.x === 'number' &&
+      !isNaN(intersectionPoint.x) &&
+      isFinite(intersectionPoint.x)
+        ? intersectionPoint.x
+        : safeNodePos.x,
+    y:
+      typeof intersectionPoint?.y === 'number' &&
+      !isNaN(intersectionPoint.y) &&
+      isFinite(intersectionPoint.y)
+        ? intersectionPoint.y
+        : safeNodePos.y,
   };
 
   const n = { ...safeNodePos, width: safeWidth, height: safeHeight } as const;

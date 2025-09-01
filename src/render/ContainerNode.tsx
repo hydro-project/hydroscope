@@ -17,7 +17,10 @@ export function ContainerNode({ id, data }: NodeProps) {
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
   if (searchHighlight || searchHighlightStrong) {
-    console.log(`🔍 ContainerNode ${id} RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, data:`, data);
+    console.log(
+      `🔍 ContainerNode ${id} RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, data:`,
+      data
+    );
   }
 
   const colorPalette = String(data.colorPalette || 'Set3');
@@ -31,7 +34,7 @@ export function ContainerNode({ id, data }: NodeProps) {
       Pastel1: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6', '#ffffcc', '#e5d8bd'],
       Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d'],
       Set1: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628'],
-      Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494']
+      Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494'],
     };
 
     const colors = colorPalettes[palette] || colorPalettes['Set3'];
@@ -59,11 +62,17 @@ export function ContainerNode({ id, data }: NodeProps) {
       return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
     };
 
-    return { background: lighten(baseColor, 0.8), border: darken(baseColor, 0.2), text: darken(baseColor, 0.4) };
+    return {
+      background: lighten(baseColor, 0.8),
+      border: darken(baseColor, 0.2),
+      text: darken(baseColor, 0.4),
+    };
   };
 
   if (data.collapsed) {
-    console.log(`🔍 ContainerNode ${id} COLLAPSED RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, label="${data.label}"`);
+    console.log(
+      `🔍 ContainerNode ${id} COLLAPSED RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, label="${data.label}"`
+    );
     const containerColors = generateContainerColors(id, colorPalette);
     return (
       <>
@@ -80,62 +89,75 @@ export function ContainerNode({ id, data }: NodeProps) {
           `}
         </style>
         <div
-        style={{
-          width: `${width}px`,
-          height: `${height}px`,
-          background: containerColors.background,
-          border: `${styleCfg.containerBorderWidth ?? 2}px solid ${containerColors.border}`,
-          borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
-          position: 'relative',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: (() => {
-            if (searchHighlightStrong) {
-              return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
-            } else if (searchHighlight) {
-              return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
-            } else {
-              return styleCfg.containerShadow === 'NONE'
-                ? 'none'
-                : styleCfg.containerShadow === 'LARGE'
-                ? '0 10px 15px -3px rgba(0,0,0,0.2)'
-                : styleCfg.containerShadow === 'MEDIUM'
-                ? '0 4px 6px -1px rgba(0,0,0,0.15)'
-                : '0 2px 8px rgba(0,0,0,0.15)';
-            }
-          })(),
-          transition: 'all 0.2s ease',
-          // Add subtle animation for search highlights
-          animation: searchHighlight 
-            ? (searchHighlightStrong ? 'searchPulseStrong 2s ease-in-out infinite' : 'searchPulse 3s ease-in-out infinite')
-            : undefined,
-        }}
-      >
-        <HandlesRenderer />
-        <div
           style={{
-            fontSize: '13px',
-            fontWeight: '600',
-            color: containerColors.text,
-            textAlign: 'center',
-            maxWidth: `${Number(width) - 16}px`,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            marginBottom: '4px',
-            cursor: 'pointer'
+            width: `${width}px`,
+            height: `${height}px`,
+            background: containerColors.background,
+            border: `${styleCfg.containerBorderWidth ?? 2}px solid ${containerColors.border}`,
+            borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
+            position: 'relative',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: (() => {
+              if (searchHighlightStrong) {
+                return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
+              } else if (searchHighlight) {
+                return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+              } else {
+                return styleCfg.containerShadow === 'NONE'
+                  ? 'none'
+                  : styleCfg.containerShadow === 'LARGE'
+                    ? '0 10px 15px -3px rgba(0,0,0,0.2)'
+                    : styleCfg.containerShadow === 'MEDIUM'
+                      ? '0 4px 6px -1px rgba(0,0,0,0.15)'
+                      : '0 2px 8px rgba(0,0,0,0.15)';
+              }
+            })(),
+            transition: 'all 0.2s ease',
+            // Add subtle animation for search highlights
+            animation: searchHighlight
+              ? searchHighlightStrong
+                ? 'searchPulseStrong 2s ease-in-out infinite'
+                : 'searchPulse 3s ease-in-out infinite'
+              : undefined,
           }}
         >
-          {truncateLabel(containerLabel, { maxLength: Math.floor((Number(width) - 16) / 8), preferDelimiters: true, leftTruncate: true })}
+          <HandlesRenderer />
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: '600',
+              color: containerColors.text,
+              textAlign: 'center',
+              maxWidth: `${Number(width) - 16}px`,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              marginBottom: '4px',
+              cursor: 'pointer',
+            }}
+          >
+            {truncateLabel(containerLabel, {
+              maxLength: Math.floor((Number(width) - 16) / 8),
+              preferDelimiters: true,
+              leftTruncate: true,
+            })}
+          </div>
+          <div
+            style={{
+              fontSize: '11px',
+              color: containerColors.text,
+              opacity: 0.8,
+              textAlign: 'center',
+            }}
+          >
+            {nodeCount} node{nodeCount !== 1 ? 's' : ''}
+          </div>
         </div>
-        <div style={{ fontSize: '11px', color: containerColors.text, opacity: 0.8, textAlign: 'center' }}>
-          {nodeCount} node{nodeCount !== 1 ? 's' : ''}
-        </div>
-      </div>
       </>
     );
   }
@@ -176,33 +198,39 @@ export function ContainerNode({ id, data }: NodeProps) {
           })(),
           transition: 'all 0.2s ease',
           // Add subtle animation for search highlights
-          animation: searchHighlight 
-            ? (searchHighlightStrong ? 'searchPulseStrong 2s ease-in-out infinite' : 'searchPulse 3s ease-in-out infinite')
+          animation: searchHighlight
+            ? searchHighlightStrong
+              ? 'searchPulseStrong 2s ease-in-out infinite'
+              : 'searchPulse 3s ease-in-out infinite'
             : undefined,
         }}
       >
-      <HandlesRenderer />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '0px',
-          right: '12px',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          color: '#1976d2',
-          maxWidth: `${Number(width) - 36}px`,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          cursor: 'pointer',
-          textShadow:
-            '1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgba(255, 255, 255, 0.8), 1px -1px 2px rgba(255, 255, 255, 0.8), -1px 1px 2px rgba(255, 255, 255, 0.8)',
-          filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))'
-        }}
-      >
-        {truncateLabel(containerLabel, { maxLength: Math.floor((Number(width) - 36) / 8), preferDelimiters: true, leftTruncate: false })}
+        <HandlesRenderer />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '0px',
+            right: '12px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            color: '#1976d2',
+            maxWidth: `${Number(width) - 36}px`,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            textShadow:
+              '1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgba(255, 255, 255, 0.8), 1px -1px 2px rgba(255, 255, 255, 0.8), -1px 1px 2px rgba(255, 255, 255, 0.8)',
+            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))',
+          }}
+        >
+          {truncateLabel(containerLabel, {
+            maxLength: Math.floor((Number(width) - 36) / 8),
+            preferDelimiters: true,
+            leftTruncate: false,
+          })}
+        </div>
       </div>
-    </div>
     </>
   );
 }
