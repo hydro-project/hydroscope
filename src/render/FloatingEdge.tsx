@@ -16,9 +16,10 @@ import {
 import { useStyleConfig } from './StyleConfigContext';
 import { getStroke, getHaloColor, stripHaloStyle } from './edgeStyle';
 import { getNodeIntersection, getEdgePosition } from './geometry';
+import type { Node as ReactFlowNode } from '@xyflow/react';
 
 // Utility function to get edge parameters for floating connection
-function getEdgeParams(source: any, target: any) {
+function getEdgeParams(source: ReactFlowNode, target: ReactFlowNode) {
   const sourceIntersectionPoint = getNodeIntersection(source, target);
   const targetIntersectionPoint = getNodeIntersection(target, source);
 

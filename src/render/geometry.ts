@@ -2,15 +2,17 @@
  * @fileoverview Geometry helpers for edge rendering
  */
 
+import type { Node as ReactFlowNode } from '@xyflow/react';
+
 /** Calculate intersection point on node rectangle */
-export function getNodeIntersection(intersectionNode: any, targetNode: any) {
+export function getNodeIntersection(intersectionNode: ReactFlowNode, targetNode: ReactFlowNode) {
   const {
-    measured: { width: intersectionNodeWidth = 120, height: intersectionNodeHeight = 40 },
-    internals: { positionAbsolute: intersectionNodePosition },
+    measured: { width: intersectionNodeWidth = 120, height: intersectionNodeHeight = 40 } = {},
+    position: intersectionNodePosition = { x: 0, y: 0 },
   } = intersectionNode;
   const {
-    measured: { width: targetNodeWidth = 120, height: targetNodeHeight = 40 },
-    internals: { positionAbsolute: targetPosition },
+    measured: { width: targetNodeWidth = 120, height: targetNodeHeight = 40 } = {},
+    position: targetPosition = { x: 0, y: 0 },
   } = targetNode;
 
   // Validate all coordinates before calculations to prevent NaN propagation
@@ -106,8 +108,8 @@ export function getNodeIntersection(intersectionNode: any, targetNode: any) {
 }
 
 /** Determine which side of a node a point lies on */
-export function getEdgePosition(node: any, intersectionPoint: any) {
-  const nodePos = node.internals?.positionAbsolute;
+export function getEdgePosition(node: ReactFlowNode, intersectionPoint: { x: number; y: number }) {
+  const nodePos = node.position || { x: 0, y: 0 };
   const nodeWidth = node.measured?.width || 120;
   const nodeHeight = node.measured?.height || 40;
 

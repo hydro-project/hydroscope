@@ -4,20 +4,27 @@
  * Compatibility wrappers for alpha event handling.
  */
 
-export function createNodeEventHandlers(_config?: any) {
+import type { 
+  Node as ReactFlowNode, 
+  Edge as ReactFlowEdge, 
+  NodeMouseHandler, 
+  EdgeMouseHandler 
+} from '@xyflow/react';
+
+export function createNodeEventHandlers(_config?: unknown) {
   return {
-    onClick: (_event: any, _node: any) => {},
+    onClick: (_event: React.MouseEvent, _node: ReactFlowNode) => {},
   };
 }
 
-export function createEdgeEventHandlers(_config?: any) {
+export function createEdgeEventHandlers(_config?: unknown) {
   return {
-    onClick: (_event: any, _edge: any) => {},
+    onClick: (_event: React.MouseEvent, _edge: ReactFlowEdge) => {},
   };
 }
 
-export function createContainerEventHandlers(_config?: any) {
+export function createContainerEventHandlers(_config?: unknown) {
   return {
-    onClick: (_event: any, _container: any) => {},
+    onClick: (_event: React.MouseEvent, _container: unknown) => {},
   };
 }
