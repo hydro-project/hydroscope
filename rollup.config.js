@@ -19,12 +19,14 @@ export default {
     {
       file: 'dist/index.js',
       format: 'cjs',
-      sourcemap: true
+      sourcemap: true,
+      inlineDynamicImports: true
     },
     {
       file: 'dist/index.esm.js',
       format: 'esm',
-      sourcemap: true
+      sourcemap: true,
+      inlineDynamicImports: true
     }
   ],
   external: (id) => externalPkgs.some(pkg => id === pkg || id.startsWith(pkg + '/')),

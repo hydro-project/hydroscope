@@ -59,7 +59,16 @@ export class ELKBridge {
    * Run full layout for all containers (initial layout)
    */
   private async runFullLayout(visState: VisualizationState): Promise<void> {
+    // Import profiler utilities for detailed timing
+    const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
+
+    const profiler = getProfiler();
+
+    profiler?.start('elk-bridge-full-layout');
+
     // Clear any existing edge layout data to ensure ReactFlow starts fresh
+    profiler?.start('clear-edge-layouts');
+
     visState.visibleEdges.forEach(edge => {
       try {
         visState.setEdgeLayout(edge.id, { sections: [] });
@@ -68,11 +77,17 @@ export class ELKBridge {
       }
     });
 
+    profiler?.end('clear-edge-layouts');
+
     // 1. Extract all visible data from VisualizationState
+    profiler?.start('vis-state-to-elk-conversion');
     const elkGraph = this.visStateToELK(visState);
+    profiler?.end('vis-state-to-elk-conversion');
 
     // 2. Validate ELK input data
+    profiler?.start('elk-validation');
     this.validateELKInput(elkGraph);
+    profiler?.end('elk-validation');
 
     // 3. Yield control to browser to show loading state
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -113,7 +128,20 @@ export class ELKBridge {
       }
     }
 
+    // 4. Run ELK layout algorithm
+    profiler?.start('elk-algorithm-execution');
+    if (profiler) {
+      console.log(
+        `[ELKBridge] Starting ELK layout with ${elkGraph.children?.length || 0} top-level elements`
+      );
+    }
+
     const elkResult = await this.elk.layout(elkGraph);
+
+    profiler?.end('elk-algorithm-execution');
+    if (profiler) {
+      console.log(`[ELKBridge] ELK layout completed`);
+    }
 
     const elkOutputContainers = elkResult.children || [];
 
@@ -135,7 +163,10 @@ export class ELKBridge {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // 6. Apply results back to VisualizationState
+    profiler?.start('elk-to-vis-state-conversion');
     this.elkToVisualizationState(elkResult, visState);
+    profiler?.end('elk-to-vis-state-conversion');
+    profiler?.end('elk-bridge-full-layout');
   }
 
   /**
@@ -379,16 +410,16 @@ export class ELKBridge {
         // Use VisualizationState API to get children (returns Set)
         const containerChildren = visState.getContainerChildren(container.id);
         containerChildren.forEach(childId => {
-          // Check if child is a container
+          // Check if child is a container and if it's visible
           const childContainer = visState.getContainer(childId);
-          if (childContainer && visState.visibleContainers.some(vc => vc.id === childId)) {
+          if (childContainer && !childContainer.hidden) {
             // Add child container recursively
             const childContainerNode = buildContainerHierarchy(childId);
             containerNode.children!.push(childContainerNode);
             processedContainers.add(childId);
           } else {
             // Add child node
-            const childNode = visState.visibleNodes.find(n => n.id === childId);
+            const childNode = visState.getGraphNode(childId);
             if (childNode) {
               // Ensure valid node dimensions
               const nodeWidth =
@@ -426,18 +457,14 @@ export class ELKBridge {
 
     // Add only root-level containers to rootNodes
     visState.visibleContainers.forEach(container => {
-      // Check if this container has a parent that's also visible
-      const hasVisibleParent = visState.visibleContainers.some(otherContainer =>
-        visState.getContainerChildren(otherContainer.id).has(container.id)
-      );
+      const containerParentMapping = visState.getContainerParentMapping();
+      const hasVisibleParent = containerParentMapping.has(container.id);
 
       // DIAGNOSTIC: Check parent relationships for problematic containers
       if (container.id === 'bt_81' || container.id === 'bt_98') {
         if (hasVisibleParent) {
           // Find the parent
-          visState.visibleContainers.find(otherContainer =>
-            visState.getContainerChildren(otherContainer.id).has(container.id)
-          );
+          const parentId = containerParentMapping.get(container.id);
         }
       }
 

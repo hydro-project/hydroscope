@@ -13,13 +13,13 @@ const CONTINUOUS_HANDLE_STYLE = {
   opacity: UI_CONSTANTS.HANDLE_OPACITY_VISIBLE,
   width: `${UI_CONSTANTS.HANDLE_SIZE_SMALL}px`,
   height: `${UI_CONSTANTS.HANDLE_SIZE_SMALL}px`,
-  background: '#666'
+  background: '#666',
 };
 
 const FLOATING_HANDLE_STYLE = {
   opacity: UI_CONSTANTS.HANDLE_OPACITY_HIDDEN,
   width: `${UI_CONSTANTS.HANDLE_SIZE}px`,
-  height: `${UI_CONSTANTS.HANDLE_SIZE}px`
+  height: `${UI_CONSTANTS.HANDLE_SIZE}px`,
 };
 
 export interface HandleConfig {

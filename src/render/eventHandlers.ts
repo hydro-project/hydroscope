@@ -4,11 +4,11 @@
  * Compatibility wrappers for alpha event handling.
  */
 
-import type { 
-  Node as ReactFlowNode, 
-  Edge as ReactFlowEdge, 
-  NodeMouseHandler, 
-  EdgeMouseHandler 
+import type {
+  Node as ReactFlowNode,
+  Edge as ReactFlowEdge,
+  NodeMouseHandler,
+  EdgeMouseHandler,
 } from '@xyflow/react';
 
 export function createNodeEventHandlers(_config?: unknown) {

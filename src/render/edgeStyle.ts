@@ -21,7 +21,11 @@ export type StrokeDefaults = {
  * Compute stroke/style values with sensible fallbacks.
  * Precedence: explicit style -> provided defaults -> config -> hardcoded fallback.
  */
-export function getStroke(styleCfg: StyleCfg, style: CSSProperties | undefined, defaults: StrokeDefaults = {}) {
+export function getStroke(
+  styleCfg: StyleCfg,
+  style: CSSProperties | undefined,
+  defaults: StrokeDefaults = {}
+) {
   const stroke = (style?.stroke ?? styleCfg.edgeColor ?? defaults.color ?? '#1976d2') as string;
   const strokeWidth = (style?.strokeWidth ?? styleCfg.edgeWidth ?? defaults.width ?? 2) as number;
   // Priority: explicit style -> explicit default dash -> cfg-based dash -> undefined
@@ -61,10 +65,7 @@ interface ExtendedEdgeStyle extends CSSProperties {
 export function isDoubleLineEdge(props: EdgeProps): boolean {
   const data = props.data as ExtendedEdgeData | undefined;
   const style = props.style as ExtendedEdgeStyle | undefined;
-  return (
-    data?.processedStyle?.lineStyle === 'double' ||
-    style?.lineStyle === 'double'
-  );
+  return data?.processedStyle?.lineStyle === 'double' || style?.lineStyle === 'double';
 }
 
 /** Whether this edge should render with a wavy path. */
@@ -72,8 +73,6 @@ export function isWavyEdge(props: EdgeProps): boolean {
   const data = props.data as ExtendedEdgeData | undefined;
   const style = props.style as ExtendedEdgeStyle | undefined;
   return Boolean(
-    style?.filter?.includes('edge-wavy') ||
-    data?.processedStyle?.waviness ||
-    style?.waviness
+    style?.filter?.includes('edge-wavy') || data?.processedStyle?.waviness || style?.waviness
   );
 }

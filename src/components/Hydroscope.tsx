@@ -19,6 +19,7 @@ import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
 import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
 import { LAYOUT_CONSTANTS } from '../shared/config';
+import { isDevelopment, getProfiler } from '../dev';
 import {
   saveToStorage,
   loadFromStorage,
@@ -27,11 +28,23 @@ import {
   isStorageAvailable,
 } from '../utils/persistence';
 
+// Conditional dev-only imports
+let PerformanceDashboard: React.ComponentType<any> | null = null;
+if (isDevelopment()) {
+  try {
+    const devComponents = require('../dev/components/PerformanceDashboard');
+    PerformanceDashboard = devComponents.default;
+  } catch (error) {
+    console.warn('Development components not available');
+  }
+}
+
 // Extended interface for the full Hydroscope component with UI panels
 export interface HydroscopeProps extends CoreProps {
   showFileUpload?: boolean;
   showInfoPanel?: boolean;
   showStylePanel?: boolean;
+  showPerformancePanel?: boolean;
   enableCollapse?: boolean;
   initialLayoutAlgorithm?: string;
   initialColorPalette?: string;
@@ -65,6 +78,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       showFileUpload = true,
       showInfoPanel = true,
       showStylePanel = true,
+      showPerformancePanel = false,
       enableCollapse = true,
       autoFit = true,
       initialLayoutAlgorithm = 'mrtree',
@@ -96,6 +110,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
     // Drawer states
     const [infoPanelOpen, setInfoPanelOpen] = useState(false); // Start collapsed
     const [stylePanelOpen, setStylePanelOpen] = useState(false); // Start collapsed
+    const [performancePanelOpen, setPerformancePanelOpen] = useState(showPerformancePanel || false);
 
     // Default values for reset functionality
     const defaultRenderConfig = {
@@ -253,6 +268,16 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
     const handleFileUpload = useCallback(
       (uploadedData: any, filename: string) => {
         setData(uploadedData);
+
+        // Auto-enable performance panel for large files
+        const dataSize = JSON.stringify(uploadedData).length;
+        if (dataSize > 100 * 1024) {
+          // 100KB threshold
+          if (isDevelopment()) {
+            setPerformancePanelOpen(true);
+          }
+        }
+
         onFileUpload?.(uploadedData, filename);
       },
       [onFileUpload]
@@ -313,15 +338,20 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       }
 
       if (jsonData) {
+        const profiler = getProfiler();
+
         setGraphData(jsonData);
         setHasParsedData(true);
 
         // Only create edge style config on initial data load, not on grouping changes
         try {
+          profiler.start('Render Config Creation');
           const parsedData = parseGraphJSON(jsonData, grouping);
           const renderConfig = createRenderConfig(parsedData);
           setEdgeStyleConfig(renderConfig);
+          profiler.end('Render Config Creation');
         } catch (e) {
+          profiler.end('Render Config Creation');
           console.error('Failed to create render config:', e);
         }
       }
@@ -757,6 +787,16 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
               }}
               onResetToDefaults={handleResetToDefaults}
             />
+
+            {/* Performance Dashboard - Development Only */}
+            {isDevelopment() && PerformanceDashboard && (
+              <PerformanceDashboard
+                visible={performancePanelOpen}
+                onClose={() => setPerformancePanelOpen(false)}
+                autoRefresh={true}
+                refreshInterval={2000}
+              />
+            )}
           </div>
         )}
       </div>

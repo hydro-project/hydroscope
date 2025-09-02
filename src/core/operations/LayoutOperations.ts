@@ -5,7 +5,14 @@
  */
 
 import { LAYOUT_CONSTANTS } from '../../shared/config';
-import type { ElkEdgeSection, GraphNode, GraphEdge, Container, Position, Dimensions } from '../../shared/types';
+import type {
+  ElkEdgeSection,
+  GraphNode,
+  GraphEdge,
+  Container,
+  Position,
+  Dimensions,
+} from '../../shared/types';
 
 interface LayoutInfo {
   position?: Position;

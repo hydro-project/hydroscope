@@ -101,7 +101,8 @@ export const ValidationConfigs = {
 /**
  * Helper to wrap multiple methods at once
  */
-export function wrapPublicMethods(instance: any, methodConfigs: Record<string, ValidationConfig>) { // TODO: Type instance properly
+export function wrapPublicMethods(instance: any, methodConfigs: Record<string, ValidationConfig>) {
+  // TODO: Type instance properly
   for (const [methodName, config] of Object.entries(methodConfigs)) {
     const originalMethod = instance[methodName];
     if (typeof originalMethod === 'function') {

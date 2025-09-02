@@ -31,7 +31,8 @@ export interface InvariantViolation {
 export class VisualizationStateInvariantValidator {
   private readonly state: any; // TODO: Replace with proper VisualizationState interface to avoid circular dependency
 
-  constructor(state: any) { // TODO: Type this properly once circular dependency is resolved
+  constructor(state: any) {
+    // TODO: Type this properly once circular dependency is resolved
     this.state = state;
   }
 
@@ -534,8 +535,22 @@ export class VisualizationStateInvariantValidator {
 
   private _isEntityVisible(entityId: string, container?: unknown, node?: unknown): boolean {
     // Check if entity is hidden
-    if (container && typeof container === 'object' && container !== null && 'hidden' in container && (container as any).hidden) return false;
-    if (node && typeof node === 'object' && node !== null && 'hidden' in node && (node as any).hidden) return false;
+    if (
+      container &&
+      typeof container === 'object' &&
+      container !== null &&
+      'hidden' in container &&
+      (container as any).hidden
+    )
+      return false;
+    if (
+      node &&
+      typeof node === 'object' &&
+      node !== null &&
+      'hidden' in node &&
+      (node as any).hidden
+    )
+      return false;
 
     // Check if node is inside a collapsed container
     if (node) {

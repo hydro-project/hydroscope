@@ -4,12 +4,18 @@
  * config updates, ReactFlow data, and event handlers. Behavior-preserving.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactFlow, applyNodeChanges, type NodeMouseHandler, type EdgeMouseHandler } from '@xyflow/react';
+import {
+  useReactFlow,
+  applyNodeChanges,
+  type NodeMouseHandler,
+  type EdgeMouseHandler,
+} from '@xyflow/react';
 
 import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import { useManualPositions } from './useManualPositions';
 import { UI_CONSTANTS } from '../shared/config';
+import { getProfiler } from '../dev';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { ReactFlowData } from '../bridges/ReactFlowBridge';
 import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core/types';
@@ -79,10 +85,10 @@ export function useFlowGraphController({
 
   const fitOnce = useCallback(() => {
     try {
-      fitView({ 
-        padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-        maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-        duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+      fitView({
+        padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+        maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+        duration: UI_CONSTANTS.FIT_VIEW_DURATION,
       });
       lastFitTimeRef.current = Date.now();
     } catch (err) {
@@ -92,9 +98,13 @@ export function useFlowGraphController({
 
   const refreshLayout = useCallback(
     async (force?: boolean) => {
+      const profiler = getProfiler();
+
       try {
         setLoading(true);
         setError(null);
+
+        profiler?.start('Layout Calculation');
 
         // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
         // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
@@ -106,25 +116,36 @@ export function useFlowGraphController({
         const lastChangedContainer = visualizationState.getLastChangedContainer();
         if (lastChangedContainer && !force) {
           // Use selective layout for individual container changes
+          profiler?.start('Selective Layout');
           await engine.runSelectiveLayout(lastChangedContainer);
           visualizationState.clearLastChangedContainer();
+          profiler?.end('Selective Layout', { containerId: lastChangedContainer });
         } else {
           // Use full layout for other cases
+          profiler?.start('Full Layout');
           await engine.runLayout();
+          profiler?.end('Full Layout');
         }
 
+        profiler?.end('Layout Calculation');
+
+        profiler?.start('Rendering');
         const baseData = bridge.convertVisualizationState(visualizationState);
         baseReactFlowDataRef.current = baseData;
         const dataWithManual = applyManualPositions(baseData, manualPositions);
         setReactFlowData(dataWithManual);
+        profiler?.end('Rendering', {
+          nodeCount: dataWithManual.nodes.length,
+          edgeCount: dataWithManual.edges.length,
+        });
 
         if (config.fitView !== false) {
           setTimeout(() => {
             try {
-              fitView({ 
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              fitView({
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
@@ -133,6 +154,8 @@ export function useFlowGraphController({
           }, 200);
         }
       } catch (err) {
+        profiler?.end('Layout Calculation');
+        profiler?.end('Rendering');
         console.error('[FlowGraph] ❌ Failed to refresh layout:', err);
         setError(err instanceof Error ? err.message : String(err));
       } finally {
@@ -220,15 +243,16 @@ export function useFlowGraphController({
           const now = Date.now();
           const since = now - lastFitTimeRef.current;
           if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
-          const delay = since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD 
-            ? UI_CONSTANTS.LAYOUT_DELAY_SHORT 
-            : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
+          const delay =
+            since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD
+              ? UI_CONSTANTS.LAYOUT_DELAY_SHORT
+              : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({ 
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              fitView({
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
@@ -318,10 +342,10 @@ export function useFlowGraphController({
         if (since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD) {
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({ 
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              fitView({
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               });
               lastFitTimeRef.current = Date.now();
             } catch (err) {

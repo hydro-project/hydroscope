@@ -3,11 +3,11 @@
 import type { NodeStyle, EdgeStyle, ContainerStyle } from '../shared/config';
 import type { ExternalContainer } from '../shared/types';
 import type { EdgeStyleConfig } from './EdgeStyleProcessor';
-import type { 
-  Node as ReactFlowNode, 
-  Edge as ReactFlowEdge, 
-  NodeMouseHandler, 
-  EdgeMouseHandler
+import type {
+  Node as ReactFlowNode,
+  Edge as ReactFlowEdge,
+  NodeMouseHandler,
+  EdgeMouseHandler,
 } from '@xyflow/react';
 
 // Forward declaration to avoid circular imports

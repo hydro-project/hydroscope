@@ -103,11 +103,7 @@ export const InfoPanel = forwardRef<
       // Collect all unique node types from visible nodes
       visualizationState.visibleNodes.forEach((node: VisualizationNode) => {
         // Support nodeType possibly nested under a data field
-        const nodeType =
-          node.nodeType ||
-          node?.data?.nodeType ||
-          node.style ||
-          'default';
+        const nodeType = node.nodeType || node?.data?.nodeType || node.style || 'default';
         nodeTypes.add(nodeType);
       });
 
@@ -184,7 +180,7 @@ export const InfoPanel = forwardRef<
     const panelStyle: React.CSSProperties = {
       position: 'absolute',
       top: PANEL_CONSTANTS.PANEL_TOP,
-      right: PANEL_CONSTANTS.PANEL_RIGHT, 
+      right: PANEL_CONSTANTS.PANEL_RIGHT,
       zIndex: 1200,
       minWidth: PANEL_CONSTANTS.INFO_PANEL_MIN_WIDTH,
       maxWidth: PANEL_CONSTANTS.INFO_PANEL_MAX_WIDTH,
@@ -236,7 +232,9 @@ export const InfoPanel = forwardRef<
             marginBottom: 12,
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM }}>Graph Info</span>
+          <span style={{ fontWeight: 600, fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM }}>
+            Graph Info
+          </span>
           <Button
             type="text"
             size="small"
@@ -268,7 +266,9 @@ export const InfoPanel = forwardRef<
             >
               {/* Grouping Controls */}
               {safeHierarchyChoices.length > 0 && (
-                <div style={{ marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5 }}>  {/* 8px */}
+                <div style={{ marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5 }}>
+                  {' '}
+                  {/* 8px */}
                   <GroupingControls
                     hierarchyChoices={safeHierarchyChoices}
                     currentGrouping={currentGrouping}

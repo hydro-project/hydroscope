@@ -111,10 +111,12 @@ export class VisualizationState {
     _containerChildren: new Map<string, Set<string>>(),
     _nodeContainers: new Map<string, string>(),
 
-    // Additional indexes, motivated by HierarchyTree
+    // Additional indexes
     _nodeParentMap: new Map<string, string>(), // nodeId -> parentContainerId (O(1) parent lookup)
+    _containerParentMap: new Map<string, string>(), // containerId -> parentContainerId (O(1) container parent lookup)
     _containerLeafCounts: new Map<string, number>(), // containerId -> immediate leaf node count
     _containerLeafNodes: new Map<string, GraphNode[]>(), // containerId -> immediate leaf nodes array
+    _recursiveLeafCounts: new Map<string, number>(), // containerId -> recursive leaf node count (memoized)
 
     // Track active keys to prevent duplicates at React rendering level
     _activeRenderKeys: new Set<string>(),
@@ -132,6 +134,12 @@ export class VisualizationState {
   // Flag to control validation during transitions
   public _validationEnabled = true;
   public _validationLevel: 'strict' | 'normal' | 'minimal' | 'silent' = 'normal';
+
+  // Layout control interface for optimization
+  private _layoutController: {
+    suspendAutoLayout?: () => void;
+    resumeAutoLayout?: (triggerLayout?: boolean) => void;
+  } | null = null;
 
   // Viewport dimensions for layout calculations
   private _viewport: { width: number; height: number } | null = null;
@@ -217,6 +225,39 @@ export class VisualizationState {
     return this._viewport;
   }
 
+  // ============ Layout Control Interface ============
+
+  /**
+   * Set the layout controller for optimization during bulk operations
+   * Called by VisualizationEngine to provide layout suspension capabilities
+   */
+  public setLayoutController(controller: {
+    suspendAutoLayout?: () => void;
+    resumeAutoLayout?: (triggerLayout?: boolean) => void;
+  }): void {
+    this._layoutController = controller;
+  }
+
+  /**
+   * Suspend automatic layout triggers during bulk operations
+   * Used internally for performance optimization
+   */
+  private _suspendLayoutTriggers(): void {
+    if (this._layoutController?.suspendAutoLayout) {
+      this._layoutController.suspendAutoLayout();
+    }
+  }
+
+  /**
+   * Resume automatic layout triggers and optionally trigger layout
+   * Used internally for performance optimization
+   */
+  private _resumeLayoutTriggers(triggerLayout: boolean = true): void {
+    if (this._layoutController?.resumeAutoLayout) {
+      this._layoutController.resumeAutoLayout(triggerLayout);
+    }
+  }
+
   // ============ SAFE BRIDGE API (Read-only access for external systems) ============
 
   /**
@@ -242,9 +283,11 @@ export class VisualizationState {
   get visibleEdges(): ReadonlyArray<Edge> {
     // Include both regular visible edges and visible hyperEdges
     const regularEdges = Array.from(this._collections._visibleEdges.values());
-    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
-      return !edge.hidden;
-    });
+    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter(
+      (edge: HyperEdge) => {
+        return !edge.hidden;
+      }
+    );
 
     const allEdges = [...regularEdges, ...hyperEdges];
 
@@ -260,9 +303,11 @@ export class VisualizationState {
    */
   getVisibleEdges(): Edge[] {
     const regularEdges = Array.from(this._collections._visibleEdges.values());
-    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
-      return !edge.hidden;
-    });
+    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter(
+      (edge: HyperEdge) => {
+        return !edge.hidden;
+      }
+    );
 
     const allEdges = [...regularEdges, ...hyperEdges];
 
@@ -343,6 +388,35 @@ export class VisualizationState {
   }
 
   /**
+   * Get node-to-container mapping for efficient parent lookups (bridge access)
+   * Returns a read-only map for bridges that need to do bulk parent lookups
+   * @returns ReadonlyMap from nodeId to containerId
+   */
+  getNodeContainerMapping(): ReadonlyMap<string, string> {
+    return this._collections._nodeContainers;
+  }
+
+  /**
+   * Get container-to-parent mapping for efficient hierarchy traversal (bridge access)
+   * Returns a read-only map for bridges that need to do bulk parent container lookups
+   * @returns ReadonlyMap from containerId to parent containerId
+   */
+  getContainerParentMapping(): ReadonlyMap<string, string> {
+    this._initializeCaches();
+    return this._collections._containerParentMap;
+  }
+
+  /**
+   * Get container by ID for O(1) lookup (bridge access)
+   * Returns the container or undefined if not found
+   * @param containerId The ID of the container to retrieve
+   * @returns Container or undefined
+   */
+  getContainerById(containerId: string): Container | undefined {
+    return this._collections._visibleContainers.get(containerId);
+  }
+
+  /**
    * Get all hyperEdges (safe read-only access for tests and debugging)
    */
   public get hyperEdges(): ReadonlyMap<string, HyperEdge> {
@@ -362,6 +436,17 @@ export class VisualizationState {
     this._collections._nodeParentMap.clear();
     for (const [nodeId, containerId] of this._collections._nodeContainers) {
       this._collections._nodeParentMap.set(nodeId, containerId);
+    }
+
+    // Initialize container parent cache from existing _containerChildren
+    this._collections._containerParentMap.clear();
+    for (const [parentId, children] of this._collections._containerChildren) {
+      for (const childId of children) {
+        // Check if child is a container (not just a node)
+        if (this._collections.containers.has(childId)) {
+          this._collections._containerParentMap.set(childId, parentId);
+        }
+      }
     }
 
     // Initialize container leaf caches
@@ -396,6 +481,16 @@ export class VisualizationState {
   getNodeParent(nodeId: string): string | null {
     this._initializeCaches();
     return this._collections._nodeParentMap.get(nodeId) || null;
+  }
+
+  /**
+   * Get parent container of a container (O(1) lookup)
+   * @param containerId - The container ID to find parent for
+   * @returns Parent container ID or null if container has no parent
+   */
+  getContainerParent(containerId: string): string | null {
+    this._initializeCaches();
+    return this._collections._containerParentMap.get(containerId) || null;
   }
 
   /**
@@ -456,28 +551,13 @@ export class VisualizationState {
       let current: string | null = containerId;
       while (current) {
         toExpand.add(current);
-        // Find parent container of this container
-        let parent: string | null = null;
-        for (const [parentId, children] of this._collections._containerChildren) {
-          if (children.has(current)) {
-            parent = parentId;
-            break;
-          }
-        }
-        current = parent;
+        current = this.getContainerParent(current);
       }
     };
 
     searchMatches.forEach(match => {
       if (match.type === 'container') {
-        // For container matches, add ancestors (but not the match itself)
-        let parent: string | null = null;
-        for (const [parentId, children] of this._collections._containerChildren) {
-          if (children.has(match.id)) {
-            parent = parentId;
-            break;
-          }
-        }
+        const parent = this.getContainerParent(match.id);
         if (parent) {
           addAncestors(parent);
         }
@@ -561,7 +641,10 @@ export class VisualizationState {
     this.layoutOps.setManualPosition(entityId, x, y);
   }
 
-  setContainerLayout(containerId: string, layout: Partial<LayoutState> & Record<string, unknown>): void {
+  setContainerLayout(
+    containerId: string,
+    layout: Partial<LayoutState> & Record<string, unknown>
+  ): void {
     this.layoutOps.setContainerLayout(containerId, layout);
   }
 
@@ -593,7 +676,7 @@ export class VisualizationState {
     this.layoutOps.clearLayoutPositions();
   }
 
-  getEdgeLayout(edgeId: string): Partial<LayoutState> & Record<string, unknown> | undefined {
+  getEdgeLayout(edgeId: string): (Partial<LayoutState> & Record<string, unknown>) | undefined {
     return this.layoutOps.getEdgeLayout(edgeId);
   }
 
@@ -670,7 +753,7 @@ export class VisualizationState {
       label: nodeData.label ?? derivedDisplayLabel,
       shortLabel: nodeData.shortLabel ?? derivedShortLabel,
       fullLabel: nodeData.fullLabel ?? derivedFullLabel,
-      style: (nodeData.style as NodeStyle) || 'default' as NodeStyle,
+      style: (nodeData.style as NodeStyle) || ('default' as NodeStyle),
       hidden: shouldBeHidden,
       width: nodeData.width || LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH,
       height: nodeData.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT,
@@ -700,6 +783,9 @@ export class VisualizationState {
         processedData,
       ]);
       this._collections._containerLeafCounts.set(parentContainer, existingCount + 1);
+
+      // Invalidate recursive leaf counts since hierarchy changed
+      this._invalidateRecursiveLeafCounts(parentContainer);
     }
 
     // Invalidate covered edges index since graph structure changed
@@ -786,8 +872,11 @@ export class VisualizationState {
           const isChildContainer = this._collections.containers.has(childId);
 
           if (childNode && !isChildContainer) {
-            // Child is a node, update caches
+            // Child is a node, update node parent cache
             this._collections._nodeParentMap.set(childId, containerId);
+          } else if (isChildContainer) {
+            // Child is a container, update container parent cache
+            this._collections._containerParentMap.set(childId, containerId);
           }
         }
       }
@@ -809,6 +898,9 @@ export class VisualizationState {
 
         this._collections._containerLeafCounts.set(containerId, leafCount);
         this._collections._containerLeafNodes.set(containerId, leafNodes);
+
+        // Invalidate recursive leaf counts since we added a new container with children
+        this._invalidateRecursiveLeafCounts(containerId);
       }
     }
 
@@ -929,7 +1021,10 @@ export class VisualizationState {
    * Set a container (legacy compatibility - forwards to addContainer)
    * @deprecated Use addContainer() for new code
    */
-  setContainer(containerIdOrData: string | (RawContainerData & { id: string }), containerData?: RawContainerData): VisualizationState {
+  setContainer(
+    containerIdOrData: string | (RawContainerData & { id: string }),
+    containerData?: RawContainerData
+  ): VisualizationState {
     if (typeof containerIdOrData === 'string') {
       // Old API: setContainer('id', { ... })
       this.addContainer(containerIdOrData, containerData || {});
@@ -1029,20 +1124,42 @@ export class VisualizationState {
    * Expand all containers in bulk with proper validation handling
    */
   expandAllContainers(): void {
+    // Import the profiler dynamically to avoid circular dependencies
+    import('../dev')
+      .then(({ getExpandAllProfiler }) => {
+        const profiler = getExpandAllProfiler();
+        if (profiler) {
+          profiler.startProfiling();
+          this._expandAllContainersWithProfiling(profiler);
+        } else {
+          this._expandAllContainersCore();
+        }
+      })
+      .catch(error => {
+        console.warn('ExpandAllProfiler not available, continuing without profiling:', error);
+        this._expandAllContainersCore();
+      });
+  }
+
+  private _expandAllContainersWithProfiling(profiler: any): void {
+    // Note: profiler is guaranteed to exist when this method is called
+    profiler.startStage('containerDiscovery');
+
+    // OPTIMIZATION: Suspend automatic layout during bulk expansion
+    this._suspendLayoutTriggers();
+
     // Get top-level containers (containers with no visible parent container)
     const topLevelContainers = [];
 
     for (const container of this.visibleContainers) {
-      // Check if this container has a parent container
+      // Check if this container has a parent container using O(1) lookup
+      const parentId = this.getContainerParent(container.id);
       let hasVisibleParent = false;
 
-      for (const [parentId, children] of this._containerChildren) {
-        if (children.has(container.id)) {
-          const parent = this._collections.containers.get(parentId);
-          if (parent && !parent.collapsed && !parent.hidden) {
-            hasVisibleParent = true;
-            break;
-          }
+      if (parentId) {
+        const parent = this._collections.containers.get(parentId);
+        if (parent && !parent.collapsed && !parent.hidden) {
+          hasVisibleParent = true;
         }
       }
 
@@ -1053,23 +1170,130 @@ export class VisualizationState {
 
     const collapsedTopLevel = topLevelContainers.filter(c => c.collapsed);
 
-    if (collapsedTopLevel.length === 0) return;
+    // Calculate container statistics
+    let totalChildCount = 0;
+    let maxChildCount = 0;
+    let totalLeafNodes = 0;
+
+    for (const container of collapsedTopLevel) {
+      const childCount = this.getContainerChildren(container.id).size;
+      const leafNodeCount = this.countRecursiveLeafNodes(container.id);
+
+      totalChildCount += childCount;
+      maxChildCount = Math.max(maxChildCount, childCount);
+      totalLeafNodes += leafNodeCount;
+    }
+
+    profiler.setContainerStats({
+      totalContainers: topLevelContainers.length,
+      collapsedContainers: collapsedTopLevel.length,
+      averageChildCount:
+        collapsedTopLevel.length > 0 ? totalChildCount / collapsedTopLevel.length : 0,
+      maxChildCount,
+      totalLeafNodes,
+    });
+
+    profiler.endStage('containerDiscovery');
+
+    if (collapsedTopLevel.length === 0) {
+      // Resume layout triggers even if no work to do
+      this._resumeLayoutTriggers(false);
+      profiler.endProfiling();
+      return;
+    }
+
+    profiler.startStage('expansionLoop');
+
+    // OPTIMIZATION: Safer Batched Expansion
+    // Use the existing expansion logic but minimize validation overhead
 
     // Disable validation during bulk expansion to avoid intermediate state issues
     const originalValidation = this._validationEnabled;
     this._validationEnabled = false;
 
     try {
-      // Expand each top-level collapsed container one by one using the basic method
+      // Expand each container using the proper expansion logic, but with validation disabled
+      for (const container of collapsedTopLevel) {
+        const expansionStart = performance.now();
+
+        const childCount = this.getContainerChildren(container.id).size;
+        const leafNodeCount = this.countRecursiveLeafNodes(container.id);
+
+        // Use the proper expansion method but with validation disabled for performance
+        this.expandContainerRecursive(container.id);
+
+        const expansionTime = performance.now() - expansionStart;
+        profiler.profileContainerExpansion(container.id, childCount, leafNodeCount, expansionTime);
+      }
+    } finally {
+      this._validationEnabled = originalValidation;
+    }
+
+    profiler.endStage('expansionLoop');
+    profiler.startStage('validation');
+
+    // Re-enable validation and run final validation
+    if (this._validationEnabled) {
+      this.validateInvariants();
+    }
+
+    profiler.endStage('validation');
+    profiler.startStage('layoutTrigger');
+
+    // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
+    this._resumeLayoutTriggers(true);
+
+    profiler.endStage('layoutTrigger');
+    profiler.endProfiling();
+  }
+
+  private _expandAllContainersCore(): void {
+    // OPTIMIZATION 4: Layout suspension for fallback implementation
+    this._suspendLayoutTriggers();
+
+    const topLevelContainers = [];
+
+    for (const container of this.visibleContainers) {
+      // Check if this container has a parent container using O(1) lookup
+      const parentId = this.getContainerParent(container.id);
+      let hasVisibleParent = false;
+
+      if (parentId) {
+        const parent = this._collections.containers.get(parentId);
+        if (parent && !parent.collapsed && !parent.hidden) {
+          hasVisibleParent = true;
+        }
+      }
+
+      if (!hasVisibleParent) {
+        topLevelContainers.push(container);
+      }
+    }
+
+    const collapsedTopLevel = topLevelContainers.filter(c => c.collapsed);
+
+    if (collapsedTopLevel.length === 0) {
+      // Resume layout triggers even if no work to do
+      this._resumeLayoutTriggers(false);
+      return;
+    }
+
+    const originalValidation = this._validationEnabled;
+    this._validationEnabled = false;
+
+    try {
+      // Use proper expansion logic but with validation disabled for performance
       for (const container of collapsedTopLevel) {
         this.expandContainerRecursive(container.id);
       }
     } finally {
-      // Re-enable validation and run final validation
       this._validationEnabled = originalValidation;
       if (this._validationEnabled) {
         this.validateInvariants();
       }
+
+      // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
+      this._resumeLayoutTriggers(true);
     }
   }
 
@@ -1077,10 +1301,17 @@ export class VisualizationState {
    * Collapse all containers in bulk with proper validation handling
    */
   collapseAllContainers(): void {
+    // OPTIMIZATION: Suspend layout triggers during bulk operations
+    this._suspendLayoutTriggers();
+
     const topLevelContainers = this.getTopLevelContainers();
     const expandedTopLevel = topLevelContainers.filter(c => !c.collapsed);
 
-    if (expandedTopLevel.length === 0) return;
+    if (expandedTopLevel.length === 0) {
+      // Resume layout triggers even if no work to do
+      this._resumeLayoutTriggers(false);
+      return;
+    }
 
     // Disable validation during bulk collapse to avoid intermediate state issues
     const originalValidation = this._validationEnabled;
@@ -1097,6 +1328,9 @@ export class VisualizationState {
       if (originalValidation) {
         this.validateInvariants();
       }
+
+      // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
+      this._resumeLayoutTriggers(true);
     }
   }
 
@@ -1141,13 +1375,11 @@ export class VisualizationState {
 
     // Also map visible containers to their parent containers
     for (const container of this.visibleContainers) {
-      for (const [parentId, children] of this._collections._containerChildren) {
-        if (children.has(container.id)) {
-          const parent = this._collections.containers.get(parentId);
-          if (parent && !parent.collapsed && !parent.hidden) {
-            parentMap.set(container.id, parentId);
-          }
-          break;
+      const parentId = this.getContainerParent(container.id);
+      if (parentId) {
+        const parent = this._collections.containers.get(parentId);
+        if (parent && !parent.collapsed && !parent.hidden) {
+          parentMap.set(container.id, parentId);
         }
       }
     }
@@ -1179,24 +1411,24 @@ export class VisualizationState {
   }
 
   /**
+   * Check if a parent container exists and is visible (not collapsed and not hidden)
+   */
+  private hasVisibleParentContainer(parentId: string | null): boolean {
+    if (!parentId) return false;
+
+    const parent = this._collections.containers.get(parentId);
+    return parent ? !parent.collapsed && !parent.hidden : false;
+  }
+
+  /**
    * Get top-level nodes (nodes not in any expanded container)
    */
   getTopLevelNodes(): ReadonlyArray<GraphNode> {
     const topLevelNodes: GraphNode[] = [];
 
     for (const node of this.visibleNodes) {
-      // Check if node is in any expanded container
-      let isInExpandedContainer = false;
-
-      for (const container of this.visibleContainers) {
-        if (!container.collapsed) {
-          const children = this._collections._containerChildren.get(container.id);
-          if (children && children.has(node.id)) {
-            isInExpandedContainer = true;
-            break;
-          }
-        }
-      }
+      const parentContainer = this.getNodeParent(node.id);
+      const isInExpandedContainer = this.hasVisibleParentContainer(parentContainer);
 
       if (!isInExpandedContainer) {
         topLevelNodes.push(node);
@@ -1213,18 +1445,8 @@ export class VisualizationState {
     const topLevelContainers: Container[] = [];
 
     for (const container of this.visibleContainers) {
-      // Check if this container has a parent container
-      let hasVisibleParent = false;
-
-      for (const [parentId, children] of this._collections._containerChildren) {
-        if (children.has(container.id)) {
-          const parent = this._collections.containers.get(parentId);
-          if (parent && !parent.collapsed && !parent.hidden) {
-            hasVisibleParent = true;
-            break;
-          }
-        }
-      }
+      const parentId = this.getContainerParent(container.id);
+      const hasVisibleParent = this.hasVisibleParentContainer(parentId);
 
       if (!hasVisibleParent) {
         topLevelContainers.push(container);
@@ -1266,7 +1488,7 @@ export class VisualizationState {
       type: 'hyper' as const,
       hidden: hyperEdgeData.hidden || false,
     };
-    
+
     this._collections.hyperEdges.set(hyperEdgeId, processedData);
     // Update node-to-edge mappings
     const sourceSet = this._collections._nodeToEdges.get(processedData.source) || new Set();
@@ -1302,7 +1524,13 @@ export class VisualizationState {
 
         this._collections._containerLeafNodes.set(containerId, [...existingLeafNodes, childNode]);
         this._collections._containerLeafCounts.set(containerId, existingCount + 1);
+      } else if (isChildContainer) {
+        // Child is a container, update container parent cache
+        this._collections._containerParentMap.set(childId, containerId);
       }
+
+      // Invalidate recursive leaf counts since hierarchy changed
+      this._invalidateRecursiveLeafCounts(containerId);
     }
   }
 
@@ -1331,7 +1559,13 @@ export class VisualizationState {
         const updatedLeafNodes = existingLeafNodes.filter(node => node.id !== childId);
         this._collections._containerLeafNodes.set(containerId, updatedLeafNodes);
         this._collections._containerLeafCounts.set(containerId, Math.max(0, existingCount - 1));
+      } else if (isChildContainer) {
+        // Child is a container, update container parent cache
+        this._collections._containerParentMap.delete(childId);
       }
+
+      // Invalidate recursive leaf counts since hierarchy changed
+      this._invalidateRecursiveLeafCounts(containerId);
     }
   }
 
@@ -1374,6 +1608,11 @@ export class VisualizationState {
         this._collections._containerLeafNodes.set(parentContainer, updatedLeafNodes);
         this._collections._containerLeafCounts.set(parentContainer, Math.max(0, existingCount - 1));
       }
+    }
+
+    // Invalidate recursive leaf count cache since hierarchy changed
+    if (parentContainer) {
+      this._invalidateRecursiveLeafCounts(parentContainer);
     }
   }
 
@@ -1423,8 +1662,26 @@ export class VisualizationState {
    * Recursively count leaf nodes (graphNodes) within a container
    * This counts all graphNodes that are descendants of the container,
    * not just direct children.
+   * OPTIMIZED: Uses memoization for O(1) subsequent lookups
    */
   countRecursiveLeafNodes(containerId: string): number {
+    // Check cache first for O(1) lookup
+    const cached = this._collections._recursiveLeafCounts.get(containerId);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Calculate and cache the result
+    const count = this._calculateRecursiveLeafNodes(containerId);
+    this._collections._recursiveLeafCounts.set(containerId, count);
+    return count;
+  }
+
+  /**
+   * Internal method to calculate recursive leaf nodes without caching
+   * Separated for clarity and testing
+   */
+  private _calculateRecursiveLeafNodes(containerId: string): number {
     let leafCount = 0;
     const children = this.getContainerChildren(containerId);
 
@@ -1433,7 +1690,7 @@ export class VisualizationState {
       const childContainer = this._collections.containers.get(childId);
 
       if (childContainer) {
-        // It's a container, recurse into it
+        // It's a container, recurse into it (this will use cache if available)
         leafCount += this.countRecursiveLeafNodes(childId);
       } else {
         // It's a leaf node (graphNode), count it
@@ -1442,6 +1699,22 @@ export class VisualizationState {
     }
 
     return leafCount;
+  }
+
+  /**
+   * Invalidate recursive leaf count cache for a container and its ancestors
+   * Called when container hierarchy changes (add/remove children)
+   */
+  private _invalidateRecursiveLeafCounts(containerId: string): void {
+    // Remove cached count for this container
+    this._collections._recursiveLeafCounts.delete(containerId);
+
+    // Recursively invalidate all ancestor containers since their counts may change
+    let current = this.getContainerParent(containerId);
+    while (current) {
+      this._collections._recursiveLeafCounts.delete(current);
+      current = this.getContainerParent(current);
+    }
   }
 
   setContainerCollapsed(containerId: string, collapsed: boolean): void {
@@ -1465,8 +1738,13 @@ export class VisualizationState {
     const edge = this._collections.graphEdges.get(edgeId);
     if (!edge) return {};
 
+    const isVisible =
+      this._collections._visibleEdges.has(edgeId) ||
+      (this._collections.hyperEdges.has(edgeId) &&
+        !this._collections.hyperEdges.get(edgeId)!.hidden);
+
     return {
-      hidden: edge.hidden || !this.visibleEdges.some(e => e.id === edgeId),
+      hidden: edge.hidden || !isVisible,
     };
   }
 

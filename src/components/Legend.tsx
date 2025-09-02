@@ -45,7 +45,10 @@ function LegendInner({
     const map = new Map<string, { primary: string; border: string }>();
     for (const item of legendData.items) {
       // generateNodeColors accepts an array of types; use single type per item
-      const colors = generateNodeColors([item.type], paletteKey) as { primary: string; border: string };
+      const colors = generateNodeColors([item.type], paletteKey) as {
+        primary: string;
+        border: string;
+      };
       map.set(item.type, colors);
     }
     return map;

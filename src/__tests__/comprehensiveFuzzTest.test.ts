@@ -574,7 +574,7 @@ class ComprehensiveFuzzTester {
   private async executeSearchOperation(state: VisualizationState, query: string): Promise<void> {
     // Simulate search matching logic (similar to SearchControls)
     const matches = this.performSearch(state, query);
-    
+
     // Update search state
     this.searchState = {
       query,
@@ -584,12 +584,17 @@ class ComprehensiveFuzzTester {
 
     // Test search expansion logic
     if (matches.length > 0) {
-      const currentCollapsed = new Set(state.getVisibleContainers().filter(c => c.collapsed).map(c => c.id));
-      
+      const currentCollapsed = new Set(
+        state
+          .getVisibleContainers()
+          .filter(c => c.collapsed)
+          .map(c => c.id)
+      );
+
       try {
         // Test the getSearchExpansionKeys method which is used by InfoPanel/HierarchyTree
         const expansionKeys = state.getSearchExpansionKeys(matches, currentCollapsed);
-        
+
         // Validate that expansion keys are actually container IDs
         for (const key of expansionKeys) {
           const container = state.getContainer(key);
@@ -597,10 +602,14 @@ class ComprehensiveFuzzTester {
             throw new Error(`Search expansion returned invalid container ID: ${key}`);
           }
         }
-        
-        console.log(`   🔍 Search "${query}" found ${matches.length} matches, expansion keys: ${expansionKeys.length}`);
+
+        console.log(
+          `   🔍 Search "${query}" found ${matches.length} matches, expansion keys: ${expansionKeys.length}`
+        );
       } catch (error) {
-        console.warn(`⚠️  Search expansion validation failed: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn(
+          `⚠️  Search expansion validation failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     } else {
       console.log(`   🔍 Search "${query}" found no matches`);
@@ -610,7 +619,10 @@ class ComprehensiveFuzzTester {
   /**
    * Perform search matching (wildcard pattern matching)
    */
-  private performSearch(state: VisualizationState, query: string): Array<{ id: string; label: string; type: 'container' | 'node' }> {
+  private performSearch(
+    state: VisualizationState,
+    query: string
+  ): Array<{ id: string; label: string; type: 'container' | 'node' }> {
     if (!query.trim()) {
       return [];
     }
@@ -661,13 +673,16 @@ class ComprehensiveFuzzTester {
     if (this.searchState.matches === 0) return;
 
     if (direction === 'next') {
-      this.searchState.currentIndex = (this.searchState.currentIndex + 1) % this.searchState.matches;
+      this.searchState.currentIndex =
+        (this.searchState.currentIndex + 1) % this.searchState.matches;
     } else {
-      this.searchState.currentIndex = 
+      this.searchState.currentIndex =
         (this.searchState.currentIndex - 1 + this.searchState.matches) % this.searchState.matches;
     }
 
-    console.log(`   🔍 Search navigation: ${direction} to ${this.searchState.currentIndex + 1}/${this.searchState.matches}`);
+    console.log(
+      `   🔍 Search navigation: ${direction} to ${this.searchState.currentIndex + 1}/${this.searchState.matches}`
+    );
   }
 
   /**

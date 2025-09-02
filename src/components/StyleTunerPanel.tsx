@@ -147,7 +147,9 @@ export function StyleTunerPanel({
           marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING,
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM }}>Style Tuner</span>
+        <span style={{ fontWeight: 600, fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM }}>
+          Style Tuner
+        </span>
         <Button
           type="text"
           size="small"
