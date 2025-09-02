@@ -11,7 +11,7 @@ import type { VisualizationState } from './VisualizationState';
 import { ELKBridge } from '../bridges/ELKBridge';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import type { ReactFlowData } from '../bridges/ReactFlowBridge';
-import type { LayoutConfig } from './types';
+import type { Container, LayoutConfig } from './types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
 
 // Visualization states
@@ -72,6 +72,12 @@ export class VisualizationEngine {
     // Initialize bridges after computing the merged config
     this.elkBridge = new ELKBridge(this.config.layoutConfig);
     this.reactFlowBridge = new ReactFlowBridge();
+
+    // Set up layout controller for VisualizationState optimizations
+    this.visState.setLayoutController({
+      suspendAutoLayout: () => this.suspendAutoLayout(),
+      resumeAutoLayout: (triggerLayout?: boolean) => this.resumeAutoLayout(triggerLayout),
+    });
 
     this.state = {
       phase: 'initial',
@@ -136,18 +142,45 @@ export class VisualizationEngine {
       return;
     }
 
+    // Import profiler utilities for layout timing
+    const { getProfiler } = await import('../dev')
+      .catch(() => ({ getProfiler: () => null }));
+
+    const profiler = getProfiler();
+
+    let bigGraph: boolean = false;
+
     try {
       this.updateState('laying_out');
-
-      // Use ELK bridge to layout the VisualizationState
-      await this.elkBridge.layoutVisualizationState(this.visState);
-
-      // Run smart collapse only on the first layout if enabled
-      if (this.config.layoutConfig?.enableSmartCollapse && this.state.layoutCount === 0) {
-        await this.runSmartCollapse();
-        // Re-layout after smart collapse
+      
+      // Profile layout operations
+      profiler?.start('layout-operation');
+      
+      if (this.state.layoutCount === 0 && this.visState.getVisibleNodes().length > 50) {
+        // layout the graph with all top-level containers collapsed.
+        profiler?.start('full-collapse');
+        await this.runFullCollapse();
+        profiler?.end('full-collapse');
+      } else {
+        // Use ELK bridge to layout the VisualizationState
+        profiler?.start('elk-layout');
         await this.elkBridge.layoutVisualizationState(this.visState);
+        profiler?.end('elk-layout');
+
+        // Run smart collapse only on the first layout if enabled
+        if (this.config.layoutConfig?.enableSmartCollapse && this.state.layoutCount === 0) {
+          profiler?.start('smart-collapse');
+          await this.runSmartCollapse();
+          profiler?.end('smart-collapse');
+          
+          // Re-layout after smart collapse
+          profiler?.start('elk-layout-post-collapse');
+          await this.elkBridge.layoutVisualizationState(this.visState);
+          profiler?.end('elk-layout-post-collapse');
+        }
       }
+
+      profiler?.end('layout-operation');
 
       // layoutCount is used to avoid running smart collapse on subsequent layouts
       this.state.layoutCount++;
@@ -360,6 +393,45 @@ export class VisualizationEngine {
 
       await this.elkBridge.layoutVisualizationState(this.visState);
     }
+  }
+
+  /**
+   * Full collapse implementation, collpases all top-level containers
+   */
+  private async runFullCollapse(): Promise<void> {
+    // Step 1: Get TOP-LEVEL containers from VisualizationState
+    // This ensures we don't double-process parent and child containers
+    const containers: readonly Container[] = this.visState.getTopLevelContainers();
+
+    if (containers.length === 0) {
+      return;
+    }
+
+    for (const container of containers) {
+      try {
+        // Sanity check:
+        // Check if container exists and is already collapsed/hidden before attempting collapse
+        if (!container || container.collapsed || container.hidden) {
+          continue;
+        }
+
+        // Use collapseContainer which handles all the mechanics atomically:
+        // - Collapsing the container and its children
+        // - Creating hyperEdges for crossing edges
+        // - Hiding descendant containers
+        this.visState.collapseContainer(container.id);
+      } catch (error) {
+        // Continue with other containers even if one fails
+      }
+    }
+
+    // Re-run layout after collapse to get clean final layout
+    // IMPORTANT: Clear any cached positions to force fresh layout with new collapsed dimensions
+    this.visState.clearLayoutPositions();
+    // Force ELK to rebuild from scratch with new dimensions
+    this.elkBridge = new ELKBridge(this.config.layoutConfig);
+
+    await this.elkBridge.layoutVisualizationState(this.visState);
   }
 
   // ============ Internal Methods ============

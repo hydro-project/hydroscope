@@ -179,6 +179,49 @@ describe('ReactFlowBridge', () => {
       }
       return new Set();
     },
+
+    // Add the node-container mapping method that ReactFlowUtils expects
+    getNodeContainerMapping: () => {
+      const mapping = new Map<string, string>();
+      mapping.set('node1', 'container1');
+      // node2 is not in any container
+      return mapping;
+    },
+
+    // Add the container parent mapping method that ReactFlowUtils expects
+    getContainerParentMapping: () => {
+      const mapping = new Map<string, string>();
+      // container1 has no parent container in our mock
+      return mapping;
+    },
+
+    // Add the getNodeById method that ReactFlowBridge expects
+    getNodeById: (nodeId: string) => {
+      const nodeMap: { [key: string]: any } = {
+        node1: {
+          id: 'node1',
+          label: 'Node 1',
+          x: 120,
+          y: 180,
+          width: 180,
+          height: 60,
+          hidden: false,
+          style: 'default',
+          customProp: 'test-value',
+        },
+        node2: {
+          id: 'node2',
+          label: 'Node 2',
+          x: 450,
+          y: 100,
+          width: 180,
+          height: 60,
+          hidden: false,
+          style: 'highlighted',
+        },
+      };
+      return nodeMap[nodeId];
+    },
   });
 
   describe('convertVisualizationState', () => {
@@ -318,6 +361,37 @@ describe('ReactFlowBridge', () => {
             return new Set(['child_node']);
           }
           return new Set();
+        },
+
+        // Add the node-container mapping method that ReactFlowUtils expects
+        getNodeContainerMapping: () => {
+          const mapping = new Map<string, string>();
+          mapping.set('child_node', 'parent_container');
+          return mapping;
+        },
+
+        // Add the container parent mapping method that ReactFlowUtils expects
+        getContainerParentMapping: () => {
+          const mapping = new Map<string, string>();
+          // parent_container has no parent container in our mock
+          return mapping;
+        },
+
+        // Add the getNodeById method that ReactFlowBridge expects
+        getNodeById: (nodeId: string) => {
+          const nodeMap: { [key: string]: any } = {
+            child_node: {
+              id: 'child_node',
+              label: 'Child Node',
+              x: 170,
+              y: 225,
+              width: 100,
+              height: 40,
+              hidden: false,
+              style: 'default',
+            },
+          };
+          return nodeMap[nodeId];
         },
       };
 

@@ -8,6 +8,7 @@
 import { createVisualizationState, VisualizationState } from './VisualizationState';
 import { NODE_STYLES, EDGE_STYLES, NodeStyle, EdgeStyle } from '../shared/config';
 import type { RenderConfig } from './types';
+import { getProfiler } from '../dev';
 
 // ============ Type Definitions ============
 
@@ -187,6 +188,10 @@ export function parseGraphJSON(
   jsonData: RawGraphData | string,
   selectedGrouping?: string
 ): ParseResult {
+  const profiler = getProfiler();
+  
+  profiler?.start('State Creation');
+  
   // Parse JSON if it's a string
   const data: RawGraphData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 
@@ -203,17 +208,30 @@ export function parseGraphJSON(
   // Determine which grouping to use
   const grouping = selectGrouping(data, selectedGrouping);
 
+  profiler?.start('Node Parsing');
   // Parse nodes first (base graph nodes)
   parseNodes(data.nodes, state);
+  profiler?.end('Node Parsing', { nodeCount: data.nodes.length });
 
+  profiler?.start('Edge Parsing');
   // Parse edges
   parseEdges(data.edges, state);
+  profiler?.end('Edge Parsing', { edgeCount: data.edges.length });
 
   // Parse hierarchy and create containers
   let containerCount = 0;
   if (grouping) {
+    profiler?.start('Hierarchy Parsing');
     containerCount = parseHierarchy(data, grouping, state);
+    profiler?.end('Hierarchy Parsing', { containerCount, grouping });
   }
+
+  profiler?.end('State Creation', {
+    totalNodes: metadata.nodeCount,
+    totalEdges: metadata.edgeCount,
+    containers: containerCount,
+    hasGrouping: !!grouping
+  });
 
   return {
     state,

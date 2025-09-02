@@ -8,24 +8,25 @@ import { LAYOUT_CONSTANTS } from '../shared/config';
 
 /** Build parent-child relationship map for visible elements */
 export function buildParentMap(visState: VisualizationState): Map<string, string> {
+  // ARCHITECTURAL FIX: Use VisualizationState's optimized mappings instead of local collections
+  const nodeContainerMapping = visState.getNodeContainerMapping();
+  const containerParentMapping = visState.getContainerParentMapping();
+  
   const parentMap = new Map<string, string>();
-
-  const visibleContainerIds = new Set(Array.from(visState.visibleContainers).map(c => c.id));
-  const visibleNodeIds = new Set(Array.from(visState.visibleNodes).map(n => n.id));
-
-  visState.visibleContainers.forEach(container => {
-    const containerChildren = visState.getContainerChildren(container.id);
-    containerChildren.forEach(childId => {
-      if (visibleContainerIds.has(childId) || visibleNodeIds.has(childId)) {
-        parentMap.set(childId, container.id);
-      }
-    });
-  });
-
+  
+  // Add node-to-container relationships for visible nodes
   visState.visibleNodes.forEach(node => {
-    const nodeWithContainer = node as GraphNode & { containerId?: string };
-    if (nodeWithContainer.containerId && visibleContainerIds.has(nodeWithContainer.containerId)) {
-      parentMap.set(node.id, nodeWithContainer.containerId);
+    const containerId = nodeContainerMapping.get(node.id);
+    if (containerId) {
+      parentMap.set(node.id, containerId);
+    }
+  });
+  
+  // Add container-to-container relationships for visible containers  
+  visState.visibleContainers.forEach(container => {
+    const parentId = containerParentMapping.get(container.id);
+    if (parentId) {
+      parentMap.set(container.id, parentId);
     }
   });
 
@@ -96,9 +97,10 @@ export function computeChildContainerPosition(
   }
 
   // Grid fallback: position among siblings under same parent
+  // ARCHITECTURAL FIX: Build parent map once instead of inside filter
+  const parentMap = buildParentMap(visState);
   const siblingContainers = Array.from(visState.visibleContainers).filter(c => {
-    const map = buildParentMap(visState);
-    return map.get(c.id) === parentId;
+    return parentMap.get(c.id) === parentId;
   });
   const containerIndex = siblingContainers.findIndex(c => c.id === container.id);
 

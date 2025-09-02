@@ -8,6 +8,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { generateSchemaDocumentation, SCHEMA_VERSION } from '../docs/generateJSONSchema';
+import { getProfiler } from '../dev';
 
 // JSON Format Documentation Component
 function JSONFormatDocumentation() {
@@ -392,15 +393,39 @@ function FileDropZone({
 
   const processFile = useCallback(
     async (file: File) => {
+      const profiler = getProfiler();
+      if (!profiler) return; // Skip profiling in production
+      
+      profiler.reset(); // Start fresh for this file
+      profiler.markLargeFileProcessing(file.size);
+      
       setIsLoading(true);
+      profiler?.start('File Loading');
+      
       try {
         const reader = new FileReader();
         reader.onload = event => {
+          profiler?.end('File Loading', { fileSize: file.size, fileName: file.name });
+          
           try {
+            profiler?.start('JSON Parsing');
             const data = JSON.parse(event.target?.result as string);
+            profiler?.end('JSON Parsing', { 
+              nodeCount: data.nodes?.length || 0,
+              edgeCount: data.edges?.length || 0
+            });
+            
+            profiler?.start('Data Processing');
             onFileLoad?.(data);
             onFileUpload?.(data, file.name);
+            profiler?.end('Data Processing');
+            
+            // Print performance report for large files
+            if (file.size > 100 * 1024) { // 100KB
+              setTimeout(() => profiler?.printReport(), 100);
+            }
           } catch (error) {
+            profiler?.end('JSON Parsing');
             console.error('JSON parsing error:', error);
             alert('Invalid JSON file: ' + (error as Error).message);
           } finally {
@@ -408,12 +433,14 @@ function FileDropZone({
           }
         };
         reader.onerror = () => {
+          profiler?.end('File Loading');
           console.error('File reading error');
           alert('Error reading file');
           setIsLoading(false);
         };
         reader.readAsText(file);
       } catch (error) {
+        profiler.end('File Loading');
         console.error('File processing error:', error);
         alert('Error processing file: ' + (error as Error).message);
         setIsLoading(false);

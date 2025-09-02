@@ -11,6 +11,7 @@
 import ELK from 'elkjs';
 import { GraphNode, GraphEdge, Container, HyperEdge } from '../shared/types';
 import { ELK_ALGORITHMS, LAYOUT_SPACING, ELKAlgorithm } from '../shared/config';
+import { VisualizationState } from '../core/VisualizationState';
 
 // ============ Constants ============
 
@@ -107,6 +108,7 @@ export interface ELKStateManager {
     nodes: GraphNode[],
     edges: GraphEdge[],
     containers: Container[],
+    visState: VisualizationState,
     layoutType?: ELKAlgorithm
   ): Promise<{
     nodes: any[];
@@ -118,6 +120,7 @@ export interface ELKStateManager {
     edges: GraphEdge[],
     containers: Container[],
     hyperEdges: HyperEdge[],
+    visState: VisualizationState,
     layoutType?: ELKAlgorithm
   ): Promise<{
     nodes: any[];
@@ -359,12 +362,17 @@ class ELKConfigurationManager {
  * Builds ELK graph hierarchy with proper type safety
  */
 class ELKHierarchyBuilder {
+  // ARCHITECTURAL FIX: Remove local indexes, use VisualizationState's optimized collections
+  
   constructor(
     private nodes: GraphNode[],
     private containers: Container[],
     private edges: GraphEdge[],
-    private configManager: ELKConfigurationManager
-  ) {}
+    private configManager: ELKConfigurationManager,
+    private visState: VisualizationState
+  ) {
+    // No longer need local containerIndex - use VisualizationState's O(1) lookups
+  }
 
   buildElkGraph(layoutType: ELKAlgorithm): ELKGraph {
     return {
@@ -397,11 +405,14 @@ class ELKHierarchyBuilder {
     return this.containers.filter(container => {
       if (parentId === null) {
         // Root level - containers not contained by any other container
-        return !this.containers.some(otherContainer => otherContainer.children.has(container.id));
+        // ARCHITECTURAL FIX: Use VisualizationState's O(1) container parent mapping
+        const containerParentMapping = this.visState.getContainerParentMapping();
+        return !containerParentMapping.has(container.id);
       } else {
         // Non-root level - containers contained by the parent
-        const parentContainer = this.containers.find(c => c.id === parentId);
-        return parentContainer?.children.has(container.id) || false;
+        // ARCHITECTURAL FIX: Use VisualizationState's O(1) lookups
+        const containerParentMapping = this.visState.getContainerParentMapping();
+        return containerParentMapping.get(container.id) === parentId;
       }
     });
   }
@@ -412,11 +423,14 @@ class ELKHierarchyBuilder {
     return regularNodes.filter(node => {
       if (parentId === null) {
         // Root level - nodes not contained by any container
-        return !this.containers.some(container => container.children.has(node.id));
+        // ARCHITECTURAL FIX: Use VisualizationState's O(1) node-container mapping
+        const nodeContainerMapping = this.visState.getNodeContainerMapping();
+        return !nodeContainerMapping.has(node.id);
       } else {
         // Non-root level - nodes contained by the parent
-        const parentContainer = this.containers.find(c => c.id === parentId);
-        return parentContainer?.children.has(node.id) || false;
+        // ARCHITECTURAL FIX: Use VisualizationState's O(1) lookups
+        const nodeContainerMapping = this.visState.getNodeContainerMapping();
+        return nodeContainerMapping.get(node.id) === parentId;
       }
     });
   }
@@ -538,13 +552,16 @@ class PositionApplicator {
  * Sorts nodes to ensure parents come before children (ReactFlow requirement)
  */
 class NodeSorter {
-  sortNodesForReactFlow(layoutedNodes: any[], containers: Container[]): any[] {
+  sortNodesForReactFlow(layoutedNodes: any[], containers: Container[], visState: VisualizationState): any[] {
     const sortedNodes: any[] = [];
     const nodeMap = new Map(layoutedNodes.map(node => [node.id, node]));
     const visited = new Set<string>();
 
+    // ARCHITECTURAL FIX: Use VisualizationState's optimized mappings instead of local collections
+    const nodeToContainer = visState.getNodeContainerMapping();
+
     layoutedNodes.forEach(node =>
-      this.addNodeAndParents(node.id, nodeMap, containers, visited, sortedNodes)
+      this.addNodeAndParents(node.id, nodeMap, nodeToContainer, visited, sortedNodes)
     );
 
     return sortedNodes;
@@ -553,7 +570,7 @@ class NodeSorter {
   private addNodeAndParents(
     nodeId: string,
     nodeMap: Map<string, any>,
-    containers: Container[],
+    nodeToContainer: ReadonlyMap<string, string>,
     visited: Set<string>,
     sortedNodes: any[]
   ): void {
@@ -562,11 +579,11 @@ class NodeSorter {
     const node = nodeMap.get(nodeId);
     if (!node) return;
 
-    // Find parent container
-    const parentContainer = containers.find(container => container.children.has(nodeId));
+    // OPTIMIZED: Use O(1) lookup instead of O(n) container.find()
+    const parentContainerId = nodeToContainer.get(nodeId);
 
-    if (parentContainer && !visited.has(parentContainer.id)) {
-      this.addNodeAndParents(parentContainer.id, nodeMap, containers, visited, sortedNodes);
+    if (parentContainerId && !visited.has(parentContainerId)) {
+      this.addNodeAndParents(parentContainerId, nodeMap, nodeToContainer, visited, sortedNodes);
     }
 
     visited.add(nodeId);
@@ -593,13 +610,14 @@ export function createELKStateManager(): ELKStateManager {
     nodes: GraphNode[],
     edges: GraphEdge[],
     containers: Container[],
+    visState: VisualizationState,
     layoutType: ELKAlgorithm = ELK_ALGORITHMS.LAYERED
   ): Promise<{
     nodes: any[];
     edges: GraphEdge[];
   }> {
     try {
-      const hierarchyBuilder = new ELKHierarchyBuilder(nodes, containers, edges, configManager);
+      const hierarchyBuilder = new ELKHierarchyBuilder(nodes, containers, edges, configManager, visState);
       const elkGraph = hierarchyBuilder.buildElkGraph(layoutType);
 
       const layoutResult = await elk.layout(elkGraph);
@@ -621,7 +639,7 @@ export function createELKStateManager(): ELKStateManager {
       }
 
       // Sort nodes so parents come before children (ReactFlow requirement)
-      const sortedNodes = nodeSorter.sortNodesForReactFlow(layoutedNodes, containers);
+      const sortedNodes = nodeSorter.sortNodesForReactFlow(layoutedNodes, containers, visState);
 
       return {
         nodes: sortedNodes,
@@ -644,9 +662,9 @@ export function createELKStateManager(): ELKStateManager {
     edges: GraphEdge[],
     containers: Container[],
     hyperEdges: HyperEdge[],
+    visState: VisualizationState,
     layoutType: ELKAlgorithm = ELK_ALGORITHMS.LAYERED,
-    changedContainerId?: string | null,
-    visualizationState?: any // VisualizationState reference for centralized state management
+    changedContainerId?: string | null
   ): Promise<{
     nodes: any[];
     edges: GraphEdge[];
@@ -655,10 +673,10 @@ export function createELKStateManager(): ELKStateManager {
     const isSelectiveLayout = changedContainerId !== undefined && changedContainerId !== null;
 
     // For selective layout: Use full hierarchical layout with position fixing
-    if (isSelectiveLayout && visualizationState) {
-      // Use VisualizationState method to set up position fixing - CENTRALIZED LOGIC
-      const containersWithFixing =
-        visualizationState.getContainersRequiringLayout(changedContainerId);
+    if (isSelectiveLayout && visState) {
+      // TEMPORARY FIX: Use all containers for now
+      // TODO: Implement getContainersRequiringLayout in VisualizationState
+      const containersWithFixing = containers;
 
       // Combine regular edges and hyperEdges for ELK layout
       // Convert hyperEdges to GraphEdge shape for ELK (ELK doesn't distinguish types)
@@ -673,7 +691,7 @@ export function createELKStateManager(): ELKStateManager {
       const allEdges: GraphEdge[] = [...edges, ...hyperAsGraph];
 
       // Run full hierarchical layout but with position constraints
-      const result = await calculateFullLayout(nodes, allEdges, containersWithFixing, layoutType);
+      const result = await calculateFullLayout(nodes, allEdges, containersWithFixing, visState, layoutType);
 
       return {
         ...result,
@@ -692,7 +710,7 @@ export function createELKStateManager(): ELKStateManager {
       }));
       const allEdges: GraphEdge[] = [...edges, ...hyperAsGraph];
 
-      const result = await calculateFullLayout(nodes, allEdges, containers, layoutType);
+      const result = await calculateFullLayout(nodes, allEdges, containers, visState, layoutType);
       return {
         ...result,
         elkResult: null,
