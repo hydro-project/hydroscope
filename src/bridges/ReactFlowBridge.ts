@@ -301,7 +301,6 @@ export class ReactFlowBridge {
 
   /**
    * SIMPLIFIED: Get edge handles using a fixed strategy
-   * ARCHITECTURAL FIX: Use only VisualizationState's O(1) lookups
    */
   getEdgeHandles(
     visState: VisualizationState,
@@ -313,9 +312,8 @@ export class ReactFlowBridge {
     }
 
     if (CURRENT_HANDLE_STRATEGY === 'discrete') {
-      // ARCHITECTURAL FIX: Use only VisualizationState's optimized O(1) lookups
-      const sourceNode = visState.getNodeById(edge.source);
-      const targetNode = visState.getNodeById(edge.target);
+      const sourceNode = visState.getGraphNode(edge.source);
+      const targetNode = visState.getGraphNode(edge.target);
       
       // For discrete handles, use the default bottom-to-top connection pattern
       // This provides consistent behavior and matches test expectations
@@ -340,7 +338,6 @@ export class ReactFlowBridge {
     edges: ReactFlowEdge[],
     nodes: ReactFlowNode[]
   ): void {
-    // ARCHITECTURAL FIX: No more local indexes - use VisualizationState's O(1) lookups
     
     edges.forEach(reactFlowEdge => {
       // Find the original edge to get its ID
@@ -357,8 +354,8 @@ export class ReactFlowBridge {
   /**
    * Recalculate handles for existing ReactFlow data after layout changes
    * This is the aggressive approach to ensure handles are always correct after ELK layout
-   * OPTIMIZED: Create node index once instead of for every edge
-   */
+   * OPTIMIZED: Create node index once
+   *    */
   recalculateHandlesAfterLayout(
     visState: VisualizationState,
     reactFlowData: ReactFlowData
@@ -366,8 +363,6 @@ export class ReactFlowBridge {
     if (CURRENT_HANDLE_STRATEGY !== 'discrete') {
       return reactFlowData; // No handle recalculation needed for other strategies
     }
-
-    // ARCHITECTURAL FIX: No more local indexes - use VisualizationState's O(1) lookups
 
     // Create a copy to avoid mutating the original
     const updatedEdges = reactFlowData.edges.map(edge => {

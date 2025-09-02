@@ -195,8 +195,8 @@ describe('ReactFlowBridge', () => {
       return mapping;
     },
 
-    // Add the getNodeById method that ReactFlowBridge expects
-    getNodeById: (nodeId: string) => {
+    // Add the getGraphNode method that ReactFlowBridge expects
+    getGraphNode: (nodeId: string) => {
       const nodeMap: { [key: string]: any } = {
         node1: {
           id: 'node1',
@@ -377,8 +377,8 @@ describe('ReactFlowBridge', () => {
           return mapping;
         },
 
-        // Add the getNodeById method that ReactFlowBridge expects
-        getNodeById: (nodeId: string) => {
+        // Add the getGraphNode method that ReactFlowBridge expects
+        getGraphNode: (nodeId: string) => {
           const nodeMap: { [key: string]: any } = {
             child_node: {
               id: 'child_node',

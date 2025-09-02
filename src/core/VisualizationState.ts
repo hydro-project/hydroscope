@@ -403,16 +403,6 @@ export class VisualizationState {
   }
 
   /**
-   * Get node by ID for O(1) lookup (bridge access)
-   * Returns the node or undefined if not found
-   * @param nodeId The ID of the node to retrieve
-   * @returns GraphNode or undefined
-   */
-  getNodeById(nodeId: string): GraphNode | undefined {
-    return this._collections._visibleNodes.get(nodeId);
-  }
-
-  /**
    * Get container by ID for O(1) lookup (bridge access)
    * Returns the container or undefined if not found
    * @param containerId The ID of the container to retrieve
@@ -557,15 +547,12 @@ export class VisualizationState {
       let current: string | null = containerId;
       while (current) {
         toExpand.add(current);
-        // OPTIMIZED: Use O(1) parent lookup instead of O(n) linear search
         current = this.getContainerParent(current);
       }
     };
 
     searchMatches.forEach(match => {
       if (match.type === 'container') {
-        // OPTIMIZED: For container matches, add ancestors (but not the match itself)
-        // Use O(1) parent lookup instead of O(n) linear search
         const parent = this.getContainerParent(match.id);
         if (parent) {
           addAncestors(parent);
@@ -1146,11 +1133,10 @@ export class VisualizationState {
     // Note: profiler is guaranteed to exist when this method is called
     profiler.startStage('containerDiscovery');
     
-    // OPTIMIZATION 4: Suspend automatic layout during bulk expansion
+    // OPTIMIZATION: Suspend automatic layout during bulk expansion
     this._suspendLayoutTriggers();
     
     // Get top-level containers (containers with no visible parent container)
-    // OPTIMIZED: Use O(1) parent lookup instead of O(n²) nested loop
     const topLevelContainers = [];
 
     for (const container of this.visibleContainers) {
@@ -1205,7 +1191,7 @@ export class VisualizationState {
 
     profiler.startStage('expansionLoop');
 
-    // OPTIMIZATION 3: Safer Batched Expansion
+    // OPTIMIZATION: Safer Batched Expansion
     // Use the existing expansion logic but minimize validation overhead
     
     // Disable validation during bulk expansion to avoid intermediate state issues
@@ -1241,7 +1227,7 @@ export class VisualizationState {
     profiler.endStage('validation');
     profiler.startStage('layoutTrigger');
 
-    // OPTIMIZATION 4: Resume layout triggers and trigger single layout calculation
+    // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
     this._resumeLayoutTriggers(true);
 
     profiler.endStage('layoutTrigger');
@@ -1252,7 +1238,6 @@ export class VisualizationState {
     // OPTIMIZATION 4: Layout suspension for fallback implementation
     this._suspendLayoutTriggers();
     
-    // OPTIMIZED: Use O(1) parent lookup instead of O(n²) nested loop
     const topLevelContainers = [];
 
     for (const container of this.visibleContainers) {
@@ -1294,7 +1279,7 @@ export class VisualizationState {
         this.validateInvariants();
       }
       
-      // OPTIMIZATION 4: Resume layout triggers and trigger single layout calculation
+      // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
       this._resumeLayoutTriggers(true);
     }
   }
@@ -1303,7 +1288,7 @@ export class VisualizationState {
    * Collapse all containers in bulk with proper validation handling
    */
   collapseAllContainers(): void {
-    // OPTIMIZATION 4: Suspend layout triggers during bulk operations
+    // OPTIMIZATION: Suspend layout triggers during bulk operations
     this._suspendLayoutTriggers();
     
     const topLevelContainers = this.getTopLevelContainers();
@@ -1331,7 +1316,7 @@ export class VisualizationState {
         this.validateInvariants();
       }
       
-      // OPTIMIZATION 4: Resume layout triggers and trigger single layout calculation
+      // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
       this._resumeLayoutTriggers(true);
     }
   }
@@ -1377,7 +1362,6 @@ export class VisualizationState {
 
     // Also map visible containers to their parent containers
     for (const container of this.visibleContainers) {
-      // OPTIMIZED: Use O(1) parent lookup instead of O(n) linear search
       const parentId = this.getContainerParent(container.id);
       if (parentId) {
         const parent = this._collections.containers.get(parentId);
@@ -1414,22 +1398,24 @@ export class VisualizationState {
   }
 
   /**
+   * Check if a parent container exists and is visible (not collapsed and not hidden)
+   */
+  private hasVisibleParentContainer(parentId: string | null): boolean {
+    if (!parentId) return false;
+    
+    const parent = this._collections.containers.get(parentId);
+    return parent ? !parent.collapsed && !parent.hidden : false;
+  }
+
+  /**
    * Get top-level nodes (nodes not in any expanded container)
    */
   getTopLevelNodes(): ReadonlyArray<GraphNode> {
     const topLevelNodes: GraphNode[] = [];
 
     for (const node of this.visibleNodes) {
-      // OPTIMIZED: Use O(1) parent lookup instead of O(n) container iteration
-      let isInExpandedContainer = false;
-      
       const parentContainer = this.getNodeParent(node.id);
-      if (parentContainer) {
-        const parent = this._collections.containers.get(parentContainer);
-        if (parent && !parent.collapsed && !parent.hidden) {
-          isInExpandedContainer = true;
-        }
-      }
+      const isInExpandedContainer = this.hasVisibleParentContainer(parentContainer);
 
       if (!isInExpandedContainer) {
         topLevelNodes.push(node);
@@ -1446,16 +1432,8 @@ export class VisualizationState {
     const topLevelContainers: Container[] = [];
 
     for (const container of this.visibleContainers) {
-      // OPTIMIZED: Check if this container has a parent container using O(1) lookup
       const parentId = this.getContainerParent(container.id);
-      let hasVisibleParent = false;
-
-      if (parentId) {
-        const parent = this._collections.containers.get(parentId);
-        if (parent && !parent.collapsed && !parent.hidden) {
-          hasVisibleParent = true;
-        }
-      }
+      const hasVisibleParent = this.hasVisibleParentContainer(parentId);
 
       if (!hasVisibleParent) {
         topLevelContainers.push(container);
@@ -1747,7 +1725,6 @@ export class VisualizationState {
     const edge = this._collections.graphEdges.get(edgeId);
     if (!edge) return {};
 
-    // ARCHITECTURAL FIX: Use O(1) Map lookup instead of O(n) visibleEdges.some()
     const isVisible = this._collections._visibleEdges.has(edgeId) || 
                      (this._collections.hyperEdges.has(edgeId) && 
                       !this._collections.hyperEdges.get(edgeId)!.hidden);
@@ -1916,10 +1893,6 @@ export class VisualizationState {
       }
     }
   }
-
-  // ============ OPTIMIZATION 3: VALIDATION BATCHING ============
-  // The main optimization here is disabling validation during bulk operations
-  // and using the existing, proven expansion logic with reduced overhead
 }
 
 /**

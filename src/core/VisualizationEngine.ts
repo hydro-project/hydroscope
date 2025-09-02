@@ -147,9 +147,6 @@ export class VisualizationEngine {
       .catch(() => ({ getProfiler: () => null }));
 
     const profiler = getProfiler();
-
-    let bigGraph: boolean = false;
-
     try {
       this.updateState('laying_out');
       
@@ -399,7 +396,7 @@ export class VisualizationEngine {
    * Full collapse implementation, collpases all top-level containers
    */
   private async runFullCollapse(): Promise<void> {
-    // Step 1: Get TOP-LEVEL containers from VisualizationState
+    // Get just the top-level containers from VisualizationState
     // This ensures we don't double-process parent and child containers
     const containers: readonly Container[] = this.visState.getTopLevelContainers();
 

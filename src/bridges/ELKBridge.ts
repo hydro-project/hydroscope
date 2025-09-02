@@ -412,14 +412,13 @@ export class ELKBridge {
           // Check if child is a container and if it's visible
           const childContainer = visState.getContainer(childId);
           if (childContainer && !childContainer.hidden) {
-            // ARCHITECTURAL FIX: Simple visibility check instead of O(n) visibleContainers.some()
             // Add child container recursively
             const childContainerNode = buildContainerHierarchy(childId);
             containerNode.children!.push(childContainerNode);
             processedContainers.add(childId);
           } else {
-            // Add child node - O(1) lookup using node index
-            const childNode = visState.getNodeById(childId);
+            // Add child node
+            const childNode = visState.getGraphNode(childId);
             if (childNode) {
               // Ensure valid node dimensions
               const nodeWidth =
@@ -457,14 +456,13 @@ export class ELKBridge {
 
     // Add only root-level containers to rootNodes
     visState.visibleContainers.forEach(container => {
-      // ARCHITECTURAL FIX: Use VisualizationState's O(1) parent mapping instead of O(n) search
       const containerParentMapping = visState.getContainerParentMapping();
       const hasVisibleParent = containerParentMapping.has(container.id);
 
       // DIAGNOSTIC: Check parent relationships for problematic containers
       if (container.id === 'bt_81' || container.id === 'bt_98') {
         if (hasVisibleParent) {
-          // Get the parent ID directly from mapping
+          // Find the parent
           const parentId = containerParentMapping.get(container.id);
         }
       }
