@@ -1,19 +1,19 @@
 /**
  * Performance Dashboard Component
- * 
+ *
  * Real-time performance monitoring dashboard for Hydroscope.
  * Shows timing breakdowns, memory usage, and performance recommendations.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Progress, Alert, Descriptions, Statistic, Space, Collapse } from 'antd';
-import { 
-  ClockCircleOutlined, 
-  DashboardOutlined, 
-  WarningOutlined, 
+import {
+  ClockCircleOutlined,
+  DashboardOutlined,
+  WarningOutlined,
   CheckCircleOutlined,
   ReloadOutlined,
-  BugOutlined
+  BugOutlined,
 } from '@ant-design/icons';
 import { PerformanceProfiler, type ProfilerReport } from '../profiling/PerformanceProfiler';
 
@@ -30,7 +30,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   visible = false,
   onClose,
   autoRefresh = true,
-  refreshInterval = 2000
+  refreshInterval = 2000,
 }) => {
   const [report, setReport] = useState<ProfilerReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     if (!visible || !autoRefresh) return;
 
     refreshReport(); // Initial load
-    
+
     const interval = setInterval(refreshReport, refreshInterval);
     return () => clearInterval(interval);
   }, [visible, autoRefresh, refreshInterval, refreshReport]);
@@ -75,7 +75,10 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     return `${mb.toFixed(1)}MB`;
   };
 
-  const getPerformanceColor = (duration: number, thresholds: { warning: number; error: number }) => {
+  const getPerformanceColor = (
+    duration: number,
+    thresholds: { warning: number; error: number }
+  ) => {
     if (duration > thresholds.error) return '#ff4d4f';
     if (duration > thresholds.warning) return '#faad14';
     return '#52c41a';
@@ -93,22 +96,26 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       );
     }
 
-    const sortedStages = Object.entries(report.stages)
-      .sort(([, a], [, b]) => b.duration - a.duration);
+    const sortedStages = Object.entries(report.stages).sort(
+      ([, a], [, b]) => b.duration - a.duration
+    );
 
     return (
       <Space direction="vertical" style={{ width: '100%' }}>
         {sortedStages.map(([stageName, metrics]) => {
-          const percentage = ((metrics.duration / report.totalDuration) * 100);
+          const percentage = (metrics.duration / report.totalDuration) * 100;
           const thresholds = {
             'File Loading': { warning: 1000, error: 3000 },
             'JSON Parsing': { warning: 2000, error: 5000 },
             'State Creation': { warning: 3000, error: 7000 },
             'Layout Calculation': { warning: 3000, error: 10000 },
-            'Rendering': { warning: 2000, error: 8000 },
+            Rendering: { warning: 2000, error: 8000 },
           };
-          
-          const stageThresholds = thresholds[stageName as keyof typeof thresholds] || { warning: 1000, error: 3000 };
+
+          const stageThresholds = thresholds[stageName as keyof typeof thresholds] || {
+            warning: 1000,
+            error: 3000,
+          };
           const color = getPerformanceColor(metrics.duration, stageThresholds);
 
           return (
@@ -158,13 +165,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     return (
       <Space direction="vertical" style={{ width: '100%' }}>
         {report.recommendations.map((rec, index) => (
-          <Alert
-            key={index}
-            message={rec}
-            type="warning"
-            icon={<WarningOutlined />}
-            showIcon
-          />
+          <Alert key={index} message={rec} type="warning" icon={<WarningOutlined />} showIcon />
         ))}
       </Space>
     );
@@ -172,13 +173,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 
   const renderMemoryUsage = () => {
     if (!report || !report.memoryPeak) {
-      return (
-        <Alert
-          message="Memory tracking not available"
-          type="info"
-          showIcon
-        />
-      );
+      return <Alert message="Memory tracking not available" type="info" showIcon />;
     }
 
     const memoryMB = report.memoryPeak / (1024 * 1024);
@@ -199,12 +194,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       title="Performance Dashboard"
       extra={
         <Space>
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={handleRefresh}
-            loading={loading}
-            size="small"
-          >
+          <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={loading} size="small">
             Refresh
           </Button>
           {onClose && (
@@ -214,7 +204,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
           )}
         </Space>
       }
-      style={{ 
+      style={{
         position: 'fixed',
         top: 20,
         right: 20,
@@ -222,7 +212,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         maxHeight: '80vh',
         overflow: 'auto',
         zIndex: 1000,
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
       }}
     >
       {report && (
@@ -230,8 +220,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
           <Statistic
             title="Total Duration"
             value={formatDuration(report.totalDuration)}
-            valueStyle={{ 
-              color: getPerformanceColor(report.totalDuration, { warning: 5000, error: 15000 })
+            valueStyle={{
+              color: getPerformanceColor(report.totalDuration, { warning: 5000, error: 15000 }),
             }}
             prefix={<ClockCircleOutlined />}
           />
@@ -243,25 +233,25 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <Panel header="Stage Breakdown" key="stages">
           {renderStageBreakdown()}
         </Panel>
-        
+
         <Panel header="Recommendations" key="recommendations">
           {renderRecommendations()}
         </Panel>
-        
+
         <Panel header="Configuration" key="config">
           <Space direction="vertical" style={{ width: '100%' }}>
             <label>
               <input
                 type="checkbox"
                 checked={autoRefresh}
-                onChange={(e) => {
+                onChange={e => {
                   // This would need to be passed up to parent component
                   console.log('Auto-refresh toggled:', e.target.checked);
                 }}
-              />
-              {' '}Auto-refresh
+              />{' '}
+              Auto-refresh
             </label>
-            
+
             <Alert
               message="Performance Tips"
               description={

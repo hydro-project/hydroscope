@@ -363,7 +363,7 @@ class ELKConfigurationManager {
  */
 class ELKHierarchyBuilder {
   // ARCHITECTURAL FIX: Remove local indexes, use VisualizationState's optimized collections
-  
+
   constructor(
     private nodes: GraphNode[],
     private containers: Container[],
@@ -552,7 +552,11 @@ class PositionApplicator {
  * Sorts nodes to ensure parents come before children (ReactFlow requirement)
  */
 class NodeSorter {
-  sortNodesForReactFlow(layoutedNodes: any[], containers: Container[], visState: VisualizationState): any[] {
+  sortNodesForReactFlow(
+    layoutedNodes: any[],
+    containers: Container[],
+    visState: VisualizationState
+  ): any[] {
     const sortedNodes: any[] = [];
     const nodeMap = new Map(layoutedNodes.map(node => [node.id, node]));
     const visited = new Set<string>();
@@ -617,7 +621,13 @@ export function createELKStateManager(): ELKStateManager {
     edges: GraphEdge[];
   }> {
     try {
-      const hierarchyBuilder = new ELKHierarchyBuilder(nodes, containers, edges, configManager, visState);
+      const hierarchyBuilder = new ELKHierarchyBuilder(
+        nodes,
+        containers,
+        edges,
+        configManager,
+        visState
+      );
       const elkGraph = hierarchyBuilder.buildElkGraph(layoutType);
 
       const layoutResult = await elk.layout(elkGraph);
@@ -691,7 +701,13 @@ export function createELKStateManager(): ELKStateManager {
       const allEdges: GraphEdge[] = [...edges, ...hyperAsGraph];
 
       // Run full hierarchical layout but with position constraints
-      const result = await calculateFullLayout(nodes, allEdges, containersWithFixing, visState, layoutType);
+      const result = await calculateFullLayout(
+        nodes,
+        allEdges,
+        containersWithFixing,
+        visState,
+        layoutType
+      );
 
       return {
         ...result,

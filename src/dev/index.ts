@@ -1,6 +1,6 @@
 /**
  * @fileoverview Development and debugging utilities
- * 
+ *
  * This module contains performance profilers, debugging tools, and development-only
  * components that should not be included in production builds.
  */
@@ -20,17 +20,19 @@ export { default as PerformanceDashboard } from './components/PerformanceDashboa
 export const isDevelopment = () => {
   // Check Node.js environment variables
   if (typeof process !== 'undefined' && process.env) {
-    if (process.env.NODE_ENV === 'development' || 
-        process.env.REACT_APP_ENABLE_PROFILING === 'true') {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      process.env.REACT_APP_ENABLE_PROFILING === 'true'
+    ) {
       return true;
     }
   }
-  
+
   // Check browser URL parameters (only if window is available)
   if (typeof window !== 'undefined' && window.location) {
     return window.location.search.includes('debug=true');
   }
-  
+
   return false;
 };
 

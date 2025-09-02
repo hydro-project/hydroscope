@@ -395,33 +395,34 @@ function FileDropZone({
     async (file: File) => {
       const profiler = getProfiler();
       if (!profiler) return; // Skip profiling in production
-      
+
       profiler.reset(); // Start fresh for this file
       profiler.markLargeFileProcessing(file.size);
-      
+
       setIsLoading(true);
       profiler?.start('File Loading');
-      
+
       try {
         const reader = new FileReader();
         reader.onload = event => {
           profiler?.end('File Loading', { fileSize: file.size, fileName: file.name });
-          
+
           try {
             profiler?.start('JSON Parsing');
             const data = JSON.parse(event.target?.result as string);
-            profiler?.end('JSON Parsing', { 
+            profiler?.end('JSON Parsing', {
               nodeCount: data.nodes?.length || 0,
-              edgeCount: data.edges?.length || 0
+              edgeCount: data.edges?.length || 0,
             });
-            
+
             profiler?.start('Data Processing');
             onFileLoad?.(data);
             onFileUpload?.(data, file.name);
             profiler?.end('Data Processing');
-            
+
             // Print performance report for large files
-            if (file.size > 100 * 1024) { // 100KB
+            if (file.size > 100 * 1024) {
+              // 100KB
               setTimeout(() => profiler?.printReport(), 100);
             }
           } catch (error) {

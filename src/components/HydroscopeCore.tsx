@@ -73,7 +73,7 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
     // Compute parsed state and merged config without causing state updates during render
     const parseOutcome = useMemo(() => {
       const profiler = getProfiler();
-      
+
       try {
         profiler?.start('Graph Parsing');
         const { state, metadata } = parseGraphJSON(data as any, grouping);
@@ -87,13 +87,13 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
         const merged: RenderConfig | undefined = metadata?.edgeStyleConfig
           ? { ...config, edgeStyleConfig: metadata.edgeStyleConfig }
           : config;
-        
+
         profiler?.end('Graph Parsing', {
           nodeCount: metadata.nodeCount,
           edgeCount: metadata.edgeCount,
-          hasGrouping: !!grouping
+          hasGrouping: !!grouping,
         });
-        
+
         return { state, metadata, mergedConfig: merged, error: null as string | null };
       } catch (e) {
         profiler?.end('Graph Parsing');

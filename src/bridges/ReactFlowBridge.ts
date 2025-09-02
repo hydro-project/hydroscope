@@ -145,7 +145,10 @@ export class ReactFlowBridge {
   /**
    * Sort containers by hierarchy level to ensure parents are processed before children
    */
-  private sortContainersByHierarchy(containers: Container[], parentMap: Map<string, string>): Container[] {
+  private sortContainersByHierarchy(
+    containers: Container[],
+    parentMap: Map<string, string>
+  ): Container[] {
     return sortContainersByHierarchyUtil(containers, parentMap);
   }
 
@@ -314,7 +317,7 @@ export class ReactFlowBridge {
     if (CURRENT_HANDLE_STRATEGY === 'discrete') {
       const sourceNode = visState.getGraphNode(edge.source);
       const targetNode = visState.getGraphNode(edge.target);
-      
+
       // For discrete handles, use the default bottom-to-top connection pattern
       // This provides consistent behavior and matches test expectations
       if (sourceNode && targetNode) {
@@ -338,7 +341,6 @@ export class ReactFlowBridge {
     edges: ReactFlowEdge[],
     nodes: ReactFlowNode[]
   ): void {
-    
     edges.forEach(reactFlowEdge => {
       // Find the original edge to get its ID
       const originalEdge =

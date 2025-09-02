@@ -11,9 +11,9 @@ export function buildParentMap(visState: VisualizationState): Map<string, string
   // ARCHITECTURAL FIX: Use VisualizationState's optimized mappings instead of local collections
   const nodeContainerMapping = visState.getNodeContainerMapping();
   const containerParentMapping = visState.getContainerParentMapping();
-  
+
   const parentMap = new Map<string, string>();
-  
+
   // Add node-to-container relationships for visible nodes
   visState.visibleNodes.forEach(node => {
     const containerId = nodeContainerMapping.get(node.id);
@@ -21,8 +21,8 @@ export function buildParentMap(visState: VisualizationState): Map<string, string
       parentMap.set(node.id, containerId);
     }
   });
-  
-  // Add container-to-container relationships for visible containers  
+
+  // Add container-to-container relationships for visible containers
   visState.visibleContainers.forEach(container => {
     const parentId = containerParentMapping.get(container.id);
     if (parentId) {
@@ -57,7 +57,9 @@ export function safeNum(n: unknown): number {
 }
 
 /** Check if ELK layout has meaningful non-zero coordinates */
-export function hasMeaningfulELKPosition(layout: { position?: { x?: number; y?: number } } | undefined): boolean {
+export function hasMeaningfulELKPosition(
+  layout: { position?: { x?: number; y?: number } } | undefined
+): boolean {
   const x = layout?.position?.x;
   const y = layout?.position?.y;
   if (x === undefined || y === undefined) return false;
@@ -66,7 +68,10 @@ export function hasMeaningfulELKPosition(layout: { position?: { x?: number; y?: 
 }
 
 /** Compute relative (child) position from absolute child and parent absolute */
-export function toRelativePosition(childAbs: { x: unknown; y: unknown }, parentAbs: { x: unknown; y: unknown }) {
+export function toRelativePosition(
+  childAbs: { x: unknown; y: unknown },
+  parentAbs: { x: unknown; y: unknown }
+) {
   const cx = safeNum(childAbs.x);
   const cy = safeNum(childAbs.y);
   const px = safeNum(parentAbs.x);

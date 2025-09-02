@@ -60,8 +60,7 @@ export class ELKBridge {
    */
   private async runFullLayout(visState: VisualizationState): Promise<void> {
     // Import profiler utilities for detailed timing
-    const { getProfiler } = await import('../dev')
-      .catch(() => ({ getProfiler: () => null }));
+    const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
 
     const profiler = getProfiler();
 
@@ -69,7 +68,7 @@ export class ELKBridge {
 
     // Clear any existing edge layout data to ensure ReactFlow starts fresh
     profiler?.start('clear-edge-layouts');
-    
+
     visState.visibleEdges.forEach(edge => {
       try {
         visState.setEdgeLayout(edge.id, { sections: [] });
@@ -77,7 +76,7 @@ export class ELKBridge {
         // Edge might not exist anymore, ignore
       }
     });
-    
+
     profiler?.end('clear-edge-layouts');
 
     // 1. Extract all visible data from VisualizationState
@@ -132,11 +131,13 @@ export class ELKBridge {
     // 4. Run ELK layout algorithm
     profiler?.start('elk-algorithm-execution');
     if (profiler) {
-      console.log(`[ELKBridge] Starting ELK layout with ${elkGraph.children?.length || 0} top-level elements`);
+      console.log(
+        `[ELKBridge] Starting ELK layout with ${elkGraph.children?.length || 0} top-level elements`
+      );
     }
 
     const elkResult = await this.elk.layout(elkGraph);
-    
+
     profiler?.end('elk-algorithm-execution');
     if (profiler) {
       console.log(`[ELKBridge] ELK layout completed`);

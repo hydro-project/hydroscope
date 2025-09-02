@@ -42,8 +42,14 @@ export type { NodeColor };
 type NodeColorResult = NodeColor | Record<string, NodeColor>;
 
 // Function expected by Legend component
+// eslint-disable-next-line no-redeclare
 export function generateNodeColors(nodeTypes: [string], palette?: string): NodeColor;
-export function generateNodeColors(nodeTypes: string[], palette?: string): Record<string, NodeColor>;
+// eslint-disable-next-line no-redeclare
+export function generateNodeColors(
+  nodeTypes: string[],
+  palette?: string
+): Record<string, NodeColor>;
+// eslint-disable-next-line no-redeclare
 export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'): NodeColorResult {
   // Get the selected palette, fallback to Set3 if not found
   const palettes = COLOR_PALETTES as unknown as Record<

@@ -284,9 +284,9 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
             onNodeDragStop={onNodeDragStop}
             onNodesChange={onNodesChange}
             fitView={false}
-            fitViewOptions={{ 
-              padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-              maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM 
+            fitViewOptions={{
+              padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+              maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
             }}
             attributionPosition="bottom-left"
             nodesDraggable={config.nodesDraggable !== false}
@@ -314,10 +314,10 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
               />
             )}
             {config.enableMiniMap !== false && (
-              <MiniMap 
-                nodeColor="#666" 
-                nodeStrokeWidth={UI_CONSTANTS.MINIMAP_STROKE_WIDTH} 
-                position="bottom-right" 
+              <MiniMap
+                nodeColor="#666"
+                nodeStrokeWidth={UI_CONSTANTS.MINIMAP_STROKE_WIDTH}
+                position="bottom-right"
               />
             )}
           </ReactFlow>

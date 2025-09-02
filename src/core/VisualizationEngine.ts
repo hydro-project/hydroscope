@@ -143,16 +143,15 @@ export class VisualizationEngine {
     }
 
     // Import profiler utilities for layout timing
-    const { getProfiler } = await import('../dev')
-      .catch(() => ({ getProfiler: () => null }));
+    const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
 
     const profiler = getProfiler();
     try {
       this.updateState('laying_out');
-      
+
       // Profile layout operations
       profiler?.start('layout-operation');
-      
+
       if (this.state.layoutCount === 0 && this.visState.getVisibleNodes().length > 50) {
         // layout the graph with all top-level containers collapsed.
         profiler?.start('full-collapse');
@@ -169,7 +168,7 @@ export class VisualizationEngine {
           profiler?.start('smart-collapse');
           await this.runSmartCollapse();
           profiler?.end('smart-collapse');
-          
+
           // Re-layout after smart collapse
           profiler?.start('elk-layout-post-collapse');
           await this.elkBridge.layoutVisualizationState(this.visState);

@@ -4,7 +4,12 @@
  * config updates, ReactFlow data, and event handlers. Behavior-preserving.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactFlow, applyNodeChanges, type NodeMouseHandler, type EdgeMouseHandler } from '@xyflow/react';
+import {
+  useReactFlow,
+  applyNodeChanges,
+  type NodeMouseHandler,
+  type EdgeMouseHandler,
+} from '@xyflow/react';
 
 import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
@@ -80,10 +85,10 @@ export function useFlowGraphController({
 
   const fitOnce = useCallback(() => {
     try {
-      fitView({ 
-        padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-        maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-        duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+      fitView({
+        padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+        maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+        duration: UI_CONSTANTS.FIT_VIEW_DURATION,
       });
       lastFitTimeRef.current = Date.now();
     } catch (err) {
@@ -94,7 +99,7 @@ export function useFlowGraphController({
   const refreshLayout = useCallback(
     async (force?: boolean) => {
       const profiler = getProfiler();
-      
+
       try {
         setLoading(true);
         setError(null);
@@ -131,16 +136,16 @@ export function useFlowGraphController({
         setReactFlowData(dataWithManual);
         profiler?.end('Rendering', {
           nodeCount: dataWithManual.nodes.length,
-          edgeCount: dataWithManual.edges.length
+          edgeCount: dataWithManual.edges.length,
         });
 
         if (config.fitView !== false) {
           setTimeout(() => {
             try {
-              fitView({ 
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              fitView({
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
@@ -238,15 +243,16 @@ export function useFlowGraphController({
           const now = Date.now();
           const since = now - lastFitTimeRef.current;
           if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
-          const delay = since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD 
-            ? UI_CONSTANTS.LAYOUT_DELAY_SHORT 
-            : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
+          const delay =
+            since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD
+              ? UI_CONSTANTS.LAYOUT_DELAY_SHORT
+              : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({ 
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              fitView({
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               });
               lastFitTimeRef.current = Date.now();
             } catch (err) {
@@ -336,10 +342,10 @@ export function useFlowGraphController({
         if (since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD) {
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({ 
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING, 
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM, 
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION 
+              fitView({
+                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               });
               lastFitTimeRef.current = Date.now();
             } catch (err) {

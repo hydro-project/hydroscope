@@ -90,13 +90,18 @@ export function StandardNode({ id, data }: NodeProps) {
     : (generateNodeColors([nodeType], colorPalette) as NodeColor);
 
   // Unified colors interface - normalize different color formats
-  const colors = 'primary' in rawColors
-    ? { backgroundColor: rawColors.primary, borderColor: rawColors.border }
-    : { backgroundColor: rawColors.background, borderColor: rawColors.border };
+  const colors =
+    'primary' in rawColors
+      ? { backgroundColor: rawColors.primary, borderColor: rawColors.border }
+      : { backgroundColor: rawColors.background, borderColor: rawColors.border };
 
   // For collapsed containers, get the same variables as ContainerNode
-  const width = data.width || (isCollapsedContainer ? UI_CONSTANTS.NODE_WIDTH_CONTAINER : UI_CONSTANTS.NODE_WIDTH_DEFAULT);
-  const height = data.height || (isCollapsedContainer ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
+  const width =
+    data.width ||
+    (isCollapsedContainer ? UI_CONSTANTS.NODE_WIDTH_CONTAINER : UI_CONSTANTS.NODE_WIDTH_DEFAULT);
+  const height =
+    data.height ||
+    (isCollapsedContainer ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
 

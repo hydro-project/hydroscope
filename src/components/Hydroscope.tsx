@@ -268,15 +268,16 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
     const handleFileUpload = useCallback(
       (uploadedData: any, filename: string) => {
         setData(uploadedData);
-        
+
         // Auto-enable performance panel for large files
         const dataSize = JSON.stringify(uploadedData).length;
-        if (dataSize > 100 * 1024) { // 100KB threshold
-        if (isDevelopment()) {
-          setPerformancePanelOpen(true);
+        if (dataSize > 100 * 1024) {
+          // 100KB threshold
+          if (isDevelopment()) {
+            setPerformancePanelOpen(true);
+          }
         }
-        }
-        
+
         onFileUpload?.(uploadedData, filename);
       },
       [onFileUpload]
@@ -338,7 +339,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
       if (jsonData) {
         const profiler = getProfiler();
-        
+
         setGraphData(jsonData);
         setHasParsedData(true);
 
@@ -786,7 +787,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
               }}
               onResetToDefaults={handleResetToDefaults}
             />
-            
+
             {/* Performance Dashboard - Development Only */}
             {isDevelopment() && PerformanceDashboard && (
               <PerformanceDashboard

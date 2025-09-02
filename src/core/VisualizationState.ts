@@ -283,9 +283,11 @@ export class VisualizationState {
   get visibleEdges(): ReadonlyArray<Edge> {
     // Include both regular visible edges and visible hyperEdges
     const regularEdges = Array.from(this._collections._visibleEdges.values());
-    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
-      return !edge.hidden;
-    });
+    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter(
+      (edge: HyperEdge) => {
+        return !edge.hidden;
+      }
+    );
 
     const allEdges = [...regularEdges, ...hyperEdges];
 
@@ -301,9 +303,11 @@ export class VisualizationState {
    */
   getVisibleEdges(): Edge[] {
     const regularEdges = Array.from(this._collections._visibleEdges.values());
-    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter((edge: HyperEdge) => {
-      return !edge.hidden;
-    });
+    const hyperEdges = Array.from(this._collections.hyperEdges.values()).filter(
+      (edge: HyperEdge) => {
+        return !edge.hidden;
+      }
+    );
 
     const allEdges = [...regularEdges, ...hyperEdges];
 
@@ -637,7 +641,10 @@ export class VisualizationState {
     this.layoutOps.setManualPosition(entityId, x, y);
   }
 
-  setContainerLayout(containerId: string, layout: Partial<LayoutState> & Record<string, unknown>): void {
+  setContainerLayout(
+    containerId: string,
+    layout: Partial<LayoutState> & Record<string, unknown>
+  ): void {
     this.layoutOps.setContainerLayout(containerId, layout);
   }
 
@@ -669,7 +676,7 @@ export class VisualizationState {
     this.layoutOps.clearLayoutPositions();
   }
 
-  getEdgeLayout(edgeId: string): Partial<LayoutState> & Record<string, unknown> | undefined {
+  getEdgeLayout(edgeId: string): (Partial<LayoutState> & Record<string, unknown>) | undefined {
     return this.layoutOps.getEdgeLayout(edgeId);
   }
 
@@ -746,7 +753,7 @@ export class VisualizationState {
       label: nodeData.label ?? derivedDisplayLabel,
       shortLabel: nodeData.shortLabel ?? derivedShortLabel,
       fullLabel: nodeData.fullLabel ?? derivedFullLabel,
-      style: (nodeData.style as NodeStyle) || 'default' as NodeStyle,
+      style: (nodeData.style as NodeStyle) || ('default' as NodeStyle),
       hidden: shouldBeHidden,
       width: nodeData.width || LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH,
       height: nodeData.height || LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT,
@@ -776,7 +783,7 @@ export class VisualizationState {
         processedData,
       ]);
       this._collections._containerLeafCounts.set(parentContainer, existingCount + 1);
-      
+
       // Invalidate recursive leaf counts since hierarchy changed
       this._invalidateRecursiveLeafCounts(parentContainer);
     }
@@ -891,7 +898,7 @@ export class VisualizationState {
 
         this._collections._containerLeafCounts.set(containerId, leafCount);
         this._collections._containerLeafNodes.set(containerId, leafNodes);
-        
+
         // Invalidate recursive leaf counts since we added a new container with children
         this._invalidateRecursiveLeafCounts(containerId);
       }
@@ -1014,7 +1021,10 @@ export class VisualizationState {
    * Set a container (legacy compatibility - forwards to addContainer)
    * @deprecated Use addContainer() for new code
    */
-  setContainer(containerIdOrData: string | (RawContainerData & { id: string }), containerData?: RawContainerData): VisualizationState {
+  setContainer(
+    containerIdOrData: string | (RawContainerData & { id: string }),
+    containerData?: RawContainerData
+  ): VisualizationState {
     if (typeof containerIdOrData === 'string') {
       // Old API: setContainer('id', { ... })
       this.addContainer(containerIdOrData, containerData || {});
@@ -1115,27 +1125,29 @@ export class VisualizationState {
    */
   expandAllContainers(): void {
     // Import the profiler dynamically to avoid circular dependencies
-    import('../dev').then(({ getExpandAllProfiler }) => {
-      const profiler = getExpandAllProfiler();
-      if (profiler) {
-        profiler.startProfiling();
-        this._expandAllContainersWithProfiling(profiler);
-      } else {
+    import('../dev')
+      .then(({ getExpandAllProfiler }) => {
+        const profiler = getExpandAllProfiler();
+        if (profiler) {
+          profiler.startProfiling();
+          this._expandAllContainersWithProfiling(profiler);
+        } else {
+          this._expandAllContainersCore();
+        }
+      })
+      .catch(error => {
+        console.warn('ExpandAllProfiler not available, continuing without profiling:', error);
         this._expandAllContainersCore();
-      }
-    }).catch(error => {
-      console.warn('ExpandAllProfiler not available, continuing without profiling:', error);
-      this._expandAllContainersCore();
-    });
+      });
   }
 
   private _expandAllContainersWithProfiling(profiler: any): void {
     // Note: profiler is guaranteed to exist when this method is called
     profiler.startStage('containerDiscovery');
-    
+
     // OPTIMIZATION: Suspend automatic layout during bulk expansion
     this._suspendLayoutTriggers();
-    
+
     // Get top-level containers (containers with no visible parent container)
     const topLevelContainers = [];
 
@@ -1166,7 +1178,7 @@ export class VisualizationState {
     for (const container of collapsedTopLevel) {
       const childCount = this.getContainerChildren(container.id).size;
       const leafNodeCount = this.countRecursiveLeafNodes(container.id);
-      
+
       totalChildCount += childCount;
       maxChildCount = Math.max(maxChildCount, childCount);
       totalLeafNodes += leafNodeCount;
@@ -1175,7 +1187,8 @@ export class VisualizationState {
     profiler.setContainerStats({
       totalContainers: topLevelContainers.length,
       collapsedContainers: collapsedTopLevel.length,
-      averageChildCount: collapsedTopLevel.length > 0 ? totalChildCount / collapsedTopLevel.length : 0,
+      averageChildCount:
+        collapsedTopLevel.length > 0 ? totalChildCount / collapsedTopLevel.length : 0,
       maxChildCount,
       totalLeafNodes,
     });
@@ -1193,7 +1206,7 @@ export class VisualizationState {
 
     // OPTIMIZATION: Safer Batched Expansion
     // Use the existing expansion logic but minimize validation overhead
-    
+
     // Disable validation during bulk expansion to avoid intermediate state issues
     const originalValidation = this._validationEnabled;
     this._validationEnabled = false;
@@ -1202,13 +1215,13 @@ export class VisualizationState {
       // Expand each container using the proper expansion logic, but with validation disabled
       for (const container of collapsedTopLevel) {
         const expansionStart = performance.now();
-        
+
         const childCount = this.getContainerChildren(container.id).size;
         const leafNodeCount = this.countRecursiveLeafNodes(container.id);
-        
+
         // Use the proper expansion method but with validation disabled for performance
         this.expandContainerRecursive(container.id);
-        
+
         const expansionTime = performance.now() - expansionStart;
         profiler.profileContainerExpansion(container.id, childCount, leafNodeCount, expansionTime);
       }
@@ -1237,7 +1250,7 @@ export class VisualizationState {
   private _expandAllContainersCore(): void {
     // OPTIMIZATION 4: Layout suspension for fallback implementation
     this._suspendLayoutTriggers();
-    
+
     const topLevelContainers = [];
 
     for (const container of this.visibleContainers) {
@@ -1278,7 +1291,7 @@ export class VisualizationState {
       if (this._validationEnabled) {
         this.validateInvariants();
       }
-      
+
       // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
       this._resumeLayoutTriggers(true);
     }
@@ -1290,7 +1303,7 @@ export class VisualizationState {
   collapseAllContainers(): void {
     // OPTIMIZATION: Suspend layout triggers during bulk operations
     this._suspendLayoutTriggers();
-    
+
     const topLevelContainers = this.getTopLevelContainers();
     const expandedTopLevel = topLevelContainers.filter(c => !c.collapsed);
 
@@ -1315,7 +1328,7 @@ export class VisualizationState {
       if (originalValidation) {
         this.validateInvariants();
       }
-      
+
       // OPTIMIZATION: Resume layout triggers and trigger single layout calculation
       this._resumeLayoutTriggers(true);
     }
@@ -1402,7 +1415,7 @@ export class VisualizationState {
    */
   private hasVisibleParentContainer(parentId: string | null): boolean {
     if (!parentId) return false;
-    
+
     const parent = this._collections.containers.get(parentId);
     return parent ? !parent.collapsed && !parent.hidden : false;
   }
@@ -1475,7 +1488,7 @@ export class VisualizationState {
       type: 'hyper' as const,
       hidden: hyperEdgeData.hidden || false,
     };
-    
+
     this._collections.hyperEdges.set(hyperEdgeId, processedData);
     // Update node-to-edge mappings
     const sourceSet = this._collections._nodeToEdges.get(processedData.source) || new Set();
@@ -1515,7 +1528,7 @@ export class VisualizationState {
         // Child is a container, update container parent cache
         this._collections._containerParentMap.set(childId, containerId);
       }
-      
+
       // Invalidate recursive leaf counts since hierarchy changed
       this._invalidateRecursiveLeafCounts(containerId);
     }
@@ -1550,7 +1563,7 @@ export class VisualizationState {
         // Child is a container, update container parent cache
         this._collections._containerParentMap.delete(childId);
       }
-      
+
       // Invalidate recursive leaf counts since hierarchy changed
       this._invalidateRecursiveLeafCounts(containerId);
     }
@@ -1695,7 +1708,7 @@ export class VisualizationState {
   private _invalidateRecursiveLeafCounts(containerId: string): void {
     // Remove cached count for this container
     this._collections._recursiveLeafCounts.delete(containerId);
-    
+
     // Recursively invalidate all ancestor containers since their counts may change
     let current = this.getContainerParent(containerId);
     while (current) {
@@ -1725,9 +1738,10 @@ export class VisualizationState {
     const edge = this._collections.graphEdges.get(edgeId);
     if (!edge) return {};
 
-    const isVisible = this._collections._visibleEdges.has(edgeId) || 
-                     (this._collections.hyperEdges.has(edgeId) && 
-                      !this._collections.hyperEdges.get(edgeId)!.hidden);
+    const isVisible =
+      this._collections._visibleEdges.has(edgeId) ||
+      (this._collections.hyperEdges.has(edgeId) &&
+        !this._collections.hyperEdges.get(edgeId)!.hidden);
 
     return {
       hidden: edge.hidden || !isVisible,

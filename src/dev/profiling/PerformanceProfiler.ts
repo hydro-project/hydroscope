@@ -1,6 +1,6 @@
 /**
  * Performance Profiler for Hydroscope
- * 
+ *
  * Provides detailed timing and memory profiling for large file rendering performance.
  * Designed to help identify bottlenecks when loading large JSON files like paxos.json.
  */
@@ -42,15 +42,19 @@ export class PerformanceProfiler {
     return PerformanceProfiler.instance;
   }
 
+  // TypeScript function overloads
+  // eslint-disable-next-line no-dupe-class-members
   public static profile<T>(stageName: string, operation: () => T): T;
+  // eslint-disable-next-line no-dupe-class-members
   public static profile<T>(stageName: string, operation: () => Promise<T>): Promise<T>;
+  // eslint-disable-next-line no-dupe-class-members
   public static profile<T>(stageName: string, operation: () => T | Promise<T>): T | Promise<T> {
     const profiler = PerformanceProfiler.getInstance();
-    
+
     profiler.start(stageName);
     try {
       const result = operation();
-      
+
       if (result instanceof Promise) {
         return result.finally(() => profiler.end(stageName));
       } else {
@@ -73,7 +77,7 @@ export class PerformanceProfiler {
 
   public start(stageName: string): void {
     if (!this.enabled) return;
-    
+
     this.startTimes.set(stageName, performance.now());
     console.time(`📊 ${stageName}`);
   }
@@ -89,7 +93,7 @@ export class PerformanceProfiler {
 
     const endTime = performance.now();
     const duration = endTime - startTime;
-    
+
     // Track memory if available
     let memoryUsed: number | undefined;
     if ((performance as any).memory) {
@@ -103,14 +107,16 @@ export class PerformanceProfiler {
       duration,
       memoryUsed,
       timestamp: endTime,
-      metadata
+      metadata,
     };
 
     this.stages.set(stageName, metrics);
     this.startTimes.delete(stageName);
 
     console.timeEnd(`📊 ${stageName}`);
-    console.log(`⏱️  ${stageName}: ${duration.toFixed(2)}ms${memoryUsed ? ` (${this.formatMemory(memoryUsed)})` : ''}`);
+    console.log(
+      `⏱️  ${stageName}: ${duration.toFixed(2)}ms${memoryUsed ? ` (${this.formatMemory(memoryUsed)})` : ''}`
+    );
 
     return metrics;
   }
@@ -126,9 +132,9 @@ export class PerformanceProfiler {
   public generateReport(): ProfilerReport {
     const stages = this.getAllMetrics();
     const totalDuration = Object.values(stages).reduce((sum, stage) => sum + stage.duration, 0);
-    
+
     const recommendations: string[] = [];
-    
+
     // Analyze performance and generate recommendations
     const fileLoadTime = stages['File Loading']?.duration || 0;
     const jsonParseTime = stages['JSON Parsing']?.duration || 0;
@@ -137,7 +143,9 @@ export class PerformanceProfiler {
     const layoutTime = stages['Layout Calculation']?.duration || 0;
 
     if (fileLoadTime > 1000) {
-      recommendations.push('File loading is slow (>1s). Consider file size optimization or streaming.');
+      recommendations.push(
+        'File loading is slow (>1s). Consider file size optimization or streaming.'
+      );
     }
 
     if (jsonParseTime > 2000) {
@@ -145,18 +153,25 @@ export class PerformanceProfiler {
     }
 
     if (stateCreationTime > 3000) {
-      recommendations.push('State creation is slow (>3s). Consider batching operations or lazy loading.');
+      recommendations.push(
+        'State creation is slow (>3s). Consider batching operations or lazy loading.'
+      );
     }
 
     if (renderingTime > 5000) {
-      recommendations.push('Rendering is slow (>5s). Consider virtualization or progressive rendering.');
+      recommendations.push(
+        'Rendering is slow (>5s). Consider virtualization or progressive rendering.'
+      );
     }
 
     if (layoutTime > 3000) {
-      recommendations.push('Layout calculation is slow (>3s). Consider layout algorithm optimization.');
+      recommendations.push(
+        'Layout calculation is slow (>3s). Consider layout algorithm optimization.'
+      );
     }
 
-    if (this.peakMemory - this.startMemory > 500 * 1024 * 1024) { // 500MB
+    if (this.peakMemory - this.startMemory > 500 * 1024 * 1024) {
+      // 500MB
       recommendations.push('High memory usage detected. Consider memory optimization strategies.');
     }
 
@@ -164,17 +179,17 @@ export class PerformanceProfiler {
       totalDuration,
       stages,
       memoryPeak: this.peakMemory,
-      recommendations
+      recommendations,
     };
   }
 
   public printReport(): void {
     const report = this.generateReport();
-    
+
     console.group('🎯 Performance Report');
     console.log(`📈 Total Duration: ${report.totalDuration.toFixed(2)}ms`);
     console.log(`💾 Peak Memory: ${this.formatMemory(report.memoryPeak)}`);
-    
+
     console.group('⏱️ Stage Breakdown:');
     Object.entries(report.stages).forEach(([stage, metrics]) => {
       const percentage = ((metrics.duration / report.totalDuration) * 100).toFixed(1);
@@ -209,7 +224,8 @@ export class PerformanceProfiler {
   }
 
   public markLargeFileProcessing(fileSize: number): void {
-    if (fileSize > 1024 * 1024) { // 1MB
+    if (fileSize > 1024 * 1024) {
+      // 1MB
       console.log(`🚨 Large file detected: ${this.formatMemory(fileSize)}`);
       console.log('📊 Detailed performance tracking enabled');
     }
@@ -217,9 +233,15 @@ export class PerformanceProfiler {
 }
 
 // Utility functions for easy profiling
+// eslint-disable-next-line no-redeclare
 export function profileStage<T>(stageName: string, operation: () => T): T;
+// eslint-disable-next-line no-redeclare
 export function profileStage<T>(stageName: string, operation: () => Promise<T>): Promise<T>;
-export function profileStage<T>(stageName: string, operation: () => T | Promise<T>): T | Promise<T> {
+// eslint-disable-next-line no-redeclare
+export function profileStage<T>(
+  stageName: string,
+  operation: () => T | Promise<T>
+): T | Promise<T> {
   return PerformanceProfiler.profile(stageName, operation);
 }
 

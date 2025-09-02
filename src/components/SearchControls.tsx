@@ -214,7 +214,14 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             style={{ height: compact ? 28 : undefined }}
           />
         </AutoComplete>
-        <span style={{ minWidth: PANEL_CONSTANTS.SEARCH_MIN_WIDTH, textAlign: 'center', fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL, color: '#666' }}>
+        <span
+          style={{
+            minWidth: PANEL_CONSTANTS.SEARCH_MIN_WIDTH,
+            textAlign: 'center',
+            fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL,
+            color: '#666',
+          }}
+        >
           {countText}
         </span>
         <Tooltip title="Previous match">

@@ -1,6 +1,6 @@
 /**
  * ExpandAll Performance Profiler
- * 
+ *
  * Provides granular profiling for expandAll operations to identify
  * specific bottlenecks in the container expansion process.
  */
@@ -88,22 +88,22 @@ export class ExpandAllProfiler {
 
   endStage(stageName: keyof ExpandAllProfile['stages']): void {
     if (!this.isActive || !this.currentProfile.stages) return;
-    
+
     const stageTime = performance.now() - this.stageStartTime;
-    
+
     if (stageName === 'individualExpansions') {
       // This stage tracks individual expansions separately
       return;
     }
-    
+
     (this.currentProfile.stages as any)[stageName] = stageTime;
     console.log(`[ExpandAllProfiler] Completed stage: ${stageName} (${stageTime.toFixed(2)}ms)`);
   }
 
   profileContainerExpansion(
-    containerId: string, 
-    childCount: number, 
-    leafNodeCount: number, 
+    containerId: string,
+    childCount: number,
+    leafNodeCount: number,
     expansionTime: number
   ): void {
     if (!this.isActive || !this.currentProfile.stages) return;
@@ -117,7 +117,7 @@ export class ExpandAllProfiler {
 
     console.log(
       `[ExpandAllProfiler] Expanded container ${containerId}: ${expansionTime.toFixed(2)}ms ` +
-      `(${childCount} children, ${leafNodeCount} leaf nodes)`
+        `(${childCount} children, ${leafNodeCount} leaf nodes)`
     );
   }
 
@@ -132,12 +132,16 @@ export class ExpandAllProfiler {
     }
 
     const totalTime = performance.now() - this.startTime;
-    
+
     // Capture final memory if available
-    if (this.currentProfile.memoryUsage && typeof performance !== 'undefined' && (performance as any).memory) {
+    if (
+      this.currentProfile.memoryUsage &&
+      typeof performance !== 'undefined' &&
+      (performance as any).memory
+    ) {
       const memory = (performance as any).memory;
       this.currentProfile.memoryUsage.end = memory.usedJSHeapSize || 0;
-      this.currentProfile.memoryUsage.delta = 
+      this.currentProfile.memoryUsage.delta =
         this.currentProfile.memoryUsage.end - this.currentProfile.memoryUsage.start;
     }
 
@@ -167,9 +171,9 @@ export class ExpandAllProfiler {
 
   private logProfile(profile: ExpandAllProfile): void {
     console.group('🔍 ExpandAll Performance Profile');
-    
+
     console.log(`⏱️  Total Time: ${profile.totalTime.toFixed(2)}ms`);
-    
+
     console.group('📊 Stage Breakdown:');
     console.log(`Container Discovery: ${profile.stages.containerDiscovery.toFixed(2)}ms`);
     console.log(`Expansion Loop: ${profile.stages.expansionLoop.toFixed(2)}ms`);
@@ -187,34 +191,37 @@ export class ExpandAllProfiler {
 
     if (profile.stages.individualExpansions.length > 0) {
       console.group('🔄 Individual Container Expansions:');
-      
+
       // Sort by time (slowest first)
-      const sortedExpansions = [...profile.stages.individualExpansions]
-        .sort((a, b) => b.time - a.time);
-      
+      const sortedExpansions = [...profile.stages.individualExpansions].sort(
+        (a, b) => b.time - a.time
+      );
+
       // Show top 10 slowest expansions
       const topSlowest = sortedExpansions.slice(0, 10);
       topSlowest.forEach((expansion, index) => {
         console.log(
           `${index + 1}. ${expansion.containerId}: ${expansion.time.toFixed(2)}ms ` +
-          `(${expansion.childCount} children, ${expansion.leafNodeCount} leaves)`
+            `(${expansion.childCount} children, ${expansion.leafNodeCount} leaves)`
         );
       });
-      
+
       if (sortedExpansions.length > 10) {
         console.log(`... and ${sortedExpansions.length - 10} more containers`);
       }
 
       // Calculate expansion statistics
-      const totalExpansionTime = profile.stages.individualExpansions
-        .reduce((sum, exp) => sum + exp.time, 0);
+      const totalExpansionTime = profile.stages.individualExpansions.reduce(
+        (sum, exp) => sum + exp.time,
+        0
+      );
       const avgExpansionTime = totalExpansionTime / profile.stages.individualExpansions.length;
-      
+
       console.log(`\nExpansion Stats:`);
       console.log(`  Total Expansion Time: ${totalExpansionTime.toFixed(2)}ms`);
       console.log(`  Average per Container: ${avgExpansionTime.toFixed(2)}ms`);
       console.log(`  Slowest Container: ${sortedExpansions[0]?.time.toFixed(2)}ms`);
-      
+
       console.groupEnd();
     }
 
@@ -227,7 +234,7 @@ export class ExpandAllProfiler {
     }
 
     console.group('🎯 Performance Insights:');
-    
+
     // Identify potential bottlenecks
     const stagePercentages = {
       discovery: (profile.stages.containerDiscovery / profile.totalTime) * 100,
@@ -238,7 +245,9 @@ export class ExpandAllProfiler {
 
     Object.entries(stagePercentages).forEach(([stage, percentage]) => {
       if (percentage > 20) {
-        console.warn(`🚨 ${stage} takes ${percentage.toFixed(1)}% of total time - potential bottleneck`);
+        console.warn(
+          `🚨 ${stage} takes ${percentage.toFixed(1)}% of total time - potential bottleneck`
+        );
       }
     });
 

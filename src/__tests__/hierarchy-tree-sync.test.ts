@@ -41,7 +41,7 @@ function buildHierarchyTreeDirect(visualizationState: VisualizationState): Hiera
   };
 
   const rootContainers = visualizationState.getTopLevelContainers();
-  return rootContainers.map((container) => buildNode(container.id));
+  return rootContainers.map(container => buildNode(container.id));
 }
 
 function getCollapsedContainersSetDirect(visualizationState: VisualizationState): Set<string> {
@@ -49,8 +49,8 @@ function getCollapsedContainersSetDirect(visualizationState: VisualizationState)
 
   return new Set(
     visualizationState.visibleContainers
-      .filter((container) => container.collapsed)
-      .map((container) => container.id)
+      .filter(container => container.collapsed)
+      .map(container => container.id)
   );
 }
 
@@ -173,7 +173,7 @@ describe('HierarchyTree State Synchronization', () => {
     expect(childContainer1.children).toHaveLength(1); // nested_container (node_2 doesn't appear as it's a leaf)
 
     // Find nested container
-    const nestedContainer = childContainer1.children.find((c) => c.id === 'nested_container');
+    const nestedContainer = childContainer1.children.find(c => c.id === 'nested_container');
     expect(nestedContainer).toBeDefined();
     expect(nestedContainer.children).toHaveLength(0); // No child containers (node_5 is a leaf)
   });
