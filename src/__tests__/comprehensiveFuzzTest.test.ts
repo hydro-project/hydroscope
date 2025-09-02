@@ -39,7 +39,10 @@ type FuzzOperation =
   | { type: 'toggleAutofit'; enabled: boolean }
   | { type: 'fitToViewport' }
   | { type: 'hierarchyTreeExpand'; containerId: string }
-  | { type: 'hierarchyTreeContract'; containerId: string };
+  | { type: 'hierarchyTreeContract'; containerId: string }
+  | { type: 'search'; query: string; expectedMatches?: number }
+  | { type: 'searchNavigation'; direction: 'next' | 'prev' }
+  | { type: 'clearSearch' };
 
 // State snapshot for comprehensive monitoring
 interface ComprehensiveStateSnapshot {
@@ -48,11 +51,16 @@ interface ComprehensiveStateSnapshot {
   hyperEdges: number;
   expandedContainers: number;
   collapsedContainers: number;
-  currentHierarchy: string | null;
   currentLayoutAlgorithm: string;
+  currentHierarchy: string | null;
   autoLayoutEnabled: boolean;
   phase: string;
   layoutCount: number;
+  searchState: {
+    query: string;
+    matches: number;
+    currentIndex: number;
+  };
 }
 
 // Simple PRNG for reproducible tests
@@ -140,6 +148,28 @@ class ComprehensiveFuzzTester {
     direction?: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
   }>;
   private autofitEnabled: boolean = true;
+  private searchState: {
+    query: string;
+    matches: number;
+    currentIndex: number;
+  } = {
+    query: '',
+    matches: 0,
+    currentIndex: 0,
+  };
+  private searchPatternsPool: string[] = [
+    '*', // Match all
+    'container*', // Match containers starting with 'container'
+    '*node*', // Match anything containing 'node'
+    'test?', // Single character wildcard
+    '*map', // Match ending with 'map'
+    'filter*', // Match starting with 'filter'
+    '??_*', // Two chars followed by underscore and anything
+    'poll*', // Match specific patterns from test data
+    '*closure*', // Match closures
+    '*server*', // Match servers
+    '', // Empty search (clear)
+  ];
 
   constructor(
     private testData: any,
@@ -345,6 +375,9 @@ class ComprehensiveFuzzTester {
       'changeLayout',
       'fitToViewport',
       'toggleAutofit',
+      'search',
+      'searchNavigation',
+      'clearSearch',
     ];
 
     // Add bulk operations if containers exist
@@ -424,6 +457,26 @@ class ComprehensiveFuzzTester {
           containerId: this.random.choice(collapsibleContainers).id,
         };
 
+      case 'search':
+        const searchQuery = this.random.choice(this.searchPatternsPool);
+        return {
+          type: 'search',
+          query: searchQuery,
+        };
+
+      case 'searchNavigation':
+        // Only navigate if there's an active search with matches
+        if (this.searchState.query && this.searchState.matches > 0) {
+          return {
+            type: 'searchNavigation',
+            direction: this.random.boolean() ? 'next' : 'prev',
+          };
+        }
+        return null;
+
+      case 'clearSearch':
+        return { type: 'clearSearch' };
+
       default:
         return null;
     }
@@ -500,7 +553,133 @@ class ComprehensiveFuzzTester {
         state.collapseContainer(operation.containerId);
         await engine.runLayout();
         break;
+
+      case 'search':
+        await this.executeSearchOperation(state, operation.query);
+        break;
+
+      case 'searchNavigation':
+        this.executeSearchNavigation(operation.direction);
+        break;
+
+      case 'clearSearch':
+        this.clearSearch();
+        break;
     }
+  }
+
+  /**
+   * Execute a search operation
+   */
+  private async executeSearchOperation(state: VisualizationState, query: string): Promise<void> {
+    // Simulate search matching logic (similar to SearchControls)
+    const matches = this.performSearch(state, query);
+    
+    // Update search state
+    this.searchState = {
+      query,
+      matches: matches.length,
+      currentIndex: matches.length > 0 ? 0 : 0,
+    };
+
+    // Test search expansion logic
+    if (matches.length > 0) {
+      const currentCollapsed = new Set(state.getVisibleContainers().filter(c => c.collapsed).map(c => c.id));
+      
+      try {
+        // Test the getSearchExpansionKeys method which is used by InfoPanel/HierarchyTree
+        const expansionKeys = state.getSearchExpansionKeys(matches, currentCollapsed);
+        
+        // Validate that expansion keys are actually container IDs
+        for (const key of expansionKeys) {
+          const container = state.getContainer(key);
+          if (!container) {
+            throw new Error(`Search expansion returned invalid container ID: ${key}`);
+          }
+        }
+        
+        console.log(`   🔍 Search "${query}" found ${matches.length} matches, expansion keys: ${expansionKeys.length}`);
+      } catch (error) {
+        console.warn(`⚠️  Search expansion validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    } else {
+      console.log(`   🔍 Search "${query}" found no matches`);
+    }
+  }
+
+  /**
+   * Perform search matching (wildcard pattern matching)
+   */
+  private performSearch(state: VisualizationState, query: string): Array<{ id: string; label: string; type: 'container' | 'node' }> {
+    if (!query.trim()) {
+      return [];
+    }
+
+    // Convert wildcard pattern to regex (similar to SearchControls logic)
+    const toRegex = (pattern: string): RegExp | null => {
+      const raw = pattern.trim();
+      if (!raw) return null;
+      const escaped = raw
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // escape regex chars
+        .replace(/\\\*/g, '.*') // * -> .*
+        .replace(/\\\?/g, '.'); // ? -> .
+      try {
+        return new RegExp(escaped, 'i');
+      } catch {
+        return null;
+      }
+    };
+
+    const regex = toRegex(query);
+    if (!regex) return [];
+
+    const matches: Array<{ id: string; label: string; type: 'container' | 'node' }> = [];
+
+    // Search containers
+    for (const container of state.getVisibleContainers()) {
+      const label = container?.data?.label || container?.label || container.id;
+      if (regex.test(label)) {
+        matches.push({ id: container.id, label, type: 'container' });
+      }
+    }
+
+    // Search nodes
+    for (const node of state.getVisibleNodes()) {
+      const label = node?.data?.label || node?.label || node?.id;
+      if (regex.test(label)) {
+        matches.push({ id: node.id, label, type: 'node' });
+      }
+    }
+
+    return matches;
+  }
+
+  /**
+   * Execute search navigation
+   */
+  private executeSearchNavigation(direction: 'next' | 'prev'): void {
+    if (this.searchState.matches === 0) return;
+
+    if (direction === 'next') {
+      this.searchState.currentIndex = (this.searchState.currentIndex + 1) % this.searchState.matches;
+    } else {
+      this.searchState.currentIndex = 
+        (this.searchState.currentIndex - 1 + this.searchState.matches) % this.searchState.matches;
+    }
+
+    console.log(`   🔍 Search navigation: ${direction} to ${this.searchState.currentIndex + 1}/${this.searchState.matches}`);
+  }
+
+  /**
+   * Clear search state
+   */
+  private clearSearch(): void {
+    this.searchState = {
+      query: '',
+      matches: 0,
+      currentIndex: 0,
+    };
+    console.log(`   🔍 Search cleared`);
   }
 
   /**
@@ -523,6 +702,7 @@ class ComprehensiveFuzzTester {
       autoLayoutEnabled: true, // Would need autofit tracking
       phase: engineState.phase,
       layoutCount: engineState.layoutCount,
+      searchState: this.searchState,
     };
   }
 }
