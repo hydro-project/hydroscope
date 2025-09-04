@@ -259,13 +259,6 @@ export function StandardNode({ id, data }: NodeProps) {
             const searchHighlight = (data as any).searchHighlight;
             const searchHighlightStrong = (data as any).searchHighlightStrong;
 
-            // DEBUG: Log standard node search highlighting
-            if (searchHighlight || searchHighlightStrong) {
-              console.log(
-                `🔍 StandardNode ${id}: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}`
-              );
-            }
-
             if (searchHighlightStrong) {
               return '0 0 0 4px rgba(255, 107, 53, 0.35), 0 8px 20px rgba(0,0,0,0.15)';
             } else if (searchHighlight) {

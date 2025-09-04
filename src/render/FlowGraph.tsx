@@ -233,26 +233,10 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
               );
               const currentId = currentSearchMatchId;
 
-              // DEBUG: Log search matches and node IDs to help debug highlighting issues
-              if (searchMatches && searchMatches.length > 0) {
-                console.log('🔍 Search matches:', searchMatches);
-                console.log('🔍 Match IDs:', Array.from(matchSet));
-                console.log(
-                  '🔍 Available node IDs:',
-                  nodes.map(n => n.id)
-                );
-                console.log('🔍 Current search match ID:', currentId);
-              }
-
               const styled = nodes.map(n => {
                 const isMatch = matchSet.has(n.id);
                 const isCurrent = currentId && n.id === currentId;
                 if (!isMatch && !isCurrent) return n;
-
-                // DEBUG: Log when we're applying highlights
-                console.log(
-                  `🔍 Highlighting node ${n.id}, isMatch: ${isMatch}, isCurrent: ${isCurrent}`
-                );
 
                 // Attach flags; node components will render glow
                 return {

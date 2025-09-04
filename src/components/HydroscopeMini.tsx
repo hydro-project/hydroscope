@@ -56,7 +56,6 @@ export function HydroscopeMini({
   // Handle parsing to get access to visualization state
   const handleParsed = useCallback(
     (metadata: any, visState: VisualizationState) => {
-      console.log('🎯 HydroscopeMini: Received visualization state');
       setVisualizationState(visState);
       onParsed?.(metadata, visState);
     },
@@ -66,8 +65,6 @@ export function HydroscopeMini({
   // Default interactive node click handler
   const handleNodeClick = useCallback(
     async (event: any, node: any) => {
-      console.log('🖱️ Node clicked!', { nodeId: node.id, event, node });
-
       if (!visualizationState) {
         console.warn('⚠️ No visualization state available for node click');
         return;
@@ -75,7 +72,6 @@ export function HydroscopeMini({
 
       if (onNodeClick) {
         // User provided custom handler - use that instead
-        console.log('🔄 Using custom onNodeClick handler');
         onNodeClick(event, node, visualizationState);
         return;
       }
@@ -83,17 +79,15 @@ export function HydroscopeMini({
       // Check if this is a container first
       const container = visualizationState.getContainer(node.id);
       if (container && enableCollapse) {
-        console.log('🏗️ Handling container click for:', node.id);
         // Built-in container collapse/expand logic
         try {
           setIsLayoutRunning(true);
 
           if (container.collapsed) {
-            console.log(`🔄 Expanding container: ${node.id}`);
             visualizationState.expandContainer(node.id);
             onContainerExpand?.(node.id, visualizationState);
           } else {
-            console.log(`🔄 Collapsing container: ${node.id}`);
+            visualizationState.collapseContainer(node.id);
             visualizationState.collapseContainer(node.id);
             onContainerCollapse?.(node.id, visualizationState);
           }
@@ -119,13 +113,6 @@ export function HydroscopeMini({
 
       // Handle regular graph node label toggle
       const graphNode = visualizationState.getGraphNode(node.id);
-      console.log('🏷️ Checking for label toggle...', {
-        nodeId: node.id,
-        hasGraphNode: !!graphNode,
-        hasFullLabel: !!graphNode?.fullLabel,
-        hasShortLabel: !!graphNode?.shortLabel,
-        labelsAreDifferent: graphNode?.fullLabel !== graphNode?.shortLabel,
-      });
 
       if (
         graphNode &&
@@ -137,8 +124,6 @@ export function HydroscopeMini({
         const currentLabel = graphNode.label || graphNode.shortLabel;
         const isShowingShort = currentLabel === graphNode.shortLabel;
         const newLabel = isShowingShort ? graphNode.fullLabel : graphNode.shortLabel;
-
-        console.log(`🏷️ Toggling label for node ${node.id}: "${currentLabel}" -> "${newLabel}"`);
 
         // Update the node's label field
         visualizationState.updateNode(node.id, { label: newLabel });
@@ -153,7 +138,6 @@ export function HydroscopeMini({
           console.error('❌ Error refreshing after label toggle:', err);
         }
       } else {
-        console.log('🏷️ No label toggle performed - conditions not met');
       }
     },
     [
@@ -172,7 +156,6 @@ export function HydroscopeMini({
 
     try {
       setIsLayoutRunning(true);
-      console.log('📦 Packing all containers...');
 
       visualizationState.collapseAllContainers();
 
@@ -200,7 +183,6 @@ export function HydroscopeMini({
 
     try {
       setIsLayoutRunning(true);
-      console.log('📂 Unpacking all containers...');
 
       visualizationState.expandAllContainers();
 
@@ -228,7 +210,6 @@ export function HydroscopeMini({
 
     try {
       setIsLayoutRunning(true);
-      console.log('🔄 Refreshing layout...');
       await hydroscopeRef.current.refreshLayout();
     } catch (err) {
       console.error('❌ Error refreshing layout:', err);

@@ -62,8 +62,8 @@ export interface HyperEdge {
   target: string;
   style?: EdgeStyle | string;
   hidden?: boolean;
-  type: 'hyper';
   edgeProperties?: string[];
+  type: 'hyper';
 }
 
 // Union type for all edge types

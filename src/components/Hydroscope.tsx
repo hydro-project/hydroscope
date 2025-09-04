@@ -345,13 +345,13 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
         // Only create edge style config on initial data load, not on grouping changes
         try {
-          profiler.start('Render Config Creation');
+          profiler?.start('Render Config Creation');
           const parsedData = parseGraphJSON(jsonData, grouping);
           const renderConfig = createRenderConfig(parsedData);
           setEdgeStyleConfig(renderConfig);
-          profiler.end('Render Config Creation');
+          profiler?.end('Render Config Creation');
         } catch (e) {
-          profiler.end('Render Config Creation');
+          profiler?.end('Render Config Creation');
           console.error('Failed to create render config:', e);
         }
       }

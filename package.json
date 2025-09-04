@@ -12,7 +12,7 @@
   "homepage": "https://github.com/hydro-project/hydroscope",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hydro-project/hydroscope.git"
+    "url": "git+https://github.com/hydro-project/hydroscope.git"
   },
   "license": "Apache-2.0",
   "type": "module",

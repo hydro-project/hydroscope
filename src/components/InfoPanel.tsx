@@ -149,17 +149,6 @@ export const InfoPanel = forwardRef<
 
     // Handlers from SearchControls
     const handleSearch = (query: string, matches: SearchMatch[]) => {
-      // DEBUG: Log search results to help debug highlighting issues
-      console.log('🔍 InfoPanel handleSearch:', { query, matches });
-      console.log(
-        '🔍 Container matches:',
-        matches.filter(m => m.type === 'container')
-      );
-      console.log(
-        '🔍 Node matches:',
-        matches.filter(m => m.type === 'node')
-      );
-
       setSearchQuery(query);
       setSearchMatches(matches);
       setCurrentSearchMatch(matches.length ? matches[0] : undefined);

@@ -16,13 +16,6 @@ export function ContainerNode({ id, data }: NodeProps) {
   // DEBUG: Log all ContainerNode renders with search highlight status
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
-  if (searchHighlight || searchHighlightStrong) {
-    console.log(
-      `🔍 ContainerNode ${id} RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, data:`,
-      data
-    );
-  }
-
   const colorPalette = String(data.colorPalette || 'Set3');
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
@@ -70,9 +63,6 @@ export function ContainerNode({ id, data }: NodeProps) {
   };
 
   if (data.collapsed) {
-    console.log(
-      `🔍 ContainerNode ${id} COLLAPSED RENDER: searchHighlight=${searchHighlight}, searchHighlightStrong=${searchHighlightStrong}, label="${data.label}"`
-    );
     const containerColors = generateContainerColors(id, colorPalette);
     return (
       <>

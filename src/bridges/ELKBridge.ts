@@ -388,11 +388,7 @@ export class ELKBridge {
         const layout = visState.getContainerLayout(container.id);
         const currentPosition = layout?.position || { x: container.x || 0, y: container.y || 0 };
 
-        console.log(
-          `🔒 FIXING position for container ${container.id} at (${currentPosition.x}, ${currentPosition.y})`
-        );
-
-        // Fix this container's position during selective layout using strict constraints
+       // Fix this container's position during selective layout using strict constraints
         containerNode.x = currentPosition.x;
         containerNode.y = currentPosition.y;
         containerNode.layoutOptions = {
@@ -401,9 +397,8 @@ export class ELKBridge {
           'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE',
         };
 
-        console.log(`🔒 Container ${container.id} layoutOptions:`, containerNode.layoutOptions);
       } else if (changedContainerId) {
-        console.log(`🔄 ALLOWING movement for changed container ${container.id}`);
+        // Allow movement for the changed container
       }
 
       if (!container.collapsed) {

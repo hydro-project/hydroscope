@@ -394,10 +394,12 @@ function FileDropZone({
   const processFile = useCallback(
     async (file: File) => {
       const profiler = getProfiler();
-      if (!profiler) return; // Skip profiling in production
-
-      profiler.reset(); // Start fresh for this file
-      profiler.markLargeFileProcessing(file.size);
+      
+      // Only do profiler setup if profiler is available
+      if (profiler) {
+        profiler.reset(); // Start fresh for this file
+        profiler.markLargeFileProcessing(file.size);
+      }
 
       setIsLoading(true);
       profiler?.start('File Loading');
@@ -441,7 +443,7 @@ function FileDropZone({
         };
         reader.readAsText(file);
       } catch (error) {
-        profiler.end('File Loading');
+        profiler?.end('File Loading');
         console.error('File processing error:', error);
         alert('Error processing file: ' + (error as Error).message);
         setIsLoading(false);

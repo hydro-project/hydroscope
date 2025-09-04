@@ -36,6 +36,7 @@ export function createHyperEdge(props: {
   target: string;
   style?: EdgeStyle | string;
   hidden?: boolean;
+  edgeProperties?: string[];
 }): HyperEdge {
   return {
     type: 'hyper',
@@ -44,6 +45,7 @@ export function createHyperEdge(props: {
     target: props.target,
     style: props.style,
     hidden: props.hidden || false,
+    edgeProperties: props.edgeProperties,
   };
 }
 
