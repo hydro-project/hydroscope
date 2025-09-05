@@ -117,7 +117,7 @@ export function createContainerClickHandler(
 }
 
 // Layout configuration helpers
-export function createLayoutConfig(algorithm: string = 'mrtree') {
+export function createLayoutConfig(algorithm: string = 'layered') {
   return {
     algorithm,
     // Add other common layout options

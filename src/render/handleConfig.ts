@@ -128,7 +128,7 @@ export const HANDLE_STRATEGIES = {
   /**
    * Floating handles - whole node connectivity with smart edge attachment
    * Uses custom floating edge component for continuous-handle-like UX
-   * Includes discrete handles for React Flow v12 compatibility but FloatingEdge ignores positions
+   * Includes discrete handles for React Flow v12 compatibility
    */
   floating: {
     enableContinuousHandles: false,

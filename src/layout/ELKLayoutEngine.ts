@@ -207,10 +207,10 @@ export class ELKLayoutEngine implements LayoutEngine {
 }
 
 /**
- * Default layout configuration - MRTree as default for better hierarchical display
+ * Default layout configuration - layered as default for better hierarchical display
  */
 export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
-  algorithm: 'mrtree',
+  algorithm: 'layered',
   direction: 'DOWN',
   spacing: 100,
   nodeSize: { width: 180, height: 60 },

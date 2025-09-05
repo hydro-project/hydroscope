@@ -26,11 +26,8 @@ export interface ParseResult {
     containerCount: number;
     availableGroupings: GroupingOption[];
     edgeStyleConfig?: {
-      // Semantics-only fields surfaced by the parser (sanitized):
+      // Semantics-only fields surfaced by the parser (sanitized)
       // - propertyMappings: property -> styleTag or { styleTag }
-      // - singlePropertyMappings: property -> styleTag
-      // - booleanPropertyPairs: pairs with semantic tags (no raw styles)
-      // - combinationRules: metadata only
       propertyMappings?: Record<string, string | { styleTag: string }>;
     };
     nodeTypeConfig?: {
@@ -78,7 +75,6 @@ interface RawEdge {
   semanticTags?: string[];
   label?: string;
   type?: string;
-  // edgeProperties?: string[]; // Removed for uniformity
   [key: string]: unknown;
 }
 
@@ -98,17 +94,8 @@ interface EdgeStylePropertyMapping {
   styleTag: string;
 }
 
-interface EdgeStyleBooleanPair {
-  pair: [string, string];
-  defaultStyle: string; // styleTag
-  altStyle: string; // styleTag
-  description?: string;
-  [key: string]: unknown;
-}
-
 interface EdgeStyleConfig {
   propertyMappings?: Record<string, string | EdgeStylePropertyMapping>;
-  booleanPropertyPairs?: EdgeStyleBooleanPair[];
   [key: string]: unknown;
 }
 
@@ -155,32 +142,8 @@ function sanitizeEdgeStyleConfig(
   // Only allow semantic mapping properties, filter out raw style configurations
   const sanitized: EdgeStyleConfig = {};
 
-  if (edgeStyleConfig.semanticMappings) {
-    sanitized.semanticMappings = edgeStyleConfig.semanticMappings;
-  }
-
-  if (edgeStyleConfig.booleanPropertyPairs) {
-    sanitized.booleanPropertyPairs = edgeStyleConfig.booleanPropertyPairs;
-  }
-
-  if (edgeStyleConfig.combinationRules) {
-    sanitized.combinationRules = edgeStyleConfig.combinationRules;
-  }
-
-  // Do not include propertyMappings with raw style objects - only allow styleTag references
   if (edgeStyleConfig.propertyMappings) {
-    const sanitizedPropertyMappings: Record<string, string | EdgeStylePropertyMapping> = {};
-    Object.entries(edgeStyleConfig.propertyMappings).forEach(([key, value]) => {
-      if (
-        typeof value === 'string' ||
-        (typeof value === 'object' && value && 'styleTag' in value)
-      ) {
-        sanitizedPropertyMappings[key] = value;
-      }
-    });
-    if (Object.keys(sanitizedPropertyMappings).length > 0) {
-      sanitized.propertyMappings = sanitizedPropertyMappings;
-    }
+    sanitized.propertyMappings = edgeStyleConfig.propertyMappings;
   }
 
   return Object.keys(sanitized).length > 0 ? sanitized : undefined;

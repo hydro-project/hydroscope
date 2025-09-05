@@ -16,20 +16,6 @@ interface EdgeStyleMapping {
 
 export interface EdgeStyleConfig {
   semanticMappings?: Record<string, Record<string, Record<string, string | number>>>;
-  // Legacy support for backward compatibility
-  booleanPropertyPairs?: Array<{
-    pair: [string, string];
-    defaultStyle: string;
-    altStyle: string;
-    description: string;
-  }>;
-  singlePropertyMappings?: Record<string, string>;
-  combinationRules?: {
-    priority?: string[];
-    description?: string;
-    mutualExclusions?: string[][];
-    visualGroups?: Record<string, string[]>;
-  };
   propertyMappings?: Record<string, string | EdgeStyleMapping>;
 }
 
@@ -49,6 +35,13 @@ export const EDGE_STYLE_CATEGORIES = {
 import type { CSSProperties } from 'react';
 import { MarkerType } from '@xyflow/react';
 import type { EdgeMarker } from '@xyflow/react';
+import {
+  EDGE_STYLE_TAG_MAPPINGS,
+  HALO_COLOR_MAPPINGS,
+  EDGE_PROPERTY_ABBREVIATIONS,
+  EDGE_PROPERTY_DESCRIPTIONS,
+  DEFAULT_EDGE_STYLE
+} from '../shared/config';
 
 // Use ReactFlow's EdgeMarker type directly for better compatibility
 export type MarkerSpec = EdgeMarker;
@@ -96,16 +89,6 @@ function processWithMappings(
   // Handle new semantic mappings system
   if (styleConfig.semanticMappings) {
     return processWithSemanticMappings(edgeProperties, styleConfig, originalLabel);
-  }
-
-  // Handle legacy boolean property pair system
-  if (styleConfig.booleanPropertyPairs || styleConfig.singlePropertyMappings) {
-    return processWithBooleanPairs(edgeProperties, styleConfig, originalLabel);
-  }
-
-  // Legacy fallback: handle old propertyMappings format
-  if (styleConfig.propertyMappings) {
-    return processLegacyMappings(edgeProperties, styleConfig);
   }
 
   // Final fallback
@@ -256,19 +239,12 @@ function convertStyleSettingsToReactFlow(
 
   // Apply halo (pass halo info to edge component)
   const halo = styleSettings['halo'] as string;
-  let strokeColor = '#666666'; // default color
+  let strokeColor = DEFAULT_EDGE_STYLE.STROKE_COLOR;
   let haloColor: string | undefined = undefined;
 
   if (halo && halo !== 'none') {
-    // Map halo types to colors
-    const haloColors = {
-      'light-blue': '#4a90e2',
-      'light-red': '#e74c3c',
-      'light-green': '#27ae60',
-    };
-
     // Store halo color for edge component to use
-    haloColor = haloColors[halo as keyof typeof haloColors];
+    haloColor = HALO_COLOR_MAPPINGS[halo as keyof typeof HALO_COLOR_MAPPINGS];
     // Keep default stroke color for the main edge
   }
 
@@ -298,7 +274,7 @@ function convertStyleSettingsToReactFlow(
     reactFlowType: 'standard',
     style: {
       stroke: strokeColor,
-      strokeWidth: 2,
+      strokeWidth: DEFAULT_EDGE_STYLE.STROKE_WIDTH,
       ...(haloColor && { haloColor }), // Pass halo color to edge component
       ...style,
     },
@@ -308,105 +284,6 @@ function convertStyleSettingsToReactFlow(
     markerEndSpec,
     lineStyle: lineStyle === 'double' ? 'double' : 'single',
   };
-}
-
-/**
- * Process edges using the new boolean property pair system
- */
-function processWithBooleanPairs(
-  edgeProperties: string[],
-  styleConfig: EdgeStyleConfig,
-  originalLabel?: string
-): ProcessedEdgeStyle {
-  const styleTags: string[] = [];
-  const appliedProperties: string[] = [];
-
-  // First, handle boolean property pairs
-  if (styleConfig.booleanPropertyPairs) {
-    for (const pairConfig of styleConfig.booleanPropertyPairs) {
-      const [defaultProp, altProp] = pairConfig.pair;
-
-      if (edgeProperties.includes(altProp)) {
-        styleTags.push(pairConfig.altStyle);
-        appliedProperties.push(altProp);
-      } else if (edgeProperties.includes(defaultProp)) {
-        styleTags.push(pairConfig.defaultStyle);
-        appliedProperties.push(defaultProp);
-      }
-    }
-  }
-
-  // Then, handle single property mappings
-  if (styleConfig.singlePropertyMappings) {
-    for (const property of edgeProperties) {
-      const mapping = styleConfig.singlePropertyMappings[property];
-      if (mapping && !appliedProperties.includes(property)) {
-        styleTags.push(mapping);
-        appliedProperties.push(property);
-      }
-    }
-  }
-
-  // Combine all style tags
-  if (styleTags.length > 0) {
-    return combineStyleTagsIntelligently(styleTags, appliedProperties, styleConfig, originalLabel);
-  }
-
-  // Fallback to default
-  return getDefaultStyle();
-}
-
-/**
- * Process edges using legacy propertyMappings format
- */
-function processLegacyMappings(
-  edgeProperties: string[],
-  styleConfig: EdgeStyleConfig,
-  originalLabel?: string
-): ProcessedEdgeStyle {
-  if (!styleConfig.propertyMappings) {
-    return getDefaultStyle();
-  }
-
-  // Collect all style tags from the properties
-  const styleTags: string[] = [];
-
-  for (const property of edgeProperties) {
-    const mapping = styleConfig.propertyMappings[property];
-    if (mapping) {
-      if (typeof mapping === 'string') {
-        styleTags.push(mapping);
-      } else if (mapping.styleTag) {
-        styleTags.push(mapping.styleTag);
-      }
-    }
-  }
-
-  // If we have style tags, combine them with intelligent CSS property handling
-  if (styleTags.length > 0) {
-    return combineStyleTagsIntelligently(styleTags, edgeProperties, styleConfig, originalLabel);
-  }
-
-  // Fallback: find the first property with any mapping
-  const selectedProperty = edgeProperties.find(prop => styleConfig.propertyMappings![prop]) || null;
-
-  if (selectedProperty && styleConfig.propertyMappings[selectedProperty]) {
-    const mapping = styleConfig.propertyMappings[selectedProperty];
-
-    // Handle backward compatibility with full style objects
-    if (typeof mapping === 'object' && mapping.style) {
-      return {
-        reactFlowType: 'standard',
-        style: { ...mapping.style },
-        animated: mapping.animated || false,
-        label: mapping.label,
-        appliedProperties: [selectedProperty],
-      };
-    }
-  }
-
-  // Fallback to treating semantic properties as direct style tags
-  return processDirectStyleTags();
 }
 
 /**
@@ -421,161 +298,15 @@ function processDirectStyleTags(): ProcessedEdgeStyle {
  * Map a style tag name to actual ReactFlow visual style
  */
 function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): ProcessedEdgeStyle {
-  const styleTagMappings: Record<string, Partial<ProcessedEdgeStyle>> = {
-    // New numbered edge style system with boolean pairs
-    // Each pair uses different visual properties that can merge cleanly
-
-    // Style 1 pair: Line pattern (ordering)
-    edge_style_1: {
-      style: { strokeDasharray: undefined }, // solid line
-      animated: false,
-      label: '1',
-    },
-    edge_style_1_alt: {
-      style: { strokeDasharray: '4,4' }, // dashed line
-      animated: false,
-      label: '1*',
-    },
-
-    // Style 2 pair: Line thickness (bounds)
-    edge_style_2: {
-      style: { strokeWidth: 1 }, // thin
-      animated: false,
-      label: '2',
-    },
-    edge_style_2_alt: {
-      style: { strokeWidth: 3 }, // thick
-      animated: false,
-      label: '2*',
-    },
-
-    // Style 3 pair: Animation (scope)
-    edge_style_3: {
-      style: {},
-      animated: false,
-      label: '3',
-    },
-    edge_style_3_alt: {
-      style: {},
-      animated: true,
-      label: '3*',
-    },
-
-    // Single properties: Double line (keyed), wavy (cycle)
-    edge_style_4: {
-      style: { strokeDasharray: '8,2,2,2' }, // double-line pattern
-      animated: false,
-      label: '4',
-    },
-    edge_style_5: {
-      style: { strokeDasharray: '2,2' }, // dotted for cycles
-      animated: true,
-      label: '5',
-    },
-
-    // Legacy compound visual styles (for backward compatibility)
-    'dashed-animated': {
-      style: { strokeDasharray: '8,4' },
-      animated: true,
-      label: '- ->',
-    },
-    'thin-stroke': {
-      style: { strokeWidth: 1 },
-      animated: false,
-      label: 'thin',
-    },
-    'thick-stroke': {
-      style: { strokeWidth: 3 },
-      animated: false,
-      label: 'thick',
-    },
-    'wavy-line': {
-      style: { strokeDasharray: '5,5' },
-      animated: true,
-      label: '~',
-    },
-    'smooth-line': {
-      style: { strokeDasharray: undefined },
-      animated: false,
-      label: '—',
-    },
-    'double-line': {
-      style: { strokeDasharray: '10,2,2,2' },
-      animated: false,
-      label: '=',
-    },
-
-    // Basic line patterns
-    solid: {
-      style: { strokeDasharray: undefined },
-      animated: false,
-      label: '—',
-    },
-    dashed: {
-      style: { strokeDasharray: '8,4' },
-      animated: false,
-      label: '- -',
-    },
-    dotted: {
-      style: { strokeDasharray: '2,2' },
-      animated: false,
-      label: '...',
-    },
-    wavy: {
-      style: { strokeDasharray: '5,5' },
-      animated: true,
-      label: '~',
-    },
-    double: {
-      style: { strokeDasharray: '10,2,2,2' },
-      animated: false,
-      label: '=',
-    },
-
-    // Line thickness
-    thin: {
-      style: { strokeWidth: 1 },
-      animated: false,
-      label: 'T',
-    },
-    normal: {
-      style: { strokeWidth: 2 },
-      animated: false,
-      label: 'N',
-    },
-    thick: {
-      style: { strokeWidth: 3 },
-      animated: false,
-      label: 'B',
-    },
-    'extra-thick': {
-      style: { strokeWidth: 4 },
-      animated: false,
-      label: 'BB',
-    },
-
-    // Animation
-    animated: {
-      style: {},
-      animated: true,
-      label: '>',
-    },
-    static: {
-      style: {},
-      animated: false,
-      label: '',
-    },
-  };
-
   const normalizedTag = styleTag.toLowerCase().replace(/[_\s]/g, '-');
-  const visualStyle = styleTagMappings[normalizedTag];
+  const visualStyle = EDGE_STYLE_TAG_MAPPINGS[normalizedTag as keyof typeof EDGE_STYLE_TAG_MAPPINGS];
 
   if (visualStyle) {
     return {
       reactFlowType: 'standard',
       style: {
-        stroke: '#666666', // Default color
-        strokeWidth: 2, // Default width
+        stroke: DEFAULT_EDGE_STYLE.STROKE_COLOR,
+        strokeWidth: DEFAULT_EDGE_STYLE.STROKE_WIDTH,
         ...visualStyle.style,
       },
       animated: visualStyle.animated ?? false,
@@ -588,8 +319,8 @@ function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): Pr
   return {
     reactFlowType: 'standard',
     style: {
-      stroke: '#666666',
-      strokeWidth: 2,
+      stroke: DEFAULT_EDGE_STYLE.STROKE_COLOR,
+      strokeWidth: DEFAULT_EDGE_STYLE.STROKE_WIDTH,
     },
     animated: false,
     label: '',
@@ -725,8 +456,8 @@ function getDefaultStyle(): ProcessedEdgeStyle {
   return {
     reactFlowType: 'standard',
     style: {
-      stroke: '#999999',
-      strokeWidth: 2,
+      stroke: DEFAULT_EDGE_STYLE.DEFAULT_STROKE_COLOR,
+      strokeWidth: DEFAULT_EDGE_STYLE.STROKE_WIDTH,
     },
     animated: false,
     appliedProperties: [],
@@ -745,18 +476,9 @@ export function createEdgeLabel(
     return originalLabel;
   }
 
-  // Create abbreviated labels for common properties
-  const abbreviations: Record<string, string> = {
-    Network: 'N',
-    Cycle: 'C',
-    Bounded: 'B',
-    Unbounded: 'U',
-    NoOrder: '~',
-    TotalOrder: 'O',
-    Keyed: 'K',
-  };
-
-  const propertyLabels = edgeProperties.map(prop => abbreviations[prop] || prop.charAt(0)).join('');
+  const propertyLabels = edgeProperties.map(prop =>
+    EDGE_PROPERTY_ABBREVIATIONS[prop as keyof typeof EDGE_PROPERTY_ABBREVIATIONS] || prop.charAt(0)
+  ).join('');
 
   if (originalLabel) {
     return `${originalLabel} [${propertyLabels}]`;
@@ -776,111 +498,7 @@ export function getEdgePropertiesDescription(
     return 'No properties';
   }
 
-  const descriptions: Record<string, string> = {
-    Network: 'Network communication',
-    Cycle: 'Cyclic data flow',
-    Bounded: 'Finite data stream',
-    Unbounded: 'Infinite data stream',
-    NoOrder: 'Unordered data',
-    TotalOrder: 'Ordered data',
-    Keyed: 'Key-value pairs',
-  };
-
-  return edgeProperties.map(prop => descriptions[prop] || prop).join(', ');
+  return edgeProperties.map(prop =>
+    EDGE_PROPERTY_DESCRIPTIONS[prop as keyof typeof EDGE_PROPERTY_DESCRIPTIONS] || prop
+  ).join(', ');
 }
-
-/**
- * Combine style tags intelligently - properties affecting same CSS attribute are mutually exclusive
- */
-function combineStyleTagsIntelligently(
-  styleTags: string[],
-  originalProperties: string[],
-  styleConfig?: EdgeStyleConfig,
-  originalLabel?: string
-): ProcessedEdgeStyle {
-  // Start with default style
-  let combinedStyle: CSSProperties & Record<string, unknown> = {
-    stroke: '#666666',
-    strokeWidth: 2,
-  };
-  let animated = false;
-  let label = '';
-
-  // Use priority from combinationRules if available
-  let priorityOrder: string[] = [];
-  if (
-    styleConfig &&
-    styleConfig.combinationRules &&
-    Array.isArray(styleConfig.combinationRules.priority)
-  ) {
-    priorityOrder = styleConfig.combinationRules.priority;
-  }
-
-  // Determine highest-priority property
-  let winningProp = originalProperties[0];
-  if (priorityOrder.length > 0) {
-    for (const p of priorityOrder) {
-      if (originalProperties.includes(p)) {
-        winningProp = p;
-        break;
-      }
-    }
-  }
-
-  // Robustly resolve the mapping for the winning property
-  let reactFlowType = 'standard';
-  let mapping = undefined;
-  if (styleConfig && styleConfig.propertyMappings && styleConfig.propertyMappings[winningProp]) {
-    let propMap = styleConfig.propertyMappings[winningProp];
-
-    // If propMap has style/animated directly, use it
-    if (
-      typeof propMap === 'object' &&
-      (propMap.animated !== undefined || propMap.style !== undefined)
-    ) {
-      mapping = propMap;
-    }
-    // If propMap has styleTag, resolve it via mapStyleTagToVisual
-    else if (typeof propMap === 'object' && propMap.styleTag) {
-      const tagStyle = mapStyleTagToVisual(propMap.styleTag, originalProperties);
-      mapping = {
-        reactFlowType: tagStyle.reactFlowType || 'standard',
-        style: tagStyle.style,
-        animated: tagStyle.animated,
-      };
-    }
-  }
-
-  if (mapping && typeof mapping === 'object') {
-    if (mapping.reactFlowType) {
-      reactFlowType = mapping.reactFlowType;
-    }
-    if (mapping.style) {
-      combinedStyle = { ...combinedStyle, ...mapping.style };
-    }
-    if (typeof mapping.animated === 'boolean') {
-      animated = mapping.animated;
-    }
-  } else {
-    // Fallback to styleTag if available
-    const tag = styleTags[originalProperties.indexOf(winningProp)];
-    if (tag) {
-      const tagStyle = mapStyleTagToVisual(tag, originalProperties);
-      combinedStyle = { ...combinedStyle, ...tagStyle.style };
-      animated = tagStyle.animated;
-    }
-  }
-
-  // Use property abbreviations for label
-  label = createEdgeLabel(originalProperties, styleConfig, originalLabel) || '';
-
-  return {
-    reactFlowType,
-    style: combinedStyle,
-    animated: animated,
-    label: label,
-    appliedProperties: originalProperties,
-  };
-}
-
-// (No changes needed here; duplicate logic removed)

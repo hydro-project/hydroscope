@@ -2,7 +2,7 @@
 
 Hydroscope is a React component for visualizing complex graphs with hierarchy, labeling, and interactive controls. 
 
-This README is designed for users who want to feed data to an app that already imports Hydroscope, or need help building a page that incorporates it.
+This README is designed for users who want to feed data to an app that already imports Hydroscope, or need help building an app that incorporates Hydroscope.
 
 ---
 
@@ -174,7 +174,7 @@ export default function MyGraphPage() {
 - `data`: object or JSON string describing your graph
 - `showFileUpload`: boolean (default: true) — enables drag-and-drop file upload
 - `showInfoPanel`: boolean (default: true) — shows info sidebar
-- `initialLayoutAlgorithm`: string (default: 'mrtree')
+- `initialLayoutAlgorithm`: string (default: 'layered')
 - `initialColorPalette`: string (default: 'Set3')
 - `autoFit`: boolean (default: true)
 - `onFileUpload`, `onNodeClick`, `onParsed`, etc.: event handlers

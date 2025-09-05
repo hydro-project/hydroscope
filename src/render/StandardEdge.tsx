@@ -19,7 +19,6 @@ import { WAVY_EDGE_CONFIG } from '../shared/config';
 
 /**
  * Standard graph edge component - uses ReactFlow's automatic routing
- * Includes all styling properties from FloatingEdge for consistency
  */
 export function StandardEdge(props: EdgeProps) {
   const styleCfg = useStyleConfig();

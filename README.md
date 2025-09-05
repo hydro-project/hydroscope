@@ -132,7 +132,7 @@ HydroscopeMini
 Hydroscope (full-featured UI)
 - showFileUpload?: boolean (default: true)
 - showInfoPanel?: boolean (default: true)
-- initialLayoutAlgorithm?: string (default: 'mrtree')
+- initialLayoutAlgorithm?: string (default: 'layered')
 - initialColorPalette?: string (default: 'Set3')
 - autoFit?: boolean (default: true)
 - onFileUpload? / onNodeClick? / onContainerCollapse? / onContainerExpand? / onParsed? / onConfigChange?
@@ -152,8 +152,8 @@ const sample = generateCompleteExample();
 ```
 ## Layout algorithms and fallback
 
-<Hydroscope data={data} layoutConfig={{ algorithm: 'layered' }} />
-// If you pass 'my-custom', Hydroscope falls back to 'mrtree'.
+<Hydroscope data={data} layoutConfig={{ algorithm: 'mrtree' }} />
+// If you pass 'my-custom', Hydroscope falls back to 'layered'.
 ```
 
 ## Sizing behavior

@@ -170,10 +170,194 @@ export const HYPEREDGE_CONSTANTS = {
   SEPARATOR: '_to_', // Separator for hyperEdge naming
 } as const;
 
+// Edge style tag mappings
+export const EDGE_STYLE_TAG_MAPPINGS = {
+  // New numbered edge style system with boolean pairs
+  // Each pair uses different visual properties that can merge cleanly
+
+  // Style 1 pair: Line pattern (ordering)
+  edge_style_1: {
+    style: { strokeDasharray: undefined }, // solid line
+    animated: false,
+    label: '1',
+  },
+  edge_style_1_alt: {
+    style: { strokeDasharray: '4,4' }, // dashed line
+    animated: false,
+    label: '1*',
+  },
+
+  // Style 2 pair: Line thickness (bounds)
+  edge_style_2: {
+    style: { strokeWidth: 1 }, // thin
+    animated: false,
+    label: '2',
+  },
+  edge_style_2_alt: {
+    style: { strokeWidth: 3 }, // thick
+    animated: false,
+    label: '2*',
+  },
+
+  // Style 3 pair: Animation (scope)
+  edge_style_3: {
+    style: {},
+    animated: false,
+    label: '3',
+  },
+  edge_style_3_alt: {
+    style: {},
+    animated: true,
+    label: '3*',
+  },
+
+  // Single properties: Double line (keyed), wavy (cycle)
+  edge_style_4: {
+    style: { strokeDasharray: '8,2,2,2' }, // double-line pattern
+    animated: false,
+    label: '4',
+  },
+  edge_style_5: {
+    style: { strokeDasharray: '2,2' }, // dotted for cycles
+    animated: true,
+    label: '5',
+  },
+
+  // Legacy compound visual styles (for backward compatibility)
+  'dashed-animated': {
+    style: { strokeDasharray: '8,4' },
+    animated: true,
+    label: '- ->',
+  },
+  'thin-stroke': {
+    style: { strokeWidth: 1 },
+    animated: false,
+    label: 'thin',
+  },
+  'thick-stroke': {
+    style: { strokeWidth: 3 },
+    animated: false,
+    label: 'thick',
+  },
+  'wavy-line': {
+    style: { strokeDasharray: '5,5' },
+    animated: true,
+    label: '~',
+  },
+  'smooth-line': {
+    style: { strokeDasharray: undefined },
+    animated: false,
+    label: '—',
+  },
+  'double-line': {
+    style: { strokeDasharray: '10,2,2,2' },
+    animated: false,
+    label: '=',
+  },
+
+  // Basic line patterns
+  solid: {
+    style: { strokeDasharray: undefined },
+    animated: false,
+    label: '—',
+  },
+  dashed: {
+    style: { strokeDasharray: '8,4' },
+    animated: false,
+    label: '- -',
+  },
+  dotted: {
+    style: { strokeDasharray: '2,2' },
+    animated: false,
+    label: '...',
+  },
+  wavy: {
+    style: { strokeDasharray: '5,5' },
+    animated: true,
+    label: '~',
+  },
+  double: {
+    style: { strokeDasharray: '10,2,2,2' },
+    animated: false,
+    label: '=',
+  },
+
+  // Line thickness
+  thin: {
+    style: { strokeWidth: 1 },
+    animated: false,
+    label: 'T',
+  },
+  normal: {
+    style: { strokeWidth: 2 },
+    animated: false,
+    label: 'N',
+  },
+  thick: {
+    style: { strokeWidth: 3 },
+    animated: false,
+    label: 'B',
+  },
+  'extra-thick': {
+    style: { strokeWidth: 4 },
+    animated: false,
+    label: 'BB',
+  },
+
+  // Animation
+  animated: {
+    style: {},
+    animated: true,
+    label: '>',
+  },
+  static: {
+    style: {},
+    animated: false,
+    label: '',
+  },
+} as const;
+
+// Halo color mappings
+export const HALO_COLOR_MAPPINGS = {
+  'light-blue': '#4a90e2',
+  'light-red': '#e74c3c',
+  'light-green': '#27ae60',
+} as const;
+
+// Edge property abbreviations
+export const EDGE_PROPERTY_ABBREVIATIONS = {
+  Network: 'N',
+  Cycle: 'C',
+  Bounded: 'B',
+  Unbounded: 'U',
+  NoOrder: '~',
+  TotalOrder: 'O',
+  Keyed: 'K',
+} as const;
+
+// Edge property descriptions
+export const EDGE_PROPERTY_DESCRIPTIONS = {
+  Network: 'Network communication',
+  Cycle: 'Cyclic data flow',
+  Bounded: 'Finite data stream',
+  Unbounded: 'Infinite data stream',
+  NoOrder: 'Unordered data',
+  TotalOrder: 'Ordered data',
+  Keyed: 'Key-value pairs',
+} as const;
+
+// Default edge style values
+export const DEFAULT_EDGE_STYLE = {
+  STROKE_COLOR: '#666666',
+  STROKE_WIDTH: 2,
+  DEFAULT_STROKE_COLOR: '#999999', // For edges with no properties
+} as const;
+
 // Type exports
 export type NodeStyle = (typeof NODE_STYLES)[keyof typeof NODE_STYLES];
 export type EdgeStyle = (typeof EDGE_STYLES)[keyof typeof EDGE_STYLES];
 export type ContainerStyle = (typeof CONTAINER_STYLES)[keyof typeof CONTAINER_STYLES];
+export type EdgeStyleTagMapping = (typeof EDGE_STYLE_TAG_MAPPINGS)[keyof typeof EDGE_STYLE_TAG_MAPPINGS];
 
 // ============================================================================
 // UI CONFIGURATION
@@ -334,8 +518,8 @@ export const WAVY_EDGE_CONFIG = {
 
 // ELK Layout exports expected by ELKStateManager
 export const ELK_ALGORITHMS = {
-  MRTREE: 'mrtree',
   LAYERED: 'layered',
+  MRTREE: 'mrtree',
   FORCE: 'force',
   STRESS: 'stress',
   RADIAL: 'radial',
@@ -355,24 +539,15 @@ export const LAYOUT_SPACING = {
 };
 
 export const ELK_LAYOUT_OPTIONS = {
-  'elk.algorithm': 'mrtree',
+  'elk.algorithm': 'layered',
   'elk.direction': 'DOWN',
-  // STANDARD APPROACH: Don't use ELK for hierarchical layout, use ReactFlow sub-flows
-  // ELK layouts root containers only, ReactFlow handles parent-child relationships
-
-  // // MRTREE-specific spacing properties (the generic ones don't work with mrtree!)
-  // 'elk.mrtree.spacing.nodeNode': LAYOUT_SPACING.NODE_TO_NODE_NORMAL.toString(),
-  // 'elk.mrtree.spacing.levelSeparation': LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
-
-  // Generic spacing as fallback
   'elk.spacing.nodeNode': LAYOUT_SPACING.NODE_TO_NODE_NORMAL.toString(),
   'elk.spacing.edgeNode': LAYOUT_SPACING.EDGE_TO_NODE.toString(),
   'elk.spacing.edgeEdge': LAYOUT_SPACING.EDGE_TO_EDGE.toString(),
   'elk.spacing.componentComponent': LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
-  'elk.layered.spacing.nodeNodeBetweenLayers': '25', // Match Visualizer layer separation
-
-  // CRITICAL: Force ELK to respect container dimensions (prevents size explosion)
-  // 'elk.nodeSize.constraints': 'FIXED_SIZE',           // Don't resize containers to fit content
+  'elk.layered.spacing.nodeNodeBetweenLayers': '50', // Match Visualizer layer separation
+  'elk.edgeRouting': 'ORTHOGONAL',         // less edge overlap
+  'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX', // stagger nodes
   'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE', // Respect our specified dimensions
 };
 
@@ -381,13 +556,13 @@ export type ELKAlgorithm = (typeof ELK_ALGORITHMS)[keyof typeof ELK_ALGORITHMS];
 // Accept broader algorithm strings and coerce to a valid ELK algorithm with a safe default
 export function getELKLayoutOptions(algorithm: string = ELK_ALGORITHMS.MRTREE) {
   const allowed: Record<string, ELKAlgorithm> = {
-    [ELK_ALGORITHMS.MRTREE]: ELK_ALGORITHMS.MRTREE,
     [ELK_ALGORITHMS.LAYERED]: ELK_ALGORITHMS.LAYERED,
+    [ELK_ALGORITHMS.MRTREE]: ELK_ALGORITHMS.MRTREE,
     [ELK_ALGORITHMS.FORCE]: ELK_ALGORITHMS.FORCE,
     [ELK_ALGORITHMS.STRESS]: ELK_ALGORITHMS.STRESS,
     [ELK_ALGORITHMS.RADIAL]: ELK_ALGORITHMS.RADIAL,
   } as const;
-  const normalized = allowed[algorithm] ?? ELK_ALGORITHMS.MRTREE;
+  const normalized = allowed[algorithm] ?? ELK_ALGORITHMS.LAYERED;
   return {
     ...ELK_LAYOUT_OPTIONS,
     'elk.algorithm': normalized,

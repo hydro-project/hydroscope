@@ -4,7 +4,6 @@
  * Thin module that re-exports edge components and preserves edgeTypes mapping.
  */
 
-import { MemoFloatingEdge } from './FloatingEdge';
 import { MemoStandardEdge } from './StandardEdge';
 import { MemoHyperEdge } from './HyperEdge';
 
@@ -16,5 +15,4 @@ export { HyperEdge } from './HyperEdge';
 export const edgeTypes = {
   standard: MemoStandardEdge,
   hyper: MemoHyperEdge,
-  floating: MemoFloatingEdge,
 };

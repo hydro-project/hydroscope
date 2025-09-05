@@ -97,7 +97,7 @@ function MyVisualization() {
   return (
     <FlowGraph 
       visualizationState={state}
-      layoutConfig={{ algorithm: 'mrtree' }}
+      layoutConfig={{ algorithm: 'layered' }}
       renderConfig={{ enableMiniMap: true }}
     />
   );
@@ -176,7 +176,7 @@ npm run test:coverage
 ### Layout Configuration
 ```typescript
 const layoutConfig = {
-  algorithm: 'mrtree',        // or 'force', 'radial'
+  algorithm: 'layered',        // or 'force', 'radial'
   direction: 'DOWN',           // or 'UP', 'LEFT', 'RIGHT'
   spacing: { nodeNode: 20 },   // Node spacing
   containerPadding: 15         // Container padding

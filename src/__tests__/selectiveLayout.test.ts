@@ -15,7 +15,7 @@ describe('Selective Layout for Individual Container Operations', () => {
     visState = new VisualizationState();
     engine = createVisualizationEngine(visState, {
       enableLogging: false,
-      layoutConfig: { algorithm: 'mrtree', direction: 'DOWN' },
+      layoutConfig: { algorithm: 'layered', direction: 'DOWN' },
     });
 
     // Set up a test scenario with multiple containers

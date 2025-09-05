@@ -20,7 +20,7 @@ export class ELKBridge {
 
   constructor(layoutConfig: LayoutConfig = {}) {
     this.elk = new ELK(); // ✅ Create fresh ELK instance for each ELKBridge
-    this.layoutConfig = { algorithm: 'mrtree', ...layoutConfig };
+    this.layoutConfig = { algorithm: 'layered', ...layoutConfig };
   }
 
   // ============================================================================
@@ -321,10 +321,10 @@ export class ELKBridge {
 
         throw new Error(
           `ELKBridge received edge ${edge.id} with invalid endpoints!\n` +
-            `Sources: [${sourceIds}] (valid: ${hasValidSource})\n` +
-            `Targets: [${targetIds}] (valid: ${hasValidTarget})\n` +
-            `Available nodes: ${availableNodes}\n` +
-            `This indicates a bug in VisualizationState - it should not send edges that reference non-existent nodes.`
+          `Sources: [${sourceIds}] (valid: ${hasValidSource})\n` +
+          `Targets: [${targetIds}] (valid: ${hasValidTarget})\n` +
+          `Available nodes: ${availableNodes}\n` +
+          `This indicates a bug in VisualizationState - it should not send edges that reference non-existent nodes.`
         );
       }
     });
@@ -371,8 +371,8 @@ export class ELKBridge {
           : 200;
       const containerHeight =
         typeof container.height === 'number' &&
-        !isNaN(container.height) &&
-        isFinite(container.height)
+          !isNaN(container.height) &&
+          isFinite(container.height)
           ? container.height
           : 150;
 
@@ -388,7 +388,7 @@ export class ELKBridge {
         const layout = visState.getContainerLayout(container.id);
         const currentPosition = layout?.position || { x: container.x || 0, y: container.y || 0 };
 
-       // Fix this container's position during selective layout using strict constraints
+        // Fix this container's position during selective layout using strict constraints
         containerNode.x = currentPosition.x;
         containerNode.y = currentPosition.y;
         containerNode.layoutOptions = {
@@ -419,14 +419,14 @@ export class ELKBridge {
               // Ensure valid node dimensions
               const nodeWidth =
                 typeof childNode.width === 'number' &&
-                !isNaN(childNode.width) &&
-                isFinite(childNode.width)
+                  !isNaN(childNode.width) &&
+                  isFinite(childNode.width)
                   ? childNode.width
                   : 180;
               const nodeHeight =
                 typeof childNode.height === 'number' &&
-                !isNaN(childNode.height) &&
-                isFinite(childNode.height)
+                  !isNaN(childNode.height) &&
+                  isFinite(childNode.height)
                   ? childNode.height
                   : 60;
 
