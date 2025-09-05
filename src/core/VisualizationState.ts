@@ -176,6 +176,8 @@ export class VisualizationState {
     this._wrapPublicMethods();
   }
 
+
+
   /**
    * Wraps public methods with validation at API boundaries
    * This removes the need for internal validation calls throughout the codebase

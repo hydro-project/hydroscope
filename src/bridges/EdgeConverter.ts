@@ -24,8 +24,8 @@ export function convertEdgeToReactFlow(
 ): ReactFlowEdge {
   const { edgeStyleConfig, showPropertyLabels = true, enableAnimations = true } = options;
 
-  // Extract edge properties from semanticTags for styling
-  const edgeProperties = (edge as any).semanticTags || [];
+  // Extract edge properties from semanticTags (regular edges) or edgeProperties (hyperedges)
+  const edgeProperties = (edge as any).edgeProperties || (edge as any).semanticTags || [];
   const originalLabel = (edge as any).label;
 
   // Process the edge style based on properties

@@ -282,22 +282,27 @@ export class ReactFlowBridge {
     };
     const convertedEdges = convertEdgesToReactFlow(visibleEdges, edgeConverterOptions);
 
-    // Ensure processedStyle is present and semantic mappings are honored
+    // EdgeConverter already processed all edges correctly, including hyperedges
+    // Only override if hyperedge has pre-serialized style (legacy compatibility)
     convertedEdges.forEach((reactFlowEdge, index) => {
       const originalEdge = visibleEdges[index];
-      // Defensive: If processedStyle is missing, reprocess with semanticMappings
-      if (!reactFlowEdge.data?.processedStyle && this.edgeStyleConfig?.semanticMappings) {
-        const edgeProperties = originalEdge.edgeProperties || [];
-        const { processEdgeStyle } = require('../core/EdgeStyleProcessor');
-        const processedStyle = processEdgeStyle(edgeProperties, this.edgeStyleConfig);
-        if (reactFlowEdge.data) {
-          reactFlowEdge.data.processedStyle = processedStyle;
+      
+      // Only override EdgeConverter processing for hyperedges with pre-serialized styles
+      if (originalEdge.type === 'hyper' && originalEdge.style && typeof originalEdge.style === 'string') {
+        const { deserializeProcessedStyle } = require('../core/EdgeStyleSerializer');
+        const parsedStyle = deserializeProcessedStyle(originalEdge.style);
+        if (parsedStyle) {
+          if (reactFlowEdge.data) {
+            reactFlowEdge.data.processedStyle = parsedStyle;
+          }
+          reactFlowEdge.style = parsedStyle.style;
+          reactFlowEdge.animated = parsedStyle.animated;
+          if (parsedStyle.markerEndSpec) {
+            reactFlowEdge.markerEnd = parsedStyle.markerEndSpec;
+          }
         }
-        reactFlowEdge.style = processedStyle.style;
-        reactFlowEdge.animated = processedStyle.animated;
-        reactFlowEdge.markerEnd = processedStyle.markerEndSpec;
       }
-      // Note: Handle assignment will be done after all nodes are created
+      // For all other edges (including hyperedges with edgeProperties), trust EdgeConverter's processing
     });
     edges.push(...convertedEdges);
   }

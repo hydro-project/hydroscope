@@ -200,40 +200,40 @@ export class ContainerOperations {
       // Aggregate semantic tags from underlying edges
       function getCommonEdgeProperties(edges: GraphEdge[]): string[] | undefined {
         if (edges.length === 0) return undefined;
-        const first = edges[0].edgeProperties || [];
-        for (const edge of edges) {
-          const props = edge.edgeProperties || [];
-          if (props.length !== first.length || !props.every((p, i) => p === first[i])) {
-            return undefined; // Not all edges have the same properties
-          }
-        }
-        return first;
+
+        // Get all property sets
+        const propertySets = edges.map(edge => new Set(edge.edgeProperties || []));
+
+        // Find intersection of all sets
+        const commonProperties = propertySets.reduce((common, current) => {
+          return new Set([...common].filter(prop => current.has(prop)));
+        });
+
+        return commonProperties.size > 0 ? Array.from(commonProperties) : undefined;
       }
 
-      // Create incoming hyperEdge (container <- external)
-      if (group.incoming.length > 0) {
-        const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${externalEndpoint}${HYPEREDGE_CONSTANTS.SEPARATOR}${containerId}`;
-        const commonProps = getCommonEdgeProperties(group.incoming);
+      // Helper to create hyperedge with aggregated semantic tags
+      const createAggregatedHyperEdge = (edges: GraphEdge[], source: string, target: string) => {
+        const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${source}${HYPEREDGE_CONSTANTS.SEPARATOR}${target}`;
+        const commonProps = getCommonEdgeProperties(edges);
+
         const hyperEdge = createHyperEdge({
           id: hyperEdgeId,
-          source: externalEndpoint,
-          target: containerId,
+          source,
+          target,
           edgeProperties: commonProps,
         });
         this.state.setHyperEdge(hyperEdge.id, hyperEdge);
+      };
+
+      // Create incoming hyperEdge (container <- external)
+      if (group.incoming.length > 0) {
+        createAggregatedHyperEdge(group.incoming, externalEndpoint, containerId);
       }
 
       // Create outgoing hyperEdge (container -> external)
       if (group.outgoing.length > 0) {
-        const hyperEdgeId = `${HYPEREDGE_CONSTANTS.PREFIX}${containerId}${HYPEREDGE_CONSTANTS.SEPARATOR}${externalEndpoint}`;
-        const commonProps = getCommonEdgeProperties(group.outgoing);
-        const hyperEdge = createHyperEdge({
-          id: hyperEdgeId,
-          source: containerId,
-          target: externalEndpoint,
-          edgeProperties: commonProps,
-        });
-        this.state.setHyperEdge(hyperEdge.id, hyperEdge);
+        createAggregatedHyperEdge(group.outgoing, containerId, externalEndpoint);
       }
     }
   }
