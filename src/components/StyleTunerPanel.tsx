@@ -7,8 +7,8 @@ type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
 // Layout algorithm options (matching ELK's available algorithms)
 const layoutOptions = {
-  layered: 'Layered',
-  mrtree: 'MR Tree (Default)',
+  layered: 'Layered (Default)',
+  mrtree: 'MR Tree',
   force: 'Force-Directed',
   stress: 'Stress Minimization',
   radial: 'Radial',
