@@ -8,6 +8,7 @@
 import { GraphEdge } from '../types';
 import { createHyperEdge } from '../EdgeFactory';
 import { HYPEREDGE_CONSTANTS } from '../../shared/config';
+import { EDGE_VISUAL_CHANNELS } from '../EdgeStyleProcessor';
 
 export class ContainerOperations {
   private readonly state: any; // Use any to access private methods
@@ -204,12 +205,34 @@ export class ContainerOperations {
         // Get all property sets
         const propertySets = edges.map(edge => new Set(edge.edgeProperties || []));
 
-        // Find intersection of all sets
+        // Find intersection of all sets (properties common to ALL edges)
         const commonProperties = propertySets.reduce((common, current) => {
           return new Set([...common].filter(prop => current.has(prop)));
         });
 
-        return commonProperties.size > 0 ? Array.from(commonProperties) : undefined;
+        // Additionally, preserve channel-specific properties that are common within each visual channel
+        const channelCommonProperties = new Set<string>();
+        
+        for (const [channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
+          // For each channel, find properties that belong to this channel
+          const channelProperties = propertySets.map(propSet => 
+            [...propSet].filter(prop => (channelValues as readonly (string | number)[]).includes(prop))
+          );
+          
+          // If all edges have at least one property from this channel,
+          // and they all share a common property within this channel
+          if (channelProperties.every(props => props.length > 0)) {
+            const channelIntersection = channelProperties.reduce((common, current) => {
+              return common.filter(prop => current.includes(prop));
+            });
+            
+            // Add common channel properties
+            channelIntersection.forEach(prop => channelCommonProperties.add(prop));
+          }
+        }
+
+        const allCommonProperties = new Set([...commonProperties, ...channelCommonProperties]);
+        return allCommonProperties.size > 0 ? Array.from(allCommonProperties) : undefined;
       }
 
       // Helper to create hyperedge with aggregated semantic tags

@@ -1,4 +1,3 @@
-// DEBUG: Log mapping resolution (removed duplicate, see below for correct placement)
 /**
  * Edge Style Processor
  *
@@ -20,7 +19,7 @@ export interface EdgeStyleConfig {
 }
 
 // Fixed style categories defined by the visualizer
-export const EDGE_STYLE_CATEGORIES = {
+export const EDGE_VISUAL_CHANNELS = {
   'line-pattern': ['solid', 'dashed', 'dotted', 'dash-dot'],
   'line-width': [1, 2, 3, 4],
   animation: ['static', 'animated'],
