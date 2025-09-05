@@ -6,7 +6,10 @@
  */
 
 // Core layout engine - bridge-based!
-export { ELKLayoutEngine, DEFAULT_LAYOUT_CONFIG } from './ELKLayoutEngine';
+export { ELKLayoutEngine } from './ELKLayoutEngine';
+
+// Re-export centralized layout configuration
+export { DEFAULT_LAYOUT_CONFIG } from '../shared/config';
 
 // Our own types
 export type {
@@ -25,7 +28,7 @@ export type {
 
 // Import types for local use
 import type { LayoutConfig } from '../core/types';
-import { DEFAULT_LAYOUT_CONFIG } from './ELKLayoutEngine';
+import { DEFAULT_LAYOUT_CONFIG } from '../shared/config';
 
 // Configuration helpers
 export function getLayoutConfig(): LayoutConfig {
@@ -41,4 +44,4 @@ export const LAYOUT_CONFIGS = {
   default: DEFAULT_LAYOUT_CONFIG,
   compact: { ...DEFAULT_LAYOUT_CONFIG, spacing: 50 },
   spacious: { ...DEFAULT_LAYOUT_CONFIG, spacing: 150 },
-};
+} as const;

@@ -12,7 +12,7 @@ import { ELKBridge } from '../bridges/ELKBridge';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import type { ReactFlowData } from '../bridges/ReactFlowBridge';
 import type { Container, LayoutConfig } from './types';
-import { LAYOUT_CONSTANTS } from '../shared/config';
+import { LAYOUT_CONSTANTS, DEFAULT_LAYOUT_CONFIG } from '../shared/config';
 
 // Visualization states
 export type VisualizationPhase =
@@ -41,11 +41,7 @@ const DEFAULT_CONFIG: VisualizationEngineConfig = {
   autoLayout: true,
   layoutDebounceMs: 300,
   enableLogging: false,
-  layoutConfig: {
-    enableSmartCollapse: true,
-    algorithm: 'layered',
-    direction: 'DOWN',
-  },
+  layoutConfig: DEFAULT_LAYOUT_CONFIG,
 };
 
 export class VisualizationEngine {

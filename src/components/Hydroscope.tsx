@@ -18,7 +18,7 @@ import { InfoPanel, type InfoPanelRef } from './InfoPanel';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig } from '../core/types';
 import { parseGraphJSON, createRenderConfig } from '../core/JSONParser';
-import { LAYOUT_CONSTANTS } from '../shared/config';
+import { LAYOUT_CONSTANTS, DEFAULT_LAYOUT_CONFIG } from '../shared/config';
 import { isDevelopment, getProfiler } from '../dev';
 import {
   saveToStorage,
@@ -81,7 +81,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       showPerformancePanel = false,
       enableCollapse = true,
       autoFit = true,
-      initialLayoutAlgorithm = 'layered',
+      initialLayoutAlgorithm = DEFAULT_LAYOUT_CONFIG.algorithm,
       initialColorPalette = 'Set3',
       onFileUpload,
       onNodeClick,

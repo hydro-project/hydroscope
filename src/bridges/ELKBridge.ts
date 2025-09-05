@@ -9,7 +9,7 @@
 
 import { VisualizationState } from '../core/VisualizationState';
 import type { LayoutConfig } from '../core/types';
-import { getELKLayoutOptions, createFixedPositionOptions } from '../shared/config';
+import { getELKLayoutOptions, createFixedPositionOptions, DEFAULT_LAYOUT_CONFIG } from '../shared/config';
 
 import ELK from 'elkjs';
 import type { ElkGraph, ElkNode, ElkEdge } from './elk-types';
@@ -20,7 +20,7 @@ export class ELKBridge {
 
   constructor(layoutConfig: LayoutConfig = {}) {
     this.elk = new ELK(); // ✅ Create fresh ELK instance for each ELKBridge
-    this.layoutConfig = { algorithm: 'layered', ...layoutConfig };
+    this.layoutConfig = { ...DEFAULT_LAYOUT_CONFIG, ...layoutConfig };
   }
 
   // ============================================================================

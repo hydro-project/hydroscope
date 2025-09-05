@@ -523,7 +523,19 @@ export const ELK_ALGORITHMS = {
   FORCE: 'force',
   STRESS: 'stress',
   RADIAL: 'radial',
-};
+} as const;
+
+// Default algorithm - single source of truth
+export const DEFAULT_ELK_ALGORITHM = ELK_ALGORITHMS.LAYERED;
+
+// Default layout configuration - single source of truth for all layout settings
+export const DEFAULT_LAYOUT_CONFIG = {
+  algorithm: DEFAULT_ELK_ALGORITHM,
+  direction: 'DOWN',
+  enableSmartCollapse: true,
+  spacing: 100,
+  nodeSize: { width: 180, height: 60 },
+} as const;
 
 export const LAYOUT_SPACING = {
   // Updated to match working Visualizer spacing values
@@ -539,7 +551,7 @@ export const LAYOUT_SPACING = {
 };
 
 export const ELK_LAYOUT_OPTIONS = {
-  'elk.algorithm': 'layered',
+  'elk.algorithm': DEFAULT_ELK_ALGORITHM,
   'elk.direction': 'DOWN',
   'elk.spacing.nodeNode': LAYOUT_SPACING.NODE_TO_NODE_NORMAL.toString(),
   'elk.spacing.edgeNode': LAYOUT_SPACING.EDGE_TO_NODE.toString(),
@@ -554,7 +566,7 @@ export const ELK_LAYOUT_OPTIONS = {
 export type ELKAlgorithm = (typeof ELK_ALGORITHMS)[keyof typeof ELK_ALGORITHMS];
 
 // Accept broader algorithm strings and coerce to a valid ELK algorithm with a safe default
-export function getELKLayoutOptions(algorithm: string = ELK_ALGORITHMS.MRTREE) {
+export function getELKLayoutOptions(algorithm: string = DEFAULT_ELK_ALGORITHM) {
   const allowed: Record<string, ELKAlgorithm> = {
     [ELK_ALGORITHMS.LAYERED]: ELK_ALGORITHMS.LAYERED,
     [ELK_ALGORITHMS.MRTREE]: ELK_ALGORITHMS.MRTREE,
@@ -562,7 +574,7 @@ export function getELKLayoutOptions(algorithm: string = ELK_ALGORITHMS.MRTREE) {
     [ELK_ALGORITHMS.STRESS]: ELK_ALGORITHMS.STRESS,
     [ELK_ALGORITHMS.RADIAL]: ELK_ALGORITHMS.RADIAL,
   } as const;
-  const normalized = allowed[algorithm] ?? ELK_ALGORITHMS.LAYERED;
+  const normalized = allowed[algorithm] ?? DEFAULT_ELK_ALGORITHM;
   return {
     ...ELK_LAYOUT_OPTIONS,
     'elk.algorithm': normalized,

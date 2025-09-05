@@ -116,11 +116,13 @@ export function createContainerClickHandler(
   };
 }
 
+import { DEFAULT_LAYOUT_CONFIG } from '../shared/config';
+
 // Layout configuration helpers
-export function createLayoutConfig(algorithm: string = 'layered') {
+export function createLayoutConfig(algorithm: string = DEFAULT_LAYOUT_CONFIG.algorithm) {
   return {
+    ...DEFAULT_LAYOUT_CONFIG,
     algorithm,
-    // Add other common layout options
   };
 }
 
