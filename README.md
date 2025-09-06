@@ -27,6 +27,21 @@ Import the stylesheet once in your app:
 import '@hydro-project/hydroscope/style.css';
 ```
 
+### ESM & Explicit Styles
+
+Hydroscope ships as pure ESM. It does **not** auto-import third-party styles to keep SSR and Node imports safe.
+
+Add these in your application root (order is not critical):
+
+```ts
+import '@xyflow/react/dist/style.css';      // React Flow base styles
+import '@hydro-project/hydroscope/style.css'; // Hydroscope generated styles
+import 'antd/dist/reset.css';               // (Optional) Ant Design reset
+```
+
+Server-side rendering (Next.js, Docusaurus): Module top-level has no unguarded `window`/`document` usage, so importing is safe. Browser-only code runs inside React effects. For client-only mounting patterns you can still dynamically import the component if desired.
+
+
 ## Requirements
 
 - Node >= 18

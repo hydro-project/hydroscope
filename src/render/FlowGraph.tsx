@@ -5,7 +5,6 @@
 
 import React, { useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { ReactFlow, Background, MiniMap, ReactFlowProvider } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { CustomControls } from '../components/CustomControls';
 
 import { DEFAULT_RENDER_CONFIG, UI_CONSTANTS } from '../shared/config';

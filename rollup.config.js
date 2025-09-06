@@ -15,20 +15,12 @@ const externalPkgs = [
 
 export default {
   input: 'src/index.ts',
-  output: [
-    {
-      file: 'dist/index.js',
-      format: 'cjs',
-      sourcemap: true,
-      inlineDynamicImports: true
-    },
-    {
-      file: 'dist/index.esm.js',
-      format: 'esm',
-      sourcemap: true,
-      inlineDynamicImports: true
-    }
-  ],
+  output: {
+    file: 'dist/index.esm.js',
+    format: 'esm',
+    sourcemap: true,
+    inlineDynamicImports: true
+  },
   external: (id) => externalPkgs.some(pkg => id === pkg || id.startsWith(pkg + '/')),
   plugins: [
     resolve({
