@@ -136,7 +136,7 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
           }, 200);
         }
       };
-  window.addEventListener('resize', onWindowResize);
+      window.addEventListener('resize', onWindowResize);
 
       return () => {
         resizeObserver.disconnect();
