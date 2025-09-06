@@ -1,6 +1,6 @@
 /**
  * Regression test for per-visual-channel merge logic in ContainerOperations
- * 
+ *
  * Tests the enhanced edge property aggregation that preserves:
  * 1. Properties common to ALL edges (original behavior)
  * 2. Properties that are common within each visual channel (new behavior)
@@ -77,7 +77,9 @@ describe('Visual Channel Merge Logic', () => {
         for (const [channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
           // For each channel, find properties that belong to this channel
           const channelProperties = propertySets.map(propSet =>
-            [...propSet].filter(prop => (channelValues as readonly (string | number)[]).includes(prop))
+            [...propSet].filter(prop =>
+              (channelValues as readonly (string | number)[]).includes(prop)
+            )
           );
 
           // If all edges have at least one property from this channel,
@@ -106,22 +108,22 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: ['solid', 'thick', 'Network']
+          edgeProperties: ['solid', 'thick', 'Network'],
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: ['solid', 'thin', 'Network']
+          edgeProperties: ['solid', 'thin', 'Network'],
         },
         {
           type: 'graph',
           id: 'edge3',
           source: 'node3',
           target: 'node4',
-          edgeProperties: ['dashed', 'thick', 'Network']
-        }
+          edgeProperties: ['dashed', 'thick', 'Network'],
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
@@ -139,22 +141,22 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: ['solid', '2', 'Network'] // line-pattern: solid, line-width: 2
+          edgeProperties: ['solid', '2', 'Network'], // line-pattern: solid, line-width: 2
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: ['solid', '3', 'Cycle'] // line-pattern: solid, line-width: 3
+          edgeProperties: ['solid', '3', 'Cycle'], // line-pattern: solid, line-width: 3
         },
         {
           type: 'graph',
           id: 'edge3',
           source: 'node3',
           target: 'node4',
-          edgeProperties: ['solid', '1', 'Bounded'] // line-pattern: solid, line-width: 1
-        }
+          edgeProperties: ['solid', '1', 'Bounded'], // line-pattern: solid, line-width: 1
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
@@ -175,22 +177,22 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: ['dashed', '2', 'animated', 'light-blue'] // multiple channels
+          edgeProperties: ['dashed', '2', 'animated', 'light-blue'], // multiple channels
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: ['dashed', '3', 'animated', 'light-red'] // same line-pattern and animation
+          edgeProperties: ['dashed', '3', 'animated', 'light-red'], // same line-pattern and animation
         },
         {
           type: 'graph',
           id: 'edge3',
           source: 'node3',
           target: 'node4',
-          edgeProperties: ['dashed', '1', 'animated', 'light-green'] // same line-pattern and animation
-        }
+          edgeProperties: ['dashed', '1', 'animated', 'light-green'], // same line-pattern and animation
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
@@ -212,29 +214,29 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: ['solid', '2', 'Network', 'static'] // Global: Network, Channel: solid, static
+          edgeProperties: ['solid', '2', 'Network', 'static'], // Global: Network, Channel: solid, static
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: ['solid', '3', 'Network', 'static'] // Global: Network, Channel: solid, static
+          edgeProperties: ['solid', '3', 'Network', 'static'], // Global: Network, Channel: solid, static
         },
         {
           type: 'graph',
           id: 'edge3',
           source: 'node3',
           target: 'node4',
-          edgeProperties: ['solid', '1', 'Network', 'static'] // Global: Network, Channel: solid, static
-        }
+          edgeProperties: ['solid', '1', 'Network', 'static'], // Global: Network, Channel: solid, static
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
 
       // Global common property
       expect(result).toContain('Network');
-      // Channel-specific common properties  
+      // Channel-specific common properties
       expect(result).toContain('solid');
       expect(result).toContain('static');
     });
@@ -251,15 +253,15 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: []
+          edgeProperties: [],
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: []
-        }
+          edgeProperties: [],
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
@@ -272,16 +274,16 @@ describe('Visual Channel Merge Logic', () => {
           type: 'graph',
           id: 'edge1',
           source: 'node1',
-          target: 'node2'
+          target: 'node2',
           // edgeProperties is undefined
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
-          target: 'node3'
+          target: 'node3',
           // edgeProperties is undefined
-        }
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
@@ -295,22 +297,22 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: ['solid', 'Network', 'CustomProperty1']
+          edgeProperties: ['solid', 'Network', 'CustomProperty1'],
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: ['solid', 'Cycle', 'CustomProperty2']
+          edgeProperties: ['solid', 'Cycle', 'CustomProperty2'],
         },
         {
           type: 'graph',
           id: 'edge3',
           source: 'node3',
           target: 'node4',
-          edgeProperties: ['dashed', 'Bounded', 'CustomProperty3']
-        }
+          edgeProperties: ['dashed', 'Bounded', 'CustomProperty3'],
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);
@@ -326,22 +328,22 @@ describe('Visual Channel Merge Logic', () => {
           id: 'edge1',
           source: 'node1',
           target: 'node2',
-          edgeProperties: ['2', 'Network'] // line-width: 2
+          edgeProperties: ['2', 'Network'], // line-width: 2
         },
         {
           type: 'graph',
           id: 'edge2',
           source: 'node2',
           target: 'node3',
-          edgeProperties: ['2', 'Cycle'] // line-width: 2
+          edgeProperties: ['2', 'Cycle'], // line-width: 2
         },
         {
           type: 'graph',
           id: 'edge3',
           source: 'node3',
           target: 'node4',
-          edgeProperties: ['2', 'Bounded'] // line-width: 2
-        }
+          edgeProperties: ['2', 'Bounded'], // line-width: 2
+        },
       ];
 
       const result = testGetCommonEdgeProperties(edges);

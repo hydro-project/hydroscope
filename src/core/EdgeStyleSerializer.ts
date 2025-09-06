@@ -1,6 +1,6 @@
 /**
  * Edge Style Serializer
- * 
+ *
  * Shared utilities for serializing/deserializing ProcessedEdgeStyle objects
  * between regular edges and hyperedges to prevent drift and duplication.
  */
@@ -18,7 +18,7 @@ export function serializeProcessedStyle(styleResult: ProcessedEdgeStyle): string
     appliedProperties: styleResult.appliedProperties,
     markerEndSpec: styleResult.markerEndSpec,
     label: styleResult.label,
-    lineStyle: styleResult.lineStyle
+    lineStyle: styleResult.lineStyle,
   });
 }
 
@@ -35,7 +35,7 @@ export function deserializeProcessedStyle(styleJson: string): ProcessedEdgeStyle
       appliedProperties: parsed.appliedProperties || [],
       markerEndSpec: parsed.markerEndSpec,
       label: parsed.label,
-      lineStyle: parsed.lineStyle
+      lineStyle: parsed.lineStyle,
     };
   } catch (e) {
     console.warn('Failed to parse ProcessedEdgeStyle JSON:', e);

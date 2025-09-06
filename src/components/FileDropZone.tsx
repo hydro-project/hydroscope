@@ -394,7 +394,7 @@ function FileDropZone({
   const processFile = useCallback(
     async (file: File) => {
       const profiler = getProfiler();
-      
+
       // Only do profiler setup if profiler is available
       if (profiler) {
         profiler.reset(); // Start fresh for this file

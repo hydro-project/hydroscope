@@ -827,4 +827,388 @@ describe('Container Operations', () => {
       expect(state.visibleNodes.length).toBe(originalVisibleNodes);
     });
   });
+
+  // ============ CONTAINER COLLAPSE INVARIANTS ============
+  // Consolidated from containerCollapseInvariants.test.ts
+
+  describe('Container Collapse Invariants', () => {
+    describe('Node Hiding Invariants', () => {
+      it('should set hidden: true on nodes when their parent container is collapsed', () => {
+        const state = createVisualizationState();
+
+        // Setup: Create container with child nodes
+        state.setContainer('container1', {
+          children: ['node1', 'node2'],
+          collapsed: false,
+          hidden: false,
+        });
+
+        state.setGraphNode('node1', { label: 'Node 1', hidden: false });
+        state.setGraphNode('node2', { label: 'Node 2', hidden: false });
+
+        // Initially: nodes should be visible
+        expect(state.getGraphNode('node1')?.hidden).toBe(false);
+        expect(state.getGraphNode('node2')?.hidden).toBe(false);
+
+        // INVARIANT TEST: Collapse container - child nodes must become hidden
+        state.collapseContainer('container1');
+
+        // After collapse: nodes should be hidden
+        expect(state.getGraphNode('node1')?.hidden).toBe(true);
+        expect(state.getGraphNode('node2')?.hidden).toBe(true);
+
+        // INVARIANT: visibleNodes should not include hidden nodes
+        const visibleNodeIds = state.visibleNodes.map(n => n.id);
+        expect(visibleNodeIds).not.toContain('node1');
+        expect(visibleNodeIds).not.toContain('node2');
+      });
+
+      it('should handle nested containers correctly', () => {
+        const state = createVisualizationState();
+
+        // Setup: Nested container hierarchy
+        state.setContainer('outer', {
+          children: ['inner'],
+          collapsed: false,
+          hidden: false,
+        });
+
+        state.setContainer('inner', {
+          children: ['node1', 'node2'],
+          collapsed: false,
+          hidden: false,
+        });
+
+        state.setGraphNode('node1', { label: 'Node 1', hidden: false });
+        state.setGraphNode('node2', { label: 'Node 2', hidden: false });
+
+        // INVARIANT TEST: Collapse outer container - all descendants should be hidden
+        state.collapseContainer('outer');
+
+        // After collapse: nodes should be hidden (transitively)
+        expect(state.getGraphNode('node1')?.hidden).toBe(true);
+        expect(state.getGraphNode('node2')?.hidden).toBe(true);
+        expect(state.getContainer('inner')?.hidden).toBe(true);
+
+        // INVARIANT: visibleNodes should not include any descendants
+        const visibleNodeIds = state.visibleNodes.map(n => n.id);
+        expect(visibleNodeIds).not.toContain('node1');
+        expect(visibleNodeIds).not.toContain('node2');
+
+        const visibleContainerIds = state.visibleContainers.map(c => c.id);
+        expect(visibleContainerIds).not.toContain('inner');
+        expect(visibleContainerIds).toContain('outer'); // Collapsed containers are still visible
+      });
+    });
+
+    describe('Edge Hiding Invariants', () => {
+      it('should set hidden: true on edges when their endpoints are in collapsed containers', () => {
+        const state = createVisualizationState();
+
+        // Setup: Two containers with nodes and edge between them
+        state.setContainer('container1', {
+          children: ['node1'],
+          collapsed: false,
+          hidden: false,
+        });
+
+        state.setContainer('container2', {
+          children: ['node2'],
+          collapsed: false,
+          hidden: false,
+        });
+
+        state.setGraphNode('node1', { label: 'Node 1', hidden: false });
+        state.setGraphNode('node2', { label: 'Node 2', hidden: false });
+        state.setGraphEdge('edge1', { source: 'node1', target: 'node2', hidden: false });
+
+        // Initially: edge should be visible
+        expect(state.getGraphEdge('edge1')?.hidden).toBe(false);
+
+        // INVARIANT TEST: Collapse one container - edge should become hidden
+        state.collapseContainer('container1');
+
+        // After collapse: edge should be hidden (one endpoint hidden)
+        expect(state.getGraphEdge('edge1')?.hidden).toBe(true);
+
+        // INVARIANT: visibleEdges should not include hidden edges
+        const visibleEdgeIds = state.visibleEdges.map(e => e.id);
+        expect(visibleEdgeIds).not.toContain('edge1');
+      });
+
+      it('should handle internal edges within collapsed containers', () => {
+        const state = createVisualizationState();
+
+        // Setup: Container with internal nodes and edge
+        state.setContainer('container1', {
+          children: ['node1', 'node2'],
+          collapsed: false,
+          hidden: false,
+        });
+
+        state.setGraphNode('node1', { label: 'Node 1', hidden: false });
+        state.setGraphNode('node2', { label: 'Node 2', hidden: false });
+        state.setGraphEdge('internal_edge', { source: 'node1', target: 'node2', hidden: false });
+
+        // Initially: edge should be visible
+        expect(state.getGraphEdge('internal_edge')?.hidden).toBe(false);
+
+        // INVARIANT TEST: Collapse container - internal edge should become hidden
+        state.collapseContainer('container1');
+
+        // After collapse: internal edge should be hidden
+        expect(state.getGraphEdge('internal_edge')?.hidden).toBe(true);
+
+        // INVARIANT: visibleEdges should not include internal edges
+        const visibleEdgeIds = state.visibleEdges.map(e => e.id);
+        expect(visibleEdgeIds).not.toContain('internal_edge');
+      });
+    });
+  });
+
+  // ============ CONTAINER ABSTRACTION LEVELS ============
+  // Consolidated from containerAbstractionLevels.test.ts
+
+  describe('Container Abstraction Levels', () => {
+    describe('Basic Lifting/Grounding Symmetry', () => {
+      it('should perform basic lifting (collapse container to hide details)', () => {
+        const state: VisualizationState = createVisualizationState();
+
+        // Create a concrete scenario: container with internal node connected to external node
+        state.setGraphNode('internal', { label: 'Internal Implementation' });
+        state.setGraphNode('external', { label: 'External Interface' });
+
+        state.setContainer('abstractModule', {
+          children: ['internal'],
+          label: 'Abstract Module',
+        });
+
+        state.setGraphEdge('implementation_edge', { source: 'internal', target: 'external' });
+
+        // Verify initial concrete state (grounded)
+        const internalNode = state.getGraphNode('internal');
+        const externalNode = state.getGraphNode('external');
+        const implementationEdge = state.getGraphEdge('implementation_edge');
+
+        expect(internalNode?.hidden).toBe(false);
+        expect(externalNode?.hidden).toBe(false);
+        expect(implementationEdge?.hidden).toBe(false);
+
+        // No abstractions should exist yet
+        const initialAbstractions = state.visibleEdges.filter(e => isHyperEdge(e));
+        expect(initialAbstractions.length).toBe(0);
+
+        // PERFORM LIFTING: Collapse container to create abstraction
+        state.collapseContainer('abstractModule');
+
+        // Verify lifted state (abstract)
+        const internalAfterLifting = state.getGraphNode('internal');
+        const externalAfterLifting = state.getGraphNode('external');
+        const edgeAfterLifting = state.getGraphEdge('implementation_edge');
+
+        expect(internalAfterLifting?.hidden).toBe(true); // Implementation hidden
+        expect(externalAfterLifting?.hidden).toBe(false); // Interface still visible
+        expect(edgeAfterLifting?.hidden).toBe(true); // Implementation edge hidden
+
+        // Abstract representation should be created
+        const abstractions = state.visibleEdges.filter(e => isHyperEdge(e));
+        expect(abstractions.length).toBe(1);
+
+        const abstraction = abstractions[0];
+        expect(abstraction.id).toBe('hyper_abstractModule_to_external');
+      });
+
+      it('should maintain perfect symmetry: Lift → Ground = Identity', () => {
+        const state: VisualizationState = createVisualizationState();
+
+        // Create initial concrete state
+        state.setGraphNode('internal', { label: 'Internal Implementation' });
+        state.setGraphNode('external', { label: 'External Interface' });
+        state.setContainer('module', { children: ['internal'] });
+        state.setGraphEdge('edge', { source: 'internal', target: 'external' });
+
+        // Capture initial state
+        const initialNodes = state.visibleNodes.length;
+        const initialEdges = state.visibleEdges.length;
+        const initialAbstractions = state.visibleEdges.filter(e => isHyperEdge(e)).length;
+
+        // Apply Lifting → Grounding sequence
+        state.collapseContainer('module'); // LIFT (create abstraction)
+        state.expandContainer('module'); // GROUND (reveal details)
+
+        // Verify we're back to original state
+        expect(state.visibleNodes.length).toBe(initialNodes);
+        expect(state.visibleEdges.length).toBe(initialEdges);
+
+        const finalAbstractions = state.visibleEdges.filter(e => isHyperEdge(e)).length;
+        expect(finalAbstractions).toBe(initialAbstractions);
+
+        // All nodes should be visible again
+        expect(state.getGraphNode('internal')?.hidden).toBe(false);
+        expect(state.getGraphNode('external')?.hidden).toBe(false);
+        expect(state.getGraphEdge('edge')?.hidden).toBe(false);
+      });
+    });
+
+    describe('Multi-Container Lifting/Grounding', () => {
+      it('should handle progressive lifting (multiple containers → layered abstractions)', () => {
+        const state: VisualizationState = createVisualizationState();
+
+        // Create complex concrete scenario
+        state.setGraphNode('impl1', { label: 'Implementation 1' });
+        state.setGraphNode('impl2', { label: 'Implementation 2' });
+        state.setGraphNode('impl3', { label: 'Implementation 3' });
+        state.setGraphNode('impl4', { label: 'Implementation 4' });
+        state.setGraphNode('client', { label: 'Client' });
+
+        state.setContainer('moduleA', {
+          children: ['impl1', 'impl2'],
+          label: 'Module A',
+        });
+
+        state.setContainer('moduleB', {
+          children: ['impl3', 'impl4'],
+          label: 'Module B',
+        });
+
+        // Create implementation edges and client interfaces
+        state.setGraphEdge('internal_A', { source: 'impl1', target: 'impl2' });
+        state.setGraphEdge('internal_B', { source: 'impl3', target: 'impl4' });
+        state.setGraphEdge('cross_module', { source: 'impl1', target: 'impl3' });
+        state.setGraphEdge('client_A', { source: 'impl2', target: 'client' });
+        state.setGraphEdge('client_B', { source: 'impl4', target: 'client' });
+
+        // Verify initial concrete state
+        expect(state.visibleNodes.length).toBe(5);
+        expect(state.visibleEdges.length).toBe(5);
+        expect(state.visibleEdges.filter(e => isHyperEdge(e)).length).toBe(0);
+
+        // PROGRESSIVE LIFTING: First level of abstraction
+        state.collapseContainer('moduleA');
+
+        expect(state.visibleNodes.length).toBe(3); // impl3, impl4, client (moduleA abstracted)
+        const firstLevelAbstractions = state.visibleEdges.filter(e => isHyperEdge(e));
+        expect(firstLevelAbstractions.length).toBeGreaterThan(0);
+
+        // PROGRESSIVE LIFTING: Second level of abstraction
+        state.collapseContainer('moduleB');
+
+        expect(state.visibleNodes.length).toBe(1); // Just client (both modules abstracted)
+        const secondLevelAbstractions = state.visibleEdges.filter(e => isHyperEdge(e));
+        expect(secondLevelAbstractions.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  // ============ CONTAINER LABEL POSITIONING & DIMENSIONS ============
+  // Consolidated from containerLabelPositioning.test.ts
+
+  describe('Container Label Positioning & Dimensions', () => {
+    describe('getContainerAdjustedDimensions', () => {
+      it('should add label space to expanded containers', () => {
+        const state = createVisualizationState();
+        const baseWidth = 300;
+        const baseHeight = 200;
+
+        // Create container first
+        state.setContainer('container1', {
+          collapsed: false,
+        });
+
+        // Then simulate ELK layout result being applied
+        state.setContainerLayout('container1', {
+          dimensions: { width: baseWidth, height: baseHeight },
+        });
+
+        const adjustedDims = state.getContainerAdjustedDimensions('container1');
+
+        // Should return the raw ELK dimensions
+        expect(adjustedDims.width).toBe(baseWidth);
+        expect(adjustedDims.height).toBe(baseHeight);
+      });
+
+      it('should ensure minimum dimensions for collapsed containers', () => {
+        const state = createVisualizationState();
+        const MIN_CONTAINER_WIDTH = 200;
+        const MIN_CONTAINER_HEIGHT = 150;
+
+        state.setContainer('container1', {
+          width: 50, // Very small raw dimensions
+          height: 20,
+          collapsed: true,
+        });
+
+        const adjustedDims = state.getContainerAdjustedDimensions('container1');
+
+        // Should enforce minimum width and height
+        expect(adjustedDims.width).toBeGreaterThanOrEqual(MIN_CONTAINER_WIDTH);
+        expect(adjustedDims.height).toBeGreaterThanOrEqual(MIN_CONTAINER_HEIGHT);
+      });
+
+      it('should throw error for non-existent container', () => {
+        const state = createVisualizationState();
+        expect(() => {
+          state.getContainerAdjustedDimensions('non-existent');
+        }).toThrow();
+      });
+    });
+  });
+
+  // ============ CONTAINER POSITIONING ============
+  // Consolidated from container-positioning.test.ts
+
+  describe('Container Positioning', () => {
+    it('should handle container positioning and hierarchy', () => {
+      const state = createVisualizationState();
+
+      // Set up a parent container with child container
+      state.setContainer('parent', {
+        x: 100,
+        y: 100,
+        width: 400,
+        height: 300,
+        collapsed: false,
+        children: ['child'],
+      });
+
+      state.setContainer('child', {
+        x: 150,
+        y: 150,
+        width: 100,
+        height: 100,
+        collapsed: false,
+      });
+
+      // Verify containers are created
+      const parentContainer = state.getContainer('parent');
+      const childContainer = state.getContainer('child');
+
+      expect(parentContainer).toBeDefined();
+      expect(childContainer).toBeDefined();
+      expect(parentContainer?.x).toBe(100);
+      expect(parentContainer?.y).toBe(100);
+      expect(childContainer?.x).toBe(150);
+      expect(childContainer?.y).toBe(150);
+    });
+
+    it('should handle containers without explicit positioning', () => {
+      const state = createVisualizationState();
+
+      // Set up containers without explicit positioning
+      state.setContainer('container1', {
+        collapsed: false,
+      });
+
+      state.setContainer('container2', {
+        collapsed: false,
+      });
+
+      // Verify containers are created with default positioning
+      const container1 = state.getContainer('container1');
+      const container2 = state.getContainer('container2');
+
+      expect(container1).toBeDefined();
+      expect(container2).toBeDefined();
+    });
+  });
 });

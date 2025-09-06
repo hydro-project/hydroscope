@@ -212,20 +212,22 @@ export class ContainerOperations {
 
         // Additionally, preserve channel-specific properties that are common within each visual channel
         const channelCommonProperties = new Set<string>();
-        
+
         for (const [channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
           // For each channel, find properties that belong to this channel
-          const channelProperties = propertySets.map(propSet => 
-            [...propSet].filter(prop => (channelValues as readonly (string | number)[]).includes(prop))
+          const channelProperties = propertySets.map(propSet =>
+            [...propSet].filter(prop =>
+              (channelValues as readonly (string | number)[]).includes(prop)
+            )
           );
-          
+
           // If all edges have at least one property from this channel,
           // and they all share a common property within this channel
           if (channelProperties.every(props => props.length > 0)) {
             const channelIntersection = channelProperties.reduce((common, current) => {
               return common.filter(prop => current.includes(prop));
             });
-            
+
             // Add common channel properties
             channelIntersection.forEach(prop => channelCommonProperties.add(prop));
           }

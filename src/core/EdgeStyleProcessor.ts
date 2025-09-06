@@ -39,7 +39,7 @@ import {
   HALO_COLOR_MAPPINGS,
   EDGE_PROPERTY_ABBREVIATIONS,
   EDGE_PROPERTY_DESCRIPTIONS,
-  DEFAULT_EDGE_STYLE
+  DEFAULT_EDGE_STYLE,
 } from '../shared/config';
 
 // Use ReactFlow's EdgeMarker type directly for better compatibility
@@ -298,7 +298,8 @@ function processDirectStyleTags(): ProcessedEdgeStyle {
  */
 function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): ProcessedEdgeStyle {
   const normalizedTag = styleTag.toLowerCase().replace(/[_\s]/g, '-');
-  const visualStyle = EDGE_STYLE_TAG_MAPPINGS[normalizedTag as keyof typeof EDGE_STYLE_TAG_MAPPINGS];
+  const visualStyle =
+    EDGE_STYLE_TAG_MAPPINGS[normalizedTag as keyof typeof EDGE_STYLE_TAG_MAPPINGS];
 
   if (visualStyle) {
     return {
@@ -475,9 +476,13 @@ export function createEdgeLabel(
     return originalLabel;
   }
 
-  const propertyLabels = edgeProperties.map(prop =>
-    EDGE_PROPERTY_ABBREVIATIONS[prop as keyof typeof EDGE_PROPERTY_ABBREVIATIONS] || prop.charAt(0)
-  ).join('');
+  const propertyLabels = edgeProperties
+    .map(
+      prop =>
+        EDGE_PROPERTY_ABBREVIATIONS[prop as keyof typeof EDGE_PROPERTY_ABBREVIATIONS] ||
+        prop.charAt(0)
+    )
+    .join('');
 
   if (originalLabel) {
     return `${originalLabel} [${propertyLabels}]`;
@@ -497,7 +502,9 @@ export function getEdgePropertiesDescription(
     return 'No properties';
   }
 
-  return edgeProperties.map(prop =>
-    EDGE_PROPERTY_DESCRIPTIONS[prop as keyof typeof EDGE_PROPERTY_DESCRIPTIONS] || prop
-  ).join(', ');
+  return edgeProperties
+    .map(
+      prop => EDGE_PROPERTY_DESCRIPTIONS[prop as keyof typeof EDGE_PROPERTY_DESCRIPTIONS] || prop
+    )
+    .join(', ');
 }

@@ -14,14 +14,22 @@ export function teardown() {
 
   // Check if fuzz tests were skipped
   const shouldRunFuzzTests = process.env.ENABLE_FUZZ_TESTS === 'true';
+  // Check if test logs were suppressed
+  const shouldOutputTestLogs = process.env.ENABLE_TEST_LOGS === 'true';
 
-  if (!shouldRunFuzzTests) {
+  if (shouldRunFuzzTests || shouldOutputTestLogs) {
     console.log('\n' + '='.repeat(80));
+  }
+  if (!shouldRunFuzzTests) {
     console.log('⏭️  COMPREHENSIVE FUZZ TESTS SKIPPED');
     console.log('   Set ENABLE_FUZZ_TESTS=true to run comprehensive stress tests');
-    console.log('   for investigating subtle visualization bugs.');
+  }
+  if (!shouldOutputTestLogs) {
+    console.log('👀 CONSOLE LOGS SUPPRESSED');
+    console.log('   Set ENABLE_TEST_LOGS=true to output console logs from tests');
+  }
+  if (shouldRunFuzzTests || shouldOutputTestLogs) {
     console.log('='.repeat(80) + '\n');
   }
-
   console.log('🧹 Global teardown complete.');
 }

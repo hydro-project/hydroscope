@@ -9,7 +9,11 @@
 
 import { VisualizationState } from '../core/VisualizationState';
 import type { LayoutConfig } from '../core/types';
-import { getELKLayoutOptions, createFixedPositionOptions, DEFAULT_LAYOUT_CONFIG } from '../shared/config';
+import {
+  getELKLayoutOptions,
+  createFixedPositionOptions,
+  DEFAULT_LAYOUT_CONFIG,
+} from '../shared/config';
 
 import ELK from 'elkjs';
 import type { ElkGraph, ElkNode, ElkEdge } from './elk-types';
@@ -321,10 +325,10 @@ export class ELKBridge {
 
         throw new Error(
           `ELKBridge received edge ${edge.id} with invalid endpoints!\n` +
-          `Sources: [${sourceIds}] (valid: ${hasValidSource})\n` +
-          `Targets: [${targetIds}] (valid: ${hasValidTarget})\n` +
-          `Available nodes: ${availableNodes}\n` +
-          `This indicates a bug in VisualizationState - it should not send edges that reference non-existent nodes.`
+            `Sources: [${sourceIds}] (valid: ${hasValidSource})\n` +
+            `Targets: [${targetIds}] (valid: ${hasValidTarget})\n` +
+            `Available nodes: ${availableNodes}\n` +
+            `This indicates a bug in VisualizationState - it should not send edges that reference non-existent nodes.`
         );
       }
     });
@@ -371,8 +375,8 @@ export class ELKBridge {
           : 200;
       const containerHeight =
         typeof container.height === 'number' &&
-          !isNaN(container.height) &&
-          isFinite(container.height)
+        !isNaN(container.height) &&
+        isFinite(container.height)
           ? container.height
           : 150;
 
@@ -396,7 +400,6 @@ export class ELKBridge {
           'elk.nodeSize.constraints': 'FIXED_POS',
           'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE',
         };
-
       } else if (changedContainerId) {
         // Allow movement for the changed container
       }
@@ -419,14 +422,14 @@ export class ELKBridge {
               // Ensure valid node dimensions
               const nodeWidth =
                 typeof childNode.width === 'number' &&
-                  !isNaN(childNode.width) &&
-                  isFinite(childNode.width)
+                !isNaN(childNode.width) &&
+                isFinite(childNode.width)
                   ? childNode.width
                   : 180;
               const nodeHeight =
                 typeof childNode.height === 'number' &&
-                  !isNaN(childNode.height) &&
-                  isFinite(childNode.height)
+                !isNaN(childNode.height) &&
+                isFinite(childNode.height)
                   ? childNode.height
                   : 60;
 

@@ -357,7 +357,8 @@ export const DEFAULT_EDGE_STYLE = {
 export type NodeStyle = (typeof NODE_STYLES)[keyof typeof NODE_STYLES];
 export type EdgeStyle = (typeof EDGE_STYLES)[keyof typeof EDGE_STYLES];
 export type ContainerStyle = (typeof CONTAINER_STYLES)[keyof typeof CONTAINER_STYLES];
-export type EdgeStyleTagMapping = (typeof EDGE_STYLE_TAG_MAPPINGS)[keyof typeof EDGE_STYLE_TAG_MAPPINGS];
+export type EdgeStyleTagMapping =
+  (typeof EDGE_STYLE_TAG_MAPPINGS)[keyof typeof EDGE_STYLE_TAG_MAPPINGS];
 
 // ============================================================================
 // UI CONFIGURATION
@@ -558,7 +559,7 @@ export const ELK_LAYOUT_OPTIONS = {
   'elk.spacing.edgeEdge': LAYOUT_SPACING.EDGE_TO_EDGE.toString(),
   'elk.spacing.componentComponent': LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
   'elk.layered.spacing.nodeNodeBetweenLayers': '50', // Match Visualizer layer separation
-  'elk.edgeRouting': 'ORTHOGONAL',         // less edge overlap
+  'elk.edgeRouting': 'ORTHOGONAL', // less edge overlap
   'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX', // stagger nodes
   'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE', // Respect our specified dimensions
 };

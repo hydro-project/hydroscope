@@ -286,9 +286,13 @@ export class ReactFlowBridge {
     // Only override if hyperedge has pre-serialized style (legacy compatibility)
     convertedEdges.forEach((reactFlowEdge, index) => {
       const originalEdge = visibleEdges[index];
-      
+
       // Only override EdgeConverter processing for hyperedges with pre-serialized styles
-      if (originalEdge.type === 'hyper' && originalEdge.style && typeof originalEdge.style === 'string') {
+      if (
+        originalEdge.type === 'hyper' &&
+        originalEdge.style &&
+        typeof originalEdge.style === 'string'
+      ) {
         const { deserializeProcessedStyle } = require('../core/EdgeStyleSerializer');
         const parsedStyle = deserializeProcessedStyle(originalEdge.style);
         if (parsedStyle) {

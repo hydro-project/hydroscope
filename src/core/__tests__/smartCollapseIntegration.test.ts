@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../VisualizationState';
-import { VisualizationEngine } from '../VisualizationEngine';
+import { VisualizationEngine, createVisualizationEngine } from '../VisualizationEngine';
+import { parseGraphJSON } from '../JSONParser';
 
 const LOTS_OF_KIDS = 50;
 
@@ -894,6 +895,179 @@ describe('Smart Collapse Integration - Failure Prevention', () => {
 
       // Should have fewer hyperEdges after expansion
       expect(hyperEdgesAfterExpansion.length).toBeLessThanOrEqual(hyperEdgesAfterCollapse.length);
+    });
+  });
+
+  // ============ SMART COLLAPSE GUARDRAILS ============
+  // Consolidated from smartCollapseGuardrails.test.ts
+
+  describe('Smart Collapse Guardrails', () => {
+    it('does not re-collapse a container after manual expand followed by re-layout', async () => {
+      const paxosFlippedData = require('../../test-data/paxos-flipped.json');
+
+      const { state } = parseGraphJSON(paxosFlippedData);
+
+      const engine = createVisualizationEngine(state, {
+        enableLogging: false,
+        layoutConfig: { enableSmartCollapse: true, algorithm: 'mrtree', direction: 'DOWN' },
+      });
+
+      // Initial layout runs smart collapse once
+      await engine.runLayout();
+
+      // Pick a collapsed top-level container
+      const topLevel = state.getTopLevelContainers();
+      const collapsedTopLevel = topLevel.filter((c: any) => c.collapsed);
+      expect(collapsedTopLevel.length).toBeGreaterThan(0);
+      const targetId = collapsedTopLevel[0].id;
+
+      // User manually expands a container
+      state.expandContainer(targetId);
+
+      // Re-run layout: should NOT re-run smart collapse (layoutCount > 0)
+      await engine.runLayout();
+
+      const container = state.getContainer(targetId)!;
+      expect(container).toBeDefined();
+      expect(container.collapsed).toBe(false);
+    });
+
+    it('keeps containers expanded after ExpandAll followed by re-layout', async () => {
+      const paxosFlippedData = require('../../test-data/paxos-flipped.json');
+
+      const { state } = parseGraphJSON(paxosFlippedData);
+
+      const engine = createVisualizationEngine(state, {
+        enableLogging: false,
+        layoutConfig: { enableSmartCollapse: true, algorithm: 'mrtree', direction: 'DOWN' },
+      });
+
+      // Initial layout + smart collapse
+      await engine.runLayout();
+
+      // User clicks ExpandAll
+      state.expandAllContainers();
+
+      // Re-run layout: should respect user action
+      await engine.runLayout();
+
+      const topAfter = state.getTopLevelContainers();
+      expect(topAfter.length).toBeGreaterThan(0);
+      // All top-level containers should remain expanded
+      expect(topAfter.every((c: any) => c.collapsed === false)).toBe(true);
+    });
+  });
+
+  // ============ RECURSIVE COLLAPSE PREVENTION ============
+  // Consolidated from recursiveCollapsePreventionTest.test.ts and simpleRecursiveCollapseTest.test.ts
+
+  describe('Recursive Collapse Prevention', () => {
+    describe('Container Hierarchy Collapse Prevention', () => {
+      it('should prevent recursive collapse of already-collapsed containers', () => {
+        const state = createVisualizationState();
+
+        // Create hierarchical container structure like chat.json backtraces
+        state.setContainer('bt_1', { x: 0, y: 0, width: 200, height: 100 });
+        state.setContainer('bt_5', { x: 250, y: 0, width: 200, height: 100 });
+        state.setContainer('bt_6', { x: 500, y: 0, width: 200, height: 100, children: ['bt_5'] });
+
+        // Create nodes within containers
+        state.setGraphNode('node_in_bt_1', {
+          x: 25,
+          y: 25,
+          width: 50,
+          height: 20,
+          container: 'bt_1',
+        });
+        state.setGraphNode('node_in_bt_5', {
+          x: 25,
+          y: 25,
+          width: 50,
+          height: 20,
+          container: 'bt_5',
+        });
+        state.setGraphNode('node_in_bt_6', {
+          x: 25,
+          y: 25,
+          width: 50,
+          height: 20,
+          container: 'bt_6',
+        });
+
+        // Create edges between nodes in different containers
+        state.setGraphEdge('edge_1', { source: 'node_in_bt_1', target: 'node_in_bt_5' });
+        state.setGraphEdge('edge_1_to_5', { source: 'node_in_bt_1', target: 'node_in_bt_5' });
+        state.setGraphEdge('edge_5_to_1', { source: 'node_in_bt_5', target: 'node_in_bt_1' });
+
+        // Step 1: Collapse bt_1
+        state.collapseContainer('bt_1');
+
+        // Step 2: Collapse bt_5 (which is inside bt_6)
+        state.collapseContainer('bt_5');
+
+        // Step 3: Collapse bt_6 (parent container) - this should NOT try to re-collapse bt_5
+        expect(() => {
+          state.collapseContainer('bt_6');
+        }).not.toThrow();
+
+        // Validate no duplicate hyperEdges exist
+        state.validateInvariants();
+      });
+
+      it('should handle complex nested hierarchy without recursive collapse errors', () => {
+        const state = createVisualizationState();
+
+        // Create a deeply nested container hierarchy: bt_1 > bt_2 > bt_3 > bt_4
+        state.setContainer('bt_1', { x: 0, y: 0, width: 400, height: 300, children: ['bt_2'] });
+        state.setContainer('bt_2', { x: 50, y: 50, width: 300, height: 200, children: ['bt_3'] });
+        state.setContainer('bt_3', { x: 100, y: 100, width: 200, height: 100, children: ['bt_4'] });
+        state.setContainer('bt_4', { x: 150, y: 150, width: 100, height: 50 });
+
+        // Add nodes in each container
+        state.setGraphNode('node1', { x: 25, y: 25, width: 20, height: 20, container: 'bt_1' });
+        state.setGraphNode('node2', { x: 75, y: 75, width: 20, height: 20, container: 'bt_2' });
+        state.setGraphNode('node3', { x: 125, y: 125, width: 20, height: 20, container: 'bt_3' });
+        state.setGraphNode('node4', { x: 150, y: 150, width: 20, height: 20, container: 'bt_4' });
+
+        // Add cross-hierarchy edges
+        state.setGraphEdge('edge1', { source: 'node1', target: 'node4' });
+        state.setGraphEdge('edge2', { source: 'node2', target: 'node3' });
+
+        // Collapse from deepest to shallowest
+        expect(() => {
+          state.collapseContainer('bt_4');
+          state.collapseContainer('bt_3');
+          state.collapseContainer('bt_2');
+          state.collapseContainer('bt_1');
+        }).not.toThrow();
+
+        // Validate state integrity
+        state.validateInvariants();
+      });
+    });
+
+    describe('Simple Recursive Collapse Prevention', () => {
+      it('should prevent recursive collapse errors in simple parent-child structure', () => {
+        const state = createVisualizationState();
+
+        // Create simple container structure
+        state.setContainer('parent', { x: 0, y: 0, width: 200, height: 200, children: ['child'] });
+        state.setContainer('child', { x: 50, y: 50, width: 100, height: 100 });
+
+        // Add a node to child container
+        state.setGraphNode('node1', { x: 75, y: 75, width: 20, height: 20, container: 'child' });
+
+        // Collapse child first
+        state.collapseContainer('child');
+
+        // Collapse parent - should not try to re-collapse child
+        expect(() => {
+          state.collapseContainer('parent');
+        }).not.toThrow();
+
+        // Validate state
+        state.validateInvariants();
+      });
     });
   });
 });
