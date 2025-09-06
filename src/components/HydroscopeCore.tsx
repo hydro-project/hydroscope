@@ -78,11 +78,15 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
         profiler?.start('Graph Parsing');
         const { state, metadata } = parseGraphJSON(data as any, grouping);
 
-        // Set a reasonable initial viewport size based on common screen sizes
-        // This will be updated when the actual component size is known
-        const initialViewportWidth = Math.min(window.innerWidth * 0.8, 1400);
-        const initialViewportHeight = Math.min(window.innerHeight * 0.8, 800);
-        state.setViewport(initialViewportWidth, initialViewportHeight);
+  // Set a reasonable initial viewport size. On the server (SSR) window is undefined,
+  // so fall back to conservative defaults. The actual size will be updated on the
+  // client once mounted.
+  const hasWindow = typeof window !== 'undefined';
+  const vw = hasWindow ? window.innerWidth : 1200; // SSR fallback width
+  const vh = hasWindow ? window.innerHeight : 800; // SSR fallback height
+  const initialViewportWidth = Math.min(vw * 0.8, 1400);
+  const initialViewportHeight = Math.min(vh * 0.8, 800);
+  state.setViewport(initialViewportWidth, initialViewportHeight);
 
         const merged: RenderConfig | undefined = metadata?.edgeStyleConfig
           ? { ...config, edgeStyleConfig: metadata.edgeStyleConfig }

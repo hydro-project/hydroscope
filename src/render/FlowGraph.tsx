@@ -88,6 +88,10 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
 
     // Track viewport dimensions and update VisualizationState
     useEffect(() => {
+      // Skip effect entirely during SSR where DOM APIs are unavailable
+      if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') {
+        return;
+      }
       const container = containerRef.current;
       if (!container) return;
 
@@ -132,13 +136,15 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
           }, 200);
         }
       };
-      window.addEventListener('resize', onWindowResize);
+  window.addEventListener('resize', onWindowResize);
 
       return () => {
         resizeObserver.disconnect();
         cancelAnimationFrame(raf);
         if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
-        window.removeEventListener('resize', onWindowResize);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('resize', onWindowResize);
+        }
       };
     }, [visualizationState, refreshLayout, config.fitView]);
 
