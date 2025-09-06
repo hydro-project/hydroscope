@@ -1,5 +1,7 @@
 # Hydroscope
 
+[![CI](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml/badge.svg)](https://github.com/hydro-project/hydroscope/actions/workflows/ci.yml)
+
 A React library for visualizing graphs with hierarchical subgraphs. Originally created for Hydro dataflow programs, but works with any graph data structure. Built on React Flow with automatic layout using ELK algorithms.
 
 ## What does it do?
