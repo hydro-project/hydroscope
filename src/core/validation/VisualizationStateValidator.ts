@@ -10,7 +10,7 @@
 import { LAYOUT_CONSTANTS, HYPEREDGE_CONSTANTS } from '../../shared/config';
 
 // Minimal interface to avoid circular dependencies
-interface VisualizationStateForValidation {
+interface _VisualizationStateForValidation {
   // This will be expanded as needed without circular imports
   [key: string]: unknown;
 }

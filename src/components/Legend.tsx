@@ -52,6 +52,7 @@ function LegendInner({
       map.set(item.type, colors);
     }
     return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nodeTypeConfig is part of the props interface and could affect color generation in future implementations
   }, [legendData.items, paletteKey, nodeTypeConfig]);
 
   const legendStyle: React.CSSProperties = useMemo(

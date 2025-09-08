@@ -329,7 +329,7 @@ export function HierarchyTree({
 
     // Use VisualizationState's efficient search expansion method
     return visualizationState.getSearchExpansionKeys(searchMatches || [], collapsedContainers);
-  }, [visualizationState, collapsedContainers, searchQuery, searchMatches]);
+  }, [visualizationState, collapsedContainers, searchMatches]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);

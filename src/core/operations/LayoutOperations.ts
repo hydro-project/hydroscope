@@ -30,7 +30,7 @@ interface EdgeLayoutInfo {
 }
 
 // Interface for the minimal state access needed by LayoutOperations
-interface LayoutOperationsState {
+interface _LayoutOperationsState {
   _collections: {
     _manualPositions: Map<string, { x: number; y: number }>;
     containers: Map<string, Container>;

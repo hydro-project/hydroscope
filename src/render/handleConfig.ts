@@ -5,7 +5,7 @@
  * This encapsulates handle behavior so it can be easily changed across the entire system.
  */
 
-import { Position, type Handle } from '@xyflow/react';
+import { Position, type Handle as _Handle } from '@xyflow/react';
 import { UI_CONSTANTS } from '../shared/config';
 
 // Helper styles for handles

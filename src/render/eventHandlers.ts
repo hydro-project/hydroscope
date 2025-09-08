@@ -7,8 +7,8 @@
 import type {
   Node as ReactFlowNode,
   Edge as ReactFlowEdge,
-  NodeMouseHandler,
-  EdgeMouseHandler,
+  NodeMouseHandler as _NodeMouseHandler,
+  EdgeMouseHandler as _EdgeMouseHandler,
 } from '@xyflow/react';
 
 export function createNodeEventHandlers(_config?: unknown) {

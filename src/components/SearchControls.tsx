@@ -143,13 +143,13 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       return () => {
         if (timerRef.current) window.clearTimeout(timerRef.current);
       };
-    }, [query, searchableItems]);
+    }, [query, searchableItems, onSearch]);
 
     // Keep index in range
     useEffect(() => {
       if (!matches.length && currentIndex !== 0) setCurrentIndex(0);
       if (currentIndex >= matches.length && matches.length) setCurrentIndex(0);
-    }, [matches]);
+    }, [matches, currentIndex]);
 
     const navigate = (dir: 'prev' | 'next') => {
       if (!matches.length) return;

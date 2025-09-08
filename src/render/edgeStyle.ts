@@ -43,7 +43,7 @@ export function getHaloColor(style: CSSProperties | undefined): string | undefin
 /** Return style object without haloColor property. */
 export function stripHaloStyle(style: CSSProperties | undefined): CSSProperties | undefined {
   if (!style) return style;
-  const { haloColor, ...rest } = style as CSSProperties & { haloColor?: string };
+  const { haloColor: _haloColor, ...rest } = style as CSSProperties & { haloColor?: string };
   return rest;
 }
 

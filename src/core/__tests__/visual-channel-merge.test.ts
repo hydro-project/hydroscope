@@ -21,7 +21,7 @@ class MockVisualizationState {
     // Add some mock methods that ContainerOperations might call
   }
 
-  isNodeOrContainerVisible(id: string): boolean {
+  isNodeOrContainerVisible(_id: string): boolean {
     return true; // Always visible for testing
   }
 
@@ -29,18 +29,18 @@ class MockVisualizationState {
     return id; // Return self for testing
   }
 
-  isNodeInContainerRecursive(nodeId: string, containerId: string): boolean {
+  isNodeInContainerRecursive(_nodeId: string, _containerId: string): boolean {
     return false; // Simple implementation for testing
   }
 }
 
 describe('Visual Channel Merge Logic', () => {
-  let containerOps: ContainerOperations;
+  let _containerOps: ContainerOperations;
   let mockState: MockVisualizationState;
 
   beforeEach(() => {
     mockState = new MockVisualizationState();
-    containerOps = new ContainerOperations(mockState as any);
+    _containerOps = new ContainerOperations(mockState as any);
   });
 
   describe('getCommonEdgeProperties', () => {
@@ -74,7 +74,7 @@ describe('Visual Channel Merge Logic', () => {
           waviness: ['none', 'wavy'],
         } as const;
 
-        for (const [channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
+        for (const [_channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
           // For each channel, find properties that belong to this channel
           const channelProperties = propertySets.map(propSet =>
             [...propSet].filter(prop =>

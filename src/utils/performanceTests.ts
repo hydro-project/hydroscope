@@ -112,7 +112,7 @@ export function testPerformanceScaling() {
     startProfiling();
 
     // Simulate file processing for different sizes
-    const data = profileStage(`File Processing (${nodeCount} nodes)`, () => {
+    const _data = profileStage(`File Processing (${nodeCount} nodes)`, () => {
       const nodes = Array.from({ length: nodeCount }, (_, i) => ({
         id: `node_${i}`,
         label: `Node ${i}`,

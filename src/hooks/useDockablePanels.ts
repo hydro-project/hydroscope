@@ -42,7 +42,7 @@ export function useDockablePanels(configs: PanelConfig[]) {
       if (saved) {
         try {
           state = { ...DEFAULT_PANEL_STATE, ...JSON.parse(saved) };
-        } catch (e) {
+        } catch (_e) {
           console.warn(`Failed to parse saved state for panel ${config.id}`);
         }
       }

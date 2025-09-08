@@ -213,7 +213,7 @@ export class ContainerOperations {
         // Additionally, preserve channel-specific properties that are common within each visual channel
         const channelCommonProperties = new Set<string>();
 
-        for (const [channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
+        for (const [_channelName, channelValues] of Object.entries(EDGE_VISUAL_CHANNELS)) {
           // For each channel, find properties that belong to this channel
           const channelProperties = propertySets.map(propSet =>
             [...propSet].filter(prop =>
