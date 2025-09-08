@@ -13,18 +13,18 @@ import type {
 
 export function createNodeEventHandlers(_config?: unknown) {
   return {
-    onClick: (_event: React.MouseEvent, _node: ReactFlowNode) => { },
+    onClick: (_event: React.MouseEvent, _node: ReactFlowNode) => {},
   };
 }
 
 export function createEdgeEventHandlers(_config?: unknown) {
   return {
-    onClick: (_event: React.MouseEvent, _edge: ReactFlowEdge) => { },
+    onClick: (_event: React.MouseEvent, _edge: ReactFlowEdge) => {},
   };
 }
 
 export function createContainerEventHandlers(_config?: unknown) {
   return {
-    onClick: (_event: React.MouseEvent, _container: unknown) => { },
+    onClick: (_event: React.MouseEvent, _container: unknown) => {},
   };
 }

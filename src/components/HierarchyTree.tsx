@@ -78,16 +78,16 @@ function createSearchHighlightDiv(
       style={
         match
           ? {
-            backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-            borderRadius: 4,
-            padding: '2px 4px',
-            margin: '-1px -2px',
-            fontWeight: isCurrent ? '600' : '500',
-            border: isCurrent
-              ? '1px solid rgba(255,107,53,0.4)'
-              : '1px solid rgba(251,191,36,0.3)',
-            ...baseStyle,
-          }
+              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
+              borderRadius: 4,
+              padding: '2px 4px',
+              margin: '-1px -2px',
+              fontWeight: isCurrent ? '600' : '500',
+              border: isCurrent
+                ? '1px solid rgba(255,107,53,0.4)'
+                : '1px solid rgba(251,191,36,0.3)',
+              ...baseStyle,
+            }
           : baseStyle
       }
     >
@@ -116,15 +116,15 @@ function createContainerDisplayTitle(
       style={
         match
           ? {
-            backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-            borderRadius: 4,
-            padding: '2px 4px',
-            margin: '-1px -2px',
-            fontWeight: isCurrent ? '600' : '500',
-            border: isCurrent
-              ? '1px solid rgba(255,107,53,0.4)'
-              : '1px solid rgba(251,191,36,0.3)',
-          }
+              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
+              borderRadius: 4,
+              padding: '2px 4px',
+              margin: '-1px -2px',
+              fontWeight: isCurrent ? '600' : '500',
+              border: isCurrent
+                ? '1px solid rgba(255,107,53,0.4)'
+                : '1px solid rgba(251,191,36,0.3)',
+            }
           : {}
       }
     >
