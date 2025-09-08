@@ -188,6 +188,7 @@ export const HANDLE_STRATEGIES = {
  * - Intelligent handle selection: prefers horizontal connections when nodes are side-by-side
  * - Follows the rule: inputs at top/left, outputs at bottom/right
  * - Uses a 1.2x threshold to determine primary direction (horizontal vs vertical)
+ * - CONSERVATIVE: Only uses safe handle combinations (out-bottom/out-right, in-top/in-left)
  */
 export const CURRENT_HANDLE_STRATEGY: HandleStrategy = 'discrete';
 

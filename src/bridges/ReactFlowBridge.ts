@@ -312,7 +312,8 @@ export class ReactFlowBridge {
   }
 
   /**
-   * SIMPLIFIED: Get edge handles using a fixed strategy
+   * Get edge handles using intelligent position-based strategy
+   * CONSERVATIVE: Only uses safe handle combinations to avoid breaking hyperedges
    */
   getEdgeHandles(
     visState: VisualizationState,
@@ -324,20 +325,153 @@ export class ReactFlowBridge {
     }
 
     if (CURRENT_HANDLE_STRATEGY === 'discrete') {
+      // For source: try node first, then container
       const sourceNode = visState.getGraphNode(edge.source);
-      const targetNode = visState.getGraphNode(edge.target);
+      const sourceContainer = sourceNode ? null : visState.getContainer(edge.source);
 
-      // For discrete handles, use the default bottom-to-top connection pattern
-      // This provides consistent behavior and matches test expectations
-      if (sourceNode && targetNode) {
-        return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+      // For target: try node first, then container  
+      const targetNode = visState.getGraphNode(edge.target);
+      const targetContainer = targetNode ? null : visState.getContainer(edge.target);
+
+      // Smart handle selection if we have both endpoints
+      const sourceElement = sourceNode || sourceContainer;
+      const targetElement = targetNode || targetContainer;
+
+      if (sourceElement && targetElement) {
+        return this.selectSmartHandles(visState, sourceElement, targetElement, edge);
       }
     }
 
+    // Fallback to safe defaults
     return {
       sourceHandle: 'out-bottom',
       targetHandle: 'in-top',
     };
+  }
+
+  /**
+   * Select appropriate handles based on node positions and relationship
+   * CONSERVATIVE: Only uses handles that follow the safe rules:
+   * - Sources: out-bottom or out-right (never out-top)
+   * - Targets: in-top or in-left (never in-bottom)
+   */
+  private selectSmartHandles(
+    visState: VisualizationState,
+    sourceElement: any,
+    targetElement: any,
+    edge: any
+  ): { sourceHandle: string; targetHandle: string } {
+    try {
+      // Get layout information for source (could be node or container)
+      const sourceLayout = visState.getNodeLayout(sourceElement.id) || visState.getContainerLayout(sourceElement.id);
+
+      // Get layout information for target (could be node or container)  
+      const targetLayout = visState.getNodeLayout(targetElement.id) || visState.getContainerLayout(targetElement.id);
+
+      // Get positions, falling back to element properties and then defaults
+      const sourcePos = {
+        x: sourceLayout?.position?.x ?? sourceElement.x ?? 0,
+        y: sourceLayout?.position?.y ?? sourceElement.y ?? 0,
+      };
+      const targetPos = {
+        x: targetLayout?.position?.x ?? targetElement.x ?? 0,
+        y: targetLayout?.position?.y ?? targetElement.y ?? 0,
+      };
+
+      // Validate positions - if any are invalid, fall back to safe defaults
+      if (!this.isValidPosition(sourcePos) || !this.isValidPosition(targetPos)) {
+        return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+      }
+
+      // Get dimensions from layout or element data or defaults
+      const sourceWidth = Math.max(1, sourceLayout?.dimensions?.width ?? sourceElement.width ?? 120);
+      const sourceHeight = Math.max(1, sourceLayout?.dimensions?.height ?? sourceElement.height ?? 40);
+      const targetWidth = Math.max(1, targetLayout?.dimensions?.width ?? targetElement.width ?? 120);
+      const targetHeight = Math.max(1, targetLayout?.dimensions?.height ?? targetElement.height ?? 40);
+
+      // Calculate node centers
+      const sourceCenterX = sourcePos.x + sourceWidth / 2;
+      const sourceCenterY = sourcePos.y + sourceHeight / 2;
+      const targetCenterX = targetPos.x + targetWidth / 2;
+      const targetCenterY = targetPos.y + targetHeight / 2;
+
+      // Calculate relative position
+      const deltaX = targetCenterX - sourceCenterX;
+      const deltaY = targetCenterY - sourceCenterY;
+
+      // Validate deltas - if any are invalid, fall back to safe defaults
+      if (!isFinite(deltaX) || !isFinite(deltaY)) {
+        return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+      }
+
+      // Use 1.2x threshold to determine primary direction as mentioned in comments
+      // Add minimum separation threshold to avoid instability with very close nodes
+      const DIRECTION_THRESHOLD = 1.2;
+      const MIN_SEPARATION = 10; // pixels
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      // If nodes are too close, default to vertical
+      if (absX < MIN_SEPARATION && absY < MIN_SEPARATION) {
+        return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+      }
+
+      // Determine primary direction
+      const isHorizontalPrimary = absX > absY * DIRECTION_THRESHOLD;
+      const isVerticalPrimary = absY > absX * DIRECTION_THRESHOLD;
+
+      // Conservative handle selection following the safe rules
+      if (isHorizontalPrimary) {
+        // Nodes are primarily horizontally arranged
+        if (deltaX > 0) {
+          // Target is to the right of source
+          return { sourceHandle: 'out-right', targetHandle: 'in-left' };
+        } else {
+          // Target is to the left of source  
+          // Since we can't use out-left or in-right safely, fall back to vertical
+          return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+        }
+      } else if (isVerticalPrimary) {
+        // Nodes are primarily vertically arranged
+        if (deltaY > 0) {
+          // Target is below source
+          return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+        } else {
+          // Target is above source
+          // Since we can't use out-top safely, use horizontal if reasonable
+          if (absX > sourceWidth / 2) {
+            // There's enough horizontal separation
+            return deltaX > 0
+              ? { sourceHandle: 'out-right', targetHandle: 'in-left' }
+              : { sourceHandle: 'out-bottom', targetHandle: 'in-top' }; // Fall back for left direction
+          } else {
+            // Use vertical with reversed safe handles - out-bottom still, but target gets in-top
+            return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+          }
+        }
+      }
+
+      // Default case: use safe vertical connection
+      return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+    } catch (error) {
+      // If any error occurs in smart selection, fall back to safe defaults
+      console.warn('[ReactFlowBridge] Error in smart handle selection, falling back to defaults:', error);
+      return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
+    }
+  }
+
+  /**
+   * Validate that a position object has valid coordinates
+   */
+  private isValidPosition(pos: { x: number; y: number }): boolean {
+    return (
+      typeof pos.x === 'number' &&
+      typeof pos.y === 'number' &&
+      isFinite(pos.x) &&
+      isFinite(pos.y) &&
+      !isNaN(pos.x) &&
+      !isNaN(pos.y)
+    );
   }
 
   /**
