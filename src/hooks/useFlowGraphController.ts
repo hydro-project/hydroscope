@@ -273,7 +273,15 @@ export function useFlowGraphController({
 
     handle();
     // Alpha: only initial render; real change detection would add listeners
-  }, [visualizationState, engine, bridge, applyManualPositions]);
+  }, [
+    visualizationState,
+    engine,
+    bridge,
+    applyManualPositions,
+    config.fitView,
+    fitView,
+    manualPositions,
+  ]);
 
   // Update ReactFlow positions when manual positions change (no re-layout)
   useEffect(() => {
