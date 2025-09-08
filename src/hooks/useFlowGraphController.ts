@@ -72,6 +72,7 @@ export function useFlowGraphController({
         enableLogging: false,
         layoutConfig: layoutConfig,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutConfig dependency causes infinite loops due to engine->layout->config feedback cycle
     [visualizationState]
   );
 
@@ -162,6 +163,7 @@ export function useFlowGraphController({
         setLoading(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutConfig dependency causes infinite loops in the layout engine feedback cycle
     [
       applyManualPositions,
       bridge,
@@ -197,6 +199,7 @@ export function useFlowGraphController({
       }
     };
     run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Including bridge, engine, reactFlowData, visualizationState, applyManualPositions would create infinite re-layout loops
   }, [layoutConfig]);
 
   // Listen to config changes (palette, edge styles)

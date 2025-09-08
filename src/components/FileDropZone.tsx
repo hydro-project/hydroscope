@@ -449,7 +449,7 @@ function FileDropZone({
         setIsLoading(false);
       }
     },
-    [onFileLoad]
+    [onFileLoad, onFileUpload]
   );
 
   const handleDrop = useCallback(

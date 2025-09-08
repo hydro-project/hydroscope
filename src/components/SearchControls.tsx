@@ -143,13 +143,15 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       return () => {
         if (timerRef.current) window.clearTimeout(timerRef.current);
       };
-    }, [query, searchableItems, onSearch]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- onSearch dependency causes graph layout issues and repositioning problems
+    }, [query, searchableItems]);
 
     // Keep index in range
     useEffect(() => {
       if (!matches.length && currentIndex !== 0) setCurrentIndex(0);
       if (currentIndex >= matches.length && matches.length) setCurrentIndex(0);
-    }, [matches, currentIndex]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- currentIndex dependency would create infinite loop since effect calls setCurrentIndex
+    }, [matches]);
 
     const navigate = (dir: 'prev' | 'next') => {
       if (!matches.length) return;

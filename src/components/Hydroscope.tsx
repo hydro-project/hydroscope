@@ -529,7 +529,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
           url.hash = '';
           url.searchParams.delete('file');
           window.history.replaceState(null, '', url.toString());
-        } catch {}
+        } catch { }
       }
       // Reset to file drop zone
       setHasParsedData(false);
