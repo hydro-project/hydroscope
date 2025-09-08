@@ -348,7 +348,7 @@ export class ReactFlowBridge {
   private assignHandlesToEdges(
     visState: VisualizationState,
     edges: ReactFlowEdge[],
-    nodes: ReactFlowNode[]
+    _nodes: ReactFlowNode[]
   ): void {
     edges.forEach(reactFlowEdge => {
       // Find the original edge to get its ID

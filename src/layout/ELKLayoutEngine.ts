@@ -9,7 +9,7 @@ import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { createVisualizationState } from '../core/VisualizationState';
 import type { GraphNode, GraphEdge, ExternalContainer } from '../shared/types';
 import type { NodeStyle, EdgeStyle } from '../shared/config';
-import { DEFAULT_LAYOUT_CONFIG } from '../shared/config';
+import { DEFAULT_LAYOUT_CONFIG as _DEFAULT_LAYOUT_CONFIG } from '../shared/config';
 import type {
   PositionedNode,
   PositionedEdge,

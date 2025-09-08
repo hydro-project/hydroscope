@@ -34,7 +34,7 @@ if (isDevelopment()) {
   try {
     const devComponents = require('../dev/components/PerformanceDashboard');
     PerformanceDashboard = devComponents.default;
-  } catch (error) {
+  } catch (_error) {
     console.warn('Development components not available');
   }
 }
@@ -77,7 +77,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       data: initialData,
       showFileUpload = true,
       showInfoPanel = true,
-      showStylePanel = true,
+      showStylePanel: _showStylePanel = true,
       showPerformancePanel = false,
       enableCollapse = true,
       autoFit = true,
@@ -89,7 +89,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       onContainerExpand,
       onParsed,
       onConfigChange,
-      style,
+      style: _style,
       ...hydroscopeProps
     },
     ref

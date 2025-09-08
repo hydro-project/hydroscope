@@ -42,7 +42,7 @@ export type { NodeColor };
 type NodeColorResult = NodeColor | Record<string, NodeColor>;
 
 // Function expected by Legend component
-// eslint-disable-next-line no-redeclare
+
 export function generateNodeColors(nodeTypes: [string], palette?: string): NodeColor;
 // eslint-disable-next-line no-redeclare
 export function generateNodeColors(

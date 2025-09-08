@@ -248,58 +248,58 @@ export const InfoPanel = forwardRef<
           {/* Grouping & Hierarchy Section */}
           {(safeHierarchyChoices.length > 0 ||
             (visualizationState && visualizationState.visibleContainers.length > 0)) && (
-              <CollapsibleSection
-                title="Grouping"
-                isCollapsed={groupingCollapsed}
-                onToggle={() => setGroupingCollapsed(!groupingCollapsed)}
-              >
-                {/* Grouping Controls */}
-                {safeHierarchyChoices.length > 0 && (
-                  <div style={{ marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5 }}>
-                    {' '}
-                    {/* 8px */}
-                    <GroupingControls
-                      hierarchyChoices={safeHierarchyChoices}
-                      currentGrouping={currentGrouping}
-                      onGroupingChange={onGroupingChange}
-                      compact={true}
-                    />
-                  </div>
-                )}
-                {/* Search + Hierarchy Tree */}
-                {visualizationState && visualizationState.visibleContainers.length > 0 && (
-                  <div>
-                    <SearchControls
-                      ref={searchControlsRef}
-                      searchableItems={searchableItems}
-                      onSearch={handleSearch}
-                      onClear={handleSearchClear}
-                      onNavigate={handleSearchNavigate}
-                      placeholder="Search containers (wildcards: * ?)"
-                      compact
-                    />
-                    <HierarchyTree
-                      collapsedContainers={collapsedContainers}
-                      visualizationState={visualizationState}
-                      onToggleContainer={containerId => {
-                        // Ensure both tree and graph stay in sync
-                        if (onToggleContainer) {
-                          onToggleContainer(containerId);
-                        }
-                      }}
-                      title={`${currentGroupingName} Hierarchy`}
-                      showNodeCounts={true}
-                      truncateLabels={true}
-                      maxLabelLength={15}
-                      // search integration - pass ALL matches (containers + nodes), not just containers
-                      searchQuery={searchQuery}
-                      searchMatches={searchMatches}
-                      currentSearchMatch={currentSearchMatch}
-                    />
-                  </div>
-                )}
-              </CollapsibleSection>
-            )}
+            <CollapsibleSection
+              title="Grouping"
+              isCollapsed={groupingCollapsed}
+              onToggle={() => setGroupingCollapsed(!groupingCollapsed)}
+            >
+              {/* Grouping Controls */}
+              {safeHierarchyChoices.length > 0 && (
+                <div style={{ marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5 }}>
+                  {' '}
+                  {/* 8px */}
+                  <GroupingControls
+                    hierarchyChoices={safeHierarchyChoices}
+                    currentGrouping={currentGrouping}
+                    onGroupingChange={onGroupingChange}
+                    compact={true}
+                  />
+                </div>
+              )}
+              {/* Search + Hierarchy Tree */}
+              {visualizationState && visualizationState.visibleContainers.length > 0 && (
+                <div>
+                  <SearchControls
+                    ref={searchControlsRef}
+                    searchableItems={searchableItems}
+                    onSearch={handleSearch}
+                    onClear={handleSearchClear}
+                    onNavigate={handleSearchNavigate}
+                    placeholder="Search containers (wildcards: * ?)"
+                    compact
+                  />
+                  <HierarchyTree
+                    collapsedContainers={collapsedContainers}
+                    visualizationState={visualizationState}
+                    onToggleContainer={containerId => {
+                      // Ensure both tree and graph stay in sync
+                      if (onToggleContainer) {
+                        onToggleContainer(containerId);
+                      }
+                    }}
+                    title={`${currentGroupingName} Hierarchy`}
+                    showNodeCounts={true}
+                    truncateLabels={true}
+                    maxLabelLength={15}
+                    // search integration - pass ALL matches (containers + nodes), not just containers
+                    searchQuery={searchQuery}
+                    searchMatches={searchMatches}
+                    currentSearchMatch={currentSearchMatch}
+                  />
+                </div>
+              )}
+            </CollapsibleSection>
+          )}
           {/* Edge Style Legend Section - Show whenever edgeStyleConfig exists */}
           {edgeStyleConfig && (
             <CollapsibleSection

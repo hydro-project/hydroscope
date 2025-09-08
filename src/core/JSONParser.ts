@@ -533,12 +533,12 @@ function parseNodes(nodes: RawNode[], state: VisualizationState): void {
         fullLabel,
         nodeType,
         semanticTags,
-        position,
+        position: _position,
         type,
-        expanded,
-        collapsed,
-        hidden,
-        style,
+        expanded: _expanded,
+        collapsed: _collapsed,
+        hidden: _hidden,
+        style: _style,
         ...safeProps
       } = rawNode;
       // Resolve nodeType with fallbacks: explicit nodeType > legacy 'type' > default
@@ -566,7 +566,16 @@ function parseEdges(edges: RawEdge[], state: VisualizationState): void {
   for (const rawEdge of edges) {
     try {
       // Extract immutable properties and filter out UI state fields
-      const { id, source, target, semanticTags, style, hidden, animated, ...safeProps } = rawEdge;
+      const {
+        id,
+        source,
+        target,
+        semanticTags,
+        style: _style,
+        hidden: _hidden,
+        animated: _animated,
+        ...safeProps
+      } = rawEdge;
 
       state.addGraphEdge(id, {
         source,

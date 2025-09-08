@@ -13,7 +13,7 @@ import {
   WarningOutlined,
   CheckCircleOutlined,
   ReloadOutlined,
-  BugOutlined,
+  BugOutlined as _BugOutlined,
 } from '@ant-design/icons';
 import { PerformanceProfiler, type ProfilerReport } from '../profiling/PerformanceProfiler';
 

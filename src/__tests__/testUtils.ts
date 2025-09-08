@@ -35,7 +35,7 @@ export function loadChatJsonTestData(grouping: string | null = null): TestDataRe
       state: result.state,
       metadata: result.metadata,
     };
-  } catch (error) {
+  } catch (_error) {
     console.warn('chat.json not found, skipping test that requires test data');
     return null;
   }

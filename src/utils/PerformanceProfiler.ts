@@ -43,11 +43,11 @@ export class PerformanceProfiler {
   }
 
   // TypeScript function overloads
-  // eslint-disable-next-line no-dupe-class-members
+
   public static profile<T>(stageName: string, operation: () => T): T;
-  // eslint-disable-next-line no-dupe-class-members
+
   public static profile<T>(stageName: string, operation: () => Promise<T>): Promise<T>;
-  // eslint-disable-next-line no-dupe-class-members
+
   public static profile<T>(stageName: string, operation: () => T | Promise<T>): T | Promise<T> {
     const profiler = PerformanceProfiler.getInstance();
 
@@ -233,7 +233,7 @@ export class PerformanceProfiler {
 }
 
 // Utility functions for easy profiling
-// eslint-disable-next-line no-redeclare
+
 export function profileStage<T>(stageName: string, operation: () => T): T;
 // eslint-disable-next-line no-redeclare
 export function profileStage<T>(stageName: string, operation: () => Promise<T>): Promise<T>;

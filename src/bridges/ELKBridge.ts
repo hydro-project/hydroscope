@@ -76,7 +76,7 @@ export class ELKBridge {
     visState.visibleEdges.forEach(edge => {
       try {
         visState.setEdgeLayout(edge.id, { sections: [] });
-      } catch (error) {
+      } catch (_error) {
         // Edge might not exist anymore, ignore
       }
     });
@@ -462,7 +462,7 @@ export class ELKBridge {
       if (container.id === 'bt_81' || container.id === 'bt_98') {
         if (hasVisibleParent) {
           // Find the parent
-          const parentId = containerParentMapping.get(container.id);
+          const _parentId = containerParentMapping.get(container.id);
         }
       }
 
@@ -544,7 +544,7 @@ export class ELKBridge {
           this.updateContainerFromELK(elkNode, visState);
           return;
         }
-      } catch (e) {
+      } catch (_e) {
         // Not a container, continue to node logic
       }
 
@@ -756,7 +756,7 @@ export class ELKBridge {
         visState.setNodeLayout(elkNode.id, layoutUpdates);
       }
       return;
-    } catch (nodeError) {
+    } catch (_nodeError) {
       // If not found as node, might be a collapsed container - apply same validation
       try {
         const layoutUpdates: any = {};
@@ -827,7 +827,7 @@ export class ELKBridge {
           visState.setContainerLayout(elkNode.id, layoutUpdates);
         }
         return;
-      } catch (containerError) {
+      } catch (_containerError) {
         console.warn(`[ELKBridge] Node/Container ${elkNode.id} not found in VisualizationState`);
       }
     }

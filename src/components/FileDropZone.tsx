@@ -632,7 +632,7 @@ function FileDropZone({
               </button>
             </div>
             <p style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>
-              💡 Drag and drop this file here, or click "Choose File" to browse for it
+              💡 Drag and drop this file here, or click &ldquo;Choose File&rdquo; to browse for it
             </p>
           </div>
         )}

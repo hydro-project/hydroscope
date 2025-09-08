@@ -7,7 +7,7 @@
  * - Coordinate translation
  */
 
-import { describe, test, expect, beforeEach, it } from 'vitest';
+import { describe, test as _test, expect, beforeEach, it } from 'vitest';
 import { ReactFlowBridge } from '../ReactFlowBridge';
 import { createVisualizationState } from '../../core/VisualizationState';
 

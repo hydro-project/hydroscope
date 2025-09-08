@@ -296,7 +296,7 @@ function processDirectStyleTags(): ProcessedEdgeStyle {
 /**
  * Map a style tag name to actual ReactFlow visual style
  */
-function mapStyleTagToVisual(styleTag: string, originalProperties: string[]): ProcessedEdgeStyle {
+function _mapStyleTagToVisual(styleTag: string, originalProperties: string[]): ProcessedEdgeStyle {
   const normalizedTag = styleTag.toLowerCase().replace(/[_\s]/g, '-');
   const visualStyle =
     EDGE_STYLE_TAG_MAPPINGS[normalizedTag as keyof typeof EDGE_STYLE_TAG_MAPPINGS];

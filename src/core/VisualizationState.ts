@@ -6,7 +6,7 @@
  */
 
 import type { GraphNode, GraphEdge, Container, LayoutState } from '../shared/types';
-import type { NodeStyle, EdgeStyle } from '../shared/config';
+import type { NodeStyle, EdgeStyle as _EdgeStyle } from '../shared/config';
 
 import type { Edge, HyperEdge } from './types';
 

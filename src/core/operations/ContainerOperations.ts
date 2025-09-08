@@ -68,7 +68,7 @@ export class ContainerOperations {
     this.state.setContainerCollapsed(containerId, false);
 
     // 2. Remove the adjacent hyperEdges (they are now invalid)
-    const nodes = new Set<String>();
+    const nodes = new Set<string>();
     nodes.add(containerId);
     this.cleanupAdjacentHyperEdges(nodes);
 
@@ -313,7 +313,7 @@ export class ContainerOperations {
   /**
    * Clean up hyperEdges that connect to nodes that are no longer visible
    */
-  private cleanupAdjacentHyperEdges(nodeIds: Set<String>): void {
+  private cleanupAdjacentHyperEdges(nodeIds: Set<string>): void {
     const hyperEdgesToRemove: string[] = [];
 
     // Check all hyperEdges for invalid endpoints

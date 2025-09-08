@@ -369,7 +369,7 @@ export class VisualizationEngine {
           // - Creating hyperEdges for crossing edges
           // - Hiding descendant containers
           this.visState.collapseContainer(containerId);
-        } catch (error) {
+        } catch (_error) {
           // Continue with other containers even if one fails
         }
       }
@@ -412,7 +412,7 @@ export class VisualizationEngine {
         // - Creating hyperEdges for crossing edges
         // - Hiding descendant containers
         this.visState.collapseContainer(container.id);
-      } catch (error) {
+      } catch (_error) {
         // Continue with other containers even if one fails
       }
     }

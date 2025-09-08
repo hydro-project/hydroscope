@@ -190,7 +190,7 @@ describe('ELK Layout Integration', () => {
 
       await elkBridge.layoutVisualizationState(state);
 
-      const crossEdgeLayout = state.getEdgeLayout('edge_cross');
+      const _crossEdgeLayout = state.getEdgeLayout('edge_cross');
       const normalEdgeLayout = state.getEdgeLayout('edge_0_1');
 
       if (normalEdgeLayout?.sections) {
