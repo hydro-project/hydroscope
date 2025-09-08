@@ -251,3 +251,5 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     );
   }
 );
+
+SearchControls.displayName = 'SearchControls';

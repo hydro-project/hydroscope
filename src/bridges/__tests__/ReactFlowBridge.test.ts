@@ -194,34 +194,6 @@ describe('ReactFlowBridge', () => {
       // container1 has no parent container in our mock
       return mapping;
     },
-
-    // Add the getGraphNode method that ReactFlowBridge expects
-    getGraphNode: (nodeId: string) => {
-      const nodeMap: { [key: string]: any } = {
-        node1: {
-          id: 'node1',
-          label: 'Node 1',
-          x: 120,
-          y: 180,
-          width: 180,
-          height: 60,
-          hidden: false,
-          style: 'default',
-          customProp: 'test-value',
-        },
-        node2: {
-          id: 'node2',
-          label: 'Node 2',
-          x: 450,
-          y: 100,
-          width: 180,
-          height: 60,
-          hidden: false,
-          style: 'highlighted',
-        },
-      };
-      return nodeMap[nodeId];
-    },
   });
 
   describe('convertVisualizationState', () => {
