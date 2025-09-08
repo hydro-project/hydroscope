@@ -13,14 +13,26 @@ const externalPkgs = [
   'web-worker'
 ];
 
+// We emit both ESM and CJS builds so downstream tooling (e.g. Docusaurus running in a CJS context)
+// can "require" the package. The CJS artifact uses the .cjs extension to avoid Node ESM semantics
+// because package.json has "type": "module".
 export default {
   input: 'src/index.ts',
-  output: {
-    file: 'dist/index.esm.js',
-    format: 'esm',
-    sourcemap: true,
-    inlineDynamicImports: true
-  },
+  output: [
+    {
+      file: 'dist/index.esm.js',
+      format: 'esm',
+      sourcemap: true,
+      inlineDynamicImports: true
+    },
+    {
+      file: 'dist/index.cjs', // .cjs extension ensures CommonJS interpretation
+      format: 'cjs',
+      sourcemap: true,
+      inlineDynamicImports: true,
+      exports: 'named'
+    }
+  ],
   external: (id) => externalPkgs.some(pkg => id === pkg || id.startsWith(pkg + '/')),
   plugins: [
     resolve({
