@@ -3,7 +3,7 @@
  *
  */
 
-import React, { useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
+import React, { useRef, forwardRef, useImperativeHandle, useEffect, useCallback } from 'react';
 import { ReactFlow, Background, MiniMap, ReactFlowProvider } from '@xyflow/react';
 import { CustomControls } from '../components/CustomControls';
 
@@ -14,6 +14,7 @@ import { StyleConfigProvider } from './StyleConfigContext';
 import { GraphDefs } from './GraphDefs';
 import { LoadingView, ErrorView, EmptyView, UpdatingOverlay } from './FallbackViews';
 import { useFlowGraphController } from '../hooks/useFlowGraphController';
+import { useResizeObserver } from '../hooks/useResizeObserver';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core/types';
 
@@ -84,69 +85,73 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
 
     const containerRef = useRef<HTMLDivElement>(null);
     const loggedOnceRef = useRef(false);
-    const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isLayoutInProgressRef = useRef(false);
 
-    // Track viewport dimensions and update VisualizationState
+    // Create stable references that don't change between renders
+    const stableVisualizationState = useRef(visualizationState);
+    const stableRefreshLayout = useRef(refreshLayout);
+    const stableFitViewEnabled = useRef(config.fitView !== false);
+
+    // Update refs when values change (but don't cause re-renders)
     useEffect(() => {
-      // Skip effect entirely during SSR where DOM APIs are unavailable
-      if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') {
-        return;
-      }
+      stableVisualizationState.current = visualizationState;
+      stableRefreshLayout.current = refreshLayout;
+      stableFitViewEnabled.current = config.fitView !== false;
+    }, [visualizationState, refreshLayout, config.fitView]);
+
+    // Handle viewport size changes with the safe ResizeObserver
+    const handleResize = useCallback(
+      (entry: { width: number; height: number }) => {
+        console.log(`[FlowGraph] 📐 Safe resize callback:`, {
+          width: entry.width,
+          height: entry.height,
+          layoutInProgress: isLayoutInProgressRef.current,
+        });
+
+        // Update the visualization state with new viewport dimensions
+        stableVisualizationState.current.setViewport(entry.width, entry.height);
+
+        if (!loggedOnceRef.current) {
+          loggedOnceRef.current = true;
+        }
+
+        // Schedule layout refresh if auto-fit is enabled
+        if (stableFitViewEnabled.current && !isLayoutInProgressRef.current) {
+          console.log(`[FlowGraph] 🔄 Triggering layout refresh due to safe resize`);
+          isLayoutInProgressRef.current = true;
+
+          stableRefreshLayout.current(true).finally(() => {
+            isLayoutInProgressRef.current = false;
+            console.log(`[FlowGraph] ✅ Layout refresh completed after resize`);
+          });
+        }
+      },
+      [] // No dependencies - use refs for stability
+    );
+
+    // Create the safe ResizeObserver
+    const { observe, disconnect } = useResizeObserver(handleResize, {
+      debounceMs: UI_CONSTANTS.LAYOUT_DELAY_NORMAL,
+      threshold: 2, // Minimum 2px change
+      preventDuring: () => isLayoutInProgressRef.current,
+      debug: true, // Enable debugging
+    });
+
+    // Set up viewport tracking
+    useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
 
-      const updateViewport = () => {
-        const rect = container.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          visualizationState.setViewport(rect.width, rect.height);
-          if (!loggedOnceRef.current) {
-            loggedOnceRef.current = true;
-          }
-          // If AutoFit is enabled, schedule a layout refresh on size changes
-          if (config.fitView !== false) {
-            if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
-            resizeDebounceRef.current = setTimeout(() => {
-              try {
-                // Force to ensure ELK considers the new viewport
-                refreshLayout(true);
-              } catch {}
-            }, 200);
-          }
-        }
-      };
+      console.log(`[FlowGraph] 🚀 Setting up safe resize observation`);
 
-      // Set initial viewport size immediately and again on next frame to avoid zero heights
-      updateViewport();
-      const raf = requestAnimationFrame(updateViewport);
-
-      // Create ResizeObserver to track size changes
-      const resizeObserver = new ResizeObserver(() => {
-        updateViewport();
-      });
-
-      resizeObserver.observe(container);
-
-      // Fallback: also listen to window resize (some browsers/layouts don't fire RO when % heights change)
-      const onWindowResize = () => {
-        updateViewport();
-        if (config.fitView !== false) {
-          if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
-          resizeDebounceRef.current = setTimeout(() => {
-            refreshLayout(true);
-          }, 200);
-        }
-      };
-      window.addEventListener('resize', onWindowResize);
+      // Start observing the container
+      observe(container);
 
       return () => {
-        resizeObserver.disconnect();
-        cancelAnimationFrame(raf);
-        if (resizeDebounceRef.current) clearTimeout(resizeDebounceRef.current);
-        if (typeof window !== 'undefined') {
-          window.removeEventListener('resize', onWindowResize);
-        }
+        console.log(`[FlowGraph] 🧹 Cleaning up safe resize observation`);
+        disconnect();
       };
-    }, [visualizationState, refreshLayout, config.fitView]);
+    }, []); // Empty dependencies - setup once and stable refs handle changes
 
     // When ReactFlow data is ready, log the container size again (helps confirm logging is visible)
     useEffect(() => {

@@ -108,24 +108,48 @@ export class ReactFlowBridge {
    * TRUST ELK: Use ELK's hierarchical layout results completely
    */
   private visStateToReactFlow(visState: VisualizationState): ReactFlowData {
+    const conversionId = `conversion-${Date.now()}`;
+    console.log(`[ReactFlowBridge] 🔄 Starting visStateToReactFlow [${conversionId}]`);
+
     const nodes: ReactFlowNode[] = [];
     const edges: ReactFlowEdge[] = [];
 
     // Build parent-child mapping from VisualizationState
+    console.log(`[ReactFlowBridge] 🗺️ Building parent map [${conversionId}]`);
     const parentMap = this.buildParentMap(visState);
+    console.log(`[ReactFlowBridge] 📊 Parent map built with ${parentMap.size} entries [${conversionId}]`);
 
     // Convert containers using ELK positions
+    console.log(`[ReactFlowBridge] 📦 Converting containers [${conversionId}]`);
+    const containerCountBefore = nodes.length;
     this.convertContainersFromELK(visState, nodes, parentMap);
+    const containerCount = nodes.length - containerCountBefore;
+    console.log(`[ReactFlowBridge] 📦 Converted ${containerCount} containers [${conversionId}]`);
 
     // Convert regular nodes using ELK positions
+    console.log(`[ReactFlowBridge] 🔵 Converting regular nodes [${conversionId}]`);
+    const nodeCountBefore = nodes.length;
     this.convertNodesFromELK(visState, nodes, parentMap);
+    const regularNodeCount = nodes.length - nodeCountBefore;
+    console.log(`[ReactFlowBridge] 🔵 Converted ${regularNodeCount} regular nodes [${conversionId}]`);
 
     // Convert edges using smart handle selection
+    console.log(`[ReactFlowBridge] 🔗 Converting edges [${conversionId}]`);
     this.convertEdges(visState, edges);
+    console.log(`[ReactFlowBridge] 🔗 Converted ${edges.length} edges [${conversionId}]`);
 
     // ALWAYS recalculate handles after all nodes are created
     // This ensures handles are correct regardless of when layout operations occurred
+    console.log(`[ReactFlowBridge] 🎯 Assigning handles to edges [${conversionId}]`);
     this.assignHandlesToEdges(visState, edges, nodes);
+    console.log(`[ReactFlowBridge] 🎯 Handle assignment completed [${conversionId}]`);
+
+    console.log(`[ReactFlowBridge] ✅ Conversion completed [${conversionId}]:`, {
+      totalNodes: nodes.length,
+      containerNodes: containerCount,
+      regularNodes: regularNodeCount,
+      totalEdges: edges.length,
+    });
 
     return { nodes, edges };
   }
@@ -275,15 +299,25 @@ export class ReactFlowBridge {
   private convertEdges(visState: VisualizationState, edges: ReactFlowEdge[]): void {
     // Always use semantic mappings for edge styling
     const visibleEdges = Array.from(visState.visibleEdges);
+    console.log(`[ReactFlowBridge] 🔗 Converting ${visibleEdges.length} visible edges:`, {
+      edgeIds: visibleEdges.map(e => e.id).slice(0, 10), // Log first 10 edge IDs
+      edgeTypes: [...new Set(visibleEdges.map(e => e.type))],
+      hasEdgeStyleConfig: !!this.edgeStyleConfig,
+    });
+
     const edgeConverterOptions: EdgeConverterOptions = {
       edgeStyleConfig: this.edgeStyleConfig,
       showPropertyLabels: true,
       enableAnimations: true,
     };
+
+    console.log(`[ReactFlowBridge] ⚙️ Edge converter options:`, edgeConverterOptions);
     const convertedEdges = convertEdgesToReactFlow(visibleEdges, edgeConverterOptions);
+    console.log(`[ReactFlowBridge] ✨ Edge converter produced ${convertedEdges.length} edges`);
 
     // EdgeConverter already processed all edges correctly, including hyperedges
     // Only override if hyperedge has pre-serialized style (legacy compatibility)
+    let overrideCount = 0;
     convertedEdges.forEach((reactFlowEdge, index) => {
       const originalEdge = visibleEdges[index];
 
@@ -293,6 +327,8 @@ export class ReactFlowBridge {
         originalEdge.style &&
         typeof originalEdge.style === 'string'
       ) {
+        console.log(`[ReactFlowBridge] 🔄 Overriding hyperedge style for ${originalEdge.id}`);
+        overrideCount++;
         const { deserializeProcessedStyle } = require('../core/EdgeStyleSerializer');
         const parsedStyle = deserializeProcessedStyle(originalEdge.style);
         if (parsedStyle) {
@@ -308,7 +344,15 @@ export class ReactFlowBridge {
       }
       // For all other edges (including hyperedges with edgeProperties), trust EdgeConverter's processing
     });
+
+    console.log(`[ReactFlowBridge] 📊 Edge conversion summary:`, {
+      totalConverted: convertedEdges.length,
+      styleOverrides: overrideCount,
+      finalEdgesCount: edges.length + convertedEdges.length,
+    });
+
     edges.push(...convertedEdges);
+    console.log(`[ReactFlowBridge] ✅ Edge conversion completed, total edges: ${edges.length}`);
   }
 
   /**

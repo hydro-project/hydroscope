@@ -18,6 +18,9 @@
  * DIY TOOLKIT: Individual components for custom layouts
  */
 
+// Install ResizeObserver error handling immediately on import
+import './utils/resizeObserverErrorHandler';
+
 // Import CSS to be bundled
 import './style.css';
 

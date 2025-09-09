@@ -4,6 +4,7 @@ import { parseGraphJSON } from '../core/JSONParser';
 import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core/types';
 import type { VisualizationState } from '../core/VisualizationState';
 import { getProfiler } from '../dev';
+import { useResizeObserverErrorHandler } from '../utils/resizeObserverErrorHandler';
 
 export interface HydroscopeCoreProps {
   data: object | string; // Graph JSON object or string
@@ -69,6 +70,9 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
     ref
   ) => {
     const flowGraphRef = React.useRef<any>(null);
+
+    // Install ResizeObserver error handler to suppress benign loop errors
+    useResizeObserverErrorHandler();
 
     // Compute parsed state and merged config without causing state updates during render
     const parseOutcome = useMemo(() => {

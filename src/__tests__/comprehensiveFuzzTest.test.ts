@@ -41,10 +41,10 @@ type FuzzOperation =
   | { type: 'contractAllNodes' }
   | { type: 'changeHierarchy'; hierarchyId: string }
   | {
-      type: 'changeLayout';
-      algorithm: 'mrtree' | 'layered' | 'force' | 'stress' | 'radial';
-      direction?: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
-    }
+    type: 'changeLayout';
+    algorithm: 'mrtree' | 'layered' | 'force' | 'stress' | 'radial';
+    direction?: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+  }
   | { type: 'toggleAutofit'; enabled: boolean }
   | { type: 'fitToViewport' }
   | { type: 'hierarchyTreeExpand'; containerId: string }
@@ -135,7 +135,7 @@ async function validateEdgeIntegrity(state: VisualizationState, context: string)
   if (disconnectedEdges > 0) {
     throw new Error(
       `❌ Edge integrity validation failed in ${context}!\n` +
-        `Found ${disconnectedEdges} disconnected hyperEdge endpoints.`
+      `Found ${disconnectedEdges} disconnected hyperEdge endpoints.`
     );
   }
 
@@ -165,10 +165,10 @@ class ComprehensiveFuzzTester {
     matches: number;
     currentIndex: number;
   } = {
-    query: '',
-    matches: 0,
-    currentIndex: 0,
-  };
+      query: '',
+      matches: 0,
+      currentIndex: 0,
+    };
   private searchPatternsPool: string[] = [
     '*', // Match all
     'container*', // Match containers starting with 'container'
