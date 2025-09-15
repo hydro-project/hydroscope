@@ -4,7 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import { generateNodeColors, type NodeColor } from '../shared/colorUtils';
+import { generateNodeColors, type NodeColor, getSearchHighlightColors, getContrastColor } from '../shared/colorUtils';
 import { truncateLabel } from '../shared/textUtils';
 import { useStyleConfig } from './StyleConfigContext';
 import { HandlesRenderer } from './handles';
@@ -90,10 +90,29 @@ export function StandardNode({ id, data }: NodeProps) {
     : (generateNodeColors([nodeType], colorPalette) as NodeColor);
 
   // Unified colors interface - normalize different color formats
-  const colors =
+  const baseColors =
     'primary' in rawColors
       ? { backgroundColor: rawColors.primary, borderColor: rawColors.border }
       : { backgroundColor: rawColors.background, borderColor: rawColors.border };
+
+  // Apply search highlight colors if needed
+  const searchHighlight = (data as any).searchHighlight;
+  const searchHighlightStrong = (data as any).searchHighlightStrong;
+  const searchColors = getSearchHighlightColors();
+
+  const colors = searchHighlight
+    ? {
+      backgroundColor: searchHighlightStrong
+        ? searchColors.current.background
+        : searchColors.match.background,
+      borderColor: searchHighlightStrong
+        ? searchColors.current.border
+        : searchColors.match.border,
+      textColor: searchHighlightStrong
+        ? searchColors.current.text
+        : searchColors.match.text,
+    }
+    : { ...baseColors, textColor: undefined };
 
   // For collapsed containers, get the same variables as ContainerNode
   const width =
@@ -119,21 +138,33 @@ export function StandardNode({ id, data }: NodeProps) {
   if (isCollapsedContainer) {
     const containerColors = generateContainerColors(id, colorPalette);
 
-    // Extract search highlighting flags
-    const searchHighlight = (data as any).searchHighlight;
-    const searchHighlightStrong = (data as any).searchHighlightStrong;
+    // Apply search highlight colors for containers too
+    const finalContainerColors = searchHighlight
+      ? {
+        background: searchHighlightStrong
+          ? searchColors.current.background
+          : searchColors.match.background,
+        border: searchHighlightStrong
+          ? searchColors.current.border
+          : searchColors.match.border,
+        text: searchHighlightStrong
+          ? searchColors.current.text
+          : searchColors.match.text,
+      }
+      : containerColors;
 
     return (
       <>
+        {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
         <style>
           {`
             @keyframes searchPulse {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.02); }
+              0%, 100% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15); }
+              50% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 10px -1px rgba(0,0,0,0.2); }
             }
             @keyframes searchPulseStrong {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.05); }
+              0%, 100% { box-shadow: 0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2); }
+              50% { box-shadow: 0 0 0 8px rgba(255, 107, 53, 0.6), 0 12px 20px -3px rgba(0,0,0,0.3); }
             }
           `}
         </style>
@@ -141,8 +172,8 @@ export function StandardNode({ id, data }: NodeProps) {
           style={{
             width: `${width}px`,
             height: `${height}px`,
-            background: containerColors.background,
-            border: `${styleCfg.containerBorderWidth ?? 2}px solid ${containerColors.border}`,
+            background: finalContainerColors.background,
+            border: `${styleCfg.containerBorderWidth ?? 2}px solid ${finalContainerColors.border}`,
             borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
             position: 'relative',
             boxSizing: 'border-box',
@@ -152,10 +183,16 @@ export function StandardNode({ id, data }: NodeProps) {
             justifyContent: 'center',
             cursor: 'pointer',
             boxShadow: (() => {
-              if (searchHighlightStrong) {
-                return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
-              } else if (searchHighlight) {
-                return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+              // For animated search highlights, use CSS animation instead of static shadow
+              if (searchHighlight && (searchHighlightStrong || !searchHighlightStrong)) {
+                // Base shadow for non-animated state - will be overridden by animation
+                return styleCfg.containerShadow === 'NONE'
+                  ? '0 0 0 2px rgba(255, 193, 7, 0.2)'
+                  : styleCfg.containerShadow === 'LARGE'
+                    ? '0 10px 15px -3px rgba(0,0,0,0.2)'
+                    : styleCfg.containerShadow === 'MEDIUM'
+                      ? '0 4px 6px -1px rgba(0,0,0,0.15)'
+                      : '0 2px 8px rgba(0,0,0,0.15)';
               } else {
                 return styleCfg.containerShadow === 'NONE'
                   ? 'none'
@@ -167,7 +204,7 @@ export function StandardNode({ id, data }: NodeProps) {
               }
             })(),
             transition: 'all 0.2s ease',
-            // Add subtle animation for search highlights
+            // Use box-shadow animations instead of transform to prevent ResizeObserver loops
             animation: searchHighlight
               ? searchHighlightStrong
                 ? 'searchPulseStrong 2s ease-in-out infinite'
@@ -180,7 +217,7 @@ export function StandardNode({ id, data }: NodeProps) {
             style={{
               fontSize: PANEL_CONSTANTS.FONT_SIZE_LABEL,
               fontWeight: '600',
-              color: containerColors.text,
+              color: finalContainerColors.text,
               textAlign: 'center',
               maxWidth: `${Number(width) - 16}px`,
               overflow: 'hidden',
@@ -199,7 +236,7 @@ export function StandardNode({ id, data }: NodeProps) {
           <div
             style={{
               fontSize: PANEL_CONSTANTS.FONT_SIZE_TINY,
-              color: containerColors.text,
+              color: finalContainerColors.text,
               opacity: 0.8,
               textAlign: 'center',
             }}
@@ -253,6 +290,7 @@ export function StandardNode({ id, data }: NodeProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          color: colors.textColor || getContrastColor(colors.backgroundColor || baseColors.backgroundColor), // Ensure good contrast
           // Click animation styles
           transform: isClicked ? 'scale(1.05) translateY(-2px)' : 'scale(1) translateY(0px)',
           boxShadow: (() => {

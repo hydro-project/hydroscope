@@ -344,15 +344,26 @@ class ELKConfigurationManager {
   }
 
   private getContextConfig(context: 'root' | 'container'): Record<string, any> {
-    const padding =
-      context === 'root' ? LAYOUT_SPACING.ROOT_PADDING : LAYOUT_SPACING.CONTAINER_PADDING;
-
-    return {
-      'elk.padding.left': padding.toString(),
-      'elk.padding.right': padding.toString(),
-      'elk.padding.top': padding.toString(),
-      'elk.padding.bottom': padding.toString(),
-    };
+    if (context === 'root') {
+      const padding = LAYOUT_SPACING.ROOT_PADDING;
+      return {
+        'elk.padding.left': padding.toString(),
+        'elk.padding.right': padding.toString(),
+        'elk.padding.top': padding.toString(),
+        'elk.padding.bottom': padding.toString(),
+      };
+    } else {
+      // For containers, add extra bottom padding to reserve space for labels
+      const basePadding = LAYOUT_SPACING.CONTAINER_PADDING;
+      const labelReservedSpace = 32; // Reserve space for label + background + padding
+      
+      return {
+        'elk.padding.left': basePadding.toString(),
+        'elk.padding.right': basePadding.toString(),
+        'elk.padding.top': basePadding.toString(),
+        'elk.padding.bottom': (basePadding + labelReservedSpace).toString(),
+      };
+    }
   }
 }
 

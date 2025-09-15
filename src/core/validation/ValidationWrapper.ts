@@ -32,13 +32,22 @@ export function withValidation<T extends unknown[], R>(
   return function (this: any, ...args: T): R {
     const shouldValidate = instance._validationEnabled && !config.skipValidation;
 
+    // RECURSIVE VALIDATION FIX: Check if we're already in a validation call
+    if (instance._validationInProgress) {
+      // Skip validation to prevent infinite recursion
+      return originalMethod.apply(this, args);
+    }
+
     // Before validation (optional)
     if (shouldValidate && config.validateBefore) {
       try {
+        instance._validationInProgress = true;
         instance.validateInvariants();
       } catch (error) {
         console.error(`[ValidationWrapper] Pre-validation failed for ${methodName}:`, error);
         throw error;
+      } finally {
+        instance._validationInProgress = false;
       }
     }
 
@@ -54,10 +63,13 @@ export function withValidation<T extends unknown[], R>(
     // After validation (default for most public APIs)
     if (shouldValidate && config.validateAfter) {
       try {
+        instance._validationInProgress = true;
         instance.validateInvariants();
       } catch (error) {
         console.error(`[ValidationWrapper] Post-validation failed for ${methodName}:`, error);
         throw error;
+      } finally {
+        instance._validationInProgress = false;
       }
     }
 

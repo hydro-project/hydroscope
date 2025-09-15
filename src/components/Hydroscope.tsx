@@ -6,6 +6,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
+import { hscopeLogger } from '../utils/logger';
 import { Card, Button, message } from 'antd';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import HydroscopeCore, {
@@ -27,13 +28,19 @@ import {
   STORAGE_KEYS,
   isStorageAvailable,
 } from '../utils/persistence';
+import { ResizeObserverErrorHandler } from '../utils/resizeObserverErrorHandler';
+import { globalReactFlowOperationManager } from '../utils/globalReactFlowOperationManager';
 
 // Conditional dev-only imports
 let PerformanceDashboard: React.ComponentType<any> | null = null;
 if (isDevelopment()) {
   try {
-    const devComponents = require('../dev/components/PerformanceDashboard');
-    PerformanceDashboard = devComponents.default;
+    // Use dynamic import for development-only components
+    import('../dev/components/PerformanceDashboard').then((devComponents) => {
+      PerformanceDashboard = devComponents.default;
+    }).catch((_error) => {
+      console.warn('Development components not available');
+    });
   } catch (_error) {
     console.warn('Development components not available');
   }
@@ -529,7 +536,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
           url.hash = '';
           url.searchParams.delete('file');
           window.history.replaceState(null, '', url.toString());
-        } catch {}
+        } catch { }
       }
       // Reset to file drop zone
       setHasParsedData(false);
@@ -611,25 +618,109 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                   setCurrentSearchMatchId(current?.id);
                 }}
                 onToggleContainer={async containerId => {
-                  try {
-                    const container = visualizationState.getContainer(containerId);
-                    if (container) {
-                      if (container.collapsed) {
-                        visualizationState.expandContainer(containerId);
-                        onContainerExpand?.(containerId, visualizationState);
-                      } else {
-                        visualizationState.collapseContainer(containerId);
-                        onContainerCollapse?.(containerId, visualizationState);
-                      }
-                      // No need to manually update collapsed containers - it's derived from visualizationState
-                      if (hydroscopeRef.current?.refreshLayout) {
-                        await hydroscopeRef.current.refreshLayout();
-                      }
-                      // Force re-computation of collapsed containers state for InfoPanel
-                      setLayoutRefreshCounter(prev => prev + 1);
+                  // RACE CONDITION FIX: Check if this is a search expansion operation
+                  // Search expansions need to be synchronous to ensure nodes are visible
+                  // before ReactFlowBridge conversion happens
+                  const isSearchExpansion = searchQuery && searchQuery.trim() && searchMatches && searchMatches.length > 0;
+                  
+                  console.error(`[Hydroscope] onToggleContainer(${containerId}) - isSearchExpansion: ${isSearchExpansion}, searchQuery: "${searchQuery}", matches: ${searchMatches?.length || 0}`);
+                  
+                  if (isSearchExpansion) {
+                    // Execute search expansion immediately (synchronously)
+                    const c = visualizationState?.getContainer(containerId);
+                    console.error(`[Hydroscope] 🚀 SYNCHRONOUS search expansion for ${containerId}, collapsed: ${c?.collapsed}`);
+                    if (c && c.collapsed) {
+                      visualizationState.expandContainer(containerId);
+                      onContainerExpand?.(containerId, visualizationState);
+                      console.error(`[Hydroscope] ✅ Expanded ${containerId} synchronously`);
+                    } else if (c) {
+                      console.error(`[Hydroscope] ⚠️ Container ${containerId} already expanded (collapsed: ${c.collapsed})`);
+                    } else {
+                      console.error(`[Hydroscope] ❌ Container ${containerId} not found!`);
                     }
-                  } catch (err) {
-                    console.error('❌ Error toggling container:', err);
+                    return; // Skip batching for search expansions
+                  }
+                  
+                  // For non-search operations, use batching as before
+                  if (!(window as any).__hydroToggleBatchRef) {
+                    (window as any).__hydroToggleBatchRef = new Set<string>();
+                    (window as any).__hydroToggleBatchScheduled = false;
+                  }
+                  const batch: Set<string> = (window as any).__hydroToggleBatchRef;
+                  batch.add(containerId);
+
+                  if (!(window as any).__hydroToggleBatchScheduled) {
+                    (window as any).__hydroToggleBatchScheduled = true;
+                    requestAnimationFrame(async () => {
+                      const ids = Array.from(batch);
+                      batch.clear();
+                      (window as any).__hydroToggleBatchScheduled = false;
+                      if (!visualizationState) return;
+                      const start = performance.now();
+                      hscopeLogger.log('toggle', `batch size=${ids.length}`);
+                      try {
+                        // Pause ResizeObserver callbacks during heavy container mutations
+                        try {
+                          ResizeObserverErrorHandler.getInstance().pause();
+                          hscopeLogger.log('ro', 'pause during batch');
+                        } catch { /* ignore */ }
+                        for (const id of ids) {
+                          const c = visualizationState.getContainer(id);
+                          if (!c) continue;
+                          if (c.collapsed) {
+                            visualizationState.expandContainer(id);
+                            onContainerExpand?.(id, visualizationState);
+                          } else {
+                            visualizationState.collapseContainer(id);
+                            onContainerCollapse?.(id, visualizationState);
+                          }
+                        }
+                        // Suppress the immediate auto-fit in refreshLayout; we'll issue a single delayed fit after layout completes
+                        (window as any).__hydroSkipNextAutoFit = true;
+                        if (hydroscopeRef.current?.refreshLayout) {
+                          const force = ids.length > 1; // multiple toggles need a full layout
+                          await hydroscopeRef.current.refreshLayout(force);
+                          if (force) { hscopeLogger.log('layout', 'full after multi-toggle'); } else { hscopeLogger.log('layout', 'single toggle layout'); }
+                        }
+                        setLayoutRefreshCounter(prev => prev + 1);
+                        const dur = Math.round(performance.now() - start);
+                        hscopeLogger.log('toggle', `batch done dur=${dur}ms`);
+                        // Resume ResizeObserver now that DOM settled post-layout (before deferred auto-fit)
+                        try {
+                          ResizeObserverErrorHandler.getInstance().resume();
+                          hscopeLogger.log('ro', 'resume after layout');
+                        } catch { /* ignore */ }
+                        // Schedule a single deferred fitView after DOM settles
+                        if (hydroscopeRef.current?.fitView) {
+                          const fitFn = hydroscopeRef.current.fitView;
+                          setTimeout(() => {
+                            try {
+                              globalReactFlowOperationManager.requestAutoFit(
+                                fitFn,
+                                undefined,
+                                'batched-container-toggle'
+                              );
+                              hscopeLogger.log('fit', 'deferred auto-fit requested');
+                            } catch (e) {
+                              console.warn('⚠️ [Hydroscope] Deferred auto-fit request failed', e);
+                            } finally {
+                              try {
+                                const inst = ResizeObserverErrorHandler.getInstance();
+                                if (inst.getStats().paused) {
+                                  inst.resume();
+                                  hscopeLogger.log('ro', 'late resume after deferred batch');
+                                }
+                              } catch { /* ignore */ }
+                            }
+                          }, 120); // shorter since requestAutoFit already delays
+                        }
+                      } catch (err) {
+                        console.error('❌ Error during batched container toggle processing:', err);
+                        try {
+                          ResizeObserverErrorHandler.getInstance().resume();
+                        } catch { /* ignore */ }
+                      }
+                    });
                   }
                 }}
                 colorPalette={colorPalette}

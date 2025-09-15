@@ -130,10 +130,12 @@ export class VisualizationState {
 
   // Track containers in transition state to suppress spurious warnings
   private readonly _recentlyCollapsedContainers = new Set<string>();
+  private readonly _recentlyExpandedContainers = new Set<string>();
 
   // Flag to control validation during transitions
   public _validationEnabled = true;
   public _validationLevel: 'strict' | 'normal' | 'minimal' | 'silent' = 'normal';
+  public _validationInProgress = false;
 
   // Layout control interface for optimization
   private _layoutController: {
@@ -152,6 +154,54 @@ export class VisualizationState {
 
   // Lazy initialization flags for efficient caches
   private _cacheInitialized = false;
+
+  // RACE CONDITION FIX: Layout lock to prevent concurrent modifications during ELK processing
+  private _layoutLock = false;
+  private _layoutLockQueue: Array<() => void> = [];
+
+  // ============ LAYOUT LOCK METHODS ============
+  // Prevent race conditions during ELK processing
+
+  /**
+   * Acquire layout lock to prevent concurrent modifications during ELK processing
+   */
+  acquireLayoutLock(): void {
+    this._layoutLock = true;
+  }
+
+  /**
+   * Release layout lock and process any queued modifications
+   */
+  releaseLayoutLock(): void {
+    this._layoutLock = false;
+
+    // Process queued modifications
+    const queue = [...this._layoutLockQueue];
+    this._layoutLockQueue = [];
+
+    if (queue.length > 0) {
+      console.error(`[VisualizationState] Processing ${queue.length} queued operations`);
+    }
+
+    for (const operation of queue) {
+      try {
+        operation();
+      } catch (error) {
+        console.error('[VisualizationState] ❌ Error processing queued operation:', error);
+      }
+    }
+  }
+
+  /**
+   * Check if a modification should be blocked or queued due to layout lock
+   */
+  private _checkLayoutLock(operationName: string, operation: () => void): boolean {
+    if (this._layoutLock) {
+      this._layoutLockQueue.push(operation);
+      return true; // Operation was queued
+    }
+    return false; // Operation can proceed
+  }
 
   // ============ BRIDGE PATTERN ACCESSORS ============
   // These provide indirect access for specialized operations classes
@@ -266,6 +316,14 @@ export class VisualizationState {
    */
   get visibleNodes(): ReadonlyArray<GraphNode> {
     return Array.from(this._collections._visibleNodes.values());
+  }
+
+  /**
+   * Get all nodes (including hidden ones) for search functionality
+   * This allows searching for nodes inside collapsed containers
+   */
+  get allNodes(): ReadonlyArray<GraphNode> {
+    return Array.from(this._collections.graphNodes.values());
   }
 
   /**
@@ -555,20 +613,65 @@ export class VisualizationState {
       }
     };
 
+    const addAncestorsOnly = (containerId: string) => {
+      // Add only the ancestors, not the container itself
+      let current: string | null = this.getContainerParent(containerId);
+      while (current) {
+        toExpand.add(current);
+        current = this.getContainerParent(current);
+      }
+    };
+
+    // Add containers needed for search matches (and their ancestors)
+    console.error(`[VisualizationState] Processing ${searchMatches.length} search matches for expansion`);
     searchMatches.forEach(match => {
+      console.error(`[VisualizationState] Processing match: ${match.id} (${match.type})`);
       if (match.type === 'container') {
-        const parent = this.getContainerParent(match.id);
-        if (parent) {
-          addAncestors(parent);
-        }
+        // FIXED: Container matches should be visible AND expanded so they can be highlighted
+        // Expand both ancestors and the matched container itself
+        const parentId = this.getContainerParent(match.id);
+        console.error(`[VisualizationState] Container ${match.id} parent: ${parentId || 'none'}`);
+        addAncestors(match.id); // This will expand ancestors AND the container itself
       } else if (match.type === 'node') {
-        // For node matches, find parent container and add its ancestors
+        // SEARCH INVARIANT: Node matches should be visible as nodes
+        // Expand all ancestors including the direct parent container
         const parentContainer = this.getNodeParent(match.id);
         if (parentContainer) {
+          console.error(`[VisualizationState] Node ${match.id} parent container: ${parentContainer}`);
           addAncestors(parentContainer);
         }
       }
     });
+
+    console.error(`[VisualizationState] Containers to expand: ${Array.from(toExpand).join(', ')}`);
+
+    // Track matched containers for diagnostics
+    const matchedContainerIds = new Set<string>();
+    searchMatches.forEach(match => {
+      if (match.type === 'container') {
+        matchedContainerIds.add(match.id);
+        // FIXED: Don't remove matched containers from expansion - let them be expanded
+      }
+    });
+
+    // DIAGNOSTIC: Log which matched containers will be visible after expansion
+    const willBeVisible = Array.from(matchedContainerIds).filter(id => {
+      // A matched container is visible if:
+      // 1. It's not collapsed itself (search invariant keeps them collapsed, so they should be visible)
+      // 2. All its ancestors are expanded (or will be expanded)
+      let current = this.getContainerParent(id);
+      while (current) {
+        if (!toExpand.has(current) && this.getContainer(current)?.collapsed) {
+          return false; // Ancestor is collapsed and won't be expanded
+        }
+        current = this.getContainerParent(current);
+      }
+      return true;
+    });
+
+    console.error(`[VisualizationState] Matched containers that WILL be visible: ${willBeVisible.join(', ')}`);
+    const willBeInvisible = Array.from(matchedContainerIds).filter(id => !willBeVisible.includes(id));
+    console.error(`[VisualizationState] Matched containers that will be INVISIBLE: ${willBeInvisible.join(', ')}`);
 
     return Array.from(toExpand);
   }
@@ -932,6 +1035,11 @@ export class VisualizationState {
    * Safely set container state with proper cascade and hyperEdge management
    */
   setContainerState(containerId: string, state: { collapsed?: boolean; hidden?: boolean }): void {
+    // RACE CONDITION FIX: Check if we're in a layout lock and queue the operation
+    if (this._checkLayoutLock('setContainerState', () => this.setContainerState(containerId, state))) {
+      return;
+    }
+
     const container = this._collections.containers.get(containerId);
     if (!container) {
       console.warn(
@@ -942,6 +1050,13 @@ export class VisualizationState {
 
     const wasCollapsed = container.collapsed;
     const wasHidden = container.hidden;
+
+    // CRITICAL FIX: Prevent illegal state transitions
+    // If we're trying to expand a hidden container, make it visible first
+    if (state.collapsed === false && (container.hidden || state.hidden === true)) {
+      console.warn(`[VisualizationState] Preventing illegal Expanded/Hidden state for container ${containerId}. Making visible.`);
+      state.hidden = false;
+    }
 
     // Apply state changes
     if (state.collapsed !== undefined) {
@@ -981,7 +1096,6 @@ export class VisualizationState {
           this._validationEnabled = originalValidation;
         }
       }
-    } else {
     }
 
     // Handle hide/show transitions
@@ -1062,6 +1176,11 @@ export class VisualizationState {
    * Expand a container with proper hyperEdge cleanup
    */
   expandContainer(containerId: string): void {
+    // RACE CONDITION FIX: Check layout lock
+    if (this._checkLayoutLock('expandContainer', () => this.expandContainer(containerId))) {
+      return; // Operation was queued
+    }
+
     const container = this._collections.containers.get(containerId);
     if (!container) {
       throw new Error(`Cannot expand non-existent container: ${containerId}`);
@@ -1069,8 +1188,73 @@ export class VisualizationState {
 
     this._lastChangedContainer = containerId; // Track for selective layout
 
+    // Track recently expanded containers to protect them from auto-collapse
+    this._recentlyExpandedContainers.add(containerId);
+    setTimeout(() => {
+      this._recentlyExpandedContainers.delete(containerId);
+    }, 10000); // Protect for 10 seconds
+
     // Just update the container's collapsed state - setContainerState will handle calling handleContainerExpansion
     this.setContainerState(containerId, { collapsed: false });
+  }
+
+  /**
+   * Get recently expanded containers (for smart collapse protection)
+   */
+  getRecentlyExpandedContainers(): Set<string> {
+    return new Set(this._recentlyExpandedContainers);
+  }
+
+  /**
+   * Apply smart collapse for ELK capacity management
+   * This is an encapsulated API that respects user intentions and container priorities
+   */
+  applySmartCollapseForCapacity(targetCount: number): number {
+    const expandedContainers = Array.from(this._collections._expandedContainers.values());
+
+    if (expandedContainers.length <= targetCount) {
+      return expandedContainers.length; // No collapse needed
+    }
+
+    // Calculate container priorities (higher = keep expanded)
+    const containersByPriority = expandedContainers
+      .map(container => ({
+        container,
+        priority: this.calculateContainerPriority(container)
+      }))
+      .sort((a, b) => b.priority - a.priority); // Sort by priority (highest first)
+
+    // Keep the highest priority containers expanded, collapse the rest
+    const containersToKeep = containersByPriority.slice(0, targetCount);
+    const containersToCollapse = containersByPriority.slice(targetCount);
+
+    // Apply collapses through proper API
+    for (const { container } of containersToCollapse) {
+      this.setContainerState(container.id, { collapsed: true });
+    }
+
+    return containersToKeep.length;
+  }
+
+  /**
+   * Calculate container priority for smart collapse (higher = keep expanded)
+   */
+  private calculateContainerPriority(container: any): number {
+    let priority = 0;
+
+    // Highest priority: Recently expanded by user (protect user actions!)
+    if (this._recentlyExpandedContainers.has(container.id)) {
+      priority += 1000;
+    }
+
+    // Medium priority: Containers with many children (more important)
+    const childCount = container.children?.size || 0;
+    priority += childCount * 10;
+
+    // Low priority: Alphabetical order (for consistency)
+    priority += container.label?.charCodeAt(0) || 0;
+
+    return priority;
   }
 
   /**

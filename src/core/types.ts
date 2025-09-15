@@ -50,7 +50,7 @@ export interface GraphEdge {
 
 export interface Container {
   id: string;
-  collapsed?: boolean;
+  collapsed: boolean;
   hidden?: boolean;
   children?: Set<string>;
   style?: ContainerStyle | string;

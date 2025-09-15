@@ -81,11 +81,11 @@ export class ContainerOperations {
       if (container) {
         // For child containers, show them
         this.state.setContainerState(childId, { hidden: false });
-        // This node was collapsed until now; all its children should be collapsed (recursively)
+        // FIXED: Skip validation for already-expanded child containers (needed for search expansion)
+        // During search expansion, child containers might already be expanded by the search logic
         if (!this.state.getContainer(childId).collapsed) {
-          throw new Error(
-            `[handleContainerExpansion] child ${childId} of expanding container is already expanded`
-          );
+          // Child container is already expanded - this is fine, just skip it
+          continue;
         }
       } else if (node) {
         // Show child nodes

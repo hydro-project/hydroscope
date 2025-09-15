@@ -109,15 +109,14 @@ export class ReactFlowBridge {
    */
   private visStateToReactFlow(visState: VisualizationState): ReactFlowData {
     const conversionId = `conversion-${Date.now()}`;
-    console.log(`[ReactFlowBridge] 🔄 Starting visStateToReactFlow [${conversionId}]`);
+    // Starting ReactFlow conversion (debug logging removed for performance)
 
     const nodes: ReactFlowNode[] = [];
     const edges: ReactFlowEdge[] = [];
 
     // Build parent-child mapping from VisualizationState
-    console.log(`[ReactFlowBridge] 🗺️ Building parent map [${conversionId}]`);
+    // Building parent map (debug logging removed for performance)
     const parentMap = this.buildParentMap(visState);
-    console.log(`[ReactFlowBridge] 📊 Parent map built with ${parentMap.size} entries [${conversionId}]`);
 
     // Convert containers using ELK positions
     console.log(`[ReactFlowBridge] 📦 Converting containers [${conversionId}]`);
@@ -327,7 +326,7 @@ export class ReactFlowBridge {
         originalEdge.style &&
         typeof originalEdge.style === 'string'
       ) {
-        console.log(`[ReactFlowBridge] 🔄 Overriding hyperedge style for ${originalEdge.id}`);
+        // Overriding hyperedge style (debug logging removed for performance)
         overrideCount++;
         const { deserializeProcessedStyle } = require('../core/EdgeStyleSerializer');
         const parsedStyle = deserializeProcessedStyle(originalEdge.style);
@@ -345,14 +344,8 @@ export class ReactFlowBridge {
       // For all other edges (including hyperedges with edgeProperties), trust EdgeConverter's processing
     });
 
-    console.log(`[ReactFlowBridge] 📊 Edge conversion summary:`, {
-      totalConverted: convertedEdges.length,
-      styleOverrides: overrideCount,
-      finalEdgesCount: edges.length + convertedEdges.length,
-    });
-
+    // Edge conversion summary (debug logging removed for performance)
     edges.push(...convertedEdges);
-    console.log(`[ReactFlowBridge] ✅ Edge conversion completed, total edges: ${edges.length}`);
   }
 
   /**

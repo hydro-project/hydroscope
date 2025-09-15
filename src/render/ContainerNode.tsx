@@ -7,6 +7,7 @@ import { type NodeProps } from '@xyflow/react';
 import { truncateLabel } from '../shared/textUtils';
 import { useStyleConfig } from './StyleConfigContext';
 import { HandlesRenderer } from './handles';
+import { getSearchHighlightColors, getContrastColor } from '../shared/colorUtils';
 
 export function ContainerNode({ id, data }: NodeProps) {
   const styleCfg = useStyleConfig();
@@ -55,26 +56,55 @@ export function ContainerNode({ id, data }: NodeProps) {
       return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
     };
 
+    // Convert hex to rgba for transparency
+    const hexToRgba = (hex: string, alpha: number) => {
+      const r = parseInt(hex.substring(1, 3), 16);
+      const g = parseInt(hex.substring(3, 5), 16);
+      const b = parseInt(hex.substring(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
     return {
-      background: lighten(baseColor, 0.8),
+      background: hexToRgba(lighten(baseColor, 0.8), 0.3), // Much more transparent
       border: darken(baseColor, 0.2),
       text: darken(baseColor, 0.4),
     };
   };
 
   if (data.collapsed) {
-    const containerColors = generateContainerColors(id, colorPalette);
+    const baseContainerColors = generateContainerColors(id, colorPalette);
+    const searchColors = getSearchHighlightColors();
+    
+    // Apply search highlight colors if needed
+    const containerColors = searchHighlight
+      ? {
+          background: searchHighlightStrong 
+            ? searchColors.current.background 
+            : searchColors.match.background,
+          border: searchHighlightStrong 
+            ? searchColors.current.border 
+            : searchColors.match.border,
+          text: searchHighlightStrong 
+            ? searchColors.current.text 
+            : searchColors.match.text,
+        }
+      : {
+          ...baseContainerColors,
+          // Ensure good contrast for non-highlighted containers too
+          text: getContrastColor(baseContainerColors.background),
+        };
     return (
       <>
+        {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
         <style>
           {`
             @keyframes searchPulse {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.02); }
+              0%, 100% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15); }
+              50% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 10px -1px rgba(0,0,0,0.2); }
             }
             @keyframes searchPulseStrong {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.05); }
+              0%, 100% { box-shadow: 0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2); }
+              50% { box-shadow: 0 0 0 8px rgba(255, 107, 53, 0.6), 0 12px 20px -3px rgba(0,0,0,0.3); }
             }
           `}
         </style>
@@ -82,8 +112,20 @@ export function ContainerNode({ id, data }: NodeProps) {
           style={{
             width: `${width}px`,
             height: `${height}px`,
-            background: containerColors.background,
-            border: `${styleCfg.containerBorderWidth ?? 2}px solid ${containerColors.border}`,
+            // COLLAPSED CONTAINERS: More opaque background to distinguish from expanded
+            background: containerColors.background.includes('rgba') 
+              ? containerColors.background.replace(/0\.\d+\)$/, '0.9)')
+              : containerColors.background,
+            // COLLAPSED CONTAINERS: Thicker border to distinguish from expanded
+            border: (() => {
+              if (searchHighlightStrong) {
+                return `3px solid rgba(255, 107, 53, 0.9)`;
+              } else if (searchHighlight) {
+                return `3px solid rgba(255, 193, 7, 0.9)`;
+              } else {
+                return `${(styleCfg.containerBorderWidth ?? 2) + 1}px solid ${containerColors.border}`;
+              }
+            })(),
             borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
             position: 'relative',
             boxSizing: 'border-box',
@@ -92,22 +134,29 @@ export function ContainerNode({ id, data }: NodeProps) {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            // COLLAPSED CONTAINERS: Stronger shadow to distinguish from expanded
             boxShadow: (() => {
               if (searchHighlightStrong) {
-                return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
+                return '0 0 0 6px rgba(255, 107, 53, 0.3), 0 0 20px rgba(255, 107, 53, 0.4), 0 10px 15px -3px rgba(0,0,0,0.3)';
               } else if (searchHighlight) {
-                return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+                return '0 0 0 5px rgba(255, 193, 7, 0.3), 0 0 15px rgba(255, 193, 7, 0.4), 0 4px 6px -1px rgba(0,0,0,0.2)';
               } else {
                 return styleCfg.containerShadow === 'NONE'
-                  ? 'none'
+                  ? '0 2px 8px rgba(0,0,0,0.2)'
                   : styleCfg.containerShadow === 'LARGE'
-                    ? '0 10px 15px -3px rgba(0,0,0,0.2)'
+                    ? '0 12px 20px -3px rgba(0,0,0,0.3)'
                     : styleCfg.containerShadow === 'MEDIUM'
-                      ? '0 4px 6px -1px rgba(0,0,0,0.15)'
-                      : '0 2px 8px rgba(0,0,0,0.15)';
+                      ? '0 6px 10px -1px rgba(0,0,0,0.2)'
+                      : '0 4px 12px rgba(0,0,0,0.2)';
               }
             })(),
             transition: 'all 0.2s ease',
+            // Z-index for search highlighting
+            zIndex: searchHighlightStrong
+              ? 100
+              : searchHighlight
+                ? 50
+                : 1,
             // Add subtle animation for search highlights
             animation: searchHighlight
               ? searchHighlightStrong
@@ -152,25 +201,46 @@ export function ContainerNode({ id, data }: NodeProps) {
     );
   }
 
+  // Apply search highlight colors for non-collapsed containers too
+  const searchColors = getSearchHighlightColors();
+  const nonCollapsedColors = searchHighlight
+    ? {
+        background: searchHighlightStrong 
+          ? searchColors.current.background 
+          : searchColors.match.background,
+        border: searchHighlightStrong 
+          ? searchColors.current.border 
+          : searchColors.match.border,
+        text: searchHighlightStrong 
+          ? searchColors.current.text 
+          : searchColors.match.text,
+      }
+    : {
+        background: 'rgba(25, 118, 210, 0.1)',
+        border: '#1976d2',
+        text: '#1976d2', // Blue text on light blue background provides good contrast
+      };
+
   return (
     <>
+      {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
       <style>
         {`
           @keyframes searchPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+            0%, 100% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15); }
+            50% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 10px -1px rgba(0,0,0,0.2); }
           }
           @keyframes searchPulseStrong {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            0%, 100% { box-shadow: 0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 107, 53, 0.6), 0 12px 20px -3px rgba(0,0,0,0.3); }
           }
         `}
       </style>
       <div
         style={{
           padding: `${Math.max((styleCfg.nodePadding ?? 12) + 4, 8)}px`,
-          background: 'rgba(25, 118, 210, 0.1)',
-          border: `${styleCfg.containerBorderWidth ?? 2}px solid #1976d2`,
+          background: nonCollapsedColors.background,
+          border: `${styleCfg.containerBorderWidth ?? 2}px solid ${nonCollapsedColors.border}`,
           borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
           width: `${width}px`,
           height: `${height}px`,
@@ -196,21 +266,27 @@ export function ContainerNode({ id, data }: NodeProps) {
         }}
       >
         <HandlesRenderer />
+        {/* EXPANDED CONTAINERS: Only lower-right label, positioned to avoid occlusion */}
         <div
           style={{
             position: 'absolute',
-            bottom: '0px',
+            bottom: '8px', // Slightly inset from edge to avoid occlusion
             right: '12px',
             fontSize: '12px',
             fontWeight: 'bold',
-            color: '#1976d2',
+            color: nonCollapsedColors.text,
             maxWidth: `${Number(width) - 36}px`,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             cursor: 'pointer',
-            textShadow:
-              '1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgba(255, 255, 255, 0.8), 1px -1px 2px rgba(255, 255, 255, 0.8), -1px 1px 2px rgba(255, 255, 255, 0.8)',
+            // Enhanced label visibility with background
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: '4px',
+            padding: '2px 6px',
+            zIndex: 10, // Ensure label appears above child containers
+            textShadow: 'none', // Remove text shadow since we have background
             filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))',
           }}
         >

@@ -138,8 +138,8 @@ export const InfoPanel = forwardRef<
           const label = container?.data?.label || container?.label || container.id;
           items.push({ id: container.id, label, type: 'container' });
         });
-        // Visible nodes from visualization state
-        visualizationState.visibleNodes.forEach((node: VisualizationNode) => {
+        // All nodes from visualization state (not just visible ones, so users can search for nodes in collapsed containers)
+        visualizationState.allNodes.forEach((node: VisualizationNode) => {
           const label = node?.data?.label || node?.label || node?.id;
           items.push({ id: node.id, label, type: 'node' });
         });

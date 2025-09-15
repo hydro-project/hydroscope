@@ -18,6 +18,7 @@ import { Tree } from 'antd';
 import type { TreeDataNode } from 'antd';
 import { HierarchyTreeProps, HierarchyTreeNode } from './types';
 import { TYPOGRAPHY } from '../shared/config';
+import { globalLayoutLock } from '../utils/globalLayoutLock';
 import { COMPONENT_COLORS } from '../shared/config';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { Container, GraphNode } from '../shared/types';
@@ -73,21 +74,34 @@ function createSearchHighlightDiv(
   isCurrent: boolean,
   baseStyle: React.CSSProperties
 ): React.ReactNode {
+  // Import search highlight colors for consistency with graph nodes
+  const searchColors = {
+    match: {
+      background: '#fbbf24', // amber-400 - same as StandardNode
+      border: '#f59e0b', // amber-500
+      text: '#000000',
+    },
+    current: {
+      background: '#f97316', // orange-500 - same as StandardNode
+      border: '#ea580c', // orange-600
+      text: '#ffffff',
+    },
+  };
+
   return (
     <div
       style={
         match
           ? {
-              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-              borderRadius: 4,
-              padding: '2px 4px',
-              margin: '-1px -2px',
-              fontWeight: isCurrent ? '600' : '500',
-              border: isCurrent
-                ? '1px solid rgba(255,107,53,0.4)'
-                : '1px solid rgba(251,191,36,0.3)',
-              ...baseStyle,
-            }
+            backgroundColor: isCurrent ? searchColors.current.background : searchColors.match.background,
+            borderRadius: 4,
+            padding: '2px 4px',
+            margin: '-1px -2px',
+            fontWeight: isCurrent ? '600' : '500',
+            border: `1px solid ${isCurrent ? searchColors.current.border : searchColors.match.border}`,
+            color: isCurrent ? searchColors.current.text : searchColors.match.text,
+            ...baseStyle,
+          }
           : baseStyle
       }
     >
@@ -116,15 +130,15 @@ function createContainerDisplayTitle(
       style={
         match
           ? {
-              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-              borderRadius: 4,
-              padding: '2px 4px',
-              margin: '-1px -2px',
-              fontWeight: isCurrent ? '600' : '500',
-              border: isCurrent
-                ? '1px solid rgba(255,107,53,0.4)'
-                : '1px solid rgba(251,191,36,0.3)',
-            }
+            backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
+            borderRadius: 4,
+            padding: '2px 4px',
+            margin: '-1px -2px',
+            fontWeight: isCurrent ? '600' : '500',
+            border: isCurrent
+              ? '1px solid rgba(255,107,53,0.4)'
+              : '1px solid rgba(251,191,36,0.3)',
+          }
           : {}
       }
     >
@@ -346,20 +360,59 @@ export function HierarchyTree({
       searchMatches.length &&
       onToggleContainer
     ) {
-      // For container matches, avoid expanding the matches themselves
-      // For node matches, expand their parent containers to make nodes visible
-      const containerMatches = new Set(
-        searchMatches.filter(m => m.type === 'container').map(m => m.id)
-      );
+
+      // For both container matches and node matches, expand the containers to make them visible
+      // This includes expanding matched containers themselves and their ancestors
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
 
+      // Collect all containers that need to be toggled
+      const containersToToggle: string[] = [];
+      
+      console.error(`[HierarchyTree] 🔍 Search expansion: shouldBeExpanded (${shouldBeExpanded.size}):`, Array.from(shouldBeExpanded).slice(0, 10).join(', '), shouldBeExpanded.size > 10 ? '...' : '');
+      console.error(`[HierarchyTree] 🔍 Search expansion: currentlyCollapsed (${currentlyCollapsed.size}):`, Array.from(currentlyCollapsed).join(', '));
+      
       currentlyCollapsed.forEach(containerId => {
-        if (shouldBeExpanded.has(containerId) && !containerMatches.has(containerId)) {
-          // This container should be expanded to show the path to matches or to reveal matching nodes
-          onToggleContainer(containerId);
+        if (shouldBeExpanded.has(containerId)) {
+          containersToToggle.push(containerId);
         }
       });
+      
+      // CRITICAL FIX: For search expansion, also include containers that should be expanded
+      // but are not in the collapsed set (they might be hidden child containers)
+      if (searchQuery && searchQuery.trim() && searchMatches && searchMatches.length > 0) {
+        shouldBeExpanded.forEach(containerId => {
+          if (!currentlyCollapsed.has(containerId) && !containersToToggle.includes(containerId)) {
+            // Check if this container exists and is collapsed (but not tracked in currentlyCollapsed)
+            const container = visualizationState?.getContainer(containerId);
+            if (container && container.collapsed) {
+              containersToToggle.push(containerId);
+              console.error(`[HierarchyTree] 🔧 Adding missing collapsed container: ${containerId}`);
+            }
+          }
+        });
+      }
+      
+      console.error(`[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}):`, containersToToggle.join(', '));
+
+      // Batch container toggle operations to prevent ResizeObserver loops
+      if (containersToToggle.length > 0) {
+        // CRITICAL FIX: Execute search expansions synchronously to prevent race conditions
+        // The async delay was causing visibility state inconsistency during search operations
+        // where layout operations would run with stale visibility data, losing nodes/edges
+        
+        // Use the global layout lock to ensure atomic execution
+        const operationId = `search-expansion-${Date.now()}`;
+        
+        globalLayoutLock.queueLayoutOperation(operationId, async () => {
+          // Toggle all containers synchronously within the lock
+          for (const containerId of containersToToggle) {
+            onToggleContainer(containerId);
+          }
+        }, false).catch((error: unknown) => {
+          console.warn(`[HierarchyTree] Search expansion failed: ${error}`);
+        });
+      }
     } else if (
       (!searchQuery || !searchQuery.trim() || !searchMatches || !searchMatches.length) &&
       onToggleContainer
@@ -368,11 +421,27 @@ export function HierarchyTree({
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
 
+      // Collect containers that need to be toggled
+      const containersToToggle: string[] = [];
       currentlyCollapsed.forEach(containerId => {
         if (shouldBeExpanded.has(containerId)) {
-          onToggleContainer(containerId);
+          containersToToggle.push(containerId);
         }
       });
+
+      // Batch container toggle operations to prevent ResizeObserver loops  
+      if (containersToToggle.length > 0) {
+        // Use the same synchronous approach for consistency
+        const operationId = `hierarchy-sync-${Date.now()}`;
+        
+        globalLayoutLock.queueLayoutOperation(operationId, async () => {
+          for (const containerId of containersToToggle) {
+            onToggleContainer(containerId);
+          }
+        }, false).catch((error: unknown) => {
+          console.warn(`[HierarchyTree] Hierarchy sync failed: ${error}`);
+        });
+      }
     }
   }, [derivedExpandedKeys, searchQuery, searchMatches, collapsedContainers, onToggleContainer]);
 
@@ -400,7 +469,7 @@ export function HierarchyTree({
   const handleExpand = (nextExpandedKeys: React.Key[], info: { node: TreeDataNode }) => {
     // Update UI immediately
     setExpandedKeys(nextExpandedKeys);
-    // Then toggle corresponding container in the visualization
+    // Then toggle corresponding container in the visualization (batched to prevent ResizeObserver loops)
     if (onToggleContainer && info.node) {
       const nodeKey = info.node.key as string;
       // Check if we're expanding or collapsing by comparing current state
@@ -409,6 +478,7 @@ export function HierarchyTree({
 
       // Only call onToggleContainer if the state actually changed
       if (wasExpanded !== isNowExpanded) {
+        // Execute synchronously to prevent race conditions with layout operations
         onToggleContainer(nodeKey);
       }
     }
@@ -417,6 +487,7 @@ export function HierarchyTree({
   const handleSelect = (_selectedKeys: React.Key[], info: { node: TreeDataNode }) => {
     if (onToggleContainer && info.node) {
       const nodeKey = info.node.key as string;
+      // Execute synchronously to prevent race conditions with layout operations
       onToggleContainer(nodeKey);
     }
   };

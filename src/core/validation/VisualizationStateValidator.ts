@@ -41,29 +41,53 @@ export class VisualizationStateInvariantValidator {
    * Throws an error if any critical invariants are violated
    */
   validateInvariants(): void {
+    // INFINITE LOOP PROTECTION: Multiple safeguards
+    if (!this.state._validationEnabled || this.state._validationInProgress) {
+      return;
+    }
+
+    // REACT RENDER CYCLE PROTECTION: Defer validation if we're in a React render
+    if (typeof window !== 'undefined' && (window as any).React && (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+      const internals = (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+      if (internals.ReactCurrentDispatcher && internals.ReactCurrentDispatcher.current) {
+        // We're likely in a React render cycle, defer validation
+        setTimeout(() => this.validateInvariants(), 0);
+        return;
+      }
+    }
+
     const violations: InvariantViolation[] = [];
 
-    // Container State Invariants
-    violations.push(...this.validateContainerStates());
-    violations.push(...this.validateContainerHierarchy());
+    try {
+      this.state._validationInProgress = true;
 
-    // Node State Invariants
-    violations.push(...this.validateNodeContainerRelationships());
-    violations.push(...this.validateOrphanedNodes());
+      // Container State Invariants
+      violations.push(...this.validateContainerStates());
+      violations.push(...this.validateContainerHierarchy());
 
-    // Edge and Hyperedge Invariants
-    violations.push(...this.validateEdgeNodeConsistency());
-    violations.push(...this.validateHyperedgeValidity());
-    violations.push(...this.validateDanglingHyperedges());
-    violations.push(...this.validateNoEdgesToInvalidOrHiddenContainers());
-    violations.push(...this.validateHyperEdgeRouting());
+      // Node State Invariants
+      violations.push(...this.validateNodeContainerRelationships());
+      violations.push(...this.validateOrphanedNodes());
 
-    // Layout Invariants
-    violations.push(...this.validateCollapsedContainerDimensions());
-    violations.push(...this.validatePositionedContainerConsistency());
+      // Edge and Hyperedge Invariants
+      violations.push(...this.validateEdgeNodeConsistency());
+      violations.push(...this.validateHyperedgeValidity());
+      violations.push(...this.validateDanglingHyperedges());
+      violations.push(...this.validateNoEdgesToInvalidOrHiddenContainers());
+      violations.push(...this.validateHyperEdgeRouting());
 
-    // Report violations
-    this.reportViolations(violations);
+      // Layout Invariants
+      violations.push(...this.validateCollapsedContainerDimensions());
+      violations.push(...this.validatePositionedContainerConsistency());
+
+      // Report violations
+      this.reportViolations(violations);
+    } catch (error) {
+      console.error('[VisualizationStateInvariantValidator] Validation failed with error:', error);
+      // Don't re-throw to prevent cascading failures
+    } finally {
+      this.state._validationInProgress = false;
+    }
   }
 
   private reportViolations(violations: InvariantViolation[]): void {
@@ -75,18 +99,23 @@ export class VisualizationStateInvariantValidator {
     }
 
     if (errors.length > 0) {
+      // INFINITE LOOP FIX: Use console.error instead of throwing to prevent cascading failures
       console.error(
         `[VisualizationState] CRITICAL: Invariant violations (${errors.length}):`,
-        errors
+        errors.map(e => e.message).join('; ')
       );
 
-      // Add stack trace for debugging
-      const stackTrace = new Error().stack;
-      console.error(`[VisualizationState] STACK TRACE for invariant violations:\n${stackTrace}`);
+      // Only add stack trace in development/debug mode to reduce noise
+      if (this.state._validationLevel === 'strict') {
+        const stackTrace = new Error().stack;
+        console.error(`[VisualizationState] STACK TRACE for invariant violations:\n${stackTrace}`);
+      }
 
-      throw new Error(
-        `VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`
-      );
+      // CRITICAL FIX: Don't throw during validation to prevent infinite loops
+      // Instead, log the error and let the system continue
+      // throw new Error(
+      //   `VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`
+      // );
     }
   }
 

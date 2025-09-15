@@ -60,9 +60,40 @@ export class ELKBridge {
   }
 
   /**
+   * Run chunked layout for extremely large container counts
+   */
+  private async runChunkedLayout(visState: VisualizationState): Promise<void> {
+    const TARGET_COUNT = 80; // Target container count for ELK stability
+    
+    console.warn(`[ELKBridge] Applying smart collapse to manage ${visState.visibleContainers.length} containers`);
+    
+    // Use VisualizationState's encapsulated smart collapse API
+    const finalCount = visState.applySmartCollapseForCapacity(TARGET_COUNT);
+    
+    console.warn(`[ELKBridge] Smart collapse complete: ${finalCount} containers remaining`);
+    
+    // Now run normal layout with reduced container count
+    await this.runFullLayout(visState);
+  }
+
+  /**
    * Run full layout for all containers (initial layout)
    */
   private async runFullLayout(visState: VisualizationState): Promise<void> {
+    // ELK CAPACITY MANAGEMENT: Only use chunked layout for extremely large counts
+    const containerCount = visState.visibleContainers.length;
+    const ELK_HARD_LIMIT = 150; // Only chunk when absolutely necessary
+    
+    if (containerCount > ELK_HARD_LIMIT) {
+      console.warn(`[ELKBridge] Extremely large layout (${containerCount} containers) - using fallback strategy`);
+      await this.runChunkedLayout(visState);
+      return;
+    }
+    
+    // RACE CONDITION FIX: Capture container state at layout start for validation
+    const initialContainerCount = visState.visibleContainers.length;
+    const initialContainerIds = new Set(visState.visibleContainers.map(c => c.id));
+    
     // Import profiler utilities for detailed timing
     const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
 
@@ -134,13 +165,95 @@ export class ELKBridge {
 
     // 4. Run ELK layout algorithm
     profiler?.start('elk-algorithm-execution');
+    const containerCountAtELKStart = visState.visibleContainers.length;
     if (profiler) {
       console.log(
         `[ELKBridge] Starting ELK layout with ${elkGraph.children?.length || 0} top-level elements`
       );
     }
 
+    // Store ELK input for debugging failures
+    (this as any)._lastElkInput = elkGraph;
+    
+    console.error(`[ELKBridge] 🚀 Starting ELK layout with ${elkGraph.children?.length || 0} root containers...`);
+    const elkStartTime = Date.now();
+    
     const elkResult = await this.elk.layout(elkGraph);
+    
+    const elkDuration = Date.now() - elkStartTime;
+    console.error(`[ELKBridge] ✅ ELK layout completed in ${elkDuration}ms`);
+    
+    const containerCountAtELKEnd = visState.visibleContainers.length;
+    
+    // COMPREHENSIVE LAYOUT VALIDATION AND RECOVERY
+    const hasRaceCondition = containerCountAtELKEnd !== containerCountAtELKStart;
+    
+    // FIXED: Count all containers recursively, not just root level
+    const allElkContainers: any[] = [];
+    const extractAllContainers = (elkNode: any) => {
+      allElkContainers.push(elkNode);
+      if (elkNode.children) {
+        elkNode.children.forEach((child: any) => extractAllContainers(child));
+      }
+    };
+    elkResult.children?.forEach((rootElkNode: any) => extractAllContainers(rootElkNode));
+    
+    const elkContainerCount = allElkContainers.length;
+    const hasELKFailure = elkContainerCount < containerCountAtELKStart * 0.8; // ELK returned <80% of expected containers
+    
+    if (hasRaceCondition || hasELKFailure) {
+      if (hasRaceCondition) {
+        console.error(
+          `[ELKBridge] 🚨 RACE CONDITION: Container count changed ${containerCountAtELKStart} → ${containerCountAtELKEnd} during ELK processing`
+        );
+      }
+      
+      if (hasELKFailure) {
+        console.error(
+          `[ELKBridge] 🚨 ELK PROCESSING ISSUE: Expected ${containerCountAtELKStart} containers, ELK returned ${elkContainerCount}`
+        );
+        
+        // FAIL FAST: Don't use fallbacks, debug the root cause
+        const elkContainerIds = new Set(allElkContainers.map(elkNode => elkNode.id));
+        const missingContainers = visState.visibleContainers.filter(container => !elkContainerIds.has(container.id));
+        
+        console.error(`[ELKBridge] 🚨 ELK FAILURE - Missing containers:`, missingContainers.map(c => ({
+          id: c.id,
+          label: c.label || c.data?.label,
+          hasPosition: !!c.position,
+          hasDimensions: !!(c.width && c.height),
+          parentId: c.parentId
+        })));
+        
+        // Log the ELK input that caused the failure
+        console.error(`[ELKBridge] 🚨 ELK INPUT that failed:`, JSON.stringify({
+          containerCount: containerCountAtELKStart,
+          elkInputChildren: (this as any)._lastElkInput?.children?.length || 'unknown',
+          elkOutputChildren: elkResult.children?.length || 0
+        }, null, 2));
+        
+        throw new Error(`ELK layout failure: Expected ${containerCountAtELKStart} containers, got ${elkContainerCount}. Check console for details.`);
+      }
+      
+      // Retry with exponential backoff (but only for race conditions, not ELK failures)
+      const maxRetries = hasRaceCondition ? 3 : 1; // Don't retry ELK failures multiple times
+      const currentRetry = (this as any)._layoutRetryCount || 0;
+      
+      if (currentRetry < maxRetries && hasRaceCondition) {
+        (this as any)._layoutRetryCount = currentRetry + 1;
+        console.error(`[ELKBridge] 🔄 Layout retry ${currentRetry + 1}/${maxRetries}`);
+        
+        // Add small delay to let any pending operations complete
+        await new Promise(resolve => setTimeout(resolve, 100 * currentRetry));
+        
+        // Retry the layout
+        await this.runFullLayout(visState);
+        return;
+      }
+    }
+    
+    // Reset retry counter on successful layout
+    (this as any)._layoutRetryCount = 0;
 
     profiler?.end('elk-algorithm-execution');
     if (profiler) {
@@ -170,8 +283,16 @@ export class ELKBridge {
     profiler?.start('elk-to-vis-state-conversion');
     this.elkToVisualizationState(elkResult, visState);
     profiler?.end('elk-to-vis-state-conversion');
+
+    // 7. Validate that all visible containers have ELK positions (Fix 2: Position Validation)
+    profiler?.start('elk-position-validation');
+    this.validateELKPositions(visState);
+    profiler?.end('elk-position-validation');
+    
     profiler?.end('elk-bridge-full-layout');
   }
+
+  // Fallback positioning removed - we now fail fast to debug ELK issues
 
   /**
    * Run selective layout for individual container changes
@@ -411,6 +532,7 @@ export class ELKBridge {
           // Check if child is a container and if it's visible
           const childContainer = visState.getContainer(childId);
           if (childContainer && !childContainer.hidden) {
+            console.error(`[ELKBridge] 🔍 Adding child container ${childId} to parent ${container.id}`);
             // Add child container recursively
             const childContainerNode = buildContainerHierarchy(childId);
             containerNode.children!.push(childContainerNode);
@@ -453,25 +575,35 @@ export class ELKBridge {
       return containerNode;
     };
 
-    // Add only root-level containers to rootNodes
+    // FIXED: Send ALL visible containers to ELK, not just root containers
+    // The hierarchy will be built correctly by buildContainerHierarchy()
+    const containerParentMapping = visState.getContainerParentMapping();
+    let rootContainerCount = 0;
+    let containersWithParents = 0;
+    
     visState.visibleContainers.forEach(container => {
-      const containerParentMapping = visState.getContainerParentMapping();
       const hasVisibleParent = containerParentMapping.has(container.id);
-
-      // DIAGNOSTIC: Check parent relationships for problematic containers
-      if (container.id === 'bt_81' || container.id === 'bt_98') {
-        if (hasVisibleParent) {
-          // Find the parent
-          const _parentId = containerParentMapping.get(container.id);
-        }
+      
+      if (hasVisibleParent) {
+        containersWithParents++;
+      } else {
+        rootContainerCount++;
       }
 
+      // CRITICAL FIX: Only add root containers, but buildContainerHierarchy will include all children
       if (!hasVisibleParent && !processedContainers.has(container.id)) {
         const containerNode = buildContainerHierarchy(container.id);
         rootNodes.push(containerNode);
         processedContainers.add(container.id);
       }
     });
+    
+    console.error(`[ELKBridge] 🔍 Container hierarchy: ${rootContainerCount} root, ${containersWithParents} with parents, ${processedContainers.size} processed`);
+    
+    // Only log hierarchy issues for debugging (can be removed later)
+    if (rootContainerCount > 50) {
+      console.error(`[ELKBridge] ⚠️ High root count: ${rootContainerCount} containers`);
+    }
 
     // Add any uncontained nodes at root level
     visState.visibleNodes.forEach(node => {
@@ -491,12 +623,32 @@ export class ELKBridge {
       targets: [edge.target],
     }));
 
-    return {
+    const elkGraph = {
       id: 'root',
       children: rootNodes,
       edges: allEdges,
       layoutOptions: getELKLayoutOptions(this.layoutConfig.algorithm),
     };
+
+    // DIAGNOSTIC: Log ELK input during search expansion to identify issues
+    if (rootNodes.length > 20) {
+      console.warn(
+        `[ELKBridge] Large hierarchy detected: ${rootNodes.length} root containers, ` +
+        `${visState.visibleContainers.length} total visible containers. ` +
+        `This may cause ELK layout failures.`
+      );
+      
+      // Log container hierarchy depth
+      const getMaxDepth = (node: ElkNode, depth = 0): number => {
+        if (!node.children || node.children.length === 0) return depth;
+        return Math.max(...node.children.map(child => getMaxDepth(child, depth + 1)));
+      };
+      
+      const maxDepth = Math.max(...rootNodes.map(node => getMaxDepth(node)));
+      console.warn(`[ELKBridge] Maximum hierarchy depth: ${maxDepth}`);
+    }
+
+    return elkGraph;
   }
 
   /**
@@ -506,6 +658,38 @@ export class ELKBridge {
     if (!elkResult.children) {
       console.warn('[ELKBridge] ⚠️ No children in ELK result');
       return;
+    }
+
+    // FIXED: Count all containers recursively, not just root level
+    const allElkContainers: any[] = [];
+    const extractAllContainers = (elkNode: any) => {
+      allElkContainers.push(elkNode);
+      if (elkNode.children) {
+        elkNode.children.forEach((child: any) => extractAllContainers(child));
+      }
+    };
+    elkResult.children.forEach(rootElkNode => extractAllContainers(rootElkNode));
+    
+    const elkContainerCount = allElkContainers.length;
+    const visibleContainerCount = visState.visibleContainers.length;
+    
+    console.error(`[ELKBridge] 🔍 ELK result: ${elkResult.children.length} root containers, ${elkContainerCount} total containers, expected ${visibleContainerCount}`);
+    
+    if (elkContainerCount !== visibleContainerCount) {
+      console.error(
+        `[ELKBridge] ❌ ELK result mismatch: ELK returned ${elkContainerCount} containers, ` +
+        `but VisualizationState has ${visibleContainerCount} visible containers. ` +
+        `This indicates ELK failed to process some containers.`
+      );
+      
+      // Log which containers are missing from ELK result
+      const elkContainerIds = new Set(allElkContainers.map(elkNode => elkNode.id));
+      const missingFromELK = visState.visibleContainers
+        .filter(container => !elkContainerIds.has(container.id))
+        .map(container => `${container.id} (${container.label})`)
+        .slice(0, 10); // Limit to first 10 for readability
+        
+      console.error(`[ELKBridge] Missing from ELK result: ${missingFromELK.join(', ')}${missingFromELK.length === 10 ? '...' : ''}`);
     }
 
     // SIMPLIFIED: Use ELK coordinates directly following ReactFlow best practices
@@ -535,8 +719,10 @@ export class ELKBridge {
       }
     });
 
-    // Apply positions to containers and nodes using ELK coordinates directly
-    elkResult.children.forEach(elkNode => {
+    console.error(`[ELKBridge] 🔍 Extracted ${allElkContainers.length} containers from ELK result (${elkResult.children.length} root + nested)`);
+    
+    // Apply positions to all containers (root + nested) using ELK coordinates directly
+    allElkContainers.forEach(elkNode => {
       // Check if this ID exists as a container in VisualizationState first
       try {
         const container = visState.getContainer(elkNode.id);
@@ -858,5 +1044,40 @@ export class ELKBridge {
     if (!container) return false;
 
     return container.elkFixed || false;
+  }
+
+  /**
+   * Validate that all visible containers have ELK layout positions
+   * This prevents race conditions where ReactFlow bridge runs before ELK completes
+   */
+  private validateELKPositions(visState: VisualizationState): void {
+    const missingPositions: Array<{ id: string; label: string }> = [];
+    
+    // Check all visible containers for ELK positions
+    visState.visibleContainers.forEach(container => {
+      const layout = visState.getContainerLayout(container.id);
+      const position = layout?.position;
+      
+      // Position is missing if undefined or has undefined coordinates
+      if (!position || position.x === undefined || position.y === undefined) {
+        missingPositions.push({ 
+          id: container.id, 
+          label: container.label || container.id 
+        });
+      }
+    });
+    
+    // If any containers are missing positions, throw detailed error
+    if (missingPositions.length > 0) {
+      const containerList = missingPositions
+        .map(c => `${c.id} (${c.label})`)
+        .join(', ');
+        
+      throw new Error(
+        `ELK layout incomplete: ${missingPositions.length} visible containers missing positions: ${containerList}. ` +
+        `This indicates ELK layout failed to complete properly. All visible containers must have ` +
+        `valid (x, y) positions before ReactFlow conversion can proceed.`
+      );
+    }
   }
 }

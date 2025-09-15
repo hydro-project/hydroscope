@@ -14,6 +14,10 @@ import {
 import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import { useManualPositions } from './useManualPositions';
+import { globalLayoutLock } from '../utils/globalLayoutLock';
+import { globalReactFlowOperationManager } from '../utils/globalReactFlowOperationManager';
+import { layoutContentionMetrics } from '../utils/layoutContentionMetrics';
+import { hscopeLogger } from '../utils/logger';
 import { UI_CONSTANTS } from '../shared/config';
 import { getProfiler } from '../dev';
 import type { VisualizationState } from '../core/VisualizationState';
@@ -51,35 +55,22 @@ export function useFlowGraphController({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Enhanced state setter with logging
+  // Enhanced state setter with global operation manager protection
   const setReactFlowDataWithLogging = useCallback((data: ReactFlowData | null, layoutId: string) => {
-    console.log(`[State] Setting ReactFlow data for layout ${layoutId}:`, {
-      beforeState: reactFlowData ? {
-        nodeCount: reactFlowData.nodes.length,
-        edgeCount: reactFlowData.edges.length
-      } : null,
-      newData: data ? {
-        nodeCount: data.nodes.length,
-        edgeCount: data.edges.length
-      } : null,
-      timestamp: new Date().toISOString()
-    });
+    hscopeLogger.log('layout', `setData request layout=${layoutId} newNodes=${data?.nodes.length || 0} newEdges=${data?.edges.length || 0}`);
 
-    setReactFlowData(data);
+    // Use global operation manager for protected state updates
+    const operationId = globalReactFlowOperationManager.setReactFlowData(
+      setReactFlowData,
+      data,
+      layoutId,
+      'high' // Layout updates are high priority
+    );
 
-    // Verify state change in next tick
-    setTimeout(() => {
-      console.log(`[State] State verification after layout ${layoutId}:`, {
-        actualState: reactFlowData ? {
-          nodeCount: reactFlowData.nodes.length,
-          edgeCount: reactFlowData.edges.length
-        } : null,
-        expectedData: data ? {
-          nodeCount: data.nodes.length,
-          edgeCount: data.edges.length
-        } : null
-      });
-    }, 0);
+    if (operationId) hscopeLogger.log('layout', `setData queued op=${operationId}`); else hscopeLogger.warn('layout', `setData blocked layout=${layoutId}`);
+
+    // Verify state change in next tick (only for debugging)
+    // Drop verbose verification; retain minimal optional hook (disabled by default)
   }, [reactFlowData]);
 
   // Circuit breaker for rapid layout refreshes
@@ -90,8 +81,8 @@ export function useFlowGraphController({
     resetPeriod: 2000, // Reset every 2 seconds
   });
 
-  // Add layout operation lock to prevent race conditions
-  const layoutLockRef = useRef<string | null>(null);
+  // When a layout attempt is blocked by the global lock we queue a limited number of retries
+  const pendingLayoutRetryRef = useRef<{ force?: boolean; attempts: number } | null>(null);
 
   const checkCircuitBreaker = () => {
     const now = Date.now();
@@ -105,7 +96,7 @@ export function useFlowGraphController({
 
     // Check if we've exceeded the limit
     if (breaker.count >= breaker.maxCount) {
-      console.warn(`[FlowGraphController] 🚨 Circuit breaker triggered - too many layouts (${breaker.count} in ${breaker.resetPeriod}ms)`);
+      hscopeLogger.warn('layout', `circuit-breaker count=${breaker.count}`);
       return false;
     }
 
@@ -124,6 +115,10 @@ export function useFlowGraphController({
   // Track the last fit operation to prevent excessive fits
   const lastFitTimeRef = useRef<number>(0);
   const autoFitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevent repeated initial auto-fit thrash
+  const hasInitialAutoFitRef = useRef<boolean>(false);
+  // Track last applied palette to avoid redundant node data rewrites
+  const lastAppliedPaletteRef = useRef<string | null>(null);
 
   // Create bridge and engine (stable instances)
   const bridge = useMemo(() => new ReactFlowBridge(), []);
@@ -148,12 +143,25 @@ export function useFlowGraphController({
 
   const fitOnce = useCallback(() => {
     try {
-      fitView({
+      const fitOptions = {
         padding: UI_CONSTANTS.FIT_VIEW_PADDING,
         maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
         duration: UI_CONSTANTS.FIT_VIEW_DURATION,
-      });
-      lastFitTimeRef.current = Date.now();
+      };
+
+      // Use global operation manager for protected fitView operations
+      const operationId = globalReactFlowOperationManager.fitView(
+        fitView,
+        fitOptions,
+        'low' // fitView operations are low priority
+      );
+
+      if (operationId) {
+        hscopeLogger.log('fit', `fitView queued op=${operationId}`);
+        lastFitTimeRef.current = Date.now();
+      } else {
+        hscopeLogger.warn('fit', 'fitView blocked');
+      }
     } catch (err) {
       console.warn('[FlowGraph] ⚠️ fitOnce failed:', err);
     }
@@ -171,31 +179,29 @@ export function useFlowGraphController({
       const timestamp = Date.now();
       const layoutId = `layout-${timestamp}`;
 
-      // Check if another layout operation is already running
-      if (layoutLockRef.current && !force) {
-        console.warn(`[FlowGraphController] ⚠️ Layout refresh blocked - operation ${layoutLockRef.current} already in progress [${layoutId}]`);
+      // Use the new queued layout system to avoid lock contention
+      const success = await globalLayoutLock.queueLayoutOperation(layoutId, async () => {
+        await executeLayoutOperation(layoutId, force);
+      }, force);
+
+      if (!success) {
+        hscopeLogger.warn('layout', `refresh failed id=${layoutId}`);
         return;
       }
+    },
+    [checkCircuitBreaker, visualizationState, engine, applyManualPositions]
+  );
 
-      // Acquire lock
-      layoutLockRef.current = layoutId;
+  const executeLayoutOperation = useCallback(async (layoutId: string, force?: boolean) => {
+    hscopeLogger.log('layout', `start refresh id=${layoutId} force=${!!force} nodes=${reactFlowData?.nodes.length || 0}`);
 
-      console.log(`[FlowGraphController] 🔄 Starting refreshLayout(force=${force}) [${layoutId}]`);
-      console.log(`[FlowGraphController] 📊 Current state:`, {
-        hasReactFlowData: !!reactFlowData,
-        nodeCount: reactFlowData?.nodes?.length || 0,
-        edgeCount: reactFlowData?.edges?.length || 0,
-        loading,
-        error,
-        manualPositionsCount: Object.keys(manualPositions).length,
-        circuitBreakerCount: layoutCircuitBreakerRef.current.count,
-      });
+    const profiler = getProfiler();
+    
+    try {
+      setLoading(true);
+      setError(null);
 
-      try {
-        setLoading(true);
-        setError(null);
-
-        profiler?.start('Layout Calculation');
+      profiler?.start('Layout Calculation');
 
         // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
         // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
@@ -208,14 +214,14 @@ export function useFlowGraphController({
         const lastChangedContainer = visualizationState.getLastChangedContainer();
         if (lastChangedContainer && !force) {
           // Use selective layout for individual container changes
-          console.log(`[FlowGraphController] 🎯 Using selective layout for container: ${lastChangedContainer} [${layoutId}]`);
+          hscopeLogger.log('layout', `selective layout container=${lastChangedContainer} id=${layoutId}`);
           profiler?.start('Selective Layout');
           await engine.runSelectiveLayout(lastChangedContainer);
           visualizationState.clearLastChangedContainer();
           profiler?.end('Selective Layout', { containerId: lastChangedContainer });
         } else {
           // Use full layout for other cases
-          console.log(`[FlowGraphController] 🌐 Using full layout [${layoutId}]`);
+          hscopeLogger.log('layout', `full layout id=${layoutId}`);
           profiler?.start('Full Layout');
           await engine.runLayout();
           profiler?.end('Full Layout');
@@ -224,89 +230,76 @@ export function useFlowGraphController({
         profiler?.end('Layout Calculation');
 
         profiler?.start('Rendering');
-        console.log(`[FlowGraphController] 🎨 Converting visualization state to ReactFlow data [${layoutId}]`);
+        hscopeLogger.log('layout', `convert state -> rfData id=${layoutId}`);
         const baseData = bridge.convertVisualizationState(visualizationState);
-        console.log(`[FlowGraphController] 📈 Base data generated:`, {
-          nodeCount: baseData.nodes.length,
-          edgeCount: baseData.edges.length,
-          layoutId,
-        });
+        hscopeLogger.log('layout', `base data counts nodes=${baseData.nodes.length} edges=${baseData.edges.length} id=${layoutId}`);
 
         baseReactFlowDataRef.current = baseData;
         const dataWithManual = applyManualPositions(baseData, manualPositions);
-        console.log(`[FlowGraphController] 🎯 Final data with manual positions:`, {
-          nodeCount: dataWithManual.nodes.length,
-          edgeCount: dataWithManual.edges.length,
-          manualPositionsApplied: Object.keys(manualPositions).length,
-          layoutId,
-        });
-
-        console.log(`[FlowGraphController] 🔄 Calling setReactFlowData with:`, {
-          nodeCount: dataWithManual.nodes.length,
-          edgeCount: dataWithManual.edges.length,
-          layoutId,
-          timestamp: Date.now(),
-        });
+        hscopeLogger.log('layout', `apply manual positions count=${Object.keys(manualPositions).length} id=${layoutId}`);
         setReactFlowDataWithLogging(dataWithManual, layoutId);
-        console.log(`[FlowGraphController] ✅ setReactFlowData call completed [${layoutId}]`);
+        hscopeLogger.log('layout', `setData complete id=${layoutId}`);
 
         profiler?.end('Rendering', {
           nodeCount: dataWithManual.nodes.length,
           edgeCount: dataWithManual.edges.length,
         });
 
-        // Use a longer delay for auto-fit after layout to let the DOM settle
+        // Controlled initial auto-fit (single within a time window)
         if (config.fitView !== false) {
-          const fitDelay = UI_CONSTANTS.LAYOUT_DELAY_NORMAL + 100; // Extra delay for stability
-          setTimeout(() => {
-            try {
-              console.log(`[FlowGraphController] 🔍 Auto-fitting view [${layoutId}]`);
-              fitView({
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
-              });
-              lastFitTimeRef.current = Date.now();
-              console.log(`[FlowGraphController] ✅ Auto-fit completed [${layoutId}]`);
-            } catch (err) {
-              console.warn(`[FlowGraphController] ⚠️ Auto-fit failed during refresh [${layoutId}]:`, err);
+          // Allow external batching (e.g., container toggle batches) to suppress the immediate auto-fit
+          if (typeof window !== 'undefined' && (window as any).__hydroSkipNextAutoFit) {
+            hscopeLogger.log('fit', `auto-fit suppressed flag id=${layoutId}`);
+            try { delete (window as any).__hydroSkipNextAutoFit; } catch { /* ignore */ }
+          } else {
+            const now = Date.now();
+            const sinceLast = now - lastFitTimeRef.current;
+            if (!hasInitialAutoFitRef.current || sinceLast > 750) {
+              const fitDelay = UI_CONSTANTS.LAYOUT_DELAY_NORMAL + 120; // Slightly longer to let DOM settle
+              setTimeout(() => {
+                try {
+                  hscopeLogger.log('fit', `auto-fit exec initial=${!hasInitialAutoFitRef.current} id=${layoutId}`);
+                  const fitOptions = {
+                    padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                    maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                    duration: UI_CONSTANTS.FIT_VIEW_DURATION,
+                  };
+                  globalReactFlowOperationManager.requestAutoFit(
+                    fitView,
+                    fitOptions,
+                    `initial-auto-fit-${layoutId}`
+                  );
+                  hasInitialAutoFitRef.current = true;
+                } catch (err) {
+                  console.warn(`[FlowGraphController] ⚠️ Auto-fit failed during refresh [${layoutId}]:`, err);
+                }
+              }, fitDelay);
+            } else {
+              hscopeLogger.log('fit', `skip redundant auto-fit sinceLast=${sinceLast}ms`);
             }
-          }, fitDelay);
+          }
         }
-
-        console.log(`[FlowGraphController] ✅ refreshLayout completed successfully [${layoutId}]`);
-      } catch (err) {
-        profiler?.end('Layout Calculation');
-        profiler?.end('Rendering');
-        console.error(`[FlowGraphController] ❌ Failed to refresh layout [${layoutId}]:`, err);
-        console.error(`[FlowGraphController] 📊 Error context:`, {
-          hasVisualizationState: !!visualizationState,
-          hasEngine: !!engine,
-          hasBridge: !!bridge,
-          layoutId,
-        });
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoading(false);
-        // Release lock
-        if (layoutLockRef.current === layoutId) {
-          layoutLockRef.current = null;
-          console.log(`[FlowGraphController] 🔓 Released layout lock [${layoutId}]`);
-        }
-        console.log(`[FlowGraphController] 🏁 refreshLayout finally block [${layoutId}]`);
-      }
-    },
+      hscopeLogger.log('layout', `refresh success id=${layoutId}`);
+    } catch (err) {
+      profiler?.end('Layout Calculation');
+      profiler?.end('Rendering');
+      hscopeLogger.error('layout', `refresh failure id=${layoutId}`, err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+      // Note: Lock is now managed by the queue system, individual operations don't release it
+      hscopeLogger.log('layout', `refresh finally complete id=${layoutId}`);
+    }
+  }, [
     // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutConfig dependency causes infinite loops in the layout engine feedback cycle
-    [
-      applyManualPositions,
-      bridge,
-      config.fitView,
-      engine,
-      fitView,
-      manualPositions,
-      visualizationState,
-    ]
-  );
+    applyManualPositions,
+    bridge,
+    config.fitView,
+    engine,
+    fitView,
+    manualPositions,
+    visualizationState,
+  ]);
 
   // Listen to layout config changes (when data already present)
   useEffect(() => {
@@ -323,9 +316,14 @@ export function useFlowGraphController({
           baseData,
           visualizationState.getAllManualPositions()
         );
-        setReactFlowData(withManual);
+        const operationId = globalReactFlowOperationManager.setReactFlowData(
+          setReactFlowData,
+          withManual,
+          'high'
+        );
+        hscopeLogger.log('layout', `layout-config change queued op=${operationId}`);
       } catch (err) {
-        console.error('[FlowGraph] ❌ Failed to apply layout change:', err);
+        hscopeLogger.error('layout', 'apply layout-config failed', err);
         setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
@@ -335,27 +333,80 @@ export function useFlowGraphController({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Including bridge, engine, reactFlowData, visualizationState, applyManualPositions would create infinite re-layout loops
   }, [layoutConfig]);
 
-  // Listen to config changes (palette, edge styles)
+  // Listen to config changes (palette, edge styles) with guards
   useEffect(() => {
-    // Palette
-    if (config?.colorPalette) {
-      bridge.setColorPalette(config.colorPalette);
-      setReactFlowData(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          nodes: prev.nodes.map(n => ({
-            ...n,
-            data: { ...n.data, colorPalette: config.colorPalette },
-          })),
-        };
-      });
+    const palette = config?.colorPalette || null;
+    const paletteChanged = palette !== lastAppliedPaletteRef.current;
+
+    if (palette && paletteChanged) {
+      bridge.setColorPalette(palette);
+      lastAppliedPaletteRef.current = palette;
+      const currentData = reactFlowData;
+      if (currentData) {
+        const needsUpdate = currentData.nodes.some(n => n.data?.colorPalette !== palette);
+        if (needsUpdate) {
+          const updatedData = {
+            ...currentData,
+            nodes: currentData.nodes.map(n => ({
+              ...n,
+              data: { ...n.data, colorPalette: palette },
+            })),
+          };
+          const operationId = globalReactFlowOperationManager.setReactFlowData(
+            setReactFlowData,
+            updatedData,
+            'palette-update',
+            'normal'
+          );
+          hscopeLogger.log('layout', `palette update queued op=${operationId}`);
+        } else {
+          hscopeLogger.log('layout', 'palette unchanged');
+        }
+      }
     }
-    // Edge style config
+
     if (config?.edgeStyleConfig) {
-      bridge.setEdgeStyleConfig(config.edgeStyleConfig);
+      const styleCfg = config.edgeStyleConfig;
+      bridge.setEdgeStyleConfig(styleCfg);
+
+      if (reactFlowData) {
+        // Build a lightweight signature to detect meaningful style config changes
+        const signatureSource = JSON.stringify({
+          semantic: styleCfg.semanticMappings || null,
+          property: styleCfg.propertyMappings || null,
+        });
+        // Simple non-crypto hash
+        let hash = 0;
+        for (let i = 0; i < signatureSource.length; i++) {
+          hash = (hash * 31 + signatureSource.charCodeAt(i)) >>> 0;
+        }
+        const signature = `es_${hash.toString(36)}`;
+
+        const needsEdgeUpdate = reactFlowData.edges.some(e => e.data?.__edgeStyleSignature !== signature);
+        if (needsEdgeUpdate) {
+          const updated = {
+            ...reactFlowData,
+            edges: reactFlowData.edges.map(ed => ({
+              ...ed,
+              data: {
+                ...ed.data,
+                __edgeStyleSignature: signature,
+              }
+            }))
+          };
+          const opId = globalReactFlowOperationManager.setReactFlowData(
+            setReactFlowData,
+            updated,
+            'edge-style-update',
+            'normal'
+          );
+          hscopeLogger.log('layout', `edge-style signature update queued op=${opId}`);
+        } else {
+          hscopeLogger.log('layout', 'edge-style signature unchanged');
+        }
+      }
     }
-  }, [config?.colorPalette, config?.edgeStyleConfig, bridge]);
+  }, [config?.colorPalette, config?.edgeStyleConfig, bridge, reactFlowData, setReactFlowData]);
 
   // Listen to visualization state changes
   useEffect(() => {
@@ -373,7 +424,13 @@ export function useFlowGraphController({
         const baseData = bridge.convertVisualizationState(visualizationState);
         baseReactFlowDataRef.current = baseData;
         const withManual = applyManualPositions(baseData, manualPositions);
-        setReactFlowData(withManual);
+        const operationId = globalReactFlowOperationManager.setReactFlowData(
+          setReactFlowData,
+          withManual,
+          'state-change-layout',
+          'high'
+        );
+        hscopeLogger.log('layout', `state change layout queued op=${operationId}`);
 
         if (config.fitView !== false) {
           const now = Date.now();
@@ -385,19 +442,26 @@ export function useFlowGraphController({
               : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({
+              const fitOptions = {
                 padding: UI_CONSTANTS.FIT_VIEW_PADDING,
                 maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
                 duration: UI_CONSTANTS.FIT_VIEW_DURATION,
-              });
+              };
+
+              // Use global operation manager for protected auto-fit operations
+              globalReactFlowOperationManager.requestAutoFit(
+                fitView,
+                fitOptions,
+                'state-change-auto-fit'
+              );
               lastFitTimeRef.current = Date.now();
             } catch (err) {
-              console.warn('[FlowGraph] ⚠️ Auto-fit failed:', err);
+              hscopeLogger.warn('fit', 'auto-fit failed state-change', err);
             }
           }, delay);
         }
       } catch (err) {
-        console.error('[FlowGraph] ❌ Failed to update visualization:', err);
+        hscopeLogger.error('layout', 'state change visualization update failed', err);
         setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
@@ -423,7 +487,13 @@ export function useFlowGraphController({
         baseReactFlowDataRef.current,
         visualizationState.getAllManualPositions()
       );
-      setReactFlowData(updated);
+      const operationId = globalReactFlowOperationManager.setReactFlowData(
+        setReactFlowData,
+        updated,
+        'manual-position-update',
+        'normal'
+      );
+      hscopeLogger.log('layout', `manual position update queued op=${operationId}`);
     }
   }, [visualizationState, applyManualPositions]);
 
@@ -431,61 +501,42 @@ export function useFlowGraphController({
   const onNodeClick: NodeMouseHandler = useCallback(
     (event, node) => {
       const timestamp = Date.now();
-      console.log(`[FlowGraphController] 🖱️ Node clicked:`, {
-        nodeId: node.id,
-        nodeType: node.type,
-        position: node.position,
-        data: node.data,
-        timestamp,
-      });
+      hscopeLogger.log('op', `node click id=${node.id} type=${node.type} x=${node.position.x} y=${node.position.y}`);
 
       // Check if this is a container node
       const container = visualizationState.getContainer(node.id);
 
       if (container) {
-        console.log(`[FlowGraphController] 📦 Container node clicked:`, {
-          containerId: container.id,
-          collapsed: container.collapsed,
-          childrenCount: container.children?.size || 0,
-          timestamp,
-        });
+        hscopeLogger.log('op', `container click id=${container.id} collapsed=${container.collapsed} children=${container.children?.size || 0}`);
 
         // For container nodes, call the event handler FIRST (to change container state)
         // then do click animation logic AFTER the container state has changed
-        console.log(`[FlowGraphController] 🎬 Calling container event handler first`);
+        // call handler first (container state changes then we mark clicked)
         eventHandlers?.onNodeClick?.(event, node);
 
         // Set isClicked: true for the clicked node, false for all others
-        console.log(`[FlowGraphController] 🎯 Setting clicked state for container`);
         visualizationState.visibleNodes.forEach(n => {
           visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
         });
 
-        console.log(`[FlowGraphController] ⚠️ Container click - layout refresh will be handled by container handler`);
+        hscopeLogger.log('layout', 'container click layout handled externally');
         // Note: Don't call refreshLayout here for containers - the container handler will do its own layout refresh
       } else {
-        console.log(`[FlowGraphController] 🔵 Regular node clicked:`, {
-          nodeId: node.id,
-          timestamp,
-        });
+        hscopeLogger.log('op', `regular node click id=${node.id}`);
 
         // For regular nodes, do click animation logic first, then call event handler
         // Set isClicked: true for the clicked node, false for all others
-        console.log(`[FlowGraphController] 🎯 Setting clicked state for regular node`);
         visualizationState.visibleNodes.forEach(n => {
           visualizationState.updateNode(n.id, { isClicked: n.id === node.id });
         });
 
         // Trigger a refresh to update node ordering
-        console.log(`[FlowGraphController] 🔄 Triggering layout refresh for regular node click`);
         refreshLayout(false);
 
         // Call the original event handler if provided
-        console.log(`[FlowGraphController] 🎬 Calling regular node event handler`);
         eventHandlers?.onNodeClick?.(event, node);
       }
-
-      console.log(`[FlowGraphController] ✅ Node click handler completed for ${node.id}`);
+      hscopeLogger.log('op', `node click handler done id=${node.id}`);
     },
     [eventHandlers, visualizationState, refreshLayout]
   );
@@ -515,11 +566,15 @@ export function useFlowGraphController({
         if (since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD) {
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              fitView({
-                padding: UI_CONSTANTS.FIT_VIEW_PADDING,
-                maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
-                duration: UI_CONSTANTS.FIT_VIEW_DURATION,
-              });
+              globalReactFlowOperationManager.requestAutoFit(
+                fitView,
+                {
+                  padding: UI_CONSTANTS.FIT_VIEW_PADDING,
+                  maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
+                  duration: UI_CONSTANTS.FIT_VIEW_DURATION,
+                },
+                'drag-stop-auto-fit'
+              );
               lastFitTimeRef.current = Date.now();
             } catch (err) {
               console.warn('[FlowGraph] ⚠️ Auto-fit after drag failed:', err);
@@ -532,11 +587,22 @@ export function useFlowGraphController({
   );
 
   const onNodesChange = useCallback((changes: any[]) => {
-    setReactFlowData(prev => {
-      if (!prev) return prev;
-      return { ...prev, nodes: applyNodeChanges(changes, prev.nodes) };
-    });
-  }, []);
+    // For onNodesChange, we need to compute the update first, then apply it
+    const currentData = reactFlowData;
+    if (currentData) {
+      const updatedData = {
+        ...currentData,
+        nodes: applyNodeChanges(changes, currentData.nodes)
+      };
+      const operationId = globalReactFlowOperationManager.setReactFlowData(
+        setReactFlowData,
+        updatedData,
+        'nodes-change',
+        'high'
+      );
+      hscopeLogger.log('layout', `nodes change queued op=${operationId}`);
+    }
+  }, [reactFlowData]);
 
   return {
     reactFlowData,

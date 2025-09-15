@@ -1,20 +1,13 @@
 /**
  * SearchControls
  * - Debounced wildcard search over provided items
- * - Prev/Next navigation among matche        value={query}
-        onChange={(e) => {
-          const val = e.target.value;
-          setQuery(val);
-          if (!val) {
-            setMatches([]);
-            setCurrentIndex(0);
-            onClear();
-            onSearch('', []);
-          }
-        }}
-        placeholder={placeholder}
-        ref={inputRef}
-        allowClearcount display and clear
+ * - Prev/Next navigation among matches
+ * - Search result count display and clear
+ * 
+ * IMPORTANT: Race Condition Prevention:
+ * - Search operations execute synchronously to prevent layout race conditions
+ * - Search highlighting animations use box-shadow instead of transform
+ * - All operations coordinate with the GlobalLayoutLock system
  */
 
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
@@ -119,7 +112,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       clear: () => clearAll(),
     }));
 
-    // Debounced search
+    // Debounced search with batched result application
     useEffect(() => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
       timerRef.current = window.setTimeout(() => {
@@ -127,19 +120,23 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         if (!rx) {
           setMatches([]);
           setCurrentIndex(0);
+          // Apply clear operation synchronously to prevent race conditions
           onSearch('', []);
           return;
         }
         const next = searchableItems.filter(i => rx.test(i.label)).map(i => ({ ...i }));
         setMatches(next);
         setCurrentIndex(0);
+
+        // Apply search results synchronously to prevent race conditions with layout operations
+        // The async batching was causing visibility state inconsistency during search
         onSearch(query, next);
 
         // Add to history when we get results
         if (next.length > 0) {
           addToHistory(query);
         }
-      }, 150);
+      }, 300); // Increased from 150ms to 300ms to prevent layout race conditions
       return () => {
         if (timerRef.current) window.clearTimeout(timerRef.current);
       };
@@ -160,6 +157,8 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           ? (currentIndex + 1) % matches.length
           : (currentIndex - 1 + matches.length) % matches.length;
       setCurrentIndex(idx);
+
+      // Apply navigation synchronously to prevent race conditions
       onNavigate(dir, matches[idx]);
     };
 
@@ -167,6 +166,8 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       setQuery('');
       setMatches([]);
       setCurrentIndex(0);
+
+      // Apply clear operations synchronously to prevent race conditions
       onClear();
       onSearch('', []);
     };
@@ -188,6 +189,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             if (v === '') {
               setMatches([]);
               setCurrentIndex(0);
+              // Apply clear operations synchronously to prevent race conditions
               onClear();
               onSearch('', []);
             }

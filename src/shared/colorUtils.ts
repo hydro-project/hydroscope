@@ -31,6 +31,26 @@ export function getContrastColor(backgroundColor: string): string {
   return brightness > 128 ? '#000000' : '#ffffff';
 }
 
+/**
+ * Get bright contrasting colors for search highlighting that work well against any palette
+ */
+export function getSearchHighlightColors() {
+  return {
+    // Standard search match - bright yellow/amber with better contrast
+    match: {
+      background: '#f59e0b', // amber-500 - slightly darker for better text contrast
+      border: '#d97706', // amber-600 - darker border for definition
+      text: '#000000', // black text for maximum contrast on amber
+    },
+    // Current/strong search match - bright orange with high contrast
+    current: {
+      background: '#ea580c', // orange-600 - darker orange for better text contrast
+      border: '#c2410c', // orange-700 - even darker border
+      text: '#ffffff', // white text for maximum contrast on dark orange
+    },
+  };
+}
+
 interface NodeColor {
   primary: string;
   border: string;

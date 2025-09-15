@@ -62,9 +62,9 @@ export function hasMeaningfulELKPosition(
 ): boolean {
   const x = layout?.position?.x;
   const y = layout?.position?.y;
-  if (x === undefined || y === undefined) return false;
-  // Accept 0 if the other coordinate is non-zero; reject 0,0 default
-  return !(x === 0 && y === 0);
+  // Position is meaningful if both coordinates are defined (including 0,0)
+  // ELK might legitimately place containers at (0,0) as part of hierarchical layout
+  return x !== undefined && y !== undefined;
 }
 
 /** Compute relative (child) position from absolute child and parent absolute */
@@ -101,24 +101,24 @@ export function computeChildContainerPosition(
     return toRelativePosition({ x: absoluteX, y: absoluteY }, { x: parentX, y: parentY });
   }
 
-  // Grid fallback: position among siblings under same parent
-  // ARCHITECTURAL FIX: Build parent map once instead of inside filter
-  const parentMap = buildParentMap(visState);
-  const siblingContainers = Array.from(visState.visibleContainers).filter(c => {
-    return parentMap.get(c.id) === parentId;
-  });
-  const containerIndex = siblingContainers.findIndex(c => c.id === container.id);
-
-  const cols = LAYOUT_CONSTANTS.CONTAINER_GRID_COLUMNS || 2;
-  const col = containerIndex % cols;
-  const row = Math.floor(containerIndex / cols);
-  const padding = LAYOUT_CONSTANTS.CONTAINER_GRID_PADDING || 20;
-  const titleHeight = LAYOUT_CONSTANTS.CONTAINER_TITLE_HEIGHT || 30;
-
-  return {
-    x: padding + col * (LAYOUT_CONSTANTS.CHILD_CONTAINER_WIDTH + padding),
-    y: titleHeight + row * (LAYOUT_CONSTANTS.CHILD_CONTAINER_HEIGHT + padding),
-  };
+  // REMOVED FALLBACK: Expose ELK layout bugs instead of masking them
+  // The grid fallback was hiding bugs where ELK layout failed to set positions
+  // Now we'll get explicit errors that help identify the root cause
+  
+  const containerPos = containerLayout?.position;
+  const parentPos = parentLayout?.position;
+  
+  console.error(`❌ [ReactFlowBridge] Missing ELK layout positions for hierarchical containers:`);
+  console.error(`   Container ${container.id} (${container.label}): position = ${containerPos ? `(${containerPos.x}, ${containerPos.y})` : 'undefined'}`);
+  console.error(`   Parent ${parentId}: position = ${parentPos ? `(${parentPos.x}, ${parentPos.y})` : 'undefined'}`);
+  console.error(`   This indicates ELK layout was not run properly or failed to set positions`);
+  
+  throw new Error(
+    `Missing ELK layout position for container ${container.id} (${container.label}). ` +
+    `ELK layout must be run successfully before ReactFlow conversion. ` +
+    `Container position: ${containerPos ? `(${containerPos.x}, ${containerPos.y})` : 'undefined'}, ` +
+    `Parent position: ${parentPos ? `(${parentPos.x}, ${parentPos.y})` : 'undefined'}`
+  );
 }
 
 /** Compute root container absolute position safely */
