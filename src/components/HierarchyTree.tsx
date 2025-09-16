@@ -393,7 +393,32 @@ export function HierarchyTree({
         });
       }
       
-      console.error(`[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}):`, containersToToggle.join(', '));
+      // CRITICAL FIX: Sort containers by hierarchy depth to expand parents before children
+      // This prevents validation infinite loops caused by expanding children before parents
+      containersToToggle.sort((a, b) => {
+        const getHierarchyDepth = (containerId: string): number => {
+          let depth = 0;
+          let currentId = containerId;
+          const visited = new Set<string>();
+          
+          while (currentId && !visited.has(currentId)) {
+            visited.add(currentId);
+            const container = visualizationState?.getContainer(currentId);
+            if (!container) break;
+            
+            const parentId = visualizationState?.getContainerParent(currentId);
+            if (!parentId) break;
+            
+            currentId = parentId;
+            depth++;
+          }
+          return depth;
+        };
+        
+        return getHierarchyDepth(a) - getHierarchyDepth(b);
+      });
+      
+      console.error(`[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}) [SORTED BY DEPTH]:`, containersToToggle.join(', '));
 
       // Batch container toggle operations to prevent ResizeObserver loops
       if (containersToToggle.length > 0) {

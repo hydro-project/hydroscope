@@ -186,7 +186,7 @@ describe('Container Nesting Debug', () => {
     expect(bt3?.style?.height).toBe(150);
   });
 
-  test('should handle missing ELK data with fallback grid positioning', () => {
+  test('should handle missing ELK data without fallback positioning', () => {
     // Set up containers without ELK layout data
     visState.addContainer('parent', {
       id: 'parent',
@@ -216,7 +216,7 @@ describe('Container Nesting Debug', () => {
       collapsed: false,
     });
 
-    // Convert without ELK data (should use fallback positioning)
+    // Convert without ELK data (no fallback positioning since it was removed)
     const reactFlowData = bridge.convertVisualizationState(visState);
 
     const containers = reactFlowData.nodes.filter(n => n.type === 'container');
@@ -224,8 +224,8 @@ describe('Container Nesting Debug', () => {
     const child1 = containers.find(n => n.id === 'child1');
     const child2 = containers.find(n => n.id === 'child2');
 
-    // Debug: Log fallback positioning
-    console.log('=== FALLBACK POSITIONING DEBUG ===');
+    // Debug: Log positioning without ELK data
+    console.log('=== NO FALLBACK POSITIONING DEBUG ===');
     containers.forEach(container => {
       console.log(`Container ${container.id}:`, {
         position: container.position,
@@ -238,12 +238,13 @@ describe('Container Nesting Debug', () => {
 
     expect(child1?.parentId).toBe('parent');
     expect(child1?.extent).toBe('parent');
-    expect(child1?.position.x).toBeGreaterThan(0); // Should have grid padding
+    // Without fallback positioning, containers should use their original coordinates (0,0)
+    expect(child1?.position.x).toBe(0);
+    expect(child1?.position.y).toBe(0);
 
     expect(child2?.parentId).toBe('parent');
     expect(child2?.extent).toBe('parent');
-    if (typeof child2?.position.x === 'number' && typeof child1?.position.x === 'number') {
-      expect(child2.position.x).toBeGreaterThan(child1.position.x); // Should be in next grid position
-    }
+    expect(child2?.position.x).toBe(0);
+    expect(child2?.position.y).toBe(0);
   });
 });

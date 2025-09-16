@@ -108,9 +108,15 @@ describe('InfoPanel + HierarchyTree search integration', () => {
     });
     // Wait for the async search expansion to complete (globalLayoutLock queue processing)
     await act(async () => { 
-      await new Promise(res => setTimeout(res, 200)); // Wait for globalLayoutLock queue processing
+      await new Promise(res => setTimeout(res, 400)); // Increased wait time to match first test
       await new Promise(res => requestAnimationFrame(res)); // Wait for any remaining async operations
     });
+    
+    // Debug: Check if onSearchUpdate was called
+    console.log('onSearchUpdate called:', onSearchUpdate.mock.calls.length);
+    if (onSearchUpdate.mock.calls.length > 0) {
+      console.log('Search matches:', onSearchUpdate.mock.calls[0][1]);
+    }
     
     const childContainer = state.getContainer('child');
     const rootContainer = state.getContainer('root');

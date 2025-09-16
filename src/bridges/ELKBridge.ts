@@ -59,36 +59,14 @@ export class ELKBridge {
     return this.runFullLayout(visState);
   }
 
-  /**
-   * Run chunked layout for extremely large container counts
-   */
-  private async runChunkedLayout(visState: VisualizationState): Promise<void> {
-    const TARGET_COUNT = 80; // Target container count for ELK stability
-    
-    console.warn(`[ELKBridge] Applying smart collapse to manage ${visState.visibleContainers.length} containers`);
-    
-    // Use VisualizationState's encapsulated smart collapse API
-    const finalCount = visState.applySmartCollapseForCapacity(TARGET_COUNT);
-    
-    console.warn(`[ELKBridge] Smart collapse complete: ${finalCount} containers remaining`);
-    
-    // Now run normal layout with reduced container count
-    await this.runFullLayout(visState);
-  }
+
 
   /**
    * Run full layout for all containers (initial layout)
    */
   private async runFullLayout(visState: VisualizationState): Promise<void> {
-    // ELK CAPACITY MANAGEMENT: Only use chunked layout for extremely large counts
-    const containerCount = visState.visibleContainers.length;
-    const ELK_HARD_LIMIT = 150; // Only chunk when absolutely necessary
-    
-    if (containerCount > ELK_HARD_LIMIT) {
-      console.warn(`[ELKBridge] Extremely large layout (${containerCount} containers) - using fallback strategy`);
-      await this.runChunkedLayout(visState);
-      return;
-    }
+    // ELK should handle whatever containers are given to it
+    // Smart collapse decisions should be made by VisualizationEngine, not ELKBridge
     
     // RACE CONDITION FIX: Capture container state at layout start for validation
     const initialContainerCount = visState.visibleContainers.length;

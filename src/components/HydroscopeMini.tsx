@@ -157,12 +157,9 @@ export function HydroscopeMini({
     try {
       setIsLayoutRunning(true);
 
+      // collapseAllContainers() already triggers layout internally via _resumeLayoutTriggers(true)
+      // No need to call refreshLayout() afterwards as it would create duplicate layout operations
       visualizationState.collapseAllContainers();
-
-      // Trigger layout refresh
-      if (hydroscopeRef.current?.refreshLayout) {
-        await hydroscopeRef.current.refreshLayout();
-      }
 
       // Auto-fit after packing
       if (autoFit && hydroscopeRef.current?.fitView) {
@@ -184,12 +181,9 @@ export function HydroscopeMini({
     try {
       setIsLayoutRunning(true);
 
+      // expandAllContainers() already triggers layout internally via _resumeLayoutTriggers(true)
+      // No need to call refreshLayout() afterwards as it would create duplicate layout operations
       visualizationState.expandAllContainers();
-
-      // Trigger layout refresh
-      if (hydroscopeRef.current?.refreshLayout) {
-        await hydroscopeRef.current.refreshLayout();
-      }
 
       // Auto-fit after unpacking
       if (autoFit && hydroscopeRef.current?.fitView) {

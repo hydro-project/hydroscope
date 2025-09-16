@@ -41,10 +41,14 @@ export class VisualizationStateInvariantValidator {
    * Throws an error if any critical invariants are violated
    */
   validateInvariants(): void {
-    // INFINITE LOOP PROTECTION: Multiple safeguards
-    if (!this.state._validationEnabled || this.state._validationInProgress) {
+    // INFINITE LOOP PROTECTION: Only check if validation is enabled
+    // The _validationInProgress flag is handled by ValidationWrapper to prevent recursive wrapper calls
+    if (!this.state._validationEnabled) {
+
       return;
     }
+    
+
 
     // REACT RENDER CYCLE PROTECTION: Defer validation if we're in a React render
     if (typeof window !== 'undefined' && (window as any).React && (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
@@ -84,7 +88,8 @@ export class VisualizationStateInvariantValidator {
       this.reportViolations(violations);
     } catch (error) {
       console.error('[VisualizationStateInvariantValidator] Validation failed with error:', error);
-      // Don't re-throw to prevent cascading failures
+      // Re-throw validation errors so they can be caught by tests and ValidationWrapper
+      throw error;
     } finally {
       this.state._validationInProgress = false;
     }
@@ -111,11 +116,11 @@ export class VisualizationStateInvariantValidator {
         console.error(`[VisualizationState] STACK TRACE for invariant violations:\n${stackTrace}`);
       }
 
-      // CRITICAL FIX: Don't throw during validation to prevent infinite loops
-      // Instead, log the error and let the system continue
-      // throw new Error(
-      //   `VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`
-      // );
+      // CRITICAL FIX: Throw validation errors but with infinite loop protection
+      // The ValidationWrapper and _validationInProgress flag should prevent infinite loops
+      throw new Error(
+        `VisualizationState invariant violations detected: ${errors.map(e => e.message).join('; ')}`
+      );
     }
   }
 

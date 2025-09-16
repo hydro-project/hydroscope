@@ -101,8 +101,8 @@ describe('Search Expansion Node Visibility Bug', () => {
     console.log('✅ Search expansion correctly makes nodes visible');
   });
 
-  test('validates search visibility invariants', () => {
-    // Test the core search invariant: matched containers should remain collapsed
+  test('validates search visibility behavior', () => {
+    // Test the core search behavior: matched containers should be expanded for user visibility
     const visState = createVisualizationState();
     
     // Create simple hierarchy
@@ -115,12 +115,14 @@ describe('Search Expansion Node Visibility Bug', () => {
     visState.addContainer('match_container', {
       label: 'leader_election', // This will be a search match
       collapsed: true,
+      hidden: true, // Should be hidden because parent is collapsed
       children: []
     });
     
     visState.addGraphNode('match_node', { 
       label: 'p_leader_heartbeat', // This will be a search match
-      type: 'operator' 
+      type: 'operator',
+      hidden: true // Should be hidden because parent is collapsed
     });
     
     // Simulate search matches
@@ -135,10 +137,10 @@ describe('Search Expansion Node Visibility Bug', () => {
     
     console.log('Expansion keys:', expansionKeys);
     
-    // The key insight: match_container should NOT be in expansion keys
+    // The key insight: matched containers should be expanded so users can see their contents
     expect(expansionKeys).toContain('parent');        // Parent should be expanded
-    expect(expansionKeys).not.toContain('match_container'); // Matched container should stay collapsed
+    expect(expansionKeys).toContain('match_container'); // Matched container should be expanded
     
-    console.log('✅ Search invariant validated: matched containers stay collapsed');
+    console.log('✅ Search behavior validated: matched containers are expanded for user visibility');
   });
 });

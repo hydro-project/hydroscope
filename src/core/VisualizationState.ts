@@ -137,6 +137,9 @@ export class VisualizationState {
   public _validationLevel: 'strict' | 'normal' | 'minimal' | 'silent' = 'normal';
   public _validationInProgress = false;
 
+  // Layout tracking
+  public layoutCount = 0;
+
   // Layout control interface for optimization
   private _layoutController: {
     suspendAutoLayout?: () => void;
@@ -627,7 +630,7 @@ export class VisualizationState {
     searchMatches.forEach(match => {
       console.error(`[VisualizationState] Processing match: ${match.id} (${match.type})`);
       if (match.type === 'container') {
-        // FIXED: Container matches should be visible AND expanded so they can be highlighted
+        // Container matches should be expanded so users can see their contents
         // Expand both ancestors and the matched container itself
         const parentId = this.getContainerParent(match.id);
         console.error(`[VisualizationState] Container ${match.id} parent: ${parentId || 'none'}`);
