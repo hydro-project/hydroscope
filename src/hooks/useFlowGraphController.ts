@@ -14,8 +14,7 @@ import {
 import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import { useManualPositions } from './useManualPositions';
-import { globalLayoutLock } from '../utils/globalLayoutLock';
-import { globalReactFlowOperationManager } from '../utils/globalReactFlowOperationManager';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 import { layoutContentionMetrics } from '../utils/layoutContentionMetrics';
 import { hscopeLogger } from '../utils/logger';
 import { UI_CONSTANTS } from '../shared/config';
@@ -59,8 +58,8 @@ export function useFlowGraphController({
   const setReactFlowDataWithLogging = useCallback((data: ReactFlowData | null, layoutId: string) => {
     hscopeLogger.log('layout', `setData request layout=${layoutId} newNodes=${data?.nodes.length || 0} newEdges=${data?.edges.length || 0}`);
 
-    // Use global operation manager for protected state updates
-    const operationId = globalReactFlowOperationManager.setReactFlowData(
+    // Use consolidated operation manager for protected state updates
+    const operationId = consolidatedOperationManager.queueReactFlowUpdate(
       setReactFlowData,
       data,
       layoutId,
@@ -149,19 +148,15 @@ export function useFlowGraphController({
         duration: UI_CONSTANTS.FIT_VIEW_DURATION,
       };
 
-      // Use global operation manager for protected fitView operations
-      const operationId = globalReactFlowOperationManager.fitView(
+      // Use consolidated operation manager for manual fitView requests
+      consolidatedOperationManager.requestAutoFit(
         fitView,
         fitOptions,
-        'low' // fitView operations are low priority
+        'manual-fit-request'
       );
-
-      if (operationId) {
-        hscopeLogger.log('fit', `fitView queued op=${operationId}`);
-        lastFitTimeRef.current = Date.now();
-      } else {
-        hscopeLogger.warn('fit', 'fitView blocked');
-      }
+      
+      hscopeLogger.log('fit', 'manual fitView requested');
+      lastFitTimeRef.current = Date.now();
     } catch (err) {
       console.warn('[FlowGraph] ⚠️ fitOnce failed:', err);
     }
@@ -179,10 +174,15 @@ export function useFlowGraphController({
       const timestamp = Date.now();
       const layoutId = `layout-${timestamp}`;
 
-      // Use the new queued layout system to avoid lock contention
-      const success = await globalLayoutLock.queueLayoutOperation(layoutId, async () => {
+      // Use the consolidated operation manager for layout operations
+      const success = await consolidatedOperationManager.queueLayoutOperation(layoutId, async () => {
         await executeLayoutOperation(layoutId, force);
-      }, force);
+      }, {
+        priority: force ? 'high' : 'normal',
+        reason: `layout refresh ${force ? '(forced)' : ''}`,
+        triggerAutoFit: config.fitView !== false, // Respect fitView config
+        force
+      });
 
       if (!success) {
         hscopeLogger.warn('layout', `refresh failed id=${layoutId}`);
@@ -264,7 +264,7 @@ export function useFlowGraphController({
                     maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
                     duration: UI_CONSTANTS.FIT_VIEW_DURATION,
                   };
-                  globalReactFlowOperationManager.requestAutoFit(
+                  consolidatedOperationManager.requestAutoFit(
                     fitView,
                     fitOptions,
                     `initial-auto-fit-${layoutId}`
@@ -316,9 +316,10 @@ export function useFlowGraphController({
           baseData,
           visualizationState.getAllManualPositions()
         );
-        const operationId = globalReactFlowOperationManager.setReactFlowData(
+        const operationId = consolidatedOperationManager.queueReactFlowUpdate(
           setReactFlowData,
           withManual,
+          'layout-config-change',
           'high'
         );
         hscopeLogger.log('layout', `layout-config change queued op=${operationId}`);
@@ -352,7 +353,7 @@ export function useFlowGraphController({
               data: { ...n.data, colorPalette: palette },
             })),
           };
-          const operationId = globalReactFlowOperationManager.setReactFlowData(
+          const operationId = consolidatedOperationManager.queueReactFlowUpdate(
             setReactFlowData,
             updatedData,
             'palette-update',
@@ -394,7 +395,7 @@ export function useFlowGraphController({
               }
             }))
           };
-          const opId = globalReactFlowOperationManager.setReactFlowData(
+          const opId = consolidatedOperationManager.queueReactFlowUpdate(
             setReactFlowData,
             updated,
             'edge-style-update',
@@ -424,7 +425,7 @@ export function useFlowGraphController({
         const baseData = bridge.convertVisualizationState(visualizationState);
         baseReactFlowDataRef.current = baseData;
         const withManual = applyManualPositions(baseData, manualPositions);
-        const operationId = globalReactFlowOperationManager.setReactFlowData(
+        const operationId = consolidatedOperationManager.queueReactFlowUpdate(
           setReactFlowData,
           withManual,
           'state-change-layout',
@@ -448,8 +449,8 @@ export function useFlowGraphController({
                 duration: UI_CONSTANTS.FIT_VIEW_DURATION,
               };
 
-              // Use global operation manager for protected auto-fit operations
-              globalReactFlowOperationManager.requestAutoFit(
+              // Use consolidated operation manager for protected auto-fit operations
+              consolidatedOperationManager.requestAutoFit(
                 fitView,
                 fitOptions,
                 'state-change-auto-fit'
@@ -487,7 +488,7 @@ export function useFlowGraphController({
         baseReactFlowDataRef.current,
         visualizationState.getAllManualPositions()
       );
-      const operationId = globalReactFlowOperationManager.setReactFlowData(
+      const operationId = consolidatedOperationManager.queueReactFlowUpdate(
         setReactFlowData,
         updated,
         'manual-position-update',
@@ -566,7 +567,7 @@ export function useFlowGraphController({
         if (since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD) {
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
-              globalReactFlowOperationManager.requestAutoFit(
+              consolidatedOperationManager.requestAutoFit(
                 fitView,
                 {
                   padding: UI_CONSTANTS.FIT_VIEW_PADDING,
@@ -594,7 +595,7 @@ export function useFlowGraphController({
         ...currentData,
         nodes: applyNodeChanges(changes, currentData.nodes)
       };
-      const operationId = globalReactFlowOperationManager.setReactFlowData(
+      const operationId = consolidatedOperationManager.queueReactFlowUpdate(
         setReactFlowData,
         updatedData,
         'nodes-change',

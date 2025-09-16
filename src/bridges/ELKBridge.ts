@@ -12,6 +12,8 @@ import type { LayoutConfig } from '../core/types';
 import {
   getELKLayoutOptions,
   createFixedPositionOptions,
+  createFreePositionOptions,
+  ELK_LAYOUT_OPTIONS,
   DEFAULT_LAYOUT_CONFIG,
 } from '../shared/config';
 
@@ -280,28 +282,13 @@ export class ELKBridge {
     visState: VisualizationState,
     changedContainerId: string
   ): Promise<void> {
-    // Store the original positions of all unchanged containers
-    const originalPositions = new Map<string, { x: number; y: number }>();
-
-    for (const container of visState.visibleContainers) {
-      if (container.id !== changedContainerId) {
-        const layout = visState.getContainerLayout(container.id);
-        const position = layout?.position || { x: container.x || 0, y: container.y || 0 };
-        originalPositions.set(container.id, position);
-      }
-    }
-
-    // Run full layout as usual (position fixing happens in visStateToELK)
+    // Run full layout with soft constraints (position preferences are set in visStateToELK)
+    // The soft constraints will keep unchanged containers close to their original positions
+    // while allowing ELK to adjust them to avoid overlaps with the expanded container
     await this.runFullLayout(visState);
-
-    // Restore the exact positions of unchanged containers
-    for (const [containerId, originalPosition] of originalPositions) {
-      visState.setContainerLayout(containerId, {
-        position: originalPosition,
-        // Keep any dimension updates from ELK
-        dimensions: visState.getContainerLayout(containerId)?.dimensions,
-      });
-    }
+    
+    // No position restoration needed - trust ELK's positioning decisions
+    // The INTERACTIVE constraints in visStateToELK already handle position preferences
   }
 
   /**
@@ -485,22 +472,32 @@ export class ELKBridge {
         ? { id: container.id, width: containerWidth, height: containerHeight, children: [] }
         : ({ id: container.id, children: [] } as ElkNode);
 
-      // SELECTIVE LAYOUT: Fix positions for unchanged containers
+      // SELECTIVE LAYOUT: Use soft constraints for unchanged containers
       if (changedContainerId && container.id !== changedContainerId) {
         // Get current position from VisualizationState
         const layout = visState.getContainerLayout(container.id);
         const currentPosition = layout?.position || { x: container.x || 0, y: container.y || 0 };
 
-        // Fix this container's position during selective layout using strict constraints
+        // Use soft constraints that prefer current position but allow movement to avoid overlaps
         containerNode.x = currentPosition.x;
         containerNode.y = currentPosition.y;
         containerNode.layoutOptions = {
-          ...createFixedPositionOptions(currentPosition.x, currentPosition.y),
-          'elk.nodeSize.constraints': 'FIXED_POS',
+          ...ELK_LAYOUT_OPTIONS,
+          // Use INTERACTIVE mode which respects current positions but allows adjustment
+          'elk.position': 'INTERACTIVE',
+          'elk.position.x': currentPosition.x.toString(),
+          'elk.position.y': currentPosition.y.toString(),
+          // Allow size adjustments if needed
+          'elk.nodeSize.constraints': '',
           'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE',
+          // Enable interactive layout
+          'elk.interactive': 'true',
         };
       } else if (changedContainerId) {
-        // Allow movement for the changed container
+        // Allow free movement for the changed container
+        containerNode.layoutOptions = {
+          ...createFreePositionOptions(),
+        };
       }
 
       if (!container.collapsed) {

@@ -29,7 +29,8 @@ import {
   isStorageAvailable,
 } from '../utils/persistence';
 import { ResizeObserverErrorHandler } from '../utils/resizeObserverErrorHandler';
-import { globalReactFlowOperationManager } from '../utils/globalReactFlowOperationManager';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
+
 
 // Conditional dev-only imports
 let PerformanceDashboard: React.ComponentType<any> | null = null;
@@ -146,6 +147,33 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       ? loadFromStorage(STORAGE_KEYS.AUTO_FIT, defaultAutoFit)
       : defaultAutoFit;
 
+    // Configuration state with persistence (moved up to fix variable order)
+    const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
+    const [colorPalette, setColorPalette] = useState(persistedColorPalette);
+    const [layoutAlgorithm, setLayoutAlgorithm] = useState(persistedLayoutAlgorithm);
+    const [renderConfig, setRenderConfig] = useState<RenderConfig>(persistedRenderConfig);
+    const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(persistedAutoFit);
+
+    // Setup global autofit request mechanism for search expansion and other operations
+    useEffect(() => {
+      (window as any).__hydroRequestAutoFit = (reason?: string) => {
+        if (hydroscopeRef.current?.fitView && autoFitEnabled) {
+          const fitFn = hydroscopeRef.current.fitView;
+          consolidatedOperationManager.requestAutoFit(
+            fitFn,
+            undefined,
+            reason || 'global-request'
+          );
+          hscopeLogger.log('fit', `global autofit requested: ${reason || 'unspecified'}`);
+        }
+      };
+      
+      // Cleanup on unmount
+      return () => {
+        delete (window as any).__hydroRequestAutoFit;
+      };
+    }, [autoFitEnabled]);
+
     // Ensure renderConfig.edgeStyleConfig is always in sync with graphData.edgeStyleConfig
     useEffect(() => {
       if (graphData && graphData.edgeStyleConfig) {
@@ -162,12 +190,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       setData(initialData);
     }, [initialData]);
 
-    // Configuration state with persistence
-    const [grouping, setGrouping] = useState<string | undefined>(hydroscopeProps.grouping);
-    const [colorPalette, setColorPalette] = useState(persistedColorPalette);
-    const [layoutAlgorithm, setLayoutAlgorithm] = useState(persistedLayoutAlgorithm);
-    const [renderConfig, setRenderConfig] = useState<RenderConfig>(persistedRenderConfig);
-    const [autoFitEnabled, setAutoFitEnabled] = useState<boolean>(persistedAutoFit);
+
 
     const hydroscopeRef = useRef<HydroscopeCoreRef>(null);
     const infoPanelRef = useRef<InfoPanelRef>(null);
@@ -179,7 +202,13 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
         getVisualizationState: () => hydroscopeRef.current?.getVisualizationState() || null,
         refreshLayout: (force?: boolean) =>
           hydroscopeRef.current?.refreshLayout(force) || Promise.resolve(),
-        fitView: () => hydroscopeRef.current?.fitView(),
+        fitView: async () => {
+          if (hydroscopeRef.current?.fitView) {
+            const fitFn = hydroscopeRef.current.fitView;
+            // Use consolidated system for imperative fitView
+            consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'imperative-fitview');
+          }
+        },
       }),
       []
     );
@@ -393,7 +422,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
               onContainerCollapse?.(node.id, visualizationState);
             }
 
-            // Trigger layout refresh
+            // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
             if (hydroscopeRef.current?.refreshLayout) {
               await hydroscopeRef.current.refreshLayout();
             }
@@ -403,8 +432,10 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
             // Auto-fit after layout completes
             if (autoFitEnabled && hydroscopeRef.current?.fitView) {
+              const fitFn = hydroscopeRef.current.fitView;
               setTimeout(() => {
-                hydroscopeRef.current?.fitView();
+                // Use consolidated system for autofit after layout
+                consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'autofit-after-layout');
               }, 300);
             }
           } catch (err) {
@@ -432,7 +463,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
           // Update the node's label field
           visualizationState.updateNode(node.id, { label: newLabel });
 
-          // Trigger a refresh to update the display
+          // Trigger a refresh to update the display (refreshLayout already uses consolidatedOperationManager)
           try {
             if (hydroscopeRef.current?.refreshLayout) {
               // Use refreshLayout to force a re-conversion of the visualization state
@@ -460,22 +491,41 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
       try {
         setIsLayoutRunning(true);
-        // collapseAllContainers() already triggers layout internally via _resumeLayoutTriggers(true)
-        // No need to call refreshLayout() afterwards as it would create duplicate layout operations
-        visualizationState.collapseAllContainers();
-
-        // Auto-fit after packing
-        if (autoFitEnabled && hydroscopeRef.current?.fitView) {
-          setTimeout(() => {
-            hydroscopeRef.current?.fitView();
-          }, 500);
+        
+        // Clear search state to prevent conflicts with bulk operations
+        setSearchQuery('');
+        setSearchMatches([]);
+        setCurrentSearchMatchId(undefined);
+        
+        // Also clear the InfoPanel search
+        if (infoPanelRef.current?.clearSearch) {
+          infoPanelRef.current.clearSearch();
         }
+        
+        // Use consolidated operation manager to coordinate collapse all with other operations
+        await consolidatedOperationManager.queueContainerToggle(
+          `collapse-all-${Date.now()}`,
+          async () => {
+            // collapseAllContainers() triggers layout internally via _resumeLayoutTriggers(true)
+            visualizationState.collapseAllContainers();
+          },
+          'high' // High priority for user-initiated collapse all
+        );
+        
+        // CRITICAL: Ensure autofit is requested after collapse all
+        // The consolidatedOperationManager should handle this automatically, but let's be explicit
+        if (hydroscopeRef.current?.fitView) {
+          const fitFn = hydroscopeRef.current.fitView;
+          consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'collapse-all-autofit');
+        }
+        
+        // AutoFit will be triggered automatically by the consolidated system
       } catch (err) {
         console.error('❌ Error packing containers:', err);
       } finally {
         setIsLayoutRunning(false);
       }
-    }, [visualizationState, autoFitEnabled]);
+    }, [visualizationState]);
 
     // Unpack all containers (expand all)
     const handleUnpackAll = useCallback(async () => {
@@ -483,22 +533,34 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
       try {
         setIsLayoutRunning(true);
-        // expandAllContainers() already triggers layout internally via _resumeLayoutTriggers(true)
-        // No need to call refreshLayout() afterwards as it would create duplicate layout operations
-        visualizationState.expandAllContainers();
-
-        // Auto-fit after unpacking
-        if (autoFitEnabled && hydroscopeRef.current?.fitView) {
-          setTimeout(() => {
-            hydroscopeRef.current?.fitView();
-          }, 500);
+        
+        // Clear search state to prevent conflicts with bulk operations
+        setSearchQuery('');
+        setSearchMatches([]);
+        setCurrentSearchMatchId(undefined);
+        
+        // Also clear the InfoPanel search
+        if (infoPanelRef.current?.clearSearch) {
+          infoPanelRef.current.clearSearch();
         }
+        
+        // Use consolidated operation manager to coordinate expand all with other operations
+        await consolidatedOperationManager.queueContainerToggle(
+          `expand-all-${Date.now()}`,
+          async () => {
+            // expandAllContainers() triggers layout internally via _resumeLayoutTriggers(true)
+            visualizationState.expandAllContainers();
+          },
+          'high' // High priority for user-initiated expand all
+        );
+        
+        // AutoFit will be triggered automatically by the consolidated system
       } catch (err) {
         console.error('❌ Error unpacking containers:', err);
       } finally {
         setIsLayoutRunning(false);
       }
-    }, [visualizationState, autoFitEnabled]);
+    }, [visualizationState]);
 
     // Handle grouping change
     const handleGroupingChange = useCallback(
@@ -612,27 +674,27 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                   setCurrentSearchMatchId(current?.id);
                 }}
                 onToggleContainer={async containerId => {
-                  // RACE CONDITION FIX: Check if this is a search expansion operation
-                  // Search expansions need to be synchronous to ensure nodes are visible
-                  // before ReactFlowBridge conversion happens
-                  const isSearchExpansion = searchQuery && searchQuery.trim() && searchMatches && searchMatches.length > 0;
+                  // Check if there's an active search and what operation the user is doing
+                  const hasActiveSearch = searchQuery && searchQuery.trim() && searchMatches && searchMatches.length > 0;
+                  const container = visualizationState?.getContainer(containerId);
+                  const isCollapsing = container && !container.collapsed; // Will be collapsed after toggle
                   
-                  console.error(`[Hydroscope] onToggleContainer(${containerId}) - isSearchExpansion: ${isSearchExpansion}, searchQuery: "${searchQuery}", matches: ${searchMatches?.length || 0}`);
+                  console.error(`[Hydroscope] onToggleContainer(${containerId}) - hasActiveSearch: ${hasActiveSearch}, isCollapsing: ${isCollapsing}, searchQuery: "${searchQuery}", matches: ${searchMatches?.length || 0}`);
                   
-                  if (isSearchExpansion) {
-                    // Execute search expansion immediately (synchronously)
-                    const c = visualizationState?.getContainer(containerId);
-                    console.error(`[Hydroscope] 🚀 SYNCHRONOUS search expansion for ${containerId}, collapsed: ${c?.collapsed}`);
-                    if (c && c.collapsed) {
-                      visualizationState.expandContainer(containerId);
-                      onContainerExpand?.(containerId, visualizationState);
-                      console.error(`[Hydroscope] ✅ Expanded ${containerId} synchronously`);
-                    } else if (c) {
-                      console.error(`[Hydroscope] ⚠️ Container ${containerId} already expanded (collapsed: ${c.collapsed})`);
-                    } else {
-                      console.error(`[Hydroscope] ❌ Container ${containerId} not found!`);
+                  // Clear search only for collapse operations during active search
+                  // Keep search active for expand operations (user likely exploring search results)
+                  if (hasActiveSearch && isCollapsing) {
+                    console.error(`[Hydroscope] 🧹 Clearing search before container collapse: ${containerId}`);
+                    setSearchQuery('');
+                    setSearchMatches([]);
+                    setCurrentSearchMatchId(undefined);
+                    
+                    // Also clear the InfoPanel search
+                    if (infoPanelRef.current?.clearSearch) {
+                      infoPanelRef.current.clearSearch();
                     }
-                    return; // Skip batching for search expansions
+                  } else if (hasActiveSearch && !isCollapsing) {
+                    console.error(`[Hydroscope] 🔍 Keeping search active for container expand: ${containerId}`);
                   }
                   
                   // For non-search operations, use batching as before
@@ -669,8 +731,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                             onContainerCollapse?.(id, visualizationState);
                           }
                         }
-                        // Suppress the immediate auto-fit in refreshLayout; we'll issue a single delayed fit after layout completes
-                        (window as any).__hydroSkipNextAutoFit = true;
+                        // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
                         if (hydroscopeRef.current?.refreshLayout) {
                           const force = ids.length > 1; // multiple toggles need a full layout
                           await hydroscopeRef.current.refreshLayout(force);
@@ -689,7 +750,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                           const fitFn = hydroscopeRef.current.fitView;
                           setTimeout(() => {
                             try {
-                              globalReactFlowOperationManager.requestAutoFit(
+                              consolidatedOperationManager.requestAutoFit(
                                 fitFn,
                                 undefined,
                                 'batched-container-toggle'
@@ -743,7 +804,13 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
               }}
               onCollapseAll={handlePackAll}
               onExpandAll={handleUnpackAll}
-              onFitView={() => hydroscopeRef.current?.fitView?.()}
+              onFitView={async () => {
+                if (hydroscopeRef.current?.fitView) {
+                  const fitFn = hydroscopeRef.current.fitView;
+                  // Use consolidated system for manual fitView
+                  consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'manual-fitview');
+                }
+              }}
               autoFit={autoFitEnabled}
               onAutoFitToggle={enabled => {
                 setAutoFitEnabled(enabled);
@@ -859,7 +926,11 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
                 if (visualizationState) {
                   visualizationState.updateNodeDimensions(newConfig);
-                  hydroscopeRef.current?.refreshLayout(true); // Force relayout
+                  
+                  // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
+                  if (hydroscopeRef.current?.refreshLayout) {
+                    hydroscopeRef.current.refreshLayout(true); // Force relayout
+                  }
                 }
               }}
               currentLayout={layoutAlgorithm}

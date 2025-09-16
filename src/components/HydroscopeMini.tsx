@@ -3,6 +3,7 @@ import { Button } from 'antd';
 import { ExpandOutlined, CompressOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Hydroscope, type HydroscopeProps, type HydroscopeRef } from './Hydroscope';
 import type { VisualizationState } from '../core/VisualizationState';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 export interface HydroscopeMiniProps extends Omit<HydroscopeProps, 'eventHandlers' | 'onParsed'> {
   // Feature toggles
@@ -92,15 +93,17 @@ export function HydroscopeMini({
             onContainerCollapse?.(node.id, visualizationState);
           }
 
-          // Trigger layout refresh
+          // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
           if (hydroscopeRef.current?.refreshLayout) {
             await hydroscopeRef.current.refreshLayout();
           }
 
           // Auto-fit after layout completes
           if (autoFit && hydroscopeRef.current?.fitView) {
+            const fitFn = hydroscopeRef.current.fitView;
             setTimeout(() => {
-              hydroscopeRef.current?.fitView();
+              // Use consolidated system for autofit after layout
+              consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'hydroscope-mini-autofit-after-layout');
             }, 300);
           }
         } catch (err) {
@@ -128,7 +131,7 @@ export function HydroscopeMini({
         // Update the node's label field
         visualizationState.updateNode(node.id, { label: newLabel });
 
-        // Trigger a refresh to update the display
+        // Trigger a refresh to update the display (refreshLayout already uses consolidatedOperationManager)
         try {
           if (hydroscopeRef.current?.refreshLayout) {
             // Use refreshLayout to force a re-conversion of the visualization state
@@ -157,22 +160,23 @@ export function HydroscopeMini({
     try {
       setIsLayoutRunning(true);
 
-      // collapseAllContainers() already triggers layout internally via _resumeLayoutTriggers(true)
-      // No need to call refreshLayout() afterwards as it would create duplicate layout operations
-      visualizationState.collapseAllContainers();
-
-      // Auto-fit after packing
-      if (autoFit && hydroscopeRef.current?.fitView) {
-        setTimeout(() => {
-          hydroscopeRef.current?.fitView();
-        }, 500);
-      }
+      // Use consolidated operation manager to coordinate collapse all with other operations
+      await consolidatedOperationManager.queueContainerToggle(
+        `mini-collapse-all-${Date.now()}`,
+        async () => {
+          // collapseAllContainers() triggers layout internally via _resumeLayoutTriggers(true)
+          visualizationState.collapseAllContainers();
+        },
+        'high' // High priority for user-initiated collapse all
+      );
+      
+      // AutoFit will be triggered automatically by the consolidated system
     } catch (err) {
       console.error('❌ Error packing containers:', err);
     } finally {
       setIsLayoutRunning(false);
     }
-  }, [visualizationState, autoFit]);
+  }, [visualizationState]);
 
   // Unpack all containers (expand all)
   const handleUnpackAll = useCallback(async () => {
@@ -181,24 +185,25 @@ export function HydroscopeMini({
     try {
       setIsLayoutRunning(true);
 
-      // expandAllContainers() already triggers layout internally via _resumeLayoutTriggers(true)
-      // No need to call refreshLayout() afterwards as it would create duplicate layout operations
-      visualizationState.expandAllContainers();
-
-      // Auto-fit after unpacking
-      if (autoFit && hydroscopeRef.current?.fitView) {
-        setTimeout(() => {
-          hydroscopeRef.current?.fitView();
-        }, 500);
-      }
+      // Use consolidated operation manager to coordinate expand all with other operations
+      await consolidatedOperationManager.queueContainerToggle(
+        `mini-expand-all-${Date.now()}`,
+        async () => {
+          // expandAllContainers() triggers layout internally via _resumeLayoutTriggers(true)
+          visualizationState.expandAllContainers();
+        },
+        'high' // High priority for user-initiated expand all
+      );
+      
+      // AutoFit will be triggered automatically by the consolidated system
     } catch (err) {
       console.error('❌ Error unpacking containers:', err);
     } finally {
       setIsLayoutRunning(false);
     }
-  }, [visualizationState, autoFit]);
+  }, [visualizationState]);
 
-  // Refresh layout manually
+  // Refresh layout manually (refreshLayout already uses consolidatedOperationManager)
   const handleRefresh = useCallback(async () => {
     if (!hydroscopeRef.current?.refreshLayout) return;
 

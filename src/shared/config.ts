@@ -93,7 +93,7 @@ export const LAYOUT_CONSTANTS = {
 // UI Animation and Interaction Constants
 export const UI_CONSTANTS = {
   // ReactFlow viewport animation
-  FIT_VIEW_PADDING: 0.1,
+  FIT_VIEW_PADDING: 0.15, // Increased from 0.1 to prevent content cutoff at viewport edges
   FIT_VIEW_MAX_ZOOM: 1.2,
   FIT_VIEW_DURATION: 300, // milliseconds
 

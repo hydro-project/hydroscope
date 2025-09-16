@@ -19,7 +19,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Divider } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { LAYOUT_CONSTANTS, PANEL_CONSTANTS, UI_CONSTANTS } from '../shared/config';
-import { globalLayoutLock } from '../utils/globalLayoutLock';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
 
@@ -136,7 +136,7 @@ export function StyleTunerPanel({
 
       try {
         // Queue the scale change operation to prevent interference with other layout operations
-        const success = await globalLayoutLock.executeLayoutOperation(operationId, async () => {
+        const success = await consolidatedOperationManager.queueLayoutOperation(operationId, async () => {
           // Execute the scale change within the queued operation
           if (onControlsScaleChange) {
             onControlsScaleChange(newScale);
@@ -145,6 +145,10 @@ export function StyleTunerPanel({
             const next = { ...local, reactFlowControlsScale: newScale };
             onChange(next);
           }
+        }, {
+          priority: 'normal',
+          reason: 'controls-scale-change',
+          triggerAutoFit: false // Scale changes don't need autofit
         });
 
         if (success) {

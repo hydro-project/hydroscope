@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { VisualizationState } from '../core/VisualizationState';
 import { VisualizationEngine } from '../core/VisualizationEngine';
-import { globalLayoutLock } from '../utils/globalLayoutLock';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 describe('Collapse All Race Condition Fix', () => {
   let engine: VisualizationEngine;
@@ -16,9 +16,8 @@ describe('Collapse All Race Condition Fix', () => {
   let layoutSpy: any;
 
   beforeEach(() => {
-    // Clear any existing locks
-    globalLayoutLock.forceReleaseAll();
-    globalLayoutLock.clearQueue();
+    // Clear any existing operations
+    consolidatedOperationManager.clearAll();
 
     // Create visualization state directly
     visState = new VisualizationState();
@@ -55,8 +54,7 @@ describe('Collapse All Race Condition Fix', () => {
 
   afterEach(() => {
     layoutSpy?.mockRestore();
-    globalLayoutLock.forceReleaseAll();
-    globalLayoutLock.clearQueue();
+    consolidatedOperationManager.clearAll();
   });
 
   it('should not trigger duplicate layouts when collapsing all containers', async () => {
@@ -139,10 +137,9 @@ describe('Collapse All Race Condition Fix', () => {
     visState.collapseAllContainers();
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Check that the global layout lock is not stuck
-    const lockStatus = globalLayoutLock.getStatus();
-    expect(lockStatus.isLocked).toBe(false);
-    expect(lockStatus.queueLength).toBe(0);
-    expect(lockStatus.isProcessingQueue).toBe(false);
+    // Check that the consolidated operation manager is not stuck
+    const status = consolidatedOperationManager.getStatus();
+    expect(status.isProcessing).toBe(false);
+    expect(status.queueLength).toBe(0);
   });
 });

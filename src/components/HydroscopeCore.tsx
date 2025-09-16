@@ -5,6 +5,7 @@ import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core
 import type { VisualizationState } from '../core/VisualizationState';
 import { getProfiler } from '../dev';
 import { useResizeObserverErrorHandler } from '../utils/resizeObserverErrorHandler';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 export interface HydroscopeCoreProps {
   data: object | string; // Graph JSON object or string
@@ -130,13 +131,16 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
       () => ({
         getVisualizationState: () => parseOutcome.state,
         refreshLayout: async (force?: boolean) => {
+          // Delegate directly to FlowGraph's refreshLayout which already uses consolidatedOperationManager
           if (flowGraphRef.current?.refreshLayout) {
             await flowGraphRef.current.refreshLayout(force);
           }
         },
-        fitView: () => {
+        fitView: async () => {
           if (flowGraphRef.current?.fitView) {
-            flowGraphRef.current.fitView();
+            const fitFn = flowGraphRef.current.fitView;
+            // Use consolidated system for fitView
+            consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'hydroscope-core-fitview');
           }
         },
       }),

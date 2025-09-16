@@ -18,6 +18,7 @@ import { useResizeObserver } from '../hooks/useResizeObserver';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { RenderConfig, FlowGraphEventHandlers, LayoutConfig } from '../core/types';
 
+
 export interface FlowGraphProps {
   visualizationState: VisualizationState;
   config?: RenderConfig;
@@ -240,7 +241,7 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
               // Only highlight items that are actual search matches, not containers expanded due to containing matches
               const filteredMatches = (Array.isArray(searchMatches) ? searchMatches : [])
                 .filter(m => m && (m.type === 'node' || m.type === 'container'));
-              
+
               // Debug logging for search matches
               if (filteredMatches.length > 0) {
                 console.log(`[FlowGraph] Search matches:`, filteredMatches.map(m => `${m.id} (${m.type}): "${m.label}"`));
@@ -248,25 +249,25 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
                 console.log(`[FlowGraph] Match IDs:`, filteredMatches.map(m => m.id));
                 console.log(`[FlowGraph] Node IDs:`, nodes.map(n => n.id));
               }
-              
+
               const matchSet = new Set(filteredMatches.map(m => m.id));
               const currentId = currentSearchMatchId;
 
               const styled = nodes.map(n => {
                 const isMatch = matchSet.has(n.id);
                 const isCurrent = currentId && n.id === currentId;
-                
+
                 // Debug logging for search highlighting
                 if (isMatch || isCurrent) {
                   console.log(`[FlowGraph] Highlighting node: ${n.id}, label: ${n.data?.label}, isMatch: ${isMatch}, isCurrent: ${isCurrent}`);
-                  
+
                   // Additional validation: check if this node's label actually matches the search
                   const nodeLabel = n.data?.label || n.id;
                   if (searchQuery && !nodeLabel.toLowerCase().includes(searchQuery.toLowerCase())) {
                     console.warn(`[FlowGraph] WARNING: Node ${n.id} with label "${nodeLabel}" is being highlighted but doesn't match search "${searchQuery}"`);
                   }
                 }
-                
+
                 if (!isMatch && !isCurrent) return n;
 
                 // Attach flags; node components will render glow
@@ -353,8 +354,9 @@ export const FlowGraph = forwardRef<FlowGraphRef, FlowGraphProps>((props, ref) =
 
   // Expose fitView and refreshLayout methods through ref
   useImperativeHandle(ref, () => ({
-    fitView: () => {
+    fitView: async () => {
       if (flowGraphRef.current) {
+        // The consolidated system will handle the coordination automatically
         flowGraphRef.current.fitView();
       }
     },

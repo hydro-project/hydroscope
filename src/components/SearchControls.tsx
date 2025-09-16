@@ -7,7 +7,7 @@
  * IMPORTANT: Race Condition Prevention:
  * - Search operations execute synchronously to prevent layout race conditions
  * - Search highlighting animations use box-shadow instead of transform
- * - All operations coordinate with the GlobalLayoutLock system
+ * - All operations coordinate with the ConsolidatedOperationManager system
  */
 
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';

@@ -13,12 +13,12 @@
 ): React.ReactNode {ew of container hierarchy for navigation using Ant Design Tree.
  */
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { Tree } from 'antd';
 import type { TreeDataNode } from 'antd';
 import { HierarchyTreeProps, HierarchyTreeNode } from './types';
 import { TYPOGRAPHY } from '../shared/config';
-import { globalLayoutLock } from '../utils/globalLayoutLock';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 import { COMPONENT_COLORS } from '../shared/config';
 import type { VisualizationState } from '../core/VisualizationState';
 import type { Container, GraphNode } from '../shared/types';
@@ -335,24 +335,35 @@ export function HierarchyTree({
   }>;
   currentSearchMatch?: { id: string } | undefined;
 }) {
-  // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic instead of complex useMemo
+  // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
     if (!visualizationState) {
       return [];
     }
 
+    // Only recalculate when there are actual search matches, not on every search keystroke
+    const hasSearchMatches = searchMatches && searchMatches.length > 0;
+    if (!hasSearchMatches) {
+      // No search matches, return empty array to keep all containers collapsed by default
+      return [];
+    }
+
     // Use VisualizationState's efficient search expansion method
-    return visualizationState.getSearchExpansionKeys(searchMatches || [], collapsedContainers);
-  }, [visualizationState, collapsedContainers, searchMatches]);
+    return visualizationState.getSearchExpansionKeys(searchMatches, collapsedContainers);
+  }, [visualizationState, collapsedContainers, searchMatches?.length, searchMatches?.map(m => m.id).join(',')]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
+  // Track the last search expansion to prevent duplicate operations
+  const lastSearchExpansionRef = useRef<string>('');
+  
   // Sync local expanded state whenever the derived value changes (e.g., collapse/expand in vis, search)
   useEffect(() => {
     setExpandedKeys(derivedExpandedKeys);
 
     // During search, expand containers that are ancestors of matches (including node matches)
+    // Add debouncing to prevent excessive operations
     if (
       searchQuery &&
       searchQuery.trim() &&
@@ -360,6 +371,15 @@ export function HierarchyTree({
       searchMatches.length &&
       onToggleContainer
     ) {
+      // Create a stable key for this search expansion to prevent duplicates
+      const searchKey = `${searchQuery.trim()}-${searchMatches.map(m => m.id).sort().join(',')}`;
+      
+      // Skip if we've already processed this exact search expansion
+      if (lastSearchExpansionRef.current === searchKey) {
+        return;
+      }
+      
+      lastSearchExpansionRef.current = searchKey;
 
       // For both container matches and node matches, expand the containers to make them visible
       // This includes expanding matched containers themselves and their ancestors
@@ -420,28 +440,28 @@ export function HierarchyTree({
       
       console.error(`[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}) [SORTED BY DEPTH]:`, containersToToggle.join(', '));
 
-      // Batch container toggle operations to prevent ResizeObserver loops
+      // Batch container toggle operations using consolidatedOperationManager
       if (containersToToggle.length > 0) {
-        // CRITICAL FIX: Execute search expansions synchronously to prevent race conditions
-        // The async delay was causing visibility state inconsistency during search operations
-        // where layout operations would run with stale visibility data, losing nodes/edges
+        console.error(`[HierarchyTree] 🚀 Executing search expansion for ${containersToToggle.length} containers`);
         
-        // Use the global layout lock to ensure atomic execution
+        // Use consolidatedOperationManager for proper coordination
         const operationId = `search-expansion-${Date.now()}`;
         
-        globalLayoutLock.queueLayoutOperation(operationId, async () => {
-          // Toggle all containers synchronously within the lock
-          for (const containerId of containersToToggle) {
+        // Let onToggleContainer handle both state updates and ELK layout refresh
+        // The existing batching system in Hydroscope will coordinate these operations
+        containersToToggle.forEach(containerId => {
+          if (onToggleContainer) {
             onToggleContainer(containerId);
           }
-        }, false).catch((error: unknown) => {
-          console.warn(`[HierarchyTree] Search expansion failed: ${error}`);
         });
       }
     } else if (
       (!searchQuery || !searchQuery.trim() || !searchMatches || !searchMatches.length) &&
       onToggleContainer
     ) {
+      // Clear the search expansion ref when search is cleared
+      lastSearchExpansionRef.current = '';
+      
       // When not searching, sync normally
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
@@ -459,11 +479,15 @@ export function HierarchyTree({
         // Use the same synchronous approach for consistency
         const operationId = `hierarchy-sync-${Date.now()}`;
         
-        globalLayoutLock.queueLayoutOperation(operationId, async () => {
+        consolidatedOperationManager.queueLayoutOperation(operationId, async () => {
           for (const containerId of containersToToggle) {
             onToggleContainer(containerId);
           }
-        }, false).catch((error: unknown) => {
+        }, {
+          priority: 'normal',
+          reason: 'hierarchy-sync',
+          triggerAutoFit: true // AutoFit will be triggered automatically
+        }).catch((error: unknown) => {
           console.warn(`[HierarchyTree] Hierarchy sync failed: ${error}`);
         });
       }

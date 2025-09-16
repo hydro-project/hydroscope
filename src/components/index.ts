@@ -10,6 +10,7 @@
  */
 
 import type { VisualizationState } from '../core/VisualizationState';
+import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 // === THREE-TIER API ===
 
@@ -111,6 +112,7 @@ export function createContainerClickHandler(
         onCollapse?.(node.id);
       }
 
+      // Call the provided refreshLayout (which should already use consolidatedOperationManager)
       await refreshLayout();
     }
   };
