@@ -13,14 +13,14 @@ describe('Search Highlight Colors', () => {
     expect(colors.match).toBeDefined();
     expect(colors.current).toBeDefined();
     
-    // Test match colors (updated for better contrast)
-    expect(colors.match.background).toBe('#f59e0b'); // amber-500 - darker for better text contrast
-    expect(colors.match.border).toBe('#d97706'); // amber-600 - darker border
+    // Test match colors (updated for better visibility)
+    expect(colors.match.background).toBe('#fbbf24'); // amber-400 - brighter for better visibility
+    expect(colors.match.border).toBe('#f59e0b'); // amber-500 - contrasting border
     expect(colors.match.text).toBe('#000000'); // black for contrast
     
-    // Test current/strong colors (updated for better contrast)
-    expect(colors.current.background).toBe('#ea580c'); // orange-600 - darker for better text contrast
-    expect(colors.current.border).toBe('#c2410c'); // orange-700 - darker border
+    // Test current/strong colors (updated for better visibility)
+    expect(colors.current.background).toBe('#f97316'); // orange-500 - brighter orange for better visibility
+    expect(colors.current.border).toBe('#ea580c'); // orange-600 - darker border for definition
     expect(colors.current.text).toBe('#ffffff'); // white for contrast
   });
 

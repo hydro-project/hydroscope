@@ -62,6 +62,7 @@ export const InfoPanel = forwardRef<
       onGroupingChange,
       collapsedContainers = new Set(),
       onToggleContainer,
+      layoutOrchestrator,
       colorPalette = 'Set3',
       defaultCollapsed: _defaultCollapsed = false,
       className: _className = '',
@@ -287,6 +288,7 @@ export const InfoPanel = forwardRef<
                         onToggleContainer(containerId);
                       }
                     }}
+                    layoutOrchestrator={layoutOrchestrator}
                     title={`${currentGroupingName} Hierarchy`}
                     showNodeCounts={true}
                     truncateLabels={true}

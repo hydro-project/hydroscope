@@ -36,17 +36,17 @@ export function getContrastColor(backgroundColor: string): string {
  */
 export function getSearchHighlightColors() {
   return {
-    // Standard search match - bright yellow/amber with better contrast
+    // Standard search match - bright yellow with high visibility
     match: {
-      background: '#f59e0b', // amber-500 - slightly darker for better text contrast
-      border: '#d97706', // amber-600 - darker border for definition
-      text: '#000000', // black text for maximum contrast on amber
+      background: '#fbbf24', // amber-400 - brighter for better visibility
+      border: '#f59e0b', // amber-500 - contrasting border
+      text: '#000000', // black text for maximum contrast on yellow
     },
-    // Current/strong search match - bright orange with high contrast
+    // Current/strong search match - bright red-orange with maximum visibility
     current: {
-      background: '#ea580c', // orange-600 - darker orange for better text contrast
-      border: '#c2410c', // orange-700 - even darker border
-      text: '#ffffff', // white text for maximum contrast on dark orange
+      background: '#f97316', // orange-500 - brighter orange for better visibility
+      border: '#ea580c', // orange-600 - darker border for definition
+      text: '#ffffff', // white text for maximum contrast on orange
     },
   };
 }

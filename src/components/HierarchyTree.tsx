@@ -314,6 +314,7 @@ function getTreeDataStructure(
 export function HierarchyTree({
   collapsedContainers = new Set(),
   onToggleContainer,
+  layoutOrchestrator,
   title = 'Container Hierarchy',
   showNodeCounts = true,
   truncateLabels = true,
@@ -337,26 +338,24 @@ export function HierarchyTree({
 }) {
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
-    if (!visualizationState) {
+    if (!visualizationState || !searchMatches || searchMatches.length === 0) {
       return [];
     }
 
-    // Only recalculate when there are actual search matches, not on every search keystroke
-    const hasSearchMatches = searchMatches && searchMatches.length > 0;
-    if (!hasSearchMatches) {
-      // No search matches, return empty array to keep all containers collapsed by default
-      return [];
-    }
+    // Ensure caches are initialized before using search expansion logic
+    visualizationState.ensureCachesInitialized();
 
-    // Use VisualizationState's efficient search expansion method
-    return visualizationState.getSearchExpansionKeys(searchMatches, collapsedContainers);
-  }, [visualizationState, collapsedContainers, searchMatches?.length, searchMatches?.map(m => m.id).join(',')]);
+    // Use the pure search expansion logic
+    const currentCollapsed = new Set(collapsedContainers);
+    return visualizationState.getSearchExpansionKeys(searchMatches, currentCollapsed);
+  }, [visualizationState, searchMatches, collapsedContainers]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   // Track the last search expansion to prevent duplicate operations
   const lastSearchExpansionRef = useRef<string>('');
+  const searchExpansionInProgressRef = useRef<boolean>(false);
   
   // Sync local expanded state whenever the derived value changes (e.g., collapse/expand in vis, search)
   useEffect(() => {
@@ -379,7 +378,14 @@ export function HierarchyTree({
         return;
       }
       
+      // Skip if a search expansion is already in progress
+      if (searchExpansionInProgressRef.current) {
+        console.error(`[HierarchyTree] 🚫 Skipping search expansion - already in progress`);
+        return;
+      }
+      
       lastSearchExpansionRef.current = searchKey;
+      searchExpansionInProgressRef.current = true;
 
       // For both container matches and node matches, expand the containers to make them visible
       // This includes expanding matched containers themselves and their ancestors
@@ -440,20 +446,29 @@ export function HierarchyTree({
       
       console.error(`[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}) [SORTED BY DEPTH]:`, containersToToggle.join(', '));
 
-      // Batch container toggle operations using consolidatedOperationManager
+      // Use LayoutOrchestrator for coordinated search expansion
       if (containersToToggle.length > 0) {
         console.error(`[HierarchyTree] 🚀 Executing search expansion for ${containersToToggle.length} containers`);
         
-        // Use consolidatedOperationManager for proper coordination
-        const operationId = `search-expansion-${Date.now()}`;
-        
-        // Let onToggleContainer handle both state updates and ELK layout refresh
-        // The existing batching system in Hydroscope will coordinate these operations
-        containersToToggle.forEach(containerId => {
-          if (onToggleContainer) {
-            onToggleContainer(containerId);
-          }
-        });
+        if (layoutOrchestrator) {
+          // CRITICAL: Use proper operation coordination and clear flag when done
+          layoutOrchestrator.expandForSearch(containersToToggle, searchQuery || '')
+            .then(() => {
+              searchExpansionInProgressRef.current = false;
+            })
+            .catch((error: unknown) => {
+              console.warn(`[HierarchyTree] LayoutOrchestrator search expansion failed: ${error}`);
+              searchExpansionInProgressRef.current = false;
+            });
+        } else {
+          // Fallback to individual toggles if LayoutOrchestrator not available
+          containersToToggle.forEach(containerId => {
+            if (onToggleContainer) {
+              onToggleContainer(containerId);
+            }
+          });
+          searchExpansionInProgressRef.current = false;
+        }
       }
     } else if (
       (!searchQuery || !searchQuery.trim() || !searchMatches || !searchMatches.length) &&
@@ -461,6 +476,7 @@ export function HierarchyTree({
     ) {
       // Clear the search expansion ref when search is cleared
       lastSearchExpansionRef.current = '';
+      searchExpansionInProgressRef.current = false;
       
       // When not searching, sync normally
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));

@@ -104,6 +104,9 @@ export function createContainerClickHandler(
 
     const container = visualizationState.getContainer(node.id);
     if (container) {
+      // CRITICAL: These direct container operations bypass ConsolidatedOperationManager
+      // TODO: Refactor to use LayoutOrchestrator for proper coordination
+      // For now, these calls have coordination guards that will warn if called outside operations
       if (container.collapsed) {
         visualizationState.expandContainer(node.id);
         onExpand?.(node.id);

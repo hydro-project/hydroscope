@@ -6,6 +6,7 @@
 
 import { VisualizationState } from '../core/VisualizationState';
 import { EdgeStyleConfig } from '../core/EdgeStyleProcessor';
+import type { LayoutOrchestrator } from '../core/LayoutOrchestrator';
 
 // ============ Base Component Props ============
 
@@ -52,6 +53,7 @@ export interface InfoPanelProps extends BaseComponentProps {
   // Container Interaction
   collapsedContainers?: Set<string>;
   onToggleContainer?: (containerId: string) => void;
+  layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated operations
 
   // Panel Control
   onPositionChange?: (panelId: string, position: PanelPosition) => void;
@@ -76,6 +78,7 @@ export interface HierarchyTreeProps extends BaseComponentProps {
 
   // Interaction
   onToggleContainer?: (containerId: string) => void;
+  layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated search expansion
 
   // Display
   title?: string;

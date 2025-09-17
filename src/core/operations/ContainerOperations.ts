@@ -29,22 +29,27 @@ export class ContainerOperations {
     // Step 1: Recursively collapse any expanded child containers first
     for (const childId of children) {
       const container = this.state.getContainer(childId);
-      if (container && !this.state.getContainerCollapsed(childId)) {
-        // Child container is expanded, collapse it first
-        this.handleContainerCollapse(childId);
+      if (container) {
+        // Always mark child containers as hidden when parent is collapsed
+        // regardless of whether they were already collapsed or not
+        container.hidden = true;
+        this.state.visibilityManager.updateContainerVisibilityCaches(childId, container);
+        
+        // If child container is expanded, collapse it recursively
+        if (!this.state.getContainerCollapsed(childId)) {
+          this.handleContainerCollapse(childId);
+        }
       }
     }
 
-    // Step 2: Hide all child nodes and containers, and collapse child containers
+    // Step 2: Hide child nodes (containers are already handled by Step 1)
     for (const childId of children) {
-      const container = this.state.getContainer(childId);
       const node = this.state.getGraphNode(childId);
-      if (container) {
-        // Child containers must be both collapsed and hidden when parent is collapsed
-        this.state.setContainerState(childId, { collapsed: true, hidden: true });
-      } else if (node) {
+      if (node) {
         this.state.setNodeVisibility(childId, false);
       }
+      // Note: Child containers are already collapsed and hidden by the recursive call in Step 1
+      // Calling setContainerState again would cause double-processing and validation issues
     }
 
     // Step 3: Clean up any hyperEdges that are no longer valid due to visibility changes
@@ -53,8 +58,13 @@ export class ContainerOperations {
     // Step 4: Create hyperEdges based on external connections
     this.createHyperEdgesForCollapsedContainer(containerId);
 
-    // Step 5: Mark container as collapsed
-    this.state.setContainerCollapsed(containerId, true);
+    // Step 5: Mark container as collapsed (use direct state modification to avoid recursion)
+    const container = this.state.getContainer(containerId);
+    if (container) {
+      container.collapsed = true;
+      // Update visibility caches
+      this.state.visibilityManager.updateContainerVisibilityCaches(containerId, container);
+    }
 
     // Reenable invariants
     this.state.resetValidation(validationState);
@@ -64,6 +74,9 @@ export class ContainerOperations {
    * Handle container expansion by removing hyperEdges and restoring GraphEdge visibility
    */
   handleContainerExpansion(containerId: string): void {
+    // DIAGNOSTIC: Log container expansion
+    console.error(`[ContainerOperations] 🔍 Expanding container ${containerId}`);
+    
     // 1. Mark container as expanded
     this.state.setContainerCollapsed(containerId, false);
 
@@ -74,18 +87,25 @@ export class ContainerOperations {
 
     // 3. Show all child nodes and expanded child containers
     const children = this.state.getContainerChildren(containerId) || new Set();
+    console.error(`[ContainerOperations] 🔍 Container ${containerId} has ${children.size} children:`, Array.from(children).join(', '));
+    
     for (const childId of children) {
       const container = this.state.getContainer(childId);
       const node = this.state.getGraphNode(childId);
 
       if (container) {
-        // For child containers, show them
-        this.state.setContainerState(childId, { hidden: false });
-        // FIXED: Skip validation for already-expanded child containers (needed for search expansion)
-        // During search expansion, child containers might already be expanded by the search logic
-        if (!this.state.getContainer(childId).collapsed) {
-          // Child container is already expanded - this is fine, just skip it
-          continue;
+        console.error(`[ContainerOperations] 🔍 Making child container ${childId} visible (parent: ${containerId})`);
+        
+        // CRITICAL FIX: Only make child containers visible if ALL their ancestors are expanded
+        // Check if this child container should be visible based on ancestor states
+        const shouldBeVisible = this.shouldContainerBeVisible(childId);
+        
+        if (shouldBeVisible) {
+          // Use direct state modification to avoid recursive validation issues
+          container.hidden = false;
+          this.state.visibilityManager.updateContainerVisibilityCaches(childId, container);
+        } else {
+          console.error(`[ContainerOperations] 🔍 Keeping child container ${childId} hidden due to collapsed ancestors`);
         }
       } else if (node) {
         // Show child nodes
@@ -144,7 +164,7 @@ export class ContainerOperations {
   /**
    * Create fresh hyperEdges for a collapsed container
    */
-  private createHyperEdgesForCollapsedContainer(containerId: string): void {
+  public createHyperEdgesForCollapsedContainer(containerId: string): void {
     // Ensure the container is actually collapsed before creating hyperEdges
     const container = this.state.getContainer(containerId);
     if (!container || !container.collapsed) {
@@ -264,6 +284,34 @@ export class ContainerOperations {
   }
 
   /**
+   * Check if a container should be visible based on its ancestor states
+   * A container should only be visible if ALL its ancestors are expanded
+   */
+  private shouldContainerBeVisible(containerId: string): boolean {
+    // Walk up the container hierarchy and check if any ancestor is collapsed
+    let currentContainer = containerId;
+    
+    while (currentContainer) {
+      const parentContainerId = this.state.getContainerParent(currentContainer);
+      if (!parentContainerId) {
+        // Reached the top level, no more ancestors to check
+        break;
+      }
+      
+      const parentContainer = this.state.getContainer(parentContainerId);
+      if (parentContainer && parentContainer.collapsed) {
+        // Found a collapsed ancestor, so this container should be hidden
+        return false;
+      }
+      
+      currentContainer = parentContainerId;
+    }
+    
+    // All ancestors are expanded, so this container can be visible
+    return true;
+  }
+
+  /**
    * Check if a node is contained within a container recursively
    */
   private isNodeInContainerRecursive(nodeId: string, containerId: string): boolean {
@@ -313,7 +361,7 @@ export class ContainerOperations {
   /**
    * Clean up hyperEdges that connect to nodes that are no longer visible
    */
-  private cleanupAdjacentHyperEdges(nodeIds: Set<string>): void {
+  public cleanupAdjacentHyperEdges(nodeIds: Set<string>): void {
     const hyperEdgesToRemove: string[] = [];
 
     // Check all hyperEdges for invalid endpoints

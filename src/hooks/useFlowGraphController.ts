@@ -53,14 +53,39 @@ export function useFlowGraphController({
   const [reactFlowData, setReactFlowData] = useState<ReactFlowData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Flag to prevent infinite loops when we're updating ReactFlow data internally
+  const isInternalUpdateRef = useRef(false);
 
   // Enhanced state setter with global operation manager protection
   const setReactFlowDataWithLogging = useCallback((data: ReactFlowData | null, layoutId: string) => {
     hscopeLogger.log('layout', `setData request layout=${layoutId} newNodes=${data?.nodes.length || 0} newEdges=${data?.edges.length || 0}`);
+    
+    // DIAGNOSTIC: Log edge data for debugging missing edges
+    if ((data?.edges.length || 0) === 0 && (data?.nodes.length || 0) > 5) {
+      console.error(`[FlowGraphController] 🚨 EDGE DATA LOSS: ${data?.nodes.length || 0} nodes but 0 edges for layout ${layoutId}`);
+      console.error(`[FlowGraphController] 🚨 This indicates edges were lost during state transitions`);
+    }
+
+    // Set flag to indicate this is an internal update
+    isInternalUpdateRef.current = true;
+
+    // CRITICAL: If we're inside an operation, execute immediately to maintain atomicity
+    if (consolidatedOperationManager.isInsideOperation()) {
+      hscopeLogger.log('layout', `setData immediate (inside operation) layout=${layoutId}`);
+      setReactFlowData(data);
+      // Reset flag after a short delay to allow ReactFlow to process
+      setTimeout(() => { isInternalUpdateRef.current = false; }, 100);
+      return;
+    }
 
     // Use consolidated operation manager for protected state updates
     const operationId = consolidatedOperationManager.queueReactFlowUpdate(
-      setReactFlowData,
+      (newData) => {
+        setReactFlowData(newData);
+        // Reset flag after a short delay to allow ReactFlow to process
+        setTimeout(() => { isInternalUpdateRef.current = false; }, 100);
+      },
       data,
       layoutId,
       'high' // Layout updates are high priority
@@ -229,6 +254,12 @@ export function useFlowGraphController({
 
         profiler?.end('Layout Calculation');
 
+        // CRITICAL: Small delay to ensure ELK results are fully applied to VisualizationState
+        // before ReactFlow conversion. This prevents race conditions where ReactFlow
+        // tries to convert containers that ELK processed but haven't been applied yet.
+        // TODO: Consider if this setTimeout is still necessary with ConsolidatedOperationManager coordination
+        await new Promise(resolve => setTimeout(resolve, 10));
+
         profiler?.start('Rendering');
         hscopeLogger.log('layout', `convert state -> rfData id=${layoutId}`);
         const baseData = bridge.convertVisualizationState(visualizationState);
@@ -256,6 +287,8 @@ export function useFlowGraphController({
             const sinceLast = now - lastFitTimeRef.current;
             if (!hasInitialAutoFitRef.current || sinceLast > 750) {
               const fitDelay = UI_CONSTANTS.LAYOUT_DELAY_NORMAL + 120; // Slightly longer to let DOM settle
+              // NOTE: This setTimeout is okay because it uses consolidatedOperationManager.requestAutoFit()
+              // which properly coordinates with other operations
               setTimeout(() => {
                 try {
                   hscopeLogger.log('fit', `auto-fit exec initial=${!hasInitialAutoFitRef.current} id=${layoutId}`);
@@ -409,8 +442,18 @@ export function useFlowGraphController({
     }
   }, [config?.colorPalette, config?.edgeStyleConfig, bridge, reactFlowData, setReactFlowData]);
 
-  // Listen to visualization state changes
+  // Track visualization state version to prevent infinite loops
+  const lastStateVersionRef = useRef<number>(0);
+
+  // Listen to visualization state changes (only when state actually changes)
   useEffect(() => {
+    const currentVersion = visualizationState.getVersion();
+    
+    // Skip if this is the same version we already processed
+    if (currentVersion === lastStateVersionRef.current) {
+      return;
+    }
+
     const handle = async () => {
       try {
         const state = engine.getState();
@@ -418,6 +461,9 @@ export function useFlowGraphController({
           // Skip; engine busy
           return;
         }
+
+        // Update the version we're processing
+        lastStateVersionRef.current = currentVersion;
 
         setLoading(true);
         setError(null);
@@ -431,7 +477,7 @@ export function useFlowGraphController({
           'state-change-layout',
           'high'
         );
-        hscopeLogger.log('layout', `state change layout queued op=${operationId}`);
+        hscopeLogger.log('layout', `state change layout queued op=${operationId} version=${currentVersion}`);
 
         if (config.fitView !== false) {
           const now = Date.now();
@@ -441,6 +487,7 @@ export function useFlowGraphController({
             since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD
               ? UI_CONSTANTS.LAYOUT_DELAY_SHORT
               : UI_CONSTANTS.LAYOUT_DELAY_NORMAL;
+          // NOTE: This setTimeout is okay because it uses consolidatedOperationManager.requestAutoFit()
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
               const fitOptions = {
@@ -470,7 +517,6 @@ export function useFlowGraphController({
     };
 
     handle();
-    // Alpha: only initial render; real change detection would add listeners
   }, [
     visualizationState,
     engine,
@@ -565,6 +611,7 @@ export function useFlowGraphController({
         const since = now - lastFitTimeRef.current;
         if (autoFitTimeoutRef.current) clearTimeout(autoFitTimeoutRef.current);
         if (since > UI_CONSTANTS.LAYOUT_DELAY_THRESHOLD) {
+          // NOTE: This setTimeout is okay because it uses consolidatedOperationManager.requestAutoFit()
           autoFitTimeoutRef.current = setTimeout(() => {
             try {
               consolidatedOperationManager.requestAutoFit(
@@ -588,6 +635,12 @@ export function useFlowGraphController({
   );
 
   const onNodesChange = useCallback((changes: any[]) => {
+    // CRITICAL: Prevent infinite loops by ignoring changes during internal updates
+    if (isInternalUpdateRef.current) {
+      hscopeLogger.log('layout', `nodes change ignored (internal update in progress)`);
+      return;
+    }
+
     // For onNodesChange, we need to compute the update first, then apply it
     const currentData = reactFlowData;
     if (currentData) {

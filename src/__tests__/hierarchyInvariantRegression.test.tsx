@@ -222,16 +222,41 @@ describe('Hierarchy Invariant Regression Tests', () => {
       // Apply expansion/collapse based on search results
       const allContainers = Array.from(visualizationState.visibleContainers);
       
+      // CRITICAL FIX: Process operations in correct order to maintain hierarchy invariant
+      // 1. First, do all collapses (to avoid expanding containers whose ancestors will be collapsed)
+      for (const container of allContainers) {
+        const shouldBeExpanded = expansionKeys.includes(container.id);
+        const isCurrentlyExpanded = !currentCollapsed.has(container.id);
+        
+        if (!shouldBeExpanded && isCurrentlyExpanded) {
+          console.log(`  🔧 Collapsing: ${container.id}`);
+          visualizationState.collapseContainer(container.id);
+        }
+      }
+      
+      // 2. Then, do all expansions (after all collapses are complete)
       for (const container of allContainers) {
         const shouldBeExpanded = expansionKeys.includes(container.id);
         const isCurrentlyExpanded = !currentCollapsed.has(container.id);
         
         if (shouldBeExpanded && !isCurrentlyExpanded) {
-          console.log(`  🔧 Expanding: ${container.id}`);
-          visualizationState.expandContainer(container.id);
-        } else if (!shouldBeExpanded && isCurrentlyExpanded) {
-          console.log(`  🔧 Collapsing: ${container.id}`);
-          visualizationState.collapseContainer(container.id);
+          // Double-check that this container can still be expanded (no collapsed ancestors)
+          let canExpand = true;
+          let current = visualizationState.getContainerParent(container.id);
+          while (current) {
+            const parentContainer = visualizationState.getContainer(current);
+            if (parentContainer?.collapsed) {
+              console.log(`  ⚠️  Skipping expansion of ${container.id} - ancestor ${current} is collapsed`);
+              canExpand = false;
+              break;
+            }
+            current = visualizationState.getContainerParent(current);
+          }
+          
+          if (canExpand) {
+            console.log(`  🔧 Expanding: ${container.id}`);
+            visualizationState.expandContainer(container.id);
+          }
         }
       }
       

@@ -134,7 +134,12 @@ export class ReactFlowBridge {
 
     // Convert edges using smart handle selection
     console.log(`[ReactFlowBridge] 🔗 Converting edges [${conversionId}]`);
-    this.convertEdges(visState, edges);
+    
+    // DIAGNOSTIC: Log edge data before conversion
+    const visibleEdgeCount = visState.visibleEdges.length;
+    console.log(`[ReactFlowBridge] 🔗 VisualizationState has ${visibleEdgeCount} visible edges before conversion`);
+    
+    this.convertEdges(visState, edges, nodes);
     console.log(`[ReactFlowBridge] 🔗 Converted ${edges.length} edges [${conversionId}]`);
 
     // ALWAYS recalculate handles after all nodes are created
@@ -142,6 +147,15 @@ export class ReactFlowBridge {
     console.log(`[ReactFlowBridge] 🎯 Assigning handles to edges [${conversionId}]`);
     this.assignHandlesToEdges(visState, edges, nodes);
     console.log(`[ReactFlowBridge] 🎯 Handle assignment completed [${conversionId}]`);
+
+    // DIAGNOSTIC: Check for edge data loss
+    if (edges.length === 0 && nodes.length > 5) {
+      console.error(`[ReactFlowBridge] 🚨 EDGE DATA LOSS DETECTED [${conversionId}]:`);
+      console.error(`  - Nodes: ${nodes.length} (${containerCount} containers, ${regularNodeCount} regular)`);
+      console.error(`  - Edges: ${edges.length} (ZERO EDGES WITH MANY NODES)`);
+      console.error(`  - VisualizationState visible edges: ${visState.visibleEdges.length}`);
+      console.error(`  - This indicates edges were lost during state transitions or conversion`);
+    }
 
     console.log(`[ReactFlowBridge] ✅ Conversion completed [${conversionId}]:`, {
       totalNodes: nodes.length,
@@ -187,17 +201,46 @@ export class ReactFlowBridge {
     // Sort containers by hierarchy level (parents first, then children)
     const containers = Array.from(visState.visibleContainers);
     const sortedContainers = this.sortContainersByHierarchy(containers, parentMap);
+    
+    // DIAGNOSTIC: Check for parent-child consistency issues
+    const containerIds = new Set(containers.map(c => c.id));
+    const missingParents: string[] = [];
+    
+    for (const container of containers) {
+      const parentId = parentMap.get(container.id);
+      if (parentId && !containerIds.has(parentId)) {
+        missingParents.push(`${container.id} -> ${parentId}`);
+      }
+    }
+    
+    if (missingParents.length > 0) {
+      console.error(`[ReactFlowBridge] ❌ PARENT-CHILD INCONSISTENCY: ${missingParents.length} containers reference missing parents:`, missingParents.slice(0, 5));
+      console.error(`[ReactFlowBridge] 📊 Visible containers: ${containers.length}, Parent map size: ${parentMap.size}`);
+    }
 
     sortedContainers.forEach(container => {
       const parentId = parentMap.get(container.id);
 
+      // CRITICAL FIX: Check if container has valid ELK position before processing
+      // During grouping changes, some containers may not have been processed by ELK yet
+      const containerLayout = visState.getContainerLayout(container.id);
+      if (!containerLayout?.position || (containerLayout.position.x === undefined || containerLayout.position.y === undefined)) {
+        console.warn(`[ReactFlowBridge] ⚠️ Skipping container ${container.id} - no valid ELK position (likely from concurrent grouping change)`);
+        return; // Skip this container
+      }
+
       // Get position and dimensions from ELK layout (stored in VisualizationState)
       let position: { x: number; y: number };
 
-      if (parentId) {
-        position = computeChildContainerPosition(visState, container, parentId);
-      } else {
-        position = computeRootContainerPosition(visState, container);
+      try {
+        if (parentId) {
+          position = computeChildContainerPosition(visState, container, parentId);
+        } else {
+          position = computeRootContainerPosition(visState, container);
+        }
+      } catch (error) {
+        console.warn(`[ReactFlowBridge] ⚠️ Skipping container ${container.id} - position computation failed:`, error);
+        return; // Skip this container
       }
 
       // Get adjusted dimensions that include label space (matches test expectations)
@@ -228,7 +271,8 @@ export class ReactFlowBridge {
           height,
         },
         parentId: parentId,
-        extent: parentId ? 'parent' : undefined, // Constrain to parent if nested
+        // Set extent constraint for child nodes to keep them within parent boundaries
+        extent: parentId ? 'parent' : undefined,
       };
 
       nodes.push(containerNode);
@@ -284,7 +328,7 @@ export class ReactFlowBridge {
         },
         parentId,
         connectable: CURRENT_HANDLE_STRATEGY === 'floating',
-        // ReactFlow sub-flow: constrain children within parent bounds
+        // Set extent constraint for child nodes to keep them within parent boundaries
         extent: parentId ? 'parent' : undefined,
       };
 
@@ -295,7 +339,7 @@ export class ReactFlowBridge {
   /**
    * Convert regular edges to ReactFlow edges
    */
-  private convertEdges(visState: VisualizationState, edges: ReactFlowEdge[]): void {
+  private convertEdges(visState: VisualizationState, edges: ReactFlowEdge[], nodes: ReactFlowNode[]): void {
     // Always use semantic mappings for edge styling
     const visibleEdges = Array.from(visState.visibleEdges);
     console.log(`[ReactFlowBridge] 🔗 Converting ${visibleEdges.length} visible edges:`, {
@@ -313,6 +357,24 @@ export class ReactFlowBridge {
     console.log(`[ReactFlowBridge] ⚙️ Edge converter options:`, edgeConverterOptions);
     const convertedEdges = convertEdgesToReactFlow(visibleEdges, edgeConverterOptions);
     console.log(`[ReactFlowBridge] ✨ Edge converter produced ${convertedEdges.length} edges`);
+
+    // DIAGNOSTIC: Check if edge endpoints exist in nodes array
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const missingEndpoints: string[] = [];
+    
+    convertedEdges.forEach(edge => {
+      if (!nodeIds.has(edge.source)) {
+        missingEndpoints.push(`${edge.id}: source ${edge.source} missing`);
+      }
+      if (!nodeIds.has(edge.target)) {
+        missingEndpoints.push(`${edge.id}: target ${edge.target} missing`);
+      }
+    });
+    
+    if (missingEndpoints.length > 0) {
+      console.error(`[ReactFlowBridge] ❌ MISSING EDGE ENDPOINTS: ${missingEndpoints.length} edges have missing source/target nodes:`, missingEndpoints.slice(0, 10));
+      console.error(`[ReactFlowBridge] 📊 Total nodes: ${nodes.length}, Total edges: ${convertedEdges.length}`);
+    }
 
     // EdgeConverter already processed all edges correctly, including hyperedges
     // Only override if hyperedge has pre-serialized style (legacy compatibility)

@@ -144,12 +144,31 @@ export class VisualizationEngine {
     const profiler = getProfiler();
     try {
       this.updateState('laying_out');
+      
+      // Acquire global state lock to prevent race conditions during layout operations
+      this.visState.acquireGlobalStateLock();
 
       // Profile layout operations
       profiler?.start('layout-operation');
 
-      if (this.state.layoutCount === 0 && this.visState.getVisibleNodes().length > 50) {
-        // layout the graph with all top-level containers collapsed.
+      // CRITICAL FIX: Don't run full collapse after search expansion or inside existing operations
+      // Search expansion specifically expands containers to show search results,
+      // so collapsing them immediately after defeats the purpose
+      const { consolidatedOperationManager } = await import('../utils/consolidatedOperationManager');
+      
+      // For initial layout, only check for search expansion, not container structure changes
+      const hasRecentSearchForInitial = typeof window !== 'undefined' && 
+                                        (window as any).__hydroRecentSearchExpansion &&
+                                        (Date.now() - (window as any).__hydroRecentSearchExpansion) < 5000;
+      
+      const shouldRunFullCollapse = this.state.layoutCount === 0 && 
+                                   this.visState.getVisibleNodes().length > 50 &&
+                                   !hasRecentSearchForInitial &&
+                                   !consolidatedOperationManager.isInsideOperation();
+      
+      if (shouldRunFullCollapse) {
+        // Run full collapse directly since we're not inside an operation
+        // This happens during initial layout setup before the main layout operation
         profiler?.start('full-collapse');
         await this.runFullCollapse();
         profiler?.end('full-collapse');
@@ -160,15 +179,19 @@ export class VisualizationEngine {
         profiler?.end('elk-layout');
 
         // Run smart collapse only on the first layout if enabled
-        if (this.config.layoutConfig?.enableSmartCollapse && this.state.layoutCount === 0) {
+        // CRITICAL: Check for recent search expansion to prevent race condition
+        // For initial layout (layoutCount === 0), only check for search expansion, not container structure changes
+        const hasRecentSearch = typeof window !== 'undefined' && 
+                               (window as any).__hydroRecentSearchExpansion &&
+                               (Date.now() - (window as any).__hydroRecentSearchExpansion) < 5000;
+        
+        if (this.config.layoutConfig?.enableSmartCollapse && 
+            this.state.layoutCount === 0 && 
+            !hasRecentSearch) {
           profiler?.start('smart-collapse');
           await this.runSmartCollapse();
           profiler?.end('smart-collapse');
-
-          // Re-layout after smart collapse
-          profiler?.start('elk-layout-post-collapse');
-          await this.elkBridge.layoutVisualizationState(this.visState);
-          profiler?.end('elk-layout-post-collapse');
+          // Note: runSmartCollapse already includes its own re-layout, so no additional layout needed
         }
       }
 
@@ -179,6 +202,9 @@ export class VisualizationEngine {
       this.updateState('ready');
     } catch (error) {
       this.handleError('Layout failed', error);
+    } finally {
+      // Always release global state lock
+      this.visState.releaseGlobalStateLock();
     }
   }
 
@@ -364,11 +390,11 @@ export class VisualizationEngine {
             continue;
           }
 
-          // Use collapseContainer which handles all the mechanics atomically:
+          // Use internal collapse method which bypasses layout lock
           // - Collapsing the container and its children
           // - Creating hyperEdges for crossing edges
           // - Hiding descendant containers
-          this.visState.collapseContainer(containerId);
+          this.visState._collapseContainerInternal(containerId);
         } catch (_error) {
           // Continue with other containers even if one fails
         }
@@ -385,6 +411,52 @@ export class VisualizationEngine {
 
       await this.elkBridge.layoutVisualizationState(this.visState);
     }
+  }
+
+  /**
+   * Check if any container structure changes happened recently (within last 5 seconds)
+   * This prevents full collapse from undoing recent structural changes
+   */
+  private hasRecentSearchExpansion(): boolean {
+    // Check for recent search expansion
+    if (typeof window !== 'undefined' && (window as any).__hydroRecentSearchExpansion) {
+      const timestamp = (window as any).__hydroRecentSearchExpansion;
+      const elapsed = Date.now() - timestamp;
+      
+      if (elapsed < 5000) {
+        return true;
+      } else {
+        delete (window as any).__hydroRecentSearchExpansion;
+      }
+    }
+    
+    // Check for recent grouping changes
+    if (typeof window !== 'undefined' && (window as any).__hydroRecentGroupingChange) {
+      const timestamp = (window as any).__hydroRecentGroupingChange;
+      const elapsed = Date.now() - timestamp;
+      
+      if (elapsed < 5000) {
+        console.error(`[VisualizationEngine] 🔍 Skipping full collapse due to recent grouping change (${elapsed}ms ago)`);
+        return true;
+      } else {
+        delete (window as any).__hydroRecentGroupingChange;
+      }
+    }
+    
+    // Check for any recent container structure changes
+    if (typeof window !== 'undefined' && (window as any).__hydroRecentContainerChange) {
+      const timestamp = (window as any).__hydroRecentContainerChange;
+      const elapsed = Date.now() - timestamp;
+      
+      if (elapsed < 5000) {
+        console.error(`[VisualizationEngine] 🔍 Skipping full collapse due to recent container structure change (${elapsed}ms ago)`);
+        return true;
+      } else {
+        delete (window as any).__hydroRecentContainerChange;
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -407,11 +479,11 @@ export class VisualizationEngine {
           continue;
         }
 
-        // Use collapseContainer which handles all the mechanics atomically:
+        // Use internal collapse method which bypasses layout lock
         // - Collapsing the container and its children
         // - Creating hyperEdges for crossing edges
         // - Hiding descendant containers
-        this.visState.collapseContainer(container.id);
+        this.visState._collapseContainerInternal(container.id);
       } catch (_error) {
         // Continue with other containers even if one fails
       }

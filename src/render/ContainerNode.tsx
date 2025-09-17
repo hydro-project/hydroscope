@@ -99,12 +99,12 @@ export function ContainerNode({ id, data }: NodeProps) {
         <style>
           {`
             @keyframes searchPulse {
-              0%, 100% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15); }
-              50% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 10px -1px rgba(0,0,0,0.2); }
+              0%, 100% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 4px 6px -1px rgba(0,0,0,0.15); }
+              50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.6), 0 6px 10px -1px rgba(0,0,0,0.2); }
             }
             @keyframes searchPulseStrong {
-              0%, 100% { box-shadow: 0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2); }
-              50% { box-shadow: 0 0 0 8px rgba(255, 107, 53, 0.6), 0 12px 20px -3px rgba(0,0,0,0.3); }
+              0%, 100% { box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2); }
+              50% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0.7), 0 12px 20px -3px rgba(0,0,0,0.3); }
             }
           `}
         </style>
@@ -119,9 +119,9 @@ export function ContainerNode({ id, data }: NodeProps) {
             // COLLAPSED CONTAINERS: Thicker border to distinguish from expanded
             border: (() => {
               if (searchHighlightStrong) {
-                return `3px solid rgba(255, 107, 53, 0.9)`;
+                return `3px solid rgba(249, 115, 22, 0.9)`;
               } else if (searchHighlight) {
-                return `3px solid rgba(255, 193, 7, 0.9)`;
+                return `3px solid rgba(251, 191, 36, 0.9)`;
               } else {
                 return `${(styleCfg.containerBorderWidth ?? 2) + 1}px solid ${containerColors.border}`;
               }
@@ -137,9 +137,9 @@ export function ContainerNode({ id, data }: NodeProps) {
             // COLLAPSED CONTAINERS: Stronger shadow to distinguish from expanded
             boxShadow: (() => {
               if (searchHighlightStrong) {
-                return '0 0 0 6px rgba(255, 107, 53, 0.3), 0 0 20px rgba(255, 107, 53, 0.4), 0 10px 15px -3px rgba(0,0,0,0.3)';
+                return '0 0 0 6px rgba(249, 115, 22, 0.4), 0 0 20px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.3)';
               } else if (searchHighlight) {
-                return '0 0 0 5px rgba(255, 193, 7, 0.3), 0 0 15px rgba(255, 193, 7, 0.4), 0 4px 6px -1px rgba(0,0,0,0.2)';
+                return '0 0 0 5px rgba(251, 191, 36, 0.4), 0 0 15px rgba(251, 191, 36, 0.5), 0 4px 6px -1px rgba(0,0,0,0.2)';
               } else {
                 return styleCfg.containerShadow === 'NONE'
                   ? '0 2px 8px rgba(0,0,0,0.2)'
@@ -157,11 +157,11 @@ export function ContainerNode({ id, data }: NodeProps) {
               : searchHighlight
                 ? 50
                 : 1,
-            // Add subtle animation for search highlights
+            // Add prominent animation for search highlights
             animation: searchHighlight
               ? searchHighlightStrong
-                ? 'searchPulseStrong 2s ease-in-out infinite'
-                : 'searchPulse 3s ease-in-out infinite'
+                ? 'searchPulseStrong 1.5s ease-in-out infinite'
+                : 'searchPulse 2s ease-in-out infinite'
               : undefined,
           }}
         >
@@ -227,12 +227,12 @@ export function ContainerNode({ id, data }: NodeProps) {
       <style>
         {`
           @keyframes searchPulse {
-            0%, 100% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15); }
-            50% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 10px -1px rgba(0,0,0,0.2); }
+            0%, 100% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 4px 6px -1px rgba(0,0,0,0.15); }
+            50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.6), 0 6px 10px -1px rgba(0,0,0,0.2); }
           }
           @keyframes searchPulseStrong {
-            0%, 100% { box-shadow: 0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2); }
-            50% { box-shadow: 0 0 0 8px rgba(255, 107, 53, 0.6), 0 12px 20px -3px rgba(0,0,0,0.3); }
+            0%, 100% { box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2); }
+            50% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0.7), 0 12px 20px -3px rgba(0,0,0,0.3); }
           }
         `}
       </style>
@@ -249,19 +249,19 @@ export function ContainerNode({ id, data }: NodeProps) {
           cursor: 'pointer',
           boxShadow: (() => {
             if (searchHighlightStrong) {
-              return '0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2)';
+              return '0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2)';
             } else if (searchHighlight) {
-              return '0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15)';
+              return '0 0 0 4px rgba(251, 191, 36, 0.4), 0 4px 6px -1px rgba(0,0,0,0.15)';
             } else {
               return 'none';
             }
           })(),
           transition: 'all 0.2s ease',
-          // Add subtle animation for search highlights
+          // Add prominent animation for search highlights
           animation: searchHighlight
             ? searchHighlightStrong
-              ? 'searchPulseStrong 2s ease-in-out infinite'
-              : 'searchPulse 3s ease-in-out infinite'
+              ? 'searchPulseStrong 1.5s ease-in-out infinite'
+              : 'searchPulse 2s ease-in-out infinite'
             : undefined,
         }}
       >

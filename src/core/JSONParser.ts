@@ -198,6 +198,10 @@ export function parseGraphJSON(
     hasGrouping: !!grouping,
   });
 
+  // Initialize caches proactively after all data is loaded
+  // This prevents React rendering issues when getSearchExpansionKeys is called
+  state.ensureCachesInitialized();
+
   return {
     state,
     metadata: {

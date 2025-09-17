@@ -3,6 +3,7 @@ import React, {
   useRef,
   useState,
   useEffect,
+  useMemo,
   forwardRef,
   useImperativeHandle,
 } from 'react';
@@ -30,6 +31,7 @@ import {
 } from '../utils/persistence';
 import { ResizeObserverErrorHandler } from '../utils/resizeObserverErrorHandler';
 import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
+import { LayoutOrchestrator } from '../core/LayoutOrchestrator';
 
 
 // Conditional dev-only imports
@@ -105,6 +107,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
     // All hooks and effects go here, inside the function body
     const [data, setData] = useState(initialData);
     const [visualizationState, setVisualizationState] = useState<VisualizationState | null>(null);
+    const [layoutOrchestrator, setLayoutOrchestrator] = useState<LayoutOrchestrator | null>(null);
     const [metadata, setMetadata] = useState<any>(null);
     const [graphData, setGraphData] = useState<any>(null); // Raw parsed JSON data like vis.js
     const [_edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null); // Processed edge style config
@@ -339,6 +342,38 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       [onParsed]
     );
 
+    // Set up LayoutOrchestrator when visualizationState and hydroscopeRef are available
+    useEffect(() => {
+      if (visualizationState && hydroscopeRef.current) {
+        const orchestrator = new LayoutOrchestrator(
+          visualizationState,
+          {
+            refreshLayout: (force?: boolean) => 
+              hydroscopeRef.current?.refreshLayout(force) || Promise.resolve(),
+          },
+          {
+            fitView: () => {
+              if (hydroscopeRef.current?.fitView) {
+                hydroscopeRef.current.fitView();
+              }
+            },
+          }
+        );
+        
+        setLayoutOrchestrator(orchestrator);
+        hscopeLogger.log('orchestrator', 'LayoutOrchestrator created and configured');
+      } else {
+        setLayoutOrchestrator(null);
+      }
+    }, [visualizationState]);
+
+    // Memoize collapsed containers to prevent infinite loops in search expansion
+    // Use layoutRefreshCounter as dependency to update when layout changes occur
+    const collapsedContainers = useMemo(() => {
+      if (!visualizationState) return new Set<string>();
+      return new Set(visualizationState.getCollapsedContainers().map(c => c.id));
+    }, [visualizationState, _layoutRefreshCounter]);
+
     // Initialize graph data and edge style config when data first loads
     useEffect(() => {
       if (!data) {
@@ -410,34 +445,37 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
         // Check if this is a container first
         const container = visualizationState.getContainer(node.id);
         if (container && enableCollapse) {
-          // Built-in container collapse/expand logic
+          // Built-in container collapse/expand logic using LayoutOrchestrator
           try {
             setIsLayoutRunning(true);
 
+            // Call callbacks for external listeners before state changes
             if (container.collapsed) {
-              visualizationState.expandContainer(node.id);
               onContainerExpand?.(node.id, visualizationState);
             } else {
-              visualizationState.collapseContainer(node.id);
               onContainerCollapse?.(node.id, visualizationState);
             }
 
-            // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
-            if (hydroscopeRef.current?.refreshLayout) {
-              await hydroscopeRef.current.refreshLayout();
+            // Use LayoutOrchestrator for coordinated container toggle
+            if (layoutOrchestrator) {
+              await layoutOrchestrator.toggleContainer(node.id);
+              hscopeLogger.log('toggle', `container toggle via LayoutOrchestrator id=${node.id}`);
+            } else {
+              // Fallback to direct state manipulation if orchestrator not available
+              if (container.collapsed) {
+                visualizationState.expandContainer(node.id);
+              } else {
+                visualizationState.collapseContainer(node.id);
+              }
+              
+              // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
+              if (hydroscopeRef.current?.refreshLayout) {
+                await hydroscopeRef.current.refreshLayout();
+              }
             }
 
             // Force re-computation of collapsed containers state for InfoPanel
             setLayoutRefreshCounter(prev => prev + 1);
-
-            // Auto-fit after layout completes
-            if (autoFitEnabled && hydroscopeRef.current?.fitView) {
-              const fitFn = hydroscopeRef.current.fitView;
-              setTimeout(() => {
-                // Use consolidated system for autofit after layout
-                consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'autofit-after-layout');
-              }, 300);
-            }
           } catch (err) {
             console.error('❌ Error toggling container:', err);
           } finally {
@@ -477,6 +515,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
       },
       [
         visualizationState,
+        layoutOrchestrator,
         enableCollapse,
         autoFitEnabled,
         onNodeClick,
@@ -487,7 +526,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
     // Pack all containers (collapse all)
     const handlePackAll = useCallback(async () => {
-      if (!visualizationState) return;
+      if (!layoutOrchestrator) return;
 
       try {
         setIsLayoutRunning(true);
@@ -502,34 +541,20 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
           infoPanelRef.current.clearSearch();
         }
         
-        // Use consolidated operation manager to coordinate collapse all with other operations
-        await consolidatedOperationManager.queueContainerToggle(
-          `collapse-all-${Date.now()}`,
-          async () => {
-            // collapseAllContainers() triggers layout internally via _resumeLayoutTriggers(true)
-            visualizationState.collapseAllContainers();
-          },
-          'high' // High priority for user-initiated collapse all
-        );
+        // Use LayoutOrchestrator for coordinated collapse all
+        await layoutOrchestrator.collapseAll();
         
-        // CRITICAL: Ensure autofit is requested after collapse all
-        // The consolidatedOperationManager should handle this automatically, but let's be explicit
-        if (hydroscopeRef.current?.fitView) {
-          const fitFn = hydroscopeRef.current.fitView;
-          consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'collapse-all-autofit');
-        }
-        
-        // AutoFit will be triggered automatically by the consolidated system
+        hscopeLogger.log('pack', 'collapse all completed via LayoutOrchestrator');
       } catch (err) {
         console.error('❌ Error packing containers:', err);
       } finally {
         setIsLayoutRunning(false);
       }
-    }, [visualizationState]);
+    }, [layoutOrchestrator]);
 
     // Unpack all containers (expand all)
     const handleUnpackAll = useCallback(async () => {
-      if (!visualizationState) return;
+      if (!layoutOrchestrator) return;
 
       try {
         setIsLayoutRunning(true);
@@ -544,40 +569,58 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
           infoPanelRef.current.clearSearch();
         }
         
-        // Use consolidated operation manager to coordinate expand all with other operations
-        await consolidatedOperationManager.queueContainerToggle(
-          `expand-all-${Date.now()}`,
-          async () => {
-            // expandAllContainers() triggers layout internally via _resumeLayoutTriggers(true)
-            visualizationState.expandAllContainers();
-          },
-          'high' // High priority for user-initiated expand all
-        );
+        // Use LayoutOrchestrator for coordinated expand all
+        await layoutOrchestrator.expandAll();
         
-        // AutoFit will be triggered automatically by the consolidated system
+        hscopeLogger.log('pack', 'expand all completed via LayoutOrchestrator');
       } catch (err) {
         console.error('❌ Error unpacking containers:', err);
       } finally {
         setIsLayoutRunning(false);
       }
-    }, [visualizationState]);
+    }, [layoutOrchestrator]);
 
     // Handle grouping change
     const handleGroupingChange = useCallback(
-      (newGrouping: string | undefined) => {
-        setGrouping(newGrouping);
+      async (newGrouping: string | undefined) => {
+        if (!graphData) return;
 
-        // Re-create edge style config with new grouping, like vis.js handleGroupingChange
-        if (graphData) {
-          try {
-            const parsedData = parseGraphJSON(graphData, newGrouping);
+        // CRITICAL FIX: Queue grouping change as atomic operation through ConsolidatedOperationManager
+        // This prevents unsafe interleaving of state changes with rendering operations
+        const operationId = `grouping-change-${Date.now()}`;
+        
+        const success = await consolidatedOperationManager.queueLayoutOperation(
+          operationId,
+          async () => {
+            // Set flag to prevent full collapse from undoing grouping changes
+            if (typeof window !== 'undefined') {
+              (window as any).__hydroRecentGroupingChange = Date.now();
+            }
 
-            const renderConfig = createRenderConfig(parsedData);
+            // Perform the grouping change atomically
+            setGrouping(newGrouping);
 
-            setEdgeStyleConfig(renderConfig);
-          } catch (e) {
-            console.error('Failed to update render config for grouping change:', e);
+            try {
+              const parsedData = parseGraphJSON(graphData, newGrouping);
+              const renderConfig = createRenderConfig(parsedData);
+              setEdgeStyleConfig(renderConfig);
+              
+              hscopeLogger.log('orchestrator', `Grouping changed to: ${newGrouping || 'none'}`);
+            } catch (e) {
+              console.error('Failed to update render config for grouping change:', e);
+              throw e; // Re-throw to mark operation as failed
+            }
+          },
+          {
+            priority: 'high',
+            reason: `Grouping change to ${newGrouping || 'none'}`,
+            triggerAutoFit: true, // Grouping changes should trigger autofit
+            force: true
           }
+        );
+
+        if (!success) {
+          console.error('Failed to queue grouping change operation');
         }
       },
       [graphData]
@@ -663,9 +706,8 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                 hierarchyChoices={metadata?.availableGroupings || []}
                 currentGrouping={grouping}
                 onGroupingChange={handleGroupingChange}
-                collapsedContainers={
-                  new Set(visualizationState.getCollapsedContainers().map(c => c.id))
-                }
+                collapsedContainers={collapsedContainers}
+                layoutOrchestrator={layoutOrchestrator}
                 open={infoPanelOpen}
                 onOpenChange={setInfoPanelOpen}
                 onSearchUpdate={(q, matches, current) => {
@@ -720,22 +762,39 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                           ResizeObserverErrorHandler.getInstance().pause();
                           hscopeLogger.log('ro', 'pause during batch');
                         } catch { /* ignore */ }
+                        // Call callbacks for external listeners before state changes
                         for (const id of ids) {
                           const c = visualizationState.getContainer(id);
                           if (!c) continue;
+                          
                           if (c.collapsed) {
-                            visualizationState.expandContainer(id);
                             onContainerExpand?.(id, visualizationState);
                           } else {
-                            visualizationState.collapseContainer(id);
                             onContainerCollapse?.(id, visualizationState);
                           }
                         }
-                        // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
-                        if (hydroscopeRef.current?.refreshLayout) {
-                          const force = ids.length > 1; // multiple toggles need a full layout
-                          await hydroscopeRef.current.refreshLayout(force);
-                          if (force) { hscopeLogger.log('layout', 'full after multi-toggle'); } else { hscopeLogger.log('layout', 'single toggle layout'); }
+                        
+                        // Use LayoutOrchestrator for coordinated container toggles
+                        if (layoutOrchestrator) {
+                          await layoutOrchestrator.toggleContainersBatch(ids);
+                          hscopeLogger.log('toggle', `batch processed via LayoutOrchestrator size=${ids.length}`);
+                        } else {
+                          // Fallback to direct state manipulation if orchestrator not available
+                          for (const id of ids) {
+                            const c = visualizationState.getContainer(id);
+                            if (!c) continue;
+                            if (c.collapsed) {
+                              visualizationState.expandContainer(id);
+                            } else {
+                              visualizationState.collapseContainer(id);
+                            }
+                          }
+                          // Trigger layout refresh (refreshLayout already uses consolidatedOperationManager)
+                          if (hydroscopeRef.current?.refreshLayout) {
+                            const force = ids.length > 1; // multiple toggles need a full layout
+                            await hydroscopeRef.current.refreshLayout(force);
+                            if (force) { hscopeLogger.log('layout', 'full after multi-toggle'); } else { hscopeLogger.log('layout', 'single toggle layout'); }
+                          }
                         }
                         setLayoutRefreshCounter(prev => prev + 1);
                         const dur = Math.round(performance.now() - start);

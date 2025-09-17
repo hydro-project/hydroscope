@@ -3,7 +3,7 @@
  * Enable categories via (window as any).__HYDRO_LOGS = 'layout,lock,op,retry'; (comma separated)
  * or process.env.HYDRO_LOGS at build time. Unknown categories are ignored.
  */
-export type HydroLogCategory = 'layout' | 'lock' | 'op' | 'retry' | 'toggle' | 'fit' | 'metrics' | 'ro';
+export type HydroLogCategory = 'layout' | 'lock' | 'op' | 'retry' | 'toggle' | 'fit' | 'metrics' | 'ro' | 'orchestrator' | 'pack';
 
 function getEnabled(): Set<string> {
     if (typeof window !== 'undefined' && (window as any).__HYDRO_LOGS) {

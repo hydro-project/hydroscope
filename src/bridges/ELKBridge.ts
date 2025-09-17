@@ -74,6 +74,8 @@ export class ELKBridge {
     const initialContainerCount = visState.visibleContainers.length;
     const initialContainerIds = new Set(visState.visibleContainers.map(c => c.id));
     
+    // Store initial state for validation
+    
     // Import profiler utilities for detailed timing
     const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
 
@@ -155,13 +157,8 @@ export class ELKBridge {
     // Store ELK input for debugging failures
     (this as any)._lastElkInput = elkGraph;
     
-    console.error(`[ELKBridge] 🚀 Starting ELK layout with ${elkGraph.children?.length || 0} root containers...`);
-    const elkStartTime = Date.now();
-    
     const elkResult = await this.elk.layout(elkGraph);
-    
-    const elkDuration = Date.now() - elkStartTime;
-    console.error(`[ELKBridge] ✅ ELK layout completed in ${elkDuration}ms`);
+
     
     const containerCountAtELKEnd = visState.visibleContainers.length;
     
@@ -573,12 +570,7 @@ export class ELKBridge {
       }
     });
     
-    console.error(`[ELKBridge] 🔍 Container hierarchy: ${rootContainerCount} root, ${containersWithParents} with parents, ${processedContainers.size} processed`);
-    
-    // Only log hierarchy issues for debugging (can be removed later)
-    if (rootContainerCount > 50) {
-      console.error(`[ELKBridge] ⚠️ High root count: ${rootContainerCount} containers`);
-    }
+
 
     // Add any uncontained nodes at root level
     visState.visibleNodes.forEach(node => {
@@ -648,23 +640,12 @@ export class ELKBridge {
     const elkContainerCount = allElkContainers.length;
     const visibleContainerCount = visState.visibleContainers.length;
     
-    console.error(`[ELKBridge] 🔍 ELK result: ${elkResult.children.length} root containers, ${elkContainerCount} total containers, expected ${visibleContainerCount}`);
-    
+    // Validate ELK result consistency
     if (elkContainerCount !== visibleContainerCount) {
-      console.error(
-        `[ELKBridge] ❌ ELK result mismatch: ELK returned ${elkContainerCount} containers, ` +
-        `but VisualizationState has ${visibleContainerCount} visible containers. ` +
-        `This indicates ELK failed to process some containers.`
+      console.warn(
+        `[ELKBridge] ELK result mismatch: ELK returned ${elkContainerCount} containers, ` +
+        `but VisualizationState has ${visibleContainerCount} visible containers.`
       );
-      
-      // Log which containers are missing from ELK result
-      const elkContainerIds = new Set(allElkContainers.map(elkNode => elkNode.id));
-      const missingFromELK = visState.visibleContainers
-        .filter(container => !elkContainerIds.has(container.id))
-        .map(container => `${container.id} (${container.label})`)
-        .slice(0, 10); // Limit to first 10 for readability
-        
-      console.error(`[ELKBridge] Missing from ELK result: ${missingFromELK.join(', ')}${missingFromELK.length === 10 ? '...' : ''}`);
     }
 
     // SIMPLIFIED: Use ELK coordinates directly following ReactFlow best practices
@@ -694,10 +675,15 @@ export class ELKBridge {
       }
     });
 
-    console.error(`[ELKBridge] 🔍 Extracted ${allElkContainers.length} containers from ELK result (${elkResult.children.length} root + nested)`);
+    // Filter to only apply positions to elements that exist in VisualizationState
+    const validElkContainers = allElkContainers.filter(elkNode => {
+      const existsAsContainer = visState.getContainer(elkNode.id) !== undefined;
+      const existsAsNode = visState.getGraphNode(elkNode.id) !== undefined;
+      return existsAsContainer || existsAsNode;
+    });
     
-    // Apply positions to all containers (root + nested) using ELK coordinates directly
-    allElkContainers.forEach(elkNode => {
+    // Apply positions only to valid containers using ELK coordinates directly
+    validElkContainers.forEach(elkNode => {
       // Check if this ID exists as a container in VisualizationState first
       try {
         const container = visState.getContainer(elkNode.id);
@@ -1007,7 +993,11 @@ export class ELKBridge {
     _changedContainerId?: string
   ): ReadonlyArray<any> {
     // Return all visible containers that need layout
-    return visState.visibleContainers.filter(container => !container.hidden);
+    const visibleContainers = visState.visibleContainers.filter(container => !container.hidden);
+    
+
+    
+    return visibleContainers;
   }
 
   /**

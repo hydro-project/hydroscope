@@ -101,9 +101,9 @@ export function computeChildContainerPosition(
     return toRelativePosition({ x: absoluteX, y: absoluteY }, { x: parentX, y: parentY });
   }
 
-  // REMOVED FALLBACK: Expose ELK layout bugs instead of masking them
-  // The grid fallback was hiding bugs where ELK layout failed to set positions
-  // Now we'll get explicit errors that help identify the root cause
+  // PROPER FIX NEEDED: This indicates a timing issue where ELK layout hasn't
+  // completed before ReactFlow conversion. This should be fixed in the
+  // ConsolidatedOperationManager to ensure proper sequencing.
   
   const containerPos = containerLayout?.position;
   const parentPos = parentLayout?.position;
@@ -112,6 +112,15 @@ export function computeChildContainerPosition(
   console.error(`   Container ${container.id} (${container.label}): position = ${containerPos ? `(${containerPos.x}, ${containerPos.y})` : 'undefined'}`);
   console.error(`   Parent ${parentId}: position = ${parentPos ? `(${parentPos.x}, ${parentPos.y})` : 'undefined'}`);
   console.error(`   This indicates ELK layout was not run properly or failed to set positions`);
+  
+  // DIAGNOSTIC: Show where this container is coming from
+  if (container.id === 'bt_204' || container.id === 'bt_40') {
+    console.error(`🔍 [ReactFlowBridge] DIAGNOSTIC for ${container.id}:`);
+    console.error(`   Container object:`, container);
+    console.error(`   Is in VisualizationState containers:`, visState.getContainer(container.id) ? 'YES' : 'NO');
+    console.error(`   Is in visible containers:`, visState.visibleContainers.some(c => c.id === container.id) ? 'YES' : 'NO');
+    console.error(`   Container source stack trace:`, new Error().stack);
+  }
   
   throw new Error(
     `Missing ELK layout position for container ${container.id} (${container.label}). ` +

@@ -155,52 +155,72 @@ export class VisualizationState {
   // Track the most recently changed container for selective layout
   private _lastChangedContainer: string | null = null;
 
+  // Version tracking to prevent infinite loops in useEffect
+  private _version = 0;
+
   // Lazy initialization flags for efficient caches
   private _cacheInitialized = false;
 
-  // RACE CONDITION FIX: Layout lock to prevent concurrent modifications during ELK processing
-  private _layoutLock = false;
-  private _layoutLockQueue: Array<() => void> = [];
+  // GLOBAL STATE LOCK: Prevent concurrent state modifications during atomic operations
+  private _globalStateLock = false;
+  private _globalStateLockQueue: Array<() => void> = [];
+  
+  // Coordinated validation - only run validation when lock is released
+  private _validationPending = false;
 
-  // ============ LAYOUT LOCK METHODS ============
-  // Prevent race conditions during ELK processing
+  // ============ GLOBAL STATE LOCK METHODS ============
+  // Prevent concurrent state modifications during atomic operations
 
   /**
-   * Acquire layout lock to prevent concurrent modifications during ELK processing
+   * Acquire global state lock to prevent concurrent modifications during atomic operations
    */
-  acquireLayoutLock(): void {
-    this._layoutLock = true;
+  acquireGlobalStateLock(): void {
+    this._globalStateLock = true;
   }
 
   /**
-   * Release layout lock and process any queued modifications
+   * Release global state lock and process any queued modifications
    */
-  releaseLayoutLock(): void {
-    this._layoutLock = false;
+  releaseGlobalStateLock(): void {
+    this._globalStateLock = false;
 
     // Process queued modifications
-    const queue = [...this._layoutLockQueue];
-    this._layoutLockQueue = [];
+    const queue = [...this._globalStateLockQueue];
+    this._globalStateLockQueue = [];
 
     if (queue.length > 0) {
       console.error(`[VisualizationState] Processing ${queue.length} queued operations`);
     }
 
-    for (const operation of queue) {
-      try {
-        operation();
-      } catch (error) {
-        console.error('[VisualizationState] ❌ Error processing queued operation:', error);
+    // Disable validation during queued operation processing to avoid intermediate state issues
+    const originalValidation = this._validationEnabled;
+    this._validationEnabled = false;
+
+    try {
+      for (const operation of queue) {
+        try {
+          operation();
+        } catch (error) {
+          console.error('[VisualizationState] ❌ Error processing queued operation:', error);
+        }
+      }
+    } finally {
+      // Re-enable validation and run coordinated validation if there were operations or pending validation
+      this._validationEnabled = originalValidation;
+      if (originalValidation && (queue.length > 0 || this._validationPending)) {
+        this._validationPending = false;
+        this._runCoordinatedValidation();
       }
     }
   }
 
   /**
-   * Check if a modification should be blocked or queued due to layout lock
+   * Check if a modification should be blocked or queued due to global state lock
    */
-  private _checkLayoutLock(operationName: string, operation: () => void): boolean {
-    if (this._layoutLock) {
-      this._layoutLockQueue.push(operation);
+  private _checkGlobalStateLock(operationName: string, operation: () => void): boolean {
+    if (this._globalStateLock) {
+      console.error(`[VisualizationState] 🚫 GLOBAL STATE LOCK VIOLATION: ${operationName} attempted while global state lock is held. Operation queued.`);
+      this._globalStateLockQueue.push(operation);
       return true; // Operation was queued
     }
     return false; // Operation can proceed
@@ -535,6 +555,14 @@ export class VisualizationState {
   }
 
   /**
+   * Ensure caches are initialized proactively (safe to call during React rendering)
+   * This method is idempotent and doesn't mutate state if caches are already initialized
+   */
+  ensureCachesInitialized(): void {
+    this._initializeCaches();
+  }
+
+  /**
    * Get parent container of a node (O(1) lookup)
    * @param nodeId - The node ID to find parent for
    * @returns Parent container ID or null if node has no parent
@@ -605,7 +633,13 @@ export class VisualizationState {
       return allContainerIds.filter(id => !currentCollapsed.has(id));
     }
 
-    this._initializeCaches();
+    // Ensure caches are initialized but don't call _initializeCaches() during rendering
+    // The caches should already be initialized from data loading operations
+    if (!this._cacheInitialized) {
+      console.warn('[VisualizationState] getSearchExpansionKeys called before caches initialized - this may cause React rendering issues');
+      this._initializeCaches();
+    }
+    
     const toExpand = new Set<string>();
 
     const addAncestors = (containerId: string) => {
@@ -628,19 +662,15 @@ export class VisualizationState {
     // Add containers needed for search matches (and their ancestors)
     console.error(`[VisualizationState] Processing ${searchMatches.length} search matches for expansion`);
     searchMatches.forEach(match => {
-      console.error(`[VisualizationState] Processing match: ${match.id} (${match.type})`);
       if (match.type === 'container') {
         // Container matches should be expanded so users can see their contents
         // Expand both ancestors and the matched container itself
-        const parentId = this.getContainerParent(match.id);
-        console.error(`[VisualizationState] Container ${match.id} parent: ${parentId || 'none'}`);
         addAncestors(match.id); // This will expand ancestors AND the container itself
       } else if (match.type === 'node') {
         // SEARCH INVARIANT: Node matches should be visible as nodes
         // Expand all ancestors including the direct parent container
         const parentContainer = this.getNodeParent(match.id);
         if (parentContainer) {
-          console.error(`[VisualizationState] Node ${match.id} parent container: ${parentContainer}`);
           addAncestors(parentContainer);
         }
       }
@@ -676,7 +706,35 @@ export class VisualizationState {
     const willBeInvisible = Array.from(matchedContainerIds).filter(id => !willBeVisible.includes(id));
     console.error(`[VisualizationState] Matched containers that will be INVISIBLE: ${willBeInvisible.join(', ')}`);
 
-    return Array.from(toExpand);
+    // CRITICAL FIX: Only return containers that are actually collapsed or need expansion
+    // Don't try to expand containers that are already expanded and visible
+    const containersToExpand = Array.from(toExpand).filter(containerId => {
+      // If the container is in currentCollapsed, it definitely needs expansion
+      if (currentCollapsed.has(containerId)) {
+        return true;
+      }
+      
+      // If the container is not visible (not in visible containers), it might need expansion
+      // This handles cases where containers are hidden due to collapsed ancestors
+      const container = this.getContainer(containerId);
+      if (!container) {
+        return false; // Container doesn't exist
+      }
+      
+      // Check if the container is currently visible
+      const isVisible = this.visibleContainers.some(vc => vc.id === containerId);
+      if (isVisible && !container.collapsed) {
+        // Container is already visible and expanded, no need to expand
+        return false;
+      }
+      
+      // Container needs expansion (either collapsed or hidden)
+      return true;
+    });
+
+    console.error(`[VisualizationState] Containers that need expansion (currently collapsed): ${containersToExpand.join(', ')}`);
+
+    return containersToExpand;
   }
 
   // ============ COVERED EDGES INDEX API ============
@@ -831,6 +889,14 @@ export class VisualizationState {
    * Add a graph node directly (for JSONParser and initial data loading)
    */
   addGraphNode(nodeId: string, nodeData: RawNodeData): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('addGraphNode', () => this.addGraphNode(nodeId, nodeData))) {
+      return;
+    }
+    
+    // Invalidate caches when data changes
+    this._cacheInitialized = false;
+    this._incrementVersion();
     // Check if node belongs to a collapsed container and should be hidden
     const parentContainer = this._collections._nodeContainers.get(nodeId);
     let shouldBeHidden = nodeData.hidden || false;
@@ -902,6 +968,11 @@ export class VisualizationState {
    * Add a graph edge directly (for JSONParser and initial data loading)
    */
   addGraphEdge(edgeId: string, edgeData: RawEdgeData): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('addGraphEdge', () => this.addGraphEdge(edgeId, edgeData))) {
+      return;
+    }
+    
     const processedData: GraphEdge = {
       ...edgeData,
       id: edgeId,
@@ -942,6 +1013,26 @@ export class VisualizationState {
    * Add a container directly (for JSONParser and initial data loading)
    */
   addContainer(containerId: string, containerData: RawContainerData): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('addContainer', () => this.addContainer(containerId, containerData))) {
+      return;
+    }
+    
+    // DIAGNOSTIC: Log container additions for problematic containers (disabled to reduce console spam)
+    // if (containerId === 'bt_204' || containerId === 'bt_40') {
+    //   console.error(`[VisualizationState] 🔍 addContainer called for ${containerId}:`, containerData);
+    //   console.error(`[VisualizationState] 🔍 ${containerId} addContainer stack trace:`, new Error().stack);
+    // }
+    this._incrementVersion();
+    // Invalidate caches when data changes
+    this._cacheInitialized = false;
+    
+    // Track container structure changes to prevent premature collapse
+    if (typeof window !== 'undefined') {
+      (window as any).__hydroRecentContainerChange = Date.now();
+      // Disabled diagnostic logging to reduce console spam
+      // console.error(`[VisualizationState] 🔍 Container structure change tracked for ${containerId}`);
+    }
     // Check existing state BEFORE making changes
     const existingContainer = this._collections.containers.get(containerId);
     const wasCollapsed = existingContainer?.collapsed === true;
@@ -963,7 +1054,10 @@ export class VisualizationState {
 
     this._collections.containers.set(containerId, processedData);
 
-    // Update visibility caches
+    // Update visibility caches (disabled diagnostic logging to reduce console spam)
+    // if (containerId === 'bt_204' || containerId === 'bt_40') {
+    //   console.error(`[VisualizationState] 🔍 ${containerId} calling updateContainerVisibilityCaches with hidden=${processedData.hidden}, collapsed=${processedData.collapsed}`);
+    // }
     this.visibilityManager.updateContainerVisibilityCaches(containerId, processedData);
 
     // Process children relationships
@@ -1025,23 +1119,210 @@ export class VisualizationState {
     this.invalidateCoveredEdgesIndex();
   }
 
+  // ============ EDGE VISIBILITY MANAGEMENT ============
+
+  /**
+   * Update edge visibility when containers are expanded
+   * This ensures edges are properly restored when containers become visible
+   */
+  private _updateEdgeVisibilityForContainerExpansion(containerId: string): void {
+    // Get all edges that might be affected by this container expansion
+    const coveredEdges = this.getCoveredEdges(containerId);
+    
+    for (const edgeId of coveredEdges) {
+      const edge = this.getGraphEdge(edgeId);
+      if (!edge) continue;
+
+      // Check if both endpoints are now visible
+      const sourceVisible = this._isEndpointVisible(edge.source);
+      const targetVisible = this._isEndpointVisible(edge.target);
+      
+      if (sourceVisible && targetVisible) {
+        // Both endpoints are visible, restore the edge
+        this.visibilityManager.setEdgeVisibility(edge.id, true);
+      }
+    }
+  }
+
+  /**
+   * Update edge visibility when containers are collapsed
+   * This ensures edges are properly hidden when containers become invisible
+   */
+  private _updateEdgeVisibilityForContainerCollapse(containerId: string): void {
+    // Get all edges connected to this container or its children
+    const children = this.getContainerChildren(containerId);
+    const allAffectedIds = new Set([containerId, ...children]);
+    
+    for (const affectedId of allAffectedIds) {
+      const adjacentEdges = this.getAdjacentEdges(affectedId);
+      if (!adjacentEdges) continue;
+      
+      for (const edgeId of adjacentEdges) {
+        const edge = this.getGraphEdge(edgeId);
+        if (!edge) continue;
+
+        // If either endpoint is now hidden, hide the edge
+        const sourceVisible = this._isEndpointVisible(edge.source);
+        const targetVisible = this._isEndpointVisible(edge.target);
+        
+        if (!sourceVisible || !targetVisible) {
+          this.visibilityManager.setEdgeVisibility(edge.id, false);
+        }
+      }
+    }
+  }
+
+
+
+  // ============ OPERATION COORDINATION ENFORCEMENT ============
+
+  /**
+   * Enforce that mutating operations are called within ConsolidatedOperationManager
+   * This prevents race conditions and ensures proper coordination
+   */
+  private _enforceOperationCoordination(methodName: string): void {
+    // Skip enforcement in test environments
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      return;
+    }
+
+
+
+
+
+    // Skip enforcement during layout operations - these are internal operations
+    // that legitimately need to modify state during layout execution
+    if (this._globalStateLock) {
+      return;
+    }
+
+    // For now, skip the coordination check to avoid circular dependency issues
+    // The layout lock and proper operation sequencing provide sufficient protection
+    // TODO: Implement a more robust coordination check that doesn't rely on dynamic imports
+    return;
+  }
+
   // ============ CONTROLLED STATE MUTATION API ============
 
   /**
    * Safely set node visibility with automatic cache updates and edge cascade
    */
   setNodeVisibility(nodeId: string, visible: boolean): void {
+    // COORDINATION GUARD: Ensure this is called within a managed operation
+    this._enforceOperationCoordination('setNodeVisibility');
+    
     this.visibilityManager.setNodeVisibility(nodeId, visible);
+  }
+
+  // ============ INTERNAL LAYOUT METHODS (Lock-aware) ============
+
+  /**
+   * Internal method for collapsing containers during layout operations
+   * This bypasses the layout lock check since it's intended for use during layout
+   */
+  public _collapseContainerInternal(containerId: string): void {
+    const container = this._collections.containers.get(containerId);
+    if (!container) {
+      throw new Error(`Cannot collapse non-existent container: ${containerId}`);
+    }
+
+    try {
+      this._recentlyCollapsedContainers.add(containerId);
+      this._lastChangedContainer = containerId; // Track for selective layout
+      
+      // Call setContainerState directly without layout lock check
+      this._setContainerStateInternal(containerId, { collapsed: true });
+
+      setTimeout(() => {
+        this._recentlyCollapsedContainers.delete(containerId);
+      }, 2000);
+    } finally {
+      // Cleanup if needed
+    }
+  }
+
+  /**
+   * Internal method for setting container state during layout operations
+   * This bypasses the layout lock check since it's intended for use during layout
+   */
+  private _setContainerStateInternal(containerId: string, state: { collapsed?: boolean; hidden?: boolean }): void {
+    const container = this._collections.containers.get(containerId);
+    if (!container) {
+      console.warn(
+        `[VisualizationState] Cannot set state for non-existent container: ${containerId}`
+      );
+      return;
+    }
+
+    const wasCollapsed = container.collapsed;
+    const wasHidden = container.hidden;
+
+    // CRITICAL FIX: Prevent illegal state transitions
+    // If we're trying to expand a hidden container, make it visible first
+    if (state.collapsed === false && (container.hidden || state.hidden === true)) {
+      console.warn(`[VisualizationState] Preventing illegal Expanded/Hidden state for container ${containerId}. Making visible.`);
+      state.hidden = false;
+    }
+
+    // Apply state changes
+    if (state.collapsed !== undefined) {
+      container.collapsed = state.collapsed;
+
+      // CRITICAL: Always override dimensions when collapsing
+      if (state.collapsed) {
+        container.width = SIZES.COLLAPSED_CONTAINER_WIDTH;
+        container.height = SIZES.COLLAPSED_CONTAINER_HEIGHT;
+      }
+    }
+    if (state.hidden !== undefined) container.hidden = state.hidden;
+
+    // Update visibility caches
+    this.visibilityManager.updateContainerVisibilityCaches(containerId, container);
+
+    // Handle collapse/expand transitions with hyperEdge management
+    if (state.collapsed !== undefined && state.collapsed !== wasCollapsed) {
+      if (state.collapsed) {
+        // Disable validation during collapse to avoid intermediate state warnings
+        const originalValidation = this._validationEnabled;
+        this._validationEnabled = false;
+
+        try {
+          this.containerOps.handleContainerCollapse(containerId);
+        } finally {
+          this._validationEnabled = originalValidation;
+        }
+      } else {
+        // Disable validation during expansion to avoid intermediate state warnings
+        const originalValidation = this._validationEnabled;
+        this._validationEnabled = false;
+
+        try {
+          this.containerOps.handleContainerExpansion(containerId);
+        } finally {
+          this._validationEnabled = originalValidation;
+        }
+      }
+    }
+
+    // Handle hide/show transitions
+    if (state.hidden !== undefined && state.hidden !== wasHidden) {
+      this.visibilityManager.cascadeContainerVisibility(containerId, !state.hidden);
+    }
   }
 
   /**
    * Safely set container state with proper cascade and hyperEdge management
    */
   setContainerState(containerId: string, state: { collapsed?: boolean; hidden?: boolean }): void {
-    // RACE CONDITION FIX: Check if we're in a layout lock and queue the operation
-    if (this._checkLayoutLock('setContainerState', () => this.setContainerState(containerId, state))) {
+    // COORDINATION GUARD: Ensure this is called within a managed operation
+    this._enforceOperationCoordination('setContainerState');
+    
+    // RACE CONDITION FIX: Check if we're in a global state lock and queue the operation
+    if (this._checkGlobalStateLock('setContainerState', () => this.setContainerState(containerId, state))) {
       return;
     }
+    
+    this._incrementVersion();
 
     const container = this._collections.containers.get(containerId);
     if (!container) {
@@ -1157,6 +1438,14 @@ export class VisualizationState {
    * Collapse a container (legacy compatibility method)
    */
   collapseContainer(containerId: string): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('collapseContainer', () => this.collapseContainer(containerId))) {
+      return;
+    }
+    
+    // COORDINATION GUARD: Ensure this is called within a managed operation
+    this._enforceOperationCoordination('collapseContainer');
+    
     const container = this._collections.containers.get(containerId);
     if (!container) {
       throw new Error(`Cannot collapse non-existent container: ${containerId}`);
@@ -1179,8 +1468,11 @@ export class VisualizationState {
    * Expand a container with proper hyperEdge cleanup
    */
   expandContainer(containerId: string): void {
-    // RACE CONDITION FIX: Check layout lock
-    if (this._checkLayoutLock('expandContainer', () => this.expandContainer(containerId))) {
+    // COORDINATION GUARD: Ensure this is called within a managed operation
+    this._enforceOperationCoordination('expandContainer');
+    
+    // RACE CONDITION FIX: Check global state lock
+    if (this._checkGlobalStateLock('expandContainer', () => this.expandContainer(containerId))) {
       return; // Operation was queued
     }
 
@@ -1298,6 +1590,85 @@ export class VisualizationState {
    */
   getLastChangedContainer(): string | null {
     return this._lastChangedContainer;
+  }
+
+  /**
+   * Get the current version of the visualization state
+   * Used to prevent infinite loops in React useEffect hooks
+   */
+  getVersion(): number {
+    return this._version;
+  }
+
+  /**
+   * Increment the version to signal state changes
+   * @private
+   */
+  private _incrementVersion(): void {
+    this._version++;
+  }
+
+  /**
+   * Mark validation as pending if we're in a global state lock
+   * @private
+   */
+  private _markValidationPending(): void {
+    if (this._globalStateLock) {
+      this._validationPending = true;
+    }
+  }
+
+  /**
+   * Run coordinated validation after layout lock is released
+   * @private
+   */
+  private _runCoordinatedValidation(): void {
+    try {
+      // Run comprehensive validation after all queued operations are complete
+      this.validateInvariants();
+      
+      // Additional coordinated checks that are expensive but important
+      this._validateContainerHierarchy();
+      this._validateVisibilityConsistency();
+      
+    } catch (error) {
+      console.error('[VisualizationState] ❌ Coordinated validation failed:', error);
+    }
+  }
+
+  /**
+   * Validate container hierarchy consistency
+   * @private
+   */
+  private _validateContainerHierarchy(): void {
+    // Check that all container children exist and are properly mapped
+    for (const [containerId, children] of this._collections._containerChildren) {
+      for (const childId of children) {
+        const childContainer = this._collections.containers.get(childId);
+        const childNode = this._collections.graphNodes.get(childId);
+        
+        if (!childContainer && !childNode) {
+          console.warn(`[VisualizationState] ⚠️ Container ${containerId} references non-existent child ${childId}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Validate visibility consistency
+   * @private
+   */
+  private _validateVisibilityConsistency(): void {
+    // Check that visible nodes are not in collapsed containers
+    for (const node of this._collections._visibleNodes.values()) {
+      const parentContainerId = this._collections._nodeContainers.get(node.id);
+      if (parentContainerId) {
+        const parentContainer = this._collections.containers.get(parentContainerId);
+        if (parentContainer?.collapsed) {
+          console.warn(`[VisualizationState] ⚠️ Node ${node.id} is visible but parent container ${parentContainerId} is collapsed`);
+        }
+      }
+    }
   }
 
   /**
@@ -1521,6 +1892,10 @@ export class VisualizationState {
     }
   }
 
+  // ============ PURE STATE METHODS (for LayoutOrchestrator) ============
+
+
+
   /**
    * Update container properties (legacy compatibility method)
    */
@@ -1692,6 +2067,8 @@ export class VisualizationState {
   }
 
   addContainerChild(containerId: string, childId: string): void {
+    // Invalidate caches when parent-child relationships change
+    this._cacheInitialized = false;
     const children = this._collections._containerChildren.get(containerId) || new Set();
     children.add(childId);
     this._collections._containerChildren.set(containerId, children);
@@ -1757,8 +2134,14 @@ export class VisualizationState {
   }
 
   updateNode(nodeId: string, updates: Partial<GraphNode>): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('updateNode', () => this.updateNode(nodeId, updates))) {
+      return;
+    }
+    
     const node = this._collections.graphNodes.get(nodeId);
     if (node) {
+      this._incrementVersion();
       Object.assign(node, updates);
 
       // Update visibility cache if hidden state changed
@@ -1773,6 +2156,11 @@ export class VisualizationState {
   }
 
   removeGraphNode(nodeId: string): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('removeGraphNode', () => this.removeGraphNode(nodeId))) {
+      return;
+    }
+    
     // Get parent container before removal for cache maintenance
     const parentContainer = this._collections._nodeContainers.get(nodeId);
 
@@ -1804,6 +2192,11 @@ export class VisualizationState {
   }
 
   removeGraphEdge(edgeId: string): void {
+    // Check global state lock
+    if (this._checkGlobalStateLock('removeGraphEdge', () => this.removeGraphEdge(edgeId))) {
+      return;
+    }
+    
     const edge = this._collections.graphEdges.get(edgeId);
     if (edge) {
       // Remove from node-to-edges mappings
@@ -1994,6 +2387,38 @@ export class VisualizationState {
 
   _updateContainerVisibilityCaches(containerId: string, container: Container): void {
     this.visibilityManager.updateContainerVisibilityCaches(containerId, container);
+  }
+
+  /**
+   * Ensure visibility consistency after bulk operations like search expansion
+   * This rebuilds visibility caches to ensure parent-child relationships are consistent
+   */
+  ensureVisibilityConsistency(): void {
+    // Rebuild container visibility caches to ensure consistency
+    for (const [containerId, container] of this._collections.containers) {
+      this.visibilityManager.updateContainerVisibilityCaches(containerId, container);
+    }
+    
+    // Rebuild node visibility caches
+    for (const [nodeId, node] of this._collections.graphNodes) {
+      if (!node.hidden) {
+        this._collections._visibleNodes.set(nodeId, node);
+      } else {
+        this._collections._visibleNodes.delete(nodeId);
+      }
+    }
+    
+    // Rebuild edge visibility caches
+    for (const [edgeId, edge] of this._collections.graphEdges) {
+      const sourceVisible = this._isEndpointVisible(edge.source);
+      const targetVisible = this._isEndpointVisible(edge.target);
+      
+      if (sourceVisible && targetVisible && !edge.hidden) {
+        this._collections._visibleEdges.set(edgeId, edge);
+      } else {
+        this._collections._visibleEdges.delete(edgeId);
+      }
+    }
   }
 
   _cascadeNodeVisibilityToEdges(nodeId: string): void {

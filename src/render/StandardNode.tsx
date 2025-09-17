@@ -159,12 +159,12 @@ export function StandardNode({ id, data }: NodeProps) {
         <style>
           {`
             @keyframes searchPulse {
-              0%, 100% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.3), 0 4px 6px -1px rgba(0,0,0,0.15); }
-              50% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 10px -1px rgba(0,0,0,0.2); }
+              0%, 100% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 4px 6px -1px rgba(0,0,0,0.15); }
+              50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.6), 0 6px 10px -1px rgba(0,0,0,0.2); }
             }
             @keyframes searchPulseStrong {
-              0%, 100% { box-shadow: 0 0 0 5px rgba(255, 107, 53, 0.38), 0 10px 15px -3px rgba(0,0,0,0.2); }
-              50% { box-shadow: 0 0 0 8px rgba(255, 107, 53, 0.6), 0 12px 20px -3px rgba(0,0,0,0.3); }
+              0%, 100% { box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2); }
+              50% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0.7), 0 12px 20px -3px rgba(0,0,0,0.3); }
             }
           `}
         </style>
@@ -187,7 +187,7 @@ export function StandardNode({ id, data }: NodeProps) {
               if (searchHighlight && (searchHighlightStrong || !searchHighlightStrong)) {
                 // Base shadow for non-animated state - will be overridden by animation
                 return styleCfg.containerShadow === 'NONE'
-                  ? '0 0 0 2px rgba(255, 193, 7, 0.2)'
+                  ? '0 0 0 2px rgba(251, 191, 36, 0.3)'
                   : styleCfg.containerShadow === 'LARGE'
                     ? '0 10px 15px -3px rgba(0,0,0,0.2)'
                     : styleCfg.containerShadow === 'MEDIUM'
@@ -266,11 +266,11 @@ export function StandardNode({ id, data }: NodeProps) {
         {`
           @keyframes searchPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+            50% { transform: scale(1.05); }
           }
           @keyframes searchPulseStrong {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.08); }
           }
         `}
       </style>
@@ -298,9 +298,9 @@ export function StandardNode({ id, data }: NodeProps) {
             const searchHighlightStrong = (data as any).searchHighlightStrong;
 
             if (searchHighlightStrong) {
-              return '0 0 0 4px rgba(255, 107, 53, 0.35), 0 8px 20px rgba(0,0,0,0.15)';
+              return '0 0 0 4px rgba(249, 115, 22, 0.5), 0 8px 20px rgba(0,0,0,0.15)';
             } else if (searchHighlight) {
-              return '0 0 0 3px rgba(255, 193, 7, 0.28), 0 2px 6px rgba(0,0,0,0.1)';
+              return '0 0 0 3px rgba(251, 191, 36, 0.4), 0 2px 6px rgba(0,0,0,0.1)';
             } else if (isClicked) {
               return '0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1)';
             } else {
@@ -315,11 +315,11 @@ export function StandardNode({ id, data }: NodeProps) {
               : isShowingLongLabel
                 ? 10
                 : 1,
-          // Add subtle animation for search highlights
+          // Add prominent animation for search highlights
           animation: (data as any).searchHighlight
             ? (data as any).searchHighlightStrong
-              ? 'searchPulseStrong 2s ease-in-out infinite'
-              : 'searchPulse 3s ease-in-out infinite'
+              ? 'searchPulseStrong 1.5s ease-in-out infinite'
+              : 'searchPulse 2s ease-in-out infinite'
             : undefined,
         }}
         title={

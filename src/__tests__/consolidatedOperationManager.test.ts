@@ -105,8 +105,8 @@ describe('ConsolidatedOperationManager', () => {
 
       await expansionPromise;
 
-      // Wait for autofit
-      await new Promise(resolve => setTimeout(resolve, 350));
+      // Wait for autofit (needs to be longer than autoFitDelayMs which is 500ms)
+      await new Promise(resolve => setTimeout(resolve, 600));
 
       expect(mockExpansionCallback).toHaveBeenCalledOnce();
       expect(mockFitView).toHaveBeenCalledOnce();

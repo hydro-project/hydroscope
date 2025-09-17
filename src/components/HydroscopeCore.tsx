@@ -165,6 +165,7 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
 
     return (
       <FlowGraph
+        key={`flowgraph-${grouping || 'default'}`}
         ref={flowGraphRef}
         visualizationState={parseOutcome.state}
         config={parseOutcome.mergedConfig}

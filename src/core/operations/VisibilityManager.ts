@@ -71,11 +71,23 @@ export class VisibilityManager {
    * Update container visibility caches
    */
   updateContainerVisibilityCaches(containerId: string, container: any): void {
+    // DIAGNOSTIC: Log visibility cache updates for problematic containers
+    if (containerId === 'bt_40' || containerId === 'bt_204') {
+      console.error(`[VisibilityManager] 🔍 Updating visibility cache for ${containerId}: hidden=${container.hidden}, collapsed=${container.collapsed}`);
+    }
+    
     // Update _visibleContainers (includes collapsed containers)
     if (!container.hidden) {
       this.state._collections._visibleContainers.set(containerId, container);
+      if (containerId === 'bt_40' || containerId === 'bt_204') {
+        console.error(`[VisibilityManager] 🔍 ${containerId} ADDED to visible containers (size now: ${this.state._collections._visibleContainers.size})`);
+      }
     } else {
       this.state._collections._visibleContainers.delete(containerId);
+      if (containerId === 'bt_40' || containerId === 'bt_204') {
+        console.error(`[VisibilityManager] 🔍 ${containerId} REMOVED from visible containers (size now: ${this.state._collections._visibleContainers.size})`);
+        console.error(`[VisibilityManager] 🔍 ${containerId} REMOVAL STACK TRACE:`, new Error().stack);
+      }
     }
 
     // Update _expandedContainers (only non-collapsed containers)
@@ -139,10 +151,13 @@ export class VisibilityManager {
 
   /**
    * Hide a specific child (container or node)
+   * This is an internal cascading operation that should be allowed during layout
    */
   private hideChild(childId: string): void {
     const childContainer = this.state._collections.containers.get(childId);
     if (childContainer) {
+      // Direct assignment is OK for internal cascading operations
+      // These are part of the layout process and should not be blocked by layout lock
       childContainer.collapsed = true;
       childContainer.hidden = true;
       childContainer.x = undefined;
