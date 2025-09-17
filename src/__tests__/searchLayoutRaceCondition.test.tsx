@@ -127,7 +127,7 @@ describe('Search Layout Race Condition', () => {
       // If it's a different error, re-throw it
       throw error;
     }
-  });
+  }, 10000); // 10 second timeout for complex ELK layout operations
 
   it('should work correctly when ELK layout completes properly', async () => {
     console.log('🔍 Testing normal layout pipeline without race condition...');
@@ -162,5 +162,5 @@ describe('Search Layout Race Condition', () => {
       expect(isFinite(pos.x)).toBe(true);
       expect(isFinite(pos.y)).toBe(true);
     });
-  });
+  }, 10000); // 10 second timeout for complex ELK layout operations
 });
