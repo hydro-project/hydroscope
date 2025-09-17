@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, screen, act } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { InfoPanel } from '../components/InfoPanel';
 import { createVisualizationState } from '../core/VisualizationState';
@@ -107,17 +107,17 @@ describe('InfoPanel + HierarchyTree search integration', () => {
       fireEvent.change(input as HTMLInputElement, { target: { value: 'gamma' } });
     });
     // Wait for the async search expansion to complete (globalLayoutLock queue processing)
-    await act(async () => { 
+    await act(async () => {
       await new Promise(res => setTimeout(res, 400)); // Increased wait time to match first test
       await new Promise(res => requestAnimationFrame(res)); // Wait for any remaining async operations
     });
-    
+
     // Debug: Check if onSearchUpdate was called
     console.log('onSearchUpdate called:', onSearchUpdate.mock.calls.length);
     if (onSearchUpdate.mock.calls.length > 0) {
       console.log('Search matches:', onSearchUpdate.mock.calls[0][1]);
     }
-    
+
     const childContainer = state.getContainer('child');
     const rootContainer = state.getContainer('root');
     expect(childContainer?.collapsed).toBe(false);

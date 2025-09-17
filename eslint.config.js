@@ -65,7 +65,6 @@ export default [
             '@typescript-eslint/no-explicit-any': 'off', // Allow any - this codebase uses it extensively for bridges/tests
             '@typescript-eslint/no-require-imports': 'off', // Allow require in tests
             '@typescript-eslint/no-empty-object-type': 'off', // Allow empty interfaces for extensibility
-            '@typescript-eslint/no-wrapper-object-types': 'warn',
             'no-empty': 'off',
             'no-case-declarations': 'off',
             'no-dupe-keys': 'error',

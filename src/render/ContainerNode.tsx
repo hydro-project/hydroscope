@@ -74,19 +74,15 @@ export function ContainerNode({ id, data }: NodeProps) {
   if (data.collapsed) {
     const baseContainerColors = generateContainerColors(id, colorPalette);
     const searchColors = getSearchHighlightColors();
-    
+
     // Apply search highlight colors if needed
     const containerColors = searchHighlight
       ? {
-          background: searchHighlightStrong 
-            ? searchColors.current.background 
+          background: searchHighlightStrong
+            ? searchColors.current.background
             : searchColors.match.background,
-          border: searchHighlightStrong 
-            ? searchColors.current.border 
-            : searchColors.match.border,
-          text: searchHighlightStrong 
-            ? searchColors.current.text 
-            : searchColors.match.text,
+          border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
+          text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
         }
       : {
           ...baseContainerColors,
@@ -113,7 +109,7 @@ export function ContainerNode({ id, data }: NodeProps) {
             width: `${width}px`,
             height: `${height}px`,
             // COLLAPSED CONTAINERS: More opaque background to distinguish from expanded
-            background: containerColors.background.includes('rgba') 
+            background: containerColors.background.includes('rgba')
               ? containerColors.background.replace(/0\.\d+\)$/, '0.9)')
               : containerColors.background,
             // COLLAPSED CONTAINERS: Thicker border to distinguish from expanded
@@ -152,11 +148,7 @@ export function ContainerNode({ id, data }: NodeProps) {
             })(),
             transition: 'all 0.2s ease',
             // Z-index for search highlighting
-            zIndex: searchHighlightStrong
-              ? 100
-              : searchHighlight
-                ? 50
-                : 1,
+            zIndex: searchHighlightStrong ? 100 : searchHighlight ? 50 : 1,
             // Add prominent animation for search highlights
             animation: searchHighlight
               ? searchHighlightStrong
@@ -205,15 +197,11 @@ export function ContainerNode({ id, data }: NodeProps) {
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
     ? {
-        background: searchHighlightStrong 
-          ? searchColors.current.background 
+        background: searchHighlightStrong
+          ? searchColors.current.background
           : searchColors.match.background,
-        border: searchHighlightStrong 
-          ? searchColors.current.border 
-          : searchColors.match.border,
-        text: searchHighlightStrong 
-          ? searchColors.current.text 
-          : searchColors.match.text,
+        border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
+        text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
       }
     : {
         background: 'rgba(25, 118, 210, 0.1)',

@@ -34,7 +34,7 @@ export class ContainerOperations {
         // regardless of whether they were already collapsed or not
         container.hidden = true;
         this.state.visibilityManager.updateContainerVisibilityCaches(childId, container);
-        
+
         // If child container is expanded, collapse it recursively
         if (!this.state.getContainerCollapsed(childId)) {
           this.handleContainerCollapse(childId);
@@ -76,7 +76,7 @@ export class ContainerOperations {
   handleContainerExpansion(containerId: string): void {
     // DIAGNOSTIC: Log container expansion
     console.error(`[ContainerOperations] 🔍 Expanding container ${containerId}`);
-    
+
     // 1. Mark container as expanded
     this.state.setContainerCollapsed(containerId, false);
 
@@ -87,25 +87,32 @@ export class ContainerOperations {
 
     // 3. Show all child nodes and expanded child containers
     const children = this.state.getContainerChildren(containerId) || new Set();
-    console.error(`[ContainerOperations] 🔍 Container ${containerId} has ${children.size} children:`, Array.from(children).join(', '));
-    
+    console.error(
+      `[ContainerOperations] 🔍 Container ${containerId} has ${children.size} children:`,
+      Array.from(children).join(', ')
+    );
+
     for (const childId of children) {
       const container = this.state.getContainer(childId);
       const node = this.state.getGraphNode(childId);
 
       if (container) {
-        console.error(`[ContainerOperations] 🔍 Making child container ${childId} visible (parent: ${containerId})`);
-        
+        console.error(
+          `[ContainerOperations] 🔍 Making child container ${childId} visible (parent: ${containerId})`
+        );
+
         // CRITICAL FIX: Only make child containers visible if ALL their ancestors are expanded
         // Check if this child container should be visible based on ancestor states
         const shouldBeVisible = this.shouldContainerBeVisible(childId);
-        
+
         if (shouldBeVisible) {
           // Use direct state modification to avoid recursive validation issues
           container.hidden = false;
           this.state.visibilityManager.updateContainerVisibilityCaches(childId, container);
         } else {
-          console.error(`[ContainerOperations] 🔍 Keeping child container ${childId} hidden due to collapsed ancestors`);
+          console.error(
+            `[ContainerOperations] 🔍 Keeping child container ${childId} hidden due to collapsed ancestors`
+          );
         }
       } else if (node) {
         // Show child nodes
@@ -290,23 +297,23 @@ export class ContainerOperations {
   private shouldContainerBeVisible(containerId: string): boolean {
     // Walk up the container hierarchy and check if any ancestor is collapsed
     let currentContainer = containerId;
-    
+
     while (currentContainer) {
       const parentContainerId = this.state.getContainerParent(currentContainer);
       if (!parentContainerId) {
         // Reached the top level, no more ancestors to check
         break;
       }
-      
+
       const parentContainer = this.state.getContainer(parentContainerId);
       if (parentContainer && parentContainer.collapsed) {
         // Found a collapsed ancestor, so this container should be hidden
         return false;
       }
-      
+
       currentContainer = parentContainerId;
     }
-    
+
     // All ancestors are expanded, so this container can be visible
     return true;
   }

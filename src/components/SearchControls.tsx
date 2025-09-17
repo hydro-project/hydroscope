@@ -3,7 +3,7 @@
  * - Debounced wildcard search over provided items
  * - Prev/Next navigation among matches
  * - Search result count display and clear
- * 
+ *
  * IMPORTANT: Race Condition Prevention:
  * - Search operations execute synchronously to prevent layout race conditions
  * - Search highlighting animations use box-shadow instead of transform

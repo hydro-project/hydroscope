@@ -103,7 +103,11 @@ export function HydroscopeMini({
             const fitFn = hydroscopeRef.current.fitView;
             setTimeout(() => {
               // Use consolidated system for autofit after layout
-              consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'hydroscope-mini-autofit-after-layout');
+              consolidatedOperationManager.requestAutoFit(
+                fitFn,
+                undefined,
+                'hydroscope-mini-autofit-after-layout'
+              );
             }, 300);
           }
         } catch (err) {
@@ -169,7 +173,7 @@ export function HydroscopeMini({
         },
         'high' // High priority for user-initiated collapse all
       );
-      
+
       // AutoFit will be triggered automatically by the consolidated system
     } catch (err) {
       console.error('❌ Error packing containers:', err);
@@ -194,7 +198,7 @@ export function HydroscopeMini({
         },
         'high' // High priority for user-initiated expand all
       );
-      
+
       // AutoFit will be triggered automatically by the consolidated system
     } catch (err) {
       console.error('❌ Error unpacking containers:', err);

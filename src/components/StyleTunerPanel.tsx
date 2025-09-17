@@ -1,8 +1,8 @@
 /**
  * @fileoverview StyleTunerPanel Component
- * 
+ *
  * Provides UI controls for adjusting visualization styling and layout settings.
- * 
+ *
  * IMPORTANT: This component implements comprehensive ResizeObserver loop prevention:
  * 1. Controls Scale changes use global layout lock to serialize operations
  * 2. Lock is released BEFORE triggering callbacks to allow subsequent layout operations
@@ -10,7 +10,7 @@
  * 4. All style changes use requestAnimationFrame batching
  * 5. Visual feedback shows when scale updates are processing
  * 6. Multi-layer error suppression handles any remaining ResizeObserver errors
- * 
+ *
  * KEY FIX: The lock must be released before calling onChange/onControlsScaleChange
  * because those callbacks trigger refreshLayout() which needs to acquire the same lock.
  */
@@ -89,87 +89,95 @@ export function StyleTunerPanel({
 
   // Robust controls scale handler to prevent ResizeObserver loops
   const scaleChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastScaleRef = useRef<number>(local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE);
+  const lastScaleRef = useRef<number>(
+    local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE
+  );
   const isScaleChangingRef = useRef<boolean>(false);
   const lastScaleChangeTimeRef = useRef<number>(0);
   const [isScaleUpdating, setIsScaleUpdating] = useState<boolean>(false);
 
-  const handleControlsScaleChange = useCallback((newScale: number) => {
-    const now = Date.now();
+  const handleControlsScaleChange = useCallback(
+    (newScale: number) => {
+      const now = Date.now();
 
-    // Throttle rapid-fire changes - prevent more than one change per 200ms
-    if (now - lastScaleChangeTimeRef.current < 200) {
+      // Throttle rapid-fire changes - prevent more than one change per 200ms
+      if (now - lastScaleChangeTimeRef.current < 200) {
+        // Update local state immediately for responsive UI
+        setLocal(prev => ({ ...prev, reactFlowControlsScale: newScale }));
+        return;
+      }
+
+      // Prevent concurrent scale changes
+      if (isScaleChangingRef.current) {
+        // Update local state immediately for responsive UI
+        setLocal(prev => ({ ...prev, reactFlowControlsScale: newScale }));
+        return;
+      }
+
+      // Skip if scale hasn't actually changed
+      if (Math.abs(newScale - lastScaleRef.current) < 0.001) {
+        return;
+      }
+
+      // Update refs and state
+      lastScaleRef.current = newScale;
+      lastScaleChangeTimeRef.current = now;
+      isScaleChangingRef.current = true;
+      setIsScaleUpdating(true);
+
+      // Clear any pending changes
+      if (scaleChangeTimeoutRef.current) {
+        clearTimeout(scaleChangeTimeoutRef.current);
+      }
+
       // Update local state immediately for responsive UI
       setLocal(prev => ({ ...prev, reactFlowControlsScale: newScale }));
-      return;
-    }
 
-    // Prevent concurrent scale changes
-    if (isScaleChangingRef.current) {
-      // Update local state immediately for responsive UI
-      setLocal(prev => ({ ...prev, reactFlowControlsScale: newScale }));
-      return;
-    }
+      // Use global layout lock queue to serialize scale changes and prevent ResizeObserver loops
+      scaleChangeTimeoutRef.current = setTimeout(async () => {
+        const operationId = `controls-scale-${Date.now()}`;
 
-    // Skip if scale hasn't actually changed
-    if (Math.abs(newScale - lastScaleRef.current) < 0.001) {
-      return;
-    }
+        try {
+          // Queue the scale change operation to prevent interference with other layout operations
+          const success = await consolidatedOperationManager.queueLayoutOperation(
+            operationId,
+            async () => {
+              // Execute the scale change within the queued operation
+              if (onControlsScaleChange) {
+                onControlsScaleChange(newScale);
+              } else {
+                // Fallback to main onChange if no separate callback
+                const next = { ...local, reactFlowControlsScale: newScale };
+                onChange(next);
+              }
+            },
+            {
+              priority: 'normal',
+              reason: 'controls-scale-change',
+              triggerAutoFit: false, // Scale changes don't need autofit
+            }
+          );
 
-    // Update refs and state
-    lastScaleRef.current = newScale;
-    lastScaleChangeTimeRef.current = now;
-    isScaleChangingRef.current = true;
-    setIsScaleUpdating(true);
-
-    // Clear any pending changes
-    if (scaleChangeTimeoutRef.current) {
-      clearTimeout(scaleChangeTimeoutRef.current);
-    }
-
-    // Update local state immediately for responsive UI
-    setLocal(prev => ({ ...prev, reactFlowControlsScale: newScale }));
-
-    // Use global layout lock queue to serialize scale changes and prevent ResizeObserver loops
-    scaleChangeTimeoutRef.current = setTimeout(async () => {
-      const operationId = `controls-scale-${Date.now()}`;
-
-      try {
-        // Queue the scale change operation to prevent interference with other layout operations
-        const success = await consolidatedOperationManager.queueLayoutOperation(operationId, async () => {
-          // Execute the scale change within the queued operation
-          if (onControlsScaleChange) {
-            onControlsScaleChange(newScale);
+          if (success) {
+            console.log(`[StyleTunerPanel] Controls scale change completed: ${operationId}`);
           } else {
-            // Fallback to main onChange if no separate callback
-            const next = { ...local, reactFlowControlsScale: newScale };
-            onChange(next);
+            console.warn(`[StyleTunerPanel] Controls scale change failed: ${operationId}`);
           }
-        }, {
-          priority: 'normal',
-          reason: 'controls-scale-change',
-          triggerAutoFit: false // Scale changes don't need autofit
-        });
 
-        if (success) {
-          console.log(`[StyleTunerPanel] Controls scale change completed: ${operationId}`);
-        } else {
-          console.warn(`[StyleTunerPanel] Controls scale change failed: ${operationId}`);
-        }
-
-        // Reset the changing flag and visual indicator after operation completes
-        setTimeout(() => {
+          // Reset the changing flag and visual indicator after operation completes
+          setTimeout(() => {
+            isScaleChangingRef.current = false;
+            setIsScaleUpdating(false);
+          }, UI_CONSTANTS.LAYOUT_DELAY_SHORT);
+        } catch (error) {
+          console.error('[StyleTunerPanel] Error during controls scale change:', error);
           isScaleChangingRef.current = false;
           setIsScaleUpdating(false);
-        }, UI_CONSTANTS.LAYOUT_DELAY_SHORT);
-
-      } catch (error) {
-        console.error('[StyleTunerPanel] Error during controls scale change:', error);
-        isScaleChangingRef.current = false;
-        setIsScaleUpdating(false);
-      }
-    }, UI_CONSTANTS.LAYOUT_DELAY_NORMAL); // Use longer delay for more stability
-  }, [onControlsScaleChange, onChange, local]);
+        }
+      }, UI_CONSTANTS.LAYOUT_DELAY_NORMAL); // Use longer delay for more stability
+    },
+    [onControlsScaleChange, onChange, local]
+  );
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -180,7 +188,7 @@ export function StyleTunerPanel({
     };
   }, []);
 
-  const update = (patch: Partial<typeof local>) => {
+  const _update = (patch: Partial<typeof local>) => {
     const next = { ...local, ...patch };
     // Update local state immediately for responsive UI
     setLocal(next);
@@ -336,7 +344,11 @@ export function StyleTunerPanel({
         <div style={rowStyle}>
           <label>
             Controls Scale
-            {isScaleUpdating && <span style={{ color: '#1890ff', fontSize: '12px', marginLeft: '4px' }}>updating...</span>}
+            {isScaleUpdating && (
+              <span style={{ color: '#1890ff', fontSize: '12px', marginLeft: '4px' }}>
+                updating...
+              </span>
+            )}
           </label>
           <input
             type="range"
@@ -352,7 +364,7 @@ export function StyleTunerPanel({
             style={{
               ...inputStyle,
               cursor: isScaleUpdating ? 'wait' : 'pointer',
-              opacity: isScaleUpdating ? 0.7 : 1
+              opacity: isScaleUpdating ? 0.7 : 1,
             }}
             title={`Scale: ${(local.reactFlowControlsScale || LAYOUT_CONSTANTS.REACTFLOW_CONTROLS_SCALE).toFixed(1)}x${isScaleUpdating ? ' (updating...)' : ''}`}
           />

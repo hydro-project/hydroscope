@@ -88,11 +88,11 @@ describe('Selective Layout for Individual Container Operations', () => {
     // The key is that container2 should remain in a reasonable position
     const newContainer2Layout = visState.getContainerLayout('container2');
     console.log('  container2:', newContainer2Layout?.position);
-    
+
     // Verify that container2 has a valid position (not undefined/null)
     expect(newContainer2Layout?.position?.x).toBeDefined();
     expect(newContainer2Layout?.position?.y).toBeDefined();
-    
+
     // Verify that container2 is positioned reasonably (not at origin)
     expect(newContainer2Layout?.position?.x).toBeGreaterThan(0);
     expect(newContainer2Layout?.position?.y).toBeGreaterThan(0);

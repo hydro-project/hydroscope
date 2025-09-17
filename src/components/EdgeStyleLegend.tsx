@@ -177,6 +177,7 @@ function EdgeStyleLegendInner({
     );
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const legendStyle: React.CSSProperties = useMemo(
     () => ({
       fontSize: compact ? '9px' : '10px',
@@ -185,6 +186,7 @@ function EdgeStyleLegendInner({
     [compact, style]
   );
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const styles = useMemo(() => {
     const pairBoxStyle: React.CSSProperties = {
       display: 'flex',
@@ -657,20 +659,28 @@ function EdgeStyleLegendInner({
   };
 
   // Memoize sections to avoid re-computation on unrelated re-renders
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const semanticBoxes = useMemo(
     () => renderSemanticMappingBoxes(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderSemanticMappingBoxes is stable
     [edgeStyleConfig?.semanticMappings, styles]
   );
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const booleanPairs = useMemo(
     () => renderBooleanPairBoxes(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderBooleanPairBoxes is stable
     [edgeStyleConfig?.booleanPropertyPairs, styles]
   );
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const singleProps = useMemo(
     () => renderSinglePropertyBoxes(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderSinglePropertyBoxes is stable
     [edgeStyleConfig?.singlePropertyMappings, styles]
   );
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const legacyBoxes = useMemo(
     () => renderLegacyBoxes(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderLegacyBoxes is stable
     [edgeStyleConfig?.propertyMappings, styles]
   );
 

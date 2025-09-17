@@ -4,7 +4,12 @@
 
 import React, { useState, useCallback } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import { generateNodeColors, type NodeColor, getSearchHighlightColors, getContrastColor } from '../shared/colorUtils';
+import {
+  generateNodeColors,
+  type NodeColor,
+  getSearchHighlightColors,
+  getContrastColor,
+} from '../shared/colorUtils';
 import { truncateLabel } from '../shared/textUtils';
 import { useStyleConfig } from './StyleConfigContext';
 import { HandlesRenderer } from './handles';
@@ -102,16 +107,14 @@ export function StandardNode({ id, data }: NodeProps) {
 
   const colors = searchHighlight
     ? {
-      backgroundColor: searchHighlightStrong
-        ? searchColors.current.background
-        : searchColors.match.background,
-      borderColor: searchHighlightStrong
-        ? searchColors.current.border
-        : searchColors.match.border,
-      textColor: searchHighlightStrong
-        ? searchColors.current.text
-        : searchColors.match.text,
-    }
+        backgroundColor: searchHighlightStrong
+          ? searchColors.current.background
+          : searchColors.match.background,
+        borderColor: searchHighlightStrong
+          ? searchColors.current.border
+          : searchColors.match.border,
+        textColor: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
+      }
     : { ...baseColors, textColor: undefined };
 
   // For collapsed containers, get the same variables as ContainerNode
@@ -141,16 +144,12 @@ export function StandardNode({ id, data }: NodeProps) {
     // Apply search highlight colors for containers too
     const finalContainerColors = searchHighlight
       ? {
-        background: searchHighlightStrong
-          ? searchColors.current.background
-          : searchColors.match.background,
-        border: searchHighlightStrong
-          ? searchColors.current.border
-          : searchColors.match.border,
-        text: searchHighlightStrong
-          ? searchColors.current.text
-          : searchColors.match.text,
-      }
+          background: searchHighlightStrong
+            ? searchColors.current.background
+            : searchColors.match.background,
+          border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
+          text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
+        }
       : containerColors;
 
     return (
@@ -290,7 +289,9 @@ export function StandardNode({ id, data }: NodeProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: colors.textColor || getContrastColor(colors.backgroundColor || baseColors.backgroundColor), // Ensure good contrast
+          color:
+            colors.textColor ||
+            getContrastColor(colors.backgroundColor || baseColors.backgroundColor), // Ensure good contrast
           // Click animation styles
           transform: isClicked ? 'scale(1.05) translateY(-2px)' : 'scale(1) translateY(0px)',
           boxShadow: (() => {

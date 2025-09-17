@@ -12,6 +12,7 @@ import { generateNodeColors, type NodeColor } from '../shared/colorUtils';
 import { Edge as ReactFlowEdge } from '@xyflow/react';
 import { CURRENT_HANDLE_STRATEGY } from '../render/handleConfig';
 import { convertEdgesToReactFlow, EdgeConverterOptions } from './EdgeConverter';
+import { deserializeProcessedStyle } from '../core/EdgeStyleSerializer';
 import {
   buildParentMap as buildParentMapUtil,
   sortContainersByHierarchy as sortContainersByHierarchyUtil,
@@ -130,15 +131,19 @@ export class ReactFlowBridge {
     const nodeCountBefore = nodes.length;
     this.convertNodesFromELK(visState, nodes, parentMap);
     const regularNodeCount = nodes.length - nodeCountBefore;
-    console.log(`[ReactFlowBridge] 🔵 Converted ${regularNodeCount} regular nodes [${conversionId}]`);
+    console.log(
+      `[ReactFlowBridge] 🔵 Converted ${regularNodeCount} regular nodes [${conversionId}]`
+    );
 
     // Convert edges using smart handle selection
     console.log(`[ReactFlowBridge] 🔗 Converting edges [${conversionId}]`);
-    
+
     // DIAGNOSTIC: Log edge data before conversion
     const visibleEdgeCount = visState.visibleEdges.length;
-    console.log(`[ReactFlowBridge] 🔗 VisualizationState has ${visibleEdgeCount} visible edges before conversion`);
-    
+    console.log(
+      `[ReactFlowBridge] 🔗 VisualizationState has ${visibleEdgeCount} visible edges before conversion`
+    );
+
     this.convertEdges(visState, edges, nodes);
     console.log(`[ReactFlowBridge] 🔗 Converted ${edges.length} edges [${conversionId}]`);
 
@@ -151,7 +156,9 @@ export class ReactFlowBridge {
     // DIAGNOSTIC: Check for edge data loss
     if (edges.length === 0 && nodes.length > 5) {
       console.error(`[ReactFlowBridge] 🚨 EDGE DATA LOSS DETECTED [${conversionId}]:`);
-      console.error(`  - Nodes: ${nodes.length} (${containerCount} containers, ${regularNodeCount} regular)`);
+      console.error(
+        `  - Nodes: ${nodes.length} (${containerCount} containers, ${regularNodeCount} regular)`
+      );
       console.error(`  - Edges: ${edges.length} (ZERO EDGES WITH MANY NODES)`);
       console.error(`  - VisualizationState visible edges: ${visState.visibleEdges.length}`);
       console.error(`  - This indicates edges were lost during state transitions or conversion`);
@@ -201,21 +208,26 @@ export class ReactFlowBridge {
     // Sort containers by hierarchy level (parents first, then children)
     const containers = Array.from(visState.visibleContainers);
     const sortedContainers = this.sortContainersByHierarchy(containers, parentMap);
-    
+
     // DIAGNOSTIC: Check for parent-child consistency issues
     const containerIds = new Set(containers.map(c => c.id));
     const missingParents: string[] = [];
-    
+
     for (const container of containers) {
       const parentId = parentMap.get(container.id);
       if (parentId && !containerIds.has(parentId)) {
         missingParents.push(`${container.id} -> ${parentId}`);
       }
     }
-    
+
     if (missingParents.length > 0) {
-      console.error(`[ReactFlowBridge] ❌ PARENT-CHILD INCONSISTENCY: ${missingParents.length} containers reference missing parents:`, missingParents.slice(0, 5));
-      console.error(`[ReactFlowBridge] 📊 Visible containers: ${containers.length}, Parent map size: ${parentMap.size}`);
+      console.error(
+        `[ReactFlowBridge] ❌ PARENT-CHILD INCONSISTENCY: ${missingParents.length} containers reference missing parents:`,
+        missingParents.slice(0, 5)
+      );
+      console.error(
+        `[ReactFlowBridge] 📊 Visible containers: ${containers.length}, Parent map size: ${parentMap.size}`
+      );
     }
 
     sortedContainers.forEach(container => {
@@ -224,8 +236,14 @@ export class ReactFlowBridge {
       // CRITICAL FIX: Check if container has valid ELK position before processing
       // During grouping changes, some containers may not have been processed by ELK yet
       const containerLayout = visState.getContainerLayout(container.id);
-      if (!containerLayout?.position || (containerLayout.position.x === undefined || containerLayout.position.y === undefined)) {
-        console.warn(`[ReactFlowBridge] ⚠️ Skipping container ${container.id} - no valid ELK position (likely from concurrent grouping change)`);
+      if (
+        !containerLayout?.position ||
+        containerLayout.position.x === undefined ||
+        containerLayout.position.y === undefined
+      ) {
+        console.warn(
+          `[ReactFlowBridge] ⚠️ Skipping container ${container.id} - no valid ELK position (likely from concurrent grouping change)`
+        );
         return; // Skip this container
       }
 
@@ -239,7 +257,10 @@ export class ReactFlowBridge {
           position = computeRootContainerPosition(visState, container);
         }
       } catch (error) {
-        console.warn(`[ReactFlowBridge] ⚠️ Skipping container ${container.id} - position computation failed:`, error);
+        console.warn(
+          `[ReactFlowBridge] ⚠️ Skipping container ${container.id} - position computation failed:`,
+          error
+        );
         return; // Skip this container
       }
 
@@ -339,7 +360,11 @@ export class ReactFlowBridge {
   /**
    * Convert regular edges to ReactFlow edges
    */
-  private convertEdges(visState: VisualizationState, edges: ReactFlowEdge[], nodes: ReactFlowNode[]): void {
+  private convertEdges(
+    visState: VisualizationState,
+    edges: ReactFlowEdge[],
+    nodes: ReactFlowNode[]
+  ): void {
     // Always use semantic mappings for edge styling
     const visibleEdges = Array.from(visState.visibleEdges);
     console.log(`[ReactFlowBridge] 🔗 Converting ${visibleEdges.length} visible edges:`, {
@@ -361,7 +386,7 @@ export class ReactFlowBridge {
     // DIAGNOSTIC: Check if edge endpoints exist in nodes array
     const nodeIds = new Set(nodes.map(n => n.id));
     const missingEndpoints: string[] = [];
-    
+
     convertedEdges.forEach(edge => {
       if (!nodeIds.has(edge.source)) {
         missingEndpoints.push(`${edge.id}: source ${edge.source} missing`);
@@ -370,15 +395,20 @@ export class ReactFlowBridge {
         missingEndpoints.push(`${edge.id}: target ${edge.target} missing`);
       }
     });
-    
+
     if (missingEndpoints.length > 0) {
-      console.error(`[ReactFlowBridge] ❌ MISSING EDGE ENDPOINTS: ${missingEndpoints.length} edges have missing source/target nodes:`, missingEndpoints.slice(0, 10));
-      console.error(`[ReactFlowBridge] 📊 Total nodes: ${nodes.length}, Total edges: ${convertedEdges.length}`);
+      console.error(
+        `[ReactFlowBridge] ❌ MISSING EDGE ENDPOINTS: ${missingEndpoints.length} edges have missing source/target nodes:`,
+        missingEndpoints.slice(0, 10)
+      );
+      console.error(
+        `[ReactFlowBridge] 📊 Total nodes: ${nodes.length}, Total edges: ${convertedEdges.length}`
+      );
     }
 
     // EdgeConverter already processed all edges correctly, including hyperedges
     // Only override if hyperedge has pre-serialized style (legacy compatibility)
-    let overrideCount = 0;
+    let _overrideCount = 0;
     convertedEdges.forEach((reactFlowEdge, index) => {
       const originalEdge = visibleEdges[index];
 
@@ -389,8 +419,8 @@ export class ReactFlowBridge {
         typeof originalEdge.style === 'string'
       ) {
         // Overriding hyperedge style (debug logging removed for performance)
-        overrideCount++;
-        const { deserializeProcessedStyle } = require('../core/EdgeStyleSerializer');
+        _overrideCount++;
+
         const parsedStyle = deserializeProcessedStyle(originalEdge.style);
         if (parsedStyle) {
           if (reactFlowEdge.data) {
@@ -428,7 +458,7 @@ export class ReactFlowBridge {
       const sourceNode = visState.getGraphNode(edge.source);
       const sourceContainer = sourceNode ? null : visState.getContainer(edge.source);
 
-      // For target: try node first, then container  
+      // For target: try node first, then container
       const targetNode = visState.getGraphNode(edge.target);
       const targetContainer = targetNode ? null : visState.getContainer(edge.target);
 
@@ -458,14 +488,16 @@ export class ReactFlowBridge {
     visState: VisualizationState,
     sourceElement: any,
     targetElement: any,
-    edge: any
+    _edge: any
   ): { sourceHandle: string; targetHandle: string } {
     try {
       // Get layout information for source (could be node or container)
-      const sourceLayout = visState.getNodeLayout(sourceElement.id) || visState.getContainerLayout(sourceElement.id);
+      const sourceLayout =
+        visState.getNodeLayout(sourceElement.id) || visState.getContainerLayout(sourceElement.id);
 
-      // Get layout information for target (could be node or container)  
-      const targetLayout = visState.getNodeLayout(targetElement.id) || visState.getContainerLayout(targetElement.id);
+      // Get layout information for target (could be node or container)
+      const targetLayout =
+        visState.getNodeLayout(targetElement.id) || visState.getContainerLayout(targetElement.id);
 
       // Get positions, falling back to element properties and then defaults
       const sourcePos = {
@@ -483,10 +515,22 @@ export class ReactFlowBridge {
       }
 
       // Get dimensions from layout or element data or defaults
-      const sourceWidth = Math.max(1, sourceLayout?.dimensions?.width ?? sourceElement.width ?? 120);
-      const sourceHeight = Math.max(1, sourceLayout?.dimensions?.height ?? sourceElement.height ?? 40);
-      const targetWidth = Math.max(1, targetLayout?.dimensions?.width ?? targetElement.width ?? 120);
-      const targetHeight = Math.max(1, targetLayout?.dimensions?.height ?? targetElement.height ?? 40);
+      const sourceWidth = Math.max(
+        1,
+        sourceLayout?.dimensions?.width ?? sourceElement.width ?? 120
+      );
+      const sourceHeight = Math.max(
+        1,
+        sourceLayout?.dimensions?.height ?? sourceElement.height ?? 40
+      );
+      const targetWidth = Math.max(
+        1,
+        targetLayout?.dimensions?.width ?? targetElement.width ?? 120
+      );
+      const targetHeight = Math.max(
+        1,
+        targetLayout?.dimensions?.height ?? targetElement.height ?? 40
+      );
 
       // Calculate node centers
       const sourceCenterX = sourcePos.x + sourceWidth / 2;
@@ -526,7 +570,7 @@ export class ReactFlowBridge {
           // Target is to the right of source
           return { sourceHandle: 'out-right', targetHandle: 'in-left' };
         } else {
-          // Target is to the left of source  
+          // Target is to the left of source
           // Since we can't use out-left or in-right safely, fall back to vertical
           return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
         }
@@ -554,7 +598,10 @@ export class ReactFlowBridge {
       return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
     } catch (error) {
       // If any error occurs in smart selection, fall back to safe defaults
-      console.warn('[ReactFlowBridge] Error in smart handle selection, falling back to defaults:', error);
+      console.warn(
+        '[ReactFlowBridge] Error in smart handle selection, falling back to defaults:',
+        error
+      );
       return { sourceHandle: 'out-bottom', targetHandle: 'in-top' };
     }
   }

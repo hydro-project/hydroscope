@@ -140,7 +140,11 @@ export const HydroscopeCore = forwardRef<HydroscopeCoreRef, HydroscopeCoreProps>
           if (flowGraphRef.current?.fitView) {
             const fitFn = flowGraphRef.current.fitView;
             // Use consolidated system for fitView
-            consolidatedOperationManager.requestAutoFit(fitFn, undefined, 'hydroscope-core-fitview');
+            consolidatedOperationManager.requestAutoFit(
+              fitFn,
+              undefined,
+              'hydroscope-core-fitview'
+            );
           }
         },
       }),

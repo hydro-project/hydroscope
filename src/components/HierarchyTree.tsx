@@ -93,15 +93,17 @@ function createSearchHighlightDiv(
       style={
         match
           ? {
-            backgroundColor: isCurrent ? searchColors.current.background : searchColors.match.background,
-            borderRadius: 4,
-            padding: '2px 4px',
-            margin: '-1px -2px',
-            fontWeight: isCurrent ? '600' : '500',
-            border: `1px solid ${isCurrent ? searchColors.current.border : searchColors.match.border}`,
-            color: isCurrent ? searchColors.current.text : searchColors.match.text,
-            ...baseStyle,
-          }
+              backgroundColor: isCurrent
+                ? searchColors.current.background
+                : searchColors.match.background,
+              borderRadius: 4,
+              padding: '2px 4px',
+              margin: '-1px -2px',
+              fontWeight: isCurrent ? '600' : '500',
+              border: `1px solid ${isCurrent ? searchColors.current.border : searchColors.match.border}`,
+              color: isCurrent ? searchColors.current.text : searchColors.match.text,
+              ...baseStyle,
+            }
           : baseStyle
       }
     >
@@ -130,15 +132,15 @@ function createContainerDisplayTitle(
       style={
         match
           ? {
-            backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
-            borderRadius: 4,
-            padding: '2px 4px',
-            margin: '-1px -2px',
-            fontWeight: isCurrent ? '600' : '500',
-            border: isCurrent
-              ? '1px solid rgba(255,107,53,0.4)'
-              : '1px solid rgba(251,191,36,0.3)',
-          }
+              backgroundColor: isCurrent ? 'rgba(255,107,53,0.35)' : 'rgba(251,191,36,0.28)',
+              borderRadius: 4,
+              padding: '2px 4px',
+              margin: '-1px -2px',
+              fontWeight: isCurrent ? '600' : '500',
+              border: isCurrent
+                ? '1px solid rgba(255,107,53,0.4)'
+                : '1px solid rgba(251,191,36,0.3)',
+            }
           : {}
       }
     >
@@ -356,7 +358,7 @@ export function HierarchyTree({
   // Track the last search expansion to prevent duplicate operations
   const lastSearchExpansionRef = useRef<string>('');
   const searchExpansionInProgressRef = useRef<boolean>(false);
-  
+
   // Sync local expanded state whenever the derived value changes (e.g., collapse/expand in vis, search)
   useEffect(() => {
     setExpandedKeys(derivedExpandedKeys);
@@ -371,19 +373,22 @@ export function HierarchyTree({
       onToggleContainer
     ) {
       // Create a stable key for this search expansion to prevent duplicates
-      const searchKey = `${searchQuery.trim()}-${searchMatches.map(m => m.id).sort().join(',')}`;
-      
+      const searchKey = `${searchQuery.trim()}-${searchMatches
+        .map(m => m.id)
+        .sort()
+        .join(',')}`;
+
       // Skip if we've already processed this exact search expansion
       if (lastSearchExpansionRef.current === searchKey) {
         return;
       }
-      
+
       // Skip if a search expansion is already in progress
       if (searchExpansionInProgressRef.current) {
         console.error(`[HierarchyTree] 🚫 Skipping search expansion - already in progress`);
         return;
       }
-      
+
       lastSearchExpansionRef.current = searchKey;
       searchExpansionInProgressRef.current = true;
 
@@ -394,16 +399,23 @@ export function HierarchyTree({
 
       // Collect all containers that need to be toggled
       const containersToToggle: string[] = [];
-      
-      console.error(`[HierarchyTree] 🔍 Search expansion: shouldBeExpanded (${shouldBeExpanded.size}):`, Array.from(shouldBeExpanded).slice(0, 10).join(', '), shouldBeExpanded.size > 10 ? '...' : '');
-      console.error(`[HierarchyTree] 🔍 Search expansion: currentlyCollapsed (${currentlyCollapsed.size}):`, Array.from(currentlyCollapsed).join(', '));
-      
+
+      console.error(
+        `[HierarchyTree] 🔍 Search expansion: shouldBeExpanded (${shouldBeExpanded.size}):`,
+        Array.from(shouldBeExpanded).slice(0, 10).join(', '),
+        shouldBeExpanded.size > 10 ? '...' : ''
+      );
+      console.error(
+        `[HierarchyTree] 🔍 Search expansion: currentlyCollapsed (${currentlyCollapsed.size}):`,
+        Array.from(currentlyCollapsed).join(', ')
+      );
+
       currentlyCollapsed.forEach(containerId => {
         if (shouldBeExpanded.has(containerId)) {
           containersToToggle.push(containerId);
         }
       });
-      
+
       // CRITICAL FIX: For search expansion, also include containers that should be expanded
       // but are not in the collapsed set (they might be hidden child containers)
       if (searchQuery && searchQuery.trim() && searchMatches && searchMatches.length > 0) {
@@ -413,12 +425,14 @@ export function HierarchyTree({
             const container = visualizationState?.getContainer(containerId);
             if (container && container.collapsed) {
               containersToToggle.push(containerId);
-              console.error(`[HierarchyTree] 🔧 Adding missing collapsed container: ${containerId}`);
+              console.error(
+                `[HierarchyTree] 🔧 Adding missing collapsed container: ${containerId}`
+              );
             }
           }
         });
       }
-      
+
       // CRITICAL FIX: Sort containers by hierarchy depth to expand parents before children
       // This prevents validation infinite loops caused by expanding children before parents
       containersToToggle.sort((a, b) => {
@@ -426,33 +440,39 @@ export function HierarchyTree({
           let depth = 0;
           let currentId = containerId;
           const visited = new Set<string>();
-          
+
           while (currentId && !visited.has(currentId)) {
             visited.add(currentId);
             const container = visualizationState?.getContainer(currentId);
             if (!container) break;
-            
+
             const parentId = visualizationState?.getContainerParent(currentId);
             if (!parentId) break;
-            
+
             currentId = parentId;
             depth++;
           }
           return depth;
         };
-        
+
         return getHierarchyDepth(a) - getHierarchyDepth(b);
       });
-      
-      console.error(`[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}) [SORTED BY DEPTH]:`, containersToToggle.join(', '));
+
+      console.error(
+        `[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}) [SORTED BY DEPTH]:`,
+        containersToToggle.join(', ')
+      );
 
       // Use LayoutOrchestrator for coordinated search expansion
       if (containersToToggle.length > 0) {
-        console.error(`[HierarchyTree] 🚀 Executing search expansion for ${containersToToggle.length} containers`);
-        
+        console.error(
+          `[HierarchyTree] 🚀 Executing search expansion for ${containersToToggle.length} containers`
+        );
+
         if (layoutOrchestrator) {
           // CRITICAL: Use proper operation coordination and clear flag when done
-          layoutOrchestrator.expandForSearch(containersToToggle, searchQuery || '')
+          layoutOrchestrator
+            .expandForSearch(containersToToggle, searchQuery || '')
             .then(() => {
               searchExpansionInProgressRef.current = false;
             })
@@ -477,7 +497,7 @@ export function HierarchyTree({
       // Clear the search expansion ref when search is cleared
       lastSearchExpansionRef.current = '';
       searchExpansionInProgressRef.current = false;
-      
+
       // When not searching, sync normally
       const shouldBeExpanded = new Set(derivedExpandedKeys.map((k: string) => String(k)));
       const currentlyCollapsed = collapsedContainers;
@@ -490,25 +510,39 @@ export function HierarchyTree({
         }
       });
 
-      // Batch container toggle operations to prevent ResizeObserver loops  
+      // Batch container toggle operations to prevent ResizeObserver loops
       if (containersToToggle.length > 0) {
         // Use the same synchronous approach for consistency
         const operationId = `hierarchy-sync-${Date.now()}`;
-        
-        consolidatedOperationManager.queueLayoutOperation(operationId, async () => {
-          for (const containerId of containersToToggle) {
-            onToggleContainer(containerId);
-          }
-        }, {
-          priority: 'normal',
-          reason: 'hierarchy-sync',
-          triggerAutoFit: true // AutoFit will be triggered automatically
-        }).catch((error: unknown) => {
-          console.warn(`[HierarchyTree] Hierarchy sync failed: ${error}`);
-        });
+
+        consolidatedOperationManager
+          .queueLayoutOperation(
+            operationId,
+            async () => {
+              for (const containerId of containersToToggle) {
+                onToggleContainer(containerId);
+              }
+            },
+            {
+              priority: 'normal',
+              reason: 'hierarchy-sync',
+              triggerAutoFit: true, // AutoFit will be triggered automatically
+            }
+          )
+          .catch((error: unknown) => {
+            console.warn(`[HierarchyTree] Hierarchy sync failed: ${error}`);
+          });
       }
     }
-  }, [derivedExpandedKeys, searchQuery, searchMatches, collapsedContainers, onToggleContainer]);
+  }, [
+    derivedExpandedKeys,
+    searchQuery,
+    searchMatches,
+    collapsedContainers,
+    onToggleContainer,
+    layoutOrchestrator,
+    visualizationState,
+  ]);
 
   const treeData = useMemo(() => {
     if (!visualizationState) return [];

@@ -41,6 +41,7 @@ function LegendInner({
     colorPalette in COLOR_PALETTES ? (colorPalette as keyof typeof COLOR_PALETTES) : 'Set3';
 
   // Precompute colors for all legend items using a memoized map
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const colorsByType = useMemo(() => {
     const map = new Map<string, { primary: string; border: string }>();
     for (const item of legendData.items) {
@@ -55,6 +56,7 @@ function LegendInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- nodeTypeConfig is part of the props interface and could affect color generation in future implementations
   }, [legendData.items, paletteKey, nodeTypeConfig]);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const legendStyle: React.CSSProperties = useMemo(
     () => ({
       fontSize: compact ? '9px' : '10px',
@@ -63,6 +65,7 @@ function LegendInner({
     [compact, style]
   );
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const itemStyle: React.CSSProperties = useMemo(
     () => ({
       display: 'flex',

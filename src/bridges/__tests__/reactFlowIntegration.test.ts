@@ -55,7 +55,7 @@ describe('ReactFlow Integration', () => {
       // Set container layout information (normally provided by ELK)
       state.setContainerLayout('container1', {
         position: { x: 100, y: 100 },
-        dimensions: { width: 300, height: 200 }
+        dimensions: { width: 300, height: 200 },
       });
 
       const result = bridge.convertVisualizationState(state);
@@ -85,7 +85,7 @@ describe('ReactFlow Integration', () => {
       // Set container layout information (normally provided by ELK)
       state.setContainerLayout('container1', {
         position: { x: 50, y: 50 },
-        dimensions: { width: 250, height: 150 }
+        dimensions: { width: 250, height: 150 },
       });
 
       const result = bridge.convertVisualizationState(state);

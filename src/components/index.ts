@@ -10,7 +10,7 @@
  */
 
 import type { VisualizationState } from '../core/VisualizationState';
-import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
+// import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 // === THREE-TIER API ===
 

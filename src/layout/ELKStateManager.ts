@@ -356,7 +356,7 @@ class ELKConfigurationManager {
       // For containers, add extra bottom padding to reserve space for labels
       const basePadding = LAYOUT_SPACING.CONTAINER_PADDING;
       const labelReservedSpace = 32; // Reserve space for label + background + padding
-      
+
       return {
         'elk.padding.left': basePadding.toString(),
         'elk.padding.right': basePadding.toString(),

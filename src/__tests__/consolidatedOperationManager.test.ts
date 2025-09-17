@@ -1,6 +1,6 @@
 /**
  * @fileoverview Tests for ConsolidatedOperationManager
- * 
+ *
  * Tests the unified operation management system that replaces both
  * GlobalLayoutLock and GlobalReactFlowOperationManager.
  */
@@ -22,7 +22,7 @@ describe('ConsolidatedOperationManager', () => {
   describe('Layout Operations', () => {
     it('should queue and execute layout operations', async () => {
       const mockCallback = vi.fn().mockResolvedValue(undefined);
-      
+
       const success = await consolidatedOperationManager.queueLayoutOperation(
         'test-layout',
         mockCallback,
@@ -36,7 +36,7 @@ describe('ConsolidatedOperationManager', () => {
     it('should trigger autofit after layout operations when requested', async () => {
       const mockLayoutCallback = vi.fn().mockResolvedValue(undefined);
       const mockFitView = vi.fn();
-      
+
       // First queue a layout operation that should trigger autofit
       const layoutPromise = consolidatedOperationManager.queueLayoutOperation(
         'test-layout-with-autofit',
@@ -61,7 +61,7 @@ describe('ConsolidatedOperationManager', () => {
     it('should queue ReactFlow updates', () => {
       const mockSetter = vi.fn();
       const testData = { nodes: [], edges: [] };
-      
+
       const operationId = consolidatedOperationManager.queueReactFlowUpdate(
         mockSetter,
         testData,
@@ -77,7 +77,7 @@ describe('ConsolidatedOperationManager', () => {
       const mockSetter = vi.fn();
       const testData1 = { nodes: [{ id: '1' }], edges: [] };
       const testData2 = { nodes: [{ id: '2' }], edges: [] };
-      
+
       // Queue multiple operations rapidly
       consolidatedOperationManager.queueReactFlowUpdate(mockSetter, testData1, 'test-1', 'normal');
       consolidatedOperationManager.queueReactFlowUpdate(mockSetter, testData2, 'test-2', 'normal');
@@ -93,7 +93,7 @@ describe('ConsolidatedOperationManager', () => {
     it('should queue search expansion with automatic autofit', async () => {
       const mockExpansionCallback = vi.fn().mockResolvedValue(undefined);
       const mockFitView = vi.fn();
-      
+
       // Queue search expansion (should automatically trigger autofit)
       const expansionPromise = consolidatedOperationManager.queueSearchExpansion(
         'test-search-expansion',
@@ -117,7 +117,7 @@ describe('ConsolidatedOperationManager', () => {
     it('should queue container toggle with automatic autofit', async () => {
       const mockToggleCallback = vi.fn().mockResolvedValue(undefined);
       const mockFitView = vi.fn();
-      
+
       // Queue container toggle (should automatically trigger autofit)
       const togglePromise = consolidatedOperationManager.queueContainerToggle(
         'test-container-toggle',
@@ -140,7 +140,7 @@ describe('ConsolidatedOperationManager', () => {
   describe('AutoFit Coordination', () => {
     it('should debounce autofit requests', async () => {
       const mockFitView = vi.fn();
-      
+
       // Make multiple rapid autofit requests
       consolidatedOperationManager.requestAutoFit(mockFitView, undefined, 'request-1');
       consolidatedOperationManager.requestAutoFit(mockFitView, undefined, 'request-2');
@@ -157,26 +157,32 @@ describe('ConsolidatedOperationManager', () => {
   describe('Priority Handling', () => {
     it('should execute high priority operations first', async () => {
       const executionOrder: string[] = [];
-      
+
       const lowPriorityOp = vi.fn().mockImplementation(() => {
         executionOrder.push('low');
         return Promise.resolve();
       });
-      
+
       const highPriorityOp = vi.fn().mockImplementation(() => {
         executionOrder.push('high');
         return Promise.resolve();
       });
-      
+
       const normalPriorityOp = vi.fn().mockImplementation(() => {
         executionOrder.push('normal');
         return Promise.resolve();
       });
 
       // Queue in reverse priority order
-      await consolidatedOperationManager.queueLayoutOperation('low-op', lowPriorityOp, { priority: 'low' });
-      await consolidatedOperationManager.queueLayoutOperation('normal-op', normalPriorityOp, { priority: 'normal' });
-      await consolidatedOperationManager.queueLayoutOperation('high-op', highPriorityOp, { priority: 'high' });
+      await consolidatedOperationManager.queueLayoutOperation('low-op', lowPriorityOp, {
+        priority: 'low',
+      });
+      await consolidatedOperationManager.queueLayoutOperation('normal-op', normalPriorityOp, {
+        priority: 'normal',
+      });
+      await consolidatedOperationManager.queueLayoutOperation('high-op', highPriorityOp, {
+        priority: 'high',
+      });
 
       // Wait for all operations to complete
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -188,17 +194,19 @@ describe('ConsolidatedOperationManager', () => {
   describe('Circuit Breaker', () => {
     it('should prevent excessive operations', async () => {
       const mockCallback = vi.fn().mockResolvedValue(undefined);
-      
+
       // Try to queue many operations rapidly (more than circuit breaker limit)
       const promises = [];
       for (let i = 0; i < 35; i++) {
         promises.push(
-          consolidatedOperationManager.queueLayoutOperation(`test-${i}`, mockCallback, { priority: 'normal' })
+          consolidatedOperationManager.queueLayoutOperation(`test-${i}`, mockCallback, {
+            priority: 'normal',
+          })
         );
       }
 
       const results = await Promise.all(promises);
-      
+
       // Some operations should be blocked by circuit breaker
       const blockedCount = results.filter(result => result === false).length;
       expect(blockedCount).toBeGreaterThan(0);
@@ -208,7 +216,7 @@ describe('ConsolidatedOperationManager', () => {
   describe('Status Reporting', () => {
     it('should report current status', () => {
       const status = consolidatedOperationManager.getStatus();
-      
+
       expect(status).toHaveProperty('isProcessing');
       expect(status).toHaveProperty('currentOperation');
       expect(status).toHaveProperty('queueLength');

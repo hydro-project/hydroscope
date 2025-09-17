@@ -6,6 +6,9 @@
  */
 
 // Performance profiling utilities
+import { PerformanceProfiler } from './profiling/PerformanceProfiler';
+import { ExpandAllProfiler } from './profiling/ExpandAllProfiler';
+
 export { PerformanceProfiler } from './profiling/PerformanceProfiler';
 export { ExpandAllProfiler } from './profiling/ExpandAllProfiler';
 export { PaxosPerformanceAnalyzer } from './profiling/PaxosPerformanceAnalyzer';
@@ -42,7 +45,6 @@ export const getProfiler = () => {
     return null;
   }
   try {
-    const { PerformanceProfiler } = require('./profiling/PerformanceProfiler');
     return PerformanceProfiler.getInstance();
   } catch (error) {
     console.warn('Profiler not available:', error);
@@ -56,7 +58,6 @@ export const getExpandAllProfiler = () => {
     return null;
   }
   try {
-    const { ExpandAllProfiler } = require('./profiling/ExpandAllProfiler');
     return ExpandAllProfiler.getInstance();
   } catch (error) {
     console.warn('ExpandAllProfiler not available:', error);

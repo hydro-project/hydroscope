@@ -15,7 +15,7 @@ import { createVisualizationEngine } from '../core/VisualizationEngine';
 import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import { useManualPositions } from './useManualPositions';
 import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
-import { layoutContentionMetrics } from '../utils/layoutContentionMetrics';
+// import { layoutContentionMetrics } from '../utils/layoutContentionMetrics';
 import { hscopeLogger } from '../utils/logger';
 import { UI_CONSTANTS } from '../shared/config';
 import { getProfiler } from '../dev';
@@ -53,49 +53,64 @@ export function useFlowGraphController({
   const [reactFlowData, setReactFlowData] = useState<ReactFlowData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Flag to prevent infinite loops when we're updating ReactFlow data internally
   const isInternalUpdateRef = useRef(false);
 
   // Enhanced state setter with global operation manager protection
-  const setReactFlowDataWithLogging = useCallback((data: ReactFlowData | null, layoutId: string) => {
-    hscopeLogger.log('layout', `setData request layout=${layoutId} newNodes=${data?.nodes.length || 0} newEdges=${data?.edges.length || 0}`);
-    
-    // DIAGNOSTIC: Log edge data for debugging missing edges
-    if ((data?.edges.length || 0) === 0 && (data?.nodes.length || 0) > 5) {
-      console.error(`[FlowGraphController] 🚨 EDGE DATA LOSS: ${data?.nodes.length || 0} nodes but 0 edges for layout ${layoutId}`);
-      console.error(`[FlowGraphController] 🚨 This indicates edges were lost during state transitions`);
-    }
+  const setReactFlowDataWithLogging = useCallback(
+    (data: ReactFlowData | null, layoutId: string) => {
+      hscopeLogger.log(
+        'layout',
+        `setData request layout=${layoutId} newNodes=${data?.nodes.length || 0} newEdges=${data?.edges.length || 0}`
+      );
 
-    // Set flag to indicate this is an internal update
-    isInternalUpdateRef.current = true;
+      // DIAGNOSTIC: Log edge data for debugging missing edges
+      if ((data?.edges.length || 0) === 0 && (data?.nodes.length || 0) > 5) {
+        console.error(
+          `[FlowGraphController] 🚨 EDGE DATA LOSS: ${data?.nodes.length || 0} nodes but 0 edges for layout ${layoutId}`
+        );
+        console.error(
+          `[FlowGraphController] 🚨 This indicates edges were lost during state transitions`
+        );
+      }
 
-    // CRITICAL: If we're inside an operation, execute immediately to maintain atomicity
-    if (consolidatedOperationManager.isInsideOperation()) {
-      hscopeLogger.log('layout', `setData immediate (inside operation) layout=${layoutId}`);
-      setReactFlowData(data);
-      // Reset flag after a short delay to allow ReactFlow to process
-      setTimeout(() => { isInternalUpdateRef.current = false; }, 100);
-      return;
-    }
+      // Set flag to indicate this is an internal update
+      isInternalUpdateRef.current = true;
 
-    // Use consolidated operation manager for protected state updates
-    const operationId = consolidatedOperationManager.queueReactFlowUpdate(
-      (newData) => {
-        setReactFlowData(newData);
+      // CRITICAL: If we're inside an operation, execute immediately to maintain atomicity
+      if (consolidatedOperationManager.isInsideOperation()) {
+        hscopeLogger.log('layout', `setData immediate (inside operation) layout=${layoutId}`);
+        setReactFlowData(data);
         // Reset flag after a short delay to allow ReactFlow to process
-        setTimeout(() => { isInternalUpdateRef.current = false; }, 100);
-      },
-      data,
-      layoutId,
-      'high' // Layout updates are high priority
-    );
+        setTimeout(() => {
+          isInternalUpdateRef.current = false;
+        }, 100);
+        return;
+      }
 
-    if (operationId) hscopeLogger.log('layout', `setData queued op=${operationId}`); else hscopeLogger.warn('layout', `setData blocked layout=${layoutId}`);
+      // Use consolidated operation manager for protected state updates
+      const operationId = consolidatedOperationManager.queueReactFlowUpdate(
+        newData => {
+          setReactFlowData(newData);
+          // Reset flag after a short delay to allow ReactFlow to process
+          setTimeout(() => {
+            isInternalUpdateRef.current = false;
+          }, 100);
+        },
+        data,
+        layoutId,
+        'high' // Layout updates are high priority
+      );
 
-    // Verify state change in next tick (only for debugging)
-    // Drop verbose verification; retain minimal optional hook (disabled by default)
-  }, [reactFlowData]);
+      if (operationId) hscopeLogger.log('layout', `setData queued op=${operationId}`);
+      else hscopeLogger.warn('layout', `setData blocked layout=${layoutId}`);
+
+      // Verify state change in next tick (only for debugging)
+      // Drop verbose verification; retain minimal optional hook (disabled by default)
+    },
+    []
+  );
 
   // Circuit breaker for rapid layout refreshes
   const layoutCircuitBreakerRef = useRef({
@@ -106,7 +121,7 @@ export function useFlowGraphController({
   });
 
   // When a layout attempt is blocked by the global lock we queue a limited number of retries
-  const pendingLayoutRetryRef = useRef<{ force?: boolean; attempts: number } | null>(null);
+  const _pendingLayoutRetryRef = useRef<{ force?: boolean; attempts: number } | null>(null);
 
   const checkCircuitBreaker = () => {
     const now = Date.now();
@@ -174,12 +189,8 @@ export function useFlowGraphController({
       };
 
       // Use consolidated operation manager for manual fitView requests
-      consolidatedOperationManager.requestAutoFit(
-        fitView,
-        fitOptions,
-        'manual-fit-request'
-      );
-      
+      consolidatedOperationManager.requestAutoFit(fitView, fitOptions, 'manual-fit-request');
+
       hscopeLogger.log('fit', 'manual fitView requested');
       lastFitTimeRef.current = Date.now();
     } catch (err) {
@@ -195,43 +206,55 @@ export function useFlowGraphController({
         return;
       }
 
-      const profiler = getProfiler();
-      const timestamp = Date.now();
-      const layoutId = `layout-${timestamp}`;
+      const _profiler = getProfiler();
+      const _timestamp = Date.now();
+      const layoutId = `layout-${_timestamp}`;
 
       // Use the consolidated operation manager for layout operations
-      const success = await consolidatedOperationManager.queueLayoutOperation(layoutId, async () => {
-        await executeLayoutOperation(layoutId, force);
-      }, {
-        priority: force ? 'high' : 'normal',
-        reason: `layout refresh ${force ? '(forced)' : ''}`,
-        triggerAutoFit: config.fitView !== false, // Respect fitView config
-        force
-      });
+      const success = await consolidatedOperationManager.queueLayoutOperation(
+        layoutId,
+        async () => {
+          await executeLayoutOperation(layoutId, force);
+        },
+        {
+          priority: force ? 'high' : 'normal',
+          reason: `layout refresh ${force ? '(forced)' : ''}`,
+          triggerAutoFit: config.fitView !== false, // Respect fitView config
+          force,
+        }
+      );
 
       if (!success) {
         hscopeLogger.warn('layout', `refresh failed id=${layoutId}`);
         return;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [checkCircuitBreaker, visualizationState, engine, applyManualPositions]
   );
 
-  const executeLayoutOperation = useCallback(async (layoutId: string, force?: boolean) => {
-    hscopeLogger.log('layout', `start refresh id=${layoutId} force=${!!force} nodes=${reactFlowData?.nodes.length || 0}`);
+  const executeLayoutOperation = useCallback(
+    async (layoutId: string, force?: boolean) => {
+      hscopeLogger.log(
+        'layout',
+        `start refresh id=${layoutId} force=${!!force} nodes=${reactFlowData?.nodes.length || 0}`
+      );
 
-    const profiler = getProfiler();
-    
-    try {
-      setLoading(true);
-      setError(null);
+      const profiler = getProfiler();
 
-      profiler?.start('Layout Calculation');
+      try {
+        setLoading(true);
+        setError(null);
+
+        profiler?.start('Layout Calculation');
 
         // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
         // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
         if (force && layoutConfig) {
-          console.log(`[FlowGraphController] 🔧 Updating layout config [${layoutId}]`, layoutConfig);
+          console.log(
+            `[FlowGraphController] 🔧 Updating layout config [${layoutId}]`,
+            layoutConfig
+          );
           engine.updateLayoutConfig({ ...layoutConfig }, false);
         }
 
@@ -239,7 +262,10 @@ export function useFlowGraphController({
         const lastChangedContainer = visualizationState.getLastChangedContainer();
         if (lastChangedContainer && !force) {
           // Use selective layout for individual container changes
-          hscopeLogger.log('layout', `selective layout container=${lastChangedContainer} id=${layoutId}`);
+          hscopeLogger.log(
+            'layout',
+            `selective layout container=${lastChangedContainer} id=${layoutId}`
+          );
           profiler?.start('Selective Layout');
           await engine.runSelectiveLayout(lastChangedContainer);
           visualizationState.clearLastChangedContainer();
@@ -263,11 +289,17 @@ export function useFlowGraphController({
         profiler?.start('Rendering');
         hscopeLogger.log('layout', `convert state -> rfData id=${layoutId}`);
         const baseData = bridge.convertVisualizationState(visualizationState);
-        hscopeLogger.log('layout', `base data counts nodes=${baseData.nodes.length} edges=${baseData.edges.length} id=${layoutId}`);
+        hscopeLogger.log(
+          'layout',
+          `base data counts nodes=${baseData.nodes.length} edges=${baseData.edges.length} id=${layoutId}`
+        );
 
         baseReactFlowDataRef.current = baseData;
         const dataWithManual = applyManualPositions(baseData, manualPositions);
-        hscopeLogger.log('layout', `apply manual positions count=${Object.keys(manualPositions).length} id=${layoutId}`);
+        hscopeLogger.log(
+          'layout',
+          `apply manual positions count=${Object.keys(manualPositions).length} id=${layoutId}`
+        );
         setReactFlowDataWithLogging(dataWithManual, layoutId);
         hscopeLogger.log('layout', `setData complete id=${layoutId}`);
 
@@ -281,7 +313,11 @@ export function useFlowGraphController({
           // Allow external batching (e.g., container toggle batches) to suppress the immediate auto-fit
           if (typeof window !== 'undefined' && (window as any).__hydroSkipNextAutoFit) {
             hscopeLogger.log('fit', `auto-fit suppressed flag id=${layoutId}`);
-            try { delete (window as any).__hydroSkipNextAutoFit; } catch { /* ignore */ }
+            try {
+              delete (window as any).__hydroSkipNextAutoFit;
+            } catch {
+              /* ignore */
+            }
           } else {
             const now = Date.now();
             const sinceLast = now - lastFitTimeRef.current;
@@ -291,7 +327,10 @@ export function useFlowGraphController({
               // which properly coordinates with other operations
               setTimeout(() => {
                 try {
-                  hscopeLogger.log('fit', `auto-fit exec initial=${!hasInitialAutoFitRef.current} id=${layoutId}`);
+                  hscopeLogger.log(
+                    'fit',
+                    `auto-fit exec initial=${!hasInitialAutoFitRef.current} id=${layoutId}`
+                  );
                   const fitOptions = {
                     padding: UI_CONSTANTS.FIT_VIEW_PADDING,
                     maxZoom: UI_CONSTANTS.FIT_VIEW_MAX_ZOOM,
@@ -304,7 +343,10 @@ export function useFlowGraphController({
                   );
                   hasInitialAutoFitRef.current = true;
                 } catch (err) {
-                  console.warn(`[FlowGraphController] ⚠️ Auto-fit failed during refresh [${layoutId}]:`, err);
+                  console.warn(
+                    `[FlowGraphController] ⚠️ Auto-fit failed during refresh [${layoutId}]:`,
+                    err
+                  );
                 }
               }, fitDelay);
             } else {
@@ -312,27 +354,29 @@ export function useFlowGraphController({
             }
           }
         }
-      hscopeLogger.log('layout', `refresh success id=${layoutId}`);
-    } catch (err) {
-      profiler?.end('Layout Calculation');
-      profiler?.end('Rendering');
-      hscopeLogger.error('layout', `refresh failure id=${layoutId}`, err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-      // Note: Lock is now managed by the queue system, individual operations don't release it
-      hscopeLogger.log('layout', `refresh finally complete id=${layoutId}`);
-    }
-  }, [
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutConfig dependency causes infinite loops in the layout engine feedback cycle
-    applyManualPositions,
-    bridge,
-    config.fitView,
-    engine,
-    fitView,
-    manualPositions,
-    visualizationState,
-  ]);
+        hscopeLogger.log('layout', `refresh success id=${layoutId}`);
+      } catch (err) {
+        profiler?.end('Layout Calculation');
+        profiler?.end('Rendering');
+        hscopeLogger.error('layout', `refresh failure id=${layoutId}`, err);
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+        // Note: Lock is now managed by the queue system, individual operations don't release it
+        hscopeLogger.log('layout', `refresh finally complete id=${layoutId}`);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- layoutConfig and reactFlowData dependencies cause infinite loops
+    [
+      applyManualPositions,
+      bridge,
+      config.fitView,
+      engine,
+      fitView,
+      manualPositions,
+      visualizationState,
+    ]
+  );
 
   // Listen to layout config changes (when data already present)
   useEffect(() => {
@@ -416,7 +460,9 @@ export function useFlowGraphController({
         }
         const signature = `es_${hash.toString(36)}`;
 
-        const needsEdgeUpdate = reactFlowData.edges.some(e => e.data?.__edgeStyleSignature !== signature);
+        const needsEdgeUpdate = reactFlowData.edges.some(
+          e => e.data?.__edgeStyleSignature !== signature
+        );
         if (needsEdgeUpdate) {
           const updated = {
             ...reactFlowData,
@@ -425,8 +471,8 @@ export function useFlowGraphController({
               data: {
                 ...ed.data,
                 __edgeStyleSignature: signature,
-              }
-            }))
+              },
+            })),
           };
           const opId = consolidatedOperationManager.queueReactFlowUpdate(
             setReactFlowData,
@@ -448,7 +494,7 @@ export function useFlowGraphController({
   // Listen to visualization state changes (only when state actually changes)
   useEffect(() => {
     const currentVersion = visualizationState.getVersion();
-    
+
     // Skip if this is the same version we already processed
     if (currentVersion === lastStateVersionRef.current) {
       return;
@@ -477,7 +523,10 @@ export function useFlowGraphController({
           'state-change-layout',
           'high'
         );
-        hscopeLogger.log('layout', `state change layout queued op=${operationId} version=${currentVersion}`);
+        hscopeLogger.log(
+          'layout',
+          `state change layout queued op=${operationId} version=${currentVersion}`
+        );
 
         if (config.fitView !== false) {
           const now = Date.now();
@@ -547,14 +596,20 @@ export function useFlowGraphController({
   // Event handlers
   const onNodeClick: NodeMouseHandler = useCallback(
     (event, node) => {
-      const timestamp = Date.now();
-      hscopeLogger.log('op', `node click id=${node.id} type=${node.type} x=${node.position.x} y=${node.position.y}`);
+      const _timestamp = Date.now();
+      hscopeLogger.log(
+        'op',
+        `node click id=${node.id} type=${node.type} x=${node.position.x} y=${node.position.y}`
+      );
 
       // Check if this is a container node
       const container = visualizationState.getContainer(node.id);
 
       if (container) {
-        hscopeLogger.log('op', `container click id=${container.id} collapsed=${container.collapsed} children=${container.children?.size || 0}`);
+        hscopeLogger.log(
+          'op',
+          `container click id=${container.id} collapsed=${container.collapsed} children=${container.children?.size || 0}`
+        );
 
         // For container nodes, call the event handler FIRST (to change container state)
         // then do click animation logic AFTER the container state has changed
@@ -634,29 +689,32 @@ export function useFlowGraphController({
     [visualizationState, config.fitView, fitView]
   );
 
-  const onNodesChange = useCallback((changes: any[]) => {
-    // CRITICAL: Prevent infinite loops by ignoring changes during internal updates
-    if (isInternalUpdateRef.current) {
-      hscopeLogger.log('layout', `nodes change ignored (internal update in progress)`);
-      return;
-    }
+  const onNodesChange = useCallback(
+    (changes: any[]) => {
+      // CRITICAL: Prevent infinite loops by ignoring changes during internal updates
+      if (isInternalUpdateRef.current) {
+        hscopeLogger.log('layout', `nodes change ignored (internal update in progress)`);
+        return;
+      }
 
-    // For onNodesChange, we need to compute the update first, then apply it
-    const currentData = reactFlowData;
-    if (currentData) {
-      const updatedData = {
-        ...currentData,
-        nodes: applyNodeChanges(changes, currentData.nodes)
-      };
-      const operationId = consolidatedOperationManager.queueReactFlowUpdate(
-        setReactFlowData,
-        updatedData,
-        'nodes-change',
-        'high'
-      );
-      hscopeLogger.log('layout', `nodes change queued op=${operationId}`);
-    }
-  }, [reactFlowData]);
+      // For onNodesChange, we need to compute the update first, then apply it
+      const currentData = reactFlowData;
+      if (currentData) {
+        const updatedData = {
+          ...currentData,
+          nodes: applyNodeChanges(changes, currentData.nodes),
+        };
+        const operationId = consolidatedOperationManager.queueReactFlowUpdate(
+          setReactFlowData,
+          updatedData,
+          'nodes-change',
+          'high'
+        );
+        hscopeLogger.log('layout', `nodes change queued op=${operationId}`);
+      }
+    },
+    [reactFlowData]
+  );
 
   return {
     reactFlowData,

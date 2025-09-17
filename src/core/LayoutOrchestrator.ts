@@ -1,10 +1,10 @@
 /**
  * @fileoverview LayoutOrchestrator - Centralized Layout Decision Making
- * 
+ *
  * This class serves as the "narrow waist" for all layout-triggering decisions.
  * It coordinates between pure state changes (VisualizationState) and layout execution,
  * using ConsolidatedOperationManager for proper operation coordination and autofit.
- * 
+ *
  * Architecture:
  * Component -> LayoutOrchestrator -> ConsolidatedOperationManager -> VisualizationState (pure) + LayoutEngine
  */
@@ -23,7 +23,7 @@ export interface AutoFitController {
 
 /**
  * LayoutOrchestrator coordinates all layout-triggering operations.
- * 
+ *
  * Key principles:
  * 1. VisualizationState methods called by this class should be "pure" (no internal layout triggers)
  * 2. All layout triggering goes through ConsolidatedOperationManager
@@ -43,22 +43,22 @@ export class LayoutOrchestrator {
    */
   async collapseAll(): Promise<void> {
     const operationId = `orchestrator-collapse-all-${Date.now()}`;
-    
+
     hscopeLogger.log('orchestrator', `collapseAll operation=${operationId}`);
-    
+
     await consolidatedOperationManager.queueContainerToggle(
       operationId,
       async () => {
         // Use original method - layout lock will prevent coordination issues
         this.visualizationState.collapseAllContainers();
-        
+
         // Trigger FULL layout recalculation for collapse all (force=true)
         // This ensures containers are repositioned optimally, not just collapsed in place
         await this.layoutController.refreshLayout(true);
       },
       'high'
     );
-    
+
     // ConsolidatedOperationManager will handle autofit automatically
     hscopeLogger.log('orchestrator', `collapseAll queued operation=${operationId}`);
   }
@@ -68,22 +68,22 @@ export class LayoutOrchestrator {
    */
   async expandAll(): Promise<void> {
     const operationId = `orchestrator-expand-all-${Date.now()}`;
-    
+
     hscopeLogger.log('orchestrator', `expandAll operation=${operationId}`);
-    
+
     await consolidatedOperationManager.queueContainerToggle(
       operationId,
       async () => {
         // Use original method - layout lock will prevent coordination issues
         this.visualizationState.expandAllContainers();
-        
+
         // Trigger FULL layout recalculation for expand all (force=true)
         // This ensures containers are repositioned optimally
         await this.layoutController.refreshLayout(true);
       },
       'high'
     );
-    
+
     hscopeLogger.log('orchestrator', `expandAll queued operation=${operationId}`);
   }
 
@@ -99,9 +99,12 @@ export class LayoutOrchestrator {
 
     const operationId = `orchestrator-toggle-${containerId}-${Date.now()}`;
     const action = container.collapsed ? 'expand' : 'collapse';
-    
-    hscopeLogger.log('orchestrator', `toggleContainer ${action} id=${containerId} operation=${operationId}`);
-    
+
+    hscopeLogger.log(
+      'orchestrator',
+      `toggleContainer ${action} id=${containerId} operation=${operationId}`
+    );
+
     await consolidatedOperationManager.queueContainerToggle(
       operationId,
       async () => {
@@ -117,8 +120,11 @@ export class LayoutOrchestrator {
       },
       'normal'
     );
-    
-    hscopeLogger.log('orchestrator', `toggleContainer ${action} queued id=${containerId} operation=${operationId}`);
+
+    hscopeLogger.log(
+      'orchestrator',
+      `toggleContainer ${action} queued id=${containerId} operation=${operationId}`
+    );
   }
 
   /**
@@ -128,14 +134,17 @@ export class LayoutOrchestrator {
     if (containerIds.length === 0) return;
 
     const operationId = `orchestrator-search-expand-${Date.now()}`;
-    
-    hscopeLogger.log('orchestrator', `expandForSearch containers=${containerIds.length} query="${searchQuery}" operation=${operationId}`);
-    
+
+    hscopeLogger.log(
+      'orchestrator',
+      `expandForSearch containers=${containerIds.length} query="${searchQuery}" operation=${operationId}`
+    );
+
     // Set flag to prevent full collapse from undoing search expansion
     if (typeof window !== 'undefined') {
       (window as any).__hydroRecentSearchExpansion = Date.now();
     }
-    
+
     await consolidatedOperationManager.queueSearchExpansion(
       operationId,
       async () => {
@@ -143,29 +152,38 @@ export class LayoutOrchestrator {
         for (const containerId of containerIds) {
           this.visualizationState.expandContainer(containerId);
         }
-        
+
         // CRITICAL: Force visibility cache consistency after search expansion
         // This ensures all container visibility states are consistent before layout
         this.visualizationState.ensureVisibilityConsistency();
-        
+
         // Search expansion always needs full layout to position newly visible child nodes
         await this.layoutController.refreshLayout(true);
       },
       'high' // Search operations are high priority
     );
-    
-    hscopeLogger.log('orchestrator', `expandForSearch queued containers=${containerIds.length} operation=${operationId}`);
+
+    hscopeLogger.log(
+      'orchestrator',
+      `expandForSearch queued containers=${containerIds.length} operation=${operationId}`
+    );
   }
 
   /**
    * Handle layout refresh with optional autofit
    * This is the central decision point for when layout should occur
    */
-  async refreshLayout(force: boolean = false, reason: string = 'orchestrator-request'): Promise<void> {
+  async refreshLayout(
+    force: boolean = false,
+    reason: string = 'orchestrator-request'
+  ): Promise<void> {
     const operationId = `orchestrator-layout-${Date.now()}`;
-    
-    hscopeLogger.log('orchestrator', `refreshLayout force=${force} reason=${reason} operation=${operationId}`);
-    
+
+    hscopeLogger.log(
+      'orchestrator',
+      `refreshLayout force=${force} reason=${reason} operation=${operationId}`
+    );
+
     await consolidatedOperationManager.queueLayoutOperation(
       operationId,
       async () => {
@@ -175,11 +193,14 @@ export class LayoutOrchestrator {
         priority: force ? 'high' : 'normal',
         reason,
         triggerAutoFit: true, // Layout operations should trigger autofit
-        force
+        force,
       }
     );
-    
-    hscopeLogger.log('orchestrator', `refreshLayout queued force=${force} operation=${operationId}`);
+
+    hscopeLogger.log(
+      'orchestrator',
+      `refreshLayout queued force=${force} operation=${operationId}`
+    );
   }
 
   /**
@@ -194,7 +215,10 @@ export class LayoutOrchestrator {
       );
       hscopeLogger.log('orchestrator', `autofit requested reason=${reason}`);
     } else {
-      hscopeLogger.warn('orchestrator', `autofit requested but no controller available reason=${reason}`);
+      hscopeLogger.warn(
+        'orchestrator',
+        `autofit requested but no controller available reason=${reason}`
+      );
     }
   }
 
@@ -206,20 +230,23 @@ export class LayoutOrchestrator {
     if (containerIds.length === 0) return;
 
     const operationId = `orchestrator-batch-toggle-${Date.now()}`;
-    
-    hscopeLogger.log('orchestrator', `toggleContainersBatch containers=${containerIds.length} operation=${operationId}`);
-    
+
+    hscopeLogger.log(
+      'orchestrator',
+      `toggleContainersBatch containers=${containerIds.length} operation=${operationId}`
+    );
+
     await consolidatedOperationManager.queueContainerToggle(
       operationId,
       async () => {
         // Check if any containers will be expanded (need full layout for child positioning)
         let hasExpansions = false;
-        
+
         // Toggle each container using pure methods
         for (const containerId of containerIds) {
           const container = this.visualizationState.getContainer(containerId);
           if (!container) continue;
-          
+
           if (container.collapsed) {
             this.visualizationState.expandContainer(containerId);
             hasExpansions = true; // Expansion detected
@@ -227,15 +254,18 @@ export class LayoutOrchestrator {
             this.visualizationState.collapseContainer(containerId);
           }
         }
-        
+
         // Use full layout if expanding any containers or multiple containers involved
         const force = hasExpansions || containerIds.length > 1;
         await this.layoutController.refreshLayout(force);
       },
       'normal'
     );
-    
-    hscopeLogger.log('orchestrator', `toggleContainersBatch queued containers=${containerIds.length} operation=${operationId}`);
+
+    hscopeLogger.log(
+      'orchestrator',
+      `toggleContainersBatch queued containers=${containerIds.length} operation=${operationId}`
+    );
   }
 
   /**

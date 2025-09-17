@@ -144,7 +144,7 @@ export class VisualizationEngine {
     const profiler = getProfiler();
     try {
       this.updateState('laying_out');
-      
+
       // Acquire global state lock to prevent race conditions during layout operations
       this.visState.acquireGlobalStateLock();
 
@@ -154,18 +154,22 @@ export class VisualizationEngine {
       // CRITICAL FIX: Don't run full collapse after search expansion or inside existing operations
       // Search expansion specifically expands containers to show search results,
       // so collapsing them immediately after defeats the purpose
-      const { consolidatedOperationManager } = await import('../utils/consolidatedOperationManager');
-      
+      const { consolidatedOperationManager } = await import(
+        '../utils/consolidatedOperationManager'
+      );
+
       // For initial layout, only check for search expansion, not container structure changes
-      const hasRecentSearchForInitial = typeof window !== 'undefined' && 
-                                        (window as any).__hydroRecentSearchExpansion &&
-                                        (Date.now() - (window as any).__hydroRecentSearchExpansion) < 5000;
-      
-      const shouldRunFullCollapse = this.state.layoutCount === 0 && 
-                                   this.visState.getVisibleNodes().length > 50 &&
-                                   !hasRecentSearchForInitial &&
-                                   !consolidatedOperationManager.isInsideOperation();
-      
+      const hasRecentSearchForInitial =
+        typeof window !== 'undefined' &&
+        (window as any).__hydroRecentSearchExpansion &&
+        Date.now() - (window as any).__hydroRecentSearchExpansion < 5000;
+
+      const shouldRunFullCollapse =
+        this.state.layoutCount === 0 &&
+        this.visState.getVisibleNodes().length > 50 &&
+        !hasRecentSearchForInitial &&
+        !consolidatedOperationManager.isInsideOperation();
+
       if (shouldRunFullCollapse) {
         // Run full collapse directly since we're not inside an operation
         // This happens during initial layout setup before the main layout operation
@@ -181,13 +185,16 @@ export class VisualizationEngine {
         // Run smart collapse only on the first layout if enabled
         // CRITICAL: Check for recent search expansion to prevent race condition
         // For initial layout (layoutCount === 0), only check for search expansion, not container structure changes
-        const hasRecentSearch = typeof window !== 'undefined' && 
-                               (window as any).__hydroRecentSearchExpansion &&
-                               (Date.now() - (window as any).__hydroRecentSearchExpansion) < 5000;
-        
-        if (this.config.layoutConfig?.enableSmartCollapse && 
-            this.state.layoutCount === 0 && 
-            !hasRecentSearch) {
+        const hasRecentSearch =
+          typeof window !== 'undefined' &&
+          (window as any).__hydroRecentSearchExpansion &&
+          Date.now() - (window as any).__hydroRecentSearchExpansion < 5000;
+
+        if (
+          this.config.layoutConfig?.enableSmartCollapse &&
+          this.state.layoutCount === 0 &&
+          !hasRecentSearch
+        ) {
           profiler?.start('smart-collapse');
           await this.runSmartCollapse();
           profiler?.end('smart-collapse');
@@ -422,40 +429,44 @@ export class VisualizationEngine {
     if (typeof window !== 'undefined' && (window as any).__hydroRecentSearchExpansion) {
       const timestamp = (window as any).__hydroRecentSearchExpansion;
       const elapsed = Date.now() - timestamp;
-      
+
       if (elapsed < 5000) {
         return true;
       } else {
         delete (window as any).__hydroRecentSearchExpansion;
       }
     }
-    
+
     // Check for recent grouping changes
     if (typeof window !== 'undefined' && (window as any).__hydroRecentGroupingChange) {
       const timestamp = (window as any).__hydroRecentGroupingChange;
       const elapsed = Date.now() - timestamp;
-      
+
       if (elapsed < 5000) {
-        console.error(`[VisualizationEngine] 🔍 Skipping full collapse due to recent grouping change (${elapsed}ms ago)`);
+        console.error(
+          `[VisualizationEngine] 🔍 Skipping full collapse due to recent grouping change (${elapsed}ms ago)`
+        );
         return true;
       } else {
         delete (window as any).__hydroRecentGroupingChange;
       }
     }
-    
+
     // Check for any recent container structure changes
     if (typeof window !== 'undefined' && (window as any).__hydroRecentContainerChange) {
       const timestamp = (window as any).__hydroRecentContainerChange;
       const elapsed = Date.now() - timestamp;
-      
+
       if (elapsed < 5000) {
-        console.error(`[VisualizationEngine] 🔍 Skipping full collapse due to recent container structure change (${elapsed}ms ago)`);
+        console.error(
+          `[VisualizationEngine] 🔍 Skipping full collapse due to recent container structure change (${elapsed}ms ago)`
+        );
         return true;
       } else {
         delete (window as any).__hydroRecentContainerChange;
       }
     }
-    
+
     return false;
   }
 

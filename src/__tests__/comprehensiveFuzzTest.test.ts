@@ -3,7 +3,7 @@
  *
  * Combines the "DISCONNECTED EDGES BUG HUNTER" with expanded fuzz testing
  * to stress test all visualizer controls and operations using paxos-flipped.json
- * 
+ *
  * Operations tested include:
  * - Container expand/collapse (individual and bulk)
  * - Layout algorithm changes
@@ -41,10 +41,10 @@ type FuzzOperation =
   | { type: 'contractAllNodes' }
   | { type: 'changeHierarchy'; hierarchyId: string }
   | {
-    type: 'changeLayout';
-    algorithm: 'mrtree' | 'layered' | 'force' | 'stress' | 'radial';
-    direction?: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
-  }
+      type: 'changeLayout';
+      algorithm: 'mrtree' | 'layered' | 'force' | 'stress' | 'radial';
+      direction?: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+    }
   | { type: 'toggleAutofit'; enabled: boolean }
   | { type: 'fitToViewport' }
   | { type: 'hierarchyTreeExpand'; containerId: string }
@@ -135,7 +135,7 @@ async function validateEdgeIntegrity(state: VisualizationState, context: string)
   if (disconnectedEdges > 0) {
     throw new Error(
       `❌ Edge integrity validation failed in ${context}!\n` +
-      `Found ${disconnectedEdges} disconnected hyperEdge endpoints.`
+        `Found ${disconnectedEdges} disconnected hyperEdge endpoints.`
     );
   }
 
@@ -165,10 +165,10 @@ class ComprehensiveFuzzTester {
     matches: number;
     currentIndex: number;
   } = {
-      query: '',
-      matches: 0,
-      currentIndex: 0,
-    };
+    query: '',
+    matches: 0,
+    currentIndex: 0,
+  };
   private searchPatternsPool: string[] = [
     '*', // Match all
     'container*', // Match containers starting with 'container'
@@ -491,7 +491,11 @@ class ComprehensiveFuzzTester {
         return { type: 'clearSearch' };
 
       case 'changeEdgeStyle':
-        const edgeStyles: Array<'bezier' | 'straight' | 'smoothstep'> = ['bezier', 'straight', 'smoothstep'];
+        const edgeStyles: Array<'bezier' | 'straight' | 'smoothstep'> = [
+          'bezier',
+          'straight',
+          'smoothstep',
+        ];
         return {
           type: 'changeEdgeStyle',
           edgeStyle: this.random.choice(edgeStyles),

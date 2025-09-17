@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createVisualizationState } from '../VisualizationState';
 import { VisualizationEngine, createVisualizationEngine } from '../VisualizationEngine';
 import { parseGraphJSON } from '../JSONParser';
+import mockJsonData from '../../test-data/paxos-flipped.json';
 
 const LOTS_OF_KIDS = 50;
 
@@ -903,7 +904,7 @@ describe('Smart Collapse Integration - Failure Prevention', () => {
 
   describe('Smart Collapse Guardrails', () => {
     it('does not re-collapse a container after manual expand followed by re-layout', async () => {
-      const paxosFlippedData = require('../../test-data/paxos-flipped.json');
+      const paxosFlippedData = mockJsonData;
 
       const { state } = parseGraphJSON(paxosFlippedData);
 
@@ -933,7 +934,7 @@ describe('Smart Collapse Integration - Failure Prevention', () => {
     });
 
     it('keeps containers expanded after ExpandAll followed by re-layout', async () => {
-      const paxosFlippedData = require('../../test-data/paxos-flipped.json');
+      const paxosFlippedData = mockJsonData;
 
       const { state } = parseGraphJSON(paxosFlippedData);
 

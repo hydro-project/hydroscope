@@ -44,14 +44,15 @@ export class VisualizationStateInvariantValidator {
     // INFINITE LOOP PROTECTION: Only check if validation is enabled
     // The _validationInProgress flag is handled by ValidationWrapper to prevent recursive wrapper calls
     if (!this.state._validationEnabled) {
-
       return;
     }
-    
-
 
     // REACT RENDER CYCLE PROTECTION: Defer validation if we're in a React render
-    if (typeof window !== 'undefined' && (window as any).React && (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+    if (
+      typeof window !== 'undefined' &&
+      (window as any).React &&
+      (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
+    ) {
       const internals = (window as any).React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
       if (internals.ReactCurrentDispatcher && internals.ReactCurrentDispatcher.current) {
         // We're likely in a React render cycle, defer validation

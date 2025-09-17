@@ -1,12 +1,12 @@
 /**
  * @fileoverview LayoutOrchestrator Tests
- * 
+ *
  * Tests the centralized layout coordination system
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LayoutOrchestrator } from '../core/LayoutOrchestrator';
-import { VisualizationState } from '../core/VisualizationState';
+// import { VisualizationState } from '../core/VisualizationState';
 import { consolidatedOperationManager } from '../utils/consolidatedOperationManager';
 
 // Mock the consolidatedOperationManager
@@ -27,7 +27,7 @@ describe('LayoutOrchestrator', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock VisualizationState
     mockVisualizationState = {
       collapseAllContainers: vi.fn(),
@@ -153,7 +153,7 @@ describe('LayoutOrchestrator', () => {
   describe('toggleContainersBatch', () => {
     it('should handle batch toggle operations efficiently', async () => {
       const containerIds = ['container1', 'container2', 'container3'];
-      
+
       // Mock containers with different states
       mockVisualizationState.getContainer
         .mockReturnValueOnce({ id: 'container1', collapsed: false })
@@ -179,7 +179,7 @@ describe('LayoutOrchestrator', () => {
       expect(mockVisualizationState.collapseContainer).toHaveBeenCalledWith('container1');
       expect(mockVisualizationState.expandContainer).toHaveBeenCalledWith('container2');
       expect(mockVisualizationState.collapseContainer).toHaveBeenCalledWith('container3');
-      
+
       // Should trigger layout refresh with force=true for multiple containers
       expect(mockLayoutController.refreshLayout).toHaveBeenCalledWith(true);
     });

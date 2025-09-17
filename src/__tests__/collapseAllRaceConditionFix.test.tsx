@@ -1,6 +1,6 @@
 /**
  * @fileoverview Test for collapse all race condition fix
- * 
+ *
  * This test verifies that the collapse all functionality doesn't create
  * duplicate layout operations that can cause race conditions and broken renders.
  */
@@ -21,33 +21,33 @@ describe('Collapse All Race Condition Fix', () => {
 
     // Create visualization state directly
     visState = new VisualizationState();
-    
+
     // Add nodes
     visState.setGraphNode('node1', { label: 'Node 1', hidden: false });
     visState.setGraphNode('node2', { label: 'Node 2', hidden: false });
     visState.setGraphNode('node3', { label: 'Node 3', hidden: false });
     visState.setGraphNode('node4', { label: 'Node 4', hidden: false });
-    
+
     // Add edges
     visState.setGraphEdge('edge1', { source: 'node1', target: 'node2' });
     visState.setGraphEdge('edge2', { source: 'node2', target: 'node3' });
-    
+
     // Add containers
-    visState.setContainer('container1', { 
-      label: 'Container 1', 
-      collapsed: false, 
+    visState.setContainer('container1', {
+      label: 'Container 1',
+      collapsed: false,
       hidden: false,
-      nodes: ['node1', 'node2']
+      nodes: ['node1', 'node2'],
     });
-    visState.setContainer('container2', { 
-      label: 'Container 2', 
-      collapsed: false, 
+    visState.setContainer('container2', {
+      label: 'Container 2',
+      collapsed: false,
       hidden: false,
-      nodes: ['node3', 'node4']
+      nodes: ['node3', 'node4'],
     });
 
     engine = new VisualizationEngine(visState);
-    
+
     // Spy on the layout method to track how many times it's called
     layoutSpy = vi.spyOn(engine, 'runLayout');
   });
@@ -87,7 +87,7 @@ describe('Collapse All Race Condition Fix', () => {
     // First collapse all containers
     visState.collapseAllContainers();
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     // Verify they're collapsed
     const collapsedContainers = visState.getVisibleContainers();
     expect(collapsedContainers.every(c => c.collapsed)).toBe(true);
@@ -116,10 +116,10 @@ describe('Collapse All Race Condition Fix', () => {
     // Perform separate collapse/expand operations with proper waits
     visState.collapseAllContainers();
     await new Promise(resolve => setTimeout(resolve, 150));
-    
+
     visState.expandAllContainers();
     await new Promise(resolve => setTimeout(resolve, 150));
-    
+
     visState.collapseAllContainers();
     await new Promise(resolve => setTimeout(resolve, 150));
 

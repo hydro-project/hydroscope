@@ -13,6 +13,7 @@
  */
 
 import { describe, it, beforeEach, expect } from 'vitest';
+import mockJsonData from '../../test-data/paxos-flipped.json';
 import { parseGraphJSON } from '../JSONParser';
 import { VisualizationState, createVisualizationState } from '../VisualizationState';
 import { VisualizationEngine } from '../VisualizationEngine';
@@ -139,7 +140,6 @@ describe('Debug Container States & Investigations', () => {
     });
 
     it('should debug missing hyperedges during smart collapse', async () => {
-      const mockJsonData = require('../../test-data/paxos-flipped.json');
       const result = parseGraphJSON(mockJsonData, undefined);
       const state = result.state;
 
@@ -184,7 +184,6 @@ describe('Debug Container States & Investigations', () => {
 
   describe('Collapsed Containers Analysis', () => {
     it('should debug which containers are collapsed and analyze missing hyperEdges', async () => {
-      const mockJsonData = require('../../test-data/paxos-flipped.json');
       const result = parseGraphJSON(mockJsonData, undefined);
       const state = result.state;
 
@@ -257,7 +256,6 @@ describe('Debug Container States & Investigations', () => {
 
   describe('Edge e460 Investigation', () => {
     it('should investigate edge e460 and its relationship to containers', async () => {
-      const mockJsonData = require('../../test-data/paxos-flipped.json');
       const result = parseGraphJSON(mockJsonData, undefined);
       const state = result.state;
 
