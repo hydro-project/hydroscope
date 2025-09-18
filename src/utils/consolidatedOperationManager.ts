@@ -9,6 +9,7 @@
  */
 
 import { hscopeLogger } from './logger';
+import { OPERATION_MANAGER_CONSTANTS } from '../shared/config';
 
 export interface ReactFlowData {
   nodes: any[];
@@ -79,8 +80,13 @@ class ConsolidatedOperationManager {
 
   // Operation queue and processing
   private operationQueue: Operation[] = [];
+  private immediateFollowUpQueue: Operation[] = []; // High-priority operations from current operation holder
   private isProcessingQueue = false;
   private currentOperation: Operation | null = null;
+
+  // Livelock prevention for immediate follow-ups
+  private immediateFollowUpCount = 0;
+  private followUpChainStartTime = 0;
 
   // Search expansion exclusivity
   private isSearchExpansionActive = false;
@@ -165,16 +171,21 @@ class ConsolidatedOperationManager {
           hscopeLogger.log('op', `completed immediately ${operationId}`);
           return true;
         } catch (error) {
-          console.error(
-            `[ConsolidatedOperationManager] Error executing immediate operation ${operationId}:`,
-            error
-          );
+          hscopeLogger.error('op', `Error executing immediate operation ${operationId}`, error);
           return false;
         }
+      } else if (currentOpType === 'layout') {
+        // If we're inside a layout operation and another layout is requested,
+        // queue it for later execution instead of blocking it entirely
+        hscopeLogger.log(
+          'op',
+          `queueing layout operation ${operationId} (inside ${currentOpType})`
+        );
+        // Don't execute immediately, let it go through the normal queue
       } else {
-        // Prevent infinite recursion - don't execute layout inside layout
+        // Prevent infinite recursion - don't execute other operations inside layout
         console.warn(
-          `[ConsolidatedOperationManager] Preventing recursive layout operation ${operationId} inside ${currentOpType}`
+          `[ConsolidatedOperationManager] Preventing recursive ${operationId} inside ${currentOpType}`
         );
         return false;
       }
@@ -348,46 +359,57 @@ class ConsolidatedOperationManager {
     const initialQueueLength = this.operationQueue.length;
     const initialIsProcessing = this.isProcessingQueue;
 
-    console.error(
-      `[ConsolidatedOperationManager] processQueue called: isProcessing=${initialIsProcessing}, queueLength=${initialQueueLength}`
+    hscopeLogger.log(
+      'op',
+      `processQueue called: isProcessing=${initialIsProcessing}, queueLength=${initialQueueLength}`
     );
-    console.error(
-      `[ConsolidatedOperationManager] queue contents:`,
-      this.operationQueue.map(op => `${op.type}:${op.id}`)
+    hscopeLogger.log(
+      'op',
+      `queue contents: ${this.operationQueue.map(op => `${op.type}:${op.id}`).join(', ')}`
     );
 
     if (initialIsProcessing) {
-      console.error(`[ConsolidatedOperationManager] processQueue early return: already processing`);
+      hscopeLogger.log('op', 'processQueue early return: already processing');
       return;
     }
 
     if (initialQueueLength === 0) {
-      console.error(`[ConsolidatedOperationManager] processQueue early return: queue empty`);
+      hscopeLogger.log('op', 'processQueue early return: queue empty');
       return;
     }
 
     // Double-check queue length after logging
     const currentQueueLength = this.operationQueue.length;
     if (currentQueueLength === 0) {
-      console.error(
-        `[ConsolidatedOperationManager] RACE CONDITION: queue was ${initialQueueLength} but now ${currentQueueLength}`
+      hscopeLogger.warn(
+        'op',
+        `RACE CONDITION: queue was ${initialQueueLength} but now ${currentQueueLength}`
       );
       return;
     }
 
     this.isProcessingQueue = true;
-    console.error(
-      `[ConsolidatedOperationManager] processQueue starting with ${this.operationQueue.length} operations`
-    );
+    hscopeLogger.log('op', `processQueue starting with ${this.operationQueue.length} operations`);
 
     try {
-      while (this.operationQueue.length > 0) {
-        const operation = this.operationQueue.shift()!;
+      while (this.operationQueue.length > 0 || this.immediateFollowUpQueue.length > 0) {
+        // Process immediate follow-ups first (they have priority)
+        const isProcessingFollowUp = this.immediateFollowUpQueue.length > 0;
+        const operation = isProcessingFollowUp
+          ? this.immediateFollowUpQueue.shift()!
+          : this.operationQueue.shift()!;
+
+        // If we're switching from follow-ups to regular operations, reset counters
+        if (!isProcessingFollowUp && this.immediateFollowUpCount > 0) {
+          hscopeLogger.log(
+            'op',
+            `resetting follow-up counters after processing ${this.immediateFollowUpCount} follow-ups`
+          );
+          this.resetFollowUpCounters();
+        }
+
         this.currentOperation = operation;
 
-        console.error(
-          `[ConsolidatedOperationManager] executing ${operation.type} id=${operation.id}`
-        );
         hscopeLogger.log('op', `executing ${operation.type} id=${operation.id}`);
 
         try {
@@ -420,24 +442,33 @@ class ConsolidatedOperationManager {
             }
           }
 
-          console.error(
-            `[ConsolidatedOperationManager] completed ${operation.type} id=${operation.id}`
-          );
           hscopeLogger.log('op', `completed ${operation.type} id=${operation.id}`);
         } catch (error) {
-          console.error(`[ConsolidatedOperationManager] Error executing ${operation.type}:`, error);
+          hscopeLogger.error('op', `Error executing ${operation.type}`, error);
         }
 
         this.currentOperation = null;
+        hscopeLogger.log(
+          'op',
+          `operation completed and currentOperation cleared: ${operation.type} id=${operation.id}`
+        );
+
+        // After completing an operation, check if there are immediate follow-ups to process
+        // This ensures follow-ups are processed before moving to the next regular operation
       }
-      console.error(
-        `[ConsolidatedOperationManager] processQueue finished, queue now has ${this.operationQueue.length} operations`
+      hscopeLogger.log(
+        'op',
+        `processQueue finished, queue now has ${this.operationQueue.length} operations, follow-up queue has ${this.immediateFollowUpQueue.length} operations`
       );
+
+      // Reset follow-up counters when queue processing is complete
+      if (this.immediateFollowUpCount > 0) {
+        hscopeLogger.log('op', `resetting follow-up counters at end of queue processing`);
+        this.resetFollowUpCounters();
+      }
     } finally {
       this.isProcessingQueue = false;
-      console.error(
-        `[ConsolidatedOperationManager] processQueue finally block, isProcessingQueue set to false`
-      );
+      hscopeLogger.log('op', 'processQueue finally block, isProcessingQueue set to false');
     }
   }
 
@@ -478,7 +509,7 @@ class ConsolidatedOperationManager {
       try {
         op.operation();
       } catch (error) {
-        console.error(`[ConsolidatedOperationManager] Error in batched ReactFlow op:`, error);
+        hscopeLogger.error('op', 'Error in batched ReactFlow op', error);
       }
     }
 
@@ -496,10 +527,7 @@ class ConsolidatedOperationManager {
             try {
               callback();
             } catch (error) {
-              console.error(
-                '[ConsolidatedOperationManager] Error in ReactFlow acknowledgment callback:',
-                error
-              );
+              hscopeLogger.error('op', 'Error in ReactFlow acknowledgment callback', error);
             }
           }
         }, 50); // Additional 50ms delay for ReactFlow node measurement
@@ -566,14 +594,11 @@ class ConsolidatedOperationManager {
             try {
               fitFn(options);
             } catch (retryError) {
-              console.error(
-                '[ConsolidatedOperationManager] AutoFit retry also failed:',
-                retryError
-              );
+              hscopeLogger.error('fit', 'AutoFit retry also failed', retryError);
             }
           }, 100);
         } else {
-          console.error('[ConsolidatedOperationManager] AutoFit failed:', error);
+          hscopeLogger.error('fit', 'AutoFit failed', error);
         }
       }
     }, remaining);
@@ -597,7 +622,97 @@ class ConsolidatedOperationManager {
    * Check if we're currently inside an operation (to avoid double-queuing)
    */
   public isInsideOperation(): boolean {
-    return this.currentOperation !== null;
+    const result = this.currentOperation !== null;
+    if (result) {
+      hscopeLogger.log(
+        'op',
+        `isInsideOperation=true, currentOperation=${this.currentOperation?.type} id=${this.currentOperation?.id}`
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Queue an immediate follow-up operation that will be executed right after the current operation completes.
+   * This can only be called from within an active operation.
+   * @param operationId Unique identifier for the operation
+   * @param callback The operation to execute
+   * @param options Operation options
+   * @returns Promise that resolves when the operation is queued (not when it completes)
+   */
+  public queueImmediateFollowUp(
+    operationId: string,
+    callback: () => Promise<void>,
+    options: {
+      priority?: 'high' | 'normal' | 'low';
+      reason?: string;
+      triggerAutoFit?: boolean;
+    } = {}
+  ): boolean {
+    // Can only be called from within an active operation
+    if (!this.isInsideOperation()) {
+      console.warn(
+        `[ConsolidatedOperationManager] queueImmediateFollowUp can only be called from within an active operation`
+      );
+      return false;
+    }
+
+    // Livelock prevention: Check if we've exceeded the maximum number of follow-ups
+    if (this.immediateFollowUpCount >= OPERATION_MANAGER_CONSTANTS.MAX_IMMEDIATE_FOLLOW_UPS) {
+      console.warn(
+        `[ConsolidatedOperationManager] Preventing livelock: maximum immediate follow-ups (${OPERATION_MANAGER_CONSTANTS.MAX_IMMEDIATE_FOLLOW_UPS}) exceeded. ` +
+          `Falling back to regular queue for operation ${operationId}`
+      );
+      // Fall back to regular queue to break the chain
+      this.queueLayoutOperation(operationId, callback, options);
+      return true; // Return true since we successfully queued the operation
+    }
+
+    // Time-based livelock prevention: If follow-ups have been running for too long, break the chain
+    const now = Date.now();
+    if (this.followUpChainStartTime === 0) {
+      this.followUpChainStartTime = now;
+    } else if (
+      now - this.followUpChainStartTime >
+      OPERATION_MANAGER_CONSTANTS.MAX_FOLLOW_UP_CHAIN_DURATION_MS
+    ) {
+      console.warn(
+        `[ConsolidatedOperationManager] Preventing livelock: immediate follow-up chain has been running for too long. ` +
+          `Falling back to regular queue for operation ${operationId}`
+      );
+      // Reset counters and fall back to regular queue
+      this.resetFollowUpCounters();
+      this.queueLayoutOperation(operationId, callback, options);
+      return true; // Return true since we successfully queued the operation
+    }
+
+    const operation: LayoutOperation = {
+      id: operationId,
+      type: 'layout',
+      timestamp: Date.now(),
+      priority: options.priority || 'high', // Default to high priority for immediate follow-ups
+      reason: options.reason,
+      operation: callback,
+      triggerAutoFit: options.triggerAutoFit ?? true,
+    };
+
+    this.immediateFollowUpQueue.push(operation);
+    this.immediateFollowUpCount++;
+
+    hscopeLogger.log(
+      'op',
+      `queued immediate follow-up ${operationId} (${this.immediateFollowUpQueue.length} in follow-up queue, count: ${this.immediateFollowUpCount})`
+    );
+
+    return true;
+  }
+
+  /**
+   * Reset immediate follow-up counters
+   */
+  private resetFollowUpCounters(): void {
+    this.immediateFollowUpCount = 0;
+    this.followUpChainStartTime = 0;
   }
 
   /**
@@ -605,9 +720,11 @@ class ConsolidatedOperationManager {
    */
   public emergencyStop(): void {
     this.operationQueue = [];
+    this.immediateFollowUpQueue = [];
     this.pendingReactFlowOps = [];
     this.isProcessingQueue = false;
     this.currentOperation = null;
+    this.resetFollowUpCounters();
 
     if (this.batchTimeoutId) {
       if (typeof this.batchTimeoutId === 'number' && typeof window !== 'undefined') {

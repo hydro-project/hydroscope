@@ -13,6 +13,7 @@ import { ReactFlowBridge } from '../bridges/ReactFlowBridge';
 import type { ReactFlowData } from '../bridges/ReactFlowBridge';
 import type { Container, LayoutConfig } from './types';
 import { LAYOUT_CONSTANTS, DEFAULT_LAYOUT_CONFIG } from '../shared/config';
+import { hscopeLogger } from '../utils/logger';
 
 // Visualization states
 export type VisualizationPhase =
@@ -148,6 +149,9 @@ export class VisualizationEngine {
       // Acquire global state lock to prevent race conditions during layout operations
       this.visState.acquireGlobalStateLock();
 
+      // Increment layout sequence to mark the start of a new layout operation
+      this.visState.incrementLayoutSequence();
+
       // Profile layout operations
       profiler?.start('layout-operation');
 
@@ -177,28 +181,32 @@ export class VisualizationEngine {
         await this.runFullCollapse();
         profiler?.end('full-collapse');
       } else {
-        // Use ELK bridge to layout the VisualizationState
+        // Use ELK bridge to layout the VisualizationState (initial layout with expanded containers)
         profiler?.start('elk-layout');
         await this.elkBridge.layoutVisualizationState(this.visState);
         profiler?.end('elk-layout');
 
-        // Run smart collapse only on the first layout if enabled
-        // CRITICAL: Check for recent search expansion to prevent race condition
-        // For initial layout (layoutCount === 0), only check for search expansion, not container structure changes
-        const hasRecentSearch =
-          typeof window !== 'undefined' &&
-          (window as any).__hydroRecentSearchExpansion &&
-          Date.now() - (window as any).__hydroRecentSearchExpansion < 5000;
+        // Run smart collapse AFTER initial ELK layout to analyze container dimensions
+        // Smart collapse needs the ELK-calculated dimensions to make informed decisions
+        if (this.config.layoutConfig?.enableSmartCollapse && this.state.layoutCount === 0) {
+          // CRITICAL: Check for recent search expansion to prevent race condition
+          const hasRecentSearch =
+            typeof window !== 'undefined' &&
+            (window as any).__hydroRecentSearchExpansion &&
+            Date.now() - (window as any).__hydroRecentSearchExpansion < 5000;
 
-        if (
-          this.config.layoutConfig?.enableSmartCollapse &&
-          this.state.layoutCount === 0 &&
-          !hasRecentSearch
-        ) {
-          profiler?.start('smart-collapse');
-          await this.runSmartCollapse();
-          profiler?.end('smart-collapse');
-          // Note: runSmartCollapse already includes its own re-layout, so no additional layout needed
+          if (!hasRecentSearch) {
+            profiler?.start('smart-collapse');
+            const containersWereCollapsed = await this.runSmartCollapse();
+            profiler?.end('smart-collapse');
+
+            if (containersWereCollapsed) {
+              // Smart collapse modified the state, run ELK again for final layout
+              profiler?.start('elk-layout-post-collapse');
+              await this.elkBridge.layoutVisualizationState(this.visState);
+              profiler?.end('elk-layout-post-collapse');
+            }
+          }
         }
       }
 
@@ -334,14 +342,15 @@ export class VisualizationEngine {
    * Smart collapse implementation, to choose which containers to expand vs collapse
    * so that initial layout is not too cluttered.
    * Run after initial ELK layout to collapse containers that exceed viewport budget
+   * @returns true if containers were collapsed and a re-layout is needed
    */
-  private async runSmartCollapse(): Promise<void> {
+  private async runSmartCollapse(): Promise<boolean> {
     // Step 1: Get TOP-LEVEL containers from VisualizationState
     // This ensures we don't double-process parent and child containers
     const containers = this.visState.getTopLevelContainers();
 
     if (containers.length === 0) {
-      return;
+      return false;
     }
 
     // Step 2: Calculate container areas using layout dimensions from ELK
@@ -407,17 +416,21 @@ export class VisualizationEngine {
         }
       }
 
-      // Step 6: Re-run layout after collapse to get clean final layout
-      // IMPORTANT: Clear any cached positions to force fresh layout with new collapsed dimensions
+      // Step 6: Clear any cached positions to ensure fresh layout with new collapsed dimensions
       this.visState.clearLayoutPositions();
-      // Force ELK to rebuild from scratch with new dimensions
+
+      // Step 7: Force ELK to rebuild from scratch with new dimensions
       this.elkBridge = new ELKBridge(this.config.layoutConfig);
 
       // INVARIANT: All containers should be unfixed for fresh layout
       this.validateRelayoutInvariants();
 
-      await this.elkBridge.layoutVisualizationState(this.visState);
+      // Return true to indicate that containers were collapsed
+      return true;
     }
+
+    // No containers were collapsed, no re-layout needed
+    return false;
   }
 
   /**
@@ -443,8 +456,9 @@ export class VisualizationEngine {
       const elapsed = Date.now() - timestamp;
 
       if (elapsed < 5000) {
-        console.error(
-          `[VisualizationEngine] 🔍 Skipping full collapse due to recent grouping change (${elapsed}ms ago)`
+        hscopeLogger.log(
+          'collapse',
+          `🔍 Skipping full collapse due to recent grouping change (${elapsed}ms ago)`
         );
         return true;
       } else {
@@ -458,8 +472,9 @@ export class VisualizationEngine {
       const elapsed = Date.now() - timestamp;
 
       if (elapsed < 5000) {
-        console.error(
-          `[VisualizationEngine] 🔍 Skipping full collapse due to recent container structure change (${elapsed}ms ago)`
+        hscopeLogger.log(
+          'collapse',
+          `🔍 Skipping full collapse due to recent container structure change (${elapsed}ms ago)`
         );
         return true;
       } else {
@@ -524,7 +539,7 @@ export class VisualizationEngine {
       try {
         listener({ ...this.state });
       } catch (error) {
-        console.error('[VisualizationEngine] Listener error:', error);
+        hscopeLogger.error('engine', 'Listener error', error);
       }
     });
   }
@@ -556,7 +571,7 @@ export class VisualizationEngine {
     this.state.error = errorMessage;
     this.updateState('error');
 
-    console.error(`[VisualizationEngine] ❌ ${errorMessage}`, error);
+    hscopeLogger.error('engine', errorMessage, error);
   }
 }
 

@@ -7,6 +7,7 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { UI_CONSTANTS } from '../shared/config';
+import { hscopeLogger } from '../utils/logger';
 
 export interface ResizeObserverEntry {
   width: number;
@@ -112,7 +113,7 @@ export function useResizeObserver(
         try {
           callback(entry);
         } catch (error) {
-          console.error(`[useResizeObserver] Callback error:`, error);
+          hscopeLogger.error('resize', 'Callback error', error);
         }
 
         timeoutRef.current = null;

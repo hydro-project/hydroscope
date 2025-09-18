@@ -298,10 +298,12 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
     // Handle layout algorithm changes - trigger relayout when algorithm changes
     useEffect(() => {
       // Only refresh layout if we have a visualization state and this isn't the initial render
+      // Only trigger on layoutAlgorithm changes, not visualizationState changes
       if (visualizationState && hydroscopeRef.current?.refreshLayout) {
         hydroscopeRef.current.refreshLayout(true);
       }
-    }, [layoutAlgorithm, visualizationState]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [layoutAlgorithm]); // Intentionally omitting visualizationState to prevent InfoPanel interference
 
     // Handle file upload
     const handleFileUpload = useCallback(
@@ -400,7 +402,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
         try {
           jsonData = JSON.parse(data);
         } catch (e) {
-          console.error('Failed to parse JSON data:', e);
+          hscopeLogger.error('parse', 'Failed to parse JSON data', e);
           setHasParsedData(false);
           return;
         }
@@ -423,7 +425,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
           profiler?.end('Render Config Creation');
         } catch (e) {
           profiler?.end('Render Config Creation');
-          console.error('Failed to create render config:', e);
+          hscopeLogger.error('parse', 'Failed to create render config', e);
         }
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps -- grouping dependency would cause infinite loops
@@ -478,7 +480,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
             // Force re-computation of collapsed containers state for InfoPanel
             setLayoutRefreshCounter(prev => prev + 1);
           } catch (err) {
-            console.error('❌ Error toggling container:', err);
+            hscopeLogger.error('toggle', 'Error toggling container', err);
           } finally {
             setIsLayoutRunning(false);
           }
@@ -509,7 +511,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
               await hydroscopeRef.current.refreshLayout(false);
             }
           } catch (err) {
-            console.error('❌ Error refreshing after label toggle:', err);
+            hscopeLogger.error('toggle', 'Error refreshing after label toggle', err);
           }
         } else {
         }
@@ -546,7 +548,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
         hscopeLogger.log('pack', 'collapse all completed via LayoutOrchestrator');
       } catch (err) {
-        console.error('❌ Error packing containers:', err);
+        hscopeLogger.error('pack', 'Error packing containers', err);
       } finally {
         setIsLayoutRunning(false);
       }
@@ -574,7 +576,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
         hscopeLogger.log('pack', 'expand all completed via LayoutOrchestrator');
       } catch (err) {
-        console.error('❌ Error unpacking containers:', err);
+        hscopeLogger.error('pack', 'Error unpacking containers', err);
       } finally {
         setIsLayoutRunning(false);
       }
@@ -607,7 +609,11 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
 
               hscopeLogger.log('orchestrator', `Grouping changed to: ${newGrouping || 'none'}`);
             } catch (e) {
-              console.error('Failed to update render config for grouping change:', e);
+              hscopeLogger.error(
+                'grouping',
+                'Failed to update render config for grouping change',
+                e
+              );
               throw e; // Re-throw to mark operation as failed
             }
           },
@@ -620,7 +626,7 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
         );
 
         if (!success) {
-          console.error('Failed to queue grouping change operation');
+          hscopeLogger.error('grouping', 'Failed to queue grouping change operation');
         }
       },
       [graphData]
@@ -722,15 +728,17 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                   const container = visualizationState?.getContainer(containerId);
                   const isCollapsing = container && !container.collapsed; // Will be collapsed after toggle
 
-                  console.error(
-                    `[Hydroscope] onToggleContainer(${containerId}) - hasActiveSearch: ${hasActiveSearch}, isCollapsing: ${isCollapsing}, searchQuery: "${searchQuery}", matches: ${searchMatches?.length || 0}`
+                  hscopeLogger.log(
+                    'toggle',
+                    `onToggleContainer(${containerId}) - hasActiveSearch: ${hasActiveSearch}, isCollapsing: ${isCollapsing}, searchQuery: "${searchQuery}", matches: ${searchMatches?.length || 0}`
                   );
 
                   // Clear search only for collapse operations during active search
                   // Keep search active for expand operations (user likely exploring search results)
                   if (hasActiveSearch && isCollapsing) {
-                    console.error(
-                      `[Hydroscope] 🧹 Clearing search before container collapse: ${containerId}`
+                    hscopeLogger.log(
+                      'search',
+                      `🧹 Clearing search before container collapse: ${containerId}`
                     );
                     setSearchQuery('');
                     setSearchMatches([]);
@@ -741,8 +749,9 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                       infoPanelRef.current.clearSearch();
                     }
                   } else if (hasActiveSearch && !isCollapsing) {
-                    console.error(
-                      `[Hydroscope] 🔍 Keeping search active for container expand: ${containerId}`
+                    hscopeLogger.log(
+                      'search',
+                      `🔍 Keeping search active for container expand: ${containerId}`
                     );
                   }
 
@@ -849,7 +858,11 @@ export const Hydroscope = forwardRef<HydroscopeCoreRef, HydroscopeProps>(
                           }, 120); // shorter since requestAutoFit already delays
                         }
                       } catch (err) {
-                        console.error('❌ Error during batched container toggle processing:', err);
+                        hscopeLogger.error(
+                          'toggle',
+                          'Error during batched container toggle processing',
+                          err
+                        );
                         try {
                           ResizeObserverErrorHandler.getInstance().resume();
                         } catch {

@@ -361,6 +361,17 @@ export type EdgeStyleTagMapping =
   (typeof EDGE_STYLE_TAG_MAPPINGS)[keyof typeof EDGE_STYLE_TAG_MAPPINGS];
 
 // ============================================================================
+// OPERATION MANAGER CONSTANTS
+// ============================================================================
+
+// ConsolidatedOperationManager livelock prevention constants
+export const OPERATION_MANAGER_CONSTANTS = {
+  // Immediate follow-up limits to prevent livelock
+  MAX_IMMEDIATE_FOLLOW_UPS: 5, // Maximum number of immediate follow-ups in a chain
+  MAX_FOLLOW_UP_CHAIN_DURATION_MS: 10000, // Maximum duration (10 seconds) for a follow-up chain
+} as const;
+
+// ============================================================================
 // UI CONFIGURATION
 // ============================================================================
 

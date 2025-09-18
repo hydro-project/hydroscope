@@ -5,6 +5,7 @@
 import type { VisualizationState } from '../core/VisualizationState';
 import type { Container, GraphNode } from '../shared/types';
 import { LAYOUT_CONSTANTS } from '../shared/config';
+import { hscopeLogger } from '../utils/logger';
 
 /** Build parent-child relationship map for visible elements */
 export function buildParentMap(visState: VisualizationState): Map<string, string> {
@@ -108,28 +109,24 @@ export function computeChildContainerPosition(
   const containerPos = containerLayout?.position;
   const parentPos = parentLayout?.position;
 
-  console.error(`❌ [ReactFlowBridge] Missing ELK layout positions for hierarchical containers:`);
-  console.error(
-    `   Container ${container.id} (${container.label}): position = ${containerPos ? `(${containerPos.x}, ${containerPos.y})` : 'undefined'}`
+  hscopeLogger.error(
+    'bridge',
+    `Missing ELK layout positions for hierarchical containers:
+   Container ${container.id} (${container.label}): position = ${containerPos ? `(${containerPos.x}, ${containerPos.y})` : 'undefined'}
+   Parent ${parentId}: position = ${parentPos ? `(${parentPos.x}, ${parentPos.y})` : 'undefined'}
+   This indicates ELK layout was not run properly or failed to set positions`
   );
-  console.error(
-    `   Parent ${parentId}: position = ${parentPos ? `(${parentPos.x}, ${parentPos.y})` : 'undefined'}`
-  );
-  console.error(`   This indicates ELK layout was not run properly or failed to set positions`);
 
   // DIAGNOSTIC: Show where this container is coming from
   if (container.id === 'bt_204' || container.id === 'bt_40') {
-    console.error(`🔍 [ReactFlowBridge] DIAGNOSTIC for ${container.id}:`);
-    console.error(`   Container object:`, container);
-    console.error(
-      `   Is in VisualizationState containers:`,
-      visState.getContainer(container.id) ? 'YES' : 'NO'
+    hscopeLogger.log(
+      'bridge',
+      `🔍 DIAGNOSTIC for ${container.id}:
+   Container object: ${JSON.stringify(container, null, 2)}
+   Is in VisualizationState containers: ${visState.getContainer(container.id) ? 'YES' : 'NO'}
+   Is in visible containers: ${visState.visibleContainers.some(c => c.id === container.id) ? 'YES' : 'NO'}
+   Container source stack trace: ${new Error().stack}`
     );
-    console.error(
-      `   Is in visible containers:`,
-      visState.visibleContainers.some(c => c.id === container.id) ? 'YES' : 'NO'
-    );
-    console.error(`   Container source stack trace:`, new Error().stack);
   }
 
   throw new Error(

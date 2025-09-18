@@ -53,7 +53,10 @@ export class ResizeObserverErrorHandler {
   private installResizeObserverPatch(): void {
     if (!window.ResizeObserver) return;
 
-    this.originalResizeObserver = window.ResizeObserver;
+    // Store the original ResizeObserver in a local variable to prevent circular reference
+    const originalResizeObserver = window.ResizeObserver;
+    this.originalResizeObserver = originalResizeObserver;
+
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
@@ -101,7 +104,8 @@ export class ResizeObserverErrorHandler {
           deliver();
         };
 
-        this.observer = new self.originalResizeObserver!(wrappedCallback);
+        // Use the local variable instead of self.originalResizeObserver to prevent recursion
+        this.observer = new originalResizeObserver(wrappedCallback);
       }
 
       observe(target: Element, options?: ResizeObserverOptions) {

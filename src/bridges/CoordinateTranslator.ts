@@ -13,6 +13,8 @@
  * - ReactFlow: Relative coordinates for child nodes within parent containers
  */
 
+import { hscopeLogger } from '../utils/logger';
+
 export interface ELKCoordinates {
   x: number;
   y: number;
@@ -140,7 +142,7 @@ export class CoordinateTranslator {
     const yMatch = Math.abs(originalELK.y - backToELK.y) < tolerance;
 
     if (!xMatch || !yMatch) {
-      console.error('[CoordinateTranslator] ❌ Coordinate conversion validation failed:', {
+      hscopeLogger.error('coord', 'Coordinate conversion validation failed', {
         originalELK,
         reactFlow,
         backToELK,

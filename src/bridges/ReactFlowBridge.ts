@@ -13,6 +13,7 @@ import { Edge as ReactFlowEdge } from '@xyflow/react';
 import { CURRENT_HANDLE_STRATEGY } from '../render/handleConfig';
 import { convertEdgesToReactFlow, EdgeConverterOptions } from './EdgeConverter';
 import { deserializeProcessedStyle } from '../core/EdgeStyleSerializer';
+import { hscopeLogger } from '../utils/logger';
 import {
   buildParentMap as buildParentMapUtil,
   sortContainersByHierarchy as sortContainersByHierarchyUtil,
@@ -155,13 +156,14 @@ export class ReactFlowBridge {
 
     // DIAGNOSTIC: Check for edge data loss
     if (edges.length === 0 && nodes.length > 5) {
-      console.error(`[ReactFlowBridge] 🚨 EDGE DATA LOSS DETECTED [${conversionId}]:`);
-      console.error(
-        `  - Nodes: ${nodes.length} (${containerCount} containers, ${regularNodeCount} regular)`
+      hscopeLogger.error(
+        'bridge',
+        `🚨 EDGE DATA LOSS DETECTED [${conversionId}]:
+  - Nodes: ${nodes.length} (${containerCount} containers, ${regularNodeCount} regular)
+  - Edges: ${edges.length} (ZERO EDGES WITH MANY NODES)
+  - VisualizationState visible edges: ${visState.visibleEdges.length}
+  - This indicates edges were lost during state transitions or conversion`
       );
-      console.error(`  - Edges: ${edges.length} (ZERO EDGES WITH MANY NODES)`);
-      console.error(`  - VisualizationState visible edges: ${visState.visibleEdges.length}`);
-      console.error(`  - This indicates edges were lost during state transitions or conversion`);
     }
 
     console.log(`[ReactFlowBridge] ✅ Conversion completed [${conversionId}]:`, {
@@ -221,12 +223,10 @@ export class ReactFlowBridge {
     }
 
     if (missingParents.length > 0) {
-      console.error(
-        `[ReactFlowBridge] ❌ PARENT-CHILD INCONSISTENCY: ${missingParents.length} containers reference missing parents:`,
-        missingParents.slice(0, 5)
-      );
-      console.error(
-        `[ReactFlowBridge] 📊 Visible containers: ${containers.length}, Parent map size: ${parentMap.size}`
+      hscopeLogger.error(
+        'bridge',
+        `❌ PARENT-CHILD INCONSISTENCY: ${missingParents.length} containers reference missing parents: ${missingParents.slice(0, 5).join(', ')}
+📊 Visible containers: ${containers.length}, Parent map size: ${parentMap.size}`
       );
     }
 
@@ -397,12 +397,10 @@ export class ReactFlowBridge {
     });
 
     if (missingEndpoints.length > 0) {
-      console.error(
-        `[ReactFlowBridge] ❌ MISSING EDGE ENDPOINTS: ${missingEndpoints.length} edges have missing source/target nodes:`,
-        missingEndpoints.slice(0, 10)
-      );
-      console.error(
-        `[ReactFlowBridge] 📊 Total nodes: ${nodes.length}, Total edges: ${convertedEdges.length}`
+      hscopeLogger.error(
+        'bridge',
+        `❌ MISSING EDGE ENDPOINTS: ${missingEndpoints.length} edges have missing source/target nodes: ${missingEndpoints.slice(0, 10).join(', ')}
+📊 Total nodes: ${nodes.length}, Total edges: ${convertedEdges.length}`
       );
     }
 

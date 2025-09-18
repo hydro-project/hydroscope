@@ -20,6 +20,7 @@ interface CollapsedContainerNode extends Container {
   collapsed: true;
 }
 import { LAYOUT_CONSTANTS, SIZES } from '../shared/config';
+import { hscopeLogger } from '../utils/logger';
 
 // Import specialized operation classes
 import { VisualizationStateInvariantValidator } from './validation/VisualizationStateValidator';
@@ -158,6 +159,9 @@ export class VisualizationState {
   // Version tracking to prevent infinite loops in useEffect
   private _version = 0;
 
+  // Layout sequence tracking to detect stale layout operations
+  private _layoutSequence = 0;
+
   // Lazy initialization flags for efficient caches
   private _cacheInitialized = false;
 
@@ -189,7 +193,7 @@ export class VisualizationState {
     this._globalStateLockQueue = [];
 
     if (queue.length > 0) {
-      console.error(`[VisualizationState] Processing ${queue.length} queued operations`);
+      hscopeLogger.log('state', `Processing ${queue.length} queued operations`);
     }
 
     // Disable validation during queued operation processing to avoid intermediate state issues
@@ -201,7 +205,7 @@ export class VisualizationState {
         try {
           operation();
         } catch (error) {
-          console.error('[VisualizationState] ❌ Error processing queued operation:', error);
+          hscopeLogger.error('state', 'Error processing queued operation', error);
         }
       }
     } finally {
@@ -219,8 +223,9 @@ export class VisualizationState {
    */
   private _checkGlobalStateLock(operationName: string, operation: () => void): boolean {
     if (this._globalStateLock) {
-      console.error(
-        `[VisualizationState] 🚫 GLOBAL STATE LOCK VIOLATION: ${operationName} attempted while global state lock is held. Operation queued.`
+      hscopeLogger.warn(
+        'state',
+        `🚫 GLOBAL STATE LOCK VIOLATION: ${operationName} attempted while global state lock is held. Operation queued.`
       );
       this._globalStateLockQueue.push(operation);
       return true; // Operation was queued
@@ -664,9 +669,7 @@ export class VisualizationState {
     };
 
     // Add containers needed for search matches (and their ancestors)
-    console.error(
-      `[VisualizationState] Processing ${searchMatches.length} search matches for expansion`
-    );
+    hscopeLogger.log('search', `Processing ${searchMatches.length} search matches for expansion`);
     searchMatches.forEach(match => {
       if (match.type === 'container') {
         // Container matches should be expanded so users can see their contents
@@ -682,7 +685,7 @@ export class VisualizationState {
       }
     });
 
-    console.error(`[VisualizationState] Containers to expand: ${Array.from(toExpand).join(', ')}`);
+    hscopeLogger.log('search', `Containers to expand: ${Array.from(toExpand).join(', ')}`);
 
     // Track matched containers for diagnostics
     const matchedContainerIds = new Set<string>();
@@ -708,14 +711,16 @@ export class VisualizationState {
       return true;
     });
 
-    console.error(
-      `[VisualizationState] Matched containers that WILL be visible: ${willBeVisible.join(', ')}`
+    hscopeLogger.log(
+      'search',
+      `Matched containers that WILL be visible: ${willBeVisible.join(', ')}`
     );
     const willBeInvisible = Array.from(matchedContainerIds).filter(
       id => !willBeVisible.includes(id)
     );
-    console.error(
-      `[VisualizationState] Matched containers that will be INVISIBLE: ${willBeInvisible.join(', ')}`
+    hscopeLogger.log(
+      'search',
+      `Matched containers that will be INVISIBLE: ${willBeInvisible.join(', ')}`
     );
 
     // CRITICAL FIX: Only return containers that are actually collapsed or need expansion
@@ -744,8 +749,9 @@ export class VisualizationState {
       return true;
     });
 
-    console.error(
-      `[VisualizationState] Containers that need expansion (currently collapsed): ${containersToExpand.join(', ')}`
+    hscopeLogger.log(
+      'search',
+      `Containers that need expansion (currently collapsed): ${containersToExpand.join(', ')}`
     );
 
     return containersToExpand;
@@ -1626,6 +1632,24 @@ export class VisualizationState {
   }
 
   /**
+   * Get the current layout sequence number
+   * Used to detect stale layout operations
+   */
+  getLayoutSequence(): number {
+    return this._layoutSequence;
+  }
+
+  /**
+   * Increment and return the new layout sequence number
+   * Should be called when starting a new layout operation
+   */
+  incrementLayoutSequence(): number {
+    this._layoutSequence++;
+    hscopeLogger.log('layout', `incremented layout sequence to ${this._layoutSequence}`);
+    return this._layoutSequence;
+  }
+
+  /**
    * Increment the version to signal state changes
    * @private
    */
@@ -1656,7 +1680,7 @@ export class VisualizationState {
       this._validateContainerHierarchy();
       this._validateVisibilityConsistency();
     } catch (error) {
-      console.error('[VisualizationState] ❌ Coordinated validation failed:', error);
+      hscopeLogger.error('state', 'Coordinated validation failed', error);
     }
   }
 
@@ -2487,9 +2511,9 @@ export class VisualizationState {
     }
 
     if (duplicateKeys.size > 0) {
-      console.error(
-        `[DUPLICATE_KEYS] Found duplicate edge keys that will cause React warnings:`,
-        Array.from(duplicateKeys)
+      hscopeLogger.warn(
+        'edges',
+        `Found duplicate edge keys that will cause React warnings: ${Array.from(duplicateKeys).join(', ')}`
       );
 
       // Check for ID overlap between regular and hyperEdges
@@ -2504,7 +2528,10 @@ export class VisualizationState {
       );
 
       if (overlap.length > 0) {
-        console.error(`[DEBUG] ID OVERLAP between regular edges and hyperEdges:`, overlap);
+        hscopeLogger.warn(
+          'edges',
+          `ID OVERLAP between regular edges and hyperEdges: ${overlap.join(', ')}`
+        );
       }
 
       // In strict validation mode, throw an error to fail tests

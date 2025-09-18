@@ -67,12 +67,11 @@ export function useFlowGraphController({
 
       // DIAGNOSTIC: Log edge data for debugging missing edges
       if ((data?.edges.length || 0) === 0 && (data?.nodes.length || 0) > 5) {
-        console.error(
-          `[FlowGraphController] 🚨 EDGE DATA LOSS: ${data?.nodes.length || 0} nodes but 0 edges for layout ${layoutId}`
+        hscopeLogger.error(
+          'layout',
+          `🚨 EDGE DATA LOSS: ${data?.nodes.length || 0} nodes but 0 edges for layout ${layoutId}`
         );
-        console.error(
-          `[FlowGraphController] 🚨 This indicates edges were lost during state transitions`
-        );
+        hscopeLogger.error('layout', '🚨 This indicates edges were lost during state transitions');
       }
 
       // Set flag to indicate this is an internal update
@@ -355,6 +354,8 @@ export function useFlowGraphController({
           }
         }
         hscopeLogger.log('layout', `refresh success id=${layoutId}`);
+
+        // Smart collapse now runs before ELK layout, so no re-layout is needed
       } catch (err) {
         profiler?.end('Layout Calculation');
         profiler?.end('Rendering');

@@ -16,6 +16,7 @@ import {
   ELK_LAYOUT_OPTIONS,
   DEFAULT_LAYOUT_CONFIG,
 } from '../shared/config';
+import { hscopeLogger } from '../utils/logger';
 
 import ELK from 'elkjs';
 import type { ElkGraph, ElkNode, ElkEdge } from './elk-types';
@@ -67,6 +68,10 @@ export class ELKBridge {
   private async runFullLayout(visState: VisualizationState): Promise<void> {
     // ELK should handle whatever containers are given to it
     // Smart collapse decisions should be made by VisualizationEngine, not ELKBridge
+
+    // RACE CONDITION FIX: Capture layout sequence at start to detect stale operations
+    const layoutSequenceAtStart = visState.getLayoutSequence();
+    hscopeLogger.log('layout', `starting ELK layout with sequence ${layoutSequenceAtStart}`);
 
     // RACE CONDITION FIX: Capture container state at layout start for validation
     const _initialContainerCount = visState.visibleContainers.length;
@@ -177,14 +182,16 @@ export class ELKBridge {
 
     if (hasRaceCondition || hasELKFailure) {
       if (hasRaceCondition) {
-        console.error(
-          `[ELKBridge] 🚨 RACE CONDITION: Container count changed ${containerCountAtELKStart} → ${containerCountAtELKEnd} during ELK processing`
+        hscopeLogger.error(
+          'elk',
+          `🚨 RACE CONDITION: Container count changed ${containerCountAtELKStart} → ${containerCountAtELKEnd} during ELK processing`
         );
       }
 
       if (hasELKFailure) {
-        console.error(
-          `[ELKBridge] 🚨 ELK PROCESSING ISSUE: Expected ${containerCountAtELKStart} containers, ELK returned ${elkContainerCount}`
+        hscopeLogger.error(
+          'elk',
+          `🚨 ELK PROCESSING ISSUE: Expected ${containerCountAtELKStart} containers, ELK returned ${elkContainerCount}`
         );
 
         // FAIL FAST: Don't use fallbacks, debug the root cause
@@ -193,21 +200,25 @@ export class ELKBridge {
           container => !elkContainerIds.has(container.id)
         );
 
-        console.error(
-          `[ELKBridge] 🚨 ELK FAILURE - Missing containers:`,
-          missingContainers.map(c => ({
-            id: c.id,
-            label: c.label || c.data?.label,
-            hasPosition: !!c.position,
-            hasDimensions: !!(c.width && c.height),
-            parentId: c.parentId,
-          }))
+        hscopeLogger.error(
+          'elk',
+          `🚨 ELK FAILURE - Missing containers: ${JSON.stringify(
+            missingContainers.map(c => ({
+              id: c.id,
+              label: c.label || c.data?.label,
+              hasPosition: !!c.position,
+              hasDimensions: !!(c.width && c.height),
+              parentId: c.parentId,
+            })),
+            null,
+            2
+          )}`
         );
 
         // Log the ELK input that caused the failure
-        console.error(
-          `[ELKBridge] 🚨 ELK INPUT that failed:`,
-          JSON.stringify(
+        hscopeLogger.error(
+          'elk',
+          `🚨 ELK INPUT that failed: ${JSON.stringify(
             {
               containerCount: containerCountAtELKStart,
               elkInputChildren: (this as any)._lastElkInput?.children?.length || 'unknown',
@@ -215,7 +226,7 @@ export class ELKBridge {
             },
             null,
             2
-          )
+          )}`
         );
 
         throw new Error(
@@ -229,7 +240,7 @@ export class ELKBridge {
 
       if (currentRetry < maxRetries && hasRaceCondition) {
         (this as any)._layoutRetryCount = currentRetry + 1;
-        console.error(`[ELKBridge] 🔄 Layout retry ${currentRetry + 1}/${maxRetries}`);
+        hscopeLogger.log('elk', `🔄 Layout retry ${currentRetry + 1}/${maxRetries}`);
 
         // Add small delay to let any pending operations complete
         await new Promise(resolve => setTimeout(resolve, 100 * currentRetry));
@@ -267,7 +278,17 @@ export class ELKBridge {
     // 5. Yield control again before applying results
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    // 6. Apply results back to VisualizationState
+    // 6. Check if layout sequence has changed (indicating state modification during layout)
+    const currentLayoutSequence = visState.getLayoutSequence();
+    if (currentLayoutSequence !== layoutSequenceAtStart) {
+      hscopeLogger.log(
+        'layout',
+        `skipping stale ELK results: sequence changed from ${layoutSequenceAtStart} to ${currentLayoutSequence}`
+      );
+      return; // Skip applying stale results
+    }
+
+    // 7. Apply results back to VisualizationState
     profiler?.start('elk-to-vis-state-conversion');
     this.elkToVisualizationState(elkResult, visState);
     profiler?.end('elk-to-vis-state-conversion');
@@ -515,8 +536,9 @@ export class ELKBridge {
           // Check if child is a container and if it's visible
           const childContainer = visState.getContainer(childId);
           if (childContainer && !childContainer.hidden) {
-            console.error(
-              `[ELKBridge] 🔍 Adding child container ${childId} to parent ${container.id}`
+            hscopeLogger.log(
+              'elk',
+              `🔍 Adding child container ${childId} to parent ${container.id}`
             );
             // Add child container recursively
             const childContainerNode = buildContainerHierarchy(childId);
@@ -738,8 +760,9 @@ export class ELKBridge {
         if (typeof elkNode.x === 'number' && !isNaN(elkNode.x) && isFinite(elkNode.x)) {
           layoutUpdates.position.x = elkNode.x;
         } else {
-          console.error(
-            `[ELKBridge] ❌ LAYOUT BUG: Invalid x coordinate for container ${elkNode.id}: ${elkNode.x} (type: ${typeof elkNode.x})`
+          hscopeLogger.error(
+            'elk',
+            `❌ LAYOUT BUG: Invalid x coordinate for container ${elkNode.id}: ${elkNode.x} (type: ${typeof elkNode.x})`
           );
           layoutUpdates.position.x = 0; // Temporarily fallback to see what's happening
         }
@@ -750,16 +773,18 @@ export class ELKBridge {
         if (typeof elkNode.y === 'number' && !isNaN(elkNode.y) && isFinite(elkNode.y)) {
           layoutUpdates.position.y = elkNode.y;
         } else {
-          console.error(
-            `[ELKBridge] ❌ LAYOUT BUG: Invalid y coordinate for container ${elkNode.id}: ${elkNode.y} (type: ${typeof elkNode.y})`
+          hscopeLogger.error(
+            'elk',
+            `❌ LAYOUT BUG: Invalid y coordinate for container ${elkNode.id}: ${elkNode.y} (type: ${typeof elkNode.y})`
           );
           layoutUpdates.position.y = 0; // Temporarily fallback to see what's happening
         }
       }
     } else {
       // ELK didn't provide ANY position coordinates - this is also a bug!
-      console.error(
-        `[ELKBridge] ❌ LAYOUT BUG: ELK provided no position coordinates for container ${elkNode.id}`
+      hscopeLogger.error(
+        'elk',
+        `❌ LAYOUT BUG: ELK provided no position coordinates for container ${elkNode.id}`
       );
       // Temporarily use origin fallback to see what's happening
       layoutUpdates.position = { x: 0, y: 0 };
@@ -779,7 +804,7 @@ export class ELKBridge {
         ) {
           layoutUpdates.dimensions.width = elkNode.width;
         } else {
-          console.error(`[ELKBridge] Invalid width for container ${elkNode.id}: ${elkNode.width}`);
+          hscopeLogger.error('elk', `Invalid width for container ${elkNode.id}: ${elkNode.width}`);
           layoutUpdates.dimensions.width = 200; // Fallback
         }
       }
@@ -794,8 +819,9 @@ export class ELKBridge {
         ) {
           layoutUpdates.dimensions.height = elkNode.height;
         } else {
-          console.error(
-            `[ELKBridge] Invalid height for container ${elkNode.id}: ${elkNode.height}`
+          hscopeLogger.error(
+            'elk',
+            `Invalid height for container ${elkNode.id}: ${elkNode.height}`
           );
           layoutUpdates.dimensions.height = 150; // Fallback
         }
@@ -862,7 +888,7 @@ export class ELKBridge {
           if (typeof elkNode.x === 'number' && !isNaN(elkNode.x) && isFinite(elkNode.x)) {
             layoutUpdates.position.x = elkNode.x;
           } else {
-            console.error(`[ELKBridge] Invalid x coordinate for node ${elkNode.id}: ${elkNode.x}`);
+            hscopeLogger.error('elk', `Invalid x coordinate for node ${elkNode.id}: ${elkNode.x}`);
             layoutUpdates.position.x = 0;
           }
         }
@@ -871,7 +897,7 @@ export class ELKBridge {
           if (typeof elkNode.y === 'number' && !isNaN(elkNode.y) && isFinite(elkNode.y)) {
             layoutUpdates.position.y = elkNode.y;
           } else {
-            console.error(`[ELKBridge] Invalid y coordinate for node ${elkNode.id}: ${elkNode.y}`);
+            hscopeLogger.error('elk', `Invalid y coordinate for node ${elkNode.id}: ${elkNode.y}`);
             layoutUpdates.position.y = 0;
           }
         }
@@ -890,7 +916,7 @@ export class ELKBridge {
           ) {
             layoutUpdates.dimensions.width = elkNode.width;
           } else {
-            console.error(`[ELKBridge] Invalid width for node ${elkNode.id}: ${elkNode.width}`);
+            hscopeLogger.error('elk', `Invalid width for node ${elkNode.id}: ${elkNode.width}`);
             layoutUpdates.dimensions.width = 180;
           }
         }
@@ -904,7 +930,7 @@ export class ELKBridge {
           ) {
             layoutUpdates.dimensions.height = elkNode.height;
           } else {
-            console.error(`[ELKBridge] Invalid height for node ${elkNode.id}: ${elkNode.height}`);
+            hscopeLogger.error('elk', `Invalid height for node ${elkNode.id}: ${elkNode.height}`);
             layoutUpdates.dimensions.height = 60;
           }
         }
@@ -926,8 +952,9 @@ export class ELKBridge {
             if (typeof elkNode.x === 'number' && !isNaN(elkNode.x) && isFinite(elkNode.x)) {
               layoutUpdates.position.x = elkNode.x;
             } else {
-              console.error(
-                `[ELKBridge] Invalid x coordinate for container ${elkNode.id}: ${elkNode.x}`
+              hscopeLogger.error(
+                'elk',
+                `Invalid x coordinate for container ${elkNode.id}: ${elkNode.x}`
               );
               layoutUpdates.position.x = 0;
             }
@@ -937,8 +964,9 @@ export class ELKBridge {
             if (typeof elkNode.y === 'number' && !isNaN(elkNode.y) && isFinite(elkNode.y)) {
               layoutUpdates.position.y = elkNode.y;
             } else {
-              console.error(
-                `[ELKBridge] Invalid y coordinate for container ${elkNode.id}: ${elkNode.y}`
+              hscopeLogger.error(
+                'elk',
+                `Invalid y coordinate for container ${elkNode.id}: ${elkNode.y}`
               );
               layoutUpdates.position.y = 0;
             }
@@ -957,8 +985,9 @@ export class ELKBridge {
             ) {
               layoutUpdates.dimensions.width = elkNode.width;
             } else {
-              console.error(
-                `[ELKBridge] Invalid width for container ${elkNode.id}: ${elkNode.width}`
+              hscopeLogger.error(
+                'elk',
+                `Invalid width for container ${elkNode.id}: ${elkNode.width}`
               );
               layoutUpdates.dimensions.width = 200;
             }
@@ -973,8 +1002,9 @@ export class ELKBridge {
             ) {
               layoutUpdates.dimensions.height = elkNode.height;
             } else {
-              console.error(
-                `[ELKBridge] Invalid height for container ${elkNode.id}: ${elkNode.height}`
+              hscopeLogger.error(
+                'elk',
+                `Invalid height for container ${elkNode.id}: ${elkNode.height}`
               );
               layoutUpdates.dimensions.height = 150;
             }

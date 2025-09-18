@@ -13,7 +13,18 @@ export type HydroLogCategory =
   | 'metrics'
   | 'ro'
   | 'orchestrator'
-  | 'pack';
+  | 'pack'
+  | 'bridge'
+  | 'coord'
+  | 'elk'
+  | 'engine'
+  | 'state'
+  | 'search'
+  | 'parse'
+  | 'grouping'
+  | 'collapse'
+  | 'edges'
+  | 'resize';
 
 function getEnabled(): Set<string> {
   if (typeof window !== 'undefined' && (window as any).__HYDRO_LOGS) {
