@@ -98,11 +98,31 @@ export function useFlowGraphController({
           return;
         }
 
-        setReactFlowData(data);
-        // Reset flag after a short delay to allow ReactFlow to process
+        // PROTECTION: Validate node structure before setting ReactFlow data
+        if (data && data.nodes.length > 0) {
+          const invalidNodes = data.nodes.filter(node => 
+            !node.id || !node.type || !node.position || !node.data ||
+            typeof node.position.x !== 'number' || typeof node.position.y !== 'number'
+          );
+          
+          if (invalidNodes.length > 0) {
+            hscopeLogger.error(
+              'layout',
+              `🚨 INVALID REACTFLOW DATA: ${invalidNodes.length} nodes have structural issues. Skipping update.`,
+              invalidNodes.slice(0, 3).map(n => ({ id: n?.id, type: n?.type, position: n?.position }))
+            );
+            return;
+          }
+        }
+
+        // Add small delay to ensure ReactFlow has finished processing previous updates
         setTimeout(() => {
-          isInternalUpdateRef.current = false;
-        }, 100);
+          setReactFlowData(data);
+          // Reset flag after ReactFlow processes the new data
+          setTimeout(() => {
+            isInternalUpdateRef.current = false;
+          }, 100);
+        }, 10);
         return;
       }
 

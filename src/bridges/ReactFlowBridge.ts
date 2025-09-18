@@ -166,14 +166,68 @@ export class ReactFlowBridge {
       );
     }
 
+    // CRITICAL FIX: Sort all nodes to ensure parents come before children (ReactFlow requirement)
+    console.log(`[ReactFlowBridge] 🔄 Sorting nodes for ReactFlow parent-child ordering [${conversionId}]`);
+    
+    // DIAGNOSTIC: Check for orphaned child nodes before sorting
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const orphanedChildren: string[] = [];
+    
+    nodes.forEach(node => {
+      if (node.parentId && !nodeIds.has(node.parentId)) {
+        orphanedChildren.push(`${node.id} -> ${node.parentId}`);
+      }
+    });
+    
+    if (orphanedChildren.length > 0) {
+      hscopeLogger.error(
+        'bridge',
+        `🚨 ORPHANED CHILDREN DETECTED [${conversionId}]: ${orphanedChildren.length} nodes reference missing parents:
+${orphanedChildren.slice(0, 10).join('\n')}
+This will cause ReactFlow parent-child errors. Removing parentId from orphaned nodes.`
+      );
+      
+      // FIX: Remove parentId from orphaned nodes to prevent ReactFlow errors
+      nodes.forEach(node => {
+        if (node.parentId && !nodeIds.has(node.parentId)) {
+          console.warn(`[ReactFlowBridge] Removing parentId ${node.parentId} from orphaned node ${node.id}`);
+          delete node.parentId;
+          delete node.extent; // Also remove extent constraint
+        }
+      });
+    }
+    
+    const sortedNodes = this.sortNodesForReactFlow(nodes, parentMap);
+    
+    // DIAGNOSTIC: Validate final node structure
+    const invalidNodes: string[] = [];
+    sortedNodes.forEach(node => {
+      if (!node.id || !node.type || !node.position || !node.data) {
+        invalidNodes.push(`${node.id || 'NO_ID'}: missing ${!node.id ? 'id' : !node.type ? 'type' : !node.position ? 'position' : 'data'}`);
+      }
+      if (node.position && (typeof node.position.x !== 'number' || typeof node.position.y !== 'number')) {
+        invalidNodes.push(`${node.id}: invalid position (${node.position.x}, ${node.position.y})`);
+      }
+    });
+    
+    if (invalidNodes.length > 0) {
+      hscopeLogger.error(
+        'bridge',
+        `🚨 INVALID NODE STRUCTURE [${conversionId}]: ${invalidNodes.length} nodes have structural issues:
+${invalidNodes.slice(0, 5).join('\n')}`
+      );
+    }
+    
+    console.log(`[ReactFlowBridge] ✅ Node sorting completed [${conversionId}]`);
+
     console.log(`[ReactFlowBridge] ✅ Conversion completed [${conversionId}]:`, {
-      totalNodes: nodes.length,
+      totalNodes: sortedNodes.length,
       containerNodes: containerCount,
       regularNodes: regularNodeCount,
       totalEdges: edges.length,
     });
 
-    return { nodes, edges };
+    return { nodes: sortedNodes, edges };
   }
 
   // ============================================================================
@@ -196,6 +250,52 @@ export class ReactFlowBridge {
     parentMap: Map<string, string>
   ): Container[] {
     return sortContainersByHierarchyUtil(containers, parentMap);
+  }
+
+  /**
+   * Sort all nodes to ensure parents come before children (ReactFlow requirement)
+   * This is the final sorting step that ensures the entire nodes array is properly ordered
+   */
+  private sortNodesForReactFlow(
+    nodes: ReactFlowNode[],
+    parentMap: Map<string, string>
+  ): ReactFlowNode[] {
+    const sortedNodes: ReactFlowNode[] = [];
+    const nodeMap = new Map(nodes.map(node => [node.id, node]));
+    const visited = new Set<string>();
+
+    // Process each node, ensuring parents are added before children
+    nodes.forEach(node => {
+      this.addNodeAndParents(node.id, nodeMap, parentMap, visited, sortedNodes);
+    });
+
+    return sortedNodes;
+  }
+
+  /**
+   * Recursively add a node and its parents to the sorted array
+   */
+  private addNodeAndParents(
+    nodeId: string,
+    nodeMap: Map<string, ReactFlowNode>,
+    parentMap: Map<string, string>,
+    visited: Set<string>,
+    sortedNodes: ReactFlowNode[]
+  ): void {
+    if (visited.has(nodeId)) return;
+
+    const node = nodeMap.get(nodeId);
+    if (!node) return;
+
+    // First, ensure the parent is added (if it exists and hasn't been added yet)
+    const parentId = parentMap.get(nodeId);
+    if (parentId && !visited.has(parentId)) {
+      this.addNodeAndParents(parentId, nodeMap, parentMap, visited, sortedNodes);
+    }
+
+    // Then add this node
+    visited.add(nodeId);
+    sortedNodes.push(node);
   }
 
   /**
