@@ -148,6 +148,11 @@ export class LayoutOrchestrator {
     await consolidatedOperationManager.queueSearchExpansion(
       operationId,
       async () => {
+        hscopeLogger.log(
+          'orchestrator',
+          `🔄 Starting container expansion for ${containerIds.length} containers`
+        );
+
         // Expand all containers atomically
         for (const containerId of containerIds) {
           this.visualizationState.expandContainer(containerId);
@@ -159,6 +164,10 @@ export class LayoutOrchestrator {
 
         // Search expansion always needs full layout to position newly visible child nodes
         await this.layoutController.refreshLayout(true);
+        hscopeLogger.log(
+          'orchestrator',
+          `✅ Search expansion completed for ${containerIds.length} containers`
+        );
       },
       'high' // Search operations are high priority
     );

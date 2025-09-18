@@ -489,11 +489,16 @@ export class VisualizationEngine {
    * Full collapse implementation, collpases all top-level containers
    */
   private async runFullCollapse(): Promise<void> {
+    hscopeLogger.log('engine', `🔄 runFullCollapse starting`);
+
     // Get just the top-level containers from VisualizationState
     // This ensures we don't double-process parent and child containers
     const containers: readonly Container[] = this.visState.getTopLevelContainers();
 
+    hscopeLogger.log('engine', `📦 Found ${containers.length} top-level containers to collapse`);
+
     if (containers.length === 0) {
+      hscopeLogger.log('engine', `✅ runFullCollapse completed - no containers to collapse`);
       return;
     }
 
@@ -515,6 +520,8 @@ export class VisualizationEngine {
       }
     }
 
+    hscopeLogger.log('engine', `🔄 Container collapse completed, starting layout`);
+
     // Re-run layout after collapse to get clean final layout
     // IMPORTANT: Clear any cached positions to force fresh layout with new collapsed dimensions
     this.visState.clearLayoutPositions();
@@ -522,6 +529,7 @@ export class VisualizationEngine {
     this.elkBridge = new ELKBridge(this.config.layoutConfig);
 
     await this.elkBridge.layoutVisualizationState(this.visState);
+    hscopeLogger.log('engine', `✅ runFullCollapse completed successfully`);
   }
 
   // ============ Internal Methods ============

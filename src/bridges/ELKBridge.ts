@@ -66,239 +66,357 @@ export class ELKBridge {
    * Run full layout for all containers (initial layout)
    */
   private async runFullLayout(visState: VisualizationState): Promise<void> {
-    // ELK should handle whatever containers are given to it
-    // Smart collapse decisions should be made by VisualizationEngine, not ELKBridge
-
-    // RACE CONDITION FIX: Capture layout sequence at start to detect stale operations
-    const layoutSequenceAtStart = visState.getLayoutSequence();
-    hscopeLogger.log('layout', `starting ELK layout with sequence ${layoutSequenceAtStart}`);
-
-    // RACE CONDITION FIX: Capture container state at layout start for validation
-    const _initialContainerCount = visState.visibleContainers.length;
-    const _initialContainerIds = new Set(visState.visibleContainers.map(c => c.id));
-
-    // Store initial state for validation
-
-    // Import profiler utilities for detailed timing
-    const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
-
-    const profiler = getProfiler();
-
-    profiler?.start('elk-bridge-full-layout');
-
-    // Clear any existing edge layout data to ensure ReactFlow starts fresh
-    profiler?.start('clear-edge-layouts');
-
-    visState.visibleEdges.forEach(edge => {
-      try {
-        visState.setEdgeLayout(edge.id, { sections: [] });
-      } catch (_error) {
-        // Edge might not exist anymore, ignore
+    try {
+      // Debug: Log call stack to see what's triggering multiple layouts
+      if (typeof console !== 'undefined' && console.trace) {
+        console.trace('[ELKBridge] runFullLayout called from:');
       }
-    });
 
-    profiler?.end('clear-edge-layouts');
+      hscopeLogger.log('elk', '🚀 runFullLayout starting');
 
-    // 1. Extract all visible data from VisualizationState
-    profiler?.start('vis-state-to-elk-conversion');
-    const elkGraph = this.visStateToELK(visState);
-    profiler?.end('vis-state-to-elk-conversion');
+      // Safely get counts
+      const containerCount = visState.visibleContainers.length;
+      const edgeCount = visState.visibleEdges.length;
 
-    // 2. Validate ELK input data
-    profiler?.start('elk-validation');
-    this.validateELKInput(elkGraph);
-    profiler?.end('elk-validation');
+      hscopeLogger.log(
+        'elk',
+        `📊 Visible containers: ${containerCount}, visible edges: ${edgeCount}`
+      );
+      // ELK should handle whatever containers are given to it
+      // Smart collapse decisions should be made by VisualizationEngine, not ELKBridge
 
-    // 3. Yield control to browser to show loading state
-    await new Promise(resolve => setTimeout(resolve, 10));
+      // RACE CONDITION FIX: Capture layout sequence at start to detect stale operations
+      const layoutSequenceAtStart = visState.getLayoutSequence();
+      hscopeLogger.log('layout', `starting ELK layout with sequence ${layoutSequenceAtStart}`);
 
-    // Debug: Check for data leaks in large graphs
-    if ((elkGraph.children?.length || 0) > 10) {
-      // CRITICAL: Check if we're accidentally including children of collapsed containers
-      const leaks: string[] = [];
-      for (const container of elkGraph.children || []) {
-        // FIXED: Only check for leaks if container is marked as collapsed
-        // Expanded containers (collapsed=false) are SUPPOSED to have children!
-        // Check the original container state from visState
-        const originalContainer = visState.getContainer(container.id);
-        if (originalContainer?.collapsed && container.children && container.children.length > 0) {
-          const leakMsg = `Container ${container.id} has ${container.children.length} children but should be collapsed!`;
-          console.warn(`[ELKBridge] ⚠️  LEAK: ${leakMsg}`);
-          console.warn(
-            `[ELKBridge] ⚠️    Children: ${container.children
-              .map(c => c.id)
-              .slice(0, 3)
-              .join(', ')}${container.children.length > 3 ? '...' : ''}`
+      // Debug: Check if there are already other layout operations in progress
+      if ((this as any)._currentLayoutSequence) {
+        hscopeLogger.warn(
+          'layout',
+          `⚠️ Another layout operation is already in progress (sequence ${(this as any)._currentLayoutSequence}). This may cause race conditions.`
+        );
+      }
+      (this as any)._currentLayoutSequence = layoutSequenceAtStart;
+
+      // RACE CONDITION FIX: Capture container state at layout start for validation
+      const _initialContainerCount = visState.visibleContainers.length;
+      const _initialContainerIds = new Set(visState.visibleContainers.map(c => c.id));
+
+      // Store initial state for validation
+
+      // Import profiler utilities for detailed timing
+      const { getProfiler } = await import('../dev').catch(() => ({ getProfiler: () => null }));
+
+      const profiler = getProfiler();
+
+      profiler?.start('elk-bridge-full-layout');
+
+      // Clear any existing edge layout data to ensure ReactFlow starts fresh
+      profiler?.start('clear-edge-layouts');
+
+      visState.visibleEdges.forEach(edge => {
+        try {
+          visState.setEdgeLayout(edge.id, { sections: [] });
+        } catch (_error) {
+          // Edge might not exist anymore, ignore
+        }
+      });
+
+      profiler?.end('clear-edge-layouts');
+
+      // 1. Extract all visible data from VisualizationState
+      profiler?.start('vis-state-to-elk-conversion');
+      const elkGraph = this.visStateToELK(visState);
+      profiler?.end('vis-state-to-elk-conversion');
+
+      // 2. Validate ELK input data
+      profiler?.start('elk-validation');
+      this.validateELKInput(elkGraph);
+
+      // Additional validation for common ELK hang causes
+      this.validateELKHangPrevention(elkGraph);
+
+      // Debug: Log the ELK graph structure before sending to ELK (safely - no JSON.stringify)
+      hscopeLogger.log(
+        'elk',
+        `ELK graph structure: ${elkGraph.children?.length || 0} children, ${elkGraph.edges?.length || 0} edges`
+      );
+
+      profiler?.end('elk-validation');
+
+      // 3. Yield control to browser to show loading state
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Debug: Check for data leaks in large graphs
+      if ((elkGraph.children?.length || 0) > 10) {
+        // CRITICAL: Check if we're accidentally including children of collapsed containers
+        const leaks: string[] = [];
+        for (const container of elkGraph.children || []) {
+          // FIXED: Only check for leaks if container is marked as collapsed
+          // Expanded containers (collapsed=false) are SUPPOSED to have children!
+          // Check the original container state from visState
+          const originalContainer = visState.getContainer(container.id);
+          if (originalContainer?.collapsed && container.children && container.children.length > 0) {
+            const leakMsg = `Container ${container.id} has ${container.children.length} children but should be collapsed!`;
+            console.warn(`[ELKBridge] ⚠️  LEAK: ${leakMsg}`);
+            console.warn(
+              `[ELKBridge] ⚠️    Children: ${container.children
+                .map(c => c.id)
+                .slice(0, 3)
+                .join(', ')}${container.children.length > 3 ? '...' : ''}`
+            );
+            leaks.push(leakMsg);
+          }
+        }
+
+        // In test environments, throw an error if we have leaks
+        // Note: Using globalThis to check for test environment since process may not be available in browser
+        const isTestEnvironment =
+          typeof globalThis !== 'undefined' &&
+          (globalThis.process?.env?.NODE_ENV === 'test' ||
+            globalThis.process?.env?.VITEST === 'true');
+
+        if (leaks.length > 0 && isTestEnvironment) {
+          throw new Error(
+            `ELK CONTAINER LEAKS DETECTED: ${leaks.length} collapsed containers have visible children. This violates the collapsed container invariant. Leaks: ${leaks.slice(0, 3).join('; ')}`
           );
-          leaks.push(leakMsg);
         }
       }
 
-      // In test environments, throw an error if we have leaks
-      // Note: Using globalThis to check for test environment since process may not be available in browser
-      const isTestEnvironment =
-        typeof globalThis !== 'undefined' &&
-        (globalThis.process?.env?.NODE_ENV === 'test' ||
-          globalThis.process?.env?.VITEST === 'true');
-
-      if (leaks.length > 0 && isTestEnvironment) {
-        throw new Error(
-          `ELK CONTAINER LEAKS DETECTED: ${leaks.length} collapsed containers have visible children. This violates the collapsed container invariant. Leaks: ${leaks.slice(0, 3).join('; ')}`
-        );
-      }
-    }
-
-    // 4. Run ELK layout algorithm
-    profiler?.start('elk-algorithm-execution');
-    const containerCountAtELKStart = visState.visibleContainers.length;
-    if (profiler) {
-      console.log(
-        `[ELKBridge] Starting ELK layout with ${elkGraph.children?.length || 0} top-level elements`
-      );
-    }
-
-    // Store ELK input for debugging failures
-    (this as any)._lastElkInput = elkGraph;
-
-    const elkResult = await this.elk.layout(elkGraph);
-
-    const containerCountAtELKEnd = visState.visibleContainers.length;
-
-    // COMPREHENSIVE LAYOUT VALIDATION AND RECOVERY
-    const hasRaceCondition = containerCountAtELKEnd !== containerCountAtELKStart;
-
-    // FIXED: Count all containers recursively, not just root level
-    const allElkContainers: any[] = [];
-    const extractAllContainers = (elkNode: any) => {
-      allElkContainers.push(elkNode);
-      if (elkNode.children) {
-        elkNode.children.forEach((child: any) => extractAllContainers(child));
-      }
-    };
-    elkResult.children?.forEach((rootElkNode: any) => extractAllContainers(rootElkNode));
-
-    const elkContainerCount = allElkContainers.length;
-    const hasELKFailure = elkContainerCount < containerCountAtELKStart * 0.8; // ELK returned <80% of expected containers
-
-    if (hasRaceCondition || hasELKFailure) {
-      if (hasRaceCondition) {
-        hscopeLogger.error(
-          'elk',
-          `🚨 RACE CONDITION: Container count changed ${containerCountAtELKStart} → ${containerCountAtELKEnd} during ELK processing`
+      // 4. Run ELK layout algorithm
+      profiler?.start('elk-algorithm-execution');
+      const containerCountAtELKStart = visState.visibleContainers.length;
+      if (profiler) {
+        console.log(
+          `[ELKBridge] Starting ELK layout with ${elkGraph.children?.length || 0} top-level elements`
         );
       }
 
-      if (hasELKFailure) {
-        hscopeLogger.error(
+      // Store ELK input for debugging failures
+      (this as any)._lastElkInput = elkGraph;
+
+      // ELK layout with proper logging for large graphs
+      let elkResult: any;
+      try {
+        hscopeLogger.log(
           'elk',
-          `🚨 ELK PROCESSING ISSUE: Expected ${containerCountAtELKStart} containers, ELK returned ${elkContainerCount}`
+          `Starting ELK layout with ${elkGraph.children?.length || 0} children and ${elkGraph.edges?.length || 0} edges`
         );
 
-        // FAIL FAST: Don't use fallbacks, debug the root cause
-        const elkContainerIds = new Set(allElkContainers.map(elkNode => elkNode.id));
-        const missingContainers = visState.visibleContainers.filter(
-          container => !elkContainerIds.has(container.id)
-        );
+        // For large graphs, ELK can take significant time - that's normal
+        const startTime = Date.now();
+        elkResult = await this.elk.layout(elkGraph);
+        const endTime = Date.now();
 
-        hscopeLogger.error(
-          'elk',
-          `🚨 ELK FAILURE - Missing containers: ${JSON.stringify(
-            missingContainers.map(c => ({
-              id: c.id,
-              label: c.label || c.data?.label,
-              hasPosition: !!c.position,
-              hasDimensions: !!(c.width && c.height),
-              parentId: c.parentId,
-            })),
-            null,
-            2
-          )}`
-        );
+        hscopeLogger.log('elk', `ELK layout completed successfully in ${endTime - startTime}ms`);
+      } catch (error) {
+        hscopeLogger.error('elk', 'ELK layout failed', error);
 
-        // Log the ELK input that caused the failure
-        hscopeLogger.error(
-          'elk',
-          `🚨 ELK INPUT that failed: ${JSON.stringify(
-            {
-              containerCount: containerCountAtELKStart,
-              elkInputChildren: (this as any)._lastElkInput?.children?.length || 'unknown',
-              elkOutputChildren: elkResult.children?.length || 0,
+        // Log detailed debug information
+        console.error('[ELKBridge] ELK layout failure details:', {
+          error: error instanceof Error ? error.message : error,
+          elkGraphStats: {
+            rootChildren: elkGraph.children?.length || 0,
+            totalEdges: elkGraph.edges?.length || 0,
+            layoutOptions: elkGraph.layoutOptions,
+          },
+          elkInput: elkGraph,
+        });
+
+        // Try a fallback layout with minimal ELK configuration
+        console.warn('[ELKBridge] Attempting fallback layout with minimal configuration...');
+
+        try {
+          // Create a simplified graph with minimal configuration
+          const fallbackGraph = {
+            id: 'root',
+            children:
+              elkGraph.children?.map(child => ({
+                id: child.id,
+                width: child.width || 200,
+                height: child.height || 150,
+                // Remove children to simplify the graph
+                children: [],
+              })) || [],
+            edges: elkGraph.edges?.slice(0, 50) || [], // Limit edges to prevent complexity
+            layoutOptions: {
+              'elk.algorithm': 'layered',
+              'elk.direction': 'DOWN',
+              'elk.spacing.nodeNode': '50',
             },
-            null,
-            2
-          )}`
+          };
+
+          elkResult = await Promise.race([
+            this.elk.layout(fallbackGraph),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Fallback timeout')), 10000)
+            ),
+          ]);
+
+          console.warn(
+            '[ELKBridge] Fallback layout succeeded, but with simplified graph structure'
+          );
+        } catch (fallbackError) {
+          console.error('[ELKBridge] Fallback layout also failed:', fallbackError);
+
+          // Final fallback: create a simple grid layout
+          elkResult = this.createGridFallbackLayout(elkGraph);
+          console.warn('[ELKBridge] Using grid fallback layout');
+        }
+      }
+
+      const containerCountAtELKEnd = visState.visibleContainers.length;
+
+      // COMPREHENSIVE LAYOUT VALIDATION AND RECOVERY
+      const hasRaceCondition = containerCountAtELKEnd !== containerCountAtELKStart;
+
+      // FIXED: Count all containers recursively, not just root level
+      const allElkContainers: any[] = [];
+      const extractAllContainers = (elkNode: any) => {
+        allElkContainers.push(elkNode);
+        if (elkNode.children) {
+          elkNode.children.forEach((child: any) => extractAllContainers(child));
+        }
+      };
+      elkResult.children?.forEach((rootElkNode: any) => extractAllContainers(rootElkNode));
+
+      const elkContainerCount = allElkContainers.length;
+      const hasELKFailure = elkContainerCount < containerCountAtELKStart * 0.8; // ELK returned <80% of expected containers
+
+      if (hasRaceCondition || hasELKFailure) {
+        if (hasRaceCondition) {
+          hscopeLogger.error(
+            'elk',
+            `🚨 RACE CONDITION: Container count changed ${containerCountAtELKStart} → ${containerCountAtELKEnd} during ELK processing`
+          );
+        }
+
+        if (hasELKFailure) {
+          hscopeLogger.error(
+            'elk',
+            `🚨 ELK PROCESSING ISSUE: Expected ${containerCountAtELKStart} containers, ELK returned ${elkContainerCount}`
+          );
+
+          // FAIL FAST: Don't use fallbacks, debug the root cause
+          const elkContainerIds = new Set(allElkContainers.map(elkNode => elkNode.id));
+          const missingContainers = visState.visibleContainers.filter(
+            container => !elkContainerIds.has(container.id)
+          );
+
+          hscopeLogger.error(
+            'elk',
+            `🚨 ELK FAILURE - Missing containers: ${JSON.stringify(
+              missingContainers.map(c => ({
+                id: c.id,
+                label: c.label || c.data?.label,
+                hasPosition: !!c.position,
+                hasDimensions: !!(c.width && c.height),
+                parentId: c.parentId,
+              })),
+              null,
+              2
+            )}`
+          );
+
+          // Log the ELK input that caused the failure
+          hscopeLogger.error(
+            'elk',
+            `🚨 ELK INPUT that failed: ${JSON.stringify(
+              {
+                containerCount: containerCountAtELKStart,
+                elkInputChildren: (this as any)._lastElkInput?.children?.length || 'unknown',
+                elkOutputChildren: elkResult.children?.length || 0,
+              },
+              null,
+              2
+            )}`
+          );
+
+          throw new Error(
+            `ELK layout failure: Expected ${containerCountAtELKStart} containers, got ${elkContainerCount}. Check console for details.`
+          );
+        }
+
+        // Retry with exponential backoff (but only for race conditions, not ELK failures)
+        const maxRetries = hasRaceCondition ? 3 : 1; // Don't retry ELK failures multiple times
+        const currentRetry = (this as any)._layoutRetryCount || 0;
+
+        if (currentRetry < maxRetries && hasRaceCondition) {
+          (this as any)._layoutRetryCount = currentRetry + 1;
+          hscopeLogger.log('elk', `🔄 Layout retry ${currentRetry + 1}/${maxRetries}`);
+
+          // Add small delay to let any pending operations complete
+          await new Promise(resolve => setTimeout(resolve, 100 * currentRetry));
+
+          // Retry the layout
+          await this.runFullLayout(visState);
+          return;
+        }
+      }
+
+      // Reset retry counter on successful layout
+      (this as any)._layoutRetryCount = 0;
+
+      profiler?.end('elk-algorithm-execution');
+      if (profiler) {
+        console.log(`[ELKBridge] ELK layout completed`);
+      }
+
+      const elkOutputContainers = elkResult.children || [];
+
+      // Calculate actual spacing from ELK results
+      const sortedByX = elkOutputContainers
+        .filter((c: any) => c && c.x !== undefined)
+        .sort((a: any, b: any) => (a.x || 0) - (b.x || 0));
+
+      if (sortedByX.length > 1) {
+        const gaps = [];
+        for (let i = 1; i < sortedByX.length; i++) {
+          const gap =
+            (sortedByX[i].x || 0) - ((sortedByX[i - 1].x || 0) + (sortedByX[i - 1].width || 0));
+          gaps.push(gap);
+        }
+      }
+
+      // 5. Yield control again before applying results
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // 6. Check if layout sequence has changed (indicating state modification during layout)
+      const currentLayoutSequence = visState.getLayoutSequence();
+      if (currentLayoutSequence !== layoutSequenceAtStart) {
+        hscopeLogger.log(
+          'layout',
+          `skipping stale ELK results: sequence changed from ${layoutSequenceAtStart} to ${currentLayoutSequence}`
         );
-
-        throw new Error(
-          `ELK layout failure: Expected ${containerCountAtELKStart} containers, got ${elkContainerCount}. Check console for details.`
-        );
+        // Clear the current layout sequence tracker
+        (this as any)._currentLayoutSequence = null;
+        return; // Skip applying stale results
       }
 
-      // Retry with exponential backoff (but only for race conditions, not ELK failures)
-      const maxRetries = hasRaceCondition ? 3 : 1; // Don't retry ELK failures multiple times
-      const currentRetry = (this as any)._layoutRetryCount || 0;
+      // 7. Apply results back to VisualizationState
+      profiler?.start('elk-to-vis-state-conversion');
+      this.elkToVisualizationState(elkResult, visState);
+      profiler?.end('elk-to-vis-state-conversion');
 
-      if (currentRetry < maxRetries && hasRaceCondition) {
-        (this as any)._layoutRetryCount = currentRetry + 1;
-        hscopeLogger.log('elk', `🔄 Layout retry ${currentRetry + 1}/${maxRetries}`);
+      // 7. Validate that all visible containers have ELK positions (Fix 2: Position Validation)
+      profiler?.start('elk-position-validation');
+      this.validateELKPositions(visState);
+      profiler?.end('elk-position-validation');
 
-        // Add small delay to let any pending operations complete
-        await new Promise(resolve => setTimeout(resolve, 100 * currentRetry));
+      profiler?.end('elk-bridge-full-layout');
 
-        // Retry the layout
-        await this.runFullLayout(visState);
-        return;
-      }
-    }
-
-    // Reset retry counter on successful layout
-    (this as any)._layoutRetryCount = 0;
-
-    profiler?.end('elk-algorithm-execution');
-    if (profiler) {
-      console.log(`[ELKBridge] ELK layout completed`);
-    }
-
-    const elkOutputContainers = elkResult.children || [];
-
-    // Calculate actual spacing from ELK results
-    const sortedByX = elkOutputContainers
-      .filter((c: any) => c && c.x !== undefined)
-      .sort((a: any, b: any) => (a.x || 0) - (b.x || 0));
-
-    if (sortedByX.length > 1) {
-      const gaps = [];
-      for (let i = 1; i < sortedByX.length; i++) {
-        const gap =
-          (sortedByX[i].x || 0) - ((sortedByX[i - 1].x || 0) + (sortedByX[i - 1].width || 0));
-        gaps.push(gap);
-      }
-    }
-
-    // 5. Yield control again before applying results
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    // 6. Check if layout sequence has changed (indicating state modification during layout)
-    const currentLayoutSequence = visState.getLayoutSequence();
-    if (currentLayoutSequence !== layoutSequenceAtStart) {
+      // Clear the current layout sequence tracker
+      (this as any)._currentLayoutSequence = null;
       hscopeLogger.log(
         'layout',
-        `skipping stale ELK results: sequence changed from ${layoutSequenceAtStart} to ${currentLayoutSequence}`
+        `ELK layout sequence ${layoutSequenceAtStart} completed and applied`
       );
-      return; // Skip applying stale results
+    } catch (error) {
+      hscopeLogger.error('elk', `❌ runFullLayout failed`, error);
+      // Clear the current layout sequence tracker even on error
+      (this as any)._currentLayoutSequence = null;
+      throw error;
     }
-
-    // 7. Apply results back to VisualizationState
-    profiler?.start('elk-to-vis-state-conversion');
-    this.elkToVisualizationState(elkResult, visState);
-    profiler?.end('elk-to-vis-state-conversion');
-
-    // 7. Validate that all visible containers have ELK positions (Fix 2: Position Validation)
-    profiler?.start('elk-position-validation');
-    this.validateELKPositions(visState);
-    profiler?.end('elk-position-validation');
-
-    profiler?.end('elk-bridge-full-layout');
   }
 
   // Fallback positioning removed - we now fail fast to debug ELK issues
@@ -355,6 +473,149 @@ export class ELKBridge {
     
     // CRITICAL: Log the exact layout options being sent
   }*/
+
+  /**
+   * Additional validation to prevent ELK from hanging
+   */
+  private validateELKHangPrevention(elkGraph: ElkGraph): void {
+    // Check for excessive complexity that might cause ELK to hang
+    const totalNodes = this.countAllNodes(elkGraph);
+    const totalEdges = elkGraph.edges?.length || 0;
+
+    if (totalNodes > 500) {
+      console.warn(
+        `[ELKBridge] Large graph detected: ${totalNodes} nodes. This may cause ELK to hang.`
+      );
+    }
+
+    if (totalEdges > 1000) {
+      console.warn(
+        `[ELKBridge] Large graph detected: ${totalEdges} edges. This may cause ELK to hang.`
+      );
+    }
+
+    // Check for circular references in container hierarchy
+    const visited = new Set<string>();
+    const recursionStack = new Set<string>();
+
+    const checkCircularReference = (nodeId: string, path: string[] = []): boolean => {
+      if (recursionStack.has(nodeId)) {
+        throw new Error(
+          `Circular reference detected in container hierarchy: ${path.join(' -> ')} -> ${nodeId}`
+        );
+      }
+
+      if (visited.has(nodeId)) {
+        return false; // Already processed this branch
+      }
+
+      visited.add(nodeId);
+      recursionStack.add(nodeId);
+
+      // Find the node and check its children
+      const node = this.findNodeById(elkGraph, nodeId);
+      if (node?.children) {
+        for (const child of node.children) {
+          if (checkCircularReference(child.id, [...path, nodeId])) {
+            return true;
+          }
+        }
+      }
+
+      recursionStack.delete(nodeId);
+      return false;
+    };
+
+    // Check all root nodes for circular references
+    elkGraph.children?.forEach(child => {
+      checkCircularReference(child.id);
+    });
+
+    // Check for edges with self-references (can cause ELK issues)
+    elkGraph.edges?.forEach(edge => {
+      const sources = edge.sources || [];
+      const targets = edge.targets || [];
+
+      for (const source of sources) {
+        if (targets.includes(source)) {
+          console.warn(
+            `[ELKBridge] Self-referencing edge detected: ${edge.id} (${source} -> ${source}). This may cause layout issues.`
+          );
+        }
+      }
+    });
+  }
+
+  /**
+   * Helper method to count all nodes recursively
+   */
+  private countAllNodes(elkGraph: ElkGraph): number {
+    let count = 0;
+
+    const countNodes = (node: any) => {
+      count++;
+      if (node.children) {
+        node.children.forEach(countNodes);
+      }
+    };
+
+    elkGraph.children?.forEach(countNodes);
+    return count;
+  }
+
+  /**
+   * Helper method to find a node by ID recursively
+   */
+  private findNodeById(elkGraph: ElkGraph, nodeId: string): any {
+    const searchInNode = (node: any): any => {
+      if (node.id === nodeId) {
+        return node;
+      }
+      if (node.children) {
+        for (const child of node.children) {
+          const found = searchInNode(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    if (elkGraph.children) {
+      for (const child of elkGraph.children) {
+        const found = searchInNode(child);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Create a simple grid layout as a last resort fallback
+   */
+  private createGridFallbackLayout(elkGraph: ElkGraph): any {
+    const children = elkGraph.children || [];
+    const cols = Math.ceil(Math.sqrt(children.length));
+    const spacing = 250;
+
+    const layoutChildren = children.map((child, index) => {
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+
+      return {
+        ...child,
+        x: col * spacing,
+        y: row * spacing,
+        width: child.width || 200,
+        height: child.height || 150,
+      };
+    });
+
+    return {
+      id: 'root',
+      children: layoutChildren,
+      edges: elkGraph.edges || [],
+    };
+  }
 
   /**
    * Validate ELK input data to prevent null reference errors

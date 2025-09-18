@@ -165,13 +165,21 @@ class ConsolidatedOperationManager {
       // CIRCUIT BREAKER: Prevent infinite recursion by limiting nested layout operations
       const currentOpType = this.currentOperation?.type;
       if (currentOpType === 'search-expansion' || currentOpType === 'container-toggle') {
-        hscopeLogger.log('op', `executing immediately (inside ${currentOpType}) ${operationId}`);
+        hscopeLogger.log(
+          'op',
+          `🔄 executing layout immediately (inside ${currentOpType}) ${operationId}`
+        );
         try {
+          const startTime = Date.now();
           await callback();
-          hscopeLogger.log('op', `completed immediately ${operationId}`);
+          const endTime = Date.now();
+          hscopeLogger.log(
+            'op',
+            `✅ completed immediate layout ${operationId} in ${endTime - startTime}ms`
+          );
           return true;
         } catch (error) {
-          hscopeLogger.error('op', `Error executing immediate operation ${operationId}`, error);
+          hscopeLogger.error('op', `❌ Error executing immediate operation ${operationId}`, error);
           return false;
         }
       } else if (currentOpType === 'layout') {
@@ -220,7 +228,19 @@ class ConsolidatedOperationManager {
       priority,
       reason: `ReactFlow update for ${layoutId}`,
       operation: () => {
-        hscopeLogger.log('layout', `setData op layout=${layoutId}`);
+        hscopeLogger.log(
+          'layout',
+          `setData op layout=${layoutId} nodes=${data?.nodes.length || 0} edges=${data?.edges.length || 0}`
+        );
+
+        // PROTECTION: Log when we're about to set data to null or empty
+        if (!data || data.nodes.length === 0) {
+          hscopeLogger.warn(
+            'op',
+            `⚠️ Setting ReactFlow data to ${!data ? 'null' : 'empty'} for layout ${layoutId}`
+          );
+        }
+
         setter(data);
         this.lastDataMutationTime = Date.now();
       },
@@ -300,6 +320,7 @@ class ConsolidatedOperationManager {
     }
 
     // CRITICAL: Block non-search operations during search expansion
+    // But allow multiple search expansions to be queued (they'll be processed sequentially)
     if (this.isSearchExpansionActive && operation.type !== 'search-expansion' && !force) {
       hscopeLogger.log('op', `operation blocked by active search expansion: ${operation.id}`);
       return false;
@@ -416,11 +437,17 @@ class ConsolidatedOperationManager {
           if (operation.type === 'search-expansion') {
             // CRITICAL: Set search expansion flag to block other operations
             this.isSearchExpansionActive = true;
+            hscopeLogger.log('op', `🔍 Search expansion started: ${operation.id}`);
             try {
               await (operation as SearchExpansionOperation).operation();
+              hscopeLogger.log('op', `✅ Search expansion completed: ${operation.id}`);
+            } catch (error) {
+              hscopeLogger.error('op', `❌ Search expansion failed: ${operation.id}`, error);
+              throw error;
             } finally {
               // Always clear the flag, even if operation fails
               this.isSearchExpansionActive = false;
+              hscopeLogger.log('op', `🏁 Search expansion flag cleared: ${operation.id}`);
             }
 
             // Trigger autofit if requested

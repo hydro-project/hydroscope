@@ -53,10 +53,21 @@ export function useResizeObserver(
   const lastEntryRef = useRef<ResizeObserverEntry | null>(null);
   const callCountRef = useRef(0);
 
+  // Store options in refs to avoid recreating callbacks
+  const callbackRef = useRef(callback);
+  const optionsRef = useRef({ debounceMs, threshold, preventDuring, debug });
+
+  // Update refs when values change
+  useEffect(() => {
+    callbackRef.current = callback;
+    optionsRef.current = { debounceMs, threshold, preventDuring, debug };
+  }, [callback, debounceMs, threshold, preventDuring, debug]);
+
   const debouncedCallback = useCallback(
     (entry: ResizeObserverEntry) => {
       const lastEntry = lastEntryRef.current;
       const now = Date.now();
+      const { debounceMs, threshold, preventDuring, debug } = optionsRef.current;
 
       // Skip if prevention function returns true
       if (preventDuring?.()) {
@@ -111,7 +122,7 @@ export function useResizeObserver(
         }
 
         try {
-          callback(entry);
+          callbackRef.current(entry);
         } catch (error) {
           hscopeLogger.error('resize', 'Callback error', error);
         }
@@ -123,7 +134,7 @@ export function useResizeObserver(
         console.log(`[useResizeObserver] Scheduled callback in ${debounceMs}ms`);
       }
     },
-    [callback, debounceMs, threshold, preventDuring, debug]
+    [] // No dependencies - use refs for all values
   );
 
   const observe = useCallback(
@@ -144,6 +155,7 @@ export function useResizeObserver(
         return;
       }
 
+      const { debug } = optionsRef.current;
       if (debug) {
         console.log(`[useResizeObserver] Starting observation of element:`, element.tagName);
       }
@@ -161,6 +173,7 @@ export function useResizeObserver(
           timestamp: Date.now(),
         };
 
+        const { debug } = optionsRef.current;
         if (debug) {
           console.log(`[useResizeObserver] ResizeObserver triggered:`, resizeEntry);
         }
@@ -188,11 +201,12 @@ export function useResizeObserver(
         lastEntryRef.current = initialEntry;
       }
     },
-    [debouncedCallback, debug]
+    [debouncedCallback] // Only depend on debouncedCallback, which is now stable
   );
 
   const disconnect = useCallback(() => {
     if (observerRef.current) {
+      const { debug } = optionsRef.current;
       if (debug) {
         console.log(`[useResizeObserver] Disconnecting observer`);
       }
@@ -207,7 +221,7 @@ export function useResizeObserver(
 
     lastEntryRef.current = null;
     callCountRef.current = 0;
-  }, [debug]);
+  }, []); // No dependencies - use refs for all values
 
   // Cleanup on unmount
   useEffect(() => {

@@ -51,6 +51,14 @@ export function useFlowGraphController({
   eventHandlers,
 }: UseFlowGraphControllerArgs): UseFlowGraphControllerReturn {
   const [reactFlowData, setReactFlowData] = useState<ReactFlowData | null>(null);
+
+  // Debug: Track when reactFlowData changes
+  useEffect(() => {
+    hscopeLogger.log(
+      'layout',
+      `reactFlowData changed: ${reactFlowData ? `${reactFlowData.nodes.length} nodes, ${reactFlowData.edges.length} edges` : 'null'}`
+    );
+  }, [reactFlowData]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +88,16 @@ export function useFlowGraphController({
       // CRITICAL: If we're inside an operation, execute immediately to maintain atomicity
       if (consolidatedOperationManager.isInsideOperation()) {
         hscopeLogger.log('layout', `setData immediate (inside operation) layout=${layoutId}`);
+
+        // PROTECTION: Don't clear existing data with empty data during layout operations
+        if ((!data || data.nodes.length === 0) && reactFlowData && reactFlowData.nodes.length > 0) {
+          hscopeLogger.warn(
+            'layout',
+            `🛡️ Preventing data clear during operation: keeping ${reactFlowData.nodes.length} nodes instead of setting to ${!data ? 'null' : 'empty'}`
+          );
+          return;
+        }
+
         setReactFlowData(data);
         // Reset flag after a short delay to allow ReactFlow to process
         setTimeout(() => {
@@ -108,7 +126,8 @@ export function useFlowGraphController({
       // Verify state change in next tick (only for debugging)
       // Drop verbose verification; retain minimal optional hook (disabled by default)
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [] // Intentionally empty - including reactFlowData would cause infinite loops
   );
 
   // Circuit breaker for rapid layout refreshes
@@ -250,10 +269,7 @@ export function useFlowGraphController({
         // Forcing a refresh should not reset layoutCount (which would re-trigger smart collapse).
         // We still allow updated layoutConfig to be applied, but avoid autoReLayout=true which resets counters.
         if (force && layoutConfig) {
-          console.log(
-            `[FlowGraphController] 🔧 Updating layout config [${layoutId}]`,
-            layoutConfig
-          );
+          hscopeLogger.log('layout', `🔧 Updating layout config [${layoutId}]`);
           engine.updateLayoutConfig({ ...layoutConfig }, false);
         }
 

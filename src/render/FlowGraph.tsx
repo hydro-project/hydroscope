@@ -101,12 +101,21 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
     }, [visualizationState, refreshLayout, config.fitView]);
 
     // Handle viewport size changes with the safe ResizeObserver
+    // Use useCallback with empty deps to prevent infinite re-creation
+    const stableReactFlowData = useRef(reactFlowData);
+
+    // Update ref when reactFlowData changes
+    useEffect(() => {
+      stableReactFlowData.current = reactFlowData;
+    }, [reactFlowData]);
+
     const handleResize = useCallback(
       (entry: { width: number; height: number }) => {
         console.log(`[FlowGraph] 📐 Safe resize callback:`, {
           width: entry.width,
           height: entry.height,
           layoutInProgress: isLayoutInProgressRef.current,
+          hasReactFlowData: !!stableReactFlowData.current,
         });
 
         // Update the visualization state with new viewport dimensions
@@ -116,8 +125,14 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
           loggedOnceRef.current = true;
         }
 
-        // Schedule layout refresh if auto-fit is enabled
-        if (stableFitViewEnabled.current && !isLayoutInProgressRef.current) {
+        // CRITICAL: Only trigger layout refresh if we have ReactFlow data
+        // This prevents ResizeObserver from triggering layouts during initial load
+        // when the component is still setting up
+        if (
+          stableFitViewEnabled.current &&
+          !isLayoutInProgressRef.current &&
+          stableReactFlowData.current
+        ) {
           console.log(`[FlowGraph] 🔄 Triggering layout refresh due to safe resize`);
           isLayoutInProgressRef.current = true;
 
@@ -125,9 +140,11 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
             isLayoutInProgressRef.current = false;
             console.log(`[FlowGraph] ✅ Layout refresh completed after resize`);
           });
+        } else if (!stableReactFlowData.current) {
+          console.log(`[FlowGraph] 🚫 Skipping layout refresh - no ReactFlow data yet`);
         }
       },
-      [] // No dependencies - use refs for stability
+      [] // Empty deps - use refs for all values to prevent recreation
     );
 
     // Create the safe ResizeObserver
@@ -196,7 +213,8 @@ const FlowGraphInternal = forwardRef<FlowGraphRef, FlowGraphProps>(
       };
     };
 
-    // Loading state
+    // Loading state - only show loading view if we have no data at all
+    // If we have existing data, show it with an overlay instead of clearing the canvas
     if (loading && !reactFlowData) {
       return <LoadingView className={className} containerStyle={getContainerStyle()} />;
     }
