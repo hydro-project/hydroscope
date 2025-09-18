@@ -660,6 +660,13 @@ class ConsolidatedOperationManager {
   }
 
   /**
+   * Get the current operation type (only valid when isInsideOperation() is true)
+   */
+  public getCurrentOperationType(): string | null {
+    return this.currentOperation?.type || null;
+  }
+
+  /**
    * Queue an immediate follow-up operation that will be executed right after the current operation completes.
    * This can only be called from within an active operation.
    * @param operationId Unique identifier for the operation

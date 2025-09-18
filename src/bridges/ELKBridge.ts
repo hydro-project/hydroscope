@@ -144,8 +144,7 @@ export class ELKBridge {
 
       profiler?.end('elk-validation');
 
-      // 3. Yield control to browser to show loading state
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // ConsolidatedOperationManager ensures proper sequencing - no artificial delays needed
 
       // Debug: Check for data leaks in large graphs
       if ((elkGraph.children?.length || 0) > 10) {
@@ -378,8 +377,7 @@ export class ELKBridge {
         }
       }
 
-      // 5. Yield control again before applying results
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // ConsolidatedOperationManager ensures proper sequencing - no artificial delays needed
 
       // 6. Check if layout sequence has changed (indicating state modification during layout)
       const currentLayoutSequence = visState.getLayoutSequence();

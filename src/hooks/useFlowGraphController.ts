@@ -115,14 +115,9 @@ export function useFlowGraphController({
           }
         }
 
-        // Add small delay to ensure ReactFlow has finished processing previous updates
-        setTimeout(() => {
-          setReactFlowData(data);
-          // Reset flag after ReactFlow processes the new data
-          setTimeout(() => {
-            isInternalUpdateRef.current = false;
-          }, 100);
-        }, 10);
+        setReactFlowData(data);
+        // Reset flag immediately - ConsolidatedOperationManager ensures proper sequencing
+        isInternalUpdateRef.current = false;
         return;
       }
 
@@ -130,10 +125,8 @@ export function useFlowGraphController({
       const operationId = consolidatedOperationManager.queueReactFlowUpdate(
         newData => {
           setReactFlowData(newData);
-          // Reset flag after a short delay to allow ReactFlow to process
-          setTimeout(() => {
-            isInternalUpdateRef.current = false;
-          }, 100);
+          // Reset flag immediately - ConsolidatedOperationManager ensures proper sequencing
+          isInternalUpdateRef.current = false;
         },
         data,
         layoutId,
@@ -248,7 +241,16 @@ export function useFlowGraphController({
       const _timestamp = Date.now();
       const layoutId = `layout-${_timestamp}`;
 
-      // Use the consolidated operation manager for layout operations
+      // CRITICAL: If we're inside a container-toggle operation, execute layout immediately
+      // to maintain atomicity and prevent race conditions
+      if (consolidatedOperationManager.isInsideOperation() && 
+          consolidatedOperationManager.getCurrentOperationType() === 'container-toggle') {
+        hscopeLogger.log('layout', `🔄 Executing layout immediately inside container-toggle [${layoutId}]`);
+        await executeLayoutOperation(layoutId, force);
+        return;
+      }
+
+      // Otherwise, use the consolidated operation manager for layout operations
       const success = await consolidatedOperationManager.queueLayoutOperation(
         layoutId,
         async () => {
@@ -315,11 +317,7 @@ export function useFlowGraphController({
 
         profiler?.end('Layout Calculation');
 
-        // CRITICAL: Small delay to ensure ELK results are fully applied to VisualizationState
-        // before ReactFlow conversion. This prevents race conditions where ReactFlow
-        // tries to convert containers that ELK processed but haven't been applied yet.
-        // TODO: Consider if this setTimeout is still necessary with ConsolidatedOperationManager coordination
-        await new Promise(resolve => setTimeout(resolve, 10));
+        // ELK layout should be complete at this point - no delays needed with proper operation coordination
 
         profiler?.start('Rendering');
         hscopeLogger.log('layout', `convert state -> rfData id=${layoutId}`);

@@ -74,17 +74,23 @@ export class LayoutOrchestrator {
     await consolidatedOperationManager.queueContainerToggle(
       operationId,
       async () => {
+        hscopeLogger.log('orchestrator', `🔄 Starting expand all containers ${operationId}`);
+        
         // Use original method - layout lock will prevent coordination issues
         this.visualizationState.expandAllContainers();
+        
+        hscopeLogger.log('orchestrator', `✅ Containers expanded, starting layout ${operationId}`);
 
-        // Trigger FULL layout recalculation for expand all (force=true)
-        // This ensures containers are repositioned optimally
+        // CRITICAL: Trigger FULL layout recalculation WITHIN the same operation
+        // This ensures ELK layout completes before any ReactFlow conversion happens
         await this.layoutController.refreshLayout(true);
+        
+        hscopeLogger.log('orchestrator', `✅ Layout completed for expand all ${operationId}`);
       },
       'high'
     );
 
-    hscopeLogger.log('orchestrator', `expandAll queued operation=${operationId}`);
+    hscopeLogger.log('orchestrator', `expandAll completed operation=${operationId}`);
   }
 
   /**
