@@ -1,0 +1,324 @@
+# Hydroscope Rewrite Implementation Plan
+
+## Phase 1: Core Foundation
+
+- [ ] 1. Set up project structure and core interfaces
+  - Create clean directory structure for new implementation
+  - Define TypeScript interfaces for all core data types
+  - Set up testing framework with comprehensive coverage reporting
+  - Create paxos.json test data utilities
+  - _Requirements: 1.1, 6.1, 7.1_
+
+- [ ] 2. Implement VisualizationState core data management
+  - [ ] 2.1 Create VisualizationState class with basic CRUD operations
+    - Implement node add/remove/update operations with validation
+    - Implement edge add/remove/update operations with validation
+    - Implement container add/remove/update operations with validation
+    - Write comprehensive unit tests for all CRUD operations
+    - _Requirements: 2.1, 6.1_
+
+  - [ ] 2.2 Implement container hierarchy and relationship management
+    - Code parent-child relationships between containers and nodes
+    - Implement efficient lookup maps for O(1) relationship queries
+    - Add validation for circular dependencies and orphaned nodes
+    - Write unit tests for all relationship operations
+    - _Requirements: 2.1, 2.2_
+
+  - [ ] 2.3 Implement container visibility and collapse/expand logic
+    - Code container collapse/expand operations with state consistency
+    - Implement visibility propagation (collapsed containers hide children)
+    - Add bulk operations (expandAll/collapseAll) with atomic transactions
+    - Write unit tests for all visibility operations
+    - _Requirements: 2.2, 8.1, 8.2_
+
+- [ ] 3. Implement layout state management
+  - [ ] 3.1 Create layout state tracking in VisualizationState
+    - Implement layout phase tracking (initial, laying_out, ready, etc.)
+    - Add layout count tracking for smart collapse logic
+    - Implement layout error handling and recovery
+    - Write unit tests for layout state management
+    - _Requirements: 2.3, 10.5_
+
+  - [ ] 3.2 Implement smart collapse prevention logic
+    - Code isFirstLayout() method based on layout count
+    - Implement layout count increment on successful layouts
+    - Add smart collapse flag management for user operations
+    - Write unit tests for smart collapse prevention scenarios
+    - _Requirements: 10.1, 10.2, 10.3_
+
+- [ ] 4. Implement search functionality in VisualizationState
+  - [ ] 4.1 Create search state management
+    - Implement search query storage and history
+    - Code search result data structures with match highlighting
+    - Add search state clearing and reset functionality
+    - Write unit tests for search state management
+    - _Requirements: 2.3, 9.4_
+
+  - [ ] 4.2 Implement search algorithms and result generation
+    - Code fuzzy search algorithm for nodes and containers
+    - Implement search result ranking and sorting
+    - Add search match highlighting with character indices
+    - Write unit tests for search algorithms with paxos.json data
+    - _Requirements: 9.1, 9.2, 7.2_
+
+- [ ] 5. Create comprehensive VisualizationState integration tests
+  - [ ] 5.1 Test paxos.json data loading and parsing
+    - Load paxos.json and verify all nodes/edges/containers are created
+    - Validate container hierarchy matches expected structure
+    - Test search functionality with paxos.json node names
+    - Verify performance with paxos.json data size
+    - _Requirements: 7.1, 7.4, 12.1_
+
+  - [ ] 5.2 Test container operations with paxos.json
+    - Test expand/collapse operations on paxos.json containers
+    - Verify container state consistency after bulk operations
+    - Test search expansion scenarios with paxos.json
+    - Validate layout state tracking during container operations
+    - _Requirements: 7.2, 8.3, 9.3_
+
+## Phase 2: Bridge Implementation
+
+- [ ] 6. Implement ELKBridge for layout processing
+  - [ ] 6.1 Create ELK format conversion from VisualizationState
+    - Code synchronous conversion from VisualizationState to ELK graph format
+    - Implement container handling (collapsed containers as single nodes)
+    - Add layout configuration application (algorithm, direction, spacing)
+    - Write unit tests for ELK conversion with paxos.json data
+    - _Requirements: 3.1, 3.3, 7.2_
+
+  - [ ] 6.2 Implement ELK result application back to VisualizationState
+    - Code synchronous application of ELK layout results to node positions
+    - Implement container dimension and position updates
+    - Add layout validation and error handling
+    - Write unit tests for ELK result application
+    - _Requirements: 3.2, 3.3_
+
+  - [ ] 6.3 Add ELK configuration management and optimization
+    - Implement layout configuration updates and validation
+    - Code ELK-specific optimizations for large graphs
+    - Add layout hints and performance tuning
+    - Write unit tests for configuration management
+    - _Requirements: 3.5, 12.1_
+
+- [ ] 7. Implement ReactFlowBridge for rendering
+  - [ ] 7.1 Create ReactFlow format conversion from VisualizationState
+    - Code synchronous conversion from VisualizationState to ReactFlow nodes/edges
+    - Implement collapsed container rendering as single nodes
+    - Implement expanded container rendering with child nodes
+    - Write unit tests for ReactFlow conversion with paxos.json data
+    - _Requirements: 4.1, 4.2, 4.3, 7.3_
+
+  - [ ] 7.2 Implement semantic tag to visual style conversion
+    - Code style mapping from semantic tags to CSS properties
+    - Implement node type styling and color schemes
+    - Implement edge type styling and visual properties
+    - Write unit tests for style application
+    - _Requirements: 4.4_
+
+  - [ ] 7.3 Add ReactFlow data immutability and optimization
+    - Implement immutable ReactFlow data generation
+    - Code data structure optimization for React rendering
+    - Add ReactFlow-specific performance optimizations
+    - Write unit tests for data immutability and performance
+    - _Requirements: 4.5, 12.2_
+
+- [ ] 8. Create bridge integration tests
+  - [ ] 8.1 Test VisualizationState + ELKBridge integration
+    - Test complete layout pipeline with paxos.json data
+    - Verify container expand/collapse affects ELK layout correctly
+    - Test layout configuration changes and their effects
+    - Validate layout error handling and recovery
+    - _Requirements: 7.2, 8.3_
+
+  - [ ] 8.2 Test VisualizationState + ReactFlowBridge integration
+    - Test complete rendering pipeline with paxos.json data
+    - Verify container states render correctly (collapsed vs expanded)
+    - Test style application with paxos.json semantic tags
+    - Validate render data immutability
+    - _Requirements: 7.3, 4.2, 4.3_
+
+  - [ ] 8.3 Test end-to-end data flow through all components
+    - Test complete pipeline: parse → layout → render with paxos.json
+    - Verify container operations work through entire pipeline
+    - Test search operations affect rendering correctly
+    - Validate performance of complete pipeline
+    - _Requirements: 7.1, 7.2, 7.3, 12.2_
+
+## Phase 3: Async Coordination
+
+- [ ] 9. Implement AsyncCoordinator for queue management
+  - [ ] 9.1 Create sequential queue system for async operations
+    - Implement queue data structure with FIFO ordering
+    - Code queue processing with error handling and retry logic
+    - Add queue status monitoring and reporting
+    - Write unit tests for queue behavior under various conditions
+    - _Requirements: 5.1, 5.4_
+
+  - [ ] 9.2 Implement ELK async operation queuing
+    - Code ELK layout operation queuing with proper sequencing
+    - Implement ELK operation cancellation and cleanup
+    - Add ELK operation timeout handling
+    - Write unit tests for ELK async operations
+    - _Requirements: 5.1, 3.3_
+
+  - [ ] 9.3 Implement ReactFlow async operation queuing
+    - Code ReactFlow render operation queuing with proper sequencing
+    - Implement ReactFlow operation cancellation and cleanup
+    - Add ReactFlow operation timeout handling
+    - Write unit tests for ReactFlow async operations
+    - _Requirements: 5.2, 4.1_
+
+- [ ] 10. Implement application event queuing
+  - [ ] 10.1 Create application event system
+    - Code event types for user interactions (expand, collapse, search)
+    - Implement event queuing with proper prioritization
+    - Add event cancellation and cleanup mechanisms
+    - Write unit tests for event system
+    - _Requirements: 5.3, 8.4_
+
+  - [ ] 10.2 Integrate container operations with async coordination
+    - Code container expand/collapse operations through async coordinator
+    - Implement proper sequencing of container operations and layout
+    - Add container operation error handling and recovery
+    - Write unit tests for container operations through async system
+    - _Requirements: 8.5, 5.4_
+
+- [ ] 11. Create async boundary integration tests
+  - [ ] 11.1 Test async coordination with paxos.json operations
+    - Test rapid container expand/collapse operations with proper sequencing
+    - Verify layout operations are queued and processed correctly
+    - Test error recovery scenarios with paxos.json data
+    - Validate performance under high async operation load
+    - _Requirements: 7.2, 8.5, 12.3_
+
+  - [ ] 11.2 Test async boundary coordination
+    - Test coordination between ELK and ReactFlow async boundaries
+    - Verify proper sequencing when multiple boundaries are active
+    - Test error propagation across async boundaries
+    - Validate system stability under async stress conditions
+    - _Requirements: 5.5, 5.4_
+
+## Phase 4: Application Integration
+
+- [ ] 12. Build React components using core system
+  - [ ] 12.1 Create HydroscopeCore component with async coordination
+    - Code React component that manages VisualizationState lifecycle
+    - Implement proper React state management with async coordinator
+    - Add component lifecycle management and cleanup
+    - Write unit tests for React component behavior
+    - _Requirements: 1.1, 6.2_
+
+  - [ ] 12.2 Implement container control components
+    - Code expand/collapse buttons with proper state management
+    - Implement container operation feedback and loading states
+    - Add container operation error handling in UI
+    - Write unit tests for container control components
+    - _Requirements: 8.1, 8.2, 8.4_
+
+- [ ] 13. Implement file upload and parsing
+  - [ ] 13.1 Create file upload component with validation
+    - Code file upload UI with drag-and-drop support
+    - Implement file validation and error reporting
+    - Add support for JSON file parsing and validation
+    - Write unit tests for file upload component
+    - _Requirements: 6.2, 7.1_
+
+  - [ ] 13.2 Integrate JSON parsing with VisualizationState
+    - Code JSON parser that creates VisualizationState from paxos.json format
+    - Implement hierarchyChoices parsing and default grouping selection
+    - Add parsing error handling and user feedback
+    - Write unit tests for JSON parsing with paxos.json
+    - _Requirements: 7.1, 2.1_
+
+- [ ] 14. Implement search UI components
+  - [ ] 14.1 Create search input and results display
+    - Code search input component with real-time feedback
+    - Implement search results display with highlighting
+    - Add search navigation (next/previous match) functionality
+    - Write unit tests for search UI components
+    - _Requirements: 9.1, 9.2_
+
+  - [ ] 14.2 Integrate search with container expansion
+    - Code search result expansion of collapsed containers
+    - Implement search expansion prevention of smart collapse
+    - Add search result highlighting in rendered graph
+    - Write unit tests for search integration
+    - _Requirements: 9.3, 10.3_
+
+- [ ] 15. Create application integration tests
+  - [ ] 15.1 Test complete application with paxos.json
+    - Test file upload of paxos.json through UI
+    - Verify container controls work correctly with loaded data
+    - Test search functionality with paxos.json nodes
+    - Validate application performance and responsiveness
+    - _Requirements: 7.1, 7.2, 7.4, 12.1_
+
+  - [ ] 15.2 Test error handling and edge cases
+    - Test invalid file upload scenarios
+    - Test application behavior with corrupted data
+    - Test UI responsiveness under high load
+    - Validate error messages and user feedback
+    - _Requirements: 12.4, 6.2_
+
+## Phase 5: End-to-End Validation
+
+- [ ] 16. Implement comprehensive Playwright tests
+  - [ ] 16.1 Create browser-based paxos.json loading tests
+    - Write Playwright test that loads paxos.json in browser
+    - Verify visual rendering matches expected container structure
+    - Test that all nodes and edges are visible and positioned correctly
+    - Validate that container hierarchy is displayed properly
+    - _Requirements: 7.3, 6.3_
+
+  - [ ] 16.2 Test container expand/collapse interactions in browser
+    - Write Playwright test for expand all button functionality
+    - Write Playwright test for collapse all button functionality
+    - Verify that container state changes are reflected visually
+    - Test that node counts change correctly when containers expand/collapse
+    - _Requirements: 8.1, 8.2, 8.4_
+
+  - [ ] 16.3 Test search functionality in browser
+    - Write Playwright test for search input and result highlighting
+    - Test search result navigation (next/previous match)
+    - Verify that search expands containers and shows hidden nodes
+    - Test that search clearing removes highlights correctly
+    - _Requirements: 9.1, 9.2, 9.4_
+
+- [ ] 17. Performance testing and optimization
+  - [ ] 17.1 Create performance benchmarks with paxos.json
+    - Implement automated performance testing for loading paxos.json
+    - Create benchmarks for layout operations with timing measurements
+    - Add memory usage monitoring during graph operations
+    - Write performance regression tests
+    - _Requirements: 12.1, 12.2, 7.5_
+
+  - [ ] 17.2 Optimize performance bottlenecks
+    - Profile layout operations and optimize slow paths
+    - Optimize ReactFlow data generation for large graphs
+    - Implement caching strategies for frequently accessed data
+    - Add performance monitoring and alerting
+    - _Requirements: 12.5, 12.2_
+
+- [ ] 18. Production readiness validation
+  - [ ] 18.1 Comprehensive error handling validation
+    - Test all error scenarios with automated tests
+    - Verify graceful degradation under failure conditions
+    - Test error recovery and system stability
+    - Validate error messages and user experience
+    - _Requirements: 12.4, 5.4_
+
+  - [ ] 18.2 Final integration and acceptance testing
+    - Run complete test suite with 100% pass rate
+    - Verify all requirements are met with automated tests
+    - Test system under realistic usage scenarios
+    - Validate that Kiro can maintain and extend the system autonomously
+    - _Requirements: 6.1, 6.2, 11.5_
+
+## Success Criteria
+
+- All tests pass with >95% code coverage
+- Paxos.json loads and renders correctly in browser
+- Container expand/collapse operations work reliably
+- Search functionality works with proper container expansion
+- Performance meets acceptable benchmarks
+- System is maintainable and extensible by Kiro autonomously
