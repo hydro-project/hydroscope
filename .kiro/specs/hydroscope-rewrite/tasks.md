@@ -78,13 +78,16 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 2.2 implement container hierarchy and relationship management"`
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 2.3 Implement container visibility and collapse/expand logic
+  - [ ] 2.3 Implement container visibility and collapse/expand logic with edge aggregation
     - Code container collapse/expand operations with state consistency
     - Implement visibility propagation (collapsed containers hide children)
-    - Add bulk operations (expandAll/collapseAll) with atomic transactions
-    - Write unit tests for all visibility operations
-    - **COMMIT**: `git add . && git commit -m "feat: 2.3 implement container visibility and collapse/expand logic"`
-    - _Requirements: 2.2, 8.1, 8.2_
+    - Implement edge aggregation when containers are collapsed (edges to internal nodes become edges to container)
+    - Implement edge restoration when containers are expanded (aggregated edges restored to original connections)
+    - Add bulk operations (expandAll/collapseAll) with atomic transactions and edge aggregation handling
+    - Handle complex edge aggregation scenarios (multi-container, nested containers)
+    - Write comprehensive unit tests for all visibility operations and edge aggregation management
+    - **COMMIT**: `git add . && git commit -m "feat: 2.3 implement container visibility and collapse/expand logic with edge aggregation"`
+    - _Requirements: 2.2, 8.1, 8.2, 8a.1, 8a.2, 8a.7_
 
 - [ ] 3. Implement layout state management
   - [ ] 3.1 Create layout state tracking in VisualizationState
@@ -103,7 +106,25 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 3.2 implement smart collapse prevention logic"`
     - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 4. Implement search functionality in VisualizationState
+- [ ] 4. Implement edge aggregation management system
+  - [ ] 4.1 Create AggregatedEdge data structures and tracking
+    - Implement AggregatedEdge interface for container boundary edges
+    - Code edge aggregation tracking with bidirectional mapping to original edges
+    - Implement efficient lookup structures for aggregated edge management
+    - Write comprehensive unit tests for aggregated edge data structures
+    - **COMMIT**: `git add . && git commit -m "feat: 4.1 create AggregatedEdge data structures and tracking"`
+    - _Requirements: 2.1, 8a.5, 8a.6_
+
+  - [ ] 4.2 Implement edge aggregation and restoration algorithms
+    - Code edge aggregation algorithm for container collapse (internal edges become container boundary edges)
+    - Implement edge restoration algorithm for container expand (aggregated edges restored to original internal connections)
+    - Handle multi-container edge scenarios and nested container edge aggregation
+    - Add performance optimizations for large edge sets during aggregation
+    - Write unit tests for all aggregation and restoration scenarios
+    - **COMMIT**: `git add . && git commit -m "feat: 4.2 implement edge aggregation and restoration algorithms"`
+    - _Requirements: 8a.1, 8a.2, 8a.3, 8a.4, 8a.7_
+
+- [ ] 5. Implement search functionality in VisualizationState
   - [ ] 4.1 Create search state management
     - Implement search query storage and history
     - Code search result data structures with match highlighting
@@ -165,13 +186,15 @@ This ensures:
     - _Requirements: 3.5, 12.1_
 
 - [ ] 7. Implement ReactFlowBridge for rendering
-  - [ ] 7.1 Create ReactFlow format conversion from VisualizationState
+  - [ ] 7.1 Create ReactFlow format conversion from VisualizationState with edge aggregation support
     - Code synchronous conversion from VisualizationState to ReactFlow nodes/edges
     - Implement collapsed container rendering as single nodes
     - Implement expanded container rendering with child nodes
-    - Write unit tests for ReactFlow conversion with paxos.json data
-    - **COMMIT**: `git add . && git commit -m "feat: 7.1 create ReactFlow format conversion from VisualizationState"`
-    - _Requirements: 4.1, 4.2, 4.3, 7.3_
+    - Implement edge rendering for both original edges and aggregated edges
+    - Handle edge routing between container boundaries and internal nodes
+    - Write unit tests for ReactFlow conversion with paxos.json data including edge aggregation
+    - **COMMIT**: `git add . && git commit -m "feat: 7.1 create ReactFlow format conversion from VisualizationState with edge aggregation support"`
+    - _Requirements: 4.1, 4.2, 4.3, 7.3, 8a.4, 8a.8_
 
   - [ ] 7.2 Implement semantic tag to visual style conversion
     - Code style mapping from semantic tags to CSS properties

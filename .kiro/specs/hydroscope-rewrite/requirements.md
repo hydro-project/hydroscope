@@ -25,10 +25,13 @@ This specification defines the complete rewrite of Hydroscope from scratch, impl
 #### Acceptance Criteria
 
 1. WHEN graph data is loaded THEN VisualizationState SHALL store nodes, edges, and containers with proper relationships
-2. WHEN containers are collapsed/expanded THEN VisualizationState SHALL maintain consistent visibility states
+2. WHEN containers are collapsed/expanded THEN VisualizationState SHALL maintain consistent visibility states for all elements including edges
 3. WHEN layout operations occur THEN VisualizationState SHALL track layout history and prevent invalid operations
 4. WHEN searches are performed THEN VisualizationState SHALL maintain search state and results
 5. WHEN state is queried THEN VisualizationState SHALL provide efficient read-only access for rendering
+6. WHEN edge aggregation is managed THEN VisualizationState SHALL track original and aggregated states separately
+7. WHEN edge aggregation occurs THEN VisualizationState SHALL maintain bidirectional mapping between original and aggregated edges
+8. WHEN container states change THEN VisualizationState SHALL update edge aggregation states atomically
 
 ### Requirement 3: ELK Bridge Integration
 
@@ -104,6 +107,24 @@ This specification defines the complete rewrite of Hydroscope from scratch, impl
 3. WHEN containers change state THEN the layout SHALL update to accommodate the new structure
 4. WHEN container operations occur THEN the UI SHALL reflect the changes immediately
 5. WHEN multiple container operations occur rapidly THEN they SHALL be processed correctly without conflicts
+6. WHEN containers are collapsed THEN edges connecting to internal nodes SHALL be properly aggregated to container boundaries
+7. WHEN containers are expanded THEN aggregated edges SHALL be restored to their original connections
+8. WHEN container operations affect edges THEN edge visibility and routing SHALL be updated consistently
+
+### Requirement 8a: Edge Aggregation During Container Operations
+
+**User Story:** As a developer, I want edges to be handled correctly during container collapse/expand operations, so that edge connectivity is maintained and visually coherent.
+
+#### Acceptance Criteria
+
+1. WHEN a container is collapsed THEN edges with endpoints inside the container SHALL be aggregated to the container boundary
+2. WHEN a container is expanded THEN aggregated edges SHALL be restored to their original internal endpoints
+3. WHEN edges span multiple containers THEN they SHALL be handled correctly regardless of container states
+4. WHEN edges connect collapsed and expanded containers THEN they SHALL route appropriately between boundaries and internal nodes
+5. WHEN edge aggregation occurs THEN the aggregated edge SHALL maintain semantic properties of the original connections
+6. WHEN aggregated edges are restored THEN all original connectivity and properties SHALL be preserved
+7. WHEN multiple containers affect the same edge THEN the edge SHALL be managed consistently across all container state changes
+8. WHEN edge visibility changes THEN the changes SHALL be atomic and consistent with container visibility states
 
 ### Requirement 9: Search Functionality
 

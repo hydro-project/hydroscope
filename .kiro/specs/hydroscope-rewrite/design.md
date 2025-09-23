@@ -71,6 +71,12 @@ class VisualizationState {
   expandAllContainers(): void
   collapseAllContainers(): void
   
+  // Edge Aggregation Management
+  aggregateEdgesForContainer(containerId: string): void
+  restoreEdgesForContainer(containerId: string): void
+  getAggregatedEdges(): ReadonlyArray<AggregatedEdge>
+  getOriginalEdges(): ReadonlyArray<GraphEdge>
+  
   // Layout State
   getLayoutState(): LayoutState
   setLayoutPhase(phase: LayoutPhase): void
@@ -79,7 +85,7 @@ class VisualizationState {
   
   // Read-only Access
   get visibleNodes(): ReadonlyArray<GraphNode>
-  get visibleEdges(): ReadonlyArray<GraphEdge>
+  get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge>
   get visibleContainers(): ReadonlyArray<Container>
   
   // Search
@@ -139,10 +145,15 @@ class ReactFlowBridge {
   // Styling
   applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[]
   applyEdgeStyles(edges: ReactFlowEdge[]): ReactFlowEdge[]
+  applyAggregatedEdgeStyles(aggregatedEdges: ReactFlowEdge[]): ReactFlowEdge[]
   
   // Container Handling
   renderCollapsedContainer(container: Container): ReactFlowNode
   renderExpandedContainer(container: Container, children: ReactFlowNode[]): ReactFlowNode[]
+  
+  // Edge Aggregation Handling
+  renderOriginalEdge(edge: GraphEdge): ReactFlowEdge
+  renderAggregatedEdge(aggregatedEdge: AggregatedEdge): ReactFlowEdge
 }
 ```
 
@@ -207,6 +218,18 @@ interface Container {
   hidden: boolean
   position?: { x: number; y: number }
   dimensions?: { width: number; height: number }
+}
+
+interface AggregatedEdge {
+  id: string
+  source: string // Source endpoint (node or container ID)
+  target: string // Target endpoint (node or container ID)
+  type: string
+  semanticTags: string[]
+  hidden: boolean
+  aggregated: true // Always true for aggregated edges
+  originalEdgeIds: string[] // IDs of original edges that were aggregated into this edge
+  aggregationSource: string // Container ID that caused the aggregation
 }
 
 interface LayoutState {
