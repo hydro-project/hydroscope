@@ -55,7 +55,7 @@ This ensures:
   - **COMMIT**: `git add . && git commit -m "feat: 1 set up project structure and core interfaces - tests passing"`
   - _Requirements: 1.1, 6.1, 7.1_
 
-- [ ] 2. Implement VisualizationState core data management
+- [-] 2. Implement VisualizationState core data management
   - [x] 2.1 Create VisualizationState class with basic CRUD operations
     - **TDD Step 1 (RED)**: Write failing tests for node CRUD operations
     - **TDD Step 2 (GREEN)**: Implement node add/remove/update operations with validation
@@ -78,7 +78,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 2.2 implement container hierarchy and relationship management"`
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 2.3 Implement container visibility and collapse/expand logic with edge aggregation
+  - [x] 2.3 Implement container visibility and collapse/expand logic with edge aggregation
     - Code container collapse/expand operations with state consistency
     - Implement visibility propagation (collapsed containers hide children)
     - Implement edge aggregation when containers are collapsed (edges to internal nodes become edges to container)
