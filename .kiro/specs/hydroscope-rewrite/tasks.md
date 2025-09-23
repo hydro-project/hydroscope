@@ -1,5 +1,20 @@
 # Hydroscope Rewrite Implementation Plan
 
+## Git Workflow Instructions
+
+**IMPORTANT**: After completing each task, you MUST commit your work to maintain progress tracking:
+
+1. **After completing any task**: Run `git add .` to stage all changes
+2. **Commit with descriptive message**: Run `git commit -m "feat: [task-number] [brief description]"`
+3. **Example**: `git commit -m "feat: 2.1 implement VisualizationState CRUD operations with validation"`
+4. **For sub-tasks**: Include the sub-task number, e.g., `git commit -m "feat: 2.1 create VisualizationState class with basic CRUD operations"`
+
+This ensures:
+- Progress is never lost
+- Each task completion is tracked
+- Easy rollback if needed
+- Clear development history
+
 ## Phase 1: Core Foundation
 
 - [ ] 1. Set up project structure and core interfaces
@@ -7,6 +22,7 @@
   - Define TypeScript interfaces for all core data types
   - Set up testing framework with comprehensive coverage reporting
   - Create paxos.json test data utilities
+  - **COMMIT**: `git add . && git commit -m "feat: 1 set up project structure and core interfaces"`
   - _Requirements: 1.1, 6.1, 7.1_
 
 - [ ] 2. Implement VisualizationState core data management
@@ -15,6 +31,7 @@
     - Implement edge add/remove/update operations with validation
     - Implement container add/remove/update operations with validation
     - Write comprehensive unit tests for all CRUD operations
+    - **COMMIT**: `git add . && git commit -m "feat: 2.1 create VisualizationState class with basic CRUD operations"`
     - _Requirements: 2.1, 6.1_
 
   - [ ] 2.2 Implement container hierarchy and relationship management
@@ -22,6 +39,7 @@
     - Implement efficient lookup maps for O(1) relationship queries
     - Add validation for circular dependencies and orphaned nodes
     - Write unit tests for all relationship operations
+    - **COMMIT**: `git add . && git commit -m "feat: 2.2 implement container hierarchy and relationship management"`
     - _Requirements: 2.1, 2.2_
 
   - [ ] 2.3 Implement container visibility and collapse/expand logic
@@ -29,6 +47,7 @@
     - Implement visibility propagation (collapsed containers hide children)
     - Add bulk operations (expandAll/collapseAll) with atomic transactions
     - Write unit tests for all visibility operations
+    - **COMMIT**: `git add . && git commit -m "feat: 2.3 implement container visibility and collapse/expand logic"`
     - _Requirements: 2.2, 8.1, 8.2_
 
 - [ ] 3. Implement layout state management
@@ -37,6 +56,7 @@
     - Add layout count tracking for smart collapse logic
     - Implement layout error handling and recovery
     - Write unit tests for layout state management
+    - **COMMIT**: `git add . && git commit -m "feat: 3.1 create layout state tracking in VisualizationState"`
     - _Requirements: 2.3, 10.5_
 
   - [ ] 3.2 Implement smart collapse prevention logic
@@ -44,6 +64,7 @@
     - Implement layout count increment on successful layouts
     - Add smart collapse flag management for user operations
     - Write unit tests for smart collapse prevention scenarios
+    - **COMMIT**: `git add . && git commit -m "feat: 3.2 implement smart collapse prevention logic"`
     - _Requirements: 10.1, 10.2, 10.3_
 
 - [ ] 4. Implement search functionality in VisualizationState
@@ -52,6 +73,7 @@
     - Code search result data structures with match highlighting
     - Add search state clearing and reset functionality
     - Write unit tests for search state management
+    - **COMMIT**: `git add . && git commit -m "feat: 4.1 create search state management"`
     - _Requirements: 2.3, 9.4_
 
   - [ ] 4.2 Implement search algorithms and result generation
@@ -59,6 +81,7 @@
     - Implement search result ranking and sorting
     - Add search match highlighting with character indices
     - Write unit tests for search algorithms with paxos.json data
+    - **COMMIT**: `git add . && git commit -m "feat: 4.2 implement search algorithms and result generation"`
     - _Requirements: 9.1, 9.2, 7.2_
 
 - [ ] 5. Create comprehensive VisualizationState integration tests
@@ -67,6 +90,7 @@
     - Validate container hierarchy matches expected structure
     - Test search functionality with paxos.json node names
     - Verify performance with paxos.json data size
+    - **COMMIT**: `git add . && git commit -m "feat: 5.1 test paxos.json data loading and parsing"`
     - _Requirements: 7.1, 7.4, 12.1_
 
   - [ ] 5.2 Test container operations with paxos.json
@@ -74,6 +98,7 @@
     - Verify container state consistency after bulk operations
     - Test search expansion scenarios with paxos.json
     - Validate layout state tracking during container operations
+    - **COMMIT**: `git add . && git commit -m "feat: 5.2 test container operations with paxos.json"`
     - _Requirements: 7.2, 8.3, 9.3_
 
 ## Phase 2: Bridge Implementation
@@ -84,6 +109,7 @@
     - Implement container handling (collapsed containers as single nodes)
     - Add layout configuration application (algorithm, direction, spacing)
     - Write unit tests for ELK conversion with paxos.json data
+    - **COMMIT**: `git add . && git commit -m "feat: 6.1 create ELK format conversion from VisualizationState"`
     - _Requirements: 3.1, 3.3, 7.2_
 
   - [ ] 6.2 Implement ELK result application back to VisualizationState
@@ -91,6 +117,7 @@
     - Implement container dimension and position updates
     - Add layout validation and error handling
     - Write unit tests for ELK result application
+    - **COMMIT**: `git add . && git commit -m "feat: 6.2 implement ELK result application back to VisualizationState"`
     - _Requirements: 3.2, 3.3_
 
   - [ ] 6.3 Add ELK configuration management and optimization
@@ -98,6 +125,7 @@
     - Code ELK-specific optimizations for large graphs
     - Add layout hints and performance tuning
     - Write unit tests for configuration management
+    - **COMMIT**: `git add . && git commit -m "feat: 6.3 add ELK configuration management and optimization"`
     - _Requirements: 3.5, 12.1_
 
 - [ ] 7. Implement ReactFlowBridge for rendering
@@ -106,6 +134,7 @@
     - Implement collapsed container rendering as single nodes
     - Implement expanded container rendering with child nodes
     - Write unit tests for ReactFlow conversion with paxos.json data
+    - **COMMIT**: `git add . && git commit -m "feat: 7.1 create ReactFlow format conversion from VisualizationState"`
     - _Requirements: 4.1, 4.2, 4.3, 7.3_
 
   - [ ] 7.2 Implement semantic tag to visual style conversion
@@ -113,6 +142,7 @@
     - Implement node type styling and color schemes
     - Implement edge type styling and visual properties
     - Write unit tests for style application
+    - **COMMIT**: `git add . && git commit -m "feat: 7.2 implement semantic tag to visual style conversion"`
     - _Requirements: 4.4_
 
   - [ ] 7.3 Add ReactFlow data immutability and optimization
@@ -120,6 +150,7 @@
     - Code data structure optimization for React rendering
     - Add ReactFlow-specific performance optimizations
     - Write unit tests for data immutability and performance
+    - **COMMIT**: `git add . && git commit -m "feat: 7.3 add ReactFlow data immutability and optimization"`
     - _Requirements: 4.5, 12.2_
 
 - [ ] 8. Create bridge integration tests
@@ -314,6 +345,24 @@
     - Validate that Kiro can maintain and extend the system autonomously
     - _Requirements: 6.1, 6.2, 11.5_
 
+## Git Commit Instructions for Remaining Tasks
+
+**For ALL tasks not explicitly marked with COMMIT instructions above:**
+
+After completing each task (including all sub-tasks), run:
+```bash
+git add .
+git commit -m "feat: [task-number] [brief description of what was implemented]"
+```
+
+**Examples:**
+- `git commit -m "feat: 8.1 test VisualizationState + ELKBridge integration"`
+- `git commit -m "feat: 9.2 implement ELK async operation queuing"`
+- `git commit -m "feat: 12.1 create HydroscopeCore component with async coordination"`
+- `git commit -m "feat: 16.2 test container expand/collapse interactions in browser"`
+
+**Important:** Never skip commits. Each completed task should have its own commit to ensure progress is tracked and recoverable.
+
 ## Success Criteria
 
 - All tests pass with >95% code coverage
@@ -322,3 +371,4 @@
 - Search functionality works with proper container expansion
 - Performance meets acceptable benchmarks
 - System is maintainable and extensible by Kiro autonomously
+- **All tasks have corresponding git commits with clear messages**
