@@ -77,6 +77,9 @@ This specification defines the complete rewrite of Hydroscope from scratch, impl
 3. WHEN UI components are built THEN they SHALL have end-to-end tests
 4. WHEN bugs are found THEN they SHALL be reproduced in tests before fixing
 5. WHEN features are added THEN tests SHALL be written first
+6. WHEN any task is completed THEN all tests SHALL pass before committing
+7. WHEN paxos.json integration points are reached THEN incremental validation SHALL be performed
+8. WHEN code is refactored THEN existing tests SHALL continue to pass
 
 ### Requirement 7: Paxos.json Test Scenario
 
@@ -149,3 +152,17 @@ This specification defines the complete rewrite of Hydroscope from scratch, impl
 3. WHEN memory usage grows THEN it SHALL be managed efficiently
 4. WHEN errors occur THEN they SHALL be handled gracefully without crashing
 5. WHEN the system runs for extended periods THEN performance SHALL remain consistent
+
+### Requirement 13: Incremental Development and Validation
+
+**User Story:** As a developer, I want each development step to be fully validated and working, so that progress is reliable and issues are caught early.
+
+#### Acceptance Criteria
+
+1. WHEN any component is implemented THEN it SHALL be immediately tested with paxos.json data
+2. WHEN integration points are reached THEN end-to-end validation SHALL be performed
+3. WHEN tests are written THEN they SHALL follow the Red-Green-Refactor TDD cycle
+4. WHEN code is committed THEN all tests SHALL pass and coverage SHALL be maintained
+5. WHEN phases are completed THEN comprehensive checkpoint validation SHALL be performed
+6. WHEN regressions occur THEN they SHALL be caught by existing tests before commit
+7. WHEN new functionality is added THEN it SHALL integrate seamlessly with existing working code

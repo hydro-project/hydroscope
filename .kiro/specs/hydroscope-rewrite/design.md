@@ -284,25 +284,34 @@ interface ErrorHandler {
 
 ## Testing Strategy
 
+### Test-Driven Development (TDD) Approach
+
+**Core TDD Principles**:
+1. **Red-Green-Refactor Cycle**: Write failing test → Make it pass → Improve code
+2. **Tests First**: No production code without a failing test
+3. **Incremental Development**: Each test adds one small piece of functionality
+4. **Continuous Integration**: All tests pass after every commit
+5. **Paxos.json Validation**: Real-world data testing at every integration point
+
 ### Unit Testing
 
-**VisualizationState Tests**:
-- Node/edge/container CRUD operations
-- Container expand/collapse logic
-- Layout state management
-- Search functionality
-- Invariant validation
+**VisualizationState Tests** (TDD Approach):
+- **RED**: Write tests for node CRUD operations → **GREEN**: Implement operations → **REFACTOR**: Optimize
+- **RED**: Write tests for container expand/collapse → **GREEN**: Implement logic → **REFACTOR**: Improve performance
+- **RED**: Write tests for layout state management → **GREEN**: Implement tracking → **REFACTOR**: Clean up
+- **RED**: Write tests for search functionality → **GREEN**: Implement search → **REFACTOR**: Optimize algorithms
+- **RED**: Write tests for invariant validation → **GREEN**: Implement validation → **REFACTOR**: Improve error messages
 
-**Bridge Tests**:
-- ELK conversion accuracy
-- ReactFlow conversion accuracy
-- Style application
-- Error handling
+**Bridge Tests** (TDD Approach):
+- **RED**: Write tests for ELK conversion accuracy → **GREEN**: Implement conversion → **REFACTOR**: Optimize
+- **RED**: Write tests for ReactFlow conversion → **GREEN**: Implement conversion → **REFACTOR**: Improve performance
+- **RED**: Write tests for style application → **GREEN**: Implement styling → **REFACTOR**: Clean up code
+- **RED**: Write tests for error handling → **GREEN**: Implement error cases → **REFACTOR**: Improve recovery
 
-**AsyncCoordinator Tests**:
-- Queue ordering
-- Error recovery
-- Performance under load
+**AsyncCoordinator Tests** (TDD Approach):
+- **RED**: Write tests for queue ordering → **GREEN**: Implement FIFO queue → **REFACTOR**: Optimize
+- **RED**: Write tests for error recovery → **GREEN**: Implement retry logic → **REFACTOR**: Improve resilience
+- **RED**: Write tests for performance under load → **GREEN**: Implement optimizations → **REFACTOR**: Fine-tune
 
 ### Integration Testing
 
@@ -311,12 +320,30 @@ interface ErrorHandler {
 - VisualizationState + ReactFlowBridge integration
 - End-to-end data flow through all components
 
-**Paxos.json Integration Tests**:
-- Load paxos.json and verify parsing
-- Perform layout and verify container positions
-- Expand/collapse containers and verify state changes
-- Search nodes and verify results
-- Render to ReactFlow and verify output
+**Paxos.json Integration Tests (Incremental Validation)**:
+
+**Phase 1 Checkpoints**:
+- **After Task 2.1**: Load paxos.json nodes/edges into VisualizationState - verify all data is stored correctly
+- **After Task 2.2**: Load paxos.json containers - verify hierarchy relationships are correct
+- **After Task 2.3**: Test container expand/collapse with paxos.json - verify visibility states
+- **After Task 4.2**: Search paxos.json nodes - verify search results and highlighting
+
+**Phase 2 Checkpoints**:
+- **After Task 6.2**: Run ELK layout on paxos.json - verify all containers have positions
+- **After Task 7.1**: Convert paxos.json to ReactFlow format - verify node/edge structure
+- **After Task 8.3**: Complete pipeline test - verify paxos.json flows through parse → layout → render
+
+**Phase 3 Checkpoints**:
+- **After Task 9.3**: Test async operations with paxos.json - verify queue processing
+- **After Task 11.2**: Test rapid container operations - verify no race conditions
+
+**Phase 4 Checkpoints**:
+- **After Task 13.2**: Load paxos.json through UI - verify file upload works
+- **After Task 14.2**: Search paxos.json through UI - verify search integration
+
+**Phase 5 Checkpoints**:
+- **After Task 16.3**: Browser test with paxos.json - verify visual rendering matches expected output
+- **After Task 17.1**: Performance test with paxos.json - verify acceptable load times
 
 ### End-to-End Testing
 

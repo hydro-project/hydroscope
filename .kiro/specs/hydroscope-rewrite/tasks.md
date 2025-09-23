@@ -1,37 +1,73 @@
 # Hydroscope Rewrite Implementation Plan
 
-## Git Workflow Instructions
+## Test-Driven Development (TDD) Workflow
+
+**CRITICAL**: This project MUST follow strict TDD practices for incremental, reliable development:
+
+### TDD Cycle for Each Task:
+1. **RED**: Write failing tests first (before any implementation code)
+2. **GREEN**: Write minimal code to make tests pass
+3. **REFACTOR**: Improve code while keeping tests green
+4. **COMMIT**: Commit working code with passing tests
+
+### Incremental Development Rules:
+1. **Tests First**: Every function/method must have tests before implementation
+2. **Small Steps**: Each commit should add one small, working piece of functionality
+3. **Always Working**: After each commit, all tests must pass
+4. **Integration Points**: Test integration between components immediately when connecting them
+5. **Paxos.json Validation**: Every major component must be tested with paxos.json data
+
+### Git Workflow Instructions:
 
 **IMPORTANT**: After completing each task, you MUST commit your work to maintain progress tracking:
 
-1. **After completing any task**: Run `git add .` to stage all changes
-2. **Commit with descriptive message**: Run `git commit -m "feat: [task-number] [brief description]"`
-3. **Example**: `git commit -m "feat: 2.1 implement VisualizationState CRUD operations with validation"`
-4. **For sub-tasks**: Include the sub-task number, e.g., `git commit -m "feat: 2.1 create VisualizationState class with basic CRUD operations"`
+1. **Write tests first**: Create failing tests for the functionality
+2. **Implement minimal code**: Make tests pass with simplest possible implementation
+3. **Run all tests**: Ensure no regressions (`npm test`)
+4. **Stage changes**: Run `git add .` to stage all changes
+5. **Commit with test status**: Run `git commit -m "feat: [task-number] [brief description] - tests passing"`
+6. **Example**: `git commit -m "feat: 2.1 implement VisualizationState CRUD operations with validation - tests passing"`
+
+### Test Requirements for Each Task:
+- **Unit Tests**: Test individual functions/methods in isolation
+- **Integration Tests**: Test component interactions
+- **Paxos.json Tests**: Validate with real data at every integration point
+- **Error Cases**: Test failure scenarios and edge cases
+- **Performance Tests**: Ensure acceptable performance with paxos.json
 
 This ensures:
+- Code works incrementally at every step
+- No regressions are introduced
+- Each piece is thoroughly validated
 - Progress is never lost
-- Each task completion is tracked
-- Easy rollback if needed
-- Clear development history
+- Clear development history with working checkpoints
 
 ## Phase 1: Core Foundation
 
 - [ ] 1. Set up project structure and core interfaces
-  - Create clean directory structure for new implementation
-  - Define TypeScript interfaces for all core data types
-  - Set up testing framework with comprehensive coverage reporting
-  - Create paxos.json test data utilities
-  - **COMMIT**: `git add . && git commit -m "feat: 1 set up project structure and core interfaces"`
+  - **TDD Step 1 (RED)**: Write tests for project structure validation and interface compliance
+  - **TDD Step 2 (GREEN)**: Create clean directory structure for new implementation
+  - **TDD Step 3 (GREEN)**: Define TypeScript interfaces for all core data types
+  - **TDD Step 4 (GREEN)**: Set up testing framework with comprehensive coverage reporting
+  - **TDD Step 5 (GREEN)**: Create paxos.json test data utilities
+  - **TDD Step 6 (REFACTOR)**: Optimize project structure and interfaces
+  - **VERIFY**: Run `npm test` - all tests must pass
+  - **COMMIT**: `git add . && git commit -m "feat: 1 set up project structure and core interfaces - tests passing"`
   - _Requirements: 1.1, 6.1, 7.1_
 
 - [ ] 2. Implement VisualizationState core data management
   - [ ] 2.1 Create VisualizationState class with basic CRUD operations
-    - Implement node add/remove/update operations with validation
-    - Implement edge add/remove/update operations with validation
-    - Implement container add/remove/update operations with validation
-    - Write comprehensive unit tests for all CRUD operations
-    - **COMMIT**: `git add . && git commit -m "feat: 2.1 create VisualizationState class with basic CRUD operations"`
+    - **TDD Step 1 (RED)**: Write failing tests for node CRUD operations
+    - **TDD Step 2 (GREEN)**: Implement node add/remove/update operations with validation
+    - **TDD Step 3 (RED)**: Write failing tests for edge CRUD operations  
+    - **TDD Step 4 (GREEN)**: Implement edge add/remove/update operations with validation
+    - **TDD Step 5 (RED)**: Write failing tests for container CRUD operations
+    - **TDD Step 6 (GREEN)**: Implement container add/remove/update operations with validation
+    - **TDD Step 7 (RED)**: Write comprehensive unit tests for error cases and edge conditions
+    - **TDD Step 8 (GREEN)**: Handle all error cases and edge conditions
+    - **TDD Step 9 (REFACTOR)**: Optimize CRUD operations while keeping tests green
+    - **VERIFY**: Run `npm test` - all tests must pass, >95% coverage
+    - **COMMIT**: `git add . && git commit -m "feat: 2.1 create VisualizationState class with basic CRUD operations - tests passing"`
     - _Requirements: 2.1, 6.1_
 
   - [ ] 2.2 Implement container hierarchy and relationship management
