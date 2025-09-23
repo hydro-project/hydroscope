@@ -30,16 +30,127 @@ export class VisualizationState {
 
   // Data Management
   addNode(node: GraphNode): void {
+    this._validateNodeData(node)
     this._nodes.set(node.id, { ...node })
     this.validateInvariants()
   }
 
+  removeNode(id: string): void {
+    this._nodes.delete(id)
+    this._nodeContainerMap.delete(id)
+    this.validateInvariants()
+  }
+
+  updateNode(id: string, node: GraphNode): void {
+    if (!this._nodes.has(id)) {
+      return // Handle non-existent node gracefully
+    }
+    
+    this._validateNodeData(node, false) // Skip id validation for updates
+    this._nodes.set(id, { ...node })
+    this.validateInvariants()
+  }
+
+  private _validateNodeData(node: GraphNode, validateId: boolean = true): void {
+    if (!node) {
+      throw new Error('Invalid node: node cannot be null or undefined')
+    }
+    if (validateId && (!node.id || node.id.trim() === '')) {
+      throw new Error('Invalid node: id cannot be empty')
+    }
+    if (!node.label || node.label.trim() === '') {
+      throw new Error('Invalid node: label cannot be empty')
+    }
+  }
+
   addEdge(edge: GraphEdge): void {
+    this._validateEdgeData(edge)
     this._edges.set(edge.id, { ...edge })
     this.validateInvariants()
   }
 
+  removeEdge(id: string): void {
+    this._edges.delete(id)
+    this.validateInvariants()
+  }
+
+  updateEdge(id: string, edge: GraphEdge): void {
+    if (!this._edges.has(id)) {
+      return // Handle non-existent edge gracefully
+    }
+    
+    this._validateEdgeData(edge, false) // Skip id validation for updates
+    this._edges.set(id, { ...edge })
+    this.validateInvariants()
+  }
+
+  private _validateEdgeData(edge: GraphEdge, validateId: boolean = true): void {
+    if (!edge) {
+      throw new Error('Invalid edge: edge cannot be null or undefined')
+    }
+    if (validateId && (!edge.id || edge.id.trim() === '')) {
+      throw new Error('Invalid edge: id cannot be empty')
+    }
+    if (!edge.source || edge.source.trim() === '') {
+      throw new Error('Invalid edge: source cannot be empty')
+    }
+    if (!edge.target || edge.target.trim() === '') {
+      throw new Error('Invalid edge: target cannot be empty')
+    }
+  }
+
   addContainer(container: Container): void {
+    this._validateContainerData(container)
+    this._updateContainerWithMappings(container)
+    this.validateInvariants()
+  }
+
+  removeContainer(id: string): void {
+    const container = this._containers.get(id)
+    if (container) {
+      this._cleanupContainerMappings(container)
+    }
+    
+    this._containers.delete(id)
+    this.validateInvariants()
+  }
+
+  updateContainer(id: string, container: Container): void {
+    if (!this._containers.has(id)) {
+      return // Handle non-existent container gracefully
+    }
+    
+    this._validateContainerData(container, false) // Skip id validation for updates
+    
+    // Clean up old mappings
+    const oldContainer = this._containers.get(id)
+    if (oldContainer) {
+      this._cleanupContainerMappings(oldContainer)
+    }
+    
+    this._updateContainerWithMappings(container)
+    this.validateInvariants()
+  }
+
+  private _validateContainerData(container: Container, validateId: boolean = true): void {
+    if (!container) {
+      throw new Error('Invalid container: container cannot be null or undefined')
+    }
+    if (validateId && (!container.id || container.id.trim() === '')) {
+      throw new Error('Invalid container: id cannot be empty')
+    }
+    if (!container.label || container.label.trim() === '') {
+      throw new Error('Invalid container: label cannot be empty')
+    }
+  }
+
+  private _updateContainerWithMappings(container: Container): void {
+    // If container already exists, clean up old mappings first
+    const existingContainer = this._containers.get(container.id)
+    if (existingContainer) {
+      this._cleanupContainerMappings(existingContainer)
+    }
+    
     this._containers.set(container.id, { 
       ...container, 
       children: new Set(container.children),
@@ -51,8 +162,12 @@ export class VisualizationState {
     for (const childId of container.children) {
       this._nodeContainerMap.set(childId, container.id)
     }
-    
-    this.validateInvariants()
+  }
+
+  private _cleanupContainerMappings(container: Container): void {
+    for (const childId of container.children) {
+      this._nodeContainerMap.delete(childId)
+    }
   }
 
   // Container Operations
@@ -128,9 +243,13 @@ export class VisualizationState {
     return Array.from(this._containers.values()).filter(container => !container.hidden)
   }
 
-  // Getters for validation
+  // Getters for validation and external access
   getGraphNode(id: string): GraphNode | undefined {
     return this._nodes.get(id)
+  }
+
+  getGraphEdge(id: string): GraphEdge | undefined {
+    return this._edges.get(id)
   }
 
   getContainer(id: string): Container | undefined {
