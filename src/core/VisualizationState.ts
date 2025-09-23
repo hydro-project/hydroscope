@@ -1233,7 +1233,9 @@ export class VisualizationState {
   }
 
   getNodesShowingLongLabels(): ReadonlyArray<GraphNode> {
-    return Array.from(this._nodes.values()).filter(node => node.showingLongLabel);
+    return Array.from(this._nodes.values()).filter(
+      (node) => node.showingLongLabel
+    );
   }
 
   getInteractionStateSummary(): {
@@ -1242,15 +1244,15 @@ export class VisualizationState {
     expandedContainers: number;
   } {
     const nodesWithLongLabels = Array.from(this._nodes.values()).filter(
-      node => node.showingLongLabel
+      (node) => node.showingLongLabel
     ).length;
 
     const collapsedContainers = Array.from(this._containers.values()).filter(
-      container => container.collapsed
+      (container) => container.collapsed
     ).length;
 
     const expandedContainers = Array.from(this._containers.values()).filter(
-      container => !container.collapsed
+      (container) => !container.collapsed
     ).length;
 
     return {
@@ -1281,7 +1283,9 @@ export class VisualizationState {
     // Check for nodes showing long labels without having long labels
     for (const [nodeId, node] of this._nodes) {
       if (node.showingLongLabel && !node.longLabel) {
-        errors.push(`Node ${nodeId} is showing long label but has no longLabel property`);
+        errors.push(
+          `Node ${nodeId} is showing long label but has no longLabel property`
+        );
       }
     }
 
