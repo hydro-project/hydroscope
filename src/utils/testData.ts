@@ -117,6 +117,38 @@ export function getMinimalTestData(): TestGraphData {
   }
 }
 
+export function createTestNode(id: string, label?: string): GraphNode {
+  return {
+    id,
+    label: label || `Node ${id}`,
+    longLabel: label ? `${label} (Full Label)` : `Node ${id} (Full Label)`,
+    type: 'node',
+    semanticTags: [],
+    hidden: false
+  }
+}
+
+export function createTestEdge(id: string, source: string, target: string): GraphEdge {
+  return {
+    id,
+    source,
+    target,
+    type: 'edge',
+    semanticTags: [],
+    hidden: false
+  }
+}
+
+export function createTestContainer(id: string, children: string[], label?: string): Container {
+  return {
+    id,
+    label: label || `Container ${id}`,
+    children: new Set(children),
+    collapsed: false,
+    hidden: false
+  }
+}
+
 export function createTestVisualizationState() {
   const { VisualizationState } = require('../core/VisualizationState.js')
   const state = new VisualizationState()

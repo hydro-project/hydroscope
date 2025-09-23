@@ -90,7 +90,7 @@ This ensures:
     - _Requirements: 2.2, 8.1, 8.2, 8a.1, 8a.2, 8a.7_
 
 - [-] 3. Implement layout state management
-  - [-] 3.1 Create layout state tracking in VisualizationState
+  - [x] 3.1 Create layout state tracking in VisualizationState
     - Implement layout phase tracking (initial, laying_out, ready, etc.)
     - Add layout count tracking for smart collapse logic
     - Implement layout error handling and recovery
@@ -98,7 +98,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 3.1 create layout state tracking in VisualizationState"`
     - _Requirements: 2.3, 10.5_
 
-  - [ ] 3.2 Implement smart collapse prevention logic
+  - [-] 3.2 Implement smart collapse prevention logic
     - Code isFirstLayout() method based on layout count
     - Implement layout count increment on successful layouts
     - Add smart collapse flag management for user operations

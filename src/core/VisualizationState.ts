@@ -330,19 +330,9 @@ export class VisualizationState {
 
   // Container Operations
   expandContainer(id: string): void {
-    const container = this._containers.get(id);
-    if (!container) return;
-
-    container.collapsed = false;
-    container.hidden = false;
-
-    // Show immediate children (but not their descendants if they are collapsed)
-    this._showImmediateChildren(id);
-
-    // Restore edges for this container
-    this.restoreEdgesForContainer(id);
-
-    this.validateInvariants();
+    this._expandContainerInternal(id);
+    // User operations disable smart collapse
+    this.disableSmartCollapseForUserOperations();
   }
 
   private _showImmediateChildren(containerId: string): void {
@@ -368,18 +358,9 @@ export class VisualizationState {
   }
 
   collapseContainer(id: string): void {
-    const container = this._containers.get(id);
-    if (!container) return;
-
-    container.collapsed = true;
-
-    // Hide all transitive descendants
-    this._hideAllDescendants(id);
-
-    // Aggregate edges for this container
-    this.aggregateEdgesForContainer(id);
-
-    this.validateInvariants();
+    this._collapseContainerInternal(id);
+    // User operations disable smart collapse
+    this.disableSmartCollapseForUserOperations();
   }
 
   private _hideAllDescendants(containerId: string): void {
@@ -405,17 +386,21 @@ export class VisualizationState {
   expandAllContainers(): void {
     for (const container of this._containers.values()) {
       if (container.collapsed) {
-        this.expandContainer(container.id);
+        this._expandContainerInternal(container.id);
       }
     }
+    // Bulk user operations disable smart collapse
+    this.disableSmartCollapseForUserOperations();
   }
 
   collapseAllContainers(): void {
     for (const container of this._containers.values()) {
       if (!container.collapsed) {
-        this.collapseContainer(container.id);
+        this._collapseContainerInternal(container.id);
       }
     }
+    // Bulk user operations disable smart collapse
+    this.disableSmartCollapseForUserOperations();
   }
 
   // Edge Aggregation Management
@@ -823,6 +808,70 @@ export class VisualizationState {
 
   disableSmartCollapseForUserOperations(): void {
     this._smartCollapseEnabled = false;
+  }
+
+  resetSmartCollapseState(): void {
+    this._smartCollapseEnabled = true;
+    this._smartCollapseOverride = false;
+  }
+
+  getSmartCollapseStatus(): {
+    enabled: boolean;
+    isFirstLayout: boolean;
+    hasOverride: boolean;
+  } {
+    return {
+      enabled: this._smartCollapseEnabled,
+      isFirstLayout: this.isFirstLayout(),
+      hasOverride: this._smartCollapseOverride,
+    };
+  }
+
+  // Search-specific container expansion
+  expandContainerForSearch(id: string): void {
+    this._expandContainerInternal(id);
+    // Search expansion should disable smart collapse
+    this.disableSmartCollapseForUserOperations();
+  }
+
+  // System vs User operation tracking
+  collapseContainerSystemOperation(id: string): void {
+    this._collapseContainerInternal(id);
+    // Note: System operations don't disable smart collapse
+  }
+
+  // Toggle container (user operation)
+  toggleContainer(id: string): void {
+    const container = this._containers.get(id);
+    if (!container) return;
+
+    if (container.collapsed) {
+      this.expandContainer(id);
+    } else {
+      this.collapseContainer(id);
+    }
+  }
+
+  // Internal methods for container operations
+  private _expandContainerInternal(id: string): void {
+    const container = this._containers.get(id);
+    if (!container) return;
+
+    container.collapsed = false;
+    container.hidden = false;
+    this._showImmediateChildren(id);
+    this.restoreEdgesForContainer(id);
+    this.validateInvariants();
+  }
+
+  private _collapseContainerInternal(id: string): void {
+    const container = this._containers.get(id);
+    if (!container) return;
+
+    container.collapsed = true;
+    this._hideAllDescendants(id);
+    this.aggregateEdgesForContainer(id);
+    this.validateInvariants();
   }
 
   // Search
