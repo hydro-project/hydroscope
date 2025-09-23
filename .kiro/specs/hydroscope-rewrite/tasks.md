@@ -55,7 +55,7 @@ This ensures:
   - **COMMIT**: `git add . && git commit -m "feat: 1 set up project structure and core interfaces - tests passing"`
   - _Requirements: 1.1, 6.1, 7.1_
 
-- [-] 2. Implement VisualizationState core data management
+- [x] 2. Implement VisualizationState core data management
   - [x] 2.1 Create VisualizationState class with basic CRUD operations
     - **TDD Step 1 (RED)**: Write failing tests for node CRUD operations
     - **TDD Step 2 (GREEN)**: Implement node add/remove/update operations with validation
@@ -89,8 +89,8 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 2.3 implement container visibility and collapse/expand logic with edge aggregation"`
     - _Requirements: 2.2, 8.1, 8.2, 8a.1, 8a.2, 8a.7_
 
-- [ ] 3. Implement layout state management
-  - [ ] 3.1 Create layout state tracking in VisualizationState
+- [-] 3. Implement layout state management
+  - [-] 3.1 Create layout state tracking in VisualizationState
     - Implement layout phase tracking (initial, laying_out, ready, etc.)
     - Add layout count tracking for smart collapse logic
     - Implement layout error handling and recovery

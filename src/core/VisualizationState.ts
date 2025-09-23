@@ -780,6 +780,51 @@ export class VisualizationState {
     return this._layoutState.layoutCount === 0;
   }
 
+  setLayoutError(error: string): void {
+    this._layoutState.error = error;
+    this._layoutState.phase = 'error';
+    this._layoutState.lastUpdate = Date.now();
+  }
+
+  clearLayoutError(): void {
+    this._layoutState.error = undefined;
+    this._layoutState.lastUpdate = Date.now();
+  }
+
+  recoverFromLayoutError(): void {
+    this._layoutState.error = undefined;
+    this._layoutState.phase = 'initial';
+    this._layoutState.lastUpdate = Date.now();
+  }
+
+  resetLayoutState(): void {
+    this._layoutState = {
+      phase: 'initial',
+      layoutCount: 0,
+      lastUpdate: Date.now(),
+    };
+  }
+
+  // Smart Collapse Management
+  private _smartCollapseEnabled = true;
+  private _smartCollapseOverride = false;
+
+  shouldRunSmartCollapse(): boolean {
+    if (this._smartCollapseOverride) {
+      this._smartCollapseOverride = false; // Reset after checking
+      return true;
+    }
+    return this._smartCollapseEnabled && this.isFirstLayout();
+  }
+
+  enableSmartCollapseForNextLayout(): void {
+    this._smartCollapseOverride = true;
+  }
+
+  disableSmartCollapseForUserOperations(): void {
+    this._smartCollapseEnabled = false;
+  }
+
   // Search
   search(query: string): SearchResult[] {
     this._searchResults = [];
