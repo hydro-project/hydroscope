@@ -421,6 +421,12 @@ export class VisualizationState {
       const targetInContainer = allDescendants.has(edge.target);
 
       if (sourceInContainer || targetInContainer) {
+        // If both endpoints are in the container, just hide the edge (internal edge)
+        if (sourceInContainer && targetInContainer) {
+          edge.hidden = true;
+          continue;
+        }
+
         // Determine the aggregated source and target
         let aggregatedSource = edge.source;
         let aggregatedTarget = edge.target;
@@ -435,8 +441,11 @@ export class VisualizationState {
           aggregatedTarget = containerId;
         }
 
-        // Skip self-loops to the container
-        if (aggregatedSource === aggregatedTarget) continue;
+        // Skip self-loops to the container (shouldn't happen with the above logic)
+        if (aggregatedSource === aggregatedTarget) {
+          edge.hidden = true;
+          continue;
+        }
 
         const key = `${aggregatedSource}-${aggregatedTarget}`;
         if (!edgesToAggregate.has(key)) {
@@ -523,7 +532,30 @@ export class VisualizationState {
         };
 
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
+
+        // Update tracking structures
+        this._aggregatedToOriginalMap.set(aggregatedEdge.id, aggregatedEdge.originalEdgeIds);
+        for (const originalId of aggregatedEdge.originalEdgeIds) {
+          this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
+        }
+
+        // Update container aggregation map
+        if (!this._containerAggregationMap.has(containerId)) {
+          this._containerAggregationMap.set(containerId, []);
+        }
+        this._containerAggregationMap.get(containerId)!.push(aggregatedEdge.id);
       }
+    }
+
+    // Record aggregation history
+    const edgeCount = Array.from(edgesToAggregate.values()).reduce((sum, edges) => sum + edges.length, 0);
+    if (edgeCount > 0) {
+      this._aggregationHistory.push({
+        operation: 'aggregate',
+        containerId,
+        edgeCount,
+        timestamp: Date.now(),
+      });
     }
   }
 
@@ -583,9 +615,36 @@ export class VisualizationState {
       }
     }
 
-    // Remove aggregated edges
+    // Remove aggregated edges and update tracking structures
     for (const aggEdgeId of aggregatedEdgesToRemove) {
+      const aggEdge = this._aggregatedEdges.get(aggEdgeId);
+      if (aggEdge) {
+        // Remove from tracking maps
+        this._aggregatedToOriginalMap.delete(aggEdgeId);
+        for (const originalId of aggEdge.originalEdgeIds) {
+          this._originalToAggregatedMap.delete(originalId);
+        }
+      }
       this._aggregatedEdges.delete(aggEdgeId);
+    }
+
+    // Update container aggregation map
+    const containerAggregations = this._containerAggregationMap.get(containerId) || [];
+    const updatedAggregations = containerAggregations.filter(id => !aggregatedEdgesToRemove.includes(id));
+    if (updatedAggregations.length === 0) {
+      this._containerAggregationMap.delete(containerId);
+    } else {
+      this._containerAggregationMap.set(containerId, updatedAggregations);
+    }
+
+    // Record restoration history
+    if (edgesToRestore.length > 0) {
+      this._aggregationHistory.push({
+        operation: 'restore',
+        containerId,
+        edgeCount: edgesToRestore.length,
+        timestamp: Date.now(),
+      });
     }
   }
 
@@ -767,7 +826,7 @@ export class VisualizationState {
 
   setLayoutError(error: string): void {
     this._layoutState.error = error;
-    this._layoutState.phase = 'error';
+    this._layoutState.phase = "error";
     this._layoutState.lastUpdate = Date.now();
   }
 
@@ -778,13 +837,13 @@ export class VisualizationState {
 
   recoverFromLayoutError(): void {
     this._layoutState.error = undefined;
-    this._layoutState.phase = 'initial';
+    this._layoutState.phase = "initial";
     this._layoutState.lastUpdate = Date.now();
   }
 
   resetLayoutState(): void {
     this._layoutState = {
-      phase: 'initial',
+      phase: "initial",
       layoutCount: 0,
       lastUpdate: Date.now(),
     };
@@ -872,6 +931,151 @@ export class VisualizationState {
     this._hideAllDescendants(id);
     this.aggregateEdgesForContainer(id);
     this.validateInvariants();
+  }
+
+  // Edge Aggregation Tracking and Lookup Methods
+  private _originalToAggregatedMap = new Map<string, string>();
+  private _aggregatedToOriginalMap = new Map<string, string[]>();
+  private _containerAggregationMap = new Map<string, string[]>();
+  private _aggregationHistory: Array<{
+    operation: 'aggregate' | 'restore';
+    containerId: string;
+    edgeCount: number;
+    timestamp: number;
+  }> = [];
+
+  getOriginalToAggregatedMapping(): ReadonlyMap<string, string> {
+    return new Map(this._originalToAggregatedMap);
+  }
+
+  getAggregatedToOriginalMapping(): ReadonlyMap<string, string[]> {
+    return new Map(this._aggregatedToOriginalMap);
+  }
+
+  getAggregationMetadata(): {
+    totalOriginalEdges: number;
+    totalAggregatedEdges: number;
+    aggregationsByContainer: ReadonlyMap<string, number>;
+  } {
+    const aggregationsByContainer = new Map<string, number>();
+    for (const [containerId, aggEdgeIds] of this._containerAggregationMap) {
+      aggregationsByContainer.set(containerId, aggEdgeIds.length);
+    }
+
+    return {
+      totalOriginalEdges: this._edges.size,
+      totalAggregatedEdges: this._aggregatedEdges.size,
+      aggregationsByContainer,
+    };
+  }
+
+  getAggregatedEdgesByContainer(containerId: string): ReadonlyArray<AggregatedEdge> {
+    const edgeIds = this._containerAggregationMap.get(containerId) || [];
+    return edgeIds
+      .map(id => this._aggregatedEdges.get(id))
+      .filter((edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden);
+  }
+
+  getOriginalEdgesForAggregated(aggregatedEdgeId: string): ReadonlyArray<GraphEdge> {
+    const originalIds = this._aggregatedToOriginalMap.get(aggregatedEdgeId) || [];
+    return originalIds
+      .map(id => this._edges.get(id))
+      .filter((edge): edge is GraphEdge => edge !== undefined);
+  }
+
+  getAggregatedEdgesAffectingNode(nodeId: string): ReadonlyArray<AggregatedEdge> {
+    return Array.from(this._aggregatedEdges.values()).filter(
+      edge => !edge.hidden && (edge.source === nodeId || edge.target === nodeId)
+    );
+  }
+
+  getAggregationHistory(): ReadonlyArray<{
+    operation: 'aggregate' | 'restore';
+    containerId: string;
+    edgeCount: number;
+    timestamp: number;
+  }> {
+    return [...this._aggregationHistory];
+  }
+
+  getAggregationStatistics(): {
+    totalAggregations: number;
+    activeAggregations: number;
+    edgeReductionRatio: number;
+    containerAggregationCounts: ReadonlyMap<string, number>;
+  } {
+    const containerCounts = new Map<string, number>();
+    let activeAggregations = 0;
+
+    for (const [containerId, aggEdgeIds] of this._containerAggregationMap) {
+      const activeCount = aggEdgeIds.filter(id => {
+        const edge = this._aggregatedEdges.get(id);
+        return edge && !edge.hidden;
+      }).length;
+      
+      if (activeCount > 0) {
+        containerCounts.set(containerId, activeCount);
+        activeAggregations += activeCount;
+      }
+    }
+
+    const totalOriginalEdges = this._edges.size;
+    const visibleOriginalEdges = Array.from(this._edges.values()).filter(e => !e.hidden).length;
+    const totalVisibleEdges = visibleOriginalEdges + activeAggregations;
+    const edgeReductionRatio = totalOriginalEdges > 0 
+      ? (totalOriginalEdges - totalVisibleEdges) / totalOriginalEdges 
+      : 0;
+
+    return {
+      totalAggregations: this._aggregationHistory.length,
+      activeAggregations,
+      edgeReductionRatio,
+      containerAggregationCounts: containerCounts,
+    };
+  }
+
+  validateAggregationConsistency(): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+
+    // Check that all aggregated edges have valid original edges
+    for (const [aggId, aggEdge] of this._aggregatedEdges) {
+      const originalIds = this._aggregatedToOriginalMap.get(aggId);
+      if (!originalIds || originalIds.length === 0) {
+        errors.push(`Aggregated edge ${aggId} has no original edges`);
+        continue;
+      }
+
+      for (const originalId of originalIds) {
+        const originalEdge = this._edges.get(originalId);
+        if (!originalEdge) {
+          errors.push(`Aggregated edge ${aggId} references non-existent original edge ${originalId}`);
+        }
+      }
+    }
+
+    // Check that all original-to-aggregated mappings are valid
+    for (const [originalId, aggId] of this._originalToAggregatedMap) {
+      const aggEdge = this._aggregatedEdges.get(aggId);
+      if (!aggEdge) {
+        errors.push(`Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`);
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  corruptAggregationForTesting(): void {
+    // Only for testing - corrupt the aggregation state
+    if (this._aggregatedEdges.size > 0) {
+      const firstAggId = Array.from(this._aggregatedEdges.keys())[0];
+      this._aggregatedToOriginalMap.set(firstAggId, ['non-existent-edge']);
+    }
   }
 
   // Search

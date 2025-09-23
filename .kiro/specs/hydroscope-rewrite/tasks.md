@@ -89,7 +89,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 2.3 implement container visibility and collapse/expand logic with edge aggregation"`
     - _Requirements: 2.2, 8.1, 8.2, 8a.1, 8a.2, 8a.7_
 
-- [-] 3. Implement layout state management
+- [x] 3. Implement layout state management
   - [x] 3.1 Create layout state tracking in VisualizationState
     - Implement layout phase tracking (initial, laying_out, ready, etc.)
     - Add layout count tracking for smart collapse logic
@@ -98,7 +98,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 3.1 create layout state tracking in VisualizationState"`
     - _Requirements: 2.3, 10.5_
 
-  - [-] 3.2 Implement smart collapse prevention logic
+  - [x] 3.2 Implement smart collapse prevention logic
     - Code isFirstLayout() method based on layout count
     - Implement layout count increment on successful layouts
     - Add smart collapse flag management for user operations
@@ -106,8 +106,8 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 3.2 implement smart collapse prevention logic"`
     - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 4. Implement edge aggregation management system
-  - [ ] 4.1 Create AggregatedEdge data structures and tracking
+- [-] 4. Implement edge aggregation management system
+  - [-] 4.1 Create AggregatedEdge data structures and tracking
     - Implement AggregatedEdge interface for container boundary edges
     - Code edge aggregation tracking with bidirectional mapping to original edges
     - Implement efficient lookup structures for aggregated edge management
