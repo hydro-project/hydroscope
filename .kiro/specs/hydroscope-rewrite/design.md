@@ -88,6 +88,11 @@ class VisualizationState {
   get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge>
   get visibleContainers(): ReadonlyArray<Container>
   
+  // Graph Element Interactions
+  toggleNodeLabel(nodeId: string): void
+  setNodeLabelState(nodeId: string, showLongLabel: boolean): void
+  toggleContainer(containerId: string): void
+  
   // Search
   search(query: string): SearchResult[]
   clearSearch(): void
@@ -154,6 +159,10 @@ class ReactFlowBridge {
   // Edge Aggregation Handling
   renderOriginalEdge(edge: GraphEdge): ReactFlowEdge
   renderAggregatedEdge(aggregatedEdge: AggregatedEdge): ReactFlowEdge
+  
+  // Interaction Handling
+  attachClickHandlers(nodes: ReactFlowNode[], containers: ReactFlowNode[]): void
+  handleElementClick(elementId: string, elementType: 'node' | 'container'): void
 }
 ```
 
@@ -186,6 +195,33 @@ class AsyncCoordinator {
 }
 ```
 
+### InteractionHandler
+
+**Purpose**: Handle user interactions with graph elements
+
+**Key Responsibilities**:
+- Process click events on nodes and containers
+- Coordinate state changes with VisualizationState
+- Trigger appropriate layout updates
+- Manage interaction event queuing
+
+**Interface**:
+```typescript
+class InteractionHandler {
+  constructor(visualizationState: VisualizationState, asyncCoordinator: AsyncCoordinator)
+  
+  // Click Event Handling
+  handleNodeClick(nodeId: string): void
+  handleContainerClick(containerId: string): void
+  
+  // Event Processing
+  processClickEvent(elementId: string, elementType: 'node' | 'container'): void
+  
+  // State Coordination
+  triggerLayoutUpdate(): void
+}
+```
+
 ## Data Models
 
 ### Core Data Types
@@ -193,12 +229,14 @@ class AsyncCoordinator {
 ```typescript
 interface GraphNode {
   id: string
-  label: string
+  label: string // Short label displayed by default
+  longLabel: string // Full label displayed on click toggle
   type: string
   semanticTags: string[]
   position?: { x: number; y: number }
   dimensions?: { width: number; height: number }
   hidden: boolean
+  showingLongLabel?: boolean // UI state for label toggle
 }
 
 interface GraphEdge {
@@ -245,6 +283,18 @@ interface SearchResult {
   type: 'node' | 'container'
   matchIndices: number[][]
 }
+
+interface ClickEvent {
+  elementId: string
+  elementType: 'node' | 'container'
+  timestamp: number
+  position: { x: number; y: number }
+}
+
+interface InteractionState {
+  nodeLabelsExpanded: Set<string> // Node IDs showing long labels
+  recentClicks: Map<string, number> // Element ID -> timestamp for debouncing
+}
 ```
 
 ### ReactFlow Data Types
@@ -261,9 +311,12 @@ interface ReactFlowNode {
   position: { x: number; y: number }
   data: {
     label: string
+    longLabel?: string
+    showingLongLabel?: boolean
     nodeType: string
     collapsed?: boolean
     containerChildren?: number
+    onClick?: (elementId: string, elementType: 'node' | 'container') => void
   }
   style?: CSSProperties
 }

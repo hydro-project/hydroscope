@@ -126,7 +126,24 @@ This specification defines the complete rewrite of Hydroscope from scratch, impl
 7. WHEN multiple containers affect the same edge THEN the edge SHALL be managed consistently across all container state changes
 8. WHEN edge visibility changes THEN the changes SHALL be atomic and consistent with container visibility states
 
-### Requirement 9: Search Functionality
+### Requirement 9: Graph Element Click Interactions
+
+**User Story:** As a user, I want to click on graph elements to interact with them directly, so that I can expand/collapse containers and toggle node labels intuitively.
+
+#### Acceptance Criteria
+
+1. WHEN I click on a container THEN the container SHALL toggle between collapsed and expanded states
+2. WHEN I click on a collapsed container THEN it SHALL expand and show its internal nodes
+3. WHEN I click on an expanded container THEN it SHALL collapse and show as a single node
+4. WHEN I click on a graph node THEN the label SHALL toggle between short label and long label
+5. WHEN a node shows long label THEN clicking again SHALL return to short label
+6. WHEN container click operations occur THEN the layout SHALL update to accommodate the new structure
+7. WHEN node label toggles occur THEN the layout SHALL accommodate longer text if needed
+8. WHEN click interactions happen THEN the changes SHALL be reflected immediately in the UI
+9. WHEN multiple rapid clicks occur THEN they SHALL be processed correctly without conflicts
+10. WHEN container states change via click THEN edge aggregation SHALL be updated accordingly
+
+### Requirement 10: Search Functionality
 
 **User Story:** As a user, I want to search for nodes and containers, so that I can quickly find specific elements in large graphs.
 

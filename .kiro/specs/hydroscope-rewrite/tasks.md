@@ -124,7 +124,25 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 4.2 implement edge aggregation and restoration algorithms"`
     - _Requirements: 8a.1, 8a.2, 8a.3, 8a.4, 8a.7_
 
-- [ ] 5. Implement search functionality in VisualizationState
+- [ ] 5. Implement graph element interaction system
+  - [ ] 5.1 Create interaction state management in VisualizationState
+    - Implement node label toggle state tracking (showingLongLabel)
+    - Code container click handling for expand/collapse operations
+    - Add interaction state persistence and restoration
+    - Write unit tests for all interaction state management
+    - **COMMIT**: `git add . && git commit -m "feat: 5.1 create interaction state management in VisualizationState"`
+    - _Requirements: 9.1, 9.4, 9.5_
+
+  - [ ] 5.2 Implement InteractionHandler for click event processing
+    - Code click event processing for nodes and containers
+    - Implement click debouncing and rapid click handling
+    - Add coordination between interaction events and layout updates
+    - Handle interaction event queuing through AsyncCoordinator
+    - Write unit tests for click event processing with paxos.json data
+    - **COMMIT**: `git add . && git commit -m "feat: 5.2 implement InteractionHandler for click event processing"`
+    - _Requirements: 9.1, 9.2, 9.3, 9.8, 9.9_
+
+- [ ] 6. Implement search functionality in VisualizationState
   - [ ] 4.1 Create search state management
     - Implement search query storage and history
     - Code search result data structures with match highlighting
@@ -186,15 +204,17 @@ This ensures:
     - _Requirements: 3.5, 12.1_
 
 - [ ] 7. Implement ReactFlowBridge for rendering
-  - [ ] 7.1 Create ReactFlow format conversion from VisualizationState with edge aggregation support
+  - [ ] 7.1 Create ReactFlow format conversion from VisualizationState with edge aggregation and interaction support
     - Code synchronous conversion from VisualizationState to ReactFlow nodes/edges
-    - Implement collapsed container rendering as single nodes
-    - Implement expanded container rendering with child nodes
+    - Implement collapsed container rendering as single nodes with click handlers
+    - Implement expanded container rendering with child nodes and click handlers
+    - Implement node rendering with label/longLabel toggle and click handlers
     - Implement edge rendering for both original edges and aggregated edges
     - Handle edge routing between container boundaries and internal nodes
-    - Write unit tests for ReactFlow conversion with paxos.json data including edge aggregation
-    - **COMMIT**: `git add . && git commit -m "feat: 7.1 create ReactFlow format conversion from VisualizationState with edge aggregation support"`
-    - _Requirements: 4.1, 4.2, 4.3, 7.3, 8a.4, 8a.8_
+    - Attach click event handlers for container toggle and node label toggle
+    - Write unit tests for ReactFlow conversion with paxos.json data including edge aggregation and interactions
+    - **COMMIT**: `git add . && git commit -m "feat: 7.1 create ReactFlow format conversion with edge aggregation and interaction support"`
+    - _Requirements: 4.1, 4.2, 4.3, 7.3, 8a.4, 8a.8, 9.1, 9.2, 9.4_
 
   - [ ] 7.2 Implement semantic tag to visual style conversion
     - Code style mapping from semantic tags to CSS properties
