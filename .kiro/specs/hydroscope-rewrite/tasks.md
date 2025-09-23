@@ -115,7 +115,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 4.1 create AggregatedEdge data structures and tracking"`
     - _Requirements: 2.1, 8a.5, 8a.6_
 
-  - [-] 4.2 Implement edge aggregation and restoration algorithms
+  - [x] 4.2 Implement edge aggregation and restoration algorithms
     - Code edge aggregation algorithm for container collapse (internal edges become container boundary edges)
     - Implement edge restoration algorithm for container expand (aggregated edges restored to original internal connections)
     - Handle multi-container edge scenarios and nested container edge aggregation
@@ -124,8 +124,8 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 4.2 implement edge aggregation and restoration algorithms"`
     - _Requirements: 8a.1, 8a.2, 8a.3, 8a.4, 8a.7_
 
-- [ ] 5. Implement graph element interaction system
-  - [ ] 5.1 Create interaction state management in VisualizationState
+- [-] 5. Implement graph element interaction system
+  - [-] 5.1 Create interaction state management in VisualizationState
     - Implement node label toggle state tracking (showingLongLabel)
     - Code container click handling for expand/collapse operations
     - Add interaction state persistence and restoration

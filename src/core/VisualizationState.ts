@@ -534,7 +534,10 @@ export class VisualizationState {
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
 
         // Update tracking structures
-        this._aggregatedToOriginalMap.set(aggregatedEdge.id, aggregatedEdge.originalEdgeIds);
+        this._aggregatedToOriginalMap.set(
+          aggregatedEdge.id,
+          aggregatedEdge.originalEdgeIds
+        );
         for (const originalId of aggregatedEdge.originalEdgeIds) {
           this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
         }
@@ -548,10 +551,13 @@ export class VisualizationState {
     }
 
     // Record aggregation history
-    const edgeCount = Array.from(edgesToAggregate.values()).reduce((sum, edges) => sum + edges.length, 0);
+    const edgeCount = Array.from(edgesToAggregate.values()).reduce(
+      (sum, edges) => sum + edges.length,
+      0
+    );
     if (edgeCount > 0) {
       this._aggregationHistory.push({
-        operation: 'aggregate',
+        operation: "aggregate",
         containerId,
         edgeCount,
         timestamp: Date.now(),
@@ -582,7 +588,7 @@ export class VisualizationState {
   restoreEdgesForContainer(containerId: string): void {
     // Get all descendants of this container
     const allDescendants = this._getAllDescendantIds(containerId);
-    
+
     // Find aggregated edges that involve this container
     const aggregatedEdgesToRemove: string[] = [];
     const edgesToRestore: string[] = [];
@@ -600,7 +606,7 @@ export class VisualizationState {
       if (edge.hidden) {
         const sourceInContainer = allDescendants.has(edge.source);
         const targetInContainer = allDescendants.has(edge.target);
-        
+
         // If this edge was hidden due to this container being collapsed
         if (sourceInContainer || targetInContainer) {
           edgesToRestore.push(edgeId);
@@ -649,8 +655,11 @@ export class VisualizationState {
     }
 
     // Update container aggregation map
-    const containerAggregations = this._containerAggregationMap.get(containerId) || [];
-    const updatedAggregations = containerAggregations.filter(id => !aggregatedEdgesToRemove.includes(id));
+    const containerAggregations =
+      this._containerAggregationMap.get(containerId) || [];
+    const updatedAggregations = containerAggregations.filter(
+      (id) => !aggregatedEdgesToRemove.includes(id)
+    );
     if (updatedAggregations.length === 0) {
       this._containerAggregationMap.delete(containerId);
     } else {
@@ -660,7 +669,7 @@ export class VisualizationState {
     // Record restoration history
     if (edgesToRestore.length > 0) {
       this._aggregationHistory.push({
-        operation: 'restore',
+        operation: "restore",
         containerId,
         edgeCount: edgesToRestore.length,
         timestamp: Date.now(),
@@ -676,13 +685,17 @@ export class VisualizationState {
     // Check if source is in a collapsed container
     const sourceNode = this._nodes.get(edge.source);
     if (sourceNode && sourceNode.hidden) {
-      sourceContainer = this._findSmallestCollapsedContainerForNode(edge.source);
+      sourceContainer = this._findSmallestCollapsedContainerForNode(
+        edge.source
+      );
     }
 
     // Check if target is in a collapsed container
     const targetNode = this._nodes.get(edge.target);
     if (targetNode && targetNode.hidden) {
-      targetContainer = this._findSmallestCollapsedContainerForNode(edge.target);
+      targetContainer = this._findSmallestCollapsedContainerForNode(
+        edge.target
+      );
     }
 
     // If either endpoint needs aggregation, create aggregated edge
@@ -699,7 +712,7 @@ export class VisualizationState {
       // Create or update aggregated edge
       const key = `${aggregatedSource}-${aggregatedTarget}`;
       const aggregatedEdgeId = `agg-${sourceContainer || targetContainer}-${aggregatedSource}-${aggregatedTarget}`;
-      
+
       let existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
       if (existingAggEdge) {
         // Add to existing aggregated edge
@@ -717,7 +730,7 @@ export class VisualizationState {
           hidden: false,
           aggregated: true as const,
           originalEdgeIds: [edge.id],
-          aggregationSource: sourceContainer || targetContainer || '',
+          aggregationSource: sourceContainer || targetContainer || "",
         };
 
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
@@ -731,7 +744,9 @@ export class VisualizationState {
           if (!this._containerAggregationMap.has(containerForTracking)) {
             this._containerAggregationMap.set(containerForTracking, []);
           }
-          this._containerAggregationMap.get(containerForTracking)!.push(aggregatedEdge.id);
+          this._containerAggregationMap
+            .get(containerForTracking)!
+            .push(aggregatedEdge.id);
         }
       }
 
@@ -739,9 +754,11 @@ export class VisualizationState {
     }
   }
 
-  private _findSmallestCollapsedContainerForNode(nodeId: string): string | undefined {
+  private _findSmallestCollapsedContainerForNode(
+    nodeId: string
+  ): string | undefined {
     let currentContainer = this._nodeContainerMap.get(nodeId);
-    
+
     while (currentContainer) {
       const container = this._containers.get(currentContainer);
       if (container && container.collapsed) {
@@ -749,7 +766,7 @@ export class VisualizationState {
       }
       currentContainer = this._containerParentMap.get(currentContainer);
     }
-    
+
     return undefined;
   }
 
@@ -1043,7 +1060,7 @@ export class VisualizationState {
   private _aggregatedToOriginalMap = new Map<string, string[]>();
   private _containerAggregationMap = new Map<string, string[]>();
   private _aggregationHistory: Array<{
-    operation: 'aggregate' | 'restore';
+    operation: "aggregate" | "restore";
     containerId: string;
     edgeCount: number;
     timestamp: number;
@@ -1074,28 +1091,38 @@ export class VisualizationState {
     };
   }
 
-  getAggregatedEdgesByContainer(containerId: string): ReadonlyArray<AggregatedEdge> {
+  getAggregatedEdgesByContainer(
+    containerId: string
+  ): ReadonlyArray<AggregatedEdge> {
     const edgeIds = this._containerAggregationMap.get(containerId) || [];
     return edgeIds
-      .map(id => this._aggregatedEdges.get(id))
-      .filter((edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden);
+      .map((id) => this._aggregatedEdges.get(id))
+      .filter(
+        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden
+      );
   }
 
-  getOriginalEdgesForAggregated(aggregatedEdgeId: string): ReadonlyArray<GraphEdge> {
-    const originalIds = this._aggregatedToOriginalMap.get(aggregatedEdgeId) || [];
+  getOriginalEdgesForAggregated(
+    aggregatedEdgeId: string
+  ): ReadonlyArray<GraphEdge> {
+    const originalIds =
+      this._aggregatedToOriginalMap.get(aggregatedEdgeId) || [];
     return originalIds
-      .map(id => this._edges.get(id))
+      .map((id) => this._edges.get(id))
       .filter((edge): edge is GraphEdge => edge !== undefined);
   }
 
-  getAggregatedEdgesAffectingNode(nodeId: string): ReadonlyArray<AggregatedEdge> {
+  getAggregatedEdgesAffectingNode(
+    nodeId: string
+  ): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
-      edge => !edge.hidden && (edge.source === nodeId || edge.target === nodeId)
+      (edge) =>
+        !edge.hidden && (edge.source === nodeId || edge.target === nodeId)
     );
   }
 
   getAggregationHistory(): ReadonlyArray<{
-    operation: 'aggregate' | 'restore';
+    operation: "aggregate" | "restore";
     containerId: string;
     edgeCount: number;
     timestamp: number;
@@ -1113,11 +1140,11 @@ export class VisualizationState {
     let activeAggregations = 0;
 
     for (const [containerId, aggEdgeIds] of this._containerAggregationMap) {
-      const activeCount = aggEdgeIds.filter(id => {
+      const activeCount = aggEdgeIds.filter((id) => {
         const edge = this._aggregatedEdges.get(id);
         return edge && !edge.hidden;
       }).length;
-      
+
       if (activeCount > 0) {
         containerCounts.set(containerId, activeCount);
         activeAggregations += activeCount;
@@ -1125,11 +1152,14 @@ export class VisualizationState {
     }
 
     const totalOriginalEdges = this._edges.size;
-    const visibleOriginalEdges = Array.from(this._edges.values()).filter(e => !e.hidden).length;
+    const visibleOriginalEdges = Array.from(this._edges.values()).filter(
+      (e) => !e.hidden
+    ).length;
     const totalVisibleEdges = visibleOriginalEdges + activeAggregations;
-    const edgeReductionRatio = totalOriginalEdges > 0 
-      ? (totalOriginalEdges - totalVisibleEdges) / totalOriginalEdges 
-      : 0;
+    const edgeReductionRatio =
+      totalOriginalEdges > 0
+        ? (totalOriginalEdges - totalVisibleEdges) / totalOriginalEdges
+        : 0;
 
     return {
       totalAggregations: this._aggregationHistory.length,
@@ -1156,7 +1186,9 @@ export class VisualizationState {
       for (const originalId of originalIds) {
         const originalEdge = this._edges.get(originalId);
         if (!originalEdge) {
-          errors.push(`Aggregated edge ${aggId} references non-existent original edge ${originalId}`);
+          errors.push(
+            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`
+          );
         }
       }
     }
@@ -1165,7 +1197,9 @@ export class VisualizationState {
     for (const [originalId, aggId] of this._originalToAggregatedMap) {
       const aggEdge = this._aggregatedEdges.get(aggId);
       if (!aggEdge) {
-        errors.push(`Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`);
+        errors.push(
+          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`
+        );
       }
     }
 
@@ -1179,8 +1213,82 @@ export class VisualizationState {
     // Only for testing - corrupt the aggregation state
     if (this._aggregatedEdges.size > 0) {
       const firstAggId = Array.from(this._aggregatedEdges.keys())[0];
-      this._aggregatedToOriginalMap.set(firstAggId, ['non-existent-edge']);
+      this._aggregatedToOriginalMap.set(firstAggId, ["non-existent-edge"]);
     }
+  }
+
+  // Graph Element Interactions
+  toggleNodeLabel(nodeId: string): void {
+    const node = this._nodes.get(nodeId);
+    if (!node) return;
+
+    node.showingLongLabel = !node.showingLongLabel;
+  }
+
+  setNodeLabelState(nodeId: string, showLongLabel: boolean): void {
+    const node = this._nodes.get(nodeId);
+    if (!node) return;
+
+    node.showingLongLabel = showLongLabel;
+  }
+
+  getNodesShowingLongLabels(): ReadonlyArray<GraphNode> {
+    return Array.from(this._nodes.values()).filter(node => node.showingLongLabel);
+  }
+
+  getInteractionStateSummary(): {
+    nodesWithLongLabels: number;
+    collapsedContainers: number;
+    expandedContainers: number;
+  } {
+    const nodesWithLongLabels = Array.from(this._nodes.values()).filter(
+      node => node.showingLongLabel
+    ).length;
+
+    const collapsedContainers = Array.from(this._containers.values()).filter(
+      container => container.collapsed
+    ).length;
+
+    const expandedContainers = Array.from(this._containers.values()).filter(
+      container => !container.collapsed
+    ).length;
+
+    return {
+      nodesWithLongLabels,
+      collapsedContainers,
+      expandedContainers,
+    };
+  }
+
+  resetAllNodeLabelsToShort(): void {
+    for (const node of this._nodes.values()) {
+      node.showingLongLabel = false;
+    }
+  }
+
+  expandAllNodeLabelsToLong(): void {
+    for (const node of this._nodes.values()) {
+      node.showingLongLabel = true;
+    }
+  }
+
+  validateInteractionState(): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+
+    // Check for nodes showing long labels without having long labels
+    for (const [nodeId, node] of this._nodes) {
+      if (node.showingLongLabel && !node.longLabel) {
+        errors.push(`Node ${nodeId} is showing long label but has no longLabel property`);
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
   }
 
   // Search
