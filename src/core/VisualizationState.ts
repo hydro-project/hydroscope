@@ -20,6 +20,8 @@ export class VisualizationState {
   private _aggregatedEdges = new Map<string, AggregatedEdge>()
   private _nodeContainerMap = new Map<string, string>()
   private _containerParentMap = new Map<string, string>()
+  private _orphanedNodes = new Set<string>()
+  private _orphanedContainers = new Set<string>()
   private _layoutState: LayoutState = {
     phase: 'initial',
     layoutCount: 0,
@@ -66,8 +68,30 @@ export class VisualizationState {
 
   addEdge(edge: GraphEdge): void {
     this._validateEdgeData(edge)
+    
     this._edges.set(edge.id, { ...edge })
+    
+    // Check if this edge needs to be aggregated due to collapsed containers
+    this._handleEdgeAggregationOnAdd(edge.id)
+    
     this.validateInvariants()
+  }
+
+  private _handleEdgeAggregationOnAdd(edgeId: string): void {
+    const edge = this._edges.get(edgeId)
+    if (!edge) return
+
+    // Find collapsed containers that contain the source or target
+    for (const [containerId, container] of this._containers) {
+      if (container.collapsed) {
+        const descendants = this._getAllDescendantIds(containerId)
+        if (descendants.has(edge.source) || descendants.has(edge.target)) {
+          // This edge needs to be aggregated
+          this.aggregateEdgesForContainer(containerId)
+          break // Only need to aggregate once
+        }
+      }
+    }
   }
 
   removeEdge(id: string): void {
@@ -110,11 +134,19 @@ export class VisualizationState {
     const container = this._containers.get(id)
     this._containers.delete(id)
     
-    // Clean up mappings for this container's children
+    // Clean up mappings and track orphaned entities
     if (container) {
       for (const childId of container.children) {
         this._nodeContainerMap.delete(childId)
         this._containerParentMap.delete(childId)
+        
+        // Track orphaned entities
+        if (this._nodes.has(childId)) {
+          this._orphanedNodes.add(childId)
+        }
+        if (this._containers.has(childId)) {
+          this._orphanedContainers.add(childId)
+        }
       }
     }
     
@@ -172,6 +204,17 @@ export class VisualizationState {
     
     // Also update any existing containers that might now have this as a parent
     this._updateParentMappings()
+    
+    // If container is collapsed, ensure children are hidden
+    if (container.collapsed) {
+      this._hideContainerChildren(container.id)
+      this.aggregateEdgesForContainer(container.id)
+    }
+  }
+
+  private _hideContainerChildren(containerId: string): void {
+    // Use the same logic as collapsing - hide all transitive descendants
+    this._hideAllDescendants(containerId)
   }
 
   private _updateChildMappings(container: Container): void {
@@ -210,6 +253,20 @@ export class VisualizationState {
       throw new Error(`Circular dependency detected: Container ${container.id} cannot contain itself`)
     }
     
+    // Check if this container is already referenced as a child by any existing container
+    // If so, adding it would create a cycle
+    for (const [existingId, existingContainer] of this._containers) {
+      if (existingContainer.children.has(container.id)) {
+        // container.id is already a child of existingId
+        // Check if any of container's children are ancestors of existingId
+        for (const childId of container.children) {
+          if (this._isAncestorOf(childId, existingId)) {
+            throw new Error(`Circular dependency detected: ${childId} is an ancestor of ${existingId}, which already has ${container.id} as a child`)
+          }
+        }
+      }
+    }
+    
     // Check for circular dependencies through the hierarchy
     for (const childId of container.children) {
       // Check if childId already has container.id as a child (direct circular dependency)
@@ -224,8 +281,25 @@ export class VisualizationState {
         if (this._isDescendantOf(container.id, childId)) {
           throw new Error(`Circular dependency detected: Adding ${childId} to ${container.id} would create a cycle`)
         }
+        
+        // Check if childId is already an ancestor of container.id
+        // This would create an indirect cycle: container.id -> ... -> childId -> ... -> container.id
+        if (this._isAncestorOf(childId, container.id)) {
+          throw new Error(`Circular dependency detected: ${childId} is already an ancestor of ${container.id}`)
+        }
       }
     }
+  }
+
+  private _isAncestorOf(potentialAncestor: string, descendant: string): boolean {
+    let current = this.getContainerParent(descendant)
+    while (current) {
+      if (current === potentialAncestor) {
+        return true
+      }
+      current = this.getContainerParent(current)
+    }
+    return false
   }
 
   private _isDescendantOf(potentialDescendant: string, ancestor: string): boolean {
@@ -241,15 +315,35 @@ export class VisualizationState {
     container.collapsed = false
     container.hidden = false
 
-    // Show child nodes
+    // Show immediate children (but not their descendants if they are collapsed)
+    this._showImmediateChildren(id)
+
+    // Restore edges for this container
+    this.restoreEdgesForContainer(id)
+
+    this.validateInvariants()
+  }
+
+  private _showImmediateChildren(containerId: string): void {
+    const container = this._containers.get(containerId)
+    if (!container) return
+
     for (const childId of container.children) {
       const childNode = this._nodes.get(childId)
+      const childContainer = this._containers.get(childId)
+      
       if (childNode) {
         childNode.hidden = false
       }
+      if (childContainer) {
+        childContainer.hidden = false
+        // Don't automatically expand child containers - they keep their collapsed state
+        // Only show their contents if they are not collapsed
+        if (!childContainer.collapsed) {
+          this._showImmediateChildren(childId)
+        }
+      }
     }
-
-    this.validateInvariants()
   }
 
   collapseContainer(id: string): void {
@@ -258,7 +352,19 @@ export class VisualizationState {
 
     container.collapsed = true
 
-    // Hide child nodes and containers
+    // Hide all transitive descendants
+    this._hideAllDescendants(id)
+
+    // Aggregate edges for this container
+    this.aggregateEdgesForContainer(id)
+
+    this.validateInvariants()
+  }
+
+  private _hideAllDescendants(containerId: string): void {
+    const container = this._containers.get(containerId)
+    if (!container) return
+
     for (const childId of container.children) {
       const childNode = this._nodes.get(childId)
       const childContainer = this._containers.get(childId)
@@ -269,10 +375,10 @@ export class VisualizationState {
       if (childContainer) {
         childContainer.hidden = true
         childContainer.collapsed = true
+        // Recursively hide descendants of child containers
+        this._hideAllDescendants(childId)
       }
     }
-
-    this.validateInvariants()
   }
 
   expandAllContainers(): void {
@@ -289,6 +395,191 @@ export class VisualizationState {
         this.collapseContainer(container.id)
       }
     }
+  }
+
+  // Edge Aggregation Management
+  aggregateEdgesForContainer(containerId: string): void {
+    const container = this._containers.get(containerId)
+    if (!container) return
+
+    // Get all descendants of this container (including nested containers)
+    const allDescendants = this._getAllDescendantIds(containerId)
+    const edgesToAggregate = new Map<string, GraphEdge[]>() // key: source-target, value: edges
+    const aggregatedEdgesToUpdate: AggregatedEdge[] = []
+
+    // Find all edges that need to be aggregated
+    for (const [edgeId, edge] of this._edges) {
+      if (edge.hidden) continue
+
+      const sourceInContainer = allDescendants.has(edge.source)
+      const targetInContainer = allDescendants.has(edge.target)
+
+      if (sourceInContainer || targetInContainer) {
+        // Determine the aggregated source and target
+        let aggregatedSource = edge.source
+        let aggregatedTarget = edge.target
+
+        // If source is in container, aggregate to container
+        if (sourceInContainer) {
+          aggregatedSource = containerId
+        }
+
+        // If target is in container, aggregate to container  
+        if (targetInContainer) {
+          aggregatedTarget = containerId
+        }
+
+        // Skip self-loops to the container
+        if (aggregatedSource === aggregatedTarget) continue
+
+        const key = `${aggregatedSource}-${aggregatedTarget}`
+        if (!edgesToAggregate.has(key)) {
+          edgesToAggregate.set(key, [])
+        }
+        edgesToAggregate.get(key)!.push(edge)
+
+        // Hide the original edge
+        edge.hidden = true
+      }
+    }
+
+    // Also check existing aggregated edges that might need to be updated
+    for (const [aggId, aggEdge] of this._aggregatedEdges) {
+      if (aggEdge.hidden) continue
+
+      const sourceInContainer = allDescendants.has(aggEdge.source)
+      const targetInContainer = allDescendants.has(aggEdge.target)
+
+      if (sourceInContainer || targetInContainer) {
+        // This aggregated edge needs to be updated
+        let newSource = aggEdge.source
+        let newTarget = aggEdge.target
+
+        if (sourceInContainer) {
+          newSource = containerId
+        }
+        if (targetInContainer) {
+          newTarget = containerId
+        }
+
+        // Skip self-loops
+        if (newSource === newTarget) {
+          aggEdge.hidden = true
+          continue
+        }
+
+        const key = `${newSource}-${newTarget}`
+        if (!edgesToAggregate.has(key)) {
+          edgesToAggregate.set(key, [])
+        }
+
+        // Hide the old aggregated edge and add its original edges to be re-aggregated
+        aggEdge.hidden = true
+        for (const originalEdgeId of aggEdge.originalEdgeIds) {
+          const originalEdge = this._edges.get(originalEdgeId)
+          if (originalEdge) {
+            edgesToAggregate.get(key)!.push(originalEdge)
+          }
+        }
+      }
+    }
+
+    // Create new aggregated edges
+    for (const [key, edges] of edgesToAggregate) {
+      const [source, target] = key.split('-')
+      const aggregatedEdgeId = `agg-${containerId}-${source}-${target}`
+      
+      // Check if this aggregated edge already exists
+      const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId)
+      
+      if (existingAggEdge && !existingAggEdge.hidden) {
+        // Merge with existing aggregated edge
+        const newOriginalIds = edges.map(e => e.id)
+        existingAggEdge.originalEdgeIds.push(...newOriginalIds)
+        existingAggEdge.semanticTags = [...new Set([...existingAggEdge.semanticTags, ...edges.flatMap(e => e.semanticTags)])]
+      } else {
+        // Create new aggregated edge
+        const aggregatedEdge: AggregatedEdge = {
+          id: aggregatedEdgeId,
+          source,
+          target,
+          type: edges[0].type, // Use type from first edge
+          semanticTags: [...new Set(edges.flatMap(e => e.semanticTags))], // Merge unique tags
+          hidden: false,
+          aggregated: true,
+          originalEdgeIds: edges.map(e => e.id),
+          aggregationSource: containerId
+        }
+
+        this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge)
+      }
+    }
+  }
+
+  private _getAllDescendantIds(containerId: string): Set<string> {
+    const descendants = new Set<string>()
+    const container = this._containers.get(containerId)
+    if (!container) return descendants
+
+    for (const childId of container.children) {
+      descendants.add(childId)
+      
+      // If child is a container, recursively get its descendants
+      if (this._containers.has(childId)) {
+        const childDescendants = this._getAllDescendantIds(childId)
+        for (const descendant of childDescendants) {
+          descendants.add(descendant)
+        }
+      }
+    }
+
+    return descendants
+  }
+
+  restoreEdgesForContainer(containerId: string): void {
+    // Find aggregated edges that involve this container
+    const aggregatedEdgesToRemove: string[] = []
+    const edgesToRestore: string[] = []
+    
+    for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
+      if (aggEdge.source === containerId || aggEdge.target === containerId) {
+        // This aggregated edge involves the container being expanded
+        edgesToRestore.push(...aggEdge.originalEdgeIds)
+        aggregatedEdgesToRemove.push(aggEdgeId)
+      }
+    }
+
+    // Restore original edges
+    for (const originalEdgeId of edgesToRestore) {
+      const originalEdge = this._edges.get(originalEdgeId)
+      if (originalEdge) {
+        // Check if both endpoints are visible
+        const sourceNode = this._nodes.get(originalEdge.source)
+        const targetNode = this._nodes.get(originalEdge.target)
+        const sourceContainer = this._containers.get(originalEdge.source)
+        const targetContainer = this._containers.get(originalEdge.target)
+        
+        const sourceVisible = (sourceNode && !sourceNode.hidden) || (sourceContainer && !sourceContainer.hidden)
+        const targetVisible = (targetNode && !targetNode.hidden) || (targetContainer && !targetContainer.hidden)
+        
+        if (sourceVisible && targetVisible) {
+          originalEdge.hidden = false
+        }
+      }
+    }
+
+    // Remove aggregated edges
+    for (const aggEdgeId of aggregatedEdgesToRemove) {
+      this._aggregatedEdges.delete(aggEdgeId)
+    }
+  }
+
+  getAggregatedEdges(): ReadonlyArray<AggregatedEdge> {
+    return Array.from(this._aggregatedEdges.values()).filter(edge => !edge.hidden)
+  }
+
+  getOriginalEdges(): ReadonlyArray<GraphEdge> {
+    return Array.from(this._edges.values())
   }
 
   // Read-only Access
@@ -392,45 +683,25 @@ export class VisualizationState {
   }
 
   getOrphanedNodes(): string[] {
-    const orphaned: string[] = []
-    
-    // Check all node-container mappings for non-existent containers
-    for (const [nodeId, containerId] of this._nodeContainerMap) {
-      if (!this._containers.has(containerId)) {
-        orphaned.push(nodeId)
-      }
-    }
-    
-    return orphaned
+    return Array.from(this._orphanedNodes)
   }
 
   getOrphanedContainers(): string[] {
-    const orphaned: string[] = []
-    
-    // Check all container-parent mappings for non-existent parents
-    for (const [containerId, parentId] of this._containerParentMap) {
-      if (!this._containers.has(parentId)) {
-        orphaned.push(containerId)
-      }
-    }
-    
-    return orphaned
+    return Array.from(this._orphanedContainers)
   }
 
   cleanupOrphanedEntities(): void {
-    // Clean up orphaned node mappings and remove nodes
-    const orphanedNodes = this.getOrphanedNodes()
-    for (const nodeId of orphanedNodes) {
-      this._nodeContainerMap.delete(nodeId)
-      this.removeNode(nodeId)
+    // Remove orphaned nodes
+    for (const nodeId of this._orphanedNodes) {
+      this._nodes.delete(nodeId)
     }
+    this._orphanedNodes.clear()
     
-    // Clean up orphaned container mappings and remove containers
-    const orphanedContainers = this.getOrphanedContainers()
-    for (const containerId of orphanedContainers) {
-      this._containerParentMap.delete(containerId)
-      this.removeContainer(containerId)
+    // Remove orphaned containers
+    for (const containerId of this._orphanedContainers) {
+      this._containers.delete(containerId)
     }
+    this._orphanedContainers.clear()
   }
 
   moveNodeToContainer(nodeId: string, targetContainerId: string): void {
