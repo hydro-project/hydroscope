@@ -580,6 +580,9 @@ export class VisualizationState {
   }
 
   restoreEdgesForContainer(containerId: string): void {
+    // Get all descendants of this container
+    const allDescendants = this._getAllDescendantIds(containerId);
+    
     // Find aggregated edges that involve this container
     const aggregatedEdgesToRemove: string[] = [];
     const edgesToRestore: string[] = [];
@@ -589,6 +592,19 @@ export class VisualizationState {
         // This aggregated edge involves the container being expanded
         edgesToRestore.push(...aggEdge.originalEdgeIds);
         aggregatedEdgesToRemove.push(aggEdgeId);
+      }
+    }
+
+    // Also restore internal edges that were simply hidden
+    for (const [edgeId, edge] of this._edges) {
+      if (edge.hidden) {
+        const sourceInContainer = allDescendants.has(edge.source);
+        const targetInContainer = allDescendants.has(edge.target);
+        
+        // If this edge was hidden due to this container being collapsed
+        if (sourceInContainer || targetInContainer) {
+          edgesToRestore.push(edgeId);
+        }
       }
     }
 
@@ -611,6 +627,10 @@ export class VisualizationState {
 
         if (sourceVisible && targetVisible) {
           originalEdge.hidden = false;
+        } else {
+          // If endpoints are still hidden due to other collapsed containers,
+          // we need to re-aggregate this edge to the appropriate container
+          this._reAggregateEdgeIfNeeded(originalEdge);
         }
       }
     }
@@ -646,6 +666,91 @@ export class VisualizationState {
         timestamp: Date.now(),
       });
     }
+  }
+
+  private _reAggregateEdgeIfNeeded(edge: GraphEdge): void {
+    // Find the smallest collapsed container that contains the source or target
+    let sourceContainer: string | undefined;
+    let targetContainer: string | undefined;
+
+    // Check if source is in a collapsed container
+    const sourceNode = this._nodes.get(edge.source);
+    if (sourceNode && sourceNode.hidden) {
+      sourceContainer = this._findSmallestCollapsedContainerForNode(edge.source);
+    }
+
+    // Check if target is in a collapsed container
+    const targetNode = this._nodes.get(edge.target);
+    if (targetNode && targetNode.hidden) {
+      targetContainer = this._findSmallestCollapsedContainerForNode(edge.target);
+    }
+
+    // If either endpoint needs aggregation, create aggregated edge
+    if (sourceContainer || targetContainer) {
+      const aggregatedSource = sourceContainer || edge.source;
+      const aggregatedTarget = targetContainer || edge.target;
+
+      // Skip self-loops
+      if (aggregatedSource === aggregatedTarget) {
+        edge.hidden = true;
+        return;
+      }
+
+      // Create or update aggregated edge
+      const key = `${aggregatedSource}-${aggregatedTarget}`;
+      const aggregatedEdgeId = `agg-${sourceContainer || targetContainer}-${aggregatedSource}-${aggregatedTarget}`;
+      
+      let existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
+      if (existingAggEdge) {
+        // Add to existing aggregated edge
+        if (!existingAggEdge.originalEdgeIds.includes(edge.id)) {
+          existingAggEdge.originalEdgeIds.push(edge.id);
+        }
+      } else {
+        // Create new aggregated edge
+        const aggregatedEdge = {
+          id: aggregatedEdgeId,
+          source: aggregatedSource,
+          target: aggregatedTarget,
+          type: edge.type,
+          semanticTags: [...edge.semanticTags],
+          hidden: false,
+          aggregated: true as const,
+          originalEdgeIds: [edge.id],
+          aggregationSource: sourceContainer || targetContainer || '',
+        };
+
+        this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
+
+        // Update tracking structures
+        this._aggregatedToOriginalMap.set(aggregatedEdge.id, [edge.id]);
+        this._originalToAggregatedMap.set(edge.id, aggregatedEdge.id);
+
+        const containerForTracking = sourceContainer || targetContainer;
+        if (containerForTracking) {
+          if (!this._containerAggregationMap.has(containerForTracking)) {
+            this._containerAggregationMap.set(containerForTracking, []);
+          }
+          this._containerAggregationMap.get(containerForTracking)!.push(aggregatedEdge.id);
+        }
+      }
+
+      edge.hidden = true;
+    }
+  }
+
+  private _findSmallestCollapsedContainerForNode(nodeId: string): string | undefined {
+    let currentContainer = this._nodeContainerMap.get(nodeId);
+    
+    while (currentContainer) {
+      const container = this._containers.get(currentContainer);
+      if (container && container.collapsed) {
+        return currentContainer;
+      }
+      currentContainer = this._containerParentMap.get(currentContainer);
+    }
+    
+    return undefined;
   }
 
   getAggregatedEdges(): ReadonlyArray<AggregatedEdge> {

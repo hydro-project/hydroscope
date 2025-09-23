@@ -107,7 +107,7 @@ This ensures:
     - _Requirements: 10.1, 10.2, 10.3_
 
 - [-] 4. Implement edge aggregation management system
-  - [-] 4.1 Create AggregatedEdge data structures and tracking
+  - [x] 4.1 Create AggregatedEdge data structures and tracking
     - Implement AggregatedEdge interface for container boundary edges
     - Code edge aggregation tracking with bidirectional mapping to original edges
     - Implement efficient lookup structures for aggregated edge management
@@ -115,7 +115,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 4.1 create AggregatedEdge data structures and tracking"`
     - _Requirements: 2.1, 8a.5, 8a.6_
 
-  - [ ] 4.2 Implement edge aggregation and restoration algorithms
+  - [-] 4.2 Implement edge aggregation and restoration algorithms
     - Code edge aggregation algorithm for container collapse (internal edges become container boundary edges)
     - Implement edge restoration algorithm for container expand (aggregated edges restored to original internal connections)
     - Handle multi-container edge scenarios and nested container edge aggregation
