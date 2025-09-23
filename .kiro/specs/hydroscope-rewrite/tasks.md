@@ -56,7 +56,7 @@ This ensures:
   - _Requirements: 1.1, 6.1, 7.1_
 
 - [ ] 2. Implement VisualizationState core data management
-  - [-] 2.1 Create VisualizationState class with basic CRUD operations
+  - [x] 2.1 Create VisualizationState class with basic CRUD operations
     - **TDD Step 1 (RED)**: Write failing tests for node CRUD operations
     - **TDD Step 2 (GREEN)**: Implement node add/remove/update operations with validation
     - **TDD Step 3 (RED)**: Write failing tests for edge CRUD operations  
@@ -70,7 +70,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 2.1 create VisualizationState class with basic CRUD operations - tests passing"`
     - _Requirements: 2.1, 6.1_
 
-  - [ ] 2.2 Implement container hierarchy and relationship management
+  - [-] 2.2 Implement container hierarchy and relationship management
     - Code parent-child relationships between containers and nodes
     - Implement efficient lookup maps for O(1) relationship queries
     - Add validation for circular dependencies and orphaned nodes

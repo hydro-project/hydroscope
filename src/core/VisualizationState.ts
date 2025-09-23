@@ -19,6 +19,7 @@ export class VisualizationState {
   private _containers = new Map<string, Container>()
   private _aggregatedEdges = new Map<string, AggregatedEdge>()
   private _nodeContainerMap = new Map<string, string>()
+  private _containerParentMap = new Map<string, string>()
   private _layoutState: LayoutState = {
     phase: 'initial',
     layoutCount: 0,
@@ -107,11 +108,16 @@ export class VisualizationState {
 
   removeContainer(id: string): void {
     const container = this._containers.get(id)
+    this._containers.delete(id)
+    
+    // Clean up mappings for this container's children
     if (container) {
-      this._cleanupContainerMappings(container)
+      for (const childId of container.children) {
+        this._nodeContainerMap.delete(childId)
+        this._containerParentMap.delete(childId)
+      }
     }
     
-    this._containers.delete(id)
     this.validateInvariants()
   }
 
@@ -145,6 +151,9 @@ export class VisualizationState {
   }
 
   private _updateContainerWithMappings(container: Container): void {
+    // Check for circular dependencies before adding
+    this._validateNoCircularDependencies(container)
+    
     // If container already exists, clean up old mappings first
     const existingContainer = this._containers.get(container.id)
     if (existingContainer) {
@@ -158,16 +167,70 @@ export class VisualizationState {
       hidden: container.hidden ?? false
     })
     
-    // Update node-container mapping
+    // Update mappings for all children
+    this._updateChildMappings(container)
+    
+    // Also update any existing containers that might now have this as a parent
+    this._updateParentMappings()
+  }
+
+  private _updateChildMappings(container: Container): void {
     for (const childId of container.children) {
-      this._nodeContainerMap.set(childId, container.id)
+      if (this._containers.has(childId)) {
+        // Child is a container
+        this._containerParentMap.set(childId, container.id)
+      } else {
+        // Child is a node (or will be a node when added later)
+        this._nodeContainerMap.set(childId, container.id)
+      }
+    }
+  }
+
+  private _updateParentMappings(): void {
+    // Go through all containers and update parent mappings
+    for (const [containerId, container] of this._containers) {
+      for (const childId of container.children) {
+        if (this._containers.has(childId)) {
+          this._containerParentMap.set(childId, containerId)
+        }
+      }
     }
   }
 
   private _cleanupContainerMappings(container: Container): void {
     for (const childId of container.children) {
       this._nodeContainerMap.delete(childId)
+      this._containerParentMap.delete(childId)
     }
+  }
+
+  private _validateNoCircularDependencies(container: Container): void {
+    // Check for self-reference
+    if (container.children.has(container.id)) {
+      throw new Error(`Circular dependency detected: Container ${container.id} cannot contain itself`)
+    }
+    
+    // Check for circular dependencies through the hierarchy
+    for (const childId of container.children) {
+      // Check if childId already has container.id as a child (direct circular dependency)
+      const existingChild = this._containers.get(childId)
+      if (existingChild && existingChild.children.has(container.id)) {
+        throw new Error(`Circular dependency detected: ${container.id} and ${childId} would reference each other`)
+      }
+      
+      if (this._containers.has(childId)) {
+        // Check if making childId a child of container.id would create a cycle
+        // This happens if container.id is already a descendant of childId
+        if (this._isDescendantOf(container.id, childId)) {
+          throw new Error(`Circular dependency detected: Adding ${childId} to ${container.id} would create a cycle`)
+        }
+      }
+    }
+  }
+
+  private _isDescendantOf(potentialDescendant: string, ancestor: string): boolean {
+    const descendants = this.getContainerDescendants(ancestor)
+    return descendants.includes(potentialDescendant)
   }
 
   // Container Operations
@@ -262,6 +325,132 @@ export class VisualizationState {
 
   getContainerChildren(containerId: string): Set<string> {
     return this._containers.get(containerId)?.children || new Set()
+  }
+
+  // Container Hierarchy Methods
+  getContainerParent(containerId: string): string | undefined {
+    return this._containerParentMap.get(containerId)
+  }
+
+  getContainerAncestors(containerId: string): string[] {
+    const ancestors: string[] = []
+    let current = this.getContainerParent(containerId)
+    
+    while (current) {
+      ancestors.push(current)
+      current = this.getContainerParent(current)
+    }
+    
+    return ancestors
+  }
+
+  getContainerDescendants(containerId: string): string[] {
+    const descendants: string[] = []
+    const children = this.getContainerChildren(containerId)
+    
+    for (const childId of children) {
+      if (this._containers.has(childId)) {
+        descendants.push(childId)
+        descendants.push(...this.getContainerDescendants(childId))
+      }
+    }
+    
+    return descendants
+  }
+
+  getContainerNodes(containerId: string): Set<string> {
+    const container = this._containers.get(containerId)
+    if (!container) return new Set()
+    
+    const nodes = new Set<string>()
+    for (const childId of container.children) {
+      if (this._nodes.has(childId)) {
+        nodes.add(childId)
+      }
+    }
+    
+    return nodes
+  }
+
+  getAllNodesInHierarchy(containerId: string): Set<string> {
+    const allNodes = new Set<string>()
+    const container = this._containers.get(containerId)
+    if (!container) return allNodes
+    
+    for (const childId of container.children) {
+      if (this._nodes.has(childId)) {
+        allNodes.add(childId)
+      } else if (this._containers.has(childId)) {
+        const childNodes = this.getAllNodesInHierarchy(childId)
+        for (const nodeId of childNodes) {
+          allNodes.add(nodeId)
+        }
+      }
+    }
+    
+    return allNodes
+  }
+
+  getOrphanedNodes(): string[] {
+    const orphaned: string[] = []
+    
+    // Check all node-container mappings for non-existent containers
+    for (const [nodeId, containerId] of this._nodeContainerMap) {
+      if (!this._containers.has(containerId)) {
+        orphaned.push(nodeId)
+      }
+    }
+    
+    return orphaned
+  }
+
+  getOrphanedContainers(): string[] {
+    const orphaned: string[] = []
+    
+    // Check all container-parent mappings for non-existent parents
+    for (const [containerId, parentId] of this._containerParentMap) {
+      if (!this._containers.has(parentId)) {
+        orphaned.push(containerId)
+      }
+    }
+    
+    return orphaned
+  }
+
+  cleanupOrphanedEntities(): void {
+    // Clean up orphaned node mappings and remove nodes
+    const orphanedNodes = this.getOrphanedNodes()
+    for (const nodeId of orphanedNodes) {
+      this._nodeContainerMap.delete(nodeId)
+      this.removeNode(nodeId)
+    }
+    
+    // Clean up orphaned container mappings and remove containers
+    const orphanedContainers = this.getOrphanedContainers()
+    for (const containerId of orphanedContainers) {
+      this._containerParentMap.delete(containerId)
+      this.removeContainer(containerId)
+    }
+  }
+
+  moveNodeToContainer(nodeId: string, targetContainerId: string): void {
+    // Remove from current container
+    const currentContainerId = this.getNodeContainer(nodeId)
+    if (currentContainerId) {
+      const currentContainer = this._containers.get(currentContainerId)
+      if (currentContainer) {
+        currentContainer.children.delete(nodeId)
+      }
+    }
+    
+    // Add to target container
+    const targetContainer = this._containers.get(targetContainerId)
+    if (targetContainer) {
+      targetContainer.children.add(nodeId)
+      this._nodeContainerMap.set(nodeId, targetContainerId)
+    }
+    
+    this.validateInvariants()
   }
 
   // Layout State
