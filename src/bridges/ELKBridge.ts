@@ -4,10 +4,10 @@
  */
 
 import type { VisualizationState } from '../core/VisualizationState.js'
-import type { LayoutConfig, ELKNode, ELKEdge, ValidationResult } from '../types/core.js'
+import type { LayoutConfig, ELKNode, ValidationResult, GraphNode, Container } from '../types/core.js'
 
 export class ELKBridge {
-  constructor(private layoutConfig: Partial<LayoutConfig> = {}) {
+  constructor(private layoutConfig: LayoutConfig = {}) {
     // Set defaults for missing config
     const fullConfig: LayoutConfig = {
       algorithm: layoutConfig.algorithm || 'layered',
@@ -33,7 +33,7 @@ export class ELKBridge {
       layoutOptions: {
         'elk.algorithm': this.layoutConfig.algorithm,
         'elk.direction': this.layoutConfig.direction,
-        'elk.spacing.nodeNode': this.layoutConfig.spacing.toString()
+        'elk.spacing.nodeNode': (this.layoutConfig.spacing || 50).toString()
       }
     }
 
@@ -47,8 +47,7 @@ export class ELKBridge {
         elkNode.children!.push({
           id: node.id,
           width: 120,
-          height: 60,
-          labels: [{ text: node.label }]
+          height: 60
         })
       }
     }
@@ -60,8 +59,7 @@ export class ELKBridge {
         elkNode.children!.push({
           id: container.id,
           width: 150,
-          height: 80,
-          labels: [{ text: container.label }]
+          height: 80
         })
       } else {
         // Expanded container with children
@@ -70,15 +68,13 @@ export class ELKBridge {
           .map(node => ({
             id: node.id,
             width: 120,
-            height: 60,
-            labels: [{ text: node.label }]
+            height: 60
           }))
 
         elkNode.children!.push({
           id: container.id,
           width: 200,
           height: 150,
-          labels: [{ text: container.label }],
           children: containerChildren
         })
       }
@@ -112,11 +108,24 @@ export class ELKBridge {
   applyELKResults(state: VisualizationState, elkResult: ELKNode): void {
     if (!elkResult.children) return
 
-    // Validate ELK result
-    this.validateELKResult(elkResult)
+    try {
+      // Validate ELK result structure
+      this.validateELKResult(elkResult)
 
-    // Apply positions to nodes and containers
-    for (const elkChild of elkResult.children) {
+      // Apply positions to nodes and containers
+      this.applyPositionsToElements(state, elkResult.children)
+      
+      // Update layout state to indicate successful layout application
+      state.setLayoutPhase('ready')
+    } catch (error) {
+      // Handle layout application errors
+      state.setLayoutPhase('error')
+      throw new Error(`Failed to apply ELK layout results: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  private applyPositionsToElements(state: VisualizationState, elkChildren: ELKNode[]): void {
+    for (const elkChild of elkChildren) {
       if (elkChild.x === undefined || elkChild.y === undefined) {
         continue // Skip invalid results
       }
@@ -125,41 +134,36 @@ export class ELKBridge {
       const container = state.getContainer(elkChild.id)
 
       if (node) {
-        node.position = { x: elkChild.x, y: elkChild.y }
-        if (elkChild.width && elkChild.height) {
-          node.dimensions = { width: elkChild.width, height: elkChild.height }
-        }
+        this.applyNodePosition(node, elkChild)
+      } else if (container) {
+        this.applyContainerPosition(container, elkChild)
       }
-
-      if (container) {
-        container.position = { x: elkChild.x, y: elkChild.y }
-        if (elkChild.width && elkChild.height) {
-          container.dimensions = { width: elkChild.width, height: elkChild.height }
-        }
-      }
+      // Silently ignore unknown IDs (they may be from previous state)
 
       // Handle nested children (for expanded containers)
-      if (elkChild.children) {
-        for (const nestedChild of elkChild.children) {
-          if (nestedChild.x === undefined || nestedChild.y === undefined) {
-            continue
-          }
-
-          const nestedNode = state.getGraphNode(nestedChild.id)
-          if (nestedNode) {
-            nestedNode.position = { x: nestedChild.x, y: nestedChild.y }
-            if (nestedChild.width && nestedChild.height) {
-              nestedNode.dimensions = { width: nestedChild.width, height: nestedChild.height }
-            }
-          }
-        }
+      if (elkChild.children && elkChild.children.length > 0) {
+        this.applyPositionsToElements(state, elkChild.children)
       }
+    }
+  }
+
+  private applyNodePosition(node: GraphNode, elkChild: ELKNode): void {
+    node.position = { x: elkChild.x!, y: elkChild.y! }
+    if (elkChild.width && elkChild.height) {
+      node.dimensions = { width: elkChild.width, height: elkChild.height }
+    }
+  }
+
+  private applyContainerPosition(container: Container, elkChild: ELKNode): void {
+    container.position = { x: elkChild.x!, y: elkChild.y! }
+    if (elkChild.width && elkChild.height) {
+      container.dimensions = { width: elkChild.width, height: elkChild.height }
     }
   }
 
   // Configuration
   updateConfiguration(config: Partial<LayoutConfig>): void {
-    const newConfig = { ...this.layoutConfig, ...config }
+    const newConfig: LayoutConfig = { ...this.layoutConfig, ...config }
     this.validateConfiguration(newConfig)
     this.layoutConfig = newConfig
   }
@@ -168,11 +172,11 @@ export class ELKBridge {
     const validAlgorithms = ['layered', 'force', 'stress', 'mrtree']
     const validDirections = ['UP', 'DOWN', 'LEFT', 'RIGHT']
 
-    if (!validAlgorithms.includes(config.algorithm)) {
+    if (config.algorithm && !validAlgorithms.includes(config.algorithm)) {
       throw new Error('Invalid ELK algorithm')
     }
 
-    if (!validDirections.includes(config.direction)) {
+    if (config.direction && !validDirections.includes(config.direction)) {
       throw new Error('Invalid ELK direction')
     }
   }
@@ -180,10 +184,31 @@ export class ELKBridge {
   private validateELKResult(elkResult: ELKNode): void {
     if (!elkResult.children) return
 
-    for (const child of elkResult.children) {
+    this.validateELKChildren(elkResult.children)
+  }
+
+  private validateELKChildren(children: ELKNode[]): void {
+    for (const child of children) {
+      // Validate required position and dimension properties
       if (child.x === undefined || child.y === undefined || 
           child.width === undefined || child.height === undefined) {
-        throw new Error('Invalid ELK layout result')
+        throw new Error(`Invalid ELK layout result for element ${child.id}: missing position or dimensions`)
+      }
+
+      // Validate position values are finite numbers
+      if (!Number.isFinite(child.x) || !Number.isFinite(child.y) ||
+          !Number.isFinite(child.width) || !Number.isFinite(child.height)) {
+        throw new Error(`Invalid ELK layout result for element ${child.id}: non-finite position or dimensions`)
+      }
+
+      // Validate dimensions are positive
+      if (child.width <= 0 || child.height <= 0) {
+        throw new Error(`Invalid ELK layout result for element ${child.id}: non-positive dimensions`)
+      }
+
+      // Recursively validate nested children
+      if (child.children && child.children.length > 0) {
+        this.validateELKChildren(child.children)
       }
     }
   }

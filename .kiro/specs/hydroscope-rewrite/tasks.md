@@ -187,7 +187,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 6.1 create ELK format conversion from VisualizationState"`
     - _Requirements: 3.1, 3.3, 7.2_
 
-  - [ ] 6.2 Implement ELK result application back to VisualizationState
+  - [-] 6.2 Implement ELK result application back to VisualizationState
     - Code synchronous application of ELK layout results to node positions
     - Implement container dimension and position updates
     - Add layout validation and error handling

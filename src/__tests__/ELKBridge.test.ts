@@ -53,14 +53,12 @@ describe('ELKBridge', () => {
         {
           id: 'n1',
           width: 120,
-          height: 60,
-          labels: [{ text: 'Node 1' }]
+          height: 60
         },
         {
           id: 'n2', 
           width: 120,
-          height: 60,
-          labels: [{ text: 'Node 2' }]
+          height: 60
         }
       ])
     })
@@ -77,7 +75,7 @@ describe('ELKBridge', () => {
       const elkGraph = bridge.toELKGraph(state)
       
       expect(elkGraph.edges).toHaveLength(1)
-      expect(elkGraph.edges[0]).toEqual({
+      expect(elkGraph.edges![0]).toEqual({
         id: 'e1',
         sources: ['n1'],
         targets: ['n2']
@@ -98,11 +96,10 @@ describe('ELKBridge', () => {
       
       // Should only show the container, not the internal nodes
       expect(elkGraph.children).toHaveLength(1)
-      expect(elkGraph.children[0]).toEqual({
+      expect(elkGraph.children![0]).toEqual({
         id: 'c1',
         width: 150,
-        height: 80,
-        labels: [{ text: 'Container 1' }]
+        height: 80
       })
     })
 
@@ -120,23 +117,20 @@ describe('ELKBridge', () => {
       
       // Should show container with children
       expect(elkGraph.children).toHaveLength(1)
-      expect(elkGraph.children[0]).toEqual({
+      expect(elkGraph.children![0]).toEqual({
         id: 'c1',
         width: 200,
         height: 150,
-        labels: [{ text: 'Container 1' }],
         children: [
           {
             id: 'n1',
             width: 120,
-            height: 60,
-            labels: [{ text: 'Node 1' }]
+            height: 60
           },
           {
             id: 'n2',
             width: 120,
-            height: 60,
-            labels: [{ text: 'Node 2' }]
+            height: 60
           }
         ]
       })
@@ -161,13 +155,13 @@ describe('ELKBridge', () => {
       const elkGraph = bridge.toELKGraph(state)
       
       // Should have aggregated edges to/from container (exact count depends on implementation)
-      expect(elkGraph.edges.length).toBeGreaterThanOrEqual(2)
+      expect(elkGraph.edges!.length).toBeGreaterThanOrEqual(2)
       
       // Check that we have edges involving the container and external node
-      const hasContainerToN3 = elkGraph.edges.some(edge => 
+      const hasContainerToN3 = elkGraph.edges!.some(edge => 
         edge.sources.includes('c1') && edge.targets.includes('n3')
       )
-      const hasN3ToContainer = elkGraph.edges.some(edge => 
+      const hasN3ToContainer = elkGraph.edges!.some(edge => 
         edge.sources.includes('n3') && edge.targets.includes('c1')
       )
       
@@ -290,7 +284,73 @@ describe('ELKBridge', () => {
       
       expect(() => {
         bridge.applyLayout(state, invalidResult)
-      }).toThrow('Invalid ELK layout result')
+      }).toThrow('Invalid ELK layout result for element n1: missing position or dimensions')
+    })
+
+    it('should validate non-finite position values', () => {
+      const node1 = createTestNode('n1', 'Node 1')
+      state.addNode(node1)
+      
+      const invalidResult = {
+        id: 'root',
+        children: [
+          { id: 'n1', x: NaN, y: 50, width: 120, height: 60 }
+        ]
+      }
+      
+      expect(() => {
+        bridge.applyLayout(state, invalidResult)
+      }).toThrow('Invalid ELK layout result for element n1: non-finite position or dimensions')
+    })
+
+    it('should validate positive dimensions', () => {
+      const node1 = createTestNode('n1', 'Node 1')
+      state.addNode(node1)
+      
+      const invalidResult = {
+        id: 'root',
+        children: [
+          { id: 'n1', x: 100, y: 50, width: -120, height: 60 }
+        ]
+      }
+      
+      expect(() => {
+        bridge.applyLayout(state, invalidResult)
+      }).toThrow('Invalid ELK layout result for element n1: non-positive dimensions')
+    })
+
+    it('should update layout state on successful application', () => {
+      const node1 = createTestNode('n1', 'Node 1')
+      state.addNode(node1)
+      
+      const elkResult = {
+        id: 'root',
+        children: [
+          { id: 'n1', x: 100, y: 50, width: 120, height: 60 }
+        ]
+      }
+      
+      bridge.applyLayout(state, elkResult)
+      
+      expect(state.getLayoutState().phase).toBe('ready')
+    })
+
+    it('should update layout state to error on failure', () => {
+      const node1 = createTestNode('n1', 'Node 1')
+      state.addNode(node1)
+      
+      const invalidResult = {
+        id: 'root',
+        children: [
+          { id: 'n1', x: 100, y: 50, width: 0, height: 60 } // Invalid width
+        ]
+      }
+      
+      expect(() => {
+        bridge.applyLayout(state, invalidResult)
+      }).toThrow()
+      
+      expect(state.getLayoutState().phase).toBe('error')
     })
 
     it('should ignore layout results for non-existent nodes', () => {
@@ -305,6 +365,63 @@ describe('ELKBridge', () => {
       expect(() => {
         bridge.applyLayout(state, elkResult)
       }).not.toThrow()
+    })
+
+    it('should handle complex layout results with paxos.json-like data', () => {
+      // Create a more complex graph structure similar to paxos.json
+      const nodes = [
+        createTestNode('proposer1', 'Proposer 1'),
+        createTestNode('acceptor1', 'Acceptor 1'),
+        createTestNode('acceptor2', 'Acceptor 2'),
+        createTestNode('learner1', 'Learner 1')
+      ]
+      
+      const container = createTestContainer('paxos_cluster', ['proposer1', 'acceptor1', 'acceptor2'], 'Paxos Cluster')
+      
+      nodes.forEach(node => state.addNode(node))
+      state.addNode(createTestNode('learner1', 'Learner 1'))
+      state.addContainer(container)
+      
+      // Simulate ELK layout result with nested structure
+      const elkResult = {
+        id: 'root',
+        children: [
+          {
+            id: 'paxos_cluster',
+            x: 50,
+            y: 25,
+            width: 300,
+            height: 200,
+            children: [
+              { id: 'proposer1', x: 75, y: 50, width: 120, height: 60 },
+              { id: 'acceptor1', x: 75, y: 120, width: 120, height: 60 },
+              { id: 'acceptor2', x: 205, y: 120, width: 120, height: 60 }
+            ]
+          },
+          { id: 'learner1', x: 400, y: 100, width: 120, height: 60 }
+        ]
+      }
+      
+      bridge.applyLayout(state, elkResult)
+      
+      // Verify container position
+      const updatedContainer = state.getContainer('paxos_cluster')
+      expect(updatedContainer?.position).toEqual({ x: 50, y: 25 })
+      expect(updatedContainer?.dimensions).toEqual({ width: 300, height: 200 })
+      
+      // Verify nested node positions
+      const proposer = state.getGraphNode('proposer1')
+      const acceptor1 = state.getGraphNode('acceptor1')
+      const acceptor2 = state.getGraphNode('acceptor2')
+      const learner = state.getGraphNode('learner1')
+      
+      expect(proposer?.position).toEqual({ x: 75, y: 50 })
+      expect(acceptor1?.position).toEqual({ x: 75, y: 120 })
+      expect(acceptor2?.position).toEqual({ x: 205, y: 120 })
+      expect(learner?.position).toEqual({ x: 400, y: 100 })
+      
+      // Verify layout state
+      expect(state.getLayoutState().phase).toBe('ready')
     })
   })
 
