@@ -10,6 +10,8 @@ import type {
   ReactFlowNode,
   ReactFlowEdge,
 } from "../types/core.js";
+import type { CSSProperties } from "react";
+import { processSemanticTags } from "../utils/StyleProcessor.js";
 
 export class ReactFlowBridge {
   constructor(private styleConfig: StyleConfig) {}
@@ -39,6 +41,8 @@ export class ReactFlowBridge {
           longLabel: node.longLabel,
           showingLongLabel: node.showingLongLabel,
           nodeType: node.type,
+          semanticTags: node.semanticTags || [],
+          originalNode: node,
           onClick: interactionHandler ? (elementId: string, elementType: 'node' | 'container') => {
             if (elementType === 'node') {
               interactionHandler.handleNodeClick(elementId);
@@ -76,23 +80,99 @@ export class ReactFlowBridge {
 
   // Styling
   applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[] {
-    return nodes.map((node) => ({
-      ...node,
-      style: {
-        ...this.styleConfig.nodeStyles?.[node.data.nodeType],
+    return nodes.map((node) => {
+      // Get the original node data to access semantic tags
+      const nodeData = node.data as any;
+      const semanticTags = nodeData.semanticTags || [];
+      
+      // Start with type-based styles
+      const typeBasedStyle = this.styleConfig.nodeStyles?.[node.data.nodeType] || {};
+      
+      // Process semantic tags for styling (only if we have semantic tags and config)
+      let semanticStyle = {};
+      let appliedTags: string[] = [];
+      
+      if (semanticTags.length > 0 && (this.styleConfig.semanticMappings || this.styleConfig.propertyMappings)) {
+        const processedStyle = processSemanticTags(
+          semanticTags,
+          this.styleConfig,
+          nodeData.label,
+          'node'
+        );
+        semanticStyle = processedStyle.style;
+        appliedTags = processedStyle.appliedTags;
+      }
+
+      // Combine styles: type-based, then semantic, then existing
+      const combinedStyle = {
+        ...typeBasedStyle,
+        ...semanticStyle,
         ...node.style,
-      },
-    }));
+      };
+
+      return {
+        ...node,
+        style: combinedStyle,
+        data: {
+          ...node.data,
+          appliedSemanticTags: appliedTags,
+        },
+      };
+    });
   }
 
   applyEdgeStyles(edges: ReactFlowEdge[]): ReactFlowEdge[] {
-    return edges.map((edge) => ({
-      ...edge,
-      style: {
-        ...this.styleConfig.edgeStyles?.[edge.type],
+    return edges.map((edge) => {
+      // Get semantic tags from edge data
+      const edgeData = edge.data as any;
+      const semanticTags = edgeData?.semanticTags || [];
+      
+      // Start with type-based styles
+      const typeBasedStyle = this.styleConfig.edgeStyles?.[edge.type] || {};
+      
+      // Process semantic tags for styling (only if we have semantic tags and config)
+      let semanticStyle = {};
+      let appliedTags: string[] = [];
+      let animated = false;
+      let label = edge.label;
+      let markerEnd = edge.markerEnd;
+      let lineStyle: 'single' | 'double' = 'single';
+      
+      if (semanticTags.length > 0 && (this.styleConfig.semanticMappings || this.styleConfig.propertyMappings)) {
+        const processedStyle = processSemanticTags(
+          semanticTags,
+          this.styleConfig,
+          edge.label as string,
+          'edge'
+        );
+        semanticStyle = processedStyle.style;
+        appliedTags = processedStyle.appliedTags;
+        animated = processedStyle.animated;
+        label = processedStyle.label || edge.label;
+        markerEnd = processedStyle.markerEnd || edge.markerEnd;
+        lineStyle = processedStyle.lineStyle || 'single';
+      }
+
+      // Combine styles: type-based, then semantic, then existing
+      const combinedStyle = {
+        ...typeBasedStyle,
+        ...semanticStyle,
         ...edge.style,
-      },
-    }));
+      };
+
+      return {
+        ...edge,
+        style: combinedStyle,
+        animated: animated || edge.animated,
+        label: label,
+        markerEnd: markerEnd,
+        data: {
+          ...edgeData,
+          appliedSemanticTags: appliedTags,
+          lineStyle: lineStyle,
+        },
+      };
+    });
   }
 
   // Container Handling
@@ -150,6 +230,10 @@ export class ReactFlowBridge {
       source: edge.source,
       target: edge.target,
       type: edge.type || "default",
+      data: {
+        semanticTags: edge.semanticTags || [],
+        originalEdge: edge,
+      },
     };
   }
 
@@ -162,6 +246,12 @@ export class ReactFlowBridge {
       style: {
         strokeWidth: 3,
         stroke: "#ff6b6b",
+      },
+      data: {
+        semanticTags: aggregatedEdge.semanticTags || [],
+        originalEdgeIds: aggregatedEdge.originalEdgeIds || [],
+        aggregationSource: aggregatedEdge.aggregationSource,
+        aggregated: true,
       },
     };
   }

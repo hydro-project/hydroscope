@@ -110,6 +110,18 @@ export interface StyleConfig {
   nodeStyles?: Record<string, any>
   edgeStyles?: Record<string, any>
   containerStyles?: Record<string, any>
+  // Semantic tag to visual style mappings
+  semanticMappings?: Record<string, Record<string, Record<string, string | number>>>
+  // Direct property mappings (legacy support)
+  propertyMappings?: Record<string, string | EdgeStyleMapping>
+}
+
+interface EdgeStyleMapping {
+  reactFlowType?: string
+  style?: Record<string, unknown>
+  animated?: boolean
+  label?: string
+  styleTag?: string
 }
 
 export interface ReactFlowData {
@@ -139,6 +151,18 @@ export interface ReactFlowEdge {
   target: string
   type: string
   style?: Record<string, any>
+  animated?: boolean
+  label?: string
+  markerEnd?: string | object
+  data?: {
+    semanticTags?: string[]
+    appliedSemanticTags?: string[]
+    lineStyle?: 'single' | 'double'
+    originalEdge?: any
+    originalEdgeIds?: string[]
+    aggregationSource?: string
+    aggregated?: boolean
+  }
 }
 
 export interface ELKNode {

@@ -414,6 +414,258 @@ describe('ReactFlowBridge', () => {
     });
   });
 
+  describe('Semantic Tag Styling', () => {
+    it('should apply semantic tag styles to nodes', () => {
+      const semanticStyleConfig: StyleConfig = {
+        ...styleConfig,
+        semanticMappings: {
+          'importance': {
+            'Critical': { 'halo': 'light-red' },
+            'Normal': { 'halo': 'none' },
+          },
+        },
+      };
+
+      const semanticBridge = new ReactFlowBridge(semanticStyleConfig);
+      
+      const node: GraphNode = {
+        id: 'node1',
+        label: 'Critical Node',
+        longLabel: 'Critical Node',
+        type: 'process',
+        semanticTags: ['Critical'],
+        hidden: false
+      };
+
+      state.addNode(node);
+      const result = semanticBridge.toReactFlowData(state);
+
+      expect(result.nodes[0].style).toMatchObject({
+        haloColor: '#e74c3c', // light-red halo color
+      });
+      expect(result.nodes[0].data.appliedSemanticTags).toEqual(['Critical']);
+    });
+
+    it('should apply semantic tag styles to edges', () => {
+      const semanticStyleConfig: StyleConfig = {
+        ...styleConfig,
+        semanticMappings: {
+          'ordering': {
+            'TotalOrder': { 'line-pattern': 'solid' },
+            'NoOrder': { 'line-pattern': 'dashed' },
+          },
+          'bounds': {
+            'Bounded': { 'line-width': 1 },
+            'Unbounded': { 'line-width': 3 },
+          },
+        },
+      };
+
+      const semanticBridge = new ReactFlowBridge(semanticStyleConfig);
+      
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: ['TotalOrder', 'Unbounded'], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = semanticBridge.toReactFlowData(state);
+
+      expect(result.edges[0].style).toMatchObject({
+        strokeDasharray: undefined, // solid from TotalOrder
+        strokeWidth: 3, // from Unbounded
+      });
+      expect(result.edges[0].data?.appliedSemanticTags).toEqual(['TotalOrder', 'Unbounded']);
+      expect(result.edges[0].label).toBe('TU'); // First characters of applied tags
+    });
+
+    it('should handle edge animation from semantic tags', () => {
+      const semanticStyleConfig: StyleConfig = {
+        ...styleConfig,
+        semanticMappings: {
+          'flow': {
+            'Static': { 'animation': 'static' },
+            'Dynamic': { 'animation': 'animated' },
+          },
+        },
+      };
+
+      const semanticBridge = new ReactFlowBridge(semanticStyleConfig);
+      
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: ['Dynamic'], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = semanticBridge.toReactFlowData(state);
+
+      expect(result.edges[0].animated).toBe(true);
+      expect(result.edges[0].data?.appliedSemanticTags).toEqual(['Dynamic']);
+    });
+
+    it('should handle edge markers from semantic tags', () => {
+      const semanticStyleConfig: StyleConfig = {
+        ...styleConfig,
+        semanticMappings: {
+          'marker': {
+            'Open': { 'arrowhead': 'triangle-open' },
+            'Closed': { 'arrowhead': 'triangle-filled' },
+            'Circle': { 'arrowhead': 'circle-filled' },
+          },
+        },
+      };
+
+      const semanticBridge = new ReactFlowBridge(semanticStyleConfig);
+      
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: ['Circle'], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = semanticBridge.toReactFlowData(state);
+
+      expect(result.edges[0].markerEnd).toBe('url(#circle-filled)');
+      expect(result.edges[0].data?.appliedSemanticTags).toEqual(['Circle']);
+    });
+
+    it('should combine semantic styles with type-based styles', () => {
+      const semanticStyleConfig: StyleConfig = {
+        ...styleConfig,
+        semanticMappings: {
+          'thickness': {
+            'Thick': { 'line-width': 4 },
+          },
+        },
+      };
+
+      const semanticBridge = new ReactFlowBridge(semanticStyleConfig);
+      
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'control',
+        semanticTags: ['Thick'], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = semanticBridge.toReactFlowData(state);
+
+      // Should have both type-based style (control) and semantic style (Thick)
+      expect(result.edges[0].style).toMatchObject({
+        stroke: '#ff9800', // from control type
+        strokeWidth: 4, // from Thick semantic tag (overrides type-based strokeWidth: 1)
+        strokeDasharray: '5,5', // from control type
+      });
+    });
+
+    it('should handle edges with no semantic tags', () => {
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: [], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = bridge.toReactFlowData(state);
+
+      // Should have default semantic styling plus type-based styling
+      expect(result.edges[0].style).toMatchObject({
+        stroke: '#2196f3', // from dataflow type
+        strokeWidth: 2, // from dataflow type
+      });
+      expect(result.edges[0].data?.appliedSemanticTags).toEqual([]);
+    });
+
+    it('should preserve original labels when combining with semantic tags', () => {
+      const semanticStyleConfig: StyleConfig = {
+        ...styleConfig,
+        semanticMappings: {
+          'test': {
+            'Network': { 'line-width': 2 },
+          },
+        },
+      };
+
+      const semanticBridge = new ReactFlowBridge(semanticStyleConfig);
+      
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: ['Network'], hidden: false
+      };
+
+      // Add edge with original label
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = semanticBridge.toReactFlowData(state);
+
+      expect(result.edges[0].label).toBe('N'); // Just the semantic tag abbreviation since no original label
+    });
+  });
+
   describe('Paxos.json Integration', () => {
     it('should convert paxos.json data correctly', () => {
       const paxosData = loadPaxosTestData();
