@@ -199,7 +199,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 6.2 implement ELK result application back to VisualizationState"`
     - _Requirements: 3.2, 3.3_
 
-  - [-] 6.3 Add ELK configuration management and optimization
+  - [x] 6.3 Add ELK configuration management and optimization
     - Implement layout configuration updates and validation
     - Code ELK-specific optimizations for large graphs
     - Add layout hints and performance tuning
@@ -207,7 +207,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 6.3 add ELK configuration management and optimization"`
     - _Requirements: 3.5, 12.1_
 
-- [ ] 7. Implement ReactFlowBridge for rendering
+- [-] 7. Implement ReactFlowBridge for rendering
   - [ ] 7.1 Create ReactFlow format conversion from VisualizationState with edge aggregation and interaction support
     - Code synchronous conversion from VisualizationState to ReactFlow nodes/edges
     - Implement collapsed container rendering as single nodes with click handlers

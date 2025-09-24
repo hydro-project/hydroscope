@@ -3,120 +3,144 @@
  * Architectural constraints: Stateless, synchronous conversions, immutable output
  */
 
-import type { VisualizationState } from '../core/VisualizationState.js'
-import type { StyleConfig, ReactFlowData, ReactFlowNode, ReactFlowEdge } from '../types/core.js'
+import type { VisualizationState } from "../core/VisualizationState.js";
+import type {
+  StyleConfig,
+  ReactFlowData,
+  ReactFlowNode,
+  ReactFlowEdge,
+} from "../types/core.js";
 
 export class ReactFlowBridge {
   constructor(private styleConfig: StyleConfig) {}
 
   // Synchronous Conversion
-  toReactFlowData(state: VisualizationState): ReactFlowData {
-    const nodes = this.convertNodes(state)
-    const edges = this.convertEdges(state)
+  toReactFlowData(state: VisualizationState, interactionHandler?: any): ReactFlowData {
+    const nodes = this.convertNodes(state, interactionHandler);
+    const edges = this.convertEdges(state);
 
     return {
       nodes: this.applyNodeStyles(nodes),
-      edges: this.applyEdgeStyles(edges)
-    }
+      edges: this.applyEdgeStyles(edges),
+    };
   }
 
-  private convertNodes(state: VisualizationState): ReactFlowNode[] {
-    const nodes: ReactFlowNode[] = []
+  private convertNodes(state: VisualizationState, interactionHandler?: any): ReactFlowNode[] {
+    const nodes: ReactFlowNode[] = [];
 
     // Convert regular nodes
     for (const node of state.visibleNodes) {
       nodes.push({
         id: node.id,
-        type: 'default',
+        type: "default",
         position: node.position || { x: 0, y: 0 },
         data: {
           label: node.showingLongLabel ? node.longLabel : node.label,
           longLabel: node.longLabel,
           showingLongLabel: node.showingLongLabel,
-          nodeType: node.type
-        }
-      })
+          nodeType: node.type,
+          onClick: interactionHandler ? (elementId: string, elementType: 'node' | 'container') => {
+            if (elementType === 'node') {
+              interactionHandler.handleNodeClick(elementId);
+            }
+          } : undefined,
+        },
+      });
     }
 
     // Convert containers
     for (const container of state.visibleContainers) {
       if (container.collapsed) {
-        nodes.push(this.renderCollapsedContainer(container))
+        nodes.push(this.renderCollapsedContainer(container, interactionHandler));
       } else {
-        nodes.push(...this.renderExpandedContainer(container, state))
+        nodes.push(...this.renderExpandedContainer(container, state, interactionHandler));
       }
     }
 
-    return nodes
+    return nodes;
   }
 
   private convertEdges(state: VisualizationState): ReactFlowEdge[] {
-    const edges: ReactFlowEdge[] = []
+    const edges: ReactFlowEdge[] = [];
 
     for (const edge of state.visibleEdges) {
-      if ('aggregated' in edge && edge.aggregated) {
-        edges.push(this.renderAggregatedEdge(edge))
+      if ("aggregated" in edge && edge.aggregated) {
+        edges.push(this.renderAggregatedEdge(edge));
       } else {
-        edges.push(this.renderOriginalEdge(edge))
+        edges.push(this.renderOriginalEdge(edge));
       }
     }
 
-    return edges
+    return edges;
   }
 
   // Styling
   applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[] {
-    return nodes.map(node => ({
+    return nodes.map((node) => ({
       ...node,
       style: {
         ...this.styleConfig.nodeStyles?.[node.data.nodeType],
-        ...node.style
-      }
-    }))
+        ...node.style,
+      },
+    }));
   }
 
   applyEdgeStyles(edges: ReactFlowEdge[]): ReactFlowEdge[] {
-    return edges.map(edge => ({
+    return edges.map((edge) => ({
       ...edge,
       style: {
         ...this.styleConfig.edgeStyles?.[edge.type],
-        ...edge.style
-      }
-    }))
+        ...edge.style,
+      },
+    }));
   }
 
   // Container Handling
-  renderCollapsedContainer(container: any): ReactFlowNode {
+  renderCollapsedContainer(container: any, interactionHandler?: any): ReactFlowNode {
     return {
       id: container.id,
-      type: 'container',
+      type: "container",
       position: container.position || { x: 0, y: 0 },
       data: {
         label: container.label,
-        nodeType: 'container',
+        nodeType: "container",
         collapsed: true,
-        containerChildren: container.children.size
+        containerChildren: container.children.size,
+        onClick: interactionHandler ? (elementId: string, elementType: 'node' | 'container') => {
+          if (elementType === 'container') {
+            interactionHandler.handleContainerClick(elementId);
+          }
+        } : undefined,
       },
-      style: this.styleConfig.containerStyles?.collapsed
-    }
+      style: this.styleConfig.containerStyles?.collapsed,
+    };
   }
 
-  renderExpandedContainer(container: any, state: VisualizationState): ReactFlowNode[] {
+  renderExpandedContainer(
+    container: any,
+    state: VisualizationState,
+    interactionHandler?: any
+  ): ReactFlowNode[] {
     // For expanded containers, we render the container boundary and its children
     const containerNode: ReactFlowNode = {
       id: container.id,
-      type: 'container',
+      type: "container",
       position: container.position || { x: 0, y: 0 },
       data: {
         label: container.label,
-        nodeType: 'container',
+        nodeType: "container",
         collapsed: false,
-        containerChildren: container.children.size
+        containerChildren: container.children.size,
+        onClick: interactionHandler ? (elementId: string, elementType: 'node' | 'container') => {
+          if (elementType === 'container') {
+            interactionHandler.handleContainerClick(elementId);
+          }
+        } : undefined,
       },
-      style: this.styleConfig.containerStyles?.expanded
-    }
+      style: this.styleConfig.containerStyles?.expanded,
+    };
 
-    return [containerNode]
+    return [containerNode];
   }
 
   // Edge Handling
@@ -125,8 +149,8 @@ export class ReactFlowBridge {
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      type: edge.type || 'default'
-    }
+      type: edge.type || "default",
+    };
   }
 
   renderAggregatedEdge(aggregatedEdge: any): ReactFlowEdge {
@@ -134,11 +158,11 @@ export class ReactFlowBridge {
       id: aggregatedEdge.id,
       source: aggregatedEdge.source,
       target: aggregatedEdge.target,
-      type: 'aggregated',
+      type: "aggregated",
       style: {
         strokeWidth: 3,
-        stroke: '#ff6b6b'
-      }
-    }
+        stroke: "#ff6b6b",
+      },
+    };
   }
 }
