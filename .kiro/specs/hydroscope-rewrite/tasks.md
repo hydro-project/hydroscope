@@ -344,7 +344,7 @@ This ensures:
     - Write unit tests for JSON parsing with paxos.json
     - _Requirements: 7.1, 2.1_
 
-- [-] 14. Implement search UI components
+- [x] 14. Implement search UI components
   - [x] 14.1 Create search input and results display
     - Code search input component with real-time feedback
     - Implement search results display with highlighting
@@ -352,22 +352,22 @@ This ensures:
     - Write unit tests for search UI components
     - _Requirements: 9.1, 9.2_
 
-  - [-] 14.2 Integrate search with container expansion
+  - [x] 14.2 Integrate search with container expansion
     - Code search result expansion of collapsed containers
     - Implement search expansion prevention of smart collapse
     - Add search result highlighting in rendered graph
     - Write unit tests for search integration
     - _Requirements: 9.3, 10.3_
 
-- [ ] 15. Create application integration tests
-  - [ ] 15.1 Test complete application with paxos.json
+- [x] 15. Create application integration tests
+  - [x] 15.1 Test complete application with paxos.json
     - Test file upload of paxos.json through UI
     - Verify container controls work correctly with loaded data
     - Test search functionality with paxos.json nodes
     - Validate application performance and responsiveness
     - _Requirements: 7.1, 7.2, 7.4, 12.1_
 
-  - [ ] 15.2 Test error handling and edge cases
+  - [x] 15.2 Test error handling and edge cases
     - Test invalid file upload scenarios
     - Test application behavior with corrupted data
     - Test UI responsiveness under high load
