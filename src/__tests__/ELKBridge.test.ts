@@ -27,16 +27,12 @@ describe('ELKBridge', () => {
     it('should convert empty VisualizationState to empty ELK graph', () => {
       const elkGraph = bridge.toELKGraph(state)
       
-      expect(elkGraph).toEqual({
-        id: 'root',
-        children: [],
-        edges: [],
-        layoutOptions: {
-          'elk.algorithm': 'layered',
-          'elk.direction': 'DOWN',
-          'elk.spacing.nodeNode': '50'
-        }
-      })
+      expect(elkGraph.id).toBe('root')
+      expect(elkGraph.children).toEqual([])
+      expect(elkGraph.edges).toEqual([])
+      expect(elkGraph.layoutOptions['elk.algorithm']).toBe('layered')
+      expect(elkGraph.layoutOptions['elk.direction']).toBe('DOWN')
+      expect(elkGraph.layoutOptions['elk.spacing.nodeNode']).toBe('50') // Default spacing
     })
 
     it('should convert nodes to ELK children', () => {
@@ -49,18 +45,15 @@ describe('ELKBridge', () => {
       const elkGraph = bridge.toELKGraph(state)
       
       expect(elkGraph.children).toHaveLength(2)
-      expect(elkGraph.children).toEqual([
-        {
-          id: 'n1',
-          width: 120,
-          height: 60
-        },
-        {
-          id: 'n2', 
-          width: 120,
-          height: 60
-        }
-      ])
+      expect(elkGraph.children![0].id).toBe('n1')
+      expect(elkGraph.children![0].width).toBe(120)
+      expect(elkGraph.children![0].height).toBe(60)
+      expect(elkGraph.children![0].layoutOptions).toBeDefined()
+      
+      expect(elkGraph.children![1].id).toBe('n2')
+      expect(elkGraph.children![1].width).toBe(120)
+      expect(elkGraph.children![1].height).toBe(60)
+      expect(elkGraph.children![1].layoutOptions).toBeDefined()
     })
 
     it('should convert edges to ELK edges', () => {
@@ -96,11 +89,10 @@ describe('ELKBridge', () => {
       
       // Should only show the container, not the internal nodes
       expect(elkGraph.children).toHaveLength(1)
-      expect(elkGraph.children![0]).toEqual({
-        id: 'c1',
-        width: 150,
-        height: 80
-      })
+      expect(elkGraph.children![0].id).toBe('c1')
+      expect(elkGraph.children![0].width).toBe(150)
+      expect(elkGraph.children![0].height).toBeGreaterThanOrEqual(80) // Size may be optimized
+      expect(elkGraph.children![0].layoutOptions).toBeDefined()
     })
 
     it('should handle expanded containers with nested structure', () => {
@@ -117,23 +109,22 @@ describe('ELKBridge', () => {
       
       // Should show container with children
       expect(elkGraph.children).toHaveLength(1)
-      expect(elkGraph.children![0]).toEqual({
-        id: 'c1',
-        width: 200,
-        height: 150,
-        children: [
-          {
-            id: 'n1',
-            width: 120,
-            height: 60
-          },
-          {
-            id: 'n2',
-            width: 120,
-            height: 60
-          }
-        ]
-      })
+      const elkContainer = elkGraph.children![0]
+      expect(elkContainer.id).toBe('c1')
+      expect(elkContainer.width).toBeGreaterThanOrEqual(200) // Size may be optimized
+      expect(elkContainer.height).toBeGreaterThanOrEqual(150) // Size may be optimized
+      expect(elkContainer.children).toHaveLength(2)
+      expect(elkContainer.layoutOptions).toBeDefined()
+      
+      expect(elkContainer.children![0].id).toBe('n1')
+      expect(elkContainer.children![0].width).toBe(120)
+      expect(elkContainer.children![0].height).toBe(60)
+      expect(elkContainer.children![0].layoutOptions).toBeDefined()
+      
+      expect(elkContainer.children![1].id).toBe('n2')
+      expect(elkContainer.children![1].width).toBe(120)
+      expect(elkContainer.children![1].height).toBe(60)
+      expect(elkContainer.children![1].layoutOptions).toBeDefined()
     })
 
     it('should handle aggregated edges for collapsed containers', () => {
@@ -180,11 +171,9 @@ describe('ELKBridge', () => {
       
       const elkGraph = customBridge.toELKGraph(state)
       
-      expect(elkGraph.layoutOptions).toEqual({
-        'elk.algorithm': 'force',
-        'elk.direction': 'RIGHT',
-        'elk.spacing.nodeNode': '100'
-      })
+      expect(elkGraph.layoutOptions['elk.algorithm']).toBe('force')
+      expect(elkGraph.layoutOptions['elk.direction']).toBe('RIGHT')
+      expect(elkGraph.layoutOptions['elk.spacing.nodeNode']).toBe('100')
     })
   })
 
@@ -440,11 +429,9 @@ describe('ELKBridge', () => {
       
       const elkGraph = bridge.toELKGraph(state)
       
-      expect(elkGraph.layoutOptions).toEqual({
-        'elk.algorithm': 'force',
-        'elk.direction': 'LEFT',
-        'elk.spacing.nodeNode': '75'
-      })
+      expect(elkGraph.layoutOptions['elk.algorithm']).toBe('force')
+      expect(elkGraph.layoutOptions['elk.direction']).toBe('LEFT')
+      expect(elkGraph.layoutOptions['elk.spacing.nodeNode']).toBe('75')
     })
 
     it('should validate layout configuration', () => {
@@ -454,7 +441,7 @@ describe('ELKBridge', () => {
           direction: 'DOWN',
           spacing: 50
         })
-      }).toThrow('Invalid ELK algorithm')
+      }).toThrow('Invalid ELK algorithm: invalid')
       
       expect(() => {
         new ELKBridge({
@@ -462,7 +449,260 @@ describe('ELKBridge', () => {
           direction: 'INVALID' as any,
           spacing: 50
         })
-      }).toThrow('Invalid ELK direction')
+      }).toThrow('Invalid ELK direction: INVALID')
+    })
+
+    it('should validate numeric configuration values', () => {
+      expect(() => {
+        new ELKBridge({ spacing: -10 })
+      }).toThrow('Spacing must be a non-negative finite number')
+
+      expect(() => {
+        new ELKBridge({ nodeSpacing: NaN })
+      }).toThrow('Node spacing must be a non-negative finite number')
+
+      expect(() => {
+        new ELKBridge({ aspectRatio: 0 })
+      }).toThrow('Aspect ratio must be a positive finite number')
+
+      expect(() => {
+        new ELKBridge({ nodeSize: { width: -10, height: 50 } })
+      }).toThrow('Node width must be a positive finite number')
+    })
+
+    it('should get current configuration', () => {
+      const config = {
+        algorithm: 'stress' as const,
+        direction: 'UP' as const,
+        spacing: 60,
+        nodeSpacing: 25,
+        compactLayout: true
+      }
+      
+      const customBridge = new ELKBridge(config)
+      const retrievedConfig = customBridge.getConfiguration()
+      
+      expect(retrievedConfig.algorithm).toBe('stress')
+      expect(retrievedConfig.direction).toBe('UP')
+      expect(retrievedConfig.spacing).toBe(60)
+      expect(retrievedConfig.nodeSpacing).toBe(25)
+      expect(retrievedConfig.compactLayout).toBe(true)
+    })
+
+    it('should reset configuration to defaults', () => {
+      bridge.updateConfiguration({
+        algorithm: 'force',
+        direction: 'LEFT',
+        spacing: 100,
+        compactLayout: true
+      })
+      
+      bridge.resetConfiguration()
+      const config = bridge.getConfiguration()
+      
+      expect(config.algorithm).toBe('layered')
+      expect(config.direction).toBe('DOWN')
+      expect(config.nodeSpacing).toBe(50)
+      expect(config.compactLayout).toBe(false)
+    })
+
+    it('should handle advanced configuration options', () => {
+      const advancedConfig = {
+        algorithm: 'layered' as const,
+        nodeSpacing: 30,
+        layerSpacing: 40,
+        edgeSpacing: 15,
+        portSpacing: 12,
+        separateConnectedComponents: true,
+        mergeEdges: true,
+        aspectRatio: 2.0,
+        containerPadding: 25,
+        hierarchicalLayout: true,
+        compactLayout: true,
+        elkOptions: {
+          'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+          'elk.stress.epsilon': '0.1'
+        }
+      }
+      
+      const customBridge = new ELKBridge(advancedConfig)
+      const node1 = createTestNode('n1', 'Node 1')
+      state.addNode(node1)
+      
+      const elkGraph = customBridge.toELKGraph(state)
+      
+      expect(elkGraph.layoutOptions['elk.spacing.nodeNode']).toBe('30')
+      expect(elkGraph.layoutOptions['elk.layered.spacing.nodeNodeBetweenLayers']).toBe('40')
+      expect(elkGraph.layoutOptions['elk.spacing.edgeNode']).toBe('15')
+      expect(elkGraph.layoutOptions['elk.spacing.portPort']).toBe('12')
+      expect(elkGraph.layoutOptions['elk.separateConnectedComponents']).toBe('true')
+      expect(elkGraph.layoutOptions['elk.aspectRatio']).toBe('2')
+      expect(elkGraph.layoutOptions['elk.hierarchyHandling']).toBe('INCLUDE_CHILDREN')
+      expect(elkGraph.layoutOptions['elk.layered.crossingMinimization.strategy']).toBe('LAYER_SWEEP')
+      expect(elkGraph.layoutOptions['elk.stress.epsilon']).toBe('0.1')
+    })
+  })
+
+  describe('performance optimization', () => {
+    it('should generate performance hints for small graphs', () => {
+      const nodes = [
+        createTestNode('n1', 'Node 1'),
+        createTestNode('n2', 'Node 2')
+      ]
+      const edges = [createTestEdge('e1', 'n1', 'n2')]
+      const containers: any[] = []
+      
+      nodes.forEach(node => state.addNode(node))
+      edges.forEach(edge => state.addEdge(edge))
+      
+      bridge.toELKGraph(state) // This generates performance hints
+      const hints = bridge.getPerformanceHints()
+      
+      expect(hints).toBeDefined()
+      expect(hints!.nodeCount).toBe(2)
+      expect(hints!.edgeCount).toBe(1)
+      expect(hints!.containerCount).toBe(0)
+      expect(hints!.isLargeGraph).toBe(false)
+    })
+
+    it('should generate performance hints for large graphs', () => {
+      // Create a large graph
+      for (let i = 0; i < 150; i++) {
+        state.addNode(createTestNode(`n${i}`, `Node ${i}`))
+      }
+      for (let i = 0; i < 250; i++) {
+        const source = `n${i % 150}`
+        const target = `n${(i + 1) % 150}`
+        state.addEdge(createTestEdge(`e${i}`, source, target))
+      }
+      
+      bridge.toELKGraph(state)
+      const hints = bridge.getPerformanceHints()
+      
+      expect(hints).toBeDefined()
+      expect(hints!.nodeCount).toBe(150)
+      expect(hints!.edgeCount).toBe(250)
+      expect(hints!.isLargeGraph).toBe(true)
+      expect(hints!.recommendedAlgorithm).toBeDefined()
+    })
+
+    it('should apply performance optimizations for large graphs', () => {
+      // Create a large graph with containers
+      for (let i = 0; i < 120; i++) {
+        state.addNode(createTestNode(`n${i}`, `Node ${i}`))
+      }
+      for (let i = 0; i < 15; i++) {
+        const children = [`n${i * 8}`, `n${i * 8 + 1}`, `n${i * 8 + 2}`]
+        state.addContainer(createTestContainer(`c${i}`, children, `Container ${i}`))
+      }
+      
+      const elkGraph = bridge.toELKGraph(state)
+      
+      // Should have performance optimizations applied
+      expect(elkGraph.layoutOptions['elk.separateConnectedComponents']).toBe('true')
+      expect(elkGraph.layoutOptions['elk.spacing.componentComponent']).toBe('20')
+      expect(elkGraph.layoutOptions['elk.hierarchyHandling']).toBe('INCLUDE_CHILDREN')
+    })
+
+    it('should analyze layout complexity', () => {
+      // Small graph
+      state.addNode(createTestNode('n1', 'Node 1'))
+      state.addNode(createTestNode('n2', 'Node 2'))
+      state.addEdge(createTestEdge('e1', 'n1', 'n2'))
+      
+      const smallAnalysis = bridge.analyzeLayoutComplexity(state)
+      expect(smallAnalysis.complexity).toBe('low')
+      expect(smallAnalysis.estimatedLayoutTime).toBeLessThan(200)
+      
+      // Large graph
+      for (let i = 2; i < 300; i++) {
+        state.addNode(createTestNode(`n${i}`, `Node ${i}`))
+      }
+      for (let i = 2; i < 299; i++) { // Avoid creating edge to non-existent node
+        state.addEdge(createTestEdge(`e${i}`, `n${i}`, `n${i + 1}`))
+      }
+      
+      const largeAnalysis = bridge.analyzeLayoutComplexity(state)
+      expect(largeAnalysis.complexity).toBe('high')
+      expect(largeAnalysis.estimatedLayoutTime).toBeGreaterThan(1000)
+      expect(largeAnalysis.recommendations).toContain('Enable separate connected components')
+    })
+
+    it('should calculate optimal node sizes based on labels', () => {
+      const shortLabelNode = createTestNode('n1', 'Short')
+      const longLabelNode = createTestNode('n2', 'This is a very long label that should affect sizing')
+      longLabelNode.showingLongLabel = true
+      
+      state.addNode(shortLabelNode)
+      state.addNode(longLabelNode)
+      
+      const elkGraph = bridge.toELKGraph(state)
+      
+      // Find the nodes in the ELK graph
+      const shortNode = elkGraph.children!.find(child => child.id === 'n1')
+      const longNode = elkGraph.children!.find(child => child.id === 'n2')
+      
+      expect(shortNode?.width).toBeDefined()
+      expect(longNode?.width).toBeDefined()
+      expect(longNode!.width).toBeGreaterThan(shortNode!.width)
+    })
+
+    it('should calculate optimal container sizes', () => {
+      const nodes = [
+        createTestNode('n1', 'Node 1'),
+        createTestNode('n2', 'Node 2'),
+        createTestNode('n3', 'Node 3')
+      ]
+      nodes.forEach(node => state.addNode(node))
+      
+      const smallContainer = createTestContainer('c1', ['n1'], 'Small Container')
+      const largeContainer = createTestContainer('c2', ['n2', 'n3'], 'Large Container')
+      
+      state.addContainer(smallContainer)
+      state.addContainer(largeContainer)
+      
+      // Test collapsed containers
+      state.collapseContainer('c1')
+      state.collapseContainer('c2')
+      
+      const elkGraph = bridge.toELKGraph(state)
+      
+      const smallContainerNode = elkGraph.children!.find(child => child.id === 'c1')
+      const largeContainerNode = elkGraph.children!.find(child => child.id === 'c2')
+      
+      expect(smallContainerNode?.width).toBeDefined()
+      expect(largeContainerNode?.width).toBeDefined()
+      // Container with more children should be larger
+      expect(largeContainerNode!.height).toBeGreaterThanOrEqual(smallContainerNode!.height)
+    })
+
+    it('should handle layout options for semantic tags', () => {
+      const importantNode = createTestNode('n1', 'Important Node')
+      importantNode.semanticTags = ['important']
+      
+      const centralNode = createTestNode('n2', 'Central Node')
+      centralNode.semanticTags = ['central']
+      
+      state.addNode(importantNode)
+      state.addNode(centralNode)
+      
+      const elkGraph = bridge.toELKGraph(state)
+      
+      const importantELKNode = elkGraph.children!.find(child => child.id === 'n1')
+      const centralELKNode = elkGraph.children!.find(child => child.id === 'n2')
+      
+      expect(importantELKNode?.layoutOptions?.['elk.priority']).toBe('10')
+      expect(centralELKNode?.layoutOptions?.['elk.layered.layering.nodePromotion.strategy']).toBe('NONE')
+    })
+
+    it('should clear performance hints when configuration is updated', () => {
+      state.addNode(createTestNode('n1', 'Node 1'))
+      
+      bridge.toELKGraph(state) // Generate hints
+      expect(bridge.getPerformanceHints()).toBeDefined()
+      
+      bridge.updateConfiguration({ algorithm: 'force' })
+      expect(bridge.getPerformanceHints()).toBeUndefined()
     })
   })
 })

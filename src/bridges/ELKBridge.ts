@@ -4,18 +4,36 @@
  */
 
 import type { VisualizationState } from '../core/VisualizationState.js'
-import type { LayoutConfig, ELKNode, ValidationResult, GraphNode, Container } from '../types/core.js'
+import type { LayoutConfig, ELKNode, ValidationResult, GraphNode, Container, PerformanceHints } from '../types/core.js'
 
 export class ELKBridge {
+  private performanceHints?: PerformanceHints
+
   constructor(private layoutConfig: LayoutConfig = {}) {
-    // Set defaults for missing config
+    // Validate input config first
+    this.validateConfiguration(layoutConfig)
+    
+    // Set defaults for missing config with performance-aware defaults
     const fullConfig: LayoutConfig = {
       algorithm: layoutConfig.algorithm || 'layered',
       direction: layoutConfig.direction || 'DOWN',
-      spacing: layoutConfig.spacing || 50
+      spacing: layoutConfig.spacing,
+      nodeSpacing: layoutConfig.nodeSpacing ?? 20,
+      layerSpacing: layoutConfig.layerSpacing ?? 25,
+      edgeSpacing: layoutConfig.edgeSpacing ?? 10,
+      portSpacing: layoutConfig.portSpacing ?? 10,
+      separateConnectedComponents: layoutConfig.separateConnectedComponents ?? true,
+      mergeEdges: layoutConfig.mergeEdges ?? false,
+      mergeHierarchyEdges: layoutConfig.mergeHierarchyEdges ?? false,
+      aspectRatio: layoutConfig.aspectRatio ?? 1.6,
+      nodeSize: layoutConfig.nodeSize || { width: 120, height: 60 },
+      containerPadding: layoutConfig.containerPadding ?? 20,
+      hierarchicalLayout: layoutConfig.hierarchicalLayout ?? true,
+      compactLayout: layoutConfig.compactLayout ?? false,
+      interactiveLayout: layoutConfig.interactiveLayout ?? false,
+      elkOptions: layoutConfig.elkOptions || {}
     }
     
-    this.validateConfiguration(fullConfig)
     this.layoutConfig = fullConfig
   }
 
@@ -26,15 +44,17 @@ export class ELKBridge {
     const visibleEdges = state.visibleEdges
     const aggregatedEdges = state.getAggregatedEdges()
 
+    // Generate performance hints for optimization
+    this.performanceHints = this.generatePerformanceHints(visibleNodes, visibleEdges, visibleContainers)
+    
+    // Apply performance-based configuration adjustments
+    const optimizedConfig = this.applyPerformanceOptimizations(this.layoutConfig, this.performanceHints)
+
     const elkNode: ELKNode = {
       id: 'root',
       children: [],
       edges: [],
-      layoutOptions: {
-        'elk.algorithm': this.layoutConfig.algorithm,
-        'elk.direction': this.layoutConfig.direction,
-        'elk.spacing.nodeNode': (this.layoutConfig.spacing || 50).toString()
-      }
+      layoutOptions: this.buildLayoutOptions(optimizedConfig)
     }
 
     // Convert visible nodes (not in collapsed containers)
@@ -44,10 +64,12 @@ export class ELKBridge {
       
       if (!parentContainer) {
         // Node is not in a container or container is collapsed
+        const nodeSize = this.calculateOptimalNodeSize(node, optimizedConfig)
         elkNode.children!.push({
           id: node.id,
-          width: 120,
-          height: 60
+          width: nodeSize.width,
+          height: nodeSize.height,
+          layoutOptions: this.getNodeLayoutOptions(node, optimizedConfig)
         })
       }
     }
@@ -56,26 +78,34 @@ export class ELKBridge {
     for (const container of visibleContainers) {
       if (container.collapsed) {
         // Collapsed container as single node
+        const containerSize = this.calculateOptimalContainerSize(container, optimizedConfig, true)
         elkNode.children!.push({
           id: container.id,
-          width: 150,
-          height: 80
+          width: containerSize.width,
+          height: containerSize.height,
+          layoutOptions: this.getContainerLayoutOptions(container, optimizedConfig)
         })
       } else {
         // Expanded container with children
         const containerChildren = visibleNodes
           .filter(node => container.children.has(node.id))
-          .map(node => ({
-            id: node.id,
-            width: 120,
-            height: 60
-          }))
+          .map(node => {
+            const nodeSize = this.calculateOptimalNodeSize(node, optimizedConfig)
+            return {
+              id: node.id,
+              width: nodeSize.width,
+              height: nodeSize.height,
+              layoutOptions: this.getNodeLayoutOptions(node, optimizedConfig)
+            }
+          })
 
+        const containerSize = this.calculateOptimalContainerSize(container, optimizedConfig, false, containerChildren.length)
         elkNode.children!.push({
           id: container.id,
-          width: 200,
-          height: 150,
-          children: containerChildren
+          width: containerSize.width,
+          height: containerSize.height,
+          children: containerChildren,
+          layoutOptions: this.getContainerLayoutOptions(container, optimizedConfig)
         })
       }
     }
@@ -161,23 +191,350 @@ export class ELKBridge {
     }
   }
 
-  // Configuration
+  // Configuration Management
   updateConfiguration(config: Partial<LayoutConfig>): void {
     const newConfig: LayoutConfig = { ...this.layoutConfig, ...config }
     this.validateConfiguration(newConfig)
     this.layoutConfig = newConfig
+    // Clear performance hints to force recalculation
+    this.performanceHints = undefined
+  }
+
+  getConfiguration(): Readonly<LayoutConfig> {
+    return { ...this.layoutConfig }
+  }
+
+  resetConfiguration(): void {
+    this.layoutConfig = {
+      algorithm: 'layered',
+      direction: 'DOWN',
+      nodeSpacing: 50,
+      layerSpacing: 25,
+      edgeSpacing: 10,
+      portSpacing: 10,
+      separateConnectedComponents: true,
+      mergeEdges: false,
+      mergeHierarchyEdges: false,
+      aspectRatio: 1.6,
+      nodeSize: { width: 120, height: 60 },
+      containerPadding: 20,
+      hierarchicalLayout: true,
+      compactLayout: false,
+      interactiveLayout: false,
+      elkOptions: {}
+    }
+    this.performanceHints = undefined
+  }
+
+  // Performance Optimization Methods
+  generatePerformanceHints(nodes: readonly GraphNode[], edges: readonly any[], containers: readonly Container[]): PerformanceHints {
+    const nodeCount = nodes.length
+    const edgeCount = edges.length
+    const containerCount = containers.length
+    
+    // Calculate maximum nesting depth
+    const maxDepth = this.calculateMaxContainerDepth(containers)
+    
+    // Determine if this is a large graph
+    const isLargeGraph = nodeCount > 100 || edgeCount > 200 || containerCount > 20
+    
+    // Recommend algorithm based on graph characteristics
+    let recommendedAlgorithm = this.layoutConfig.algorithm
+    let recommendedOptions: Record<string, string> = {}
+    
+    if (isLargeGraph) {
+      if (containerCount > 10) {
+        recommendedAlgorithm = 'layered' // Better for hierarchical structures
+        recommendedOptions = {
+          'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
+          'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+          'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP'
+        }
+      } else if (edgeCount > nodeCount * 2) {
+        recommendedAlgorithm = 'stress' // Better for dense graphs
+        recommendedOptions = {
+          'elk.stress.epsilon': '0.1',
+          'elk.stress.iterationLimit': '1000'
+        }
+      }
+    }
+    
+    return {
+      nodeCount,
+      edgeCount,
+      containerCount,
+      maxDepth,
+      isLargeGraph,
+      recommendedAlgorithm,
+      recommendedOptions
+    }
+  }
+
+  applyPerformanceOptimizations(config: LayoutConfig, hints: PerformanceHints): LayoutConfig {
+    const optimizedConfig = { ...config }
+    
+    if (hints.isLargeGraph) {
+      // Enable optimizations for large graphs
+      optimizedConfig.separateConnectedComponents = true
+      optimizedConfig.compactLayout = true
+      
+      // Adjust spacing for better performance
+      if (hints.nodeCount > 200) {
+        optimizedConfig.nodeSpacing = Math.max((optimizedConfig.nodeSpacing || 20) * 0.8, 10)
+        optimizedConfig.layerSpacing = Math.max((optimizedConfig.layerSpacing || 25) * 0.8, 15)
+      }
+      
+      // Use recommended algorithm if not explicitly set
+      if (!config.algorithm && hints.recommendedAlgorithm) {
+        optimizedConfig.algorithm = hints.recommendedAlgorithm
+      }
+      
+      // Merge recommended ELK options
+      if (hints.recommendedOptions) {
+        optimizedConfig.elkOptions = {
+          ...optimizedConfig.elkOptions,
+          ...hints.recommendedOptions
+        }
+      }
+    }
+    
+    // Optimize for deep hierarchies
+    if (hints.maxDepth > 3) {
+      optimizedConfig.hierarchicalLayout = true
+      optimizedConfig.containerPadding = Math.max((optimizedConfig.containerPadding || 20) * 0.7, 10)
+    }
+    
+    return optimizedConfig
+  }
+
+  private calculateMaxContainerDepth(containers: readonly Container[]): number {
+    // For now, return a simple estimate - in a full implementation,
+    // this would traverse the container hierarchy
+    return containers.length > 0 ? Math.ceil(Math.log2(containers.length + 1)) : 0
+  }
+
+  private buildLayoutOptions(config: LayoutConfig): Record<string, any> {
+    const options: Record<string, any> = {
+      'elk.algorithm': config.algorithm || 'layered',
+      'elk.direction': config.direction || 'DOWN',
+      'elk.spacing.nodeNode': (config.spacing !== undefined ? config.spacing : (config.nodeSpacing !== undefined ? config.nodeSpacing : 50)).toString(),
+      'elk.spacing.edgeNode': (config.edgeSpacing || 10).toString(),
+      'elk.spacing.edgeEdge': (config.edgeSpacing || 10).toString(),
+      'elk.layered.spacing.nodeNodeBetweenLayers': (config.layerSpacing || 25).toString(),
+      'elk.spacing.portPort': (config.portSpacing || 10).toString()
+    }
+    
+    // Add performance optimizations
+    if (config.separateConnectedComponents) {
+      options['elk.separateConnectedComponents'] = 'true'
+    }
+    
+    if (config.compactLayout) {
+      options['elk.spacing.componentComponent'] = '20'
+      options['elk.layered.compaction.postCompaction.strategy'] = 'EDGE_LENGTH'
+    }
+    
+    if (config.hierarchicalLayout) {
+      options['elk.hierarchyHandling'] = 'INCLUDE_CHILDREN'
+    }
+    
+    if (config.interactiveLayout) {
+      options['elk.interactiveLayout'] = 'true'
+    }
+    
+    // Add aspect ratio hint
+    if (config.aspectRatio) {
+      options['elk.aspectRatio'] = config.aspectRatio.toString()
+    }
+    
+    // Merge custom ELK options
+    if (config.elkOptions) {
+      Object.assign(options, config.elkOptions)
+    }
+    
+    return options
+  }
+
+  private calculateOptimalNodeSize(node: GraphNode, config: LayoutConfig): { width: number; height: number } {
+    const baseSize = config.nodeSize || { width: 120, height: 60 }
+    
+    // Adjust size based on label length for better readability
+    const labelLength = node.showingLongLabel ? node.longLabel.length : node.label.length
+    const widthMultiplier = Math.max(1, Math.min(2, labelLength / 20))
+    
+    return {
+      width: Math.round(baseSize.width * widthMultiplier),
+      height: baseSize.height
+    }
+  }
+
+  private calculateOptimalContainerSize(
+    container: Container, 
+    config: LayoutConfig, 
+    collapsed: boolean, 
+    childCount: number = 0
+  ): { width: number; height: number } {
+    if (collapsed) {
+      // Collapsed container size based on label and child count
+      const baseWidth = 150
+      const baseHeight = 80
+      const labelMultiplier = Math.max(1, container.label.length / 15)
+      const childMultiplier = Math.max(1, Math.sqrt(childCount) / 2)
+      
+      return {
+        width: Math.round(baseWidth * labelMultiplier),
+        height: Math.round(baseHeight * childMultiplier)
+      }
+    } else {
+      // Expanded container size based on children and padding
+      const padding = config.containerPadding || 20
+      const baseWidth = 200 + (childCount * 30)
+      const baseHeight = 150 + (childCount * 20)
+      
+      return {
+        width: baseWidth + (padding * 2),
+        height: baseHeight + (padding * 2)
+      }
+    }
+  }
+
+  private getNodeLayoutOptions(node: GraphNode, config: LayoutConfig): Record<string, any> {
+    const options: Record<string, any> = {}
+    
+    // Add node-specific layout hints based on semantic tags
+    if (node.semanticTags.includes('important')) {
+      options['elk.priority'] = '10'
+    }
+    
+    if (node.semanticTags.includes('central')) {
+      options['elk.layered.layering.nodePromotion.strategy'] = 'NONE'
+    }
+    
+    return options
+  }
+
+  private getContainerLayoutOptions(container: Container, config: LayoutConfig): Record<string, any> {
+    const options: Record<string, any> = {}
+    
+    // Container-specific layout options
+    options['elk.padding'] = `[top=${config.containerPadding || 20},left=${config.containerPadding || 20},bottom=${config.containerPadding || 20},right=${config.containerPadding || 20}]`
+    
+    if (config.hierarchicalLayout) {
+      options['elk.hierarchyHandling'] = 'INCLUDE_CHILDREN'
+    }
+    
+    return options
+  }
+
+  // Performance Analysis
+  getPerformanceHints(): PerformanceHints | undefined {
+    return this.performanceHints ? { ...this.performanceHints } : undefined
+  }
+
+  analyzeLayoutComplexity(state: VisualizationState): {
+    complexity: 'low' | 'medium' | 'high' | 'very_high'
+    estimatedLayoutTime: number
+    recommendations: string[]
+  } {
+    const nodes = state.visibleNodes
+    const edges = state.visibleEdges
+    const containers = state.visibleContainers
+    
+    const nodeCount = nodes.length
+    const edgeCount = edges.length
+    const containerCount = containers.length
+    
+    let complexity: 'low' | 'medium' | 'high' | 'very_high' = 'low'
+    let estimatedLayoutTime = 100 // Base time in ms
+    const recommendations: string[] = []
+    
+    // Analyze complexity
+    if (nodeCount > 500 || edgeCount > 1000) {
+      complexity = 'very_high'
+      estimatedLayoutTime = 5000
+      recommendations.push('Consider using stress algorithm for very large graphs')
+      recommendations.push('Enable compact layout for better performance')
+    } else if (nodeCount > 200 || edgeCount > 400) {
+      complexity = 'high'
+      estimatedLayoutTime = 2000
+      recommendations.push('Enable separate connected components')
+      recommendations.push('Consider reducing node spacing')
+    } else if (nodeCount > 50 || edgeCount > 100) {
+      complexity = 'medium'
+      estimatedLayoutTime = 500
+      recommendations.push('Current settings should work well')
+    }
+    
+    // Container-specific recommendations
+    if (containerCount > 20) {
+      recommendations.push('Use hierarchical layout for better container handling')
+    }
+    
+    return {
+      complexity,
+      estimatedLayoutTime,
+      recommendations
+    }
   }
 
   private validateConfiguration(config: LayoutConfig): void {
-    const validAlgorithms = ['layered', 'force', 'stress', 'mrtree']
+    const validAlgorithms = ['layered', 'force', 'stress', 'mrtree', 'radial', 'disco']
     const validDirections = ['UP', 'DOWN', 'LEFT', 'RIGHT']
 
     if (config.algorithm && !validAlgorithms.includes(config.algorithm)) {
-      throw new Error('Invalid ELK algorithm')
+      throw new Error(`Invalid ELK algorithm: ${config.algorithm}. Valid options: ${validAlgorithms.join(', ')}`)
     }
 
     if (config.direction && !validDirections.includes(config.direction)) {
-      throw new Error('Invalid ELK direction')
+      throw new Error(`Invalid ELK direction: ${config.direction}. Valid options: ${validDirections.join(', ')}`)
+    }
+
+    // Validate numeric values
+    if (config.spacing !== undefined && (config.spacing < 0 || !Number.isFinite(config.spacing))) {
+      throw new Error('Spacing must be a non-negative finite number')
+    }
+
+    if (config.nodeSpacing !== undefined && (config.nodeSpacing < 0 || !Number.isFinite(config.nodeSpacing))) {
+      throw new Error('Node spacing must be a non-negative finite number')
+    }
+
+    if (config.layerSpacing !== undefined && (config.layerSpacing < 0 || !Number.isFinite(config.layerSpacing))) {
+      throw new Error('Layer spacing must be a non-negative finite number')
+    }
+
+    if (config.edgeSpacing !== undefined && (config.edgeSpacing < 0 || !Number.isFinite(config.edgeSpacing))) {
+      throw new Error('Edge spacing must be a non-negative finite number')
+    }
+
+    if (config.portSpacing !== undefined && (config.portSpacing < 0 || !Number.isFinite(config.portSpacing))) {
+      throw new Error('Port spacing must be a non-negative finite number')
+    }
+
+    if (config.aspectRatio !== undefined && (config.aspectRatio <= 0 || !Number.isFinite(config.aspectRatio))) {
+      throw new Error('Aspect ratio must be a positive finite number')
+    }
+
+    if (config.containerPadding !== undefined && (config.containerPadding < 0 || !Number.isFinite(config.containerPadding))) {
+      throw new Error('Container padding must be a non-negative finite number')
+    }
+
+    // Validate node size
+    if (config.nodeSize) {
+      if (config.nodeSize.width <= 0 || !Number.isFinite(config.nodeSize.width)) {
+        throw new Error('Node width must be a positive finite number')
+      }
+      if (config.nodeSize.height <= 0 || !Number.isFinite(config.nodeSize.height)) {
+        throw new Error('Node height must be a positive finite number')
+      }
+    }
+
+    // Validate ELK options
+    if (config.elkOptions) {
+      for (const [key, value] of Object.entries(config.elkOptions)) {
+        if (typeof key !== 'string' || typeof value !== 'string') {
+          throw new Error('ELK options must be string key-value pairs')
+        }
+      }
     }
   }
 

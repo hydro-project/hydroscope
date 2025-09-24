@@ -75,6 +75,35 @@ export interface LayoutConfig {
   algorithm?: string
   spacing?: number
   direction?: 'DOWN' | 'UP' | 'LEFT' | 'RIGHT'
+  // Advanced ELK configuration options
+  nodeSpacing?: number
+  layerSpacing?: number
+  edgeSpacing?: number
+  portSpacing?: number
+  // Performance optimizations
+  separateConnectedComponents?: boolean
+  mergeEdges?: boolean
+  mergeHierarchyEdges?: boolean
+  // Layout hints
+  aspectRatio?: number
+  nodeSize?: { width: number; height: number }
+  containerPadding?: number
+  // Large graph optimizations
+  hierarchicalLayout?: boolean
+  compactLayout?: boolean
+  interactiveLayout?: boolean
+  // ELK-specific options
+  elkOptions?: Record<string, string>
+}
+
+export interface PerformanceHints {
+  nodeCount: number
+  edgeCount: number
+  containerCount: number
+  maxDepth: number
+  isLargeGraph: boolean
+  recommendedAlgorithm?: string
+  recommendedOptions?: Record<string, string>
 }
 
 export interface StyleConfig {
