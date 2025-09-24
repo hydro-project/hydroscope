@@ -140,6 +140,8 @@ export interface ReactFlowNode {
     nodeType: string
     collapsed?: boolean
     containerChildren?: number
+    semanticTags?: string[]
+    appliedSemanticTags?: string[]
     onClick?: (elementId: string, elementType: 'node' | 'container') => void
   }
   style?: Record<string, any>

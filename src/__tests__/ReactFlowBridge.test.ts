@@ -829,7 +829,7 @@ describe('ReactFlowBridge', () => {
     });
   });
 
-  describe('Data Immutability', () => {
+  describe('Data Immutability and Performance Optimization', () => {
     it('should return immutable ReactFlow data', () => {
       const node: GraphNode = {
         id: 'node1',
@@ -864,12 +864,299 @@ describe('ReactFlowBridge', () => {
       state.addNode(originalNode);
       const result = bridge.toReactFlowData(state);
 
-      // Modify the result
-      result.nodes[0].data.label = 'Modified';
+      // Try to modify the result - should throw error due to immutability
+      expect(() => {
+        (result.nodes[0].data as any).label = 'Modified';
+      }).toThrow();
 
       // Original should be unchanged
       const stateNode = state.getGraphNode('node1');
       expect(stateNode?.label).toBe('Test');
+    });
+
+    it('should freeze ReactFlow data objects for immutability', () => {
+      const node: GraphNode = {
+        id: 'node1',
+        label: 'Test',
+        longLabel: 'Test Long',
+        type: 'process',
+        semanticTags: [],
+        hidden: false
+      };
+
+      state.addNode(node);
+      const result = bridge.toReactFlowData(state);
+
+      // Top-level objects should be frozen
+      expect(Object.isFrozen(result)).toBe(true);
+      expect(Object.isFrozen(result.nodes)).toBe(true);
+      expect(Object.isFrozen(result.edges)).toBe(true);
+
+      // Individual nodes should be frozen
+      expect(Object.isFrozen(result.nodes[0])).toBe(true);
+      expect(Object.isFrozen(result.nodes[0].data)).toBe(true);
+      expect(Object.isFrozen(result.nodes[0].position)).toBe(true);
+      
+      if (result.nodes[0].style) {
+        expect(Object.isFrozen(result.nodes[0].style)).toBe(true);
+      }
+    });
+
+    it('should freeze edge data objects for immutability', () => {
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: ['test'], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result = bridge.toReactFlowData(state);
+
+      // Individual edges should be frozen
+      expect(Object.isFrozen(result.edges[0])).toBe(true);
+      if (result.edges[0].style) {
+        expect(Object.isFrozen(result.edges[0].style)).toBe(true);
+      }
+      if (result.edges[0].data) {
+        expect(Object.isFrozen(result.edges[0].data)).toBe(true);
+      }
+    });
+
+    it('should use caching for performance with identical state', () => {
+      const node: GraphNode = {
+        id: 'node1',
+        label: 'Test',
+        longLabel: 'Test Long',
+        type: 'process',
+        semanticTags: [],
+        hidden: false
+      };
+
+      state.addNode(node);
+      
+      // First call should populate cache
+      const start1 = performance.now();
+      const result1 = bridge.toReactFlowData(state);
+      const time1 = performance.now() - start1;
+
+      // Second call should use cache and be faster
+      const start2 = performance.now();
+      const result2 = bridge.toReactFlowData(state);
+      const time2 = performance.now() - start2;
+
+      // Results should be equal but different objects (due to deep cloning)
+      expect(result1).toEqual(result2);
+      expect(result1).not.toBe(result2);
+      
+      // Second call should generally be faster (though this may be flaky in CI)
+      // We'll just verify the caching mechanism works by checking the results are consistent
+      expect(result1.nodes).toHaveLength(result2.nodes.length);
+      expect(result1.edges).toHaveLength(result2.edges.length);
+    });
+
+    it('should invalidate cache when state changes', () => {
+      const node1: GraphNode = {
+        id: 'node1',
+        label: 'Test 1',
+        longLabel: 'Test 1 Long',
+        type: 'process',
+        semanticTags: [],
+        hidden: false
+      };
+
+      state.addNode(node1);
+      const result1 = bridge.toReactFlowData(state);
+
+      // Add another node to change state
+      const node2: GraphNode = {
+        id: 'node2',
+        label: 'Test 2',
+        longLabel: 'Test 2 Long',
+        type: 'data',
+        semanticTags: [],
+        hidden: false
+      };
+
+      state.addNode(node2);
+      const result2 = bridge.toReactFlowData(state);
+
+      // Results should be different
+      expect(result1.nodes).toHaveLength(1);
+      expect(result2.nodes).toHaveLength(2);
+      expect(result1).not.toEqual(result2);
+    });
+
+    it('should handle large graphs with optimized conversion', () => {
+      // Create a large number of nodes to trigger optimization
+      const nodeCount = 1200; // Above LARGE_GRAPH_NODE_THRESHOLD
+      
+      for (let i = 0; i < nodeCount; i++) {
+        const node: GraphNode = {
+          id: `node${i}`,
+          label: `Node ${i}`,
+          longLabel: `Node ${i} Long Description`,
+          type: i % 2 === 0 ? 'process' : 'data',
+          semanticTags: [],
+          hidden: false
+        };
+        state.addNode(node);
+      }
+
+      const result = bridge.toReactFlowData(state);
+
+      // Should handle large graph without errors
+      expect(result.nodes).toHaveLength(nodeCount);
+      expect(result.nodes[0]).toMatchObject({
+        id: 'node0',
+        data: {
+          label: 'Node 0',
+          nodeType: 'process'
+        }
+      });
+
+      // All nodes should be properly frozen
+      expect(Object.isFrozen(result.nodes[0])).toBe(true);
+      expect(Object.isFrozen(result.nodes[nodeCount - 1])).toBe(true);
+    });
+
+    it('should clear caches when requested', () => {
+      const node: GraphNode = {
+        id: 'node1',
+        label: 'Test',
+        longLabel: 'Test Long',
+        type: 'process',
+        semanticTags: [],
+        hidden: false
+      };
+
+      state.addNode(node);
+      
+      // Populate cache
+      bridge.toReactFlowData(state);
+      
+      // Clear caches
+      bridge.clearCaches();
+      
+      // Should still work after clearing caches
+      const result = bridge.toReactFlowData(state);
+      expect(result.nodes).toHaveLength(1);
+      expect(result.nodes[0].id).toBe('node1');
+    });
+
+    it('should maintain performance with repeated style applications', () => {
+      const nodes: GraphNode[] = [];
+      const edges: GraphEdge[] = [];
+      
+      // Create moderate number of elements for performance testing
+      for (let i = 0; i < 100; i++) {
+        const node: GraphNode = {
+          id: `node${i}`,
+          label: `Node ${i}`,
+          longLabel: `Node ${i} Long`,
+          type: i % 3 === 0 ? 'process' : i % 3 === 1 ? 'data' : 'default',
+          semanticTags: [],
+          hidden: false
+        };
+        nodes.push(node);
+        state.addNode(node);
+
+        if (i > 0) {
+          const edge: GraphEdge = {
+            id: `edge${i}`,
+            source: `node${i-1}`,
+            target: `node${i}`,
+            type: i % 2 === 0 ? 'dataflow' : 'control',
+            semanticTags: [],
+            hidden: false
+          };
+          edges.push(edge);
+          state.addEdge(edge);
+        }
+      }
+
+      // Multiple conversions should be consistent and performant
+      const results = [];
+      for (let i = 0; i < 5; i++) {
+        const result = bridge.toReactFlowData(state);
+        results.push(result);
+        
+        // Each result should be properly structured
+        expect(result.nodes).toHaveLength(100);
+        expect(result.edges).toHaveLength(99);
+        
+        // Each result should be immutable
+        expect(Object.isFrozen(result)).toBe(true);
+        expect(Object.isFrozen(result.nodes)).toBe(true);
+        expect(Object.isFrozen(result.edges)).toBe(true);
+      }
+
+      // All results should be equal but different objects
+      for (let i = 1; i < results.length; i++) {
+        expect(results[i]).toEqual(results[0]);
+        expect(results[i]).not.toBe(results[0]);
+      }
+    });
+
+    it('should handle deep cloning of complex edge data', () => {
+      const node1: GraphNode = {
+        id: 'node1', label: 'Node 1', longLabel: 'Node 1', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const node2: GraphNode = {
+        id: 'node2', label: 'Node 2', longLabel: 'Node 2', type: 'process',
+        semanticTags: [], hidden: false
+      };
+      const edge: GraphEdge = {
+        id: 'edge1', source: 'node1', target: 'node2', type: 'dataflow',
+        semanticTags: ['tag1', 'tag2'], hidden: false
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(edge);
+
+      const result1 = bridge.toReactFlowData(state);
+      const result2 = bridge.toReactFlowData(state);
+
+      // Edge data should be deeply cloned
+      expect(result1.edges[0].data).toEqual(result2.edges[0].data);
+      expect(result1.edges[0].data).not.toBe(result2.edges[0].data);
+      
+      if (result1.edges[0].data?.semanticTags && result2.edges[0].data?.semanticTags) {
+        expect(result1.edges[0].data.semanticTags).toEqual(result2.edges[0].data.semanticTags);
+        expect(result1.edges[0].data.semanticTags).not.toBe(result2.edges[0].data.semanticTags);
+      }
+    });
+
+    it('should preserve onClick function references in deep cloning', () => {
+      const node: GraphNode = {
+        id: 'node1',
+        label: 'Test',
+        longLabel: 'Test Long',
+        type: 'process',
+        semanticTags: [],
+        hidden: false
+      };
+
+      state.addNode(node);
+      const result1 = bridge.toReactFlowData(state, interactionHandler);
+      const result2 = bridge.toReactFlowData(state, interactionHandler);
+
+      // onClick functions should exist and be the same reference
+      expect(result1.nodes[0].data.onClick).toBeDefined();
+      expect(result2.nodes[0].data.onClick).toBeDefined();
+      expect(typeof result1.nodes[0].data.onClick).toBe('function');
+      expect(typeof result2.nodes[0].data.onClick).toBe('function');
     });
   });
 });

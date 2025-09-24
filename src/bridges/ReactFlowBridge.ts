@@ -10,20 +10,215 @@ import type {
   ReactFlowNode,
   ReactFlowEdge,
 } from "../types/core.js";
-import type { CSSProperties } from "react";
 import { processSemanticTags } from "../utils/StyleProcessor.js";
 
+// Performance optimization constants
+const LARGE_GRAPH_NODE_THRESHOLD = 1000;
+const LARGE_GRAPH_EDGE_THRESHOLD = 2000;
+const PERFORMANCE_CACHE_SIZE = 100;
+
 export class ReactFlowBridge {
+  private styleCache = new Map<string, any>();
+  private nodeCache = new Map<string, ReactFlowNode>();
+  private edgeCache = new Map<string, ReactFlowEdge>();
+  private lastStateHash: string | null = null;
+  private lastResult: ReactFlowData | null = null;
+
   constructor(private styleConfig: StyleConfig) {}
 
-  // Synchronous Conversion
-  toReactFlowData(state: VisualizationState, interactionHandler?: any): ReactFlowData {
-    const nodes = this.convertNodes(state, interactionHandler);
-    const edges = this.convertEdges(state);
+  // Clear caches when needed (for testing or memory management)
+  clearCaches(): void {
+    this.styleCache.clear();
+    this.nodeCache.clear();
+    this.edgeCache.clear();
+    this.lastStateHash = null;
+    this.lastResult = null;
+  }
 
+  // Synchronous Conversion with immutability and performance optimizations
+  toReactFlowData(state: VisualizationState, interactionHandler?: any): ReactFlowData {
+    // Generate state hash for caching
+    const stateHash = this.generateStateHash(state, interactionHandler);
+    
+    // Return cached result if state hasn't changed
+    if (this.lastStateHash === stateHash && this.lastResult) {
+      return this.deepCloneReactFlowData(this.lastResult);
+    }
+
+    // Detect large graphs for performance optimizations
+    const isLargeGraph = this.isLargeGraph(state);
+    
+    // Convert with appropriate optimization strategy
+    const nodes = isLargeGraph 
+      ? this.convertNodesOptimized(state, interactionHandler)
+      : this.convertNodes(state, interactionHandler);
+    
+    const edges = isLargeGraph
+      ? this.convertEdgesOptimized(state)
+      : this.convertEdges(state);
+
+    // Create immutable result
+    const result: ReactFlowData = Object.freeze({
+      nodes: Object.freeze(this.applyNodeStyles(nodes)),
+      edges: Object.freeze(this.applyEdgeStyles(edges)),
+    });
+
+    // Cache result for performance
+    this.lastStateHash = stateHash;
+    this.lastResult = result;
+
+    // Return deep clone to ensure immutability
+    return this.deepCloneReactFlowData(result);
+  }
+
+  // Performance optimization helpers
+  private generateStateHash(state: VisualizationState, interactionHandler?: any): string {
+    // Simple hash based on visible element counts and interaction handler presence
+    const nodeCount = state.visibleNodes.length;
+    const edgeCount = state.visibleEdges.length;
+    const containerCount = state.visibleContainers.length;
+    const hasHandler = !!interactionHandler;
+    
+    // Include layout state for cache invalidation
+    const layoutState = state.getLayoutState();
+    
+    return `${nodeCount}-${edgeCount}-${containerCount}-${hasHandler}-${layoutState.lastUpdate}`;
+  }
+
+  private isLargeGraph(state: VisualizationState): boolean {
+    return state.visibleNodes.length > LARGE_GRAPH_NODE_THRESHOLD ||
+           state.visibleEdges.length > LARGE_GRAPH_EDGE_THRESHOLD;
+  }
+
+  private deepCloneReactFlowData(data: ReactFlowData): ReactFlowData {
+    const clonedNodes = data.nodes.map(node => Object.freeze({
+      ...node,
+      position: Object.freeze({ ...node.position }),
+      data: Object.freeze({ 
+        ...node.data,
+        // Deep clone onClick function reference (but not the function itself)
+        onClick: node.data.onClick,
+        semanticTags: node.data.semanticTags ? Object.freeze([...node.data.semanticTags]) : undefined,
+        appliedSemanticTags: node.data.appliedSemanticTags ? Object.freeze([...node.data.appliedSemanticTags]) : undefined
+      }),
+      style: node.style ? Object.freeze({ ...node.style }) : undefined
+    }));
+
+    const clonedEdges = data.edges.map(edge => Object.freeze({
+      ...edge,
+      style: edge.style ? Object.freeze({ ...edge.style }) : undefined,
+      data: edge.data ? Object.freeze({ 
+        ...edge.data,
+        semanticTags: edge.data.semanticTags ? Object.freeze([...edge.data.semanticTags]) : undefined,
+        appliedSemanticTags: edge.data.appliedSemanticTags ? Object.freeze([...edge.data.appliedSemanticTags]) : undefined,
+        originalEdgeIds: edge.data.originalEdgeIds ? Object.freeze([...edge.data.originalEdgeIds]) : undefined
+      }) : undefined
+    }));
+
+    return Object.freeze({
+      nodes: Object.freeze(clonedNodes),
+      edges: Object.freeze(clonedEdges)
+    });
+  }
+
+  // Optimized conversion for large graphs
+  private convertNodesOptimized(state: VisualizationState, interactionHandler?: any): ReactFlowNode[] {
+    const nodes: ReactFlowNode[] = [];
+    const visibleNodes = state.visibleNodes;
+    const visibleContainers = state.visibleContainers;
+
+    // Batch process nodes for better performance
+    for (let i = 0; i < visibleNodes.length; i++) {
+      const node = visibleNodes[i];
+      const cacheKey = `node-${node.id}-${node.showingLongLabel}-${!!interactionHandler}`;
+      
+      let reactFlowNode = this.nodeCache.get(cacheKey);
+      if (!reactFlowNode) {
+        reactFlowNode = this.createReactFlowNode(node, interactionHandler);
+        
+        // Limit cache size to prevent memory issues
+        if (this.nodeCache.size < PERFORMANCE_CACHE_SIZE) {
+          this.nodeCache.set(cacheKey, reactFlowNode);
+        }
+      }
+      
+      nodes.push(reactFlowNode);
+    }
+
+    // Process containers
+    for (let i = 0; i < visibleContainers.length; i++) {
+      const container = visibleContainers[i];
+      const cacheKey = `container-${container.id}-${container.collapsed}-${!!interactionHandler}`;
+      
+      let containerNodes = this.nodeCache.get(cacheKey);
+      if (!containerNodes) {
+        if (container.collapsed) {
+          containerNodes = [this.renderCollapsedContainer(container, interactionHandler)];
+        } else {
+          containerNodes = this.renderExpandedContainer(container, state, interactionHandler);
+        }
+        
+        if (this.nodeCache.size < PERFORMANCE_CACHE_SIZE) {
+          this.nodeCache.set(cacheKey, containerNodes);
+        }
+      }
+      
+      if (Array.isArray(containerNodes)) {
+        nodes.push(...containerNodes);
+      } else {
+        nodes.push(containerNodes);
+      }
+    }
+
+    return nodes;
+  }
+
+  private convertEdgesOptimized(state: VisualizationState): ReactFlowEdge[] {
+    const edges: ReactFlowEdge[] = [];
+    const visibleEdges = state.visibleEdges;
+
+    // Batch process edges for better performance
+    for (let i = 0; i < visibleEdges.length; i++) {
+      const edge = visibleEdges[i];
+      const cacheKey = `edge-${edge.id}-${edge.type}`;
+      
+      let reactFlowEdge = this.edgeCache.get(cacheKey);
+      if (!reactFlowEdge) {
+        if ("aggregated" in edge && edge.aggregated) {
+          reactFlowEdge = this.renderAggregatedEdge(edge);
+        } else {
+          reactFlowEdge = this.renderOriginalEdge(edge);
+        }
+        
+        // Limit cache size to prevent memory issues
+        if (this.edgeCache.size < PERFORMANCE_CACHE_SIZE) {
+          this.edgeCache.set(cacheKey, reactFlowEdge);
+        }
+      }
+      
+      edges.push(reactFlowEdge);
+    }
+
+    return edges;
+  }
+
+  private createReactFlowNode(node: any, interactionHandler?: any): ReactFlowNode {
     return {
-      nodes: this.applyNodeStyles(nodes),
-      edges: this.applyEdgeStyles(edges),
+      id: node.id,
+      type: "default",
+      position: node.position || { x: 0, y: 0 },
+      data: {
+        label: node.showingLongLabel ? node.longLabel : node.label,
+        longLabel: node.longLabel,
+        showingLongLabel: node.showingLongLabel,
+        nodeType: node.type,
+        semanticTags: node.semanticTags || [],
+        onClick: interactionHandler ? (elementId: string, elementType: 'node' | 'container') => {
+          if (elementType === 'node') {
+            interactionHandler.handleNodeClick(elementId);
+          }
+        } : undefined,
+      },
     };
   }
 
@@ -32,24 +227,7 @@ export class ReactFlowBridge {
 
     // Convert regular nodes
     for (const node of state.visibleNodes) {
-      nodes.push({
-        id: node.id,
-        type: "default",
-        position: node.position || { x: 0, y: 0 },
-        data: {
-          label: node.showingLongLabel ? node.longLabel : node.label,
-          longLabel: node.longLabel,
-          showingLongLabel: node.showingLongLabel,
-          nodeType: node.type,
-          semanticTags: node.semanticTags || [],
-          originalNode: node,
-          onClick: interactionHandler ? (elementId: string, elementType: 'node' | 'container') => {
-            if (elementType === 'node') {
-              interactionHandler.handleNodeClick(elementId);
-            }
-          } : undefined,
-        },
-      });
+      nodes.push(this.createReactFlowNode(node, interactionHandler));
     }
 
     // Convert containers
@@ -78,12 +256,20 @@ export class ReactFlowBridge {
     return edges;
   }
 
-  // Styling
+  // Styling with immutability and performance optimizations
   applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[] {
     return nodes.map((node) => {
-      // Get the original node data to access semantic tags
-      const nodeData = node.data as any;
-      const semanticTags = nodeData.semanticTags || [];
+      // Create style cache key for performance
+      const styleCacheKey = `node-style-${node.data.nodeType}-${node.data.label}`;
+      
+      // Check style cache first
+      let cachedStyle = this.styleCache.get(styleCacheKey);
+      if (cachedStyle) {
+        return this.createImmutableNode(node, cachedStyle.style, cachedStyle.appliedTags);
+      }
+
+      // Get semantic tags from node data
+      const semanticTags = node.data.semanticTags || [];
       
       // Start with type-based styles
       const typeBasedStyle = this.styleConfig.nodeStyles?.[node.data.nodeType] || {};
@@ -96,7 +282,7 @@ export class ReactFlowBridge {
         const processedStyle = processSemanticTags(
           semanticTags,
           this.styleConfig,
-          nodeData.label,
+          node.data.label,
           'node'
         );
         semanticStyle = processedStyle.style;
@@ -110,14 +296,24 @@ export class ReactFlowBridge {
         ...node.style,
       };
 
-      return {
-        ...node,
-        style: combinedStyle,
-        data: {
-          ...node.data,
-          appliedSemanticTags: appliedTags,
-        },
-      };
+      // Cache the computed style for performance
+      if (this.styleCache.size < PERFORMANCE_CACHE_SIZE) {
+        this.styleCache.set(styleCacheKey, { style: combinedStyle, appliedTags });
+      }
+
+      return this.createImmutableNode(node, combinedStyle, appliedTags);
+    });
+  }
+
+  private createImmutableNode(node: ReactFlowNode, style: any, appliedTags: string[]): ReactFlowNode {
+    return Object.freeze({
+      ...node,
+      position: Object.freeze({ ...node.position }),
+      style: Object.freeze({ ...style }),
+      data: Object.freeze({
+        ...node.data,
+        appliedSemanticTags: Object.freeze([...appliedTags]),
+      }),
     });
   }
 
@@ -126,6 +322,15 @@ export class ReactFlowBridge {
       // Get semantic tags from edge data
       const edgeData = edge.data as any;
       const semanticTags = edgeData?.semanticTags || [];
+      
+      // Create style cache key for performance
+      const styleCacheKey = `edge-style-${edge.type}-${semanticTags.join(',')}-${edge.id}`;
+      
+      // Check style cache first
+      let cachedStyle = this.styleCache.get(styleCacheKey);
+      if (cachedStyle) {
+        return this.createImmutableEdge(edge, cachedStyle);
+      }
       
       // Start with type-based styles
       const typeBasedStyle = this.styleConfig.edgeStyles?.[edge.type] || {};
@@ -160,18 +365,36 @@ export class ReactFlowBridge {
         ...edge.style,
       };
 
-      return {
-        ...edge,
+      const styleData = {
         style: combinedStyle,
         animated: animated || edge.animated,
         label: label,
         markerEnd: markerEnd,
-        data: {
-          ...edgeData,
-          appliedSemanticTags: appliedTags,
-          lineStyle: lineStyle,
-        },
+        appliedTags: appliedTags,
+        lineStyle: lineStyle
       };
+
+      // Cache the computed style for performance
+      if (this.styleCache.size < PERFORMANCE_CACHE_SIZE) {
+        this.styleCache.set(styleCacheKey, styleData);
+      }
+
+      return this.createImmutableEdge(edge, styleData);
+    });
+  }
+
+  private createImmutableEdge(edge: ReactFlowEdge, styleData: any): ReactFlowEdge {
+    return Object.freeze({
+      ...edge,
+      style: Object.freeze({ ...styleData.style }),
+      animated: styleData.animated,
+      label: styleData.label,
+      markerEnd: styleData.markerEnd,
+      data: Object.freeze({
+        ...edge.data,
+        appliedSemanticTags: Object.freeze([...styleData.appliedTags]),
+        lineStyle: styleData.lineStyle,
+      }),
     });
   }
 
