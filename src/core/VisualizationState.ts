@@ -28,6 +28,21 @@ export class VisualizationState {
     lastUpdate: Date.now(),
   };
   private _searchResults: SearchResult[] = [];
+  private _searchQuery: string = '';
+  private _searchHistory: string[] = [];
+  private _searchState: {
+    isActive: boolean;
+    query: string;
+    resultCount: number;
+    lastSearchTime: number;
+    expandedContainers: Set<string>; // Containers expanded due to search
+  } = {
+    isActive: false,
+    query: '',
+    resultCount: 0,
+    lastSearchTime: 0,
+    expandedContainers: new Set(),
+  };
   private _validationEnabled = true;
   private _validationInProgress = false;
 
@@ -1011,6 +1026,8 @@ export class VisualizationState {
   // Search-specific container expansion
   expandContainerForSearch(id: string): void {
     this._expandContainerInternal(id);
+    // Track containers expanded for search
+    this._searchState.expandedContainers.add(id);
     // Search expansion should disable smart collapse
     this.disableSmartCollapseForUserOperations();
   }
@@ -1297,37 +1314,246 @@ export class VisualizationState {
 
   // Search
   search(query: string): SearchResult[] {
+    // Update search state
+    this._searchQuery = query.trim();
+    this._searchState.isActive = this._searchQuery.length > 0;
+    this._searchState.query = this._searchQuery;
+    this._searchState.lastSearchTime = Date.now();
+    
+    // Add to search history if not empty
+    if (this._searchQuery) {
+      // Remove existing entry if present
+      const existingIndex = this._searchHistory.indexOf(this._searchQuery);
+      if (existingIndex !== -1) {
+        this._searchHistory.splice(existingIndex, 1);
+      }
+      // Add to front
+      this._searchHistory.unshift(this._searchQuery);
+      // Keep only last 10 searches
+      if (this._searchHistory.length > 10) {
+        this._searchHistory = this._searchHistory.slice(0, 10);
+      }
+    }
+
     this._searchResults = [];
 
-    // Search nodes
+    if (!this._searchQuery) {
+      this._searchState.resultCount = 0;
+      return this._searchResults;
+    }
+
+    const queryLower = this._searchQuery.toLowerCase();
+
+    // Search nodes - prioritize exact matches
     for (const node of this._nodes.values()) {
-      if (node.label.toLowerCase().includes(query.toLowerCase())) {
+      const matchResult = this._findMatches(node.label, queryLower);
+      if (matchResult.matches) {
         this._searchResults.push({
           id: node.id,
           label: node.label,
           type: "node",
-          matchIndices: [[0, query.length]],
+          matchIndices: matchResult.indices,
         });
       }
     }
 
-    // Search containers
+    // Search containers - prioritize exact matches
     for (const container of this._containers.values()) {
-      if (container.label.toLowerCase().includes(query.toLowerCase())) {
+      const matchResult = this._findMatches(container.label, queryLower);
+      if (matchResult.matches) {
         this._searchResults.push({
           id: container.id,
           label: container.label,
           type: "container",
-          matchIndices: [[0, query.length]],
+          matchIndices: matchResult.indices,
         });
       }
     }
 
+    // Sort results by relevance (exact matches first, then by match position)
+    this._searchResults.sort((a, b) => {
+      const aExact = a.label.toLowerCase() === queryLower;
+      const bExact = b.label.toLowerCase() === queryLower;
+      
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      
+      // Sort by first match position
+      const aFirstMatch = a.matchIndices[0]?.[0] ?? Infinity;
+      const bFirstMatch = b.matchIndices[0]?.[0] ?? Infinity;
+      
+      return aFirstMatch - bFirstMatch;
+    });
+
+    this._searchState.resultCount = this._searchResults.length;
     return [...this._searchResults];
+  }
+
+  private _findMatches(text: string, query: string): { matches: boolean; indices: number[][]; isExact: boolean } {
+    const textLower = text.toLowerCase();
+    const indices: number[][] = [];
+    
+    // Exact substring match
+    let startIndex = 0;
+    while (true) {
+      const index = textLower.indexOf(query, startIndex);
+      if (index === -1) break;
+      indices.push([index, index + query.length]);
+      startIndex = index + 1;
+    }
+    
+    if (indices.length > 0) {
+      return { matches: true, indices, isExact: true };
+    }
+    
+    // Only do fuzzy matching for queries longer than 3 characters to avoid too many false positives
+    if (query.length <= 3) {
+      return { matches: false, indices: [], isExact: false };
+    }
+    
+    // Fuzzy matching - check if all characters of query appear in order
+    let queryIndex = 0;
+    const fuzzyIndices: number[] = [];
+    
+    for (let i = 0; i < textLower.length && queryIndex < query.length; i++) {
+      if (textLower[i] === query[queryIndex]) {
+        fuzzyIndices.push(i);
+        queryIndex++;
+      }
+    }
+    
+    if (queryIndex === query.length) {
+      // All characters found - create match indices for individual characters
+      const charIndices: number[][] = fuzzyIndices.map(i => [i, i + 1]);
+      return { matches: true, indices: charIndices, isExact: false };
+    }
+    
+    return { matches: false, indices: [], isExact: false };
   }
 
   clearSearch(): void {
     this._searchResults = [];
+    this._searchQuery = '';
+    this._searchState.isActive = false;
+    this._searchState.query = '';
+    this._searchState.resultCount = 0;
+    this._searchState.expandedContainers.clear();
+  }
+
+  // Search state getters
+  getSearchQuery(): string {
+    return this._searchQuery;
+  }
+
+  getSearchResults(): ReadonlyArray<SearchResult> {
+    return [...this._searchResults];
+  }
+
+  getSearchHistory(): ReadonlyArray<string> {
+    return [...this._searchHistory];
+  }
+
+  isSearchActive(): boolean {
+    return this._searchState.isActive;
+  }
+
+  getSearchResultCount(): number {
+    return this._searchState.resultCount;
+  }
+
+  getSearchExpandedContainers(): ReadonlyArray<string> {
+    return Array.from(this._searchState.expandedContainers);
+  }
+
+  clearSearchHistory(): void {
+    this._searchHistory = [];
+  }
+
+  // Advanced search methods
+  searchByType(query: string, entityType: 'node' | 'container'): SearchResult[] {
+    const allResults = this.search(query);
+    return allResults.filter(result => result.type === entityType);
+  }
+
+  searchBySemanticTag(tag: string): SearchResult[] {
+    this._searchResults = [];
+    
+    // Search nodes by semantic tags
+    for (const node of this._nodes.values()) {
+      if (node.semanticTags.some(nodeTag => 
+        nodeTag.toLowerCase().includes(tag.toLowerCase())
+      )) {
+        this._searchResults.push({
+          id: node.id,
+          label: node.label,
+          type: "node",
+          matchIndices: [[0, 0]], // No text highlighting for semantic tag matches
+        });
+      }
+    }
+
+    // Search edges by semantic tags (return connected nodes)
+    for (const edge of this._edges.values()) {
+      if (edge.semanticTags.some(edgeTag => 
+        edgeTag.toLowerCase().includes(tag.toLowerCase())
+      )) {
+        // Add source and target nodes if not already in results
+        const sourceNode = this._nodes.get(edge.source);
+        const targetNode = this._nodes.get(edge.target);
+        
+        if (sourceNode && !this._searchResults.some(r => r.id === sourceNode.id)) {
+          this._searchResults.push({
+            id: sourceNode.id,
+            label: sourceNode.label,
+            type: "node",
+            matchIndices: [[0, 0]],
+          });
+        }
+        
+        if (targetNode && !this._searchResults.some(r => r.id === targetNode.id)) {
+          this._searchResults.push({
+            id: targetNode.id,
+            label: targetNode.label,
+            type: "node",
+            matchIndices: [[0, 0]],
+          });
+        }
+      }
+    }
+
+    this._searchState.resultCount = this._searchResults.length;
+    return [...this._searchResults];
+  }
+
+  // Get search suggestions based on existing labels
+  getSearchSuggestions(partialQuery: string, limit: number = 5): string[] {
+    if (!partialQuery.trim()) return [];
+    
+    const queryLower = partialQuery.toLowerCase();
+    const suggestions = new Set<string>();
+    
+    // Collect suggestions from node labels
+    for (const node of this._nodes.values()) {
+      if (node.label.toLowerCase().includes(queryLower)) {
+        suggestions.add(node.label);
+      }
+    }
+    
+    // Collect suggestions from container labels
+    for (const container of this._containers.values()) {
+      if (container.label.toLowerCase().includes(queryLower)) {
+        suggestions.add(container.label);
+      }
+    }
+    
+    // Add from search history
+    for (const historyItem of this._searchHistory) {
+      if (historyItem.toLowerCase().includes(queryLower)) {
+        suggestions.add(historyItem);
+      }
+    }
+    
+    return Array.from(suggestions).slice(0, limit);
   }
 
   // Validation - Extracted invariants from main branch

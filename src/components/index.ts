@@ -16,3 +16,19 @@ export {
   type FileUploadProps, 
   type FileUploadState 
 } from './FileUpload.js';
+export {
+  Search,
+  type SearchProps
+} from './Search.js';
+export {
+  SearchInput,
+  type SearchInputProps
+} from './SearchInput.js';
+export {
+  SearchResults,
+  type SearchResultsProps
+} from './SearchResults.js';
+export {
+  SearchIntegration,
+  type SearchIntegrationProps
+} from './SearchIntegration.js';

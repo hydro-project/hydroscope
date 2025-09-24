@@ -146,8 +146,8 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 5.2 implement InteractionHandler for click event processing"`
     - _Requirements: 9.1, 9.2, 9.3, 9.8, 9.9_
 
-- [ ] 6. Implement search functionality in VisualizationState
-  - [ ] 4.1 Create search state management
+- [x] 6. Implement search functionality in VisualizationState
+  - [x] 4.1 Create search state management
     - Implement search query storage and history
     - Code search result data structures with match highlighting
     - Add search state clearing and reset functionality
@@ -155,7 +155,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 4.1 create search state management"`
     - _Requirements: 2.3, 9.4_
 
-  - [ ] 4.2 Implement search algorithms and result generation
+  - [x] 4.2 Implement search algorithms and result generation
     - Code fuzzy search algorithm for nodes and containers
     - Implement search result ranking and sorting
     - Add search match highlighting with character indices
@@ -329,7 +329,7 @@ This ensures:
     - Write unit tests for container control components
     - _Requirements: 8.1, 8.2, 8.4_
 
-- [-] 13. Implement file upload and parsing
+- [x] 13. Implement file upload and parsing
   - [x] 13.1 Create file upload component with validation
     - Code file upload UI with drag-and-drop support
     - Implement file validation and error reporting
@@ -337,22 +337,22 @@ This ensures:
     - Write unit tests for file upload component
     - _Requirements: 6.2, 7.1_
 
-  - [-] 13.2 Integrate JSON parsing with VisualizationState
+  - [x] 13.2 Integrate JSON parsing with VisualizationState
     - Code JSON parser that creates VisualizationState from paxos.json format
     - Implement hierarchyChoices parsing and default grouping selection
     - Add parsing error handling and user feedback
     - Write unit tests for JSON parsing with paxos.json
     - _Requirements: 7.1, 2.1_
 
-- [ ] 14. Implement search UI components
-  - [ ] 14.1 Create search input and results display
+- [-] 14. Implement search UI components
+  - [x] 14.1 Create search input and results display
     - Code search input component with real-time feedback
     - Implement search results display with highlighting
     - Add search navigation (next/previous match) functionality
     - Write unit tests for search UI components
     - _Requirements: 9.1, 9.2_
 
-  - [ ] 14.2 Integrate search with container expansion
+  - [-] 14.2 Integrate search with container expansion
     - Code search result expansion of collapsed containers
     - Implement search expansion prevention of smart collapse
     - Add search result highlighting in rendered graph
