@@ -3,8 +3,6 @@
  * Provides consistent test data throughout development
  */
 
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import type { GraphNode, GraphEdge, Container } from '../types/core.js'
 
 export interface TestGraphData {
@@ -14,16 +12,10 @@ export interface TestGraphData {
 }
 
 export function loadPaxosTestData(): TestGraphData {
-  try {
-    const paxosPath = join(process.cwd(), 'test-data', 'paxos.json')
-    const rawData = readFileSync(paxosPath, 'utf-8')
-    const paxosData = JSON.parse(rawData)
-    
-    return convertToTestData(paxosData)
-  } catch (error) {
-    console.warn('Could not load paxos.json, using minimal test data')
-    return getMinimalTestData()
-  }
+  // In browser environment, return minimal test data
+  // File system access is not available in browsers
+  console.warn('File system access not available in browser, using minimal test data')
+  return getMinimalTestData()
 }
 
 function convertToTestData(rawData: any): TestGraphData {

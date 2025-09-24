@@ -12,3 +12,7 @@ export { ELKBridge } from './bridges/ELKBridge.js';
 export { JSONParser, type JSONParserOptions, type ParseResult } from './utils/JSONParser.js';
 export * from './types/core.js';
 export { loadPaxosTestData, createTestVisualizationState } from './utils/testData.js';
+
+// Docusaurus-compatible React components
+export { HydroscopeDocusaurus } from './components/HydroscopeDocusaurus.js';
+export { HydroscopeDemo } from './components/HydroscopeDemo.js';

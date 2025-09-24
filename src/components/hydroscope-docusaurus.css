@@ -1,0 +1,123 @@
+/**
+ * Hydroscope Docusaurus integration styles
+ * These styles ensure the component looks good in Docusaurus themes
+ */
+
+.hydroscope-docusaurus {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-border-radius);
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.hydroscope-docusaurus .react-flow__attribution {
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content-secondary);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.hydroscope-docusaurus .react-flow__controls {
+  background: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.hydroscope-docusaurus .react-flow__controls button {
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.hydroscope-docusaurus .react-flow__controls button:hover {
+  background: var(--ifm-color-emphasis-100);
+}
+
+.hydroscope-docusaurus .react-flow__minimap {
+  background: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.hydroscope-demo-controls {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: var(--ifm-border-radius);
+}
+
+.hydroscope-demo-controls h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.hydroscope-demo-controls p {
+  margin-bottom: 1rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.hydroscope-demo-button {
+  margin-right: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hydroscope-demo-button:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.hydroscope-demo-button.active {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.hydroscope-demo-instructions {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: var(--ifm-border-radius);
+  font-size: 0.9em;
+}
+
+.hydroscope-demo-instructions p {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.hydroscope-demo-instructions ul {
+  margin-bottom: 0;
+  padding-left: 1.5rem;
+}
+
+.hydroscope-demo-instructions li {
+  margin-bottom: 0.25rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.hydroscope-loading,
+.hydroscope-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-border-radius);
+  background: var(--ifm-background-color);
+}
+
+.hydroscope-error {
+  color: var(--ifm-color-danger);
+}
+
+/* Dark theme adjustments */
+[data-theme='dark'] .hydroscope-docusaurus {
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .hydroscope-docusaurus .react-flow__node {
+  color: var(--ifm-color-content);
+}
+
+[data-theme='dark'] .hydroscope-docusaurus .react-flow__edge-text {
+  fill: var(--ifm-color-content);
+}
