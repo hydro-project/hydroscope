@@ -189,3 +189,34 @@ export interface ValidationResult {
   errors: string[]
   warnings: string[]
 }
+
+// AsyncCoordinator types
+export interface QueuedOperation<T = any> {
+  id: string
+  type: 'elk_layout' | 'reactflow_render' | 'application_event'
+  operation: () => Promise<T>
+  timeout?: number
+  retryCount?: number
+  maxRetries?: number
+  createdAt: number
+  startedAt?: number
+  completedAt?: number
+  error?: Error
+}
+
+export interface QueueStatus {
+  pending: number
+  processing: number
+  completed: number
+  failed: number
+  totalProcessed: number
+  currentOperation?: QueuedOperation
+  averageProcessingTime: number
+  errors: Error[]
+}
+
+export interface ApplicationEvent {
+  type: 'container_expand' | 'container_collapse' | 'search' | 'layout_config_change'
+  payload: any
+  timestamp: number
+}
