@@ -16,6 +16,7 @@ import { processSemanticTags } from "../utils/StyleProcessor.js";
 const LARGE_GRAPH_NODE_THRESHOLD = 1000;
 const LARGE_GRAPH_EDGE_THRESHOLD = 2000;
 const PERFORMANCE_CACHE_SIZE = 100;
+const CACHE_CLEANUP_THRESHOLD = 500; // Clean cache when it exceeds this size
 
 export class ReactFlowBridge {
   private styleCache = new Map<string, any>();
@@ -23,6 +24,9 @@ export class ReactFlowBridge {
   private edgeCache = new Map<string, ReactFlowEdge>();
   private lastStateHash: string | null = null;
   private lastResult: ReactFlowData | null = null;
+  private cacheHits = 0;
+  private cacheMisses = 0;
+  private lastCacheCleanup = Date.now();
 
   constructor(private styleConfig: StyleConfig) {}
 
@@ -33,6 +37,61 @@ export class ReactFlowBridge {
     this.edgeCache.clear();
     this.lastStateHash = null;
     this.lastResult = null;
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
+  }
+
+  // Get cache statistics for performance monitoring
+  getCacheStats(): {
+    hitRate: number;
+    totalRequests: number;
+    cacheSize: {
+      styles: number;
+      nodes: number;
+      edges: number;
+    };
+  } {
+    const totalRequests = this.cacheHits + this.cacheMisses;
+    return {
+      hitRate: totalRequests > 0 ? this.cacheHits / totalRequests : 0,
+      totalRequests,
+      cacheSize: {
+        styles: this.styleCache.size,
+        nodes: this.nodeCache.size,
+        edges: this.edgeCache.size,
+      },
+    };
+  }
+
+  // Intelligent cache cleanup
+  private cleanupCaches(): void {
+    const now = Date.now();
+    
+    // Only cleanup if enough time has passed and caches are large
+    if (now - this.lastCacheCleanup < 60000 || // 1 minute
+        this.nodeCache.size + this.edgeCache.size < CACHE_CLEANUP_THRESHOLD) {
+      return;
+    }
+
+    // Keep only the most recently used items (simple LRU approximation)
+    if (this.nodeCache.size > PERFORMANCE_CACHE_SIZE) {
+      const entries = Array.from(this.nodeCache.entries());
+      this.nodeCache.clear();
+      // Keep last 50% of entries
+      entries.slice(-Math.floor(PERFORMANCE_CACHE_SIZE / 2)).forEach(([key, value]) => {
+        this.nodeCache.set(key, value);
+      });
+    }
+
+    if (this.edgeCache.size > PERFORMANCE_CACHE_SIZE) {
+      const entries = Array.from(this.edgeCache.entries());
+      this.edgeCache.clear();
+      entries.slice(-Math.floor(PERFORMANCE_CACHE_SIZE / 2)).forEach(([key, value]) => {
+        this.edgeCache.set(key, value);
+      });
+    }
+
+    this.lastCacheCleanup = now;
   }
 
   // Synchronous Conversion with immutability and performance optimizations

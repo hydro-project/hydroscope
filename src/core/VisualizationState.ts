@@ -45,6 +45,11 @@ export class VisualizationState {
   };
   private _validationEnabled = true;
   private _validationInProgress = false;
+  private _performanceMetrics = {
+    operationCounts: new Map<string, number>(),
+    operationTimes: new Map<string, number[]>(),
+    lastOptimization: Date.now(),
+  };
 
   // Data Management
   addNode(node: GraphNode): void {
@@ -1554,6 +1559,49 @@ export class VisualizationState {
     }
     
     return Array.from(suggestions).slice(0, limit);
+  }
+
+  // Performance Monitoring
+  private trackOperation(operationName: string, duration: number): void {
+    // Track operation count
+    const currentCount = this._performanceMetrics.operationCounts.get(operationName) || 0;
+    this._performanceMetrics.operationCounts.set(operationName, currentCount + 1);
+
+    // Track operation times (keep last 10 for average calculation)
+    const times = this._performanceMetrics.operationTimes.get(operationName) || [];
+    times.push(duration);
+    if (times.length > 10) {
+      times.shift();
+    }
+    this._performanceMetrics.operationTimes.set(operationName, times);
+  }
+
+  getPerformanceMetrics(): {
+    operationCounts: Map<string, number>;
+    averageTimes: Map<string, number>;
+    recommendations: string[];
+  } {
+    const averageTimes = new Map<string, number>();
+    const recommendations: string[] = [];
+
+    for (const [operation, times] of this._performanceMetrics.operationTimes) {
+      const avg = times.reduce((sum, time) => sum + time, 0) / times.length;
+      averageTimes.set(operation, avg);
+
+      // Generate recommendations based on performance
+      if (avg > 50 && operation.includes('search')) {
+        recommendations.push(`Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`);
+      }
+      if (avg > 100 && operation.includes('container')) {
+        recommendations.push(`Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`);
+      }
+    }
+
+    return {
+      operationCounts: new Map(this._performanceMetrics.operationCounts),
+      averageTimes,
+      recommendations,
+    };
   }
 
   // Validation - Extracted invariants from main branch

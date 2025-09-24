@@ -8,6 +8,9 @@ import type { LayoutConfig, ELKNode, ValidationResult, GraphNode, Container, Per
 
 export class ELKBridge {
   private performanceHints?: PerformanceHints
+  private layoutCache = new Map<string, ELKNode>()
+  private configCache = new Map<string, any>()
+  private lastGraphHash: string | null = null
 
   constructor(private layoutConfig: LayoutConfig = {}) {
     // Validate input config first
@@ -37,8 +40,16 @@ export class ELKBridge {
     this.layoutConfig = fullConfig
   }
 
-  // Synchronous Conversions
+  // Synchronous Conversions with caching
   toELKGraph(state: VisualizationState): ELKNode {
+    // Generate hash for caching
+    const graphHash = this.generateGraphHash(state)
+    
+    // Check cache first
+    if (this.lastGraphHash === graphHash && this.layoutCache.has(graphHash)) {
+      return this.deepCloneELKNode(this.layoutCache.get(graphHash)!)
+    }
+
     const visibleNodes = state.visibleNodes
     const visibleContainers = state.visibleContainers
     const visibleEdges = state.visibleEdges
@@ -128,7 +139,50 @@ export class ELKBridge {
       })
     }
 
+    // Cache the result
+    this.layoutCache.set(graphHash, this.deepCloneELKNode(elkNode))
+    this.lastGraphHash = graphHash
+    
+    // Cleanup cache if it gets too large
+    if (this.layoutCache.size > 10) {
+      const oldestKey = this.layoutCache.keys().next().value
+      this.layoutCache.delete(oldestKey)
+    }
+
     return elkNode
+  }
+
+  private generateGraphHash(state: VisualizationState): string {
+    // Simple hash based on visible elements and their states
+    const visibleNodes = state.visibleNodes
+    const visibleContainers = state.visibleContainers
+    const visibleEdges = state.visibleEdges
+    
+    const nodeHash = visibleNodes.map(n => `${n.id}:${n.hidden}`).join(',')
+    const containerHash = visibleContainers.map(c => `${c.id}:${c.collapsed}`).join(',')
+    const edgeHash = visibleEdges.map(e => `${e.id}:${e.source}:${e.target}`).join(',')
+    
+    return `${nodeHash}|${containerHash}|${edgeHash}|${JSON.stringify(this.layoutConfig)}`
+  }
+
+  private deepCloneELKNode(node: ELKNode): ELKNode {
+    return JSON.parse(JSON.stringify(node))
+  }
+
+  // Clear caches for memory management
+  clearCaches(): void {
+    this.layoutCache.clear()
+    this.configCache.clear()
+    this.lastGraphHash = null
+    this.performanceHints = undefined
+  }
+
+  // Get cache statistics
+  getCacheStats(): { size: number; hitRate: number } {
+    return {
+      size: this.layoutCache.size,
+      hitRate: 0, // Would need to track hits/misses for accurate rate
+    }
   }
 
   applyLayout(state: VisualizationState, elkResult: ELKNode): void {

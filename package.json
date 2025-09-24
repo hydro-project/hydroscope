@@ -56,6 +56,7 @@
     "dev": "rollup -c --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:performance": "node scripts/performance-test.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
