@@ -314,15 +314,15 @@ This ensures:
 
 ## Phase 4: Application Integration
 
-- [ ] 12. Build React components using core system
-  - [ ] 12.1 Create HydroscopeCore component with async coordination
+- [-] 12. Build React components using core system
+  - [x] 12.1 Create HydroscopeCore component with async coordination
     - Code React component that manages VisualizationState lifecycle
     - Implement proper React state management with async coordinator
     - Add component lifecycle management and cleanup
     - Write unit tests for React component behavior
     - _Requirements: 1.1, 6.2_
 
-  - [ ] 12.2 Implement container control components
+  - [x] 12.2 Implement container control components
     - Code expand/collapse buttons with proper state management
     - Implement container operation feedback and loading states
     - Add container operation error handling in UI
