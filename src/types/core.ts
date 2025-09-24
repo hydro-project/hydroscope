@@ -196,8 +196,8 @@ export interface QueuedOperation<T = any> {
   type: 'elk_layout' | 'reactflow_render' | 'application_event'
   operation: () => Promise<T>
   timeout?: number
-  retryCount?: number
-  maxRetries?: number
+  retryCount: number
+  maxRetries: number
   createdAt: number
   startedAt?: number
   completedAt?: number
@@ -217,6 +217,23 @@ export interface QueueStatus {
 
 export interface ApplicationEvent {
   type: 'container_expand' | 'container_collapse' | 'search' | 'layout_config_change'
-  payload: any
+  payload: ApplicationEventPayload
   timestamp: number
+}
+
+export interface ApplicationEventPayload {
+  // Common fields
+  state?: any // VisualizationState - using any to avoid circular dependency
+  triggerLayout?: boolean
+  layoutConfig?: LayoutConfig
+  
+  // Container operation fields
+  containerId?: string
+  
+  // Search fields
+  query?: string
+  expandContainers?: boolean
+  
+  // Layout config change fields
+  config?: LayoutConfig
 }

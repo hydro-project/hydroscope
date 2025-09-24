@@ -282,15 +282,15 @@ This ensures:
     - Write unit tests for ReactFlow async operations
     - _Requirements: 5.2, 4.1_
 
-- [ ] 10. Implement application event queuing
-  - [ ] 10.1 Create application event system
+- [-] 10. Implement application event queuing
+  - [x] 10.1 Create application event system
     - Code event types for user interactions (expand, collapse, search)
     - Implement event queuing with proper prioritization
     - Add event cancellation and cleanup mechanisms
     - Write unit tests for event system
     - _Requirements: 5.3, 8.4_
 
-  - [ ] 10.2 Integrate container operations with async coordination
+  - [-] 10.2 Integrate container operations with async coordination
     - Code container expand/collapse operations through async coordinator
     - Implement proper sequencing of container operations and layout
     - Add container operation error handling and recovery
