@@ -182,8 +182,8 @@ export function createTestContainer(id: string, children: string[], label?: stri
   }
 }
 
-export function createTestVisualizationState() {
-  const { VisualizationState } = require('../core/VisualizationState.js')
+export async function createTestVisualizationState() {
+  const { VisualizationState } = await import('../core/VisualizationState.js')
   const state = new VisualizationState()
   const testData = loadPaxosTestData()
   

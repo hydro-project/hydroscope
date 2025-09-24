@@ -282,7 +282,7 @@ This ensures:
     - Write unit tests for ReactFlow async operations
     - _Requirements: 5.2, 4.1_
 
-- [-] 10. Implement application event queuing
+- [x] 10. Implement application event queuing
   - [x] 10.1 Create application event system
     - Code event types for user interactions (expand, collapse, search)
     - Implement event queuing with proper prioritization
@@ -290,22 +290,22 @@ This ensures:
     - Write unit tests for event system
     - _Requirements: 5.3, 8.4_
 
-  - [-] 10.2 Integrate container operations with async coordination
+  - [x] 10.2 Integrate container operations with async coordination
     - Code container expand/collapse operations through async coordinator
     - Implement proper sequencing of container operations and layout
     - Add container operation error handling and recovery
     - Write unit tests for container operations through async system
     - _Requirements: 8.5, 5.4_
 
-- [ ] 11. Create async boundary integration tests
-  - [ ] 11.1 Test async coordination with paxos.json operations
+- [x] 11. Create async boundary integration tests
+  - [x] 11.1 Test async coordination with paxos.json operations
     - Test rapid container expand/collapse operations with proper sequencing
     - Verify layout operations are queued and processed correctly
     - Test error recovery scenarios with paxos.json data
     - Validate performance under high async operation load
     - _Requirements: 7.2, 8.5, 12.3_
 
-  - [ ] 11.2 Test async boundary coordination
+  - [x] 11.2 Test async boundary coordination
     - Test coordination between ELK and ReactFlow async boundaries
     - Verify proper sequencing when multiple boundaries are active
     - Test error propagation across async boundaries
