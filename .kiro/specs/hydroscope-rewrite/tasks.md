@@ -314,7 +314,7 @@ This ensures:
 
 ## Phase 4: Application Integration
 
-- [-] 12. Build React components using core system
+- [x] 12. Build React components using core system
   - [x] 12.1 Create HydroscopeCore component with async coordination
     - Code React component that manages VisualizationState lifecycle
     - Implement proper React state management with async coordinator
@@ -329,15 +329,15 @@ This ensures:
     - Write unit tests for container control components
     - _Requirements: 8.1, 8.2, 8.4_
 
-- [ ] 13. Implement file upload and parsing
-  - [ ] 13.1 Create file upload component with validation
+- [-] 13. Implement file upload and parsing
+  - [x] 13.1 Create file upload component with validation
     - Code file upload UI with drag-and-drop support
     - Implement file validation and error reporting
     - Add support for JSON file parsing and validation
     - Write unit tests for file upload component
     - _Requirements: 6.2, 7.1_
 
-  - [ ] 13.2 Integrate JSON parsing with VisualizationState
+  - [-] 13.2 Integrate JSON parsing with VisualizationState
     - Code JSON parser that creates VisualizationState from paxos.json format
     - Implement hierarchyChoices parsing and default grouping selection
     - Add parsing error handling and user feedback

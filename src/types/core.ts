@@ -184,7 +184,7 @@ export interface ELKEdge {
   targets: string[]
 }
 
-export interface ValidationResult {
+export interface ELKValidationResult {
   valid: boolean
   errors: string[]
   warnings: string[]
@@ -236,4 +236,37 @@ export interface ApplicationEventPayload {
   
   // Layout config change fields
   config?: LayoutConfig
+}
+
+// File upload and parsing types
+export interface HydroscopeData {
+  nodes: any[] // Raw node data from JSON
+  edges: any[] // Raw edge data from JSON
+  hierarchyChoices: HierarchyChoice[]
+  nodeAssignments: Record<string, Record<string, string>>
+  nodeTypeConfig?: any
+  edgeStyleConfig?: any
+  legend?: any
+  styles?: any
+}
+
+export interface HierarchyChoice {
+  id: string
+  name: string
+  children?: HierarchyChoice[]
+}
+
+export interface ParseError {
+  type: 'json_parse' | 'processing_error'
+  message: string
+  line?: number
+  column?: number
+  context?: Record<string, any>
+}
+
+export interface ValidationResult {
+  type: string
+  message: string
+  severity: 'error' | 'warning' | 'info'
+  context?: Record<string, any>
 }

@@ -11,3 +11,8 @@ export {
   type IndividualContainerControlProps,
   type ContainerControlsState
 } from './ContainerControls.js';
+export { 
+  FileUpload, 
+  type FileUploadProps, 
+  type FileUploadState 
+} from './FileUpload.js';
