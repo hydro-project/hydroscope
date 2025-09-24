@@ -56,6 +56,9 @@
     "dev": "rollup -c --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
     "lint": "eslint 'src/**/*.{js,ts,tsx}' --max-warnings 0",
     "lint:fix": "eslint 'src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{js,ts,tsx}'",
@@ -76,6 +79,7 @@
     "elkjs": "^0.10.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-typescript": "^11.0.0",

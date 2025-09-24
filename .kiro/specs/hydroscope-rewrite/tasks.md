@@ -376,22 +376,22 @@ This ensures:
 
 ## Phase 5: End-to-End Validation
 
-- [ ] 16. Implement comprehensive Playwright tests
-  - [ ] 16.1 Create browser-based paxos.json loading tests
+- [x] 16. Implement comprehensive Playwright tests
+  - [x] 16.1 Create browser-based paxos.json loading tests
     - Write Playwright test that loads paxos.json in browser
     - Verify visual rendering matches expected container structure
     - Test that all nodes and edges are visible and positioned correctly
     - Validate that container hierarchy is displayed properly
     - _Requirements: 7.3, 6.3_
 
-  - [ ] 16.2 Test container expand/collapse interactions in browser
+  - [x] 16.2 Test container expand/collapse interactions in browser
     - Write Playwright test for expand all button functionality
     - Write Playwright test for collapse all button functionality
     - Verify that container state changes are reflected visually
     - Test that node counts change correctly when containers expand/collapse
     - _Requirements: 8.1, 8.2, 8.4_
 
-  - [ ] 16.3 Test search functionality in browser
+  - [x] 16.3 Test search functionality in browser
     - Write Playwright test for search input and result highlighting
     - Test search result navigation (next/previous match)
     - Verify that search expands containers and shows hidden nodes
