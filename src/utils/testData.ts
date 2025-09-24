@@ -36,9 +36,9 @@ function convertToTestData(rawData: any): TestGraphData {
     for (const node of rawData.nodes) {
       nodes.push({
         id: node.id || `node_${nodes.length}`,
-        label: node.label || node.name || `Node ${nodes.length}`,
-        longLabel: node.longLabel || node.label || node.name || `Node ${nodes.length}`,
-        type: node.type || 'node',
+        label: node.shortLabel || node.label || node.name || `Node ${nodes.length}`,
+        longLabel: node.fullLabel || node.longLabel || node.label || node.name || `Node ${nodes.length}`,
+        type: node.nodeType || node.type || 'node',
         semanticTags: node.semanticTags || [],
         hidden: false
       })
@@ -59,7 +59,14 @@ function convertToTestData(rawData: any): TestGraphData {
     }
   }
 
-  // Convert containers
+  // Convert containers from hierarchyChoices (paxos.json format)
+  if (rawData.hierarchyChoices) {
+    for (const hierarchy of rawData.hierarchyChoices) {
+      convertHierarchyToContainers(hierarchy, containers)
+    }
+  }
+
+  // Convert containers (direct format)
   if (rawData.containers) {
     for (const container of rawData.containers) {
       containers.push({
@@ -73,6 +80,32 @@ function convertToTestData(rawData: any): TestGraphData {
   }
 
   return { nodes, edges, containers }
+}
+
+function convertHierarchyToContainers(hierarchy: any, containers: Container[]): void {
+  if (hierarchy.children && hierarchy.children.length > 0) {
+    // Create container for this hierarchy level
+    const childIds = hierarchy.children
+      .filter((child: any) => !child.children || child.children.length === 0)
+      .map((child: any) => child.id)
+    
+    if (childIds.length > 0) {
+      containers.push({
+        id: hierarchy.id || `container_${containers.length}`,
+        label: hierarchy.name || `Container ${containers.length}`,
+        children: new Set(childIds),
+        collapsed: false,
+        hidden: false
+      })
+    }
+
+    // Recursively process nested hierarchies
+    for (const child of hierarchy.children) {
+      if (child.children && child.children.length > 0) {
+        convertHierarchyToContainers(child, containers)
+      }
+    }
+  }
 }
 
 export function getMinimalTestData(): TestGraphData {
