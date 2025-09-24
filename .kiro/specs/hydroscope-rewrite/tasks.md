@@ -33,10 +33,12 @@
 ### Test Requirements for Each Task:
 
 - **Unit Tests**: Test individual functions/methods in isolation
-- **Integration Tests**: Test component interactions
+- **Integration Tests**: Test component interactions WITHOUT mocks - exercise full codebase
 - **Paxos.json Tests**: Validate with real data at every integration point
 - **Error Cases**: Test failure scenarios and edge cases
 - **Performance Tests**: Ensure acceptable performance with paxos.json
+- **No Fallbacks**: Failures must be surfaced explicitly, no silent fallbacks allowed
+- **No Mocks in Integration/E2E**: Integration and end-to-end tests must use real implementations
 
 This ensures:
 
@@ -163,7 +165,7 @@ This ensures:
     - **COMMIT**: `git add . && git commit -m "feat: 4.2 implement search algorithms and result generation"`
     - _Requirements: 9.1, 9.2, 7.2_
 
-- [-] 5. Create comprehensive VisualizationState integration tests
+- [x] 5. Create comprehensive VisualizationState integration tests
   - [x] 5.1 Test paxos.json data loading and parsing
     - Load paxos.json and verify all nodes/edges/containers are created
     - Validate container hierarchy matches expected structure
@@ -373,6 +375,26 @@ This ensures:
     - Test UI responsiveness under high load
     - Validate error messages and user feedback
     - _Requirements: 12.4, 6.2_
+
+## Phase 2.5: Complete ELK Integration (Critical Fix)
+
+- [-] 6.4 Complete actual ELK library integration (Critical Fix)
+  - **CRITICAL ISSUE FOUND**: AsyncCoordinator simulates ELK processing instead of calling real elkjs library (lines 231-232)
+  - **CRITICAL ISSUE FOUND**: ELKBridge has placeholder container depth calculation (lines 365-367)  
+  - **MASKING ISSUE FOUND**: ReactFlowBridge uses fallback positions { x: 0, y: 0 } hiding missing ELK calculations
+  - **CONSTRAINT**: No fallbacks allowed - failures must be surfaced explicitly for resolution
+  - **CONSTRAINT**: Integration and e2e tests must not use mocks - they must exercise the full codebase
+  - **TDD Step 1 (RED)**: Write failing integration tests that verify ELK actually calculates real positions (no mocks, no fallbacks)
+  - **TDD Step 2 (GREEN)**: Import elkjs library in ELKBridge: `import ELK from 'elkjs'`
+  - **TDD Step 3 (GREEN)**: Add async `layout()` method in ELKBridge that calls real `elk.layout()` with converted graph
+  - **TDD Step 4 (GREEN)**: Replace simulation in AsyncCoordinator (lines 231-232) with real ELK layout call
+  - **TDD Step 5 (GREEN)**: Remove fallback positions in ReactFlowBridge - throw explicit error if positions missing
+  - **TDD Step 6 (GREEN)**: Fix placeholder container depth calculation in ELKBridge (lines 365-367) with real implementation
+  - **TDD Step 7 (GREEN)**: Ensure all layout failures surface as explicit errors (no silent fallbacks)
+  - **TDD Step 8 (REFACTOR)**: Optimize ELK integration for performance while keeping tests green
+  - **VERIFY**: Run integration tests with paxos.json - all nodes must have real ELK-calculated positions, failures must be explicit
+  - **COMMIT**: `git add . && git commit -m "feat: 6.4 complete actual ELK library integration - real layout calculation working"`
+  - _Requirements: 3.1, 3.2, 7.2, 12.1_
 
 ## Phase 5: End-to-End Validation
 

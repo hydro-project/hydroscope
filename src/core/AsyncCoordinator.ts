@@ -211,26 +211,16 @@ export class AsyncCoordinator {
    */
   async queueELKLayout(
     state: any, // VisualizationState - using any to avoid circular dependency
-    config: any, // LayoutConfig
+    elkBridge: any, // ELKBridge instance
     options: QueueOptions = {}
   ): Promise<void> {
     const operation = async () => {
-      // Import ELKBridge dynamically to avoid circular dependency
-      const { ELKBridge } = await import('../bridges/ELKBridge.js')
-      
       try {
-        // Create ELK bridge with config
-        const elkBridge = new ELKBridge(config)
-        
         // Set layout phase to indicate processing
         state.setLayoutPhase('laying_out')
         
-        // Convert to ELK format
-        const elkGraph = elkBridge.toELKGraph(state)
-        
-        // Simulate ELK processing (in real implementation, this would call actual ELK)
-        // For now, we'll just apply the layout directly
-        elkBridge.applyELKResults(state, elkGraph)
+        // Call real ELK layout calculation
+        await elkBridge.layout(state)
         
         // Increment layout count for smart collapse logic
         state.incrementLayoutCount()

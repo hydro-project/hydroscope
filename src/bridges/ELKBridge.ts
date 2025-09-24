@@ -3,6 +3,7 @@
  * Architectural constraints: Stateless, React-free, synchronous conversions
  */
 
+import ELK from 'elkjs'
 import type { VisualizationState } from '../core/VisualizationState.js'
 import type { LayoutConfig, ELKNode, ValidationResult, GraphNode, Container, PerformanceHints } from '../types/core.js'
 
@@ -11,6 +12,7 @@ export class ELKBridge {
   private layoutCache = new Map<string, ELKNode>()
   private configCache = new Map<string, any>()
   private lastGraphHash: string | null = null
+  private elk: ELK
 
   constructor(private layoutConfig: LayoutConfig = {}) {
     // Validate input config first
@@ -38,6 +40,9 @@ export class ELKBridge {
     }
     
     this.layoutConfig = fullConfig
+    
+    // Initialize ELK instance
+    this.elk = new ELK()
   }
 
   // Synchronous Conversions with caching
@@ -182,6 +187,22 @@ export class ELKBridge {
     return {
       size: this.layoutCache.size,
       hitRate: 0, // Would need to track hits/misses for accurate rate
+    }
+  }
+
+  // Real ELK Layout Method - calls actual elkjs library
+  async layout(state: VisualizationState): Promise<void> {
+    try {
+      // Convert VisualizationState to ELK format
+      const elkGraph = this.toELKGraph(state)
+      
+      // Call real ELK library to calculate layout
+      const layoutResult = await this.elk.layout(elkGraph)
+      
+      // Apply the calculated positions back to VisualizationState
+      this.applyELKResults(state, layoutResult)
+    } catch (error) {
+      throw new Error(`ELK layout calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -362,9 +383,43 @@ export class ELKBridge {
   }
 
   private calculateMaxContainerDepth(containers: readonly Container[]): number {
-    // For now, return a simple estimate - in a full implementation,
-    // this would traverse the container hierarchy
-    return containers.length > 0 ? Math.ceil(Math.log2(containers.length + 1)) : 0
+    if (containers.length === 0) return 0
+    
+    // Build container hierarchy map
+    const containerMap = new Map<string, Container>()
+    const childToParent = new Map<string, string>()
+    
+    for (const container of containers) {
+      containerMap.set(container.id, container)
+      for (const childId of container.children) {
+        childToParent.set(childId, container.id)
+      }
+    }
+    
+    // Calculate depth for each container
+    let maxDepth = 0
+    
+    for (const container of containers) {
+      let depth = 0
+      let currentId: string | undefined = container.id
+      const visited = new Set<string>()
+      
+      // Traverse up the hierarchy to find depth
+      while (currentId && !visited.has(currentId)) {
+        visited.add(currentId)
+        const parentId = childToParent.get(currentId)
+        if (parentId && containerMap.has(parentId)) {
+          depth++
+          currentId = parentId
+        } else {
+          break
+        }
+      }
+      
+      maxDepth = Math.max(maxDepth, depth)
+    }
+    
+    return maxDepth
   }
 
   private buildLayoutOptions(config: LayoutConfig): Record<string, any> {

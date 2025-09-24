@@ -265,7 +265,9 @@ export class ReactFlowBridge {
     return {
       id: node.id,
       type: "default",
-      position: node.position || { x: 0, y: 0 },
+      position: node.position || (() => {
+        throw new Error(`Node ${node.id} is missing position data. ELK layout must be calculated before rendering.`)
+      })(),
       data: {
         label: node.showingLongLabel ? node.longLabel : node.label,
         longLabel: node.longLabel,
@@ -462,7 +464,9 @@ export class ReactFlowBridge {
     return {
       id: container.id,
       type: "container",
-      position: container.position || { x: 0, y: 0 },
+      position: container.position || (() => {
+        throw new Error(`Container ${container.id} is missing position data. ELK layout must be calculated before rendering.`)
+      })(),
       data: {
         label: container.label,
         nodeType: "container",
@@ -487,7 +491,9 @@ export class ReactFlowBridge {
     const containerNode: ReactFlowNode = {
       id: container.id,
       type: "container",
-      position: container.position || { x: 0, y: 0 },
+      position: container.position || (() => {
+        throw new Error(`Container ${container.id} is missing position data. ELK layout must be calculated before rendering.`)
+      })(),
       data: {
         label: container.label,
         nodeType: "container",
