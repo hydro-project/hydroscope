@@ -3,11 +3,11 @@
  * Architectural constraints: Coordinates between VisualizationState and AsyncCoordinator
  */
 
-import type { VisualizationState } from './VisualizationState.js';
+import type { VisualizationState } from "./VisualizationState.js";
 
 export interface ClickEvent {
   elementId: string;
-  elementType: 'node' | 'container';
+  elementType: "node" | "container";
   timestamp: number;
   position: { x: number; y: number };
 }
@@ -28,7 +28,7 @@ export class InteractionHandler {
   constructor(
     visualizationState: VisualizationState,
     asyncCoordinator?: any,
-    config?: Partial<InteractionConfig>
+    config?: Partial<InteractionConfig>,
   ) {
     this._visualizationState = visualizationState;
     this._asyncCoordinator = asyncCoordinator;
@@ -44,7 +44,7 @@ export class InteractionHandler {
   handleNodeClick(nodeId: string, position?: { x: number; y: number }): void {
     const clickEvent: ClickEvent = {
       elementId: nodeId,
-      elementType: 'node',
+      elementType: "node",
       timestamp: Date.now(),
       position: position || { x: 0, y: 0 },
     };
@@ -52,10 +52,13 @@ export class InteractionHandler {
     this.processClickEvent(clickEvent);
   }
 
-  handleContainerClick(containerId: string, position?: { x: number; y: number }): void {
+  handleContainerClick(
+    containerId: string,
+    position?: { x: number; y: number },
+  ): void {
     const clickEvent: ClickEvent = {
       elementId: containerId,
-      elementType: 'container',
+      elementType: "container",
       timestamp: Date.now(),
       position: position || { x: 0, y: 0 },
     };
@@ -74,7 +77,7 @@ export class InteractionHandler {
 
   private _processClickEventWithDebouncing(event: ClickEvent): void {
     const key = `${event.elementType}-${event.elementId}`;
-    
+
     // Cancel any pending operation for this element
     const pendingTimeout = this._pendingOperations.get(key);
     if (pendingTimeout) {
@@ -85,8 +88,11 @@ export class InteractionHandler {
     // Check for rapid clicks
     const lastClickTime = this._recentClicks.get(key) || 0;
     const timeSinceLastClick = event.timestamp - lastClickTime;
-    
-    if (timeSinceLastClick < this._config.rapidClickThreshold && lastClickTime > 0) {
+
+    if (
+      timeSinceLastClick < this._config.rapidClickThreshold &&
+      lastClickTime > 0
+    ) {
       // This is a rapid click - handle it immediately
       this._executeClickEvent(event);
       this._recentClicks.set(key, event.timestamp);
@@ -105,16 +111,16 @@ export class InteractionHandler {
 
   private _executeClickEvent(event: ClickEvent): void {
     try {
-      if (event.elementType === 'node') {
+      if (event.elementType === "node") {
         this._handleNodeClickInternal(event);
-      } else if (event.elementType === 'container') {
+      } else if (event.elementType === "container") {
         this._handleContainerClickInternal(event);
       }
 
       // Trigger layout update if needed
       this._triggerLayoutUpdateIfNeeded(event);
     } catch (error) {
-      console.error('Error processing click event:', error);
+      console.error("Error processing click event:", error);
     }
   }
 
@@ -130,14 +136,18 @@ export class InteractionHandler {
 
   private _triggerLayoutUpdateIfNeeded(event: ClickEvent): void {
     // Container clicks always need layout updates
-    if (event.elementType === 'container') {
+    if (event.elementType === "container") {
       this._triggerLayoutUpdate();
     }
-    
+
     // Node label changes might need layout updates if the label size changes significantly
-    if (event.elementType === 'node') {
+    if (event.elementType === "node") {
       const node = this._visualizationState.getGraphNode(event.elementId);
-      if (node && node.longLabel && node.longLabel.length > node.label.length * 2) {
+      if (
+        node &&
+        node.longLabel &&
+        node.longLabel.length > node.label.length * 2
+      ) {
         // Significant label size change - trigger layout update
         this._triggerLayoutUpdate();
       }
@@ -156,7 +166,7 @@ export class InteractionHandler {
     for (const nodeId of nodeIds) {
       this._visualizationState.setNodeLabelState(nodeId, showLongLabel);
     }
-    
+
     // Trigger single layout update for all changes
     this._triggerLayoutUpdate();
   }
@@ -172,7 +182,7 @@ export class InteractionHandler {
         }
       }
     }
-    
+
     // Trigger single layout update for all changes
     this._triggerLayoutUpdate();
   }
@@ -211,14 +221,14 @@ export class InteractionHandler {
   getRecentClicksCount(): number {
     const now = Date.now();
     const recentThreshold = now - this._config.rapidClickThreshold;
-    
+
     let count = 0;
     for (const timestamp of this._recentClicks.values()) {
       if (timestamp > recentThreshold) {
         count++;
       }
     }
-    
+
     return count;
   }
 
@@ -230,21 +240,27 @@ export class InteractionHandler {
 
   // Event queuing through AsyncCoordinator (when available)
   queueInteractionEvent(event: ClickEvent): Promise<void> {
-    if (this._asyncCoordinator && this._asyncCoordinator.queueApplicationEvent) {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.queueApplicationEvent
+    ) {
       return this._asyncCoordinator.queueApplicationEvent({
-        type: 'interaction',
+        type: "interaction",
         data: event,
       });
     }
-    
+
     // Fallback to synchronous processing
     this.processClickEvent(event);
     return Promise.resolve();
   }
 
   // Integration with search operations
-  handleSearchResultClick(elementId: string, elementType: 'node' | 'container'): void {
-    if (elementType === 'container') {
+  handleSearchResultClick(
+    elementId: string,
+    elementType: "node" | "container",
+  ): void {
+    if (elementType === "container") {
       // Search result clicks should expand containers
       this._visualizationState.expandContainerForSearch(elementId);
       this._triggerLayoutUpdate();

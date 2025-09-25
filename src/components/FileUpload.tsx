@@ -3,13 +3,13 @@
  * Supports drag-and-drop and file selection with comprehensive validation
  */
 
-import React, { useCallback, useState, useRef } from 'react';
-import type { 
-  HydroscopeData, 
-  ParseError, 
+import React, { useCallback, useState, useRef, useEffect } from "react";
+import type {
+  HydroscopeData,
+  ParseError,
   ValidationResult,
-  HierarchyChoice 
-} from '../types/core.js';
+  HierarchyChoice,
+} from "../types/core.js";
 
 export interface FileUploadProps {
   /** Callback when file is successfully parsed */
@@ -42,406 +42,478 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onFileLoaded,
   onParseError,
   onValidationError,
-  acceptedTypes = ['.json'],
+  acceptedTypes = [".json"],
   maxFileSize = 50 * 1024 * 1024, // 50MB default
   debug = false,
   customValidator,
-  showDetailedErrors = false
+  showDetailedErrors = false,
 }) => {
   const [state, setState] = useState<FileUploadState>({
     isDragOver: false,
     isProcessing: false,
     lastError: null,
     lastSuccess: null,
-    uploadProgress: 0
+    uploadProgress: 0,
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const safeSetState = useCallback(
+    (updater: React.SetStateAction<FileUploadState>) => {
+      if (mountedRef.current) {
+        setState(updater);
+      }
+    },
+    [],
+  );
 
   // Debug logging helper
-  const debugLog = useCallback((message: string, data?: any) => {
-    if (debug) {
-      console.log(`[FileUpload] ${message}`, data);
-    }
-  }, [debug]);
+  const debugLog = useCallback(
+    (message: string, data?: any) => {
+      if (debug) {
+        console.log(`[FileUpload] ${message}`, data);
+      }
+    },
+    [debug],
+  );
 
   // Validate file before processing
-  const validateFile = useCallback((file: File): ValidationResult[] => {
-    const errors: ValidationResult[] = [];
+  const validateFile = useCallback(
+    (file: File): ValidationResult[] => {
+      const errors: ValidationResult[] = [];
 
-    // Check file type
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!acceptedTypes.includes(fileExtension)) {
-      errors.push({
-        type: 'file_type',
-        message: `Invalid file type. Expected: ${acceptedTypes.join(', ')}`,
-        severity: 'error',
-        context: { filename: file.name, extension: fileExtension }
-      });
-    }
+      // Check file type
+      const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
+      if (!acceptedTypes.includes(fileExtension)) {
+        errors.push({
+          type: "file_type",
+          message: `Invalid file type. Expected: ${acceptedTypes.join(", ")}`,
+          severity: "error",
+          context: { filename: file.name, extension: fileExtension },
+        });
+      }
 
-    // Check file size
-    if (file.size > maxFileSize) {
-      errors.push({
-        type: 'file_size',
-        message: `File too large. Maximum size: ${Math.round(maxFileSize / 1024 / 1024)}MB`,
-        severity: 'error',
-        context: { filename: file.name, size: file.size, maxSize: maxFileSize }
-      });
-    }
+      // Check file size
+      if (file.size > maxFileSize) {
+        errors.push({
+          type: "file_size",
+          message: `File too large. Maximum size: ${Math.round(maxFileSize / 1024 / 1024)}MB`,
+          severity: "error",
+          context: {
+            filename: file.name,
+            size: file.size,
+            maxSize: maxFileSize,
+          },
+        });
+      }
 
-    // Check if file is empty
-    if (file.size === 0) {
-      errors.push({
-        type: 'file_empty',
-        message: 'File is empty',
-        severity: 'error',
-        context: { filename: file.name }
-      });
-    }
+      // Check if file is empty
+      if (file.size === 0) {
+        errors.push({
+          type: "file_empty",
+          message: "File is empty",
+          severity: "error",
+          context: { filename: file.name },
+        });
+      }
 
-    return errors;
-  }, [acceptedTypes, maxFileSize]);
+      return errors;
+    },
+    [acceptedTypes, maxFileSize],
+  );
 
   // Validate JSON structure
-  const validateJSONStructure = useCallback((data: any, filename: string): ValidationResult[] => {
-    const errors: ValidationResult[] = [];
+  const validateJSONStructure = useCallback(
+    (data: any, filename: string): ValidationResult[] => {
+      const errors: ValidationResult[] = [];
 
-    // Check if it's an object
-    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-      errors.push({
-        type: 'json_structure',
-        message: 'JSON must be an object',
-        severity: 'error',
-        context: { filename, dataType: typeof data }
-      });
+      // Check if it's an object
+      if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        errors.push({
+          type: "json_structure",
+          message: "JSON must be an object",
+          severity: "error",
+          context: { filename, dataType: typeof data },
+        });
+        return errors;
+      }
+
+      // Check required top-level properties
+      const requiredProps = ["nodes", "edges"];
+      for (const prop of requiredProps) {
+        if (!(prop in data)) {
+          errors.push({
+            type: "missing_property",
+            message: `Missing required property: ${prop}`,
+            severity: "error",
+            context: { filename, property: prop },
+          });
+        }
+      }
+
+      // Validate nodes array
+      if ("nodes" in data) {
+        if (!Array.isArray(data.nodes)) {
+          errors.push({
+            type: "invalid_property_type",
+            message: "nodes must be an array",
+            severity: "error",
+            context: {
+              filename,
+              property: "nodes",
+              expectedType: "array",
+              actualType: typeof data.nodes,
+            },
+          });
+        } else {
+          // Validate node structure
+          data.nodes.forEach((node: any, index: number) => {
+            if (typeof node !== "object" || node === null) {
+              errors.push({
+                type: "invalid_node",
+                message: `Node at index ${index} must be an object`,
+                severity: "error",
+                context: { filename, nodeIndex: index },
+              });
+              return;
+            }
+
+            // Check required node properties
+            const requiredNodeProps = ["id"];
+            for (const prop of requiredNodeProps) {
+              if (!(prop in node)) {
+                errors.push({
+                  type: "missing_node_property",
+                  message: `Node at index ${index} missing required property: ${prop}`,
+                  severity: "error",
+                  context: { filename, nodeIndex: index, property: prop },
+                });
+              }
+            }
+
+            // Validate node ID is string
+            if ("id" in node && typeof node.id !== "string") {
+              errors.push({
+                type: "invalid_node_property",
+                message: `Node at index ${index} has invalid id type`,
+                severity: "error",
+                context: {
+                  filename,
+                  nodeIndex: index,
+                  property: "id",
+                  expectedType: "string",
+                  actualType: typeof node.id,
+                },
+              });
+            }
+          });
+        }
+      }
+
+      // Validate edges array
+      if ("edges" in data) {
+        if (!Array.isArray(data.edges)) {
+          errors.push({
+            type: "invalid_property_type",
+            message: "edges must be an array",
+            severity: "error",
+            context: {
+              filename,
+              property: "edges",
+              expectedType: "array",
+              actualType: typeof data.edges,
+            },
+          });
+        } else {
+          // Validate edge structure
+          data.edges.forEach((edge: any, index: number) => {
+            if (typeof edge !== "object" || edge === null) {
+              errors.push({
+                type: "invalid_edge",
+                message: `Edge at index ${index} must be an object`,
+                severity: "error",
+                context: { filename, edgeIndex: index },
+              });
+              return;
+            }
+
+            // Check required edge properties
+            const requiredEdgeProps = ["id", "source", "target"];
+            for (const prop of requiredEdgeProps) {
+              if (!(prop in edge)) {
+                errors.push({
+                  type: "missing_edge_property",
+                  message: `Edge at index ${index} missing required property: ${prop}`,
+                  severity: "error",
+                  context: { filename, edgeIndex: index, property: prop },
+                });
+              }
+            }
+          });
+        }
+      }
+
+      // Validate hierarchyChoices if present
+      if ("hierarchyChoices" in data) {
+        if (!Array.isArray(data.hierarchyChoices)) {
+          errors.push({
+            type: "invalid_property_type",
+            message: "hierarchyChoices must be an array",
+            severity: "error",
+            context: {
+              filename,
+              property: "hierarchyChoices",
+              expectedType: "array",
+              actualType: typeof data.hierarchyChoices,
+            },
+          });
+        } else {
+          data.hierarchyChoices.forEach((choice: any, index: number) => {
+            if (typeof choice !== "object" || choice === null) {
+              errors.push({
+                type: "invalid_hierarchy_choice",
+                message: `HierarchyChoice at index ${index} must be an object`,
+                severity: "error",
+                context: { filename, choiceIndex: index },
+              });
+              return;
+            }
+
+            // Check required hierarchy choice properties
+            const requiredChoiceProps = ["id", "name"];
+            for (const prop of requiredChoiceProps) {
+              if (!(prop in choice)) {
+                errors.push({
+                  type: "missing_hierarchy_choice_property",
+                  message: `HierarchyChoice at index ${index} missing required property: ${prop}`,
+                  severity: "error",
+                  context: { filename, choiceIndex: index, property: prop },
+                });
+              }
+            }
+          });
+        }
+      }
+
+      // Run custom validation if provided
+      if (customValidator) {
+        try {
+          const customErrors = customValidator(data);
+          errors.push(...customErrors);
+        } catch (error) {
+          errors.push({
+            type: "custom_validation_error",
+            message: `Custom validation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+            severity: "error",
+            context: {
+              filename,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          });
+        }
+      }
+
       return errors;
-    }
-
-    // Check required top-level properties
-    const requiredProps = ['nodes', 'edges'];
-    for (const prop of requiredProps) {
-      if (!(prop in data)) {
-        errors.push({
-          type: 'missing_property',
-          message: `Missing required property: ${prop}`,
-          severity: 'error',
-          context: { filename, property: prop }
-        });
-      }
-    }
-
-    // Validate nodes array
-    if ('nodes' in data) {
-      if (!Array.isArray(data.nodes)) {
-        errors.push({
-          type: 'invalid_property_type',
-          message: 'nodes must be an array',
-          severity: 'error',
-          context: { filename, property: 'nodes', expectedType: 'array', actualType: typeof data.nodes }
-        });
-      } else {
-        // Validate node structure
-        data.nodes.forEach((node: any, index: number) => {
-          if (typeof node !== 'object' || node === null) {
-            errors.push({
-              type: 'invalid_node',
-              message: `Node at index ${index} must be an object`,
-              severity: 'error',
-              context: { filename, nodeIndex: index }
-            });
-            return;
-          }
-
-          // Check required node properties
-          const requiredNodeProps = ['id'];
-          for (const prop of requiredNodeProps) {
-            if (!(prop in node)) {
-              errors.push({
-                type: 'missing_node_property',
-                message: `Node at index ${index} missing required property: ${prop}`,
-                severity: 'error',
-                context: { filename, nodeIndex: index, property: prop }
-              });
-            }
-          }
-
-          // Validate node ID is string
-          if ('id' in node && typeof node.id !== 'string') {
-            errors.push({
-              type: 'invalid_node_property',
-              message: `Node at index ${index} has invalid id type`,
-              severity: 'error',
-              context: { filename, nodeIndex: index, property: 'id', expectedType: 'string', actualType: typeof node.id }
-            });
-          }
-        });
-      }
-    }
-
-    // Validate edges array
-    if ('edges' in data) {
-      if (!Array.isArray(data.edges)) {
-        errors.push({
-          type: 'invalid_property_type',
-          message: 'edges must be an array',
-          severity: 'error',
-          context: { filename, property: 'edges', expectedType: 'array', actualType: typeof data.edges }
-        });
-      } else {
-        // Validate edge structure
-        data.edges.forEach((edge: any, index: number) => {
-          if (typeof edge !== 'object' || edge === null) {
-            errors.push({
-              type: 'invalid_edge',
-              message: `Edge at index ${index} must be an object`,
-              severity: 'error',
-              context: { filename, edgeIndex: index }
-            });
-            return;
-          }
-
-          // Check required edge properties
-          const requiredEdgeProps = ['id', 'source', 'target'];
-          for (const prop of requiredEdgeProps) {
-            if (!(prop in edge)) {
-              errors.push({
-                type: 'missing_edge_property',
-                message: `Edge at index ${index} missing required property: ${prop}`,
-                severity: 'error',
-                context: { filename, edgeIndex: index, property: prop }
-              });
-            }
-          }
-        });
-      }
-    }
-
-    // Validate hierarchyChoices if present
-    if ('hierarchyChoices' in data) {
-      if (!Array.isArray(data.hierarchyChoices)) {
-        errors.push({
-          type: 'invalid_property_type',
-          message: 'hierarchyChoices must be an array',
-          severity: 'error',
-          context: { filename, property: 'hierarchyChoices', expectedType: 'array', actualType: typeof data.hierarchyChoices }
-        });
-      } else {
-        data.hierarchyChoices.forEach((choice: any, index: number) => {
-          if (typeof choice !== 'object' || choice === null) {
-            errors.push({
-              type: 'invalid_hierarchy_choice',
-              message: `HierarchyChoice at index ${index} must be an object`,
-              severity: 'error',
-              context: { filename, choiceIndex: index }
-            });
-            return;
-          }
-
-          // Check required hierarchy choice properties
-          const requiredChoiceProps = ['id', 'name'];
-          for (const prop of requiredChoiceProps) {
-            if (!(prop in choice)) {
-              errors.push({
-                type: 'missing_hierarchy_choice_property',
-                message: `HierarchyChoice at index ${index} missing required property: ${prop}`,
-                severity: 'error',
-                context: { filename, choiceIndex: index, property: prop }
-              });
-            }
-          }
-        });
-      }
-    }
-
-    // Run custom validation if provided
-    if (customValidator) {
-      try {
-        const customErrors = customValidator(data);
-        errors.push(...customErrors);
-      } catch (error) {
-        errors.push({
-          type: 'custom_validation_error',
-          message: `Custom validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'error',
-          context: { filename, error: error instanceof Error ? error.message : String(error) }
-        });
-      }
-    }
-
-    return errors;
-  }, [customValidator]);
+    },
+    [customValidator],
+  );
 
   // Process uploaded file
-  const processFile = useCallback(async (file: File) => {
-    debugLog('Processing file', { name: file.name, size: file.size, type: file.type });
-
-    setState(prev => ({
-      ...prev,
-      isProcessing: true,
-      lastError: null,
-      lastSuccess: null,
-      uploadProgress: 0
-    }));
-
-    try {
-      // Validate file
-      const fileErrors = validateFile(file);
-      if (fileErrors.length > 0) {
-        debugLog('File validation failed', fileErrors);
-        if (onValidationError) {
-          onValidationError(fileErrors, file.name);
-        }
-        setState(prev => ({
-          ...prev,
-          isProcessing: false,
-          lastError: fileErrors.map(e => e.message).join(', ')
-        }));
-        return;
-      }
-
-      // Update progress
-      setState(prev => ({ ...prev, uploadProgress: 25 }));
-
-      // Read file content
-      const fileContent = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            resolve(e.target.result as string);
-          } else {
-            reject(new Error('Failed to read file'));
-          }
-        };
-        reader.onerror = () => reject(new Error('File reading failed'));
-        reader.readAsText(file);
+  const processFile = useCallback(
+    async (file: File) => {
+      debugLog("Processing file", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
       });
 
-      // Update progress
-      setState(prev => ({ ...prev, uploadProgress: 50 }));
+      safeSetState((prev) => ({
+        ...prev,
+        isProcessing: true,
+        lastError: null,
+        lastSuccess: null,
+        uploadProgress: 0,
+      }));
 
-      // Parse JSON
-      let parsedData: any;
       try {
-        parsedData = JSON.parse(fileContent);
-      } catch (parseError) {
-        const error: ParseError = {
-          type: 'json_parse',
-          message: `Invalid JSON: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`,
-          line: undefined,
-          column: undefined,
-          context: { filename: file.name }
+        // Validate file
+        const fileErrors = validateFile(file);
+        if (fileErrors.length > 0) {
+          debugLog("File validation failed", fileErrors);
+          if (onValidationError) {
+            onValidationError(fileErrors, file.name);
+          }
+          safeSetState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            lastError: fileErrors.map((e) => e.message).join(", "),
+          }));
+          return;
+        }
+
+        // Update progress
+        safeSetState((prev) => ({ ...prev, uploadProgress: 25 }));
+
+        // Read file content
+        const fileContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              resolve(e.target.result as string);
+            } else {
+              reject(new Error("Failed to read file"));
+            }
+          };
+          reader.onerror = () => reject(new Error("File reading failed"));
+          reader.readAsText(file);
+        });
+
+        // Update progress
+        safeSetState((prev) => ({ ...prev, uploadProgress: 50 }));
+
+        // Parse JSON
+        let parsedData: any;
+        try {
+          parsedData = JSON.parse(fileContent);
+        } catch (parseError) {
+          const error: ParseError = {
+            type: "json_parse",
+            message: `Invalid JSON: ${parseError instanceof Error ? parseError.message : "Unknown parsing error"}`,
+            line: undefined,
+            column: undefined,
+            context: { filename: file.name },
+          };
+          debugLog("JSON parsing failed", error);
+          if (onParseError) {
+            onParseError(error, file.name);
+          }
+          safeSetState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            lastError: error.message,
+          }));
+          return;
+        }
+
+        // Update progress
+        safeSetState((prev) => ({ ...prev, uploadProgress: 75 }));
+
+        // Validate JSON structure
+        const structureErrors = validateJSONStructure(parsedData, file.name);
+        if (structureErrors.length > 0) {
+          debugLog("JSON structure validation failed", structureErrors);
+          if (onValidationError) {
+            onValidationError(structureErrors, file.name);
+          }
+          safeSetState((prev) => ({
+            ...prev,
+            isProcessing: false,
+            lastError: structureErrors.map((e) => e.message).join(", "),
+          }));
+          return;
+        }
+
+        // Update progress
+        safeSetState((prev) => ({ ...prev, uploadProgress: 100 }));
+
+        // Success - convert to HydroscopeData format
+        const hydroscopeData: HydroscopeData = {
+          nodes: parsedData.nodes || [],
+          edges: parsedData.edges || [],
+          hierarchyChoices: parsedData.hierarchyChoices || [],
+          nodeAssignments: parsedData.nodeAssignments || {},
+          nodeTypeConfig: parsedData.nodeTypeConfig,
+          edgeStyleConfig: parsedData.edgeStyleConfig,
+          legend: parsedData.legend,
+          styles: parsedData.styles,
         };
-        debugLog('JSON parsing failed', error);
+
+        debugLog("File processed successfully", {
+          nodeCount: hydroscopeData.nodes.length,
+          edgeCount: hydroscopeData.edges.length,
+          hierarchyChoicesCount: hydroscopeData.hierarchyChoices.length,
+        });
+
+        if (onFileLoaded) {
+          onFileLoaded(hydroscopeData, file.name);
+        }
+
+        safeSetState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          lastSuccess: `Successfully loaded ${file.name}`,
+          uploadProgress: 0,
+        }));
+      } catch (error) {
+        const parseError: ParseError = {
+          type: "processing_error",
+          message: `File processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          context: { filename: file.name },
+        };
+        debugLog("File processing failed", parseError);
         if (onParseError) {
-          onParseError(error, file.name);
+          onParseError(parseError, file.name);
         }
-        setState(prev => ({
+        safeSetState((prev) => ({
           ...prev,
           isProcessing: false,
-          lastError: error.message
+          lastError: parseError.message,
+          uploadProgress: 0,
         }));
-        return;
       }
-
-      // Update progress
-      setState(prev => ({ ...prev, uploadProgress: 75 }));
-
-      // Validate JSON structure
-      const structureErrors = validateJSONStructure(parsedData, file.name);
-      if (structureErrors.length > 0) {
-        debugLog('JSON structure validation failed', structureErrors);
-        if (onValidationError) {
-          onValidationError(structureErrors, file.name);
-        }
-        setState(prev => ({
-          ...prev,
-          isProcessing: false,
-          lastError: structureErrors.map(e => e.message).join(', ')
-        }));
-        return;
-      }
-
-      // Update progress
-      setState(prev => ({ ...prev, uploadProgress: 100 }));
-
-      // Success - convert to HydroscopeData format
-      const hydroscopeData: HydroscopeData = {
-        nodes: parsedData.nodes || [],
-        edges: parsedData.edges || [],
-        hierarchyChoices: parsedData.hierarchyChoices || [],
-        nodeAssignments: parsedData.nodeAssignments || {},
-        nodeTypeConfig: parsedData.nodeTypeConfig,
-        edgeStyleConfig: parsedData.edgeStyleConfig,
-        legend: parsedData.legend,
-        styles: parsedData.styles
-      };
-
-      debugLog('File processed successfully', { 
-        nodeCount: hydroscopeData.nodes.length, 
-        edgeCount: hydroscopeData.edges.length,
-        hierarchyChoicesCount: hydroscopeData.hierarchyChoices.length
-      });
-
-      if (onFileLoaded) {
-        onFileLoaded(hydroscopeData, file.name);
-      }
-
-      setState(prev => ({
-        ...prev,
-        isProcessing: false,
-        lastSuccess: `Successfully loaded ${file.name}`,
-        uploadProgress: 0
-      }));
-
-    } catch (error) {
-      const parseError: ParseError = {
-        type: 'processing_error',
-        message: `File processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        context: { filename: file.name }
-      };
-      debugLog('File processing failed', parseError);
-      if (onParseError) {
-        onParseError(parseError, file.name);
-      }
-      setState(prev => ({
-        ...prev,
-        isProcessing: false,
-        lastError: parseError.message,
-        uploadProgress: 0
-      }));
-    }
-  }, [debugLog, validateFile, validateJSONStructure, onFileLoaded, onParseError, onValidationError]);
+    },
+    [
+      debugLog,
+      validateFile,
+      validateJSONStructure,
+      onFileLoaded,
+      onParseError,
+      onValidationError,
+    ],
+  );
 
   // Handle file selection
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    processFile(file);
-  }, [processFile]);
+  const handleFileSelect = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      processFile(file);
+    },
+    [processFile],
+  );
 
   // Handle drag events
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setState(prev => ({ ...prev, isDragOver: true }));
+    safeSetState((prev) => ({ ...prev, isDragOver: true }));
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setState(prev => ({ ...prev, isDragOver: false }));
+    safeSetState((prev) => ({ ...prev, isDragOver: false }));
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prev => ({ ...prev, isDragOver: false }));
-    
-    const files = e.dataTransfer.files;
-    handleFileSelect(files);
-  }, [handleFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      safeSetState((prev) => ({ ...prev, isDragOver: false }));
+
+      const files = e.dataTransfer.files;
+      handleFileSelect(files);
+    },
+    [handleFileSelect],
+  );
 
   // Handle click to open file dialog
   const handleClick = useCallback(() => {
@@ -450,14 +522,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, [state.isProcessing]);
 
   // Handle input change
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files);
-  }, [handleFileSelect]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFileSelect(e.target.files);
+    },
+    [handleFileSelect],
+  );
 
   return (
     <div className="hydroscope-file-upload">
       <div
-        className={`upload-area ${state.isDragOver ? 'drag-over' : ''} ${state.isProcessing ? 'processing' : ''}`}
+        className={`upload-area ${state.isDragOver ? "drag-over" : ""} ${state.isProcessing ? "processing" : ""}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -465,7 +540,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             handleClick();
           }
@@ -474,12 +549,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept={acceptedTypes.join(',')}
+          accept={acceptedTypes.join(",")}
           onChange={handleInputChange}
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
           disabled={state.isProcessing}
         />
-        
+
         <div className="upload-content">
           {state.isProcessing ? (
             <div className="processing-state">
@@ -487,8 +562,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <p>Processing file...</p>
               {state.uploadProgress > 0 && (
                 <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
+                  <div
+                    className="progress-fill"
                     style={{ width: `${state.uploadProgress}%` }}
                   />
                 </div>
@@ -501,7 +576,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 Drop a JSON file here or click to select
               </p>
               <p className="secondary-text">
-                Supported formats: {acceptedTypes.join(', ')} • Max size: {Math.round(maxFileSize / 1024 / 1024)}MB
+                Supported formats: {acceptedTypes.join(", ")} • Max size:{" "}
+                {Math.round(maxFileSize / 1024 / 1024)}MB
               </p>
             </div>
           )}
@@ -523,7 +599,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .hydroscope-file-upload {
           width: 100%;
           max-width: 600px;

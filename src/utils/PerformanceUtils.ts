@@ -33,7 +33,7 @@ export class PerformanceProfiler {
 
   start(): void {
     if (this.isRunning) {
-      throw new Error('Profiler is already running');
+      throw new Error("Profiler is already running");
     }
 
     this.reset();
@@ -41,14 +41,14 @@ export class PerformanceProfiler {
     this.initialMemory = this.getCurrentMemoryUsage();
     this.peakMemory = this.initialMemory;
     this.isRunning = true;
-    
+
     // Take initial snapshot
     this.takeMemorySnapshot();
   }
 
   stop(): PerformanceMetrics {
     if (!this.isRunning) {
-      throw new Error('Profiler is not running');
+      throw new Error("Profiler is not running");
     }
 
     this.endTime = performance.now();
@@ -57,7 +57,10 @@ export class PerformanceProfiler {
 
     const duration = this.endTime - this.startTime;
     const memoryGrowth = this.finalMemory - this.initialMemory;
-    const throughput = this.operationCount > 0 ? (this.operationCount / duration) * 1000 : undefined;
+    const throughput =
+      this.operationCount > 0
+        ? (this.operationCount / duration) * 1000
+        : undefined;
 
     return {
       duration,
@@ -80,7 +83,7 @@ export class PerformanceProfiler {
   takeMemorySnapshot(): void {
     const currentMemory = this.getCurrentMemoryUsage();
     this.memorySnapshots.push(currentMemory);
-    
+
     if (currentMemory > this.peakMemory) {
       this.peakMemory = currentMemory;
     }
@@ -106,7 +109,10 @@ export class PerformanceProfiler {
 }
 
 export class PerformanceAnalyzer {
-  static analyzeMetrics(metrics: PerformanceMetrics, thresholds: PerformanceThresholds): {
+  static analyzeMetrics(
+    metrics: PerformanceMetrics,
+    thresholds: PerformanceThresholds,
+  ): {
     passed: boolean;
     violations: string[];
     summary: string;
@@ -114,39 +120,61 @@ export class PerformanceAnalyzer {
     const violations: string[] = [];
 
     if (metrics.duration > thresholds.maxDuration) {
-      violations.push(`Duration ${metrics.duration.toFixed(2)}ms exceeds threshold ${thresholds.maxDuration}ms`);
+      violations.push(
+        `Duration ${metrics.duration.toFixed(2)}ms exceeds threshold ${thresholds.maxDuration}ms`,
+      );
     }
 
     if (metrics.memoryUsage.growth > thresholds.maxMemoryGrowth) {
-      violations.push(`Memory growth ${metrics.memoryUsage.growth.toFixed(2)}MB exceeds threshold ${thresholds.maxMemoryGrowth}MB`);
+      violations.push(
+        `Memory growth ${metrics.memoryUsage.growth.toFixed(2)}MB exceeds threshold ${thresholds.maxMemoryGrowth}MB`,
+      );
     }
 
-    if (thresholds.minThroughput && metrics.throughput && metrics.throughput < thresholds.minThroughput) {
-      violations.push(`Throughput ${metrics.throughput.toFixed(2)} ops/sec below threshold ${thresholds.minThroughput} ops/sec`);
+    if (
+      thresholds.minThroughput &&
+      metrics.throughput &&
+      metrics.throughput < thresholds.minThroughput
+    ) {
+      violations.push(
+        `Throughput ${metrics.throughput.toFixed(2)} ops/sec below threshold ${thresholds.minThroughput} ops/sec`,
+      );
     }
 
     const passed = violations.length === 0;
-    const summary = `Duration: ${metrics.duration.toFixed(2)}ms, Memory: ${metrics.memoryUsage.growth.toFixed(2)}MB growth, Peak: ${metrics.memoryUsage.peak.toFixed(2)}MB${metrics.throughput ? `, Throughput: ${metrics.throughput.toFixed(2)} ops/sec` : ''}`;
+    const summary = `Duration: ${metrics.duration.toFixed(2)}ms, Memory: ${metrics.memoryUsage.growth.toFixed(2)}MB growth, Peak: ${metrics.memoryUsage.peak.toFixed(2)}MB${metrics.throughput ? `, Throughput: ${metrics.throughput.toFixed(2)} ops/sec` : ""}`;
 
     return { passed, violations, summary };
   }
 
-  static compareMetrics(baseline: PerformanceMetrics, current: PerformanceMetrics): {
+  static compareMetrics(
+    baseline: PerformanceMetrics,
+    current: PerformanceMetrics,
+  ): {
     durationChange: number;
     memoryChange: number;
     throughputChange?: number;
     regression: boolean;
   } {
-    const durationChange = ((current.duration - baseline.duration) / baseline.duration) * 100;
-    const memoryChange = ((current.memoryUsage.growth - baseline.memoryUsage.growth) / baseline.memoryUsage.growth) * 100;
-    
+    const durationChange =
+      ((current.duration - baseline.duration) / baseline.duration) * 100;
+    const memoryChange =
+      ((current.memoryUsage.growth - baseline.memoryUsage.growth) /
+        baseline.memoryUsage.growth) *
+      100;
+
     let throughputChange: number | undefined;
     if (baseline.throughput && current.throughput) {
-      throughputChange = ((current.throughput - baseline.throughput) / baseline.throughput) * 100;
+      throughputChange =
+        ((current.throughput - baseline.throughput) / baseline.throughput) *
+        100;
     }
 
     // Consider it a regression if duration increased by >10% or memory by >20%
-    const regression = durationChange > 10 || memoryChange > 20 || (throughputChange !== undefined && throughputChange < -10);
+    const regression =
+      durationChange > 10 ||
+      memoryChange > 20 ||
+      (throughputChange !== undefined && throughputChange < -10);
 
     return {
       durationChange,
@@ -164,7 +192,7 @@ export class BatchPerformanceTester {
     testName: string,
     testFunction: () => T | Promise<T>,
     iterations: number = 1,
-    warmupIterations: number = 0
+    warmupIterations: number = 0,
   ): Promise<{
     results: PerformanceMetrics[];
     average: PerformanceMetrics;
@@ -217,67 +245,76 @@ export class BatchPerformanceTester {
     return {
       duration: results.reduce((sum, r) => sum + r.duration, 0) / count,
       memoryUsage: {
-        initial: results.reduce((sum, r) => sum + r.memoryUsage.initial, 0) / count,
+        initial:
+          results.reduce((sum, r) => sum + r.memoryUsage.initial, 0) / count,
         peak: results.reduce((sum, r) => sum + r.memoryUsage.peak, 0) / count,
         final: results.reduce((sum, r) => sum + r.memoryUsage.final, 0) / count,
-        growth: results.reduce((sum, r) => sum + r.memoryUsage.growth, 0) / count,
+        growth:
+          results.reduce((sum, r) => sum + r.memoryUsage.growth, 0) / count,
       },
       operationCount: results[0].operationCount,
-      throughput: results[0].throughput ? results.reduce((sum, r) => sum + (r.throughput || 0), 0) / count : undefined,
+      throughput: results[0].throughput
+        ? results.reduce((sum, r) => sum + (r.throughput || 0), 0) / count
+        : undefined,
     };
   }
 
   private calculateMedian(results: PerformanceMetrics[]): PerformanceMetrics {
     const sorted = [...results].sort((a, b) => a.duration - b.duration);
     const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 === 0 
+    return sorted.length % 2 === 0
       ? this.calculateAverage([sorted[mid - 1], sorted[mid]])
       : sorted[mid];
   }
 
   private calculateMin(results: PerformanceMetrics[]): PerformanceMetrics {
-    return results.reduce((min, current) => 
-      current.duration < min.duration ? current : min
+    return results.reduce((min, current) =>
+      current.duration < min.duration ? current : min,
     );
   }
 
   private calculateMax(results: PerformanceMetrics[]): PerformanceMetrics {
-    return results.reduce((max, current) => 
-      current.duration > max.duration ? current : max
+    return results.reduce((max, current) =>
+      current.duration > max.duration ? current : max,
     );
   }
 }
 
 // Utility functions for common performance testing scenarios
-export function measureAsync<T>(fn: () => Promise<T>): Promise<{ result: T; metrics: PerformanceMetrics }> {
+export function measureAsync<T>(
+  fn: () => Promise<T>,
+): Promise<{ result: T; metrics: PerformanceMetrics }> {
   const profiler = new PerformanceProfiler();
-  
-  return new Promise(async (resolve, reject) => {
+
+  return (async () => {
     try {
       profiler.start();
       const result = await fn();
       const metrics = profiler.stop();
-      resolve({ result, metrics });
+      return { result, metrics };
     } catch (error) {
-      reject(error);
+      throw error;
     }
-  });
+  })();
 }
 
-export function measureSync<T>(fn: () => T): { result: T; metrics: PerformanceMetrics } {
+export function measureSync<T>(fn: () => T): {
+  result: T;
+  metrics: PerformanceMetrics;
+} {
   const profiler = new PerformanceProfiler();
-  
+
   profiler.start();
   const result = fn();
   const metrics = profiler.stop();
-  
+
   return { result, metrics };
 }
 
 export function createPerformanceReport(
   testName: string,
   metrics: PerformanceMetrics,
-  thresholds?: PerformanceThresholds
+  thresholds?: PerformanceThresholds,
 ): string {
   let report = `Performance Report: ${testName}\n`;
   report += `Duration: ${metrics.duration.toFixed(2)}ms\n`;
@@ -286,20 +323,20 @@ export function createPerformanceReport(
   report += `  Peak: ${metrics.memoryUsage.peak.toFixed(2)}MB\n`;
   report += `  Final: ${metrics.memoryUsage.final.toFixed(2)}MB\n`;
   report += `  Growth: ${metrics.memoryUsage.growth.toFixed(2)}MB\n`;
-  
+
   if (metrics.operationCount) {
     report += `Operations: ${metrics.operationCount}\n`;
   }
-  
+
   if (metrics.throughput) {
     report += `Throughput: ${metrics.throughput.toFixed(2)} ops/sec\n`;
   }
 
   if (thresholds) {
     const analysis = PerformanceAnalyzer.analyzeMetrics(metrics, thresholds);
-    report += `\nThreshold Analysis: ${analysis.passed ? 'PASSED' : 'FAILED'}\n`;
+    report += `\nThreshold Analysis: ${analysis.passed ? "PASSED" : "FAILED"}\n`;
     if (analysis.violations.length > 0) {
-      report += `Violations:\n${analysis.violations.map(v => `  - ${v}`).join('\n')}\n`;
+      report += `Violations:\n${analysis.violations.map((v) => `  - ${v}`).join("\n")}\n`;
     }
   }
 

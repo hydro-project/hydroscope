@@ -3,16 +3,16 @@
  * Integrated search component with input and results display
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { SearchInput } from './SearchInput.js';
-import { SearchResults } from './SearchResults.js';
-import type { SearchResult } from '../types/core.js';
+import React, { useState, useCallback, useEffect, useMemo } from "react";
+import { SearchInput } from "./SearchInput.js";
+import { SearchResults } from "./SearchResults.js";
+import type { SearchResult } from "../types/core.js";
 
 export interface SearchProps {
   onSearch: (query: string) => void;
   onClear: () => void;
   onResultSelect: (result: SearchResult) => void;
-  searchResults: SearchResult[];
+  searchResults: readonly SearchResult[];
   isSearching?: boolean;
   query?: string;
   placeholder?: string;
@@ -27,11 +27,11 @@ export const Search: React.FC<SearchProps> = ({
   onResultSelect,
   searchResults,
   isSearching = false,
-  query = '',
+  query = "",
   placeholder,
   maxResults,
   groupByType = false,
-  showResultsPanel = true
+  showResultsPanel = true,
 }) => {
   const [currentResultIndex, setCurrentResultIndex] = useState(-1);
 
@@ -42,32 +42,38 @@ export const Search: React.FC<SearchProps> = ({
 
   // Navigation handlers
   const handleNavigateNext = useCallback(() => {
-    if (searchResults.length === 0) return;
-    
-    setCurrentResultIndex(prevIndex => {
+    if (!searchResults || searchResults.length === 0) return;
+
+    setCurrentResultIndex((prevIndex) => {
       if (prevIndex < 0) return 0;
       return (prevIndex + 1) % searchResults.length;
     });
-  }, [searchResults.length]);
+  }, [searchResults?.length]);
 
   const handleNavigatePrevious = useCallback(() => {
-    if (searchResults.length === 0) return;
-    
-    setCurrentResultIndex(prevIndex => {
+    if (!searchResults || searchResults.length === 0) return;
+
+    setCurrentResultIndex((prevIndex) => {
       if (prevIndex <= 0) return searchResults.length - 1;
       return prevIndex - 1;
     });
-  }, [searchResults.length]);
+  }, [searchResults?.length]);
 
   // Result selection handlers
-  const handleResultClick = useCallback((result: SearchResult, index: number) => {
-    setCurrentResultIndex(index);
-    onResultSelect(result);
-  }, [onResultSelect]);
+  const handleResultClick = useCallback(
+    (result: SearchResult, index: number) => {
+      setCurrentResultIndex(index);
+      onResultSelect(result);
+    },
+    [onResultSelect],
+  );
 
-  const handleResultHover = useCallback((result: SearchResult, index: number) => {
-    setCurrentResultIndex(index);
-  }, []);
+  const handleResultHover = useCallback(
+    (result: SearchResult, index: number) => {
+      setCurrentResultIndex(index);
+    },
+    [],
+  );
 
   // Clear handler that resets navigation
   const handleClear = useCallback(() => {
@@ -76,16 +82,25 @@ export const Search: React.FC<SearchProps> = ({
   }, [onClear]);
 
   // Keyboard navigation for current result selection
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && currentResultIndex >= 0 && currentResultIndex < searchResults.length) {
-      event.preventDefault();
-      const currentResult = searchResults[currentResultIndex];
-      onResultSelect(currentResult);
-    }
-  }, [currentResultIndex, searchResults, onResultSelect]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (
+        event.key === "Enter" &&
+        currentResultIndex >= 0 &&
+        searchResults &&
+        currentResultIndex < searchResults.length
+      ) {
+        event.preventDefault();
+        const currentResult = searchResults[currentResultIndex];
+        onResultSelect(currentResult);
+      }
+    },
+    [currentResultIndex, searchResults, onResultSelect],
+  );
 
-  const hasResults = searchResults.length > 0;
-  const showResults = showResultsPanel && (hasResults || (query && !isSearching));
+  const hasResults = searchResults?.length > 0;
+  const showResults =
+    showResultsPanel && (hasResults || (query && !isSearching));
 
   return (
     <div className="search-container" onKeyDown={handleKeyDown}>
@@ -100,7 +115,7 @@ export const Search: React.FC<SearchProps> = ({
         query={query}
         placeholder={placeholder}
       />
-      
+
       {showResults && (
         <div className="search-results-panel">
           <SearchResults

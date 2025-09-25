@@ -3,17 +3,17 @@
  * This component can be embedded in Docusaurus pages
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { ReactFlow, Background, Controls, MiniMap } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import './hydroscope-docusaurus.css';
+import React, { useEffect, useRef, useState } from "react";
+import { ReactFlow, Background, Controls, MiniMap } from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import "./hydroscope-docusaurus.css";
 
-import { VisualizationState } from '../core/VisualizationState.js';
-import { ReactFlowBridge } from '../bridges/ReactFlowBridge.js';
-import { ELKBridge } from '../bridges/ELKBridge.js';
-import { JSONParser } from '../utils/JSONParser.js';
-import { InteractionHandler } from '../core/InteractionHandler.js';
-import type { HydroscopeData } from '../types/core.js';
+import { VisualizationState } from "../core/VisualizationState.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { JSONParser } from "../utils/JSONParser.js";
+import { InteractionHandler } from "../core/InteractionHandler.js";
+import type { HydroscopeData } from "../types/core.js";
 
 interface HydroscopeDocusaurusProps {
   /** JSON data to visualize (optional - will show demo data if not provided) */
@@ -35,14 +35,18 @@ interface HydroscopeDocusaurusProps {
 export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
   data,
   height = 600,
-  width = '100%',
+  width = "100%",
   showControls = true,
   showMiniMap = true,
   showBackground = true,
-  demo = false
+  demo = false,
 }) => {
-  const [visualizationState, setVisualizationState] = useState<VisualizationState | null>(null);
-  const [reactFlowData, setReactFlowData] = useState<{ nodes: any[], edges: any[] }>({ nodes: [], edges: [] });
+  const [visualizationState, setVisualizationState] =
+    useState<VisualizationState | null>(null);
+  const [reactFlowData, setReactFlowData] = useState<{
+    nodes: any[];
+    edges: any[];
+  }>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const interactionHandlerRef = useRef<InteractionHandler | null>(null);
@@ -60,7 +64,7 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
         if (demo && !data) {
           try {
             // Try to load paxos.json demo data
-            const response = await fetch('/test-data/paxos.json');
+            const response = await fetch("/test-data/paxos.json");
             if (response.ok) {
               dataToUse = await response.json();
             } else {
@@ -101,10 +105,9 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
         setVisualizationState(state);
         setReactFlowData(flowData);
         setLoading(false);
-
       } catch (err) {
-        console.error('Failed to initialize Hydroscope:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        console.error("Failed to initialize Hydroscope:", err);
+        setError(err instanceof Error ? err.message : "Unknown error occurred");
         setLoading(false);
       }
     };
@@ -118,7 +121,7 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
 
     try {
       // Handle container expand/collapse
-      if (node.type === 'container') {
+      if (node.type === "container") {
         const container = visualizationState.getContainer(node.id);
         if (container) {
           if (container.collapsed) {
@@ -126,27 +129,28 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
           } else {
             visualizationState.collapseContainer(node.id);
           }
-          
+
           // Update ReactFlow data
           const elkBridge = new ELKBridge({});
           const reactFlowBridge = new ReactFlowBridge({});
-          
+
           try {
             const elkGraph = elkBridge.toELKGraph(visualizationState);
             elkBridge.applyLayout(visualizationState, elkGraph);
-            const flowData = reactFlowBridge.toReactFlowData(visualizationState);
+            const flowData =
+              reactFlowBridge.toReactFlowData(visualizationState);
             setReactFlowData(flowData);
           } catch (err) {
-            console.error('Error updating layout:', err);
+            console.error("Error updating layout:", err);
           }
         }
       }
       // Handle node label toggle
-      else if (node.type === 'node') {
+      else if (node.type === "node") {
         const graphNode = visualizationState.getGraphNode(node.id);
         if (graphNode) {
           visualizationState.toggleNodeLabel(node.id);
-          
+
           // Update ReactFlow data
           const reactFlowBridge = new ReactFlowBridge({});
           const flowData = reactFlowBridge.toReactFlowData(visualizationState);
@@ -154,7 +158,7 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
         }
       }
     } catch (err) {
-      console.error('Error handling node click:', err);
+      console.error("Error handling node click:", err);
     }
   };
 
@@ -196,58 +200,58 @@ function createMinimalDemoData(): HydroscopeData {
   return {
     nodes: [
       {
-        id: 'node1',
-        shortLabel: 'Source',
-        fullLabel: 'Data Source Node',
-        nodeType: 'Source',
-        data: { locationId: 0, locationType: 'Process' }
+        id: "node1",
+        shortLabel: "Source",
+        fullLabel: "Data Source Node",
+        nodeType: "Source",
+        data: { locationId: 0, locationType: "Process" },
       },
       {
-        id: 'node2',
-        shortLabel: 'Transform',
-        fullLabel: 'Data Transform Node',
-        nodeType: 'Transform',
-        data: { locationId: 0, locationType: 'Process' }
+        id: "node2",
+        shortLabel: "Transform",
+        fullLabel: "Data Transform Node",
+        nodeType: "Transform",
+        data: { locationId: 0, locationType: "Process" },
       },
       {
-        id: 'node3',
-        shortLabel: 'Sink',
-        fullLabel: 'Data Sink Node',
-        nodeType: 'Sink',
-        data: { locationId: 1, locationType: 'Process' }
-      }
+        id: "node3",
+        shortLabel: "Sink",
+        fullLabel: "Data Sink Node",
+        nodeType: "Sink",
+        data: { locationId: 1, locationType: "Process" },
+      },
     ],
     edges: [
       {
-        id: 'edge1',
-        source: 'node1',
-        target: 'node2',
-        semanticTags: ['DataFlow']
+        id: "edge1",
+        source: "node1",
+        target: "node2",
+        semanticTags: ["DataFlow"],
       },
       {
-        id: 'edge2',
-        source: 'node2',
-        target: 'node3',
-        semanticTags: ['DataFlow']
-      }
+        id: "edge2",
+        source: "node2",
+        target: "node3",
+        semanticTags: ["DataFlow"],
+      },
     ],
     hierarchyChoices: [
       {
-        id: 'location',
-        name: 'Location',
+        id: "location",
+        name: "Location",
         children: [
-          { id: 'loc_0', name: 'Process 0', children: [] },
-          { id: 'loc_1', name: 'Process 1', children: [] }
-        ]
-      }
+          { id: "loc_0", name: "Process 0", children: [] },
+          { id: "loc_1", name: "Process 1", children: [] },
+        ],
+      },
     ],
     nodeAssignments: {
       location: {
-        'node1': 'loc_0',
-        'node2': 'loc_0',
-        'node3': 'loc_1'
-      }
-    }
+        node1: "loc_0",
+        node2: "loc_0",
+        node3: "loc_1",
+      },
+    },
   };
 }
 

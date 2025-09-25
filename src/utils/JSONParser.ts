@@ -3,16 +3,16 @@
  * Handles paxos.json format with hierarchyChoices and nodeAssignments
  */
 
-import { VisualizationState } from '../core/VisualizationState.js';
-import type { 
-  HydroscopeData, 
-  HierarchyChoice, 
-  GraphNode, 
-  GraphEdge, 
+import { VisualizationState } from "../core/VisualizationState.js";
+import type {
+  HydroscopeData,
+  HierarchyChoice,
+  GraphNode,
+  GraphEdge,
   Container,
   ParseError,
-  ValidationResult 
-} from '../types/core.js';
+  ValidationResult,
+} from "../types/core.js";
 
 export interface JSONParserOptions {
   /** Default hierarchy choice to use for grouping */
@@ -46,11 +46,11 @@ export class JSONParser {
 
   constructor(options: JSONParserOptions = {}) {
     this.options = {
-      defaultHierarchyChoice: options.defaultHierarchyChoice || 'location',
+      defaultHierarchyChoice: options.defaultHierarchyChoice || "location",
       debug: options.debug || false,
       nodeTransformer: options.nodeTransformer || ((node) => node),
       edgeTransformer: options.edgeTransformer || ((edge) => edge),
-      validateDuringParsing: options.validateDuringParsing !== false
+      validateDuringParsing: options.validateDuringParsing !== false,
     };
     this.debug = this.options.debug;
   }
@@ -67,10 +67,10 @@ export class JSONParser {
    */
   async parseData(data: HydroscopeData): Promise<ParseResult> {
     const startTime = Date.now();
-    this.debugLog('Starting JSON parsing', { 
-      nodeCount: data.nodes.length, 
+    this.debugLog("Starting JSON parsing", {
+      nodeCount: data.nodes.length,
       edgeCount: data.edges.length,
-      hierarchyChoicesCount: data.hierarchyChoices.length
+      hierarchyChoicesCount: data.hierarchyChoices.length,
     });
 
     const warnings: ValidationResult[] = [];
@@ -78,40 +78,55 @@ export class JSONParser {
 
     try {
       // Step 1: Parse hierarchy choices
-      const hierarchyChoices = this.parseHierarchyChoices(data.hierarchyChoices);
-      this.debugLog('Parsed hierarchy choices', { count: hierarchyChoices.length });
+      const hierarchyChoices = this.parseHierarchyChoices(
+        data.hierarchyChoices,
+      );
+      this.debugLog("Parsed hierarchy choices", {
+        count: hierarchyChoices.length,
+      });
 
       // Step 2: Determine which hierarchy to use for grouping
-      const selectedHierarchy = this.selectDefaultHierarchy(hierarchyChoices, data.nodeAssignments);
-      this.debugLog('Selected hierarchy', { hierarchy: selectedHierarchy });
+      const selectedHierarchy = this.selectDefaultHierarchy(
+        hierarchyChoices,
+        data.nodeAssignments,
+      );
+      this.debugLog("Selected hierarchy", { hierarchy: selectedHierarchy });
 
       // Step 3: Create containers from selected hierarchy
       let containerCount = 0;
       if (selectedHierarchy && data.nodeAssignments[selectedHierarchy]) {
         containerCount = await this.createContainersFromHierarchy(
-          visualizationState, 
-          hierarchyChoices.find(h => h.id === selectedHierarchy),
+          visualizationState,
+          hierarchyChoices.find((h) => h.id === selectedHierarchy),
           data.nodeAssignments[selectedHierarchy],
-          warnings
+          warnings,
         );
       }
 
       // Step 4: Parse and add nodes
-      const nodeCount = await this.parseNodes(visualizationState, data.nodes, warnings);
-      this.debugLog('Parsed nodes', { count: nodeCount });
+      const nodeCount = await this.parseNodes(
+        visualizationState,
+        data.nodes,
+        warnings,
+      );
+      this.debugLog("Parsed nodes", { count: nodeCount });
 
       // Step 5: Assign nodes to containers
       if (selectedHierarchy && data.nodeAssignments[selectedHierarchy]) {
         await this.assignNodesToContainers(
           visualizationState,
           data.nodeAssignments[selectedHierarchy],
-          warnings
+          warnings,
         );
       }
 
       // Step 6: Parse and add edges
-      const edgeCount = await this.parseEdges(visualizationState, data.edges, warnings);
-      this.debugLog('Parsed edges', { count: edgeCount });
+      const edgeCount = await this.parseEdges(
+        visualizationState,
+        data.edges,
+        warnings,
+      );
+      this.debugLog("Parsed edges", { count: edgeCount });
 
       // Step 7: Validate final state
       if (this.options.validateDuringParsing) {
@@ -119,12 +134,12 @@ export class JSONParser {
       }
 
       const processingTime = Date.now() - startTime;
-      this.debugLog('Parsing completed', { 
+      this.debugLog("Parsing completed", {
         processingTime,
         nodeCount,
         edgeCount,
         containerCount,
-        warningCount: warnings.length
+        warningCount: warnings.length,
       });
 
       return {
@@ -136,18 +151,17 @@ export class JSONParser {
           nodeCount,
           edgeCount,
           containerCount,
-          processingTime
-        }
+          processingTime,
+        },
       };
-
     } catch (error) {
       const parseError: ParseError = {
-        type: 'processing_error',
-        message: `JSON parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        context: { 
-          step: 'parsing',
-          processingTime: Date.now() - startTime
-        }
+        type: "processing_error",
+        message: `JSON parsing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        context: {
+          step: "parsing",
+          processingTime: Date.now() - startTime,
+        },
       };
       throw parseError;
     }
@@ -163,7 +177,9 @@ export class JSONParser {
 
     return rawChoices.map((choice, index) => {
       if (!choice.id || !choice.name) {
-        throw new Error(`Invalid hierarchy choice at index ${index}: missing id or name`);
+        throw new Error(
+          `Invalid hierarchy choice at index ${index}: missing id or name`,
+        );
       }
 
       // Handle different formats: some have 'children', others have 'hierarchy'
@@ -172,7 +188,7 @@ export class JSONParser {
       return {
         id: choice.id,
         name: choice.name,
-        children: this.parseHierarchyChildren(childrenArray)
+        children: this.parseHierarchyChildren(childrenArray),
       };
     });
   }
@@ -187,13 +203,15 @@ export class JSONParser {
 
     return rawChildren.map((child, index) => {
       if (!child.id || !child.name) {
-        throw new Error(`Invalid hierarchy child at index ${index}: missing id or name`);
+        throw new Error(
+          `Invalid hierarchy child at index ${index}: missing id or name`,
+        );
       }
 
       return {
         id: child.id,
         name: child.name,
-        children: this.parseHierarchyChildren(child.children || [])
+        children: this.parseHierarchyChildren(child.children || []),
       };
     });
   }
@@ -202,13 +220,16 @@ export class JSONParser {
    * Select the default hierarchy for grouping
    */
   private selectDefaultHierarchy(
-    hierarchyChoices: HierarchyChoice[], 
-    nodeAssignments: Record<string, Record<string, string>>
+    hierarchyChoices: HierarchyChoice[],
+    nodeAssignments: Record<string, Record<string, string>>,
   ): string | null {
     // First try the configured default
     if (this.options.defaultHierarchyChoice) {
-      const hasChoice = hierarchyChoices.some(h => h.id === this.options.defaultHierarchyChoice);
-      const hasAssignments = nodeAssignments[this.options.defaultHierarchyChoice];
+      const hasChoice = hierarchyChoices.some(
+        (h) => h.id === this.options.defaultHierarchyChoice,
+      );
+      const hasAssignments =
+        nodeAssignments[this.options.defaultHierarchyChoice];
       if (hasChoice && hasAssignments) {
         return this.options.defaultHierarchyChoice;
       }
@@ -231,7 +252,7 @@ export class JSONParser {
     state: VisualizationState,
     hierarchy: HierarchyChoice | undefined,
     assignments: Record<string, string>,
-    warnings: ValidationResult[]
+    warnings: ValidationResult[],
   ): Promise<number> {
     if (!hierarchy) {
       return 0;
@@ -247,20 +268,19 @@ export class JSONParser {
           label: child.name,
           children: new Set<string>(),
           collapsed: false, // Start expanded by default to avoid invariant violations
-          hidden: false
+          hidden: false,
         };
 
         state.addContainer(container);
         containerCount++;
 
-        this.debugLog('Created container', { id: child.id, name: child.name });
-
+        this.debugLog("Created container", { id: child.id, name: child.name });
       } catch (error) {
         warnings.push({
-          type: 'container_creation_error',
-          message: `Failed to create container ${child.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'warning',
-          context: { containerId: child.id, containerName: child.name }
+          type: "container_creation_error",
+          message: `Failed to create container ${child.id}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          severity: "warning",
+          context: { containerId: child.id, containerName: child.name },
         });
       }
     }
@@ -272,9 +292,9 @@ export class JSONParser {
    * Parse nodes from raw data
    */
   private async parseNodes(
-    state: VisualizationState, 
-    rawNodes: any[], 
-    warnings: ValidationResult[]
+    state: VisualizationState,
+    rawNodes: any[],
+    warnings: ValidationResult[],
   ): Promise<number> {
     let nodeCount = 0;
 
@@ -286,28 +306,42 @@ export class JSONParser {
         // Create GraphNode from raw data
         const node: GraphNode = {
           id: rawNode.id || transformedNode.id || `node_${index}`,
-          label: rawNode.shortLabel || rawNode.label || transformedNode.label || `Node ${index}`,
-          longLabel: rawNode.fullLabel || rawNode.longLabel || transformedNode.longLabel || rawNode.shortLabel || rawNode.label || `Node ${index}`,
-          type: rawNode.nodeType || rawNode.type || transformedNode.type || 'Unknown',
-          semanticTags: rawNode.semanticTags || transformedNode.semanticTags || [],
+          label:
+            rawNode.shortLabel ||
+            rawNode.label ||
+            transformedNode.label ||
+            `Node ${index}`,
+          longLabel:
+            rawNode.fullLabel ||
+            rawNode.longLabel ||
+            transformedNode.longLabel ||
+            rawNode.shortLabel ||
+            rawNode.label ||
+            `Node ${index}`,
+          type:
+            rawNode.nodeType ||
+            rawNode.type ||
+            transformedNode.type ||
+            "Unknown",
+          semanticTags:
+            rawNode.semanticTags || transformedNode.semanticTags || [],
           hidden: false,
           showingLongLabel: false,
-          ...transformedNode // Allow transformer to override any field
+          ...transformedNode, // Allow transformer to override any field
         };
 
         state.addNode(node);
         nodeCount++;
 
         if (nodeCount % 100 === 0) {
-          this.debugLog('Parsed nodes progress', { count: nodeCount });
+          this.debugLog("Parsed nodes progress", { count: nodeCount });
         }
-
       } catch (error) {
         warnings.push({
-          type: 'node_parsing_error',
-          message: `Failed to parse node at index ${index}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'warning',
-          context: { nodeIndex: index, rawNode }
+          type: "node_parsing_error",
+          message: `Failed to parse node at index ${index}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          severity: "warning",
+          context: { nodeIndex: index, rawNode },
         });
       }
     }
@@ -321,7 +355,7 @@ export class JSONParser {
   private async assignNodesToContainers(
     state: VisualizationState,
     assignments: Record<string, string>,
-    warnings: ValidationResult[]
+    warnings: ValidationResult[],
   ): Promise<void> {
     let assignmentCount = 0;
 
@@ -331,10 +365,10 @@ export class JSONParser {
         const node = state.getGraphNode(nodeId);
         if (!node) {
           warnings.push({
-            type: 'node_assignment_error',
+            type: "node_assignment_error",
             message: `Cannot assign non-existent node ${nodeId} to container ${containerId}`,
-            severity: 'warning',
-            context: { nodeId, containerId }
+            severity: "warning",
+            context: { nodeId, containerId },
           });
           continue;
         }
@@ -343,10 +377,10 @@ export class JSONParser {
         const container = state.getContainer(containerId);
         if (!container) {
           warnings.push({
-            type: 'container_assignment_error',
+            type: "container_assignment_error",
             message: `Cannot assign node ${nodeId} to non-existent container ${containerId}`,
-            severity: 'warning',
-            context: { nodeId, containerId }
+            severity: "warning",
+            context: { nodeId, containerId },
           });
           continue;
         }
@@ -356,29 +390,28 @@ export class JSONParser {
         assignmentCount++;
 
         if (assignmentCount % 100 === 0) {
-          this.debugLog('Node assignment progress', { count: assignmentCount });
+          this.debugLog("Node assignment progress", { count: assignmentCount });
         }
-
       } catch (error) {
         warnings.push({
-          type: 'assignment_error',
-          message: `Failed to assign node ${nodeId} to container ${containerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'warning',
-          context: { nodeId, containerId }
+          type: "assignment_error",
+          message: `Failed to assign node ${nodeId} to container ${containerId}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          severity: "warning",
+          context: { nodeId, containerId },
         });
       }
     }
 
-    this.debugLog('Completed node assignments', { count: assignmentCount });
+    this.debugLog("Completed node assignments", { count: assignmentCount });
   }
 
   /**
    * Parse edges from raw data
    */
   private async parseEdges(
-    state: VisualizationState, 
-    rawEdges: any[], 
-    warnings: ValidationResult[]
+    state: VisualizationState,
+    rawEdges: any[],
+    warnings: ValidationResult[],
   ): Promise<number> {
     let edgeCount = 0;
 
@@ -392,30 +425,35 @@ export class JSONParser {
           id: rawEdge.id || transformedEdge.id || `edge_${index}`,
           source: rawEdge.source || transformedEdge.source,
           target: rawEdge.target || transformedEdge.target,
-          type: rawEdge.type || transformedEdge.type || 'Unknown',
-          semanticTags: rawEdge.semanticTags || rawEdge.edgeProperties || transformedEdge.semanticTags || [],
+          type: rawEdge.type || transformedEdge.type || "Unknown",
+          semanticTags:
+            rawEdge.semanticTags ||
+            rawEdge.edgeProperties ||
+            transformedEdge.semanticTags ||
+            [],
           hidden: false,
-          ...transformedEdge // Allow transformer to override any field
+          ...transformedEdge, // Allow transformer to override any field
         };
 
         // Validate required fields
         if (!edge.source || !edge.target) {
-          throw new Error(`Edge missing source or target: source=${edge.source}, target=${edge.target}`);
+          throw new Error(
+            `Edge missing source or target: source=${edge.source}, target=${edge.target}`,
+          );
         }
 
         state.addEdge(edge);
         edgeCount++;
 
         if (edgeCount % 100 === 0) {
-          this.debugLog('Parsed edges progress', { count: edgeCount });
+          this.debugLog("Parsed edges progress", { count: edgeCount });
         }
-
       } catch (error) {
         warnings.push({
-          type: 'edge_parsing_error',
-          message: `Failed to parse edge at index ${index}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'warning',
-          context: { edgeIndex: index, rawEdge }
+          type: "edge_parsing_error",
+          message: `Failed to parse edge at index ${index}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          severity: "warning",
+          context: { edgeIndex: index, rawEdge },
         });
       }
     }
@@ -426,16 +464,18 @@ export class JSONParser {
   /**
    * Create a parser with paxos.json specific configuration
    */
-  static createPaxosParser(options: Partial<JSONParserOptions> = {}): JSONParser {
+  static createPaxosParser(
+    options: Partial<JSONParserOptions> = {},
+  ): JSONParser {
     return new JSONParser({
-      defaultHierarchyChoice: 'location',
+      defaultHierarchyChoice: "location",
       debug: false,
       validateDuringParsing: true,
       ...options,
       // Paxos-specific node transformer
       nodeTransformer: (rawNode) => {
         const transformed: Partial<GraphNode> = {};
-        
+
         // Handle paxos.json specific fields
         if (rawNode.shortLabel) {
           transformed.label = rawNode.shortLabel;
@@ -482,7 +522,7 @@ export class JSONParser {
         }
 
         return transformed;
-      }
+      },
     });
   }
 }

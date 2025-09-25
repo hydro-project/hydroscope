@@ -3,18 +3,18 @@
  * Tests JSON parsing with real paxos.json data
  */
 
-import { describe, it, expect } from 'vitest';
-import { JSONParser } from '../utils/JSONParser.js';
-import type { HydroscopeData } from '../types/core.js';
-import fs from 'fs';
-import path from 'path';
+import { describe, it, expect } from "vitest";
+import { JSONParser } from "../utils/JSONParser.js";
+import type { HydroscopeData } from "../types/core.js";
+import fs from "fs";
+import path from "path";
 
-describe('JSONParser Integration Tests', () => {
-  describe('Paxos.json Integration', () => {
-    it('parses paxos.json successfully', async () => {
+describe("JSONParser Integration Tests", () => {
+  describe("Paxos.json Integration", () => {
+    it("parses paxos.json successfully", async () => {
       // Read paxos.json file
-      const paxosPath = path.join(process.cwd(), 'test-data', 'paxos.json');
-      const paxosContent = fs.readFileSync(paxosPath, 'utf-8');
+      const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");
+      const paxosContent = fs.readFileSync(paxosPath, "utf-8");
       const paxosData = JSON.parse(paxosContent) as HydroscopeData;
 
       // Create paxos-specific parser
@@ -26,21 +26,21 @@ describe('JSONParser Integration Tests', () => {
       // Verify basic structure
       expect(result.visualizationState).toBeDefined();
       expect(result.hierarchyChoices).toBeDefined();
-      expect(result.selectedHierarchy).toBe('location');
+      expect(result.selectedHierarchy).toBe("location");
       expect(result.stats.nodeCount).toBeGreaterThan(0);
       expect(result.stats.edgeCount).toBeGreaterThan(0);
       expect(result.stats.containerCount).toBeGreaterThan(0);
 
       // Verify specific nodes exist
-      const node195 = result.visualizationState.getGraphNode('195');
+      const node195 = result.visualizationState.getGraphNode("195");
       expect(node195).toBeDefined();
-      expect(node195?.label).toBe('cycle_sink');
-      expect(node195?.longLabel).toBe('cycle_sink(cycle_10)');
+      expect(node195?.label).toBe("cycle_sink");
+      expect(node195?.longLabel).toBe("cycle_sink(cycle_10)");
 
-      const node13 = result.visualizationState.getGraphNode('13');
+      const node13 = result.visualizationState.getGraphNode("13");
       expect(node13).toBeDefined();
-      expect(node13?.label).toBe('persist');
-      expect(node13?.longLabel).toBe('persist [state storage]');
+      expect(node13?.label).toBe("persist");
+      expect(node13?.longLabel).toBe("persist [state storage]");
 
       // Verify edges exist
       const edges = result.visualizationState.visibleEdges;
@@ -51,19 +51,20 @@ describe('JSONParser Integration Tests', () => {
       expect(containers.length).toBeGreaterThan(0);
 
       // Verify node assignments
-      const node195Container = result.visualizationState.getNodeContainer('195');
-      const node13Container = result.visualizationState.getNodeContainer('13');
+      const node195Container =
+        result.visualizationState.getNodeContainer("195");
+      const node13Container = result.visualizationState.getNodeContainer("13");
       expect(node195Container).toBeDefined();
       expect(node13Container).toBeDefined();
 
-      console.log('Paxos.json parsing stats:', result.stats);
-      console.log('Warnings:', result.warnings.length);
+      console.log("Paxos.json parsing stats:", result.stats);
+      console.log("Warnings:", result.warnings.length);
     }, 30000); // 30 second timeout for large file
 
-    it('handles paxos.json with performance requirements', async () => {
+    it("handles paxos.json with performance requirements", async () => {
       // Read paxos.json file
-      const paxosPath = path.join(process.cwd(), 'test-data', 'paxos.json');
-      const paxosContent = fs.readFileSync(paxosPath, 'utf-8');
+      const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");
+      const paxosContent = fs.readFileSync(paxosPath, "utf-8");
       const paxosData = JSON.parse(paxosContent) as HydroscopeData;
 
       // Create parser with performance monitoring
@@ -81,15 +82,21 @@ describe('JSONParser Integration Tests', () => {
       expect(result.warnings.length).toBeLessThan(result.stats.nodeCount * 0.1); // Less than 10% warnings
 
       console.log(`Paxos.json processed in ${endTime - startTime}ms`);
-      console.log(`Nodes: ${result.stats.nodeCount}, Edges: ${result.stats.edgeCount}, Containers: ${result.stats.containerCount}`);
+      console.log(
+        `Nodes: ${result.stats.nodeCount}, Edges: ${result.stats.edgeCount}, Containers: ${result.stats.containerCount}`,
+      );
     }, 30000);
   });
 
-  describe('Simple Test Data Integration', () => {
-    it('parses simple-collapsed-test.json successfully', async () => {
+  describe("Simple Test Data Integration", () => {
+    it("parses simple-collapsed-test.json successfully", async () => {
       // Read simple test file
-      const simplePath = path.join(process.cwd(), 'test-data', 'simple-collapsed-test.json');
-      const simpleContent = fs.readFileSync(simplePath, 'utf-8');
+      const simplePath = path.join(
+        process.cwd(),
+        "test-data",
+        "simple-collapsed-test.json",
+      );
+      const simpleContent = fs.readFileSync(simplePath, "utf-8");
       const simpleData = JSON.parse(simpleContent) as HydroscopeData;
 
       // Create parser
@@ -105,20 +112,24 @@ describe('JSONParser Integration Tests', () => {
       expect(result.stats.containerCount).toBe(2);
 
       // Verify nodes
-      const node1 = result.visualizationState.getGraphNode('node1');
-      const node2 = result.visualizationState.getGraphNode('node2');
-      expect(node1?.label).toBe('Node 1');
-      expect(node2?.label).toBe('Node 2');
+      const node1 = result.visualizationState.getGraphNode("node1");
+      const node2 = result.visualizationState.getGraphNode("node2");
+      expect(node1?.label).toBe("Node 1");
+      expect(node2?.label).toBe("Node 2");
 
       // Verify containers
-      const containerA = result.visualizationState.getContainer('container_a');
-      const containerB = result.visualizationState.getContainer('container_b');
-      expect(containerA?.label).toBe('Container A');
-      expect(containerB?.label).toBe('Container B');
+      const containerA = result.visualizationState.getContainer("container_a");
+      const containerB = result.visualizationState.getContainer("container_b");
+      expect(containerA?.label).toBe("Container A");
+      expect(containerB?.label).toBe("Container B");
 
       // Verify assignments
-      expect(result.visualizationState.getNodeContainer('node1')).toBe('container_a');
-      expect(result.visualizationState.getNodeContainer('node2')).toBe('container_b');
+      expect(result.visualizationState.getNodeContainer("node1")).toBe(
+        "container_a",
+      );
+      expect(result.visualizationState.getNodeContainer("node2")).toBe(
+        "container_b",
+      );
     });
   });
 });

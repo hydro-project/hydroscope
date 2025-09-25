@@ -3,15 +3,15 @@
  * Provides search input with real-time feedback and navigation controls
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { SearchResult } from '../types/core.js';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import type { SearchResult } from "../types/core.js";
 
 export interface SearchInputProps {
   onSearch: (query: string) => void;
   onClear: () => void;
   onNavigateNext: () => void;
   onNavigatePrevious: () => void;
-  searchResults: SearchResult[];
+  searchResults: readonly SearchResult[];
   currentResultIndex: number;
   isSearching?: boolean;
   query?: string;
@@ -27,9 +27,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   searchResults,
   currentResultIndex,
   isSearching = false,
-  query = '',
-  placeholder = 'Search nodes and containers...',
-  debounceMs = 300
+  query = "",
+  placeholder = "Search nodes and containers...",
+  debounceMs = 300,
 }) => {
   const [inputValue, setInputValue] = useState(query);
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
@@ -41,26 +41,32 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   }, [query]);
 
   // Debounced search function
-  const debouncedSearch = useCallback((value: string) => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
+  const debouncedSearch = useCallback(
+    (value: string) => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
 
-    debounceTimeoutRef.current = setTimeout(() => {
-      onSearch(value);
-    }, debounceMs);
-  }, [onSearch, debounceMs]);
+      debounceTimeoutRef.current = setTimeout(() => {
+        onSearch(value);
+      }, debounceMs);
+    },
+    [onSearch, debounceMs],
+  );
 
   // Handle input change
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setInputValue(value);
-    debouncedSearch(value);
-  }, [debouncedSearch]);
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setInputValue(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch],
+  );
 
   // Handle clear button click
   const handleClear = useCallback(() => {
-    setInputValue('');
+    setInputValue("");
     onClear();
     if (inputRef.current) {
       inputRef.current.focus();
@@ -68,32 +74,42 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   }, [onClear]);
 
   // Handle keyboard events
-  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-    switch (event.key) {
-      case 'Enter':
-        event.preventDefault();
-        onSearch(inputValue);
-        break;
-      case 'ArrowDown':
-        event.preventDefault();
-        if (searchResults.length > 0) {
-          onNavigateNext();
-        }
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        if (searchResults.length > 0) {
-          onNavigatePrevious();
-        }
-        break;
-      case 'Escape':
-        event.preventDefault();
-        if (inputValue) {
-          handleClear();
-        }
-        break;
-    }
-  }, [inputValue, searchResults.length, onSearch, onNavigateNext, onNavigatePrevious, handleClear]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      switch (event.key) {
+        case "Enter":
+          event.preventDefault();
+          onSearch(inputValue);
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          if (searchResults && searchResults.length > 0) {
+            onNavigateNext();
+          }
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          if (searchResults && searchResults.length > 0) {
+            onNavigatePrevious();
+          }
+          break;
+        case "Escape":
+          event.preventDefault();
+          if (inputValue) {
+            handleClear();
+          }
+          break;
+      }
+    },
+    [
+      inputValue,
+      searchResults?.length,
+      onSearch,
+      onNavigateNext,
+      onNavigatePrevious,
+      handleClear,
+    ],
+  );
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -104,11 +120,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     };
   }, []);
 
-  const hasResults = searchResults.length > 0;
+  const hasResults = searchResults?.length > 0;
   const hasQuery = inputValue.trim().length > 0;
   const showResultCount = hasQuery || hasResults;
   const isAtFirstResult = currentResultIndex === 0;
-  const isAtLastResult = currentResultIndex === searchResults.length - 1;
+  const isAtLastResult =
+    currentResultIndex === (searchResults?.length ?? 0) - 1;
 
   return (
     <div className="search-input-container">
@@ -125,13 +142,13 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           aria-label="Search nodes and containers"
           role="textbox"
         />
-        
+
         {isSearching && (
           <div className="search-loading" aria-live="polite">
             Searching...
           </div>
         )}
-        
+
         <div className="search-buttons">
           <button
             type="button"
@@ -142,7 +159,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           >
             🔍
           </button>
-          
+
           {hasQuery && (
             <button
               type="button"
@@ -161,18 +178,19 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         <div className="search-results-info">
           {hasResults ? (
             <div className="result-count">
-              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+              {searchResults?.length ?? 0} result
+              {(searchResults?.length ?? 0) !== 1 ? "s" : ""}
             </div>
           ) : hasQuery ? (
             <div className="no-results">No results</div>
           ) : null}
-          
+
           {hasResults && (
             <div className="navigation-controls">
               <div className="result-position">
-                {currentResultIndex + 1} of {searchResults.length}
+                {currentResultIndex + 1} of {searchResults?.length ?? 0}
               </div>
-              
+
               <div className="navigation-buttons">
                 <button
                   type="button"
@@ -183,7 +201,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
                 >
                   ↑
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={onNavigateNext}

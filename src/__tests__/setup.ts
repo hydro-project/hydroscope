@@ -2,11 +2,13 @@
  * Test setup file for React component tests
  */
 
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Extend expect with jest-dom matchers
 declare global {
-  namespace Vi {
-    interface JestAssertion<T = any> extends jest.Matchers<void, T> {}
+  interface CustomMatchers<R = unknown> {
+    toBeInTheDocument(): R;
+    toHaveClass(className: string): R;
+    toHaveTextContent(text: string): R;
   }
 }

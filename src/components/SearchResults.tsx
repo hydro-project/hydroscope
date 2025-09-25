@@ -3,11 +3,11 @@
  * Displays search results with highlighting and navigation
  */
 
-import React, { useCallback, useMemo } from 'react';
-import type { SearchResult } from '../types/core.js';
+import React, { useCallback, useMemo } from "react";
+import type { SearchResult } from "../types/core.js";
 
 export interface SearchResultsProps {
-  searchResults: SearchResult[];
+  searchResults: readonly SearchResult[];
   currentResultIndex: number;
   onResultClick: (result: SearchResult, index: number) => void;
   onResultHover?: (result: SearchResult, index: number) => void;
@@ -22,10 +22,10 @@ interface HighlightedTextProps {
   className?: string;
 }
 
-const HighlightedText: React.FC<HighlightedTextProps> = ({ 
-  text, 
-  matchIndices, 
-  className = '' 
+const HighlightedText: React.FC<HighlightedTextProps> = ({
+  text,
+  matchIndices,
+  className = "",
 }) => {
   const highlightedText = useMemo(() => {
     if (!matchIndices || matchIndices.length === 0) {
@@ -43,14 +43,14 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
       if (start > lastIndex) {
         segments.push({
           text: text.slice(lastIndex, start),
-          highlighted: false
+          highlighted: false,
         });
       }
 
       // Add highlighted match
       segments.push({
         text: text.slice(start, end),
-        highlighted: true
+        highlighted: true,
       });
 
       lastIndex = end;
@@ -60,7 +60,7 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
     if (lastIndex < text.length) {
       segments.push({
         text: text.slice(lastIndex),
-        highlighted: false
+        highlighted: false,
       });
     }
 
@@ -69,15 +69,15 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
 
   return (
     <span className={className}>
-      {highlightedText.map((segment, index) => (
+      {highlightedText.map((segment, index) =>
         segment.highlighted ? (
           <mark key={index} className="search-highlight">
             {segment.text}
           </mark>
         ) : (
           <span key={index}>{segment.text}</span>
-        )
-      ))}
+        ),
+      )}
     </span>
   );
 };
@@ -95,7 +95,7 @@ const SearchResultItem: React.FC<SearchResultItemProps> = ({
   index,
   isCurrent,
   onResultClick,
-  onResultHover
+  onResultHover,
 }) => {
   const handleClick = useCallback(() => {
     onResultClick(result, index);
@@ -105,16 +105,19 @@ const SearchResultItem: React.FC<SearchResultItemProps> = ({
     onResultHover?.(result, index);
   }, [result, index, onResultHover]);
 
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onResultClick(result, index);
-    }
-  }, [result, index, onResultClick]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onResultClick(result, index);
+      }
+    },
+    [result, index, onResultClick],
+  );
 
   return (
     <li
-      className={`search-result-item ${isCurrent ? 'current-result' : ''}`}
+      className={`search-result-item ${isCurrent ? "current-result" : ""}`}
       onClick={handleClick}
       onMouseEnter={handleHover}
       onKeyDown={handleKeyDown}
@@ -148,7 +151,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onResultHover,
   query,
   maxResults,
-  groupByType = false
+  groupByType = false,
 }) => {
   const displayedResults = useMemo(() => {
     if (maxResults && searchResults.length > maxResults) {
@@ -163,7 +166,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     }
 
     const groups: Record<string, SearchResult[]> = {};
-    displayedResults.forEach(result => {
+    displayedResults.forEach((result) => {
       const type = result.type;
       if (!groups[type]) {
         groups[type] = [];
@@ -190,18 +193,22 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   const getResultGlobalIndex = (result: SearchResult): number => {
-    return searchResults.findIndex(r => r.id === result.id);
+    return searchResults.findIndex((r) => r.id === result.id);
   };
 
   return (
     <div className="search-results-container">
-      <ul className="search-results-list" role="list" aria-label="Search results">
+      <ul
+        className="search-results-list"
+        role="list"
+        aria-label="Search results"
+      >
         {Object.entries(groupedResults).map(([groupType, results]) => (
           <React.Fragment key={groupType}>
-            {groupByType && groupType !== 'all' && (
+            {groupByType && groupType !== "all" && (
               <li className="result-group-header" role="presentation">
                 <h3 className="group-title">
-                  {groupType === 'node' ? 'Nodes' : 'Containers'}
+                  {groupType === "node" ? "Nodes" : "Containers"}
                 </h3>
               </li>
             )}
@@ -224,7 +231,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
       {hiddenResultsCount > 0 && (
         <div className="more-results-indicator">
-          + {hiddenResultsCount} more result{hiddenResultsCount !== 1 ? 's' : ''}
+          + {hiddenResultsCount} more result
+          {hiddenResultsCount !== 1 ? "s" : ""}
         </div>
       )}
     </div>

@@ -3,32 +3,32 @@
  * Manages async boundaries with FIFO queues and error handling
  */
 
-import { QueuedOperation, QueueStatus, ApplicationEvent } from '../types/core'
+import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 
 export interface QueueOptions {
-  timeout?: number
-  maxRetries?: number
+  timeout?: number;
+  maxRetries?: number;
 }
 
 export class AsyncCoordinator {
-  private queue: QueuedOperation[] = []
-  private processing = false
-  private completedOperations: QueuedOperation[] = []
-  private failedOperations: QueuedOperation[] = []
-  private processingTimes: number[] = []
-  private currentOperation?: QueuedOperation
-  private operationIdCounter = 0
+  private queue: QueuedOperation[] = [];
+  private processing = false;
+  private completedOperations: QueuedOperation[] = [];
+  private failedOperations: QueuedOperation[] = [];
+  private processingTimes: number[] = [];
+  private currentOperation?: QueuedOperation;
+  private operationIdCounter = 0;
 
   /**
    * Queue an operation for sequential processing
    */
   queueOperation<T>(
-    type: QueuedOperation['type'], 
-    operation: () => Promise<T>, 
-    options: QueueOptions = {}
+    type: QueuedOperation["type"],
+    operation: () => Promise<T>,
+    options: QueueOptions = {},
   ): string {
-    const id = `op_${++this.operationIdCounter}`
-    
+    const id = `op_${++this.operationIdCounter}`;
+
     const queuedOp: QueuedOperation<T> = {
       id,
       type,
@@ -36,11 +36,11 @@ export class AsyncCoordinator {
       timeout: options.timeout,
       retryCount: 0,
       maxRetries: options.maxRetries || 0,
-      createdAt: Date.now()
-    }
-    
-    this.queue.push(queuedOp)
-    return id
+      createdAt: Date.now(),
+    };
+
+    this.queue.push(queuedOp);
+    return id;
   }
 
   /**
@@ -48,19 +48,19 @@ export class AsyncCoordinator {
    */
   async processQueue(): Promise<void> {
     if (this.processing) {
-      return
+      return;
     }
-    
-    this.processing = true
-    
+
+    this.processing = true;
+
     try {
       while (this.queue.length > 0) {
-        const operation = this.queue.shift()!
-        await this.processOperation(operation)
+        const operation = this.queue.shift()!;
+        await this.processOperation(operation);
       }
     } finally {
-      this.processing = false
-      this.currentOperation = undefined
+      this.processing = false;
+      this.currentOperation = undefined;
     }
   }
 
@@ -68,33 +68,34 @@ export class AsyncCoordinator {
    * Process a single operation with retry logic and timeout handling
    */
   private async processOperation(operation: QueuedOperation): Promise<void> {
-    this.currentOperation = operation
-    operation.startedAt = Date.now()
-    
+    this.currentOperation = operation;
+    operation.startedAt = Date.now();
+
     while (operation.retryCount <= operation.maxRetries) {
       try {
-        const result = await this.executeWithTimeout(operation)
-        
+        const result = await this.executeWithTimeout(operation);
+
         // Operation succeeded
-        operation.completedAt = Date.now()
-        this.completedOperations.push(operation)
-        this.recordProcessingTime(operation)
-        return
-        
+        operation.completedAt = Date.now();
+        this.completedOperations.push(operation);
+        this.recordProcessingTime(operation);
+        return;
       } catch (error) {
-        operation.error = error as Error
-        operation.retryCount++
-        
+        operation.error = error as Error;
+        operation.retryCount++;
+
         // If we've exhausted retries, mark as failed
         if (operation.retryCount > operation.maxRetries) {
-          operation.completedAt = Date.now()
-          this.failedOperations.push(operation)
-          this.recordProcessingTime(operation)
-          return
+          operation.completedAt = Date.now();
+          this.failedOperations.push(operation);
+          this.recordProcessingTime(operation);
+          return;
         }
-        
+
         // Otherwise, retry after a brief delay
-        await new Promise(resolve => setTimeout(resolve, 100 * operation.retryCount))
+        await new Promise((resolve) =>
+          setTimeout(resolve, 100 * operation.retryCount),
+        );
       }
     }
   }
@@ -104,24 +105,29 @@ export class AsyncCoordinator {
    */
   private async executeWithTimeout(operation: QueuedOperation): Promise<any> {
     if (!operation.timeout) {
-      return await operation.operation()
+      return await operation.operation();
     }
-    
+
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        reject(new Error(`Operation ${operation.id} timed out after ${operation.timeout}ms`))
-      }, operation.timeout)
-      
-      operation.operation()
-        .then(result => {
-          clearTimeout(timeoutId)
-          resolve(result)
+        reject(
+          new Error(
+            `Operation ${operation.id} timed out after ${operation.timeout}ms`,
+          ),
+        );
+      }, operation.timeout);
+
+      operation
+        .operation()
+        .then((result) => {
+          clearTimeout(timeoutId);
+          resolve(result);
         })
-        .catch(error => {
-          clearTimeout(timeoutId)
-          reject(error)
-        })
-    })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        });
+    });
   }
 
   /**
@@ -129,12 +135,12 @@ export class AsyncCoordinator {
    */
   private recordProcessingTime(operation: QueuedOperation): void {
     if (operation.startedAt && operation.completedAt) {
-      const processingTime = operation.completedAt - operation.startedAt
-      this.processingTimes.push(processingTime)
-      
+      const processingTime = operation.completedAt - operation.startedAt;
+      this.processingTimes.push(processingTime);
+
       // Keep only last 100 processing times for rolling average
       if (this.processingTimes.length > 100) {
-        this.processingTimes.shift()
+        this.processingTimes.shift();
       }
     }
   }
@@ -143,11 +149,14 @@ export class AsyncCoordinator {
    * Get current queue status and statistics
    */
   getQueueStatus(): QueueStatus {
-    const totalProcessed = this.completedOperations.length + this.failedOperations.length
-    const averageProcessingTime = this.processingTimes.length > 0
-      ? this.processingTimes.reduce((sum, time) => sum + time, 0) / this.processingTimes.length
-      : 0
-    
+    const totalProcessed =
+      this.completedOperations.length + this.failedOperations.length;
+    const averageProcessingTime =
+      this.processingTimes.length > 0
+        ? this.processingTimes.reduce((sum, time) => sum + time, 0) /
+          this.processingTimes.length
+        : 0;
+
     return {
       pending: this.queue.length,
       processing: this.processing ? 1 : 0,
@@ -156,103 +165,105 @@ export class AsyncCoordinator {
       totalProcessed,
       currentOperation: this.currentOperation,
       averageProcessingTime,
-      errors: this.failedOperations.map(op => op.error!).filter(Boolean)
-    }
+      errors: this.failedOperations.map((op) => op.error!).filter(Boolean),
+    };
   }
 
   /**
    * Clear all queued operations
    */
   clearQueue(): void {
-    this.queue = []
+    this.queue = [];
   }
 
   /**
    * Clear all statistics and completed operations
    */
   clearHistory(): void {
-    this.completedOperations = []
-    this.failedOperations = []
-    this.processingTimes = []
+    this.completedOperations = [];
+    this.failedOperations = [];
+    this.processingTimes = [];
   }
 
   /**
    * Get all completed operations
    */
   getCompletedOperations(): ReadonlyArray<QueuedOperation> {
-    return [...this.completedOperations]
+    return [...this.completedOperations];
   }
 
   /**
    * Get all failed operations
    */
   getFailedOperations(): ReadonlyArray<QueuedOperation> {
-    return [...this.failedOperations]
+    return [...this.failedOperations];
   }
 
   /**
    * Check if queue is currently processing
    */
   isProcessing(): boolean {
-    return this.processing
+    return this.processing;
   }
 
   /**
    * Get current queue length
    */
   getQueueLength(): number {
-    return this.queue.length
+    return this.queue.length;
   }
 
   // ELK-specific async operations
-  
+
   /**
    * Queue ELK layout operation with proper sequencing
    */
   async queueELKLayout(
     state: any, // VisualizationState - using any to avoid circular dependency
     elkBridge: any, // ELKBridge instance
-    options: QueueOptions = {}
+    options: QueueOptions = {},
   ): Promise<void> {
     const operation = async () => {
       try {
         // Set layout phase to indicate processing
-        state.setLayoutPhase('laying_out')
-        
+        state.setLayoutPhase("laying_out");
+
         // Call real ELK layout calculation
-        await elkBridge.layout(state)
-        
+        await elkBridge.layout(state);
+
         // Increment layout count for smart collapse logic
-        state.incrementLayoutCount()
-        
-        return 'layout_complete'
+        state.incrementLayoutCount();
+
+        return "layout_complete";
       } catch (error) {
-        state.setLayoutPhase('error')
-        throw error
+        state.setLayoutPhase("error");
+        throw error;
       }
-    }
-    
+    };
+
     // Queue the operation and wait for it to complete
-    const operationId = this.queueOperation('elk_layout', operation, {
+    const operationId = this.queueOperation("elk_layout", operation, {
       timeout: options.timeout || 10000, // 10 second default timeout
-      maxRetries: options.maxRetries || 1
-    })
-    
+      maxRetries: options.maxRetries || 1,
+    });
+
     // Process the queue if not already processing
     if (!this.processing) {
-      await this.processQueue()
+      await this.processQueue();
     }
-    
+
     // Check if our operation completed successfully
-    const completedOp = this.completedOperations.find(op => op.id === operationId)
-    const failedOp = this.failedOperations.find(op => op.id === operationId)
-    
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
+
     if (failedOp) {
-      throw failedOp.error || new Error('ELK layout operation failed')
+      throw failedOp.error || new Error("ELK layout operation failed");
     }
-    
+
     if (!completedOp) {
-      throw new Error('ELK layout operation not found')
+      throw new Error("ELK layout operation not found");
     }
   }
 
@@ -260,136 +271,145 @@ export class AsyncCoordinator {
    * Cancel ELK operation if it's still queued
    */
   cancelELKOperation(operationId: string): boolean {
-    const index = this.queue.findIndex(op => op.id === operationId && op.type === 'elk_layout')
+    const index = this.queue.findIndex(
+      (op) => op.id === operationId && op.type === "elk_layout",
+    );
     if (index !== -1) {
-      this.queue.splice(index, 1)
-      return true
+      this.queue.splice(index, 1);
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
    * Get status of ELK operations
    */
   getELKOperationStatus(): {
-    queued: number
-    processing: boolean
-    lastCompleted?: QueuedOperation
-    lastFailed?: QueuedOperation
+    queued: number;
+    processing: boolean;
+    lastCompleted?: QueuedOperation;
+    lastFailed?: QueuedOperation;
   } {
-    const elkOps = this.queue.filter(op => op.type === 'elk_layout')
-    const currentELK = this.currentOperation?.type === 'elk_layout'
+    const elkOps = this.queue.filter((op) => op.type === "elk_layout");
+    const currentELK = this.currentOperation?.type === "elk_layout";
     const lastCompleted = [...this.completedOperations]
       .reverse()
-      .find(op => op.type === 'elk_layout')
+      .find((op) => op.type === "elk_layout");
     const lastFailed = [...this.failedOperations]
       .reverse()
-      .find(op => op.type === 'elk_layout')
-    
+      .find((op) => op.type === "elk_layout");
+
     return {
       queued: elkOps.length,
       processing: currentELK,
       lastCompleted,
-      lastFailed
-    }
+      lastFailed,
+    };
   }
 
   // ReactFlow-specific async operations
-  
+
   /**
    * Queue ReactFlow render operation with proper sequencing
    */
   async queueReactFlowRender(
     state: any, // VisualizationState - using any to avoid circular dependency
-    options: QueueOptions = {}
-  ): Promise<any> { // ReactFlowData
+    options: QueueOptions = {},
+  ): Promise<any> {
+    // ReactFlowData
     const operation = async () => {
       // Import ReactFlowBridge dynamically to avoid circular dependency
-      const { ReactFlowBridge } = await import('../bridges/ReactFlowBridge.js')
-      
+      const { ReactFlowBridge } = await import("../bridges/ReactFlowBridge.js");
+
       try {
         // Create ReactFlow bridge with default style config
-        const reactFlowBridge = new ReactFlowBridge({})
-        
+        const reactFlowBridge = new ReactFlowBridge({});
+
         // Set layout phase to indicate rendering
-        state.setLayoutPhase('rendering')
-        
+        state.setLayoutPhase("rendering");
+
         // Convert to ReactFlow format
-        const reactFlowData = reactFlowBridge.toReactFlowData(state)
-        
+        const reactFlowData = reactFlowBridge.toReactFlowData(state);
+
         // Set layout phase to displayed
-        state.setLayoutPhase('displayed')
-        
-        return reactFlowData
+        state.setLayoutPhase("displayed");
+
+        return reactFlowData;
       } catch (error) {
-        state.setLayoutPhase('error')
-        throw error
+        state.setLayoutPhase("error");
+        throw error;
       }
-    }
-    
+    };
+
     // Queue the operation and wait for it to complete
-    const operationId = this.queueOperation('reactflow_render', operation, {
+    const operationId = this.queueOperation("reactflow_render", operation, {
       timeout: options.timeout || 5000, // 5 second default timeout
-      maxRetries: options.maxRetries || 1
-    })
-    
+      maxRetries: options.maxRetries || 1,
+    });
+
     // Process the queue if not already processing
     if (!this.processing) {
-      await this.processQueue()
+      await this.processQueue();
     }
-    
+
     // Check if our operation completed successfully
-    const completedOp = this.completedOperations.find(op => op.id === operationId)
-    const failedOp = this.failedOperations.find(op => op.id === operationId)
-    
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
+
     if (failedOp) {
-      throw failedOp.error || new Error('ReactFlow render operation failed')
+      throw failedOp.error || new Error("ReactFlow render operation failed");
     }
-    
+
     if (!completedOp) {
-      throw new Error('ReactFlow render operation not found')
+      throw new Error("ReactFlow render operation not found");
     }
-    
+
     // Return the ReactFlow data from the completed operation
-    return completedOp
+    return completedOp;
   }
 
   /**
    * Cancel ReactFlow operation if it's still queued
    */
   cancelReactFlowOperation(operationId: string): boolean {
-    const index = this.queue.findIndex(op => op.id === operationId && op.type === 'reactflow_render')
+    const index = this.queue.findIndex(
+      (op) => op.id === operationId && op.type === "reactflow_render",
+    );
     if (index !== -1) {
-      this.queue.splice(index, 1)
-      return true
+      this.queue.splice(index, 1);
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
    * Get status of ReactFlow operations
    */
   getReactFlowOperationStatus(): {
-    queued: number
-    processing: boolean
-    lastCompleted?: QueuedOperation
-    lastFailed?: QueuedOperation
+    queued: number;
+    processing: boolean;
+    lastCompleted?: QueuedOperation;
+    lastFailed?: QueuedOperation;
   } {
-    const reactFlowOps = this.queue.filter(op => op.type === 'reactflow_render')
-    const currentReactFlow = this.currentOperation?.type === 'reactflow_render'
+    const reactFlowOps = this.queue.filter(
+      (op) => op.type === "reactflow_render",
+    );
+    const currentReactFlow = this.currentOperation?.type === "reactflow_render";
     const lastCompleted = [...this.completedOperations]
       .reverse()
-      .find(op => op.type === 'reactflow_render')
+      .find((op) => op.type === "reactflow_render");
     const lastFailed = [...this.failedOperations]
       .reverse()
-      .find(op => op.type === 'reactflow_render')
-    
+      .find((op) => op.type === "reactflow_render");
+
     return {
       queued: reactFlowOps.length,
       processing: currentReactFlow,
       lastCompleted,
-      lastFailed
-    }
+      lastFailed,
+    };
   }
 
   // Application Event System
@@ -399,33 +419,29 @@ export class AsyncCoordinator {
    */
   queueApplicationEvent(
     event: ApplicationEvent,
-    options: QueueOptions = {}
+    options: QueueOptions = {},
   ): string {
     const operation = async () => {
-      try {
-        // Process the application event based on its type
-        await this.processApplicationEvent(event)
-        return 'event_processed'
-      } catch (error) {
-        throw error
-      }
-    }
-    
+      // Process the application event based on its type
+      await this.processApplicationEvent(event);
+      return "event_processed";
+    };
+
     // Determine priority based on event type
-    const priority = this.getEventPriority(event.type)
-    
+    const priority = this.getEventPriority(event.type);
+
     // Queue the operation with priority handling
-    const operationId = this.queueOperation('application_event', operation, {
+    const operationId = this.queueOperation("application_event", operation, {
       timeout: options.timeout || 5000, // 5 second default timeout
-      maxRetries: options.maxRetries || 1
-    })
-    
+      maxRetries: options.maxRetries || 1,
+    });
+
     // Insert operation at appropriate position based on priority
-    if (priority === 'high') {
-      this.prioritizeOperation(operationId)
+    if (priority === "high") {
+      this.prioritizeOperation(operationId);
     }
-    
-    return operationId
+
+    return operationId;
   }
 
   /**
@@ -433,63 +449,69 @@ export class AsyncCoordinator {
    */
   async processApplicationEventAndWait(
     event: ApplicationEvent,
-    options: QueueOptions = {}
+    options: QueueOptions = {},
   ): Promise<void> {
-    const operationId = this.queueApplicationEvent(event, options)
-    
+    const operationId = this.queueApplicationEvent(event, options);
+
     // Process the queue if not already processing
     if (!this.processing) {
-      await this.processQueue()
+      await this.processQueue();
     }
-    
+
     // Check if our operation completed successfully
-    const completedOp = this.completedOperations.find(op => op.id === operationId)
-    const failedOp = this.failedOperations.find(op => op.id === operationId)
-    
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
+
     if (failedOp) {
-      throw failedOp.error || new Error('Application event processing failed')
+      throw failedOp.error || new Error("Application event processing failed");
     }
-    
+
     if (!completedOp) {
-      throw new Error('Application event operation not found')
+      throw new Error("Application event operation not found");
     }
   }
 
   /**
    * Process individual application event
    */
-  private async processApplicationEvent(event: ApplicationEvent): Promise<void> {
+  private async processApplicationEvent(
+    event: ApplicationEvent,
+  ): Promise<void> {
     switch (event.type) {
-      case 'container_expand':
-        await this.handleContainerExpandEvent(event)
-        break
-      case 'container_collapse':
-        await this.handleContainerCollapseEvent(event)
-        break
-      case 'search':
-        await this.handleSearchEvent(event)
-        break
-      case 'layout_config_change':
-        await this.handleLayoutConfigChangeEvent(event)
-        break
+      case "container_expand":
+        await this.handleContainerExpandEvent(event);
+        break;
+      case "container_collapse":
+        await this.handleContainerCollapseEvent(event);
+        break;
+      case "search":
+        await this.handleSearchEvent(event);
+        break;
+      case "layout_config_change":
+        await this.handleLayoutConfigChangeEvent(event);
+        break;
       default:
-        throw new Error(`Unknown application event type: ${event.type}`)
+        throw new Error(`Unknown application event type: ${event.type}`);
     }
   }
 
   /**
    * Handle container expand event
    */
-  private async handleContainerExpandEvent(event: ApplicationEvent): Promise<void> {
-    const { containerId, state } = event.payload
-    
+  private async handleContainerExpandEvent(
+    event: ApplicationEvent,
+  ): Promise<void> {
+    const { containerId, state } = event.payload;
+
     if (!containerId || !state) {
-      throw new Error('Container expand event missing required payload')
+      throw new Error("Container expand event missing required payload");
     }
-    
+
     // Expand the container in the state
-    state.expandContainer(containerId)
-    
+    state.expandContainer(containerId);
+
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
   }
@@ -497,16 +519,18 @@ export class AsyncCoordinator {
   /**
    * Handle container collapse event
    */
-  private async handleContainerCollapseEvent(event: ApplicationEvent): Promise<void> {
-    const { containerId, state } = event.payload
-    
+  private async handleContainerCollapseEvent(
+    event: ApplicationEvent,
+  ): Promise<void> {
+    const { containerId, state } = event.payload;
+
     if (!containerId || !state) {
-      throw new Error('Container collapse event missing required payload')
+      throw new Error("Container collapse event missing required payload");
     }
-    
+
     // Collapse the container in the state
-    state.collapseContainer(containerId)
-    
+    state.collapseContainer(containerId);
+
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
   }
@@ -515,30 +539,32 @@ export class AsyncCoordinator {
    * Handle search event
    */
   private async handleSearchEvent(event: ApplicationEvent): Promise<void> {
-    const { query, state } = event.payload
-    
+    const { query, state } = event.payload;
+
     if (!state) {
-      throw new Error('Search event missing required payload')
+      throw new Error("Search event missing required payload");
     }
-    
+
     // Perform search in the state
-    const results = state.search(query || '')
-    
+    const results = state.search(query || "");
+
     // Expand containers containing search results if needed
     if (event.payload.expandContainers && results.length > 0) {
       for (const result of results) {
-        if (result.type === 'node') {
+        if (result.type === "node") {
           // Find containers that contain this node and expand them
-          const containers = state.getContainersForNode ? state.getContainersForNode(result.id) : []
+          const containers = state.getContainersForNode
+            ? state.getContainersForNode(result.id)
+            : [];
           for (const container of containers) {
             if (container.collapsed) {
-              state.expandContainer(container.id)
+              state.expandContainer(container.id);
             }
           }
         }
       }
     }
-    
+
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
   }
@@ -546,13 +572,15 @@ export class AsyncCoordinator {
   /**
    * Handle layout config change event
    */
-  private async handleLayoutConfigChangeEvent(event: ApplicationEvent): Promise<void> {
-    const { config, state } = event.payload
-    
+  private async handleLayoutConfigChangeEvent(
+    event: ApplicationEvent,
+  ): Promise<void> {
+    const { config, state } = event.payload;
+
     if (!config || !state) {
-      throw new Error('Layout config change event missing required payload')
+      throw new Error("Layout config change event missing required payload");
     }
-    
+
     // Store the new configuration in the state (if supported)
     // The actual layout update should be triggered separately
     // Note: This is a simplified implementation - in practice, we'd store config in state
@@ -561,17 +589,19 @@ export class AsyncCoordinator {
   /**
    * Get event priority for queue ordering
    */
-  private getEventPriority(eventType: ApplicationEvent['type']): 'high' | 'normal' | 'low' {
+  private getEventPriority(
+    eventType: ApplicationEvent["type"],
+  ): "high" | "normal" | "low" {
     switch (eventType) {
-      case 'container_expand':
-      case 'container_collapse':
-        return 'high' // User interactions should be prioritized
-      case 'search':
-        return 'normal'
-      case 'layout_config_change':
-        return 'low' // Configuration changes can wait
+      case "container_expand":
+      case "container_collapse":
+        return "high"; // User interactions should be prioritized
+      case "search":
+        return "normal";
+      case "layout_config_change":
+        return "low"; // Configuration changes can wait
       default:
-        return 'normal'
+        return "normal";
     }
   }
 
@@ -579,10 +609,10 @@ export class AsyncCoordinator {
    * Move operation to front of queue for high priority
    */
   private prioritizeOperation(operationId: string): void {
-    const index = this.queue.findIndex(op => op.id === operationId)
+    const index = this.queue.findIndex((op) => op.id === operationId);
     if (index > 0) {
-      const operation = this.queue.splice(index, 1)[0]
-      this.queue.unshift(operation)
+      const operation = this.queue.splice(index, 1)[0];
+      this.queue.unshift(operation);
     }
   }
 
@@ -590,77 +620,81 @@ export class AsyncCoordinator {
    * Cancel application event if it's still queued
    */
   cancelApplicationEvent(operationId: string): boolean {
-    const index = this.queue.findIndex(op => op.id === operationId && op.type === 'application_event')
+    const index = this.queue.findIndex(
+      (op) => op.id === operationId && op.type === "application_event",
+    );
     if (index !== -1) {
-      this.queue.splice(index, 1)
-      return true
+      this.queue.splice(index, 1);
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
    * Cancel all application events of a specific type
    */
-  cancelApplicationEventsByType(eventType: ApplicationEvent['type']): number {
-    let cancelledCount = 0
-    
+  cancelApplicationEventsByType(eventType: ApplicationEvent["type"]): number {
+    let cancelledCount = 0;
+
     // Filter out operations that match the event type
-    this.queue = this.queue.filter(op => {
-      if (op.type === 'application_event') {
+    this.queue = this.queue.filter((op) => {
+      if (op.type === "application_event") {
         // We need to check the event type in the operation
         // This is a simplified approach - in practice, we'd need to store event metadata
-        cancelledCount++
-        return false
+        cancelledCount++;
+        return false;
       }
-      return true
-    })
-    
-    return cancelledCount
+      return true;
+    });
+
+    return cancelledCount;
   }
 
   /**
    * Get status of application event operations
    */
   getApplicationEventStatus(): {
-    queued: number
-    processing: boolean
-    lastCompleted?: QueuedOperation
-    lastFailed?: QueuedOperation
-    queuedByType: Record<string, number>
+    queued: number;
+    processing: boolean;
+    lastCompleted?: QueuedOperation;
+    lastFailed?: QueuedOperation;
+    queuedByType: Record<string, number>;
   } {
-    const appEventOps = this.queue.filter(op => op.type === 'application_event')
-    const currentAppEvent = this.currentOperation?.type === 'application_event'
+    const appEventOps = this.queue.filter(
+      (op) => op.type === "application_event",
+    );
+    const currentAppEvent = this.currentOperation?.type === "application_event";
     const lastCompleted = [...this.completedOperations]
       .reverse()
-      .find(op => op.type === 'application_event')
+      .find((op) => op.type === "application_event");
     const lastFailed = [...this.failedOperations]
       .reverse()
-      .find(op => op.type === 'application_event')
-    
+      .find((op) => op.type === "application_event");
+
     // Count queued operations by type (simplified - would need event metadata in practice)
     const queuedByType: Record<string, number> = {
       container_expand: 0,
       container_collapse: 0,
       search: 0,
-      layout_config_change: 0
-    }
-    
+      layout_config_change: 0,
+    };
+
     return {
       queued: appEventOps.length,
       processing: currentAppEvent,
       lastCompleted,
       lastFailed,
-      queuedByType
-    }
+      queuedByType,
+    };
   }
 
   /**
    * Clear all application events from queue
    */
   clearApplicationEvents(): number {
-    const initialLength = this.queue.length
-    this.queue = this.queue.filter(op => op.type !== 'application_event')
-    return initialLength - this.queue.length
+    const initialLength = this.queue.length;
+    this.queue = this.queue.filter((op) => op.type !== "application_event");
+    return initialLength - this.queue.length;
   }
 
   // Container Operations Integration with Async Coordination
@@ -671,45 +705,47 @@ export class AsyncCoordinator {
   async expandContainer(
     containerId: string,
     state: any, // VisualizationState
-    options: { 
-      triggerLayout?: boolean
-      layoutConfig?: any // LayoutConfig
-      timeout?: number
-      maxRetries?: number
-    } = {}
+    options: {
+      triggerLayout?: boolean;
+      layoutConfig?: any; // LayoutConfig
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
   ): Promise<void> {
     const event: ApplicationEvent = {
-      type: 'container_expand',
+      type: "container_expand",
       payload: {
         containerId,
         state,
         triggerLayout: options.triggerLayout !== false,
-        layoutConfig: options.layoutConfig || {}
+        layoutConfig: options.layoutConfig || {},
       },
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    };
 
     // Queue the container expand event
     const operationId = this.queueApplicationEvent(event, {
       timeout: options.timeout,
-      maxRetries: options.maxRetries
-    })
+      maxRetries: options.maxRetries,
+    });
 
     // Process the queue if not already processing
     if (!this.processing) {
-      await this.processQueue()
+      await this.processQueue();
     }
 
     // Check if our operation completed successfully
-    const completedOp = this.completedOperations.find(op => op.id === operationId)
-    const failedOp = this.failedOperations.find(op => op.id === operationId)
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
 
     if (failedOp) {
-      throw failedOp.error || new Error('Container expand operation failed')
+      throw failedOp.error || new Error("Container expand operation failed");
     }
 
     if (!completedOp) {
-      throw new Error('Container expand operation not found')
+      throw new Error("Container expand operation not found");
     }
 
     // Note: Layout triggering should be handled separately to avoid circular dependencies
@@ -722,45 +758,47 @@ export class AsyncCoordinator {
   async collapseContainer(
     containerId: string,
     state: any, // VisualizationState
-    options: { 
-      triggerLayout?: boolean
-      layoutConfig?: any // LayoutConfig
-      timeout?: number
-      maxRetries?: number
-    } = {}
+    options: {
+      triggerLayout?: boolean;
+      layoutConfig?: any; // LayoutConfig
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
   ): Promise<void> {
     const event: ApplicationEvent = {
-      type: 'container_collapse',
+      type: "container_collapse",
       payload: {
         containerId,
         state,
         triggerLayout: options.triggerLayout !== false,
-        layoutConfig: options.layoutConfig || {}
+        layoutConfig: options.layoutConfig || {},
       },
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    };
 
     // Queue the container collapse event
     const operationId = this.queueApplicationEvent(event, {
       timeout: options.timeout,
-      maxRetries: options.maxRetries
-    })
+      maxRetries: options.maxRetries,
+    });
 
     // Process the queue if not already processing
     if (!this.processing) {
-      await this.processQueue()
+      await this.processQueue();
     }
 
     // Check if our operation completed successfully
-    const completedOp = this.completedOperations.find(op => op.id === operationId)
-    const failedOp = this.failedOperations.find(op => op.id === operationId)
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
 
     if (failedOp) {
-      throw failedOp.error || new Error('Container collapse operation failed')
+      throw failedOp.error || new Error("Container collapse operation failed");
     }
 
     if (!completedOp) {
-      throw new Error('Container collapse operation not found')
+      throw new Error("Container collapse operation not found");
     }
 
     // Note: Layout triggering should be handled separately to avoid circular dependencies
@@ -772,22 +810,24 @@ export class AsyncCoordinator {
    */
   async expandAllContainers(
     state: any, // VisualizationState
-    options: { 
-      triggerLayout?: boolean
-      layoutConfig?: any // LayoutConfig
-      timeout?: number
-      maxRetries?: number
-    } = {}
+    options: {
+      triggerLayout?: boolean;
+      layoutConfig?: any; // LayoutConfig
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
   ): Promise<void> {
     // Get all collapsed containers
-    const collapsedContainers = state.visibleContainers.filter((container: any) => container.collapsed)
-    
+    const collapsedContainers = state.visibleContainers.filter(
+      (container: any) => container.collapsed,
+    );
+
     // Expand each container sequentially
     for (const container of collapsedContainers) {
       await this.expandContainer(container.id, state, {
         ...options,
-        triggerLayout: false // Don't trigger layout for each individual container
-      })
+        triggerLayout: false, // Don't trigger layout for each individual container
+      });
     }
 
     // Note: Layout triggering should be handled separately to avoid circular dependencies
@@ -799,22 +839,24 @@ export class AsyncCoordinator {
    */
   async collapseAllContainers(
     state: any, // VisualizationState
-    options: { 
-      triggerLayout?: boolean
-      layoutConfig?: any // LayoutConfig
-      timeout?: number
-      maxRetries?: number
-    } = {}
+    options: {
+      triggerLayout?: boolean;
+      layoutConfig?: any; // LayoutConfig
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
   ): Promise<void> {
     // Get all expanded containers
-    const expandedContainers = state.visibleContainers.filter((container: any) => !container.collapsed)
-    
+    const expandedContainers = state.visibleContainers.filter(
+      (container: any) => !container.collapsed,
+    );
+
     // Collapse each container sequentially
     for (const container of expandedContainers) {
       await this.collapseContainer(container.id, state, {
         ...options,
-        triggerLayout: false // Don't trigger layout for each individual container
-      })
+        triggerLayout: false, // Don't trigger layout for each individual container
+      });
     }
 
     // Note: Layout triggering should be handled separately to avoid circular dependencies
@@ -827,42 +869,44 @@ export class AsyncCoordinator {
   async recoverFromContainerOperationError(
     operationId: string,
     state: any, // VisualizationState
-    recoveryAction: 'retry' | 'rollback' | 'skip' = 'retry'
+    recoveryAction: "retry" | "rollback" | "skip" = "retry",
   ): Promise<void> {
-    const failedOp = this.failedOperations.find(op => op.id === operationId)
-    
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
+
     if (!failedOp) {
-      throw new Error(`Failed operation ${operationId} not found`)
+      throw new Error(`Failed operation ${operationId} not found`);
     }
 
     switch (recoveryAction) {
-      case 'retry':
+      case "retry":
         // Re-queue the failed operation with increased retry count
         const retryOperation = async () => {
-          return await failedOp.operation()
-        }
-        
+          return await failedOp.operation();
+        };
+
         this.queueOperation(failedOp.type, retryOperation, {
           timeout: failedOp.timeout,
-          maxRetries: (failedOp.maxRetries || 0) + 1
-        })
-        
-        await this.processQueue()
-        break
-        
-      case 'rollback':
+          maxRetries: (failedOp.maxRetries || 0) + 1,
+        });
+
+        await this.processQueue();
+        break;
+
+      case "rollback":
         // Attempt to rollback the state change (implementation depends on the specific operation)
         // This is a simplified implementation - in practice, we'd need operation-specific rollback logic
-        console.warn(`Rollback not implemented for operation ${operationId}`)
-        break
-        
-      case 'skip':
+        console.warn(`Rollback not implemented for operation ${operationId}`);
+        break;
+
+      case "skip":
         // Simply remove the failed operation from the failed list and continue
-        this.failedOperations = this.failedOperations.filter(op => op.id !== operationId)
-        break
-        
+        this.failedOperations = this.failedOperations.filter(
+          (op) => op.id !== operationId,
+        );
+        break;
+
       default:
-        throw new Error(`Unknown recovery action: ${recoveryAction}`)
+        throw new Error(`Unknown recovery action: ${recoveryAction}`);
     }
   }
 
@@ -871,56 +915,65 @@ export class AsyncCoordinator {
    */
   getContainerOperationStatus(): {
     expandOperations: {
-      queued: number
-      processing: boolean
-      completed: number
-      failed: number
-    }
+      queued: number;
+      processing: boolean;
+      completed: number;
+      failed: number;
+    };
     collapseOperations: {
-      queued: number
-      processing: boolean
-      completed: number
-      failed: number
-    }
+      queued: number;
+      processing: boolean;
+      completed: number;
+      failed: number;
+    };
     bulkOperations: {
-      queued: number
-      processing: boolean
-      completed: number
-      failed: number
-    }
-    lastError?: Error
+      queued: number;
+      processing: boolean;
+      completed: number;
+      failed: number;
+    };
+    lastError?: Error;
   } {
     // Filter operations by container operation types
-    const expandOps = [...this.queue, ...this.completedOperations, ...this.failedOperations]
-      .filter(op => op.type === 'application_event')
-    
-    const collapseOps = expandOps // Simplified - in practice we'd need to check event payload
-    const bulkOps = expandOps // Simplified - in practice we'd need to check for bulk operations
-    
-    const lastError = this.failedOperations.length > 0 
-      ? this.failedOperations[this.failedOperations.length - 1].error
-      : undefined
+    const expandOps = [
+      ...this.queue,
+      ...this.completedOperations,
+      ...this.failedOperations,
+    ].filter((op) => op.type === "application_event");
+
+    const collapseOps = expandOps; // Simplified - in practice we'd need to check event payload
+    const bulkOps = expandOps; // Simplified - in practice we'd need to check for bulk operations
+
+    const lastError =
+      this.failedOperations.length > 0
+        ? this.failedOperations[this.failedOperations.length - 1].error
+        : undefined;
 
     return {
       expandOperations: {
-        queued: this.queue.filter(op => op.type === 'application_event').length,
-        processing: this.currentOperation?.type === 'application_event',
-        completed: this.completedOperations.filter(op => op.type === 'application_event').length,
-        failed: this.failedOperations.filter(op => op.type === 'application_event').length
+        queued: this.queue.filter((op) => op.type === "application_event")
+          .length,
+        processing: this.currentOperation?.type === "application_event",
+        completed: this.completedOperations.filter(
+          (op) => op.type === "application_event",
+        ).length,
+        failed: this.failedOperations.filter(
+          (op) => op.type === "application_event",
+        ).length,
       },
       collapseOperations: {
         queued: 0, // Simplified
         processing: false,
         completed: 0,
-        failed: 0
+        failed: 0,
       },
       bulkOperations: {
         queued: 0, // Simplified
         processing: false,
         completed: 0,
-        failed: 0
+        failed: 0,
       },
-      lastError
-    }
+      lastError,
+    };
   }
 }

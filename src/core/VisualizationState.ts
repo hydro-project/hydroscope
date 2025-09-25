@@ -28,7 +28,7 @@ export class VisualizationState {
     lastUpdate: Date.now(),
   };
   private _searchResults: SearchResult[] = [];
-  private _searchQuery: string = '';
+  private _searchQuery: string = "";
   private _searchHistory: string[] = [];
   private _searchState: {
     isActive: boolean;
@@ -38,7 +38,7 @@ export class VisualizationState {
     expandedContainers: Set<string>; // Containers expanded due to search
   } = {
     isActive: false,
-    query: '',
+    query: "",
     resultCount: 0,
     lastSearchTime: 0,
     expandedContainers: new Set(),
@@ -192,11 +192,11 @@ export class VisualizationState {
 
   private _validateContainerData(
     container: Container,
-    validateId: boolean = true
+    validateId: boolean = true,
   ): void {
     if (!container) {
       throw new Error(
-        "Invalid container: container cannot be null or undefined"
+        "Invalid container: container cannot be null or undefined",
       );
     }
     if (validateId && (!container.id || container.id.trim() === "")) {
@@ -276,7 +276,7 @@ export class VisualizationState {
     // Check for self-reference
     if (container.children.has(container.id)) {
       throw new Error(
-        `Circular dependency detected: Container ${container.id} cannot contain itself`
+        `Circular dependency detected: Container ${container.id} cannot contain itself`,
       );
     }
 
@@ -289,7 +289,7 @@ export class VisualizationState {
         for (const childId of container.children) {
           if (this._isAncestorOf(childId, existingId)) {
             throw new Error(
-              `Circular dependency detected: ${childId} is an ancestor of ${existingId}, which already has ${container.id} as a child`
+              `Circular dependency detected: ${childId} is an ancestor of ${existingId}, which already has ${container.id} as a child`,
             );
           }
         }
@@ -302,7 +302,7 @@ export class VisualizationState {
       const existingChild = this._containers.get(childId);
       if (existingChild && existingChild.children.has(container.id)) {
         throw new Error(
-          `Circular dependency detected: ${container.id} and ${childId} would reference each other`
+          `Circular dependency detected: ${container.id} and ${childId} would reference each other`,
         );
       }
 
@@ -311,7 +311,7 @@ export class VisualizationState {
         // This happens if container.id is already a descendant of childId
         if (this._isDescendantOf(container.id, childId)) {
           throw new Error(
-            `Circular dependency detected: Adding ${childId} to ${container.id} would create a cycle`
+            `Circular dependency detected: Adding ${childId} to ${container.id} would create a cycle`,
           );
         }
 
@@ -319,7 +319,7 @@ export class VisualizationState {
         // This would create an indirect cycle: container.id -> ... -> childId -> ... -> container.id
         if (this._isAncestorOf(childId, container.id)) {
           throw new Error(
-            `Circular dependency detected: ${childId} is already an ancestor of ${container.id}`
+            `Circular dependency detected: ${childId} is already an ancestor of ${container.id}`,
           );
         }
       }
@@ -328,7 +328,7 @@ export class VisualizationState {
 
   private _isAncestorOf(
     potentialAncestor: string,
-    descendant: string
+    descendant: string,
   ): boolean {
     let current = this.getContainerParent(descendant);
     while (current) {
@@ -342,7 +342,7 @@ export class VisualizationState {
 
   private _isDescendantOf(
     potentialDescendant: string,
-    ancestor: string
+    ancestor: string,
   ): boolean {
     const descendants = this.getContainerDescendants(ancestor);
     return descendants.includes(potentialDescendant);
@@ -556,7 +556,7 @@ export class VisualizationState {
         // Update tracking structures
         this._aggregatedToOriginalMap.set(
           aggregatedEdge.id,
-          aggregatedEdge.originalEdgeIds
+          aggregatedEdge.originalEdgeIds,
         );
         for (const originalId of aggregatedEdge.originalEdgeIds) {
           this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
@@ -573,7 +573,7 @@ export class VisualizationState {
     // Record aggregation history
     const edgeCount = Array.from(edgesToAggregate.values()).reduce(
       (sum, edges) => sum + edges.length,
-      0
+      0,
     );
     if (edgeCount > 0) {
       this._aggregationHistory.push({
@@ -678,7 +678,7 @@ export class VisualizationState {
     const containerAggregations =
       this._containerAggregationMap.get(containerId) || [];
     const updatedAggregations = containerAggregations.filter(
-      (id) => !aggregatedEdgesToRemove.includes(id)
+      (id) => !aggregatedEdgesToRemove.includes(id),
     );
     if (updatedAggregations.length === 0) {
       this._containerAggregationMap.delete(containerId);
@@ -706,7 +706,7 @@ export class VisualizationState {
     const sourceNode = this._nodes.get(edge.source);
     if (sourceNode && sourceNode.hidden) {
       sourceContainer = this._findSmallestCollapsedContainerForNode(
-        edge.source
+        edge.source,
       );
     }
 
@@ -714,7 +714,7 @@ export class VisualizationState {
     const targetNode = this._nodes.get(edge.target);
     if (targetNode && targetNode.hidden) {
       targetContainer = this._findSmallestCollapsedContainerForNode(
-        edge.target
+        edge.target,
       );
     }
 
@@ -775,7 +775,7 @@ export class VisualizationState {
   }
 
   private _findSmallestCollapsedContainerForNode(
-    nodeId: string
+    nodeId: string,
   ): string | undefined {
     let currentContainer = this._nodeContainerMap.get(nodeId);
 
@@ -792,7 +792,7 @@ export class VisualizationState {
 
   getAggregatedEdges(): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
-      (edge) => !edge.hidden
+      (edge) => !edge.hidden,
     );
   }
 
@@ -807,17 +807,17 @@ export class VisualizationState {
 
   get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge> {
     const regularEdges = Array.from(this._edges.values()).filter(
-      (edge) => !edge.hidden
+      (edge) => !edge.hidden,
     );
     const aggregatedEdges = Array.from(this._aggregatedEdges.values()).filter(
-      (edge) => !edge.hidden
+      (edge) => !edge.hidden,
     );
     return [...regularEdges, ...aggregatedEdges];
   }
 
   get visibleContainers(): ReadonlyArray<Container> {
     return Array.from(this._containers.values()).filter(
-      (container) => !container.hidden
+      (container) => !container.hidden,
     );
   }
 
@@ -1114,18 +1114,18 @@ export class VisualizationState {
   }
 
   getAggregatedEdgesByContainer(
-    containerId: string
+    containerId: string,
   ): ReadonlyArray<AggregatedEdge> {
     const edgeIds = this._containerAggregationMap.get(containerId) || [];
     return edgeIds
       .map((id) => this._aggregatedEdges.get(id))
       .filter(
-        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden
+        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden,
       );
   }
 
   getOriginalEdgesForAggregated(
-    aggregatedEdgeId: string
+    aggregatedEdgeId: string,
   ): ReadonlyArray<GraphEdge> {
     const originalIds =
       this._aggregatedToOriginalMap.get(aggregatedEdgeId) || [];
@@ -1135,11 +1135,11 @@ export class VisualizationState {
   }
 
   getAggregatedEdgesAffectingNode(
-    nodeId: string
+    nodeId: string,
   ): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
       (edge) =>
-        !edge.hidden && (edge.source === nodeId || edge.target === nodeId)
+        !edge.hidden && (edge.source === nodeId || edge.target === nodeId),
     );
   }
 
@@ -1175,7 +1175,7 @@ export class VisualizationState {
 
     const totalOriginalEdges = this._edges.size;
     const visibleOriginalEdges = Array.from(this._edges.values()).filter(
-      (e) => !e.hidden
+      (e) => !e.hidden,
     ).length;
     const totalVisibleEdges = visibleOriginalEdges + activeAggregations;
     const edgeReductionRatio =
@@ -1209,7 +1209,7 @@ export class VisualizationState {
         const originalEdge = this._edges.get(originalId);
         if (!originalEdge) {
           errors.push(
-            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`
+            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`,
           );
         }
       }
@@ -1220,7 +1220,7 @@ export class VisualizationState {
       const aggEdge = this._aggregatedEdges.get(aggId);
       if (!aggEdge) {
         errors.push(
-          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`
+          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`,
         );
       }
     }
@@ -1256,7 +1256,7 @@ export class VisualizationState {
 
   getNodesShowingLongLabels(): ReadonlyArray<GraphNode> {
     return Array.from(this._nodes.values()).filter(
-      (node) => node.showingLongLabel
+      (node) => node.showingLongLabel,
     );
   }
 
@@ -1266,15 +1266,15 @@ export class VisualizationState {
     expandedContainers: number;
   } {
     const nodesWithLongLabels = Array.from(this._nodes.values()).filter(
-      (node) => node.showingLongLabel
+      (node) => node.showingLongLabel,
     ).length;
 
     const collapsedContainers = Array.from(this._containers.values()).filter(
-      (container) => container.collapsed
+      (container) => container.collapsed,
     ).length;
 
     const expandedContainers = Array.from(this._containers.values()).filter(
-      (container) => !container.collapsed
+      (container) => !container.collapsed,
     ).length;
 
     return {
@@ -1306,7 +1306,7 @@ export class VisualizationState {
     for (const [nodeId, node] of this._nodes) {
       if (node.showingLongLabel && !node.longLabel) {
         errors.push(
-          `Node ${nodeId} is showing long label but has no longLabel property`
+          `Node ${nodeId} is showing long label but has no longLabel property`,
         );
       }
     }
@@ -1324,7 +1324,7 @@ export class VisualizationState {
     this._searchState.isActive = this._searchQuery.length > 0;
     this._searchState.query = this._searchQuery;
     this._searchState.lastSearchTime = Date.now();
-    
+
     // Add to search history if not empty
     if (this._searchQuery) {
       // Remove existing entry if present
@@ -1379,14 +1379,14 @@ export class VisualizationState {
     this._searchResults.sort((a, b) => {
       const aExact = a.label.toLowerCase() === queryLower;
       const bExact = b.label.toLowerCase() === queryLower;
-      
+
       if (aExact && !bExact) return -1;
       if (!aExact && bExact) return 1;
-      
+
       // Sort by first match position
       const aFirstMatch = a.matchIndices[0]?.[0] ?? Infinity;
       const bFirstMatch = b.matchIndices[0]?.[0] ?? Infinity;
-      
+
       return aFirstMatch - bFirstMatch;
     });
 
@@ -1394,53 +1394,57 @@ export class VisualizationState {
     return [...this._searchResults];
   }
 
-  private _findMatches(text: string, query: string): { matches: boolean; indices: number[][]; isExact: boolean } {
+  private _findMatches(
+    text: string,
+    query: string,
+  ): { matches: boolean; indices: number[][]; isExact: boolean } {
     const textLower = text.toLowerCase();
     const indices: number[][] = [];
-    
+
     // Exact substring match
     let startIndex = 0;
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const index = textLower.indexOf(query, startIndex);
       if (index === -1) break;
       indices.push([index, index + query.length]);
       startIndex = index + 1;
     }
-    
+
     if (indices.length > 0) {
       return { matches: true, indices, isExact: true };
     }
-    
+
     // Only do fuzzy matching for queries longer than 3 characters to avoid too many false positives
     if (query.length <= 3) {
       return { matches: false, indices: [], isExact: false };
     }
-    
+
     // Fuzzy matching - check if all characters of query appear in order
     let queryIndex = 0;
     const fuzzyIndices: number[] = [];
-    
+
     for (let i = 0; i < textLower.length && queryIndex < query.length; i++) {
       if (textLower[i] === query[queryIndex]) {
         fuzzyIndices.push(i);
         queryIndex++;
       }
     }
-    
+
     if (queryIndex === query.length) {
       // All characters found - create match indices for individual characters
-      const charIndices: number[][] = fuzzyIndices.map(i => [i, i + 1]);
+      const charIndices: number[][] = fuzzyIndices.map((i) => [i, i + 1]);
       return { matches: true, indices: charIndices, isExact: false };
     }
-    
+
     return { matches: false, indices: [], isExact: false };
   }
 
   clearSearch(): void {
     this._searchResults = [];
-    this._searchQuery = '';
+    this._searchQuery = "";
     this._searchState.isActive = false;
-    this._searchState.query = '';
+    this._searchState.query = "";
     this._searchState.resultCount = 0;
     this._searchState.expandedContainers.clear();
   }
@@ -1475,19 +1479,24 @@ export class VisualizationState {
   }
 
   // Advanced search methods
-  searchByType(query: string, entityType: 'node' | 'container'): SearchResult[] {
+  searchByType(
+    query: string,
+    entityType: "node" | "container",
+  ): SearchResult[] {
     const allResults = this.search(query);
-    return allResults.filter(result => result.type === entityType);
+    return allResults.filter((result) => result.type === entityType);
   }
 
   searchBySemanticTag(tag: string): SearchResult[] {
     this._searchResults = [];
-    
+
     // Search nodes by semantic tags
     for (const node of this._nodes.values()) {
-      if (node.semanticTags.some(nodeTag => 
-        nodeTag.toLowerCase().includes(tag.toLowerCase())
-      )) {
+      if (
+        node.semanticTags.some((nodeTag) =>
+          nodeTag.toLowerCase().includes(tag.toLowerCase()),
+        )
+      ) {
         this._searchResults.push({
           id: node.id,
           label: node.label,
@@ -1499,14 +1508,19 @@ export class VisualizationState {
 
     // Search edges by semantic tags (return connected nodes)
     for (const edge of this._edges.values()) {
-      if (edge.semanticTags.some(edgeTag => 
-        edgeTag.toLowerCase().includes(tag.toLowerCase())
-      )) {
+      if (
+        edge.semanticTags.some((edgeTag) =>
+          edgeTag.toLowerCase().includes(tag.toLowerCase()),
+        )
+      ) {
         // Add source and target nodes if not already in results
         const sourceNode = this._nodes.get(edge.source);
         const targetNode = this._nodes.get(edge.target);
-        
-        if (sourceNode && !this._searchResults.some(r => r.id === sourceNode.id)) {
+
+        if (
+          sourceNode &&
+          !this._searchResults.some((r) => r.id === sourceNode.id)
+        ) {
           this._searchResults.push({
             id: sourceNode.id,
             label: sourceNode.label,
@@ -1514,8 +1528,11 @@ export class VisualizationState {
             matchIndices: [[0, 0]],
           });
         }
-        
-        if (targetNode && !this._searchResults.some(r => r.id === targetNode.id)) {
+
+        if (
+          targetNode &&
+          !this._searchResults.some((r) => r.id === targetNode.id)
+        ) {
           this._searchResults.push({
             id: targetNode.id,
             label: targetNode.label,
@@ -1533,42 +1550,47 @@ export class VisualizationState {
   // Get search suggestions based on existing labels
   getSearchSuggestions(partialQuery: string, limit: number = 5): string[] {
     if (!partialQuery.trim()) return [];
-    
+
     const queryLower = partialQuery.toLowerCase();
     const suggestions = new Set<string>();
-    
+
     // Collect suggestions from node labels
     for (const node of this._nodes.values()) {
       if (node.label.toLowerCase().includes(queryLower)) {
         suggestions.add(node.label);
       }
     }
-    
+
     // Collect suggestions from container labels
     for (const container of this._containers.values()) {
       if (container.label.toLowerCase().includes(queryLower)) {
         suggestions.add(container.label);
       }
     }
-    
+
     // Add from search history
     for (const historyItem of this._searchHistory) {
       if (historyItem.toLowerCase().includes(queryLower)) {
         suggestions.add(historyItem);
       }
     }
-    
+
     return Array.from(suggestions).slice(0, limit);
   }
 
   // Performance Monitoring
   private trackOperation(operationName: string, duration: number): void {
     // Track operation count
-    const currentCount = this._performanceMetrics.operationCounts.get(operationName) || 0;
-    this._performanceMetrics.operationCounts.set(operationName, currentCount + 1);
+    const currentCount =
+      this._performanceMetrics.operationCounts.get(operationName) || 0;
+    this._performanceMetrics.operationCounts.set(
+      operationName,
+      currentCount + 1,
+    );
 
     // Track operation times (keep last 10 for average calculation)
-    const times = this._performanceMetrics.operationTimes.get(operationName) || [];
+    const times =
+      this._performanceMetrics.operationTimes.get(operationName) || [];
     times.push(duration);
     if (times.length > 10) {
       times.shift();
@@ -1589,11 +1611,15 @@ export class VisualizationState {
       averageTimes.set(operation, avg);
 
       // Generate recommendations based on performance
-      if (avg > 50 && operation.includes('search')) {
-        recommendations.push(`Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`);
+      if (avg > 50 && operation.includes("search")) {
+        recommendations.push(
+          `Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`,
+        );
       }
-      if (avg > 100 && operation.includes('container')) {
-        recommendations.push(`Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`);
+      if (avg > 100 && operation.includes("container")) {
+        recommendations.push(
+          `Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`,
+        );
       }
     }
 
@@ -1670,7 +1696,7 @@ export class VisualizationState {
 
   private validateDescendantsCollapsed(
     containerId: string,
-    violations: InvariantViolation[]
+    violations: InvariantViolation[],
   ): void {
     const children = this.getContainerChildren(containerId);
 
@@ -1709,7 +1735,7 @@ export class VisualizationState {
 
   private validateAncestorsVisible(
     containerId: string,
-    violations: InvariantViolation[]
+    violations: InvariantViolation[],
   ): void {
     let current = this.getNodeContainer(containerId);
 
@@ -1852,10 +1878,10 @@ export class VisualizationState {
     if (errors.length > 0) {
       console.error(
         "[VisualizationState] CRITICAL: Invariant violations:",
-        errors
+        errors,
       );
       throw new Error(
-        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`
+        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`,
       );
     }
   }
