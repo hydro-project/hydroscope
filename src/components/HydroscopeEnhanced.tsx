@@ -657,19 +657,19 @@ export const HydroscopeEnhanced: React.FC<HydroscopeEnhancedProps> = ({
   return (
     <StyleConfigProvider value={styleConfig}>
       <div className="hydroscope-enhanced" style={{ height, width, position: 'relative' }}>
-        {/* File Upload (when no data) */}
+        {/* File Upload Landing Page (when no data) */}
         {!graphData && enhanced && (
           <div style={{
             position: 'absolute',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 100,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: 'white',
-            padding: '20px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            border: '1px solid #e0e0e0'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50
           }}>
             <FileUpload
               onFileLoaded={handleFileLoaded}
