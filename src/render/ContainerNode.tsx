@@ -78,17 +78,17 @@ export function ContainerNode({ id, data }: NodeProps) {
     // Apply search highlight colors if needed
     const containerColors = searchHighlight
       ? {
-          background: searchHighlightStrong
-            ? searchColors.current.background
-            : searchColors.match.background,
-          border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
-          text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
-        }
+        background: searchHighlightStrong
+          ? searchColors.current.background
+          : searchColors.match.background,
+        border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
+        text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
+      }
       : {
-          ...baseContainerColors,
-          // Ensure good contrast for non-highlighted containers too
-          text: getContrastColor(baseContainerColors.background),
-        };
+        ...baseContainerColors,
+        // Ensure good contrast for non-highlighted containers too
+        text: getContrastColor(baseContainerColors.background),
+      };
     return (
       <>
         {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -197,17 +197,17 @@ export function ContainerNode({ id, data }: NodeProps) {
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
     ? {
-        background: searchHighlightStrong
-          ? searchColors.current.background
-          : searchColors.match.background,
-        border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
-        text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
-      }
+      background: searchHighlightStrong
+        ? searchColors.current.background
+        : searchColors.match.background,
+      border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
+      text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
+    }
     : {
-        background: 'rgba(25, 118, 210, 0.1)',
-        border: '#1976d2',
-        text: '#1976d2', // Blue text on light blue background provides good contrast
-      };
+      background: 'rgba(25, 118, 210, 0.1)',
+      border: '#1976d2',
+      text: '#1976d2', // Blue text on light blue background provides good contrast
+    };
 
   return (
     <>
