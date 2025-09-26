@@ -152,8 +152,16 @@ export interface ReactFlowNode {
     semanticTags?: string[];
     appliedSemanticTags?: string[];
     onClick?: (elementId: string, elementType: "node" | "container") => void;
+    width?: number;
+    height?: number;
+    nodeCount?: number;
+    colorPalette?: string;
+    style?: string;
   };
   style?: Record<string, any>;
+  parentNode?: string;
+  parentId?: string;
+  extent?: 'parent' | [[number, number], [number, number]];
 }
 
 export interface ReactFlowEdge {

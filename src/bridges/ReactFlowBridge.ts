@@ -247,62 +247,14 @@ export class ReactFlowBridge {
     return clonedResult;
   }
 
-  // Optimized conversion for large graphs
+  // Optimized conversion for large graphs - use same logic as regular conversion
   private convertNodesOptimized(
     state: VisualizationState,
     interactionHandler?: any,
   ): ReactFlowNode[] {
-    const nodes: ReactFlowNode[] = [];
-    const visibleNodes = state.visibleNodes;
-    const visibleContainers = state.visibleContainers;
-
-    // Batch process nodes for better performance
-    for (let i = 0; i < visibleNodes.length; i++) {
-      const node = visibleNodes[i];
-      const cacheKey = `node-${node.id}-${node.showingLongLabel}-${!!interactionHandler}`;
-
-      let reactFlowNode = this.nodeCache.get(cacheKey);
-      if (!reactFlowNode) {
-        reactFlowNode = this.createReactFlowNode(node, interactionHandler);
-
-        // Limit cache size to prevent memory issues
-        if (this.nodeCache.size < PERFORMANCE_CACHE_SIZE) {
-          this.nodeCache.set(cacheKey, reactFlowNode);
-        }
-      }
-
-      nodes.push(reactFlowNode);
-    }
-
-    // Process containers
-    for (let i = 0; i < visibleContainers.length; i++) {
-      const container = visibleContainers[i];
-      const cacheKey = `container-${container.id}-${container.collapsed}-${!!interactionHandler}`;
-
-      let containerNodes = this.containerCache.get(cacheKey);
-      if (!containerNodes) {
-        if (container.collapsed) {
-          containerNodes = [
-            this.renderCollapsedContainer(container, interactionHandler),
-          ];
-        } else {
-          containerNodes = this.renderExpandedContainer(
-            container,
-            state,
-            interactionHandler,
-          );
-        }
-
-        if (this.containerCache.size < PERFORMANCE_CACHE_SIZE) {
-          this.containerCache.set(cacheKey, containerNodes);
-        }
-      }
-
-      // containerNodes is always an array from cache or assignment above
-      nodes.push(...containerNodes);
-    }
-
-    return nodes;
+    // For now, use the same logic as regular conversion
+    // TODO: Add caching and batching optimizations
+    return this.convertNodes(state, interactionHandler);
   }
 
   private convertEdgesOptimized(state: VisualizationState): ReactFlowEdge[] {
@@ -340,7 +292,7 @@ export class ReactFlowBridge {
   ): ReactFlowNode {
     return {
       id: node.id,
-      type: "default",
+      type: "standard",
       position:
         node.position ||
         (() => {
@@ -371,25 +323,125 @@ export class ReactFlowBridge {
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
 
-    // Convert regular nodes
-    for (const node of state.visibleNodes) {
-      nodes.push(this.createReactFlowNode(node, interactionHandler));
-    }
+    // Build parent mapping for nodes and containers
+    const nodeParentMap = new Map<string, string>();
+    const containerParentMap = new Map<string, string>();
 
-    // Convert containers
+    // Map nodes to their parent containers
     for (const container of state.visibleContainers) {
-      if (container.collapsed) {
-        nodes.push(
-          this.renderCollapsedContainer(container, interactionHandler),
-        );
-      } else {
-        nodes.push(
-          ...this.renderExpandedContainer(container, state, interactionHandler),
-        );
+      for (const childId of container.children) {
+        nodeParentMap.set(childId, container.id);
+        console.log(`[ReactFlowBridge] Node ${childId} assigned to container ${container.id}`);
       }
     }
 
+    // Add containers first (parents before children)
+    for (const container of state.visibleContainers) {
+      const parentId = containerParentMap.get(container.id);
+      
+      // Get position and dimensions from ELK layout
+      const position = container.position || { x: 0, y: 0 };
+      const width = container.dimensions?.width || container.width || 200;
+      const height = container.dimensions?.height || container.height || 150;
+      
+      // Debug: Log container info
+      console.log(`[ReactFlowBridge] Processing container ${container.id}: collapsed=${container.collapsed}, children=${container.children.size}, position=(${position.x}, ${position.y})`);
+      if (container.children.size > 0) {
+        const childIds = Array.from(container.children).slice(0, 5); // First 5 children
+        console.log(`[ReactFlowBridge] Container ${container.id} children (first 5):`, childIds);
+      }
+      
+
+      
+      const nodeCount = container.collapsed ? this.countContainerNodes(container, state) : 0;
+
+      const containerNode: ReactFlowNode = {
+        id: container.id,
+        type: container.collapsed ? 'standard' : 'container',
+        position,
+        data: {
+          label: container.label || container.id,
+          nodeType: 'container',
+          collapsed: container.collapsed,
+          containerChildren: container.children.size,
+          nodeCount,
+          width,
+          height,
+          colorPalette: 'Set3',
+          style: 'default',
+        },
+        style: {
+          width,
+          height,
+        },
+        parentId: parentId,
+        extent: parentId ? 'parent' : undefined,
+      };
+
+      nodes.push(containerNode);
+    }
+
+    // Add regular nodes with proper parent relationships
+    for (const node of state.visibleNodes) {
+      const parentId = nodeParentMap.get(node.id);
+      const parentContainer = parentId ? state.getContainer(parentId) : null;
+      
+      // Skip nodes that are inside collapsed containers
+      if (parentContainer && parentContainer.collapsed) {
+        continue;
+      }
+
+      const position = node.position;
+      
+      // Debug: Log all node positions from ELK
+      console.log(`[ReactFlowBridge] Node ${node.id} ELK position: (${position?.x}, ${position?.y}), assigned to container: ${parentId}`);
+      
+      // ELK already calculates positions relative to parent containers
+      // For nodes with parents, position is already relative - no conversion needed
+      let adjustedPosition = position || { x: 0, y: 0 };
+      
+      if (parentId) {
+        console.log(`[ReactFlowBridge] Node ${node.id} using ELK relative position: (${adjustedPosition.x}, ${adjustedPosition.y}) in container ${parentId}`);
+      } else {
+        console.log(`[ReactFlowBridge] Node ${node.id} using ELK absolute position: (${adjustedPosition.x}, ${adjustedPosition.y}) (no parent)`);
+      }
+
+      const reactFlowNode: ReactFlowNode = {
+        id: node.id,
+        type: 'standard',
+        position: adjustedPosition,
+        data: {
+          label: node.showingLongLabel ? node.longLabel : node.label,
+          longLabel: node.longLabel,
+          showingLongLabel: node.showingLongLabel,
+          nodeType: node.type,
+          semanticTags: node.semanticTags || [],
+          colorPalette: 'Set3',
+          style: node.type || 'default',
+        },
+        parentId: parentId,
+        parentNode: parentId, // React Flow uses parentNode
+        extent: parentId ? 'parent' : undefined,
+      };
+
+      nodes.push(reactFlowNode);
+    }
+
     return nodes;
+  }
+
+  private countContainerNodes(container: any, state: VisualizationState): number {
+    let count = 0;
+    for (const childId of container.children) {
+      const childNode = state.getGraphNode(childId);
+      const childContainer = state.getContainer(childId);
+      if (childNode) {
+        count++;
+      } else if (childContainer) {
+        count += this.countContainerNodes(childContainer, state);
+      }
+    }
+    return count;
   }
 
   private convertEdges(state: VisualizationState): ReactFlowEdge[] {
@@ -590,71 +642,7 @@ export class ReactFlowBridge {
   }
 
   // Container Handling
-  renderCollapsedContainer(
-    container: any,
-    interactionHandler?: any,
-  ): ReactFlowNode {
-    return {
-      id: container.id,
-      type: "container",
-      position:
-        container.position ||
-        (() => {
-          throw new Error(
-            `Container ${container.id} is missing position data. ELK layout must be calculated before rendering.`,
-          );
-        })(),
-      data: {
-        label: container.label,
-        nodeType: "container",
-        collapsed: true,
-        containerChildren: container.children.size,
-        onClick: interactionHandler
-          ? (elementId: string, elementType: "node" | "container") => {
-              if (elementType === "container") {
-                interactionHandler.handleContainerClick(elementId);
-              }
-            }
-          : undefined,
-      },
-      style: this.styleConfig.containerStyles?.collapsed,
-    };
-  }
-
-  renderExpandedContainer(
-    container: any,
-    state: VisualizationState,
-    interactionHandler?: any,
-  ): ReactFlowNode[] {
-    // For expanded containers, we render the container boundary and its children
-    const containerNode: ReactFlowNode = {
-      id: container.id,
-      type: "container",
-      position:
-        container.position ||
-        (() => {
-          throw new Error(
-            `Container ${container.id} is missing position data. ELK layout must be calculated before rendering.`,
-          );
-        })(),
-      data: {
-        label: container.label,
-        nodeType: "container",
-        collapsed: false,
-        containerChildren: container.children.size,
-        onClick: interactionHandler
-          ? (elementId: string, elementType: "node" | "container") => {
-              if (elementType === "container") {
-                interactionHandler.handleContainerClick(elementId);
-              }
-            }
-          : undefined,
-      },
-      style: this.styleConfig.containerStyles?.expanded,
-    };
-
-    return [containerNode];
-  }
+  // These methods are no longer used - container rendering is handled in convertNodes
 
   // Edge Handling
   renderOriginalEdge(edge: any): ReactFlowEdge {

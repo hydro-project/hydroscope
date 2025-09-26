@@ -97,6 +97,7 @@ export class ELKBridge {
 
       if (!parentContainer) {
         // Node is not in a container or container is collapsed
+        console.log(`[ELKBridge] Adding node ${node.id} to root (no parent container)`);
         const nodeSize = this.calculateOptimalNodeSize(node, optimizedConfig);
         elkNode.children!.push({
           id: node.id,
@@ -104,6 +105,8 @@ export class ELKBridge {
           height: nodeSize.height,
           layoutOptions: this.getNodeLayoutOptions(node, optimizedConfig),
         });
+      } else {
+        console.log(`[ELKBridge] Node ${node.id} will be added as child of container ${parentContainer.id}`);
       }
     }
 
@@ -130,6 +133,7 @@ export class ELKBridge {
         const containerChildren = visibleNodes
           .filter((node) => container.children.has(node.id))
           .map((node) => {
+            console.log(`[ELKBridge] Adding node ${node.id} as child of container ${container.id}`);
             const nodeSize = this.calculateOptimalNodeSize(
               node,
               optimizedConfig,
@@ -231,7 +235,10 @@ export class ELKBridge {
     };
   }
 
-  // Real ELK Layout Method - calls actual elkjs library
+  /**
+   * Calculate and apply ELK layout to VisualizationState
+   * This is the main method to use - it runs the ELK algorithm and applies results
+   */
   async layout(state: VisualizationState): Promise<void> {
     try {
       // Convert VisualizationState to ELK format
@@ -249,10 +256,18 @@ export class ELKBridge {
     }
   }
 
+  /**
+   * Apply pre-calculated ELK layout results to VisualizationState
+   * @deprecated Use layout() instead for automatic ELK calculation
+   */
   applyLayout(state: VisualizationState, elkResult: ELKNode): void {
     this.applyELKResults(state, elkResult);
   }
 
+  /**
+   * Apply pre-calculated ELK layout results to VisualizationState
+   * Use this when you have ELK results from external calculation
+   */
   applyELKResults(state: VisualizationState, elkResult: ELKNode): void {
     if (!elkResult.children) return;
 

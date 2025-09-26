@@ -8,6 +8,9 @@ import { ReactFlow, Background, Controls, MiniMap } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./hydroscope-docusaurus.css";
 
+import { nodeTypes } from "./nodes/index.js";
+import { StyleConfigProvider } from "../render/StyleConfigContext.js";
+
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
@@ -60,39 +63,39 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
 
         let dataToUse = data;
 
-        // If demo mode is enabled and no data provided, load demo data
-        if (demo && !data) {
-          try {
-            // Try to load paxos.json demo data
-            const response = await fetch("/test-data/paxos.json");
-            if (response.ok) {
-              dataToUse = await response.json();
-            } else {
+        // Only load demo data if no real data is provided
+        if (!dataToUse) {
+          if (demo) {
+            try {
+              // Try to load paxos.json demo data
+              const response = await fetch("/test-data/paxos.json");
+              if (response.ok) {
+                dataToUse = await response.json();
+              } else {
+                // Fallback to minimal demo data
+                dataToUse = createMinimalDemoData();
+              }
+            } catch {
               // Fallback to minimal demo data
               dataToUse = createMinimalDemoData();
             }
-          } catch {
-            // Fallback to minimal demo data
+          } else {
+            // No demo mode and no data - use minimal data as placeholder
             dataToUse = createMinimalDemoData();
           }
         }
 
-        if (!dataToUse) {
-          dataToUse = createMinimalDemoData();
-        }
-
         // Parse the data
         const parser = JSONParser.createPaxosParser({ debug: false });
-        const parseResult = await parser.parseData(dataToUse);
+        const parseResult = await parser.parseData(dataToUse!);
         const state = parseResult.visualizationState;
 
         // Set up bridges with default configs
         const elkBridge = new ELKBridge({});
         const reactFlowBridge = new ReactFlowBridge({});
 
-        // Perform layout
-        const elkGraph = elkBridge.toELKGraph(state);
-        elkBridge.applyLayout(state, elkGraph);
+        // Perform layout using real ELK calculation
+        await elkBridge.layout(state);
 
         // Convert to ReactFlow format
         const flowData = reactFlowBridge.toReactFlowData(state);
@@ -116,7 +119,7 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
   }, [data, demo]);
 
   // Handle node/edge clicks
-  const handleNodeClick = (event: React.MouseEvent, node: any) => {
+  const handleNodeClick = async (event: React.MouseEvent, node: any) => {
     if (!visualizationState || !interactionHandlerRef.current) return;
 
     try {
@@ -135,8 +138,7 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
           const reactFlowBridge = new ReactFlowBridge({});
 
           try {
-            const elkGraph = elkBridge.toELKGraph(visualizationState);
-            elkBridge.applyLayout(visualizationState, elkGraph);
+            await elkBridge.layout(visualizationState);
             const flowData =
               reactFlowBridge.toReactFlowData(visualizationState);
             setReactFlowData(flowData);
@@ -180,17 +182,20 @@ export const HydroscopeDocusaurus: React.FC<HydroscopeDocusaurusProps> = ({
 
   return (
     <div className="hydroscope-docusaurus" style={{ height, width }}>
-      <ReactFlow
-        nodes={reactFlowData.nodes}
-        edges={reactFlowData.edges}
-        onNodeClick={handleNodeClick}
-        fitView
-        attributionPosition="bottom-left"
-      >
-        {showBackground && <Background />}
-        {showControls && <Controls />}
-        {showMiniMap && <MiniMap />}
-      </ReactFlow>
+      <StyleConfigProvider>
+        <ReactFlow
+          nodes={reactFlowData.nodes}
+          edges={reactFlowData.edges}
+          nodeTypes={nodeTypes}
+          onNodeClick={handleNodeClick}
+          fitView
+          attributionPosition="bottom-left"
+        >
+          {showBackground && <Background />}
+          {showControls && <Controls />}
+          {showMiniMap && <MiniMap />}
+        </ReactFlow>
+      </StyleConfigProvider>
     </div>
   );
 };

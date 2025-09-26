@@ -425,7 +425,7 @@ export class JSONParser {
           id: rawEdge.id || transformedEdge.id || `edge_${index}`,
           source: rawEdge.source || transformedEdge.source,
           target: rawEdge.target || transformedEdge.target,
-          type: rawEdge.type || transformedEdge.type || "Unknown",
+          type: rawEdge.type || transformedEdge.type || "default",
           semanticTags:
             rawEdge.semanticTags ||
             rawEdge.edgeProperties ||
