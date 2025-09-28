@@ -161,13 +161,15 @@ export interface ReactFlowNode {
   style?: Record<string, any>;
   parentNode?: string;
   parentId?: string;
-  extent?: 'parent' | [[number, number], [number, number]];
+  extent?: "parent" | [[number, number], [number, number]];
 }
 
 export interface ReactFlowEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
   type: string;
   style?: Record<string, any>;
   animated?: boolean;
@@ -247,6 +249,7 @@ export interface ApplicationEventPayload {
   state?: any; // VisualizationState - using any to avoid circular dependency
   triggerLayout?: boolean;
   layoutConfig?: LayoutConfig;
+  triggerValidation?: boolean; // New field for triggering ReactFlow validation
 
   // Container operation fields
   containerId?: string;

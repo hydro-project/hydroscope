@@ -442,6 +442,11 @@ export class JSONParser {
           );
         }
 
+        // Debug: Log first few edges to verify source/target values
+        if (edgeCount < 5) {
+          console.log(`[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`);
+        }
+
         state.addEdge(edge);
         edgeCount++;
 

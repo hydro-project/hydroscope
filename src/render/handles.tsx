@@ -1,46 +1,59 @@
 /**
- * @fileoverview Simple handles renderer component
+ * @fileoverview Handles renderer component
  *
- * Renders basic ReactFlow handles for nodes.
+ * Renders ReactFlow handles based on the current handle configuration.
  */
 
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
-
-const HANDLE_STYLE = {
-  width: 8,
-  height: 8,
-  background: '#555',
-  border: '2px solid #fff',
-};
+import { getHandleConfig, HANDLE_STYLES } from './handleConfig';
 
 export function HandlesRenderer() {
+  const config = getHandleConfig();
+
+  if (config.enableContinuousHandles) {
+    // ReactFlow v12 continuous handles - connections anywhere on perimeter
+    return (
+      <>
+        <Handle
+          type="source"
+          position={Position.Top}
+          style={HANDLE_STYLES.continuous}
+          isConnectable={true}
+        />
+        <Handle
+          type="target"
+          position={Position.Top}
+          style={HANDLE_STYLES.continuous}
+          isConnectable={true}
+        />
+      </>
+    );
+  }
+
+  // Discrete handles if configured
   return (
     <>
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={HANDLE_STYLE}
-        isConnectable={true}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={HANDLE_STYLE}
-        isConnectable={true}
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={HANDLE_STYLE}
-        isConnectable={true}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={HANDLE_STYLE}
-        isConnectable={true}
-      />
+      {config.sourceHandles.map(handle => (
+        <Handle
+          key={handle.id}
+          id={handle.id}
+          type="source"
+          position={handle.position}
+          style={handle.style}
+          isConnectable={true}
+        />
+      ))}
+      {config.targetHandles.map(handle => (
+        <Handle
+          key={handle.id}
+          id={handle.id}
+          type="target"
+          position={handle.position}
+          style={handle.style}
+          isConnectable={true}
+        />
+      ))}
     </>
   );
 }

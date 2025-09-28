@@ -579,15 +579,10 @@ export class ELKBridge {
     childCount: number = 0,
   ): { width: number; height: number } {
     if (collapsed) {
-      // Collapsed container size based on label and child count
-      const baseWidth = 150;
-      const baseHeight = 80;
-      const labelMultiplier = Math.max(1, container.label.length / 15);
-      const childMultiplier = Math.max(1, Math.sqrt(childCount) / 2);
-
+      // Use consistent collapsed container dimensions from config
       return {
-        width: Math.round(baseWidth * labelMultiplier),
-        height: Math.round(baseHeight * childMultiplier),
+        width: 200,  // COLLAPSED_CONTAINER_WIDTH from config
+        height: 150, // COLLAPSED_CONTAINER_HEIGHT from config
       };
     } else {
       // Expanded container size based on children and padding
@@ -836,6 +831,8 @@ export class ELKBridge {
       }
     }
   }
+
+
 
   // Validation
   validateELKGraph(elkGraph: ELKNode): ELKValidationResult {

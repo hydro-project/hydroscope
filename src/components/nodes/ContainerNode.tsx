@@ -1,5 +1,6 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { HandlesRenderer } from '../../render/handles';
 
 export interface ContainerNodeProps {
   data: {
@@ -36,7 +37,8 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id }) => {
           fontWeight: 'bold'
         }}
       >
-        <Handle type="target" position={Position.Top} />
+        <HandlesRenderer />
+        
         <div>
           {data.label}
           {data.containerChildren && (
@@ -45,7 +47,6 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id }) => {
             </span>
           )}
         </div>
-        <Handle type="source" position={Position.Bottom} />
       </div>
     );
   } else {
@@ -82,11 +83,7 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id }) => {
           {data.label}
         </div>
         
-        {/* Handles for connections */}
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
-        <Handle type="target" position={Position.Left} />
-        <Handle type="source" position={Position.Right} />
+        <HandlesRenderer />
       </div>
     );
   }

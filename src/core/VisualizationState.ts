@@ -89,6 +89,11 @@ export class VisualizationState {
   addEdge(edge: GraphEdge): void {
     this._validateEdgeData(edge);
 
+    // Debug: Log first few edges to verify they're still valid when added to state
+    if (this._edges.size < 5) {
+      console.log(`[VisualizationState] 🔍 Adding edge ${edge.id}: ${edge.source} -> ${edge.target}`);
+    }
+
     this._edges.set(edge.id, { ...edge });
 
     // Check if this edge needs to be aggregated due to collapsed containers
@@ -378,9 +383,17 @@ export class VisualizationState {
   }
 
   collapseContainer(id: string): void {
+    console.log(`[VisualizationState] 🔄 Collapsing container ${id}`);
     this._collapseContainerInternal(id);
+    
+    // CRITICAL FIX: Aggregate edges when container collapses
+    this.aggregateEdgesForContainer(id);
+    
     // User operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
+    
+    // Trigger ReactFlow validation after collapse
+    this.triggerReactFlowValidation();
   }
 
   private _hideAllDescendants(containerId: string): void {
@@ -414,33 +427,66 @@ export class VisualizationState {
   }
 
   collapseAllContainers(): void {
+    console.log(`[VisualizationState] 🔄 Collapsing all containers`);
     for (const container of this._containers.values()) {
       if (!container.collapsed) {
         this._collapseContainerInternal(container.id);
+        
+        // CRITICAL FIX: Aggregate edges when each container collapses
+        this.aggregateEdgesForContainer(container.id);
       }
     }
     // Bulk user operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
+    
+    // Trigger ReactFlow validation after collapse operations
+    this.triggerReactFlowValidation();
+  }
+
+  /**
+   * Trigger ReactFlow validation to check for floating edges and other issues
+   */
+  triggerReactFlowValidation(): void {
+    console.log(`[VisualizationState] 🔍 Triggering ReactFlow validation`);
+    try {
+      // Import ReactFlowBridge dynamically to avoid circular dependency
+      import("../bridges/ReactFlowBridge.js").then(({ ReactFlowBridge }) => {
+        const bridge = new ReactFlowBridge({});
+        const result = bridge.toReactFlowData(this);
+        console.log(`[VisualizationState] ✅ ReactFlow validation completed - ${result.nodes.length} nodes, ${result.edges.length} edges`);
+      }).catch((error) => {
+        console.error(`[VisualizationState] ❌ ReactFlow validation failed:`, error);
+      });
+    } catch (error) {
+      console.error(`[VisualizationState] ❌ ReactFlow validation import failed:`, error);
+    }
   }
 
   // Edge Aggregation Management
   aggregateEdgesForContainer(containerId: string): void {
     const container = this._containers.get(containerId);
-    if (!container) return;
+    if (!container) {
+      console.log(`[VisualizationState] ❌ Container ${containerId} not found`);
+      return;
+    }
 
     // Get all descendants of this container (including nested containers)
     const allDescendants = this._getAllDescendantIds(containerId);
+    console.log(`[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(', ')}`);
+    
     const edgesToAggregate = new Map<string, GraphEdge[]>(); // key: source-target, value: edges
     const aggregatedEdgesToUpdate: AggregatedEdge[] = [];
 
     // Find all edges that need to be aggregated
+    const edgesBySourceTarget = new Map<string, { source: string; target: string; edges: GraphEdge[] }>();
+    
     for (const [edgeId, edge] of this._edges) {
-      if (edge.hidden) continue;
-
+      // Process ALL edges, including hidden ones, since they might need aggregation
       const sourceInContainer = allDescendants.has(edge.source);
       const targetInContainer = allDescendants.has(edge.target);
 
       if (sourceInContainer || targetInContainer) {
+
         // If both endpoints are in the container, just hide the edge (internal edge)
         if (sourceInContainer && targetInContainer) {
           edge.hidden = true;
@@ -461,17 +507,50 @@ export class VisualizationState {
           aggregatedTarget = containerId;
         }
 
-        // Skip self-loops to the container (shouldn't happen with the above logic)
+        // CRITICAL FIX: Ensure both endpoints are visible containers or nodes
+        // If source is a hidden node, find its visible container
+        if (!this._containers.has(aggregatedSource)) {
+          const sourceNode = this._nodes.get(aggregatedSource);
+          if (sourceNode && sourceNode.hidden) {
+            const sourceContainer = this._nodeContainerMap.get(aggregatedSource);
+            if (sourceContainer && this._containers.has(sourceContainer)) {
+              const container = this._containers.get(sourceContainer);
+              if (container && !container.hidden) {
+                aggregatedSource = sourceContainer;
+              }
+            }
+          }
+        }
+
+        // If target is a hidden node, find its visible container
+        if (!this._containers.has(aggregatedTarget)) {
+          const targetNode = this._nodes.get(aggregatedTarget);
+          if (targetNode && targetNode.hidden) {
+            const targetContainer = this._nodeContainerMap.get(aggregatedTarget);
+            if (targetContainer && this._containers.has(targetContainer)) {
+              const container = this._containers.get(targetContainer);
+              if (container && !container.hidden) {
+                aggregatedTarget = targetContainer;
+              }
+            }
+          }
+        }
+
+        // Skip self-loops to the container
         if (aggregatedSource === aggregatedTarget) {
           edge.hidden = true;
           continue;
         }
 
         const key = `${aggregatedSource}-${aggregatedTarget}`;
-        if (!edgesToAggregate.has(key)) {
-          edgesToAggregate.set(key, []);
+        if (!edgesBySourceTarget.has(key)) {
+          edgesBySourceTarget.set(key, {
+            source: aggregatedSource,
+            target: aggregatedTarget,
+            edges: []
+          });
         }
-        edgesToAggregate.get(key)!.push(edge);
+        edgesBySourceTarget.get(key)!.edges.push(edge);
 
         // Hide the original edge
         edge.hidden = true;
@@ -519,16 +598,22 @@ export class VisualizationState {
       }
     }
 
+    console.log(`[VisualizationState] 📊 Found ${edgesBySourceTarget.size} edge groups to aggregate`);
+    
     // Create new aggregated edges
-    for (const [key, edges] of edgesToAggregate) {
-      const [source, target] = key.split("-");
+    for (const [key, edgeGroup] of edgesBySourceTarget) {
+      const { source, target, edges } = edgeGroup;
       const aggregatedEdgeId = `agg-${containerId}-${source}-${target}`;
+      
+      console.log(`[VisualizationState] 🔗 Creating aggregated edge ${aggregatedEdgeId}: ${source} -> ${target} (${edges.length} original edges)`);
 
       // Check if this aggregated edge already exists
       const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
+      console.log(`[VisualizationState] 🔍 Checking existing aggregated edge ${aggregatedEdgeId}: exists=${!!existingAggEdge}, hidden=${existingAggEdge?.hidden}`);
 
       if (existingAggEdge && !existingAggEdge.hidden) {
         // Merge with existing aggregated edge
+        console.log(`[VisualizationState] 🔄 Merging with existing aggregated edge ${aggregatedEdgeId}`);
         const newOriginalIds = edges.map((e) => e.id);
         existingAggEdge.originalEdgeIds.push(...newOriginalIds);
         existingAggEdge.semanticTags = [
@@ -537,6 +622,7 @@ export class VisualizationState {
             ...edges.flatMap((e) => e.semanticTags),
           ]),
         ];
+        console.log(`[VisualizationState] ✅ Merged ${newOriginalIds.length} edges into existing aggregated edge ${aggregatedEdgeId}`);
       } else {
         // Create new aggregated edge
         const aggregatedEdge: AggregatedEdge = {
@@ -552,6 +638,7 @@ export class VisualizationState {
         };
 
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
+        console.log(`[VisualizationState] ✅ Created aggregated edge ${aggregatedEdge.id}`);
 
         // Update tracking structures
         this._aggregatedToOriginalMap.set(
@@ -571,8 +658,8 @@ export class VisualizationState {
     }
 
     // Record aggregation history
-    const edgeCount = Array.from(edgesToAggregate.values()).reduce(
-      (sum, edges) => sum + edges.length,
+    const edgeCount = Array.from(edgesBySourceTarget.values()).reduce(
+      (sum, edgeGroup) => sum + edgeGroup.edges.length,
       0,
     );
     if (edgeCount > 0) {
@@ -581,6 +668,18 @@ export class VisualizationState {
         containerId,
         edgeCount,
         timestamp: Date.now(),
+      });
+    }
+
+    // Debug: Check final state of aggregated edges
+    console.log(`[VisualizationState] 📊 After aggregation for ${containerId}:`);
+    console.log(`  - Total aggregated edges in system: ${this._aggregatedEdges.size}`);
+    console.log(`  - Visible aggregated edges: ${Array.from(this._aggregatedEdges.values()).filter(e => !e.hidden).length}`);
+    const containerAggEdges = Array.from(this._aggregatedEdges.values()).filter(e => e.aggregationSource === containerId);
+    console.log(`  - Aggregated edges for this container: ${containerAggEdges.length}`);
+    if (containerAggEdges.length > 0) {
+      containerAggEdges.forEach(e => {
+        console.log(`    - ${e.id}: ${e.source} -> ${e.target} (hidden: ${e.hidden})`);
       });
     }
   }
@@ -1068,13 +1167,20 @@ export class VisualizationState {
   }
 
   private _collapseContainerInternal(id: string): void {
+    console.log(`[VisualizationState] 🔄 _collapseContainerInternal called for ${id}`);
     const container = this._containers.get(id);
-    if (!container) return;
+    if (!container) {
+      console.log(`[VisualizationState] ❌ Container ${id} not found in _collapseContainerInternal`);
+      return;
+    }
 
+    console.log(`[VisualizationState] 📊 Collapsing container ${id}, setting collapsed=true`);
     container.collapsed = true;
     this._hideAllDescendants(id);
+    console.log(`[VisualizationState] 🔗 About to call aggregateEdgesForContainer for ${id}`);
     this.aggregateEdgesForContainer(id);
     this.validateInvariants();
+    console.log(`[VisualizationState] ✅ Finished _collapseContainerInternal for ${id}`);
   }
 
   // Edge Aggregation Tracking and Lookup Methods

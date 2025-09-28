@@ -3,7 +3,7 @@
  * Tests ReactFlow format conversion with edge aggregation and interaction support
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { VisualizationState } from "../core/VisualizationState.js";
@@ -87,7 +87,7 @@ describe("ReactFlowBridge", () => {
       expect(result.nodes).toHaveLength(1);
       expect(result.nodes[0]).toMatchObject({
         id: "node1",
-        type: "default",
+        type: "standard",
         position: expect.objectContaining({
           x: expect.any(Number),
           y: expect.any(Number),
@@ -902,6 +902,399 @@ describe("ReactFlowBridge", () => {
       const result = semanticBridge.toReactFlowData(state);
 
       expect(result.edges[0].label).toBe("N"); // Just the semantic tag abbreviation since no original label
+    });
+  });
+
+  describe("Edge Validation", () => {
+    it("should validate and render valid edges", async () => {
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const node2: GraphNode = {
+        id: "node2",
+        label: "Node 2",
+        longLabel: "Node 2",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const validEdge: GraphEdge = {
+        id: "edge1",
+        source: "node1",
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(validEdge);
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]).toMatchObject({
+        id: "edge1",
+        source: "node1",
+        target: "node2",
+        type: "dataflow",
+      });
+    });
+
+    it("should skip edges with missing source", async () => {
+      const node2: GraphNode = {
+        id: "node2",
+        label: "Node 2",
+        longLabel: "Node 2",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const invalidEdge: GraphEdge = {
+        id: "edge1",
+        source: "", // Invalid empty source
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node2);
+      
+      // VisualizationState should reject invalid edges
+      expect(() => state.addEdge(invalidEdge)).toThrow("Invalid edge: source cannot be empty");
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(0); // No edges should be present
+    });
+
+    it("should skip edges with missing target", async () => {
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const invalidEdge: GraphEdge = {
+        id: "edge1",
+        source: "node1",
+        target: "", // Invalid empty target
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      
+      // VisualizationState should reject invalid edges
+      expect(() => state.addEdge(invalidEdge)).toThrow("Invalid edge: target cannot be empty");
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(0); // No edges should be present
+    });
+
+    it("should skip floating edges (source node doesn't exist)", async () => {
+      const node2: GraphNode = {
+        id: "node2",
+        label: "Node 2",
+        longLabel: "Node 2",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const floatingEdge: GraphEdge = {
+        id: "edge1",
+        source: "nonexistent_node", // Source doesn't exist
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node2);
+      
+      // VisualizationState should reject edges with non-existent source
+      expect(() => state.addEdge(floatingEdge)).toThrow("references non-existent source");
+
+      // Don't call layout since the state might be inconsistent after validation failure
+      // Just test that the bridge would handle it correctly if it somehow got through
+      const result = bridge.toReactFlowData(state);
+      expect(result.edges).toHaveLength(0); // No edges should be present
+    });
+
+    it("should skip floating edges (target node doesn't exist)", async () => {
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const floatingEdge: GraphEdge = {
+        id: "edge1",
+        source: "node1",
+        target: "nonexistent_node", // Target doesn't exist
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      
+      // VisualizationState should reject edges with non-existent target
+      expect(() => state.addEdge(floatingEdge)).toThrow("references non-existent target");
+
+      // Don't call layout since the state might be inconsistent after validation failure
+      // Just test that the bridge would handle it correctly if it somehow got through
+      const result = bridge.toReactFlowData(state);
+      expect(result.edges).toHaveLength(0); // No edges should be present
+    });
+
+    it("should handle edges connecting to containers", async () => {
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const container: Container = {
+        id: "container1",
+        label: "Container",
+        children: new Set(["node2"]),
+        collapsed: true,
+        hidden: false,
+      };
+      const edgeToContainer: GraphEdge = {
+        id: "edge1",
+        source: "node1",
+        target: "container1", // Target is a container
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      state.addContainer(container);
+      state.addEdge(edgeToContainer);
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]).toMatchObject({
+        id: "edge1",
+        source: "node1",
+        target: "container1",
+        type: "dataflow",
+      });
+    });
+
+    it("should validate aggregated edges", async () => {
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const container: Container = {
+        id: "container1",
+        label: "Container",
+        children: new Set(["node2"]),
+        collapsed: true,
+        hidden: false,
+      };
+      
+      // Create an aggregated edge manually
+      const aggregatedEdge: AggregatedEdge = {
+        id: "agg_edge1",
+        source: "node1",
+        target: "container1",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+        aggregated: true,
+        originalEdgeIds: ["original_edge1", "original_edge2"],
+        aggregationSource: "container_collapse",
+      };
+
+      state.addNode(node1);
+      state.addContainer(container);
+      state.addEdge(aggregatedEdge);
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]).toMatchObject({
+        id: "agg_edge1",
+        source: "node1",
+        target: "container1",
+        type: "aggregated",
+      });
+      expect(result.edges[0].style).toMatchObject({
+        strokeWidth: 3,
+        stroke: "#ff6b6b",
+      });
+      expect(result.edges[0].data?.aggregated).toBe(true);
+      expect(result.edges[0].data?.originalEdgeIds).toEqual(["original_edge1", "original_edge2"]);
+    });
+
+    it("should skip invalid aggregated edges", async () => {
+      const invalidAggregatedEdge: AggregatedEdge = {
+        id: "agg_edge1",
+        source: "nonexistent_source",
+        target: "nonexistent_target",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+        aggregated: true,
+        originalEdgeIds: ["original_edge1"],
+        aggregationSource: "container_collapse",
+      };
+
+      // VisualizationState should reject edges with non-existent source and target
+      expect(() => state.addEdge(invalidAggregatedEdge)).toThrow("references non-existent");
+
+      // Don't call layout since the state might be inconsistent after validation failure
+      // Just test that the bridge would handle it correctly if it somehow got through
+      const result = bridge.toReactFlowData(state);
+      expect(result.edges).toHaveLength(0); // No edges should be present
+    });
+
+    it("should handle self-loop edges with warning", async () => {
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const selfLoopEdge: GraphEdge = {
+        id: "edge1",
+        source: "node1",
+        target: "node1", // Self-loop
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      state.addEdge(selfLoopEdge);
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(1); // Self-loops are valid
+      expect(result.edges[0]).toMatchObject({
+        id: "edge1",
+        source: "node1",
+        target: "node1",
+        type: "dataflow",
+      });
+    });
+
+    it("should provide detailed validation summary", async () => {
+      // Create valid edges only since VisualizationState prevents invalid ones
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const node2: GraphNode = {
+        id: "node2",
+        label: "Node 2",
+        longLabel: "Node 2",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      const validEdge: GraphEdge = {
+        id: "valid_edge",
+        source: "node1",
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addEdge(validEdge);
+
+      await elkBridge.layout(state);
+      
+      // Capture console output to verify validation messages
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      
+      const result = bridge.toReactFlowData(state);
+
+      expect(result.edges).toHaveLength(1); // Valid edge should be rendered
+      expect(result.edges[0].id).toBe("valid_edge");
+
+      // Verify validation messages were logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Edge processing summary')
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle edge validation at ReactFlow bridge level", async () => {
+      // Test the bridge's own validation methods directly
+      const validEdge = {
+        id: "valid_edge",
+        source: "node1",
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      const invalidEdge = {
+        id: "invalid_edge",
+        source: "",
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      // Test renderOriginalEdge directly
+      const validRendered = bridge.renderOriginalEdge(validEdge);
+      expect(validRendered).not.toBeNull();
+      expect(validRendered?.id).toBe("valid_edge");
+
+      // Test with invalid edge
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const invalidRendered = bridge.renderOriginalEdge(invalidEdge);
+      expect(invalidRendered).toBeNull(); // Should return null for invalid edge
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Cannot render original edge')
+      );
+      consoleSpy.mockRestore();
     });
   });
 

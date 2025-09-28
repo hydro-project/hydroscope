@@ -94,7 +94,7 @@ describe("ELKBridge", () => {
       // Should only show the container, not the internal nodes
       expect(elkGraph.children).toHaveLength(1);
       expect(elkGraph.children![0].id).toBe("c1");
-      expect(elkGraph.children![0].width).toBe(150);
+      expect(elkGraph.children![0].width).toBe(200);
       expect(elkGraph.children![0].height).toBeGreaterThanOrEqual(80); // Size may be optimized
       expect(elkGraph.children![0].layoutOptions).toBeDefined();
     });

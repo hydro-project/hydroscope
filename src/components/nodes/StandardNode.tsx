@@ -1,5 +1,6 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { HandlesRenderer } from '../../render/handles';
 
 export interface StandardNodeProps {
   data: {
@@ -34,9 +35,8 @@ export const StandardNode: React.FC<StandardNodeProps> = ({ data, id }) => {
         fontSize: '12px'
       }}
     >
-      <Handle type="target" position={Position.Top} />
+      <HandlesRenderer />
       <div>{data.showingLongLabel ? data.longLabel : data.label}</div>
-      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 };
