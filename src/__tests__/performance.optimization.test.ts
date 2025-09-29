@@ -1,4 +1,4 @@
-/**
+ /**
  * Performance Optimization Tests
  * Tests to verify performance improvements and optimizations
  */

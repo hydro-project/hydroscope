@@ -453,9 +453,11 @@ describe("ReactFlowBridge", () => {
         target: "container1",
         type: "aggregated",
       });
+      // With new semantic styling system, aggregated edges without semantic tags
+      // get default styling (the +1 thickness is applied in the React component)
       expect(aggregatedEdges[0].style).toMatchObject({
-        strokeWidth: 3,
-        stroke: "#ff6b6b",
+        strokeWidth: 2, // Default thickness (component adds +1 when rendering)
+        stroke: "#999999", // Default stroke color for unstyled edges
       });
     });
   });
@@ -1149,9 +1151,11 @@ describe("ReactFlowBridge", () => {
         target: "container1",
         type: "aggregated",
       });
+      // With new semantic styling system, aggregated edges without semantic tags
+      // get default styling (the +1 thickness is applied in the React component)
       expect(result.edges[0].style).toMatchObject({
-        strokeWidth: 3,
-        stroke: "#ff6b6b",
+        strokeWidth: 2, // Default thickness (component adds +1 when rendering)
+        stroke: "#999999", // Default stroke color for unstyled edges
       });
       expect(result.edges[0].data?.aggregated).toBe(true);
       expect(result.edges[0].data?.originalEdgeIds).toEqual(["original_edge1", "original_edge2"]);

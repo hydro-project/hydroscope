@@ -354,7 +354,7 @@ describe("Performance Benchmarks", () => {
 
       // Apply styles multiple times to test caching
       reactFlowBridge.applyNodeStyles(reactFlowData.nodes);
-      reactFlowBridge.applyEdgeStyles(reactFlowData.edges);
+      reactFlowBridge.applyEdgeStyles(reactFlowData.edges, visualizationState);
 
       const duration = monitor.endTiming();
 

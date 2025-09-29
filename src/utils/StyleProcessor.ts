@@ -86,6 +86,152 @@ export function processSemanticTags(
 }
 
 /**
+ * Process semantic tags for aggregated edges with conflict resolution
+ */
+export function processAggregatedSemanticTags(
+  originalEdges: any[],
+  styleConfig?: StyleConfig,
+  originalLabel?: string,
+): ProcessedStyle {
+  if (!originalEdges || originalEdges.length === 0) {
+    return getDefaultStyle("edge");
+  }
+
+  if (!styleConfig?.semanticMappings) {
+    // Fallback to merging all semantic tags if no mappings
+    const allTags = [...new Set(originalEdges.flatMap(e => e.semanticTags || []))];
+    const result = processSemanticTags(allTags, styleConfig, originalLabel, "edge");
+    
+    // Ensure we always have some default styling for aggregated edges
+    if (!result.style || Object.keys(result.style).length === 0) {
+      return getDefaultStyle("edge");
+    }
+    
+    return result;
+  }
+
+  // Process each original edge to get its style settings
+  const edgeStyleSettings: Record<string, string | number>[] = [];
+  
+  for (const edge of originalEdges) {
+    const edgeTags = edge.semanticTags || [];
+    if (edgeTags.length > 0) {
+      const styleSettings = extractStyleSettingsFromTags(edgeTags, styleConfig);
+      if (Object.keys(styleSettings).length > 0) {
+        edgeStyleSettings.push(styleSettings);
+      }
+    }
+  }
+
+  // Merge style settings with conflict resolution
+  const mergedSettings = mergeStyleSettingsWithConflictResolution(edgeStyleSettings);
+  
+  // Convert merged settings to visual format
+  if (Object.keys(mergedSettings).length > 0) {
+    const appliedTags = [...new Set(originalEdges.flatMap(e => e.semanticTags || []))];
+    return convertStyleSettingsToVisual(
+      mergedSettings,
+      appliedTags,
+      originalLabel,
+      "edge",
+    );
+  }
+
+  return getDefaultStyle("edge");
+}
+
+/**
+ * Extract style settings from semantic tags using semantic mappings
+ */
+function extractStyleSettingsFromTags(
+  semanticTags: string[],
+  styleConfig: StyleConfig,
+): Record<string, string | number> {
+  const styleSettings: Record<string, string | number> = {};
+  
+  if (!styleConfig.semanticMappings) {
+    return styleSettings;
+  }
+
+  // Process each group in the semantic mappings
+  for (const [, group] of Object.entries(styleConfig.semanticMappings)) {
+    // Find which option in this group matches our semantic tags (if any)
+    for (const [optionName, styleMapping] of Object.entries(group)) {
+      if (semanticTags.includes(optionName)) {
+        // Apply all style settings from this option
+        Object.assign(styleSettings, styleMapping);
+        break; // Only one option per group can match
+      }
+    }
+  }
+
+  return styleSettings;
+}
+
+/**
+ * Merge style settings from multiple edges with conflict resolution
+ */
+function mergeStyleSettingsWithConflictResolution(
+  edgeStyleSettings: Record<string, string | number>[],
+): Record<string, string | number> {
+  if (edgeStyleSettings.length === 0) {
+    return {};
+  }
+
+  if (edgeStyleSettings.length === 1) {
+    return { ...edgeStyleSettings[0] };
+  }
+
+  // Collect all style properties and their values across edges
+  const propertyValues: Record<string, Set<string | number>> = {};
+  
+  for (const settings of edgeStyleSettings) {
+    for (const [property, value] of Object.entries(settings)) {
+      if (!propertyValues[property]) {
+        propertyValues[property] = new Set();
+      }
+      propertyValues[property].add(value);
+    }
+  }
+
+  // Resolve conflicts
+  const mergedSettings: Record<string, string | number> = {};
+  
+  for (const [property, values] of Object.entries(propertyValues)) {
+    if (values.size === 1) {
+      // No conflict - use the single value
+      mergedSettings[property] = Array.from(values)[0];
+    } else {
+      // Conflict - use neutral default
+      const neutralValue = getNeutralDefaultForProperty(property);
+      if (neutralValue !== undefined) {
+        mergedSettings[property] = neutralValue;
+      }
+      // If no neutral default exists, omit the property (let CSS defaults apply)
+    }
+  }
+
+  return mergedSettings;
+}
+
+/**
+ * Get neutral default values for conflicting style properties
+ */
+function getNeutralDefaultForProperty(property: string): string | number | undefined {
+  const neutralDefaults: Record<string, string | number> = {
+    "line-pattern": "solid",
+    "line-width": 2,
+    "animation": "static",
+    "line-style": "single",
+    "halo": "none",
+    "arrowhead": "triangle-open", // Neutral arrow for aggregated edges
+    "waviness": "none",
+  };
+
+  return neutralDefaults[property];
+}
+
+/**
  * Process semantic tags using semantic mappings configuration
  */
 function processWithSemanticMappings(

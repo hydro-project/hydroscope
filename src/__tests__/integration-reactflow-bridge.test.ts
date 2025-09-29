@@ -480,11 +480,11 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       );
       expect(aggregatedEdges.length).toBeGreaterThan(0);
 
-      // Verify aggregated edge style
+      // Verify aggregated edge style - with new semantic styling system
       for (const aggEdge of aggregatedEdges) {
         expect(aggEdge.style).toMatchObject({
-          strokeWidth: 3,
-          stroke: "#ff6b6b",
+          strokeWidth: 2, // Default thickness (component adds +1 when rendering)
+          stroke: "#999999", // Default stroke color for unstyled edges
         });
       }
     });

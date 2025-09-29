@@ -10,7 +10,7 @@ import type {
   ReactFlowNode,
   ReactFlowEdge,
 } from "../types/core.js";
-import { processSemanticTags } from "../utils/StyleProcessor.js";
+import { processSemanticTags, processAggregatedSemanticTags } from "../utils/StyleProcessor.js";
 import { CURRENT_HANDLE_STRATEGY } from "../render/handleConfig.js";
 
 // Performance optimization constants
@@ -154,7 +154,7 @@ export class ReactFlowBridge {
     // Create result with mutable arrays for ReactFlow compatibility
     const result: ReactFlowData = {
       nodes: this.applyNodeStyles(nodes),
-      edges: this.applyEdgeStyles(edges),
+      edges: this.applyEdgeStyles(edges, state),
     };
 
     // Deep freeze the result for immutability while maintaining TypeScript compatibility
@@ -783,14 +783,15 @@ export class ReactFlowBridge {
     return result;
   }
 
-  applyEdgeStyles(edges: ReactFlowEdge[]): ReactFlowEdge[] {
+  applyEdgeStyles(edges: ReactFlowEdge[], state?: VisualizationState): ReactFlowEdge[] {
     return edges.map((edge) => {
       // Get semantic tags from edge data
       const edgeData = edge.data as any;
       const semanticTags = edgeData?.semanticTags || [];
+      const isAggregated = edgeData?.aggregated === true;
 
       // Create style cache key for performance
-      const styleCacheKey = `edge-style-${edge.type}-${semanticTags.join(",")}-${edge.id}`;
+      const styleCacheKey = `edge-style-${edge.type}-${semanticTags.join(",")}-${edge.id}-${isAggregated}`;
 
       // Check style cache first
       let cachedStyle = this.styleCache.get(styleCacheKey);
@@ -801,7 +802,7 @@ export class ReactFlowBridge {
       // Start with type-based styles
       const typeBasedStyle = this.styleConfig.edgeStyles?.[edge.type] || {};
 
-      // Process semantic tags for styling (only if we have semantic tags and config)
+      // Process semantic tags for styling
       let semanticStyle = {};
       let appliedTags: string[] = [];
       let animated = false;
@@ -809,10 +810,46 @@ export class ReactFlowBridge {
       let markerEnd = edge.markerEnd;
       let lineStyle: "single" | "double" = "single";
 
-      if (
+      if (isAggregated && state && edgeData?.originalEdgeIds) {
+        // For aggregated edges, use conflict resolution system
+        console.log(`[ReactFlowBridge] 🔄 Processing aggregated edge ${edge.id} with ${edgeData.originalEdgeIds.length} original edges`);
+        
+        // Get original edges from state
+        const originalEdges = edgeData.originalEdgeIds
+          .map((id: string) => state.getGraphEdge(id))
+          .filter((e: any) => e !== undefined);
+
+        if (originalEdges.length > 0) {
+          const processedStyle = processAggregatedSemanticTags(
+            originalEdges,
+            this.styleConfig,
+            edge.label as string,
+          );
+          semanticStyle = processedStyle.style;
+          appliedTags = processedStyle.appliedTags;
+          animated = processedStyle.animated;
+          label = processedStyle.label || edge.label;
+          markerEnd = processedStyle.markerEnd || edge.markerEnd;
+          lineStyle = processedStyle.lineStyle || "single";
+          
+          console.log(`[ReactFlowBridge] ✅ Aggregated edge ${edge.id} resolved conflicts:`, {
+            originalEdgeCount: originalEdges.length,
+            appliedTags,
+            hasStyle: Object.keys(semanticStyle).length > 0,
+            hasSemanticMappings: !!this.styleConfig.semanticMappings
+          });
+        } else {
+          // No original edges found, use default styling
+          console.log(`[ReactFlowBridge] ⚠️ Aggregated edge ${edge.id} has no original edges, using default styling`);
+          const defaultStyle = processSemanticTags([], this.styleConfig, edge.label as string, "edge");
+          semanticStyle = defaultStyle.style;
+          appliedTags = defaultStyle.appliedTags;
+        }
+      } else if (
         semanticTags.length > 0 &&
         (this.styleConfig.semanticMappings || this.styleConfig.propertyMappings)
       ) {
+        // For regular edges, use normal semantic processing
         const processedStyle = processSemanticTags(
           semanticTags,
           this.styleConfig,
@@ -1130,7 +1167,7 @@ export class ReactFlowBridge {
       return null;
     }
 
-    console.log(`[ReactFlowBridge] ✅ Rendering aggregated edge ${aggregatedEdge.id}: ${aggregatedEdge.source} -> ${aggregatedEdge.target}`);
+    console.log(`[ReactFlowBridge] ✅ Rendering aggregated edge ${aggregatedEdge.id}: ${aggregatedEdge.source} -> ${aggregatedEdge.target} (aggregating ${aggregatedEdge.originalEdgeIds?.length || 0} edges)`);
     
     const handles = visState ? this.getSmartHandles(visState, aggregatedEdge.source, aggregatedEdge.target) : {};
     
@@ -1141,11 +1178,6 @@ export class ReactFlowBridge {
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
       type: "aggregated",
-      style: {
-        strokeWidth: 3,
-        stroke: "#ff6b6b", // Red color for aggregated edges to match test expectation
-        strokeDasharray: "5,5", // Dashed line to distinguish from regular edges
-      },
       data: {
         semanticTags: aggregatedEdge.semanticTags || [],
         originalEdgeIds: aggregatedEdge.originalEdgeIds || [],
