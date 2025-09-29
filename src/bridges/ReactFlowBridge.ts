@@ -898,7 +898,7 @@ export class ReactFlowBridge {
       style: { ...styleData.style },
       animated: styleData.animated,
       label: styleData.label,
-      markerEnd: styleData.markerEnd,
+      markerEnd: styleData.markerEnd || { type: "arrowclosed" },
       data: {
         ...edge.data,
         appliedSemanticTags: [...styleData.appliedTags],

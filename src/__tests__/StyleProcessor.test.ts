@@ -25,6 +25,7 @@ describe("StyleProcessor", () => {
         },
         animated: false,
         appliedTags: [],
+        markerEnd: { type: "arrowclosed" },
       });
     });
 
@@ -38,6 +39,7 @@ describe("StyleProcessor", () => {
         },
         animated: false,
         appliedTags: [],
+        markerEnd: { type: "arrowclosed" },
       });
     });
 

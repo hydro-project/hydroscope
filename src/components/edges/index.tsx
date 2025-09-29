@@ -32,6 +32,14 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
     strokeWidth: style.strokeWidth ? (style.strokeWidth as number) + 1 : 3,
   };
 
+  // Default to triangle arrowhead if no markerEnd is specified
+  const effectiveMarkerEnd = markerEnd || { type: "arrowclosed" };
+  
+  // Convert object marker to string format for BaseEdge
+  const markerEndString: string | undefined = typeof effectiveMarkerEnd === 'object' && effectiveMarkerEnd?.type
+    ? `url(#react-flow__${effectiveMarkerEnd.type})`
+    : effectiveMarkerEnd as string | undefined;
+
   // Show count of aggregated edges if available
   const originalEdgeCount = (data?.originalEdgeIds as string[])?.length || 0;
   const showLabel = originalEdgeCount > 1;
@@ -40,7 +48,7 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
     <>
       <BaseEdge 
         path={edgePath} 
-        markerEnd={markerEnd} 
+        markerEnd={markerEndString} 
         style={aggregatedStyle}
       />
       {showLabel && (
@@ -68,10 +76,52 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
   );
 };
 
-// Memoized version for performance
+// Default Edge Component
+// This is the standard edge type with default arrowhead
+export const DefaultEdge: React.FC<EdgeProps> = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style = {},
+  data,
+  markerEnd,
+}) => {
+  const [edgePath] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  // Default to triangle arrowhead if no markerEnd is specified
+  const effectiveMarkerEnd = markerEnd || { type: "arrowclosed" };
+  
+  // Convert object marker to string format for BaseEdge
+  const markerEndString: string | undefined = typeof effectiveMarkerEnd === 'object' && effectiveMarkerEnd?.type
+    ? `url(#react-flow__${effectiveMarkerEnd.type})`
+    : effectiveMarkerEnd as string | undefined;
+
+  return (
+    <BaseEdge 
+      path={edgePath} 
+      markerEnd={markerEndString} 
+      style={style}
+    />
+  );
+};
+
+// Memoized versions for performance
 export const MemoAggregatedEdge = React.memo(AggregatedEdge);
+export const MemoDefaultEdge = React.memo(DefaultEdge);
 
 // Edge types configuration
 export const edgeTypes = {
+  default: MemoDefaultEdge,
   aggregated: MemoAggregatedEdge,
 };

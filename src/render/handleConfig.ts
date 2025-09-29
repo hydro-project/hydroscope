@@ -22,11 +22,12 @@ export type HandleStrategy = 'discrete' | 'continuous';
  */
 export const HANDLE_STYLES = {
   discrete: {
-    background: '#555',
-    border: '2px solid #222',
-    width: '8px',
-    height: '8px',
-    opacity: 0.8,
+    background: 'rgba(255, 255, 255, 0.1)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    width: '6px',
+    height: '6px',
+    opacity: 0.3,
+    borderRadius: '50%',
   },
   continuous: {
     background: 'transparent',

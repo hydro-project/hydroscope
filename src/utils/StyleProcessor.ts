@@ -416,6 +416,9 @@ function convertStyleSettingsToVisual(
         markerEnd = "url(#diamond-open)";
         break;
     }
+  } else if (elementType === "edge" && !arrowhead) {
+    // Default arrowhead for edges when none is specified
+    markerEnd = { type: "arrowclosed" };
   }
 
   // Only set base style properties if we don't have any style settings
@@ -475,6 +478,7 @@ function getDefaultStyle(
     },
     animated: false,
     appliedTags: [],
+    markerEnd: { type: "arrowclosed" },
   };
 }
 
