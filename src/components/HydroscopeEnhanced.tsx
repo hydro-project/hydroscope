@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ReactFlow, Background, Controls, MiniMap, useReactFlow, ControlButton, ReactFlowProvider } from "@xyflow/react";
+import { ReactFlow, Background, Controls, MiniMap, useReactFlow, ControlButton, ReactFlowProvider, applyNodeChanges } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "./nodes/index.js";
@@ -1354,8 +1354,8 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     if (!visualizationState || !interactionHandlerRef.current) return;
 
     try {
-      // Handle container expand/collapse
-      if (node.type === "container") {
+      // Handle container expand/collapse - check data.nodeType instead of node.type
+      if (node.data?.nodeType === "container") {
         const container = visualizationState.getContainer(node.id);
         if (container) {
           if (container.collapsed) {
@@ -1382,8 +1382,8 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
           }
         }
       }
-      // Handle node label toggle
-      else if (node.type === "node") {
+      // Handle node label toggle - check if it's NOT a container
+      else if (node.data?.nodeType !== "container") {
         const graphNode = visualizationState.getGraphNode(node.id);
         if (graphNode) {
           visualizationState.toggleNodeLabel(node.id);
@@ -1403,6 +1403,52 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
       console.error("Error handling node click:", err);
     }
   };
+
+  // Handle node drag events
+  const handleNodesChange = useCallback((changes: any[]) => {
+    if (!visualizationState || !reactFlowData) return;
+
+    try {
+      // Apply changes to ReactFlow nodes for immediate visual feedback
+      const updatedNodes = applyNodeChanges(changes, reactFlowData.nodes);
+      
+      // Update ReactFlow data with the new node positions
+      setReactFlowData({
+        nodes: updatedNodes,
+        edges: reactFlowData.edges
+      });
+
+      // Also update visualization state for final positions (when drag is complete)
+      const finalPositionChanges = changes.filter(change => 
+        change.type === 'position' && change.dragging === false && change.position
+      );
+
+      if (finalPositionChanges.length > 0) {
+        finalPositionChanges.forEach(change => {
+          const { id, position } = change;
+          
+          // Check if it's a container
+          const container = visualizationState.getContainer(id);
+          if (container) {
+            container.position = position;
+            console.log(`Updated container ${id} position to (${position.x}, ${position.y})`);
+          } else {
+            // Check if it's a node
+            const node = visualizationState.getGraphNode(id);
+            if (node) {
+              node.position = position;
+              console.log(`Updated node ${id} position to (${position.x}, ${position.y})`);
+            }
+          }
+        });
+
+        console.log('Drag completed, positions saved to visualization state');
+      }
+
+    } catch (err) {
+      console.error("Error handling node drag:", err);
+    }
+  }, [visualizationState, reactFlowData]);
 
   if (loading) {
     return (
@@ -1486,6 +1532,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodeClick={handleNodeClick}
+          onNodesChange={handleNodesChange}
+          nodesDraggable={true}
+          nodesConnectable={false}
+          elementsSelectable={true}
           fitView
           minZoom={0.05}
           maxZoom={2.0}
