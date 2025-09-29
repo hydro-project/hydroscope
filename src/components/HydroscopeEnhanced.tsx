@@ -127,23 +127,65 @@ const FitIcon = () => (
 
 const AutoFitIcon = ({ enabled }: { enabled: boolean }) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    {/* Corner brackets matching FitIcon style - using similar positioning and size */}
-    <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none">
-      {/* Top-left corner */}
-      <path d="M1 5.5V1.5h4" />
-      {/* Top-right corner */}
-      <path d="M10.5 1.5h4v4" />
-      {/* Bottom-left corner */}
-      <path d="M5.5 14.5H1.5v-4" />
-      {/* Bottom-right corner */}
-      <path d="M14.5 10.5v4h-4" />
+    {/* Mask definition for enabled state */}
+    <defs>
+      {/* Mask that defines the interior area of the corner bracket frame */}
+      <mask id="frame-interior-mask">
+        {/* White rectangle covers the entire area */}
+        <rect x="0" y="0" width="16" height="16" fill="white" />
+        {/* Black corner brackets cut out the frame areas */}
+        <g transform="translate(-9, -0) scale(0.25)" fill="black">
+          <path d="M99,55h-7s-1.1-11.9-1.1-11.9h-10.9c0-.1,0-7.1,0-7.1,15.5-1.8,20.8,3.5,19,19Z" />
+          <path d="M99,75c1.2,15.5-3.6,20.1-19,18v-7s11.1-.4,11.1-.4l.9-10.6h7Z" />
+          <path d="M55,36v7s-10,.5-10,.5c-3.3,1.6-1.6,8.4-2,11.5h-6c-1.6-15.9,1.5-20.7,18-19Z" />
+          <path d="M43,75l1.1,10.9h10.9c0,.1,0,7.1,0,7.1-16,1.6-19.6-2-18-18h6Z" />
+        </g>
+      </mask>
+    </defs>
+
+    {/* Outer frame — scaled from 135×130 to 16×16 and vertically centered */}
+    <g transform="translate(-10.5, -9.25) scale(0.275)" fill="currentColor">
+      <path d="M99,55h-7s-1.1-11.9-1.1-11.9h-10.9c0-.1,0-7.1,0-7.1,15.5-1.8,20.8,3.5,19,19Z" />
+      <path d="M99,75c1.2,15.5-3.6,20.1-19,18v-7s11.1-.4,11.1-.4l.9-10.6h7Z" />
+      <path d="M55,36v7s-10,.5-10,.5c-3.3,1.6-1.6,8.4-2,11.5h-6c-1.6-15.9,1.5-20.7,18-19Z" />
+      <path d="M43,75l1.1,10.9h10.9c0,.1,0,7.1,0,7.1-16,1.6-19.6-2-18-18h6Z" />
     </g>
-    {/* X in the center to indicate auto-fit */}
-    <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <path d="M6.5 6.5l3 3M9.5 6.5l-3 3" />
-    </g>
+
+    {/* Inner content - changes based on enabled state */}
+    {enabled ? (
+      // Enabled: 20% transparent black fill that matches the frame interior
+      <>
+        <rect
+          x="0"
+          y="0"
+          width="16"
+          height="16"
+          fill="black"
+          fillOpacity="0.2"
+          mask="url(#frame-interior-mask)"
+        />
+        <g transform="translate(0.9, 1.1) scale(0.9)">
+          <path
+            d="M4 4l2 2M12 4l-2 2M4 12l2-2M12 12l-2-2"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </g>
+      </>
+    ) : (
+      <g transform="translate(0.9, 1.1) scale(0.9)">
+        <path
+          d="M4 4l2 2M12 4l-2 2M4 12l2-2M12 12l-2-2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </g>
+    )}
   </svg>
 );
+
 
 const LoadFileIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
