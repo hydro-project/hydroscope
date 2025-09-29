@@ -1070,9 +1070,9 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     // Only run when we have data
     if (!graphData) return;
 
-    // Prevent double initialization
-    if (initializationRef.current.inProgress || initializationRef.current.completed) {
-      console.log('🔍 Skipping visualization init - already in progress or completed');
+    // Allow re-initialization when data changes - only prevent if currently in progress
+    if (initializationRef.current.inProgress) {
+      console.log('🔍 Skipping visualization init - already in progress');
       return;
     }
 
@@ -1269,8 +1269,23 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
   // Handle file upload
   const handleFileLoaded = useCallback((data: HydroscopeData, filename: string) => {
-    debouncedFileProcess(data, filename);
-  }, [debouncedFileProcess]);
+    // Reset initialization state to allow re-initialization with new data
+    initializationRef.current.completed = false;
+    initializationRef.current.inProgress = false;
+    
+    // Clear existing state to force complete re-initialization
+    setVisualizationState(null);
+    setAsyncCoordinator(null);
+    setReactFlowData({ nodes: [], edges: [] });
+    
+    // Create a new object reference to ensure React detects the change
+    const newData = { ...data, _timestamp: Date.now() };
+    
+    // Set the new data directly instead of using debounced function
+    setGraphData(newData);
+    setLoading(true);
+    setError(null);
+  }, []);
 
   const handleFileError = useCallback((error: any, filename: string) => {
     console.error('❌ File error:', error, filename);
