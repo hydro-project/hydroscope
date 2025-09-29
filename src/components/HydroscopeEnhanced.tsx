@@ -73,7 +73,7 @@ class OptimizedHeightCalculator {
       this.timeoutId = setTimeout(() => {
         // Check if calculator has been destroyed
         if (this.isDestroyed) return;
-        
+
         try {
           const navbar = document.querySelector('.navbar');
           const navbarHeight = navbar?.getBoundingClientRect().height || 60;
@@ -127,15 +127,21 @@ const FitIcon = () => (
 
 const AutoFitIcon = ({ enabled }: { enabled: boolean }) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" rx="2" />
-    {enabled ? (
-      <>
-        <rect x="4" y="4" width="8" height="8" fill="currentColor" rx="1" />
-        <path d="M2 2l2 2M14 2l-2 2M2 14l2-2M14 14l-2-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </>
-    ) : (
-      <path d="M4 4l2 2M12 4l-2 2M4 12l2-2M12 12l-2-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    )}
+    {/* Corner brackets matching FitIcon style - using similar positioning and size */}
+    <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none">
+      {/* Top-left corner */}
+      <path d="M1 5.5V1.5h4" />
+      {/* Top-right corner */}
+      <path d="M10.5 1.5h4v4" />
+      {/* Bottom-left corner */}
+      <path d="M5.5 14.5H1.5v-4" />
+      {/* Bottom-right corner */}
+      <path d="M14.5 10.5v4h-4" />
+    </g>
+    {/* X in the center to indicate auto-fit */}
+    <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M6.5 6.5l3 3M9.5 6.5l-3 3" />
+    </g>
   </svg>
 );
 
@@ -151,7 +157,6 @@ interface CustomControlsProps {
   asyncCoordinator?: AsyncCoordinator | null;
   onCollapseAll?: () => void;
   onExpandAll?: () => void;
-  onFitView?: () => void;
   autoFit?: boolean;
   onAutoFitToggle?: (enabled: boolean) => void;
   onLoadFile?: () => void;
@@ -165,7 +170,6 @@ function CustomControls({
   asyncCoordinator,
   onCollapseAll,
   onExpandAll,
-  onFitView,
   autoFit = false,
   onAutoFitToggle,
   onLoadFile,
@@ -182,7 +186,7 @@ function CustomControls({
   const hasExpandedContainers = visualizationState?.visibleContainers?.some(container => !container.collapsed) ?? false;
 
   // Calculate if we have any custom controls to show
-  const hasCustomControls = hasContainers || onFitView || onAutoFitToggle || showLoadFile;
+  const hasCustomControls = hasContainers || onAutoFitToggle || showLoadFile;
 
   // Dynamically measure the standard controls height
   useEffect(() => {
@@ -291,16 +295,6 @@ function CustomControls({
 
         setReactFlowDataRef.current(updatedFlowData);
         console.log('✅ ReactFlow data updated:', { nodes: updatedFlowData.nodes.length, edges: updatedFlowData.edges.length });
-        
-        // Auto-fit the view after layout update to ensure graph is visible
-        if (onFitView) {
-          console.log('🔄 Auto-fitting view after collapse...');
-          // Small delay to ensure ReactFlow has processed the new data
-          setTimeout(() => {
-            onFitView();
-            console.log('✅ View fitted after collapse');
-          }, 100);
-        }
       }
 
       onCollapseAll?.();
@@ -336,16 +330,6 @@ function CustomControls({
         const updatedFlowData = reactFlowBridge.toReactFlowData(visualizationState);
         setReactFlowDataRef.current(updatedFlowData);
         console.log('✅ ReactFlow data updated:', { nodes: updatedFlowData.nodes.length, edges: updatedFlowData.edges.length });
-        
-        // Auto-fit the view after layout update to ensure graph is visible
-        if (onFitView) {
-          console.log('🔄 Auto-fitting view after expand...');
-          // Small delay to ensure ReactFlow has processed the new data
-          setTimeout(() => {
-            onFitView();
-            console.log('✅ View fitted after expand');
-          }, 100);
-        }
       }
 
       onExpandAll?.();
@@ -394,13 +378,6 @@ function CustomControls({
                 }}
               >
                 <AutoFitIcon enabled={autoFit} />
-              </ControlButton>
-            )}
-
-            {/* Fit View Button */}
-            {onFitView && (
-              <ControlButton onClick={onFitView} title="Fit graph to viewport">
-                <FitIcon />
               </ControlButton>
             )}
 
@@ -1117,18 +1094,18 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
         // Convert to ReactFlow format
         const flowData = reactFlowBridge.toReactFlowData(state);
-        
+
         // Debug: Check edge handles
         console.log('🔍 [DEBUG] ReactFlow data after conversion:');
         console.log(`  - Nodes: ${flowData.nodes.length}`);
         console.log(`  - Edges: ${flowData.edges.length}`);
-        
+
         const edgesWithHandles = flowData.edges.filter(e => e.sourceHandle && e.targetHandle);
         const edgesWithoutHandles = flowData.edges.filter(e => !e.sourceHandle || !e.targetHandle);
-        
+
         console.log(`  - Edges with handles: ${edgesWithHandles.length}`);
         console.log(`  - Edges without handles: ${edgesWithoutHandles.length}`);
-        
+
         if (edgesWithoutHandles.length > 0) {
           console.log('❌ Edges without handles:', edgesWithoutHandles.slice(0, 3).map(e => ({
             id: e.id,
@@ -1138,7 +1115,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
             targetHandle: e.targetHandle
           })));
         }
-        
+
         if (edgesWithHandles.length > 0) {
           console.log('✅ Example edges with handles:', edgesWithHandles.slice(0, 3).map(e => ({
             id: e.id,
@@ -1272,15 +1249,15 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     // Reset initialization state to allow re-initialization with new data
     initializationRef.current.completed = false;
     initializationRef.current.inProgress = false;
-    
+
     // Clear existing state to force complete re-initialization
     setVisualizationState(null);
     setAsyncCoordinator(null);
     setReactFlowData({ nodes: [], edges: [] });
-    
+
     // Create a new object reference to ensure React detects the change
     const newData = { ...data, _timestamp: Date.now() };
-    
+
     // Set the new data directly instead of using debounced function
     setGraphData(newData);
     setLoading(true);
@@ -1310,11 +1287,11 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
       // minZoom: 0.05 allows zooming out to 5% (20x zoom out)
       // maxZoom: 2.0 allows zooming in to 200%
       // This gives a much wider range to accommodate large graphs
-      reactFlowInstance.fitView({ 
-        padding: 0.1, 
-        minZoom: 0.05, 
-        maxZoom: 2.0, 
-        duration: 300 
+      reactFlowInstance.fitView({
+        padding: 0.1,
+        minZoom: 0.05,
+        maxZoom: 2.0,
+        duration: 300
       });
     } catch (error) {
       console.error('Error fitting view:', error);
@@ -1426,7 +1403,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     try {
       // Apply changes to ReactFlow nodes for immediate visual feedback
       const updatedNodes = applyNodeChanges(changes, reactFlowData.nodes);
-      
+
       // Update ReactFlow data with the new node positions
       setReactFlowData({
         nodes: updatedNodes,
@@ -1434,14 +1411,14 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
       });
 
       // Also update visualization state for final positions (when drag is complete)
-      const finalPositionChanges = changes.filter(change => 
+      const finalPositionChanges = changes.filter(change =>
         change.type === 'position' && change.dragging === false && change.position
       );
 
       if (finalPositionChanges.length > 0) {
         finalPositionChanges.forEach(change => {
           const { id, position } = change;
-          
+
           // Check if it's a container
           const container = visualizationState.getContainer(id);
           if (container) {
@@ -1561,7 +1538,6 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
             <CustomControls
               visualizationState={visualizationState}
               asyncCoordinator={asyncCoordinator}
-              onFitView={handleFitView}
               autoFit={pageState.autoFit}
               onAutoFitToggle={toggleAutoFit}
               onLoadFile={handleLoadFile}
