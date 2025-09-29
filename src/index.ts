@@ -21,6 +21,4 @@ export {
 } from "./utils/testData.js";
 
 // Docusaurus-compatible React components
-export { HydroscopeDocusaurus } from "./components/HydroscopeDocusaurus.js";
-export { HydroscopeDemo } from "./components/HydroscopeDemo.js";
 export { HydroscopeEnhanced } from "./components/HydroscopeEnhanced.js";

@@ -291,6 +291,16 @@ function CustomControls({
 
         setReactFlowDataRef.current(updatedFlowData);
         console.log('✅ ReactFlow data updated:', { nodes: updatedFlowData.nodes.length, edges: updatedFlowData.edges.length });
+        
+        // Auto-fit the view after layout update to ensure graph is visible
+        if (onFitView) {
+          console.log('🔄 Auto-fitting view after collapse...');
+          // Small delay to ensure ReactFlow has processed the new data
+          setTimeout(() => {
+            onFitView();
+            console.log('✅ View fitted after collapse');
+          }, 100);
+        }
       }
 
       onCollapseAll?.();
@@ -326,6 +336,16 @@ function CustomControls({
         const updatedFlowData = reactFlowBridge.toReactFlowData(visualizationState);
         setReactFlowDataRef.current(updatedFlowData);
         console.log('✅ ReactFlow data updated:', { nodes: updatedFlowData.nodes.length, edges: updatedFlowData.edges.length });
+        
+        // Auto-fit the view after layout update to ensure graph is visible
+        if (onFitView) {
+          console.log('🔄 Auto-fitting view after expand...');
+          // Small delay to ensure ReactFlow has processed the new data
+          setTimeout(() => {
+            onFitView();
+            console.log('✅ View fitted after expand');
+          }, 100);
+        }
       }
 
       onExpandAll?.();
@@ -1271,7 +1291,16 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
   // Handle fit view
   const handleFitView = useCallback(() => {
     try {
-      reactFlowInstance.fitView({ padding: 0.15, maxZoom: 1.2, duration: 300 });
+      // Allow much more zoom-out for large expanded graphs
+      // minZoom: 0.05 allows zooming out to 5% (20x zoom out)
+      // maxZoom: 2.0 allows zooming in to 200%
+      // This gives a much wider range to accommodate large graphs
+      reactFlowInstance.fitView({ 
+        padding: 0.1, 
+        minZoom: 0.05, 
+        maxZoom: 2.0, 
+        duration: 300 
+      });
     } catch (error) {
       console.error('Error fitting view:', error);
     }
@@ -1458,6 +1487,8 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
           edgeTypes={edgeTypes}
           onNodeClick={handleNodeClick}
           fitView
+          minZoom={0.05}
+          maxZoom={2.0}
           attributionPosition="bottom-left"
         >
           {showBackground && <Background />}
