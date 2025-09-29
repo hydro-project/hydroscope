@@ -270,8 +270,9 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
 
-      state.addContainer(parentContainer);
+      // Add child container first, then parent
       state.addContainer(childContainer);
+      state.addContainer(parentContainer);
       state.addNode(node1);
       state.addNode(node2);
       state.addEdge(edge);

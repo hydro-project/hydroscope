@@ -11,14 +11,6 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
 
   describe("Parent-Child Relationships", () => {
     it("should establish basic parent-child relationships", () => {
-      const parent: Container = {
-        id: "parent",
-        label: "Parent",
-        children: new Set(["child"]),
-        collapsed: false,
-        hidden: false,
-      };
-
       const child: Container = {
         id: "child",
         label: "Child",
@@ -27,18 +19,27 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
         hidden: false,
       };
 
-      state.addContainer(parent);
+      const parent: Container = {
+        id: "parent",
+        label: "Parent",
+        children: new Set(["child"]),
+        collapsed: false,
+        hidden: false,
+      };
+
+      // Add child first, then parent that references it
       state.addContainer(child);
+      state.addContainer(parent);
 
       expect(state.getContainerParent("child")).toBe("parent");
       expect(state.getContainerChildren("parent")).toEqual(new Set(["child"]));
     });
 
     it("should handle nested container hierarchies", () => {
-      const grandparent: Container = {
-        id: "grandparent",
-        label: "Grandparent",
-        children: new Set(["parent"]),
+      const child: Container = {
+        id: "child",
+        label: "Child",
+        children: new Set(["n1"]),
         collapsed: false,
         hidden: false,
       };
@@ -51,17 +52,18 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
         hidden: false,
       };
 
-      const child: Container = {
-        id: "child",
-        label: "Child",
-        children: new Set(["n1"]),
+      const grandparent: Container = {
+        id: "grandparent",
+        label: "Grandparent",
+        children: new Set(["parent"]),
         collapsed: false,
         hidden: false,
       };
 
-      state.addContainer(grandparent);
-      state.addContainer(parent);
+      // Add in order: child -> parent -> grandparent
       state.addContainer(child);
+      state.addContainer(parent);
+      state.addContainer(grandparent);
 
       expect(state.getContainerParent("parent")).toBe("grandparent");
       expect(state.getContainerParent("child")).toBe("parent");
@@ -123,7 +125,7 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
       };
 
       expect(() => state.addContainer(container)).toThrow(
-        /circular.*dependency/i,
+        /non-tree.*dependency/i,
       );
     });
 
@@ -147,15 +149,15 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
       state.addContainer(container1);
 
       expect(() => state.addContainer(container2)).toThrow(
-        /circular.*dependency/i,
+        /non-tree.*dependency/i,
       );
     });
 
     it("should detect indirect circular dependencies", () => {
-      const container1: Container = {
-        id: "c1",
-        label: "Container 1",
-        children: new Set(["c2"]),
+      const container3: Container = {
+        id: "c3",
+        label: "Container 3",
+        children: new Set(),
         collapsed: false,
         hidden: false,
       };
@@ -168,33 +170,36 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
         hidden: false,
       };
 
-      const container3: Container = {
+      const container1: Container = {
+        id: "c1",
+        label: "Container 1",
+        children: new Set(["c2"]),
+        collapsed: false,
+        hidden: false,
+      };
+
+      // Add containers in order: c3 -> c2 -> c1
+      state.addContainer(container3);
+      state.addContainer(container2);
+      state.addContainer(container1);
+
+      // Now try to create circular dependency: c3 -> c1 (which already contains c2 -> c3)
+      const circularContainer: Container = {
         id: "c3",
-        label: "Container 3",
+        label: "Container 3 Updated",
         children: new Set(["c1"]), // Creates indirect circular dependency
         collapsed: false,
         hidden: false,
       };
 
-      state.addContainer(container1);
-      state.addContainer(container2);
-
-      expect(() => state.addContainer(container3)).toThrow(
-        /circular.*dependency/i,
+      expect(() => state.updateContainer("c3", circularContainer)).toThrow(
+        /non-tree.*dependency/i,
       );
     });
   });
 
   describe("Efficient Lookups", () => {
     it("should provide O(1) lookup for container parent relationships", () => {
-      const parent: Container = {
-        id: "parent",
-        label: "Parent",
-        children: new Set(["child1", "child2", "child3"]),
-        collapsed: false,
-        hidden: false,
-      };
-
       const children = ["child1", "child2", "child3"].map((id) => ({
         id,
         label: `Child ${id}`,
@@ -203,8 +208,17 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
         hidden: false,
       }));
 
-      state.addContainer(parent);
+      const parent: Container = {
+        id: "parent",
+        label: "Parent",
+        children: new Set(["child1", "child2", "child3"]),
+        collapsed: false,
+        hidden: false,
+      };
+
+      // Add children first, then parent
       children.forEach((child) => state.addContainer(child));
+      state.addContainer(parent);
 
       // These should be O(1) lookups
       expect(state.getContainerParent("child1")).toBe("parent");
@@ -278,14 +292,6 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
     });
 
     it("should handle orphaned containers when parent is removed", () => {
-      const parent: Container = {
-        id: "parent",
-        label: "Parent",
-        children: new Set(["child"]),
-        collapsed: false,
-        hidden: false,
-      };
-
       const child: Container = {
         id: "child",
         label: "Child",
@@ -294,8 +300,17 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
         hidden: false,
       };
 
-      state.addContainer(parent);
+      const parent: Container = {
+        id: "parent",
+        label: "Parent",
+        children: new Set(["child"]),
+        collapsed: false,
+        hidden: false,
+      };
+
+      // Add child first, then parent
       state.addContainer(child);
+      state.addContainer(parent);
 
       expect(state.getContainerParent("child")).toBe("parent");
 
@@ -387,7 +402,7 @@ describe("VisualizationState Container Hierarchy and Relationships", () => {
       expect(state.getNodeContainer("n3")).toBe("c2");
 
       // Move n1 from c1 to c2
-      state.moveNodeToContainer("n1", "c2");
+      state.assignNodeToContainer("n1", "c2");
 
       expect(state.getNodeContainer("n1")).toBe("c2");
       expect(state.getContainerChildren("c1")).toEqual(new Set(["n2"]));

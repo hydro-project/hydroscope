@@ -755,4 +755,85 @@ describe("ELKBridge", () => {
       expect(bridge.getPerformanceHints()).toBeUndefined();
     });
   });
+
+  describe("smart collapse integration", () => {
+    it("should run smart collapse before layout on first layout", async () => {
+      // Create containers with different child counts
+      const smallContainer = createTestContainer("small", ["node1", "node2"]);
+      const largeContainer = createTestContainer("large", ["node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10"]);
+      
+      // Add test nodes
+      for (let i = 1; i <= 10; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+      
+      state.addContainer(smallContainer);
+      state.addContainer(largeContainer);
+
+      // Initially both containers should be expanded
+      expect(state.getContainer("small")?.collapsed).toBe(false);
+      expect(state.getContainer("large")?.collapsed).toBe(false);
+      expect(state.shouldRunSmartCollapse()).toBe(true);
+
+      // Run layout - this should trigger smart collapse
+      await bridge.layout(state);
+
+      // Small container (2 children) should remain expanded
+      expect(state.getContainer("small")?.collapsed).toBe(false);
+      
+      // Large container (8 children > 7 threshold) should be collapsed by smart collapse
+      expect(state.getContainer("large")?.collapsed).toBe(true);
+      
+      // Layout count should be incremented
+      expect(state.isFirstLayout()).toBe(false);
+      expect(state.shouldRunSmartCollapse()).toBe(false);
+    });
+
+    it("should not run smart collapse when disabled", async () => {
+      const largeContainer = createTestContainer("large", ["node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8"]);
+      
+      for (let i = 1; i <= 8; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+      
+      state.addContainer(largeContainer);
+      state.disableSmartCollapseForUserOperations();
+
+      expect(state.shouldRunSmartCollapse()).toBe(false);
+      
+      await bridge.layout(state);
+
+      // Container should remain expanded
+      expect(state.getContainer("large")?.collapsed).toBe(false);
+    });
+
+    it("should not run smart collapse after first layout", async () => {
+      const largeContainer = createTestContainer("large", ["node1", "node2", "node3", "node4", "node5"]);
+      
+      for (let i = 1; i <= 5; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+      
+      state.addContainer(largeContainer);
+      
+      // Run first layout
+      await bridge.layout(state);
+      expect(state.isFirstLayout()).toBe(false);
+      
+      // Add another container
+      const anotherLargeContainer = createTestContainer("another", ["node6", "node7", "node8", "node9", "node10"]);
+      for (let i = 6; i <= 10; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+      state.addContainer(anotherLargeContainer);
+
+      expect(state.shouldRunSmartCollapse()).toBe(false);
+      
+      // Run second layout
+      await bridge.layout(state);
+
+      // New container should remain expanded (no smart collapse on second layout)
+      expect(state.getContainer("another")?.collapsed).toBe(false);
+    });
+  });
 });

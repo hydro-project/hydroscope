@@ -91,7 +91,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
         // Move nodes to containers
         for (const childId of container.children) {
           if (state.getGraphNode(childId)) {
-            state.moveNodeToContainer(childId, container.id);
+            state.assignNodeToContainer(childId, container.id);
           }
         }
       }
@@ -244,8 +244,8 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container1);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
       state.addEdge(edge1);
       state.addEdge(edge2);
     });
@@ -268,7 +268,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
         (node) => node.id === "c1",
       );
       expect(containerNode).toBeDefined();
-      expect(containerNode!.type).toBe("container");
+      expect(containerNode!.type).toBe("standard"); // Collapsed containers use 'standard' type for edge connections
       expect(containerNode!.data.collapsed).toBe(true);
       expect(containerNode!.data.containerChildren).toBe(2);
       expect(containerNode!.data.label).toBe("Container 1");
@@ -348,7 +348,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       // Add another container
       const container2 = createTestContainer("c2", ["n3"], "Container 2");
       state.addContainer(container2);
-      state.moveNodeToContainer("n3", "c2");
+      state.assignNodeToContainer("n3", "c2");
 
       // Expand all
       state.expandAllContainers();
@@ -366,7 +366,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       reactFlowData = bridge.toReactFlowData(state);
 
       const collapsedContainers = reactFlowData.nodes.filter(
-        (node) => node.type === "container" && node.data.collapsed === true,
+        (node) => node.data.nodeType === "container" && node.data.collapsed === true,
       );
       expect(collapsedContainers.length).toBe(2);
     });
@@ -461,8 +461,8 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
       state.addEdge(edge);
 
       // Collapse container to trigger edge aggregation
@@ -627,7 +627,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
 
       freshState.addNode(node);
       freshState.addContainer(container);
-      freshState.moveNodeToContainer("n1", "c1");
+      freshState.assignNodeToContainer("n1", "c1");
 
       // Start with expanded container
       freshState.expandContainer("c1");
@@ -820,8 +820,8 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
       state.addEdge(edge1);
       state.addEdge(edge2);
 
@@ -863,8 +863,8 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
       state.addEdge(edge1);
       state.addEdge(edge2);
 

@@ -255,7 +255,7 @@ describe("ReactFlowBridge", () => {
       expect(result.nodes).toHaveLength(1);
       expect(result.nodes[0]).toMatchObject({
         id: "container1",
-        type: "container",
+        type: "standard", // Collapsed containers use 'standard' type for edge connections
         position: expect.objectContaining({
           x: expect.any(Number),
           y: expect.any(Number),
@@ -414,7 +414,7 @@ describe("ReactFlowBridge", () => {
         id: "container1",
         label: "Container",
         children: new Set(["node2"]),
-        collapsed: true,
+        collapsed: false, // Start expanded
         hidden: false,
       };
 
@@ -431,7 +431,7 @@ describe("ReactFlowBridge", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container);
-      state.moveNodeToContainer("node2", "container1");
+      state.assignNodeToContainer("node2", "container1");
       state.addEdge(edge);
 
       // Collapse container to trigger edge aggregation
@@ -1312,7 +1312,7 @@ describe("ReactFlowBridge", () => {
       for (const container of paxosData.containers) {
         state.addContainer(container);
         for (const childId of container.children) {
-          state.moveNodeToContainer(childId, container.id);
+          state.assignNodeToContainer(childId, container.id);
         }
       }
 
@@ -1354,7 +1354,7 @@ describe("ReactFlowBridge", () => {
       for (const container of paxosData.containers) {
         state.addContainer(container);
         for (const childId of container.children) {
-          state.moveNodeToContainer(childId, container.id);
+          state.assignNodeToContainer(childId, container.id);
         }
       }
 

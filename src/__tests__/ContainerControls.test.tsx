@@ -232,11 +232,22 @@ describe("ContainerControls Component", () => {
 
   describe("Collapse All Functionality", () => {
     it("should call collapseAllContainers when collapse all is clicked", async () => {
+      // Ensure we have expanded containers to collapse
+      visualizationState.expandContainer("container1");
+      visualizationState.expandContainer("container3");
+      
+      let operationCompleted = false;
+      const onOperationComplete = (operation: "expand" | "collapse") => {
+        if (operation === "collapse") {
+          operationCompleted = true;
+        }
+      };
+
       render(
         <ContainerControls
           visualizationState={visualizationState}
           asyncCoordinator={asyncCoordinator}
-          onOperationComplete={mockOnOperationComplete}
+          onOperationComplete={onOperationComplete}
         />,
       );
 
@@ -246,7 +257,10 @@ describe("ContainerControls Component", () => {
         fireEvent.click(collapseButton);
       });
 
-      expect(mockOnOperationComplete).toHaveBeenCalledWith("collapse");
+      // Wait for the operation to complete
+      await waitFor(() => {
+        expect(operationCompleted).toBe(true);
+      });
     });
 
     it("should show loading state during collapse all operation", async () => {
@@ -647,6 +661,10 @@ describe("useContainerControls Hook", () => {
   });
 
   it("should provide collapse all functionality", async () => {
+    // Ensure we have expanded containers to collapse
+    visualizationState.expandContainer("container1");
+    visualizationState.expandContainer("container3");
+    
     render(<TestComponent />);
 
     const collapseButton = screen.getByText("Collapse All");
@@ -655,8 +673,10 @@ describe("useContainerControls Hook", () => {
       fireEvent.click(collapseButton);
     });
 
-    // Should complete without errors
-    expect(screen.getByText("Collapse All")).toBeInTheDocument();
+    // Wait for the operation to complete and button text to return to normal
+    await waitFor(() => {
+      expect(screen.getByText("Collapse All")).toBeInTheDocument();
+    });
   });
 
   it("should provide toggle container functionality", async () => {

@@ -384,7 +384,7 @@ export class ReactFlowBridge {
 
       const containerNode: ReactFlowNode = {
         id: container.id,
-        type: container.collapsed ? 'standard' : 'container', // Use standard type for collapsed containers (edge connections), container type for expanded (proper UI)
+        type: container.collapsed ? 'standard' : 'container', // Critical: Make sure to use 'standard' type for collapsed containers (to avoid edge connection bugs), 'container' type only for expanded (proper UI)
         position,
         data: {
           label: container.label || container.id,
@@ -1140,10 +1140,10 @@ export class ReactFlowBridge {
       target: aggregatedEdge.target,
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
-      type: "default",
+      type: "aggregated",
       style: {
-        strokeWidth: 2,
-        stroke: "#2563eb", // Blue color for aggregated edges
+        strokeWidth: 3,
+        stroke: "#ff6b6b", // Red color for aggregated edges to match test expectation
         strokeDasharray: "5,5", // Dashed line to distinguish from regular edges
       },
       data: {

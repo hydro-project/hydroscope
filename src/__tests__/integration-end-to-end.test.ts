@@ -92,7 +92,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
         // Move nodes to containers
         for (const childId of container.children) {
           if (state.getGraphNode(childId)) {
-            state.moveNodeToContainer(childId, container.id);
+            state.assignNodeToContainer(childId, container.id);
           }
         }
       }
@@ -189,8 +189,8 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
       state.addEdge(edge1);
       state.addEdge(edge2);
 
@@ -264,10 +264,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node4);
       state.addContainer(container1);
       state.addContainer(container2);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
-      state.moveNodeToContainer("n3", "c2");
-      state.moveNodeToContainer("n4", "c2");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n3", "c2");
+      state.assignNodeToContainer("n4", "c2");
       state.addEdge(edge1);
       state.addEdge(edge2);
     });
@@ -319,7 +319,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       // Verify collapsed state
       const collapsedContainers = reactFlowData.nodes.filter(
-        (node) => node.type === "container" && node.data.collapsed === true,
+        (node) => node.data.nodeType === "container" && node.data.collapsed === true,
       );
       expect(collapsedContainers.length).toBe(2);
 
@@ -465,7 +465,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container);
-      state.moveNodeToContainer("search_node_1", "search_container");
+      state.assignNodeToContainer("search_node_1", "search_container");
       state.addEdge(edge);
     });
 
@@ -668,7 +668,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
         // Move nodes to container
         for (const childId of childNodes) {
           if (state.getGraphNode(childId)) {
-            state.moveNodeToContainer(childId, `perf_c${i}`);
+            state.assignNodeToContainer(childId, `perf_c${i}`);
           }
         }
       }
@@ -739,7 +739,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
         for (const childId of childNodes) {
           if (state.getGraphNode(childId)) {
-            state.moveNodeToContainer(childId, `bulk_c${i}`);
+            state.assignNodeToContainer(childId, `bulk_c${i}`);
           }
         }
       }
@@ -783,7 +783,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       // Verify final state
       const collapsedContainers = reactFlowData.nodes.filter(
-        (node) => node.type === "container" && node.data.collapsed === true,
+        (node) => node.data.nodeType === "container" && node.data.collapsed === true,
       );
       expect(collapsedContainers.length).toBe(10);
     });

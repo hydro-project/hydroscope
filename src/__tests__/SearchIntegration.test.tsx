@@ -88,22 +88,21 @@ describe("SearchIntegration Component", () => {
       // First, clear existing containers and nodes
       visualizationState.clearSearch();
 
-      // Add nested container structure - parent contains container1, container1 contains node1
-      visualizationState.addContainer({
-        id: "parent-container",
-        label: "Parent Container",
-        children: new Set(["container1"]),
-        collapsed: true,
-        hidden: false,
-      });
-
-      // Update container1 to be child of parent-container
+      // Add nested container structure - add in order: container1 first, then parent
       visualizationState.addContainer({
         id: "container1",
         label: "Collapsed Container",
         children: new Set(["node1"]),
         collapsed: true,
         hidden: true, // Hidden because parent is collapsed
+      });
+
+      visualizationState.addContainer({
+        id: "parent-container",
+        label: "Parent Container",
+        children: new Set(["container1"]),
+        collapsed: true,
+        hidden: false,
       });
 
       // Update node1 to be in container1

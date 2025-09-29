@@ -33,13 +33,13 @@ describe("Validation Invariants", () => {
       );
       const state = new VisualizationState();
 
-      // Add nested containers
+      // Add nested containers (child first, then parent)
+      state.addContainer({ id: "child", label: "Child", children: new Set() });
       state.addContainer({
         id: "parent",
         label: "Parent",
         children: new Set(["child"]),
       });
-      state.addContainer({ id: "child", label: "Child", children: new Set() });
 
       // Collapse parent
       state.collapseContainer("parent");
@@ -56,13 +56,13 @@ describe("Validation Invariants", () => {
       );
       const state = new VisualizationState();
 
-      // Add nested containers
+      // Add nested containers (child first, then parent)
+      state.addContainer({ id: "child", label: "Child", children: new Set() });
       state.addContainer({
         id: "parent",
         label: "Parent",
         children: new Set(["child"]),
       });
-      state.addContainer({ id: "child", label: "Child", children: new Set() });
 
       // Make child visible - parent must also be visible
       const child = state.getContainer("child");

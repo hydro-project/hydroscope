@@ -241,6 +241,12 @@ export class ELKBridge {
    */
   async layout(state: VisualizationState): Promise<void> {
     try {
+      // CRITICAL FIX: Run smart collapse before layout if enabled
+      if (state.shouldRunSmartCollapse()) {
+        console.log(`[ELKBridge] 🧠 Running smart collapse before layout`);
+        state.performSmartCollapse();
+      }
+
       // Convert VisualizationState to ELK format
       const elkGraph = this.toELKGraph(state);
 
@@ -249,6 +255,9 @@ export class ELKBridge {
 
       // Apply the calculated positions back to VisualizationState
       this.applyELKResults(state, layoutResult);
+
+      // Increment layout count after successful layout
+      state.incrementLayoutCount();
     } catch (error) {
       throw new Error(
         `ELK layout calculation failed: ${error instanceof Error ? error.message : "Unknown error"}`,

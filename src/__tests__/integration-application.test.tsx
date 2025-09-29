@@ -318,7 +318,7 @@ describe("Application Integration: Complete Application with paxos.json", () => 
             // Move nodes to container
             for (const nodeId of nodeIds) {
               if (state.getGraphNode(nodeId)) {
-                state.moveNodeToContainer(nodeId, containerId);
+                state.assignNodeToContainer(nodeId, containerId);
               }
             }
           }

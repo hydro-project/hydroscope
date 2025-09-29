@@ -166,7 +166,7 @@ describe("Comprehensive Error Handling Validation", () => {
       visualizationState.addContainer(container1);
       expect(() => {
         visualizationState.addContainer(container2);
-      }).toThrow("Circular dependency detected");
+      }).toThrow("Non-tree dependency detected");
 
       // Test operations on non-existent containers (should not throw, just return)
       expect(() => {

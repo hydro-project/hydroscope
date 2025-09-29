@@ -54,7 +54,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
         // Move nodes to containers
         for (const childId of container.children) {
           if (state.getGraphNode(childId)) {
-            state.moveNodeToContainer(childId, container.id);
+            state.assignNodeToContainer(childId, container.id);
           }
         }
       }
@@ -180,8 +180,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       state.addNode(node2);
       state.addNode(node3);
       state.addContainer(container1);
-      state.moveNodeToContainer("n1", "c1");
-      state.moveNodeToContainer("n2", "c1");
+      state.assignNodeToContainer("n1", "c1");
+      state.assignNodeToContainer("n2", "c1");
       state.addEdge(edge1);
       state.addEdge(edge2);
     });
@@ -260,7 +260,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       // Add more containers for bulk testing
       const container2 = createTestContainer("c2", ["n3"], "Container 2");
       state.addContainer(container2);
-      state.moveNodeToContainer("n3", "c2");
+      state.assignNodeToContainer("n3", "c2");
 
       // Test expand all
       state.expandAllContainers();

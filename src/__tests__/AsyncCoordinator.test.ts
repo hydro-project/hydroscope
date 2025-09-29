@@ -1013,90 +1013,108 @@ describe("AsyncCoordinator", () => {
   });
 
   describe("Container Operations Integration", () => {
-    let mockState: any;
+    let state: VisualizationState;
 
     beforeEach(() => {
-      mockState = {
-        expandContainer: vi.fn(),
-        collapseContainer: vi.fn(),
-        search: vi.fn(() => []),
-        getContainersForNode: vi.fn(() => []),
-        setLayoutPhase: vi.fn(),
-        incrementLayoutCount: vi.fn(),
-        visibleNodes: [],
-        visibleContainers: [
-          { id: "container1", collapsed: true },
-          { id: "container2", collapsed: false },
-          { id: "container3", collapsed: true },
-        ],
-        visibleEdges: [],
-        getAggregatedEdges: () => [],
-      };
+      state = new VisualizationState();
+      
+      // Add some test containers
+      state.addContainer({
+        id: "container1",
+        label: "Container 1",
+        children: new Set<string>(),
+        collapsed: true,
+        hidden: false
+      });
+
+      state.addContainer({
+        id: "container2", 
+        label: "Container 2",
+        children: new Set<string>(),
+        collapsed: false,
+        hidden: false
+      });
+
+      state.addContainer({
+        id: "container3",
+        label: "Container 3", 
+        children: new Set<string>(),
+        collapsed: true,
+        hidden: false
+      });
     });
 
     it("should expand container through async coordination", async () => {
-      await coordinator.expandContainer("container1", mockState);
+      await coordinator.expandContainer("container1", state);
 
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
+      const container = state.getContainer("container1");
+      expect(container?.collapsed).toBe(false);
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
     });
 
     it("should expand container without triggering layout when specified", async () => {
-      await coordinator.expandContainer("container1", mockState, {
+      await coordinator.expandContainer("container1", state, {
         triggerLayout: false,
       });
 
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
+      const container = state.getContainer("container1");
+      expect(container?.collapsed).toBe(false);
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
     });
 
     it("should collapse container through async coordination", async () => {
-      await coordinator.collapseContainer("container2", mockState);
+      await coordinator.collapseContainer("container2", state);
 
-      expect(mockState.collapseContainer).toHaveBeenCalledWith("container2");
+      const container = state.getContainer("container2");
+      expect(container?.collapsed).toBe(true);
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
     });
 
     it("should collapse container without triggering layout when specified", async () => {
-      await coordinator.collapseContainer("container2", mockState, {
+      await coordinator.collapseContainer("container2", state, {
         triggerLayout: false,
       });
 
-      expect(mockState.collapseContainer).toHaveBeenCalledWith("container2");
+      const container = state.getContainer("container2");
+      expect(container?.collapsed).toBe(true);
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
     });
 
     it("should expand all containers sequentially", async () => {
-      await coordinator.expandAllContainers(mockState);
+      await coordinator.expandAllContainers(state);
 
       // Should expand all collapsed containers
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container3");
-      expect(mockState.expandContainer).not.toHaveBeenCalledWith("container2"); // Already expanded
+      const container1 = state.getContainer("container1");
+      const container2 = state.getContainer("container2");
+      const container3 = state.getContainer("container3");
+      
+      expect(container1?.collapsed).toBe(false);
+      expect(container2?.collapsed).toBe(false); // Was already expanded
+      expect(container3?.collapsed).toBe(false);
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
     });
 
     it("should collapse all containers sequentially", async () => {
-      await coordinator.collapseAllContainers(mockState);
+      await coordinator.collapseAllContainers(state);
 
       // Should collapse all expanded containers
-      expect(mockState.collapseContainer).toHaveBeenCalledWith("container2");
-      expect(mockState.collapseContainer).not.toHaveBeenCalledWith(
-        "container1",
-      ); // Already collapsed
-      expect(mockState.collapseContainer).not.toHaveBeenCalledWith(
-        "container3",
-      ); // Already collapsed
+      const container1 = state.getContainer("container1");
+      const container2 = state.getContainer("container2");
+      const container3 = state.getContainer("container3");
+      
+      expect(container1?.collapsed).toBe(true); // Was already collapsed
+      expect(container2?.collapsed).toBe(true); // Should be collapsed now
+      expect(container3?.collapsed).toBe(true); // Was already collapsed
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
@@ -1116,21 +1134,22 @@ describe("AsyncCoordinator", () => {
 
     it("should retry failed container operations", async () => {
       let attemptCount = 0;
-      const flakyState = {
-        ...mockState,
-        expandContainer: vi.fn(() => {
-          attemptCount++;
-          if (attemptCount < 2) {
-            throw new Error("Temporary container failure");
-          }
-        }),
-      };
+      const originalExpandContainer = state.expandContainer.bind(state);
+      
+      // Mock the expandContainer method to fail on first attempt
+      state.expandContainer = vi.fn((containerId: string) => {
+        attemptCount++;
+        if (attemptCount < 2) {
+          throw new Error("Temporary container failure");
+        }
+        return originalExpandContainer(containerId);
+      });
 
       // Queue the operation with retries and process manually
       coordinator.queueApplicationEvent(
         {
           type: "container_expand",
-          payload: { containerId: "container1", state: flakyState },
+          payload: { containerId: "container1", state },
           timestamp: Date.now(),
         },
         { maxRetries: 2 },
@@ -1141,7 +1160,7 @@ describe("AsyncCoordinator", () => {
       await processPromise;
 
       expect(attemptCount).toBe(2);
-      expect(flakyState.expandContainer).toHaveBeenCalledWith("container1");
+      expect(state.expandContainer).toHaveBeenCalledWith("container1");
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
@@ -1175,7 +1194,7 @@ describe("AsyncCoordinator", () => {
       expect(status.expandOperations.failed).toBe(0);
 
       // Execute operation
-      await coordinator.expandContainer("container1", mockState, {
+      await coordinator.expandContainer("container1", state, {
         triggerLayout: false,
       });
 
@@ -1199,7 +1218,7 @@ describe("AsyncCoordinator", () => {
       // Test skip recovery
       await coordinator.recoverFromContainerOperationError(
         failedOpId,
-        mockState,
+        state,
         "skip",
       );
 
@@ -1210,63 +1229,24 @@ describe("AsyncCoordinator", () => {
     it("should sequence container operations properly", async () => {
       const operationOrder: string[] = [];
 
-      const trackingState = {
-        ...mockState,
-        expandContainer: vi.fn((containerId) => {
-          operationOrder.push(`expand-${containerId}`);
-        }),
-        collapseContainer: vi.fn((containerId) => {
-          operationOrder.push(`collapse-${containerId}`);
-        }),
-      };
-
-      // Queue multiple operations manually with same priority to maintain order
-      coordinator.queueApplicationEvent({
-        type: "search", // Use search type to avoid priority reordering
-        payload: {
-          query: "expand-container1",
-          state: {
-            ...trackingState,
-            search: () => {
-              operationOrder.push("expand-container1");
-              return [];
-            },
-          },
-        },
-        timestamp: Date.now(),
+      // Mock the container operations to track order
+      const originalExpandContainer = state.expandContainer.bind(state);
+      const originalCollapseContainer = state.collapseContainer.bind(state);
+      
+      state.expandContainer = vi.fn((containerId: string) => {
+        operationOrder.push(`expand-${containerId}`);
+        return originalExpandContainer(containerId);
+      });
+      
+      state.collapseContainer = vi.fn((containerId: string) => {
+        operationOrder.push(`collapse-${containerId}`);
+        return originalCollapseContainer(containerId);
       });
 
-      coordinator.queueApplicationEvent({
-        type: "search", // Use search type to avoid priority reordering
-        payload: {
-          query: "collapse-container2",
-          state: {
-            ...trackingState,
-            search: () => {
-              operationOrder.push("collapse-container2");
-              return [];
-            },
-          },
-        },
-        timestamp: Date.now(),
-      });
-
-      coordinator.queueApplicationEvent({
-        type: "search", // Use search type to avoid priority reordering
-        payload: {
-          query: "expand-container3",
-          state: {
-            ...trackingState,
-            search: () => {
-              operationOrder.push("expand-container3");
-              return [];
-            },
-          },
-        },
-        timestamp: Date.now(),
-      });
-
-      await coordinator.processQueue();
+      // Queue multiple operations sequentially
+      await coordinator.expandContainer("container1", state, { triggerLayout: false });
+      await coordinator.collapseContainer("container2", state, { triggerLayout: false });
+      await coordinator.expandContainer("container3", state, { triggerLayout: false });
 
       // Operations should be executed in the order they were queued
       expect(operationOrder).toEqual([
@@ -1279,7 +1259,7 @@ describe("AsyncCoordinator", () => {
     it("should handle bulk operations efficiently", async () => {
       const startTime = Date.now();
 
-      await coordinator.expandAllContainers(mockState);
+      await coordinator.expandAllContainers(state);
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -1287,18 +1267,25 @@ describe("AsyncCoordinator", () => {
       // Bulk operation should complete reasonably quickly
       expect(duration).toBeLessThan(1000); // Less than 1 second
 
-      // Should have expanded all collapsed containers
-      expect(mockState.expandContainer).toHaveBeenCalledTimes(2); // container1 and container3
+      // Should have expanded all containers
+      const container1 = state.getContainer("container1");
+      const container2 = state.getContainer("container2");
+      const container3 = state.getContainer("container3");
+      
+      expect(container1?.collapsed).toBe(false);
+      expect(container2?.collapsed).toBe(false);
+      expect(container3?.collapsed).toBe(false);
     });
 
     it("should handle custom layout configuration for container operations", async () => {
       const customConfig = { algorithm: "force", direction: "UP" as const };
 
-      await coordinator.expandContainer("container1", mockState, {
+      await coordinator.expandContainer("container1", state, {
         layoutConfig: customConfig,
       });
 
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
+      const container = state.getContainer("container1");
+      expect(container?.collapsed).toBe(false);
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);

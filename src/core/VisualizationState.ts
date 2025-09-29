@@ -3,6 +3,7 @@
  * Architectural constraints: React-free, single source of truth, synchronous core
  */
 
+import { LAYOUT_CONSTANTS } from "@/shared/config.js";
 import type {
   GraphNode,
   GraphEdge,
@@ -66,6 +67,7 @@ export class VisualizationState {
 
   updateNode(id: string, node: GraphNode): void {
     if (!this._nodes.has(id)) {
+      console.warn("[VisualizationState] updateNode called with invalid id");
       return; // Handle non-existent node gracefully
     }
 
@@ -91,7 +93,9 @@ export class VisualizationState {
 
     // Debug: Log first few edges to verify they're still valid when added to state
     if (this._edges.size < 5) {
-      console.log(`[VisualizationState] 🔍 Adding edge ${edge.id}: ${edge.source} -> ${edge.target}`);
+      console.log(
+        `[VisualizationState] 🔍 Adding edge ${edge.id}: ${edge.source} -> ${edge.target}`
+      );
     }
 
     this._edges.set(edge.id, { ...edge });
@@ -107,6 +111,8 @@ export class VisualizationState {
     if (!edge) return;
 
     // Find collapsed containers that contain the source or target
+    // TODO: more efficient to simply check if parent of either source
+    // or target is collapsed!
     for (const [containerId, container] of this._containers) {
       if (container.collapsed) {
         const descendants = this._getAllDescendantIds(containerId);
@@ -126,6 +132,7 @@ export class VisualizationState {
 
   updateEdge(id: string, edge: GraphEdge): void {
     if (!this._edges.has(id)) {
+      console.warn("[VisualizationState] updateEdge called with invalid id");
       return; // Handle non-existent edge gracefully
     }
 
@@ -180,6 +187,9 @@ export class VisualizationState {
 
   updateContainer(id: string, container: Container): void {
     if (!this._containers.has(id)) {
+      console.warn(
+        "[VisualizationState] updateContainer called with invalid id"
+      );
       return; // Handle non-existent container gracefully
     }
 
@@ -197,11 +207,11 @@ export class VisualizationState {
 
   private _validateContainerData(
     container: Container,
-    validateId: boolean = true,
+    validateId: boolean = true
   ): void {
     if (!container) {
       throw new Error(
-        "Invalid container: container cannot be null or undefined",
+        "Invalid container: container cannot be null or undefined"
       );
     }
     if (validateId && (!container.id || container.id.trim() === "")) {
@@ -210,11 +220,13 @@ export class VisualizationState {
     if (!container.label || container.label.trim() === "") {
       throw new Error("Invalid container: label cannot be empty");
     }
+    // TODO: throw on container with no children? Make symmetric to orphaned nodes?
+    // Need to check order of ops at parsing/initialization.
   }
 
   private _updateContainerWithMappings(container: Container): void {
-    // Check for circular dependencies before adding
-    this._validateNoCircularDependencies(container);
+    // Check for non-tree-shaped dependencies before adding
+    this._validateTreeDependencies(container);
 
     // If container already exists, clean up old mappings first
     const existingContainer = this._containers.get(container.id);
@@ -243,7 +255,7 @@ export class VisualizationState {
   }
 
   private _hideContainerChildren(containerId: string): void {
-    // Use the same logic as collapsing - hide all transitive descendants
+    // Hide all (transitive) descendants
     this._hideAllDescendants(containerId);
   }
 
@@ -277,80 +289,24 @@ export class VisualizationState {
     }
   }
 
-  private _validateNoCircularDependencies(container: Container): void {
-    // Check for self-reference
+  private _validateTreeDependencies(container: Container): void {
+    // Check that each container referenced only once. Prevents DAGs and cycles
     if (container.children.has(container.id)) {
       throw new Error(
-        `Circular dependency detected: Container ${container.id} cannot contain itself`,
+        `Non-tree dependency detected: Container ${container.id} cannot contain itself`
       );
     }
 
     // Check if this container is already referenced as a child by any existing container
-    // If so, adding it would create a cycle
+    // If so, adding it would create a DAG or possibly a cycle
     for (const [existingId, existingContainer] of this._containers) {
       if (existingContainer.children.has(container.id)) {
         // container.id is already a child of existingId
-        // Check if any of container's children are ancestors of existingId
-        for (const childId of container.children) {
-          if (this._isAncestorOf(childId, existingId)) {
-            throw new Error(
-              `Circular dependency detected: ${childId} is an ancestor of ${existingId}, which already has ${container.id} as a child`,
-            );
-          }
-        }
-      }
-    }
-
-    // Check for circular dependencies through the hierarchy
-    for (const childId of container.children) {
-      // Check if childId already has container.id as a child (direct circular dependency)
-      const existingChild = this._containers.get(childId);
-      if (existingChild && existingChild.children.has(container.id)) {
         throw new Error(
-          `Circular dependency detected: ${container.id} and ${childId} would reference each other`,
+          `Non-tree dependency detected: ${existingId} already referenced ${container.id} as a child`
         );
       }
-
-      if (this._containers.has(childId)) {
-        // Check if making childId a child of container.id would create a cycle
-        // This happens if container.id is already a descendant of childId
-        if (this._isDescendantOf(container.id, childId)) {
-          throw new Error(
-            `Circular dependency detected: Adding ${childId} to ${container.id} would create a cycle`,
-          );
-        }
-
-        // Check if childId is already an ancestor of container.id
-        // This would create an indirect cycle: container.id -> ... -> childId -> ... -> container.id
-        if (this._isAncestorOf(childId, container.id)) {
-          throw new Error(
-            `Circular dependency detected: ${childId} is already an ancestor of ${container.id}`,
-          );
-        }
-      }
     }
-  }
-
-  private _isAncestorOf(
-    potentialAncestor: string,
-    descendant: string,
-  ): boolean {
-    let current = this.getContainerParent(descendant);
-    while (current) {
-      if (current === potentialAncestor) {
-        return true;
-      }
-      current = this.getContainerParent(current);
-    }
-    return false;
-  }
-
-  private _isDescendantOf(
-    potentialDescendant: string,
-    ancestor: string,
-  ): boolean {
-    const descendants = this.getContainerDescendants(ancestor);
-    return descendants.includes(potentialDescendant);
   }
 
   // Container Operations
@@ -376,6 +332,9 @@ export class VisualizationState {
         // Don't automatically expand child containers - they keep their collapsed state
         // Only show their contents if they are not collapsed
         if (!childContainer.collapsed) {
+          console.warn(
+            "_showImmediateChildren: nested call suggests nested expended containers"
+          );
           this._showImmediateChildren(childId);
         }
       }
@@ -385,13 +344,13 @@ export class VisualizationState {
   collapseContainer(id: string): void {
     console.log(`[VisualizationState] 🔄 Collapsing container ${id}`);
     this._collapseContainerInternal(id);
-    
-    // CRITICAL FIX: Aggregate edges when container collapses
+
+    // Aggregate edges when container collapses
     this.aggregateEdgesForContainer(id);
-    
+
     // User operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
-    
+
     // Trigger ReactFlow validation after collapse
     this.triggerReactFlowValidation();
   }
@@ -431,34 +390,45 @@ export class VisualizationState {
     for (const container of this._containers.values()) {
       if (!container.collapsed) {
         this._collapseContainerInternal(container.id);
-        
+
         // CRITICAL FIX: Aggregate edges when each container collapses
         this.aggregateEdgesForContainer(container.id);
       }
     }
     // Bulk user operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
-    
+
     // Trigger ReactFlow validation after collapse operations
     this.triggerReactFlowValidation();
   }
 
   /**
    * Trigger ReactFlow validation to check for floating edges and other issues
+   * TODO This is jank and needs to be cleaned out.
    */
   triggerReactFlowValidation(): void {
     console.log(`[VisualizationState] 🔍 Triggering ReactFlow validation`);
     try {
       // Import ReactFlowBridge dynamically to avoid circular dependency
-      import("../bridges/ReactFlowBridge.js").then(({ ReactFlowBridge }) => {
-        const bridge = new ReactFlowBridge({});
-        const result = bridge.toReactFlowData(this);
-        console.log(`[VisualizationState] ✅ ReactFlow validation completed - ${result.nodes.length} nodes, ${result.edges.length} edges`);
-      }).catch((error) => {
-        console.error(`[VisualizationState] ❌ ReactFlow validation failed:`, error);
-      });
+      import("../bridges/ReactFlowBridge.js")
+        .then(({ ReactFlowBridge }) => {
+          const bridge = new ReactFlowBridge({});
+          const result = bridge.toReactFlowData(this);
+          console.log(
+            `[VisualizationState] ✅ ReactFlow validation completed - ${result.nodes.length} nodes, ${result.edges.length} edges`
+          );
+        })
+        .catch((error) => {
+          console.error(
+            `[VisualizationState] ❌ ReactFlow validation failed:`,
+            error
+          );
+        });
     } catch (error) {
-      console.error(`[VisualizationState] ❌ ReactFlow validation import failed:`, error);
+      console.error(
+        `[VisualizationState] ❌ ReactFlow validation import failed:`,
+        error
+      );
     }
   }
 
@@ -472,21 +442,25 @@ export class VisualizationState {
 
     // Get all descendants of this container (including nested containers)
     const allDescendants = this._getAllDescendantIds(containerId);
-    console.log(`[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(', ')}`);
-    
+    console.log(
+      `[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(", ")}`
+    );
+
     const edgesToAggregate = new Map<string, GraphEdge[]>(); // key: source-target, value: edges
-    const aggregatedEdgesToUpdate: AggregatedEdge[] = [];
 
     // Find all edges that need to be aggregated
-    const edgesBySourceTarget = new Map<string, { source: string; target: string; edges: GraphEdge[] }>();
-    
+    const edgesBySourceTarget = new Map<
+      string,
+      { source: string; target: string; edges: GraphEdge[] }
+    >();
+
+    // TODO: seems inefficient to iterate through all edges. Should walk the tree downward from here.
     for (const [edgeId, edge] of this._edges) {
       // Process ALL edges, including hidden ones, since they might need aggregation
       const sourceInContainer = allDescendants.has(edge.source);
       const targetInContainer = allDescendants.has(edge.target);
 
       if (sourceInContainer || targetInContainer) {
-
         // If both endpoints are in the container, just hide the edge (internal edge)
         if (sourceInContainer && targetInContainer) {
           edge.hidden = true;
@@ -507,12 +481,15 @@ export class VisualizationState {
           aggregatedTarget = containerId;
         }
 
+        // TODO: DRY up the next two blocks into one block.
+        // TODO: do these 2 blocks need to be made recursive?
         // CRITICAL FIX: Ensure both endpoints are visible containers or nodes
         // If source is a hidden node, find its visible container
         if (!this._containers.has(aggregatedSource)) {
           const sourceNode = this._nodes.get(aggregatedSource);
           if (sourceNode && sourceNode.hidden) {
-            const sourceContainer = this._nodeContainerMap.get(aggregatedSource);
+            const sourceContainer =
+              this._nodeContainerMap.get(aggregatedSource);
             if (sourceContainer && this._containers.has(sourceContainer)) {
               const container = this._containers.get(sourceContainer);
               if (container && !container.hidden) {
@@ -526,7 +503,8 @@ export class VisualizationState {
         if (!this._containers.has(aggregatedTarget)) {
           const targetNode = this._nodes.get(aggregatedTarget);
           if (targetNode && targetNode.hidden) {
-            const targetContainer = this._nodeContainerMap.get(aggregatedTarget);
+            const targetContainer =
+              this._nodeContainerMap.get(aggregatedTarget);
             if (targetContainer && this._containers.has(targetContainer)) {
               const container = this._containers.get(targetContainer);
               if (container && !container.hidden) {
@@ -547,7 +525,7 @@ export class VisualizationState {
           edgesBySourceTarget.set(key, {
             source: aggregatedSource,
             target: aggregatedTarget,
-            edges: []
+            edges: [],
           });
         }
         edgesBySourceTarget.get(key)!.edges.push(edge);
@@ -558,6 +536,7 @@ export class VisualizationState {
     }
 
     // Also check existing aggregated edges that might need to be updated
+    // TODO: Can this be DRYed up? Seems quite similar to the above.
     for (const [aggId, aggEdge] of this._aggregatedEdges) {
       if (aggEdge.hidden) continue;
 
@@ -598,31 +577,28 @@ export class VisualizationState {
       }
     }
 
-    console.log(`[VisualizationState] 📊 Found ${edgesBySourceTarget.size} edge groups to aggregate`);
-    
     // Create new aggregated edges
     for (const [key, edgeGroup] of edgesBySourceTarget) {
       const { source, target, edges } = edgeGroup;
       const aggregatedEdgeId = `agg-${containerId}-${source}-${target}`;
-      
-      console.log(`[VisualizationState] 🔗 Creating aggregated edge ${aggregatedEdgeId}: ${source} -> ${target} (${edges.length} original edges)`);
 
       // Check if this aggregated edge already exists
       const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
-      console.log(`[VisualizationState] 🔍 Checking existing aggregated edge ${aggregatedEdgeId}: exists=${!!existingAggEdge}, hidden=${existingAggEdge?.hidden}`);
 
       if (existingAggEdge && !existingAggEdge.hidden) {
         // Merge with existing aggregated edge
-        console.log(`[VisualizationState] 🔄 Merging with existing aggregated edge ${aggregatedEdgeId}`);
         const newOriginalIds = edges.map((e) => e.id);
-        existingAggEdge.originalEdgeIds.push(...newOriginalIds);
+        // Only add edge IDs that aren't already in the list to prevent duplicates
+        const uniqueNewIds = newOriginalIds.filter(
+          (id) => !existingAggEdge.originalEdgeIds.includes(id)
+        );
+        existingAggEdge.originalEdgeIds.push(...uniqueNewIds);
         existingAggEdge.semanticTags = [
           ...new Set([
             ...existingAggEdge.semanticTags,
             ...edges.flatMap((e) => e.semanticTags),
           ]),
         ];
-        console.log(`[VisualizationState] ✅ Merged ${newOriginalIds.length} edges into existing aggregated edge ${aggregatedEdgeId}`);
       } else {
         // Create new aggregated edge
         const aggregatedEdge: AggregatedEdge = {
@@ -638,12 +614,11 @@ export class VisualizationState {
         };
 
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
-        console.log(`[VisualizationState] ✅ Created aggregated edge ${aggregatedEdge.id}`);
 
         // Update tracking structures
         this._aggregatedToOriginalMap.set(
           aggregatedEdge.id,
-          aggregatedEdge.originalEdgeIds,
+          aggregatedEdge.originalEdgeIds
         );
         for (const originalId of aggregatedEdge.originalEdgeIds) {
           this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
@@ -660,7 +635,7 @@ export class VisualizationState {
     // Record aggregation history
     const edgeCount = Array.from(edgesBySourceTarget.values()).reduce(
       (sum, edgeGroup) => sum + edgeGroup.edges.length,
-      0,
+      0
     );
     if (edgeCount > 0) {
       this._aggregationHistory.push({
@@ -668,18 +643,6 @@ export class VisualizationState {
         containerId,
         edgeCount,
         timestamp: Date.now(),
-      });
-    }
-
-    // Debug: Check final state of aggregated edges
-    console.log(`[VisualizationState] 📊 After aggregation for ${containerId}:`);
-    console.log(`  - Total aggregated edges in system: ${this._aggregatedEdges.size}`);
-    console.log(`  - Visible aggregated edges: ${Array.from(this._aggregatedEdges.values()).filter(e => !e.hidden).length}`);
-    const containerAggEdges = Array.from(this._aggregatedEdges.values()).filter(e => e.aggregationSource === containerId);
-    console.log(`  - Aggregated edges for this container: ${containerAggEdges.length}`);
-    if (containerAggEdges.length > 0) {
-      containerAggEdges.forEach(e => {
-        console.log(`    - ${e.id}: ${e.source} -> ${e.target} (hidden: ${e.hidden})`);
       });
     }
   }
@@ -712,6 +675,7 @@ export class VisualizationState {
     const aggregatedEdgesToRemove: string[] = [];
     const edgesToRestore: string[] = [];
 
+    // TODO: could be made more efficient with an index from container to aggregated edges
     for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
       if (aggEdge.source === containerId || aggEdge.target === containerId) {
         // This aggregated edge involves the container being expanded
@@ -777,7 +741,7 @@ export class VisualizationState {
     const containerAggregations =
       this._containerAggregationMap.get(containerId) || [];
     const updatedAggregations = containerAggregations.filter(
-      (id) => !aggregatedEdgesToRemove.includes(id),
+      (id) => !aggregatedEdgesToRemove.includes(id)
     );
     if (updatedAggregations.length === 0) {
       this._containerAggregationMap.delete(containerId);
@@ -805,15 +769,16 @@ export class VisualizationState {
     const sourceNode = this._nodes.get(edge.source);
     if (sourceNode && sourceNode.hidden) {
       sourceContainer = this._findSmallestCollapsedContainerForNode(
-        edge.source,
+        edge.source
       );
     }
 
     // Check if target is in a collapsed container
+    // TODO: DRY this up by combining with previous block
     const targetNode = this._nodes.get(edge.target);
     if (targetNode && targetNode.hidden) {
       targetContainer = this._findSmallestCollapsedContainerForNode(
-        edge.target,
+        edge.target
       );
     }
 
@@ -829,6 +794,7 @@ export class VisualizationState {
       }
 
       // Create or update aggregated edge
+      // TODO: this is redundant with similar code above. DRY up.
       const key = `${aggregatedSource}-${aggregatedTarget}`;
       const aggregatedEdgeId = `agg-${sourceContainer || targetContainer}-${aggregatedSource}-${aggregatedTarget}`;
 
@@ -874,7 +840,7 @@ export class VisualizationState {
   }
 
   private _findSmallestCollapsedContainerForNode(
-    nodeId: string,
+    nodeId: string
   ): string | undefined {
     let currentContainer = this._nodeContainerMap.get(nodeId);
 
@@ -891,7 +857,7 @@ export class VisualizationState {
 
   getAggregatedEdges(): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
-      (edge) => !edge.hidden,
+      (edge) => !edge.hidden
     );
   }
 
@@ -906,17 +872,17 @@ export class VisualizationState {
 
   get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge> {
     const regularEdges = Array.from(this._edges.values()).filter(
-      (edge) => !edge.hidden,
+      (edge) => !edge.hidden
     );
     const aggregatedEdges = Array.from(this._aggregatedEdges.values()).filter(
-      (edge) => !edge.hidden,
+      (edge) => !edge.hidden
     );
     return [...regularEdges, ...aggregatedEdges];
   }
 
   get visibleContainers(): ReadonlyArray<Container> {
     return Array.from(this._containers.values()).filter(
-      (container) => !container.hidden,
+      (container) => !container.hidden
     );
   }
 
@@ -1027,7 +993,7 @@ export class VisualizationState {
     this._orphanedContainers.clear();
   }
 
-  moveNodeToContainer(nodeId: string, targetContainerId: string): void {
+  assignNodeToContainer(nodeId: string, targetContainerId: string): void {
     // Remove from current container
     const currentContainerId = this.getNodeContainer(nodeId);
     if (currentContainerId) {
@@ -1127,6 +1093,75 @@ export class VisualizationState {
     };
   }
 
+  /**
+   * Perform smart collapse operation - automatically collapse containers
+   * that meet certain criteria to improve initial layout readability
+   */
+  performSmartCollapse(): void {
+    console.log(`[VisualizationState] 🧠 Starting smart collapse operation`);
+
+    if (!this.shouldRunSmartCollapse()) {
+      console.log(
+        `[VisualizationState] ⏭️ Smart collapse skipped - not enabled or not first layout`
+      );
+      return;
+    }
+
+    const containers = Array.from(this._containers.values());
+    const collapsibleContainers = containers.filter(
+      (container) =>
+        !container.collapsed &&
+        !container.hidden &&
+        this._shouldCollapseContainer(container)
+    );
+
+    console.log(`[VisualizationState] 📊 Smart collapse analysis:`);
+    console.log(`  - Total containers: ${containers.length}`);
+    console.log(`  - Collapsible containers: ${collapsibleContainers.length}`);
+
+    if (collapsibleContainers.length === 0) {
+      console.log(`[VisualizationState] ✅ No containers to collapse`);
+      return;
+    }
+
+    // Collapse containers using system operations (doesn't disable future smart collapse)
+    let collapsedCount = 0;
+    for (const container of collapsibleContainers) {
+      console.log(
+        `[VisualizationState] 🔄 Smart collapsing container: ${container.id} (${container.children.size} children)`
+      );
+      this.collapseContainerSystemOperation(container.id);
+      collapsedCount++;
+    }
+
+    console.log(
+      `[VisualizationState] ✅ Smart collapse completed: ${collapsedCount} containers collapsed`
+    );
+  }
+
+  /**
+   * Determine if a container should be collapsed during smart collapse
+   * Current algorithm: collapse containers with more than 3 children
+   */
+  private _shouldCollapseContainer(container: Container): boolean {
+    // Smart collapse criteria:
+    // 1. Container has more than 3 children (reduces visual complexity)
+    // 2. Container is not already collapsed
+    // 3. Container is not hidden
+
+    const childCount = container.children.size;
+    const shouldCollapse =
+      childCount > LAYOUT_CONSTANTS.LARGE_CONTAINER_CHILD_COUNT_THRESHOLD;
+
+    if (shouldCollapse) {
+      console.log(
+        `[VisualizationState] 🎯 Container ${container.id} meets smart collapse criteria (${childCount} children > 3)`
+      );
+    }
+
+    return shouldCollapse;
+  }
+
   // Search-specific container expansion
   expandContainerForSearch(id: string): void {
     this._expandContainerInternal(id);
@@ -1167,20 +1202,17 @@ export class VisualizationState {
   }
 
   private _collapseContainerInternal(id: string): void {
-    console.log(`[VisualizationState] 🔄 _collapseContainerInternal called for ${id}`);
     const container = this._containers.get(id);
     if (!container) {
-      console.log(`[VisualizationState] ❌ Container ${id} not found in _collapseContainerInternal`);
+      console.warn(
+        `[VisualizationState] ❌ Container ${id} not found in _collapseContainerInternal`
+      );
       return;
     }
-
-    console.log(`[VisualizationState] 📊 Collapsing container ${id}, setting collapsed=true`);
     container.collapsed = true;
     this._hideAllDescendants(id);
-    console.log(`[VisualizationState] 🔗 About to call aggregateEdgesForContainer for ${id}`);
     this.aggregateEdgesForContainer(id);
     this.validateInvariants();
-    console.log(`[VisualizationState] ✅ Finished _collapseContainerInternal for ${id}`);
   }
 
   // Edge Aggregation Tracking and Lookup Methods
@@ -1220,18 +1252,18 @@ export class VisualizationState {
   }
 
   getAggregatedEdgesByContainer(
-    containerId: string,
+    containerId: string
   ): ReadonlyArray<AggregatedEdge> {
     const edgeIds = this._containerAggregationMap.get(containerId) || [];
     return edgeIds
       .map((id) => this._aggregatedEdges.get(id))
       .filter(
-        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden,
+        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden
       );
   }
 
   getOriginalEdgesForAggregated(
-    aggregatedEdgeId: string,
+    aggregatedEdgeId: string
   ): ReadonlyArray<GraphEdge> {
     const originalIds =
       this._aggregatedToOriginalMap.get(aggregatedEdgeId) || [];
@@ -1241,11 +1273,11 @@ export class VisualizationState {
   }
 
   getAggregatedEdgesAffectingNode(
-    nodeId: string,
+    nodeId: string
   ): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
       (edge) =>
-        !edge.hidden && (edge.source === nodeId || edge.target === nodeId),
+        !edge.hidden && (edge.source === nodeId || edge.target === nodeId)
     );
   }
 
@@ -1281,7 +1313,7 @@ export class VisualizationState {
 
     const totalOriginalEdges = this._edges.size;
     const visibleOriginalEdges = Array.from(this._edges.values()).filter(
-      (e) => !e.hidden,
+      (e) => !e.hidden
     ).length;
     const totalVisibleEdges = visibleOriginalEdges + activeAggregations;
     const edgeReductionRatio =
@@ -1315,7 +1347,7 @@ export class VisualizationState {
         const originalEdge = this._edges.get(originalId);
         if (!originalEdge) {
           errors.push(
-            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`,
+            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`
           );
         }
       }
@@ -1326,7 +1358,7 @@ export class VisualizationState {
       const aggEdge = this._aggregatedEdges.get(aggId);
       if (!aggEdge) {
         errors.push(
-          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`,
+          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`
         );
       }
     }
@@ -1362,7 +1394,7 @@ export class VisualizationState {
 
   getNodesShowingLongLabels(): ReadonlyArray<GraphNode> {
     return Array.from(this._nodes.values()).filter(
-      (node) => node.showingLongLabel,
+      (node) => node.showingLongLabel
     );
   }
 
@@ -1372,15 +1404,15 @@ export class VisualizationState {
     expandedContainers: number;
   } {
     const nodesWithLongLabels = Array.from(this._nodes.values()).filter(
-      (node) => node.showingLongLabel,
+      (node) => node.showingLongLabel
     ).length;
 
     const collapsedContainers = Array.from(this._containers.values()).filter(
-      (container) => container.collapsed,
+      (container) => container.collapsed
     ).length;
 
     const expandedContainers = Array.from(this._containers.values()).filter(
-      (container) => !container.collapsed,
+      (container) => !container.collapsed
     ).length;
 
     return {
@@ -1412,7 +1444,7 @@ export class VisualizationState {
     for (const [nodeId, node] of this._nodes) {
       if (node.showingLongLabel && !node.longLabel) {
         errors.push(
-          `Node ${nodeId} is showing long label but has no longLabel property`,
+          `Node ${nodeId} is showing long label but has no longLabel property`
         );
       }
     }
@@ -1469,6 +1501,7 @@ export class VisualizationState {
     }
 
     // Search containers - prioritize exact matches
+    // TODO: DRY up and combine with previous block
     for (const container of this._containers.values()) {
       const matchResult = this._findMatches(container.label, queryLower);
       if (matchResult.matches) {
@@ -1500,9 +1533,10 @@ export class VisualizationState {
     return [...this._searchResults];
   }
 
+  // TODO: Use a library for this.
   private _findMatches(
     text: string,
-    query: string,
+    query: string
   ): { matches: boolean; indices: number[][]; isExact: boolean } {
     const textLower = text.toLowerCase();
     const indices: number[][] = [];
@@ -1587,7 +1621,7 @@ export class VisualizationState {
   // Advanced search methods
   searchByType(
     query: string,
-    entityType: "node" | "container",
+    entityType: "node" | "container"
   ): SearchResult[] {
     const allResults = this.search(query);
     return allResults.filter((result) => result.type === entityType);
@@ -1600,7 +1634,7 @@ export class VisualizationState {
     for (const node of this._nodes.values()) {
       if (
         node.semanticTags.some((nodeTag) =>
-          nodeTag.toLowerCase().includes(tag.toLowerCase()),
+          nodeTag.toLowerCase().includes(tag.toLowerCase())
         )
       ) {
         this._searchResults.push({
@@ -1616,7 +1650,7 @@ export class VisualizationState {
     for (const edge of this._edges.values()) {
       if (
         edge.semanticTags.some((edgeTag) =>
-          edgeTag.toLowerCase().includes(tag.toLowerCase()),
+          edgeTag.toLowerCase().includes(tag.toLowerCase())
         )
       ) {
         // Add source and target nodes if not already in results
@@ -1691,7 +1725,7 @@ export class VisualizationState {
       this._performanceMetrics.operationCounts.get(operationName) || 0;
     this._performanceMetrics.operationCounts.set(
       operationName,
-      currentCount + 1,
+      currentCount + 1
     );
 
     // Track operation times (keep last 10 for average calculation)
@@ -1719,12 +1753,12 @@ export class VisualizationState {
       // Generate recommendations based on performance
       if (avg > 50 && operation.includes("search")) {
         recommendations.push(
-          `Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`,
+          `Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`
         );
       }
       if (avg > 100 && operation.includes("container")) {
         recommendations.push(
-          `Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`,
+          `Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`
         );
       }
     }
@@ -1802,7 +1836,7 @@ export class VisualizationState {
 
   private validateDescendantsCollapsed(
     containerId: string,
-    violations: InvariantViolation[],
+    violations: InvariantViolation[]
   ): void {
     const children = this.getContainerChildren(containerId);
 
@@ -1841,7 +1875,7 @@ export class VisualizationState {
 
   private validateAncestorsVisible(
     containerId: string,
-    violations: InvariantViolation[],
+    violations: InvariantViolation[]
   ): void {
     let current = this.getNodeContainer(containerId);
 
@@ -1984,10 +2018,10 @@ export class VisualizationState {
     if (errors.length > 0) {
       console.error(
         "[VisualizationState] CRITICAL: Invariant violations:",
-        errors,
+        errors
       );
       throw new Error(
-        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`,
+        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`
       );
     }
   }

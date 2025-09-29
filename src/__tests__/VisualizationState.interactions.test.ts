@@ -323,8 +323,9 @@ describe("VisualizationState Interaction State Management", () => {
       const node = createTestNode("node1", "Short");
       node.longLabel = "Long Label";
 
-      state.addContainer(parentContainer);
+      // Add child container first, then parent
       state.addContainer(childContainer);
+      state.addContainer(parentContainer);
       state.addNode(node);
 
       // Set interaction states

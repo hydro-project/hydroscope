@@ -94,9 +94,9 @@ describe('Container Collapse/Expand E2E Tests', () => {
     state.addEdge(edge2);
 
     // Set up node assignments
-    state.moveNodeToContainer('node1', 'container1');
-    state.moveNodeToContainer('node2', 'container1');
-    state.moveNodeToContainer('node3', 'container2');
+    state.assignNodeToContainer('node1', 'container1');
+    state.assignNodeToContainer('node2', 'container1');
+    state.assignNodeToContainer('node3', 'container2');
   });
 
   describe('Single Container Collapse', () => {
@@ -121,7 +121,7 @@ describe('Container Collapse/Expand E2E Tests', () => {
       container1Node = reactFlowData.nodes.find(n => n.id === 'container1');
       
       expect(container1Node).toBeDefined();
-      expect(container1Node?.type).toBe('container'); // Should still be container type
+      expect(container1Node?.type).toBe('standard'); // Collapsed containers use 'standard' type for edge connections
       expect(container1Node?.data.collapsed).toBe(true); // But marked as collapsed
       
       // Child nodes should not be visible in ReactFlow data
@@ -177,7 +177,7 @@ describe('Container Collapse/Expand E2E Tests', () => {
       
       expect(containerNodes).toHaveLength(2);
       containerNodes.forEach(node => {
-        expect(node.type).toBe('container');
+        expect(node.type).toBe('standard'); // Collapsed containers use 'standard' type for edge connections
         expect(node.data.collapsed).toBe(true);
       });
 
@@ -228,7 +228,7 @@ describe('Container Collapse/Expand E2E Tests', () => {
 
       // Container should be marked as collapsed
       expect(container1Node?.data.collapsed).toBe(true);
-      expect(container1Node?.type).toBe('container');
+      expect(container1Node?.type).toBe('standard'); // Collapsed containers use 'standard' type for edge connections
       
       // Child nodes should not be visible
       const childNodes = reactFlowData.nodes.filter(n => ['node1', 'node2'].includes(n.id));
@@ -426,7 +426,7 @@ describe('Container Collapse/Expand E2E Tests', () => {
       containerNodes = reactFlowData.nodes.filter(n => n.data.nodeType === 'container');
       
       containerNodes.forEach(node => {
-        expect(node.type).toBe('container'); // Should still be 'container', not 'standard'
+        expect(node.type).toBe('standard'); // Collapsed containers use 'standard' type for edge connections
         expect(node.data.collapsed).toBe(true);
       });
     });

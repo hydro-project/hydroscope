@@ -161,8 +161,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
 
-      state.addContainer(parentContainer);
+      // Add child container first, then parent
       state.addContainer(childContainer);
+      state.addContainer(parentContainer);
       state.addNode(node1);
       state.addNode(externalNode);
       state.addEdge(edge);
@@ -189,9 +190,10 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
 
-      state.addContainer(grandparent);
-      state.addContainer(parent);
+      // Add containers in order: child -> parent -> grandparent
       state.addContainer(child);
+      state.addContainer(parent);
+      state.addContainer(grandparent);
       state.addNode(node1);
       state.addNode(externalNode);
       state.addEdge(edge);
@@ -261,8 +263,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
 
-      state.addContainer(parentContainer);
+      // Add child container first, then parent
       state.addContainer(childContainer);
+      state.addContainer(parentContainer);
       state.addNode(node1);
       state.addNode(externalNode);
       state.addEdge(edge);

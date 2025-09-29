@@ -386,7 +386,7 @@ export class JSONParser {
         }
 
         // Assign node to container
-        state.moveNodeToContainer(nodeId, containerId);
+        state.assignNodeToContainer(nodeId, containerId);
         assignmentCount++;
 
         if (assignmentCount % 100 === 0) {
