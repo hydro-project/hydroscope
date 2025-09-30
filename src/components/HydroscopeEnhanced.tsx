@@ -799,6 +799,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   const [currentLayout, setCurrentLayout] = useState("layered");
   const [colorPalette, setColorPalette] = useState("Set2");
   const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null);
+  const [nodeTypeConfig, setNodeTypeConfig] = useState<any>(null);
 
   // Update the ref with the actual setReactFlowData function
   useEffect(() => {
@@ -1153,17 +1154,20 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
         const parseResult = await parser.parseData(dataToUse);
         const state = parseResult.visualizationState;
         const extractedEdgeStyleConfig = parseResult.edgeStyleConfig || null;
+        const extractedNodeTypeConfig = parseResult.nodeTypeConfig || null;
         console.log("✅ Data parsed successfully, state created");
 
         // Extract hierarchy and grouping data
         setHierarchyChoices(parseResult.hierarchyChoices || []);
         setCurrentGrouping(parseResult.selectedHierarchy);
         setEdgeStyleConfig(extractedEdgeStyleConfig);
+        setNodeTypeConfig(extractedNodeTypeConfig);
         console.log("📊 Hierarchy data:", {
           choices: parseResult.hierarchyChoices?.length || 0,
           selected: parseResult.selectedHierarchy,
         });
         console.log("🎨 Edge style config:", extractedEdgeStyleConfig);
+        console.log("🎨 Node type config:", extractedNodeTypeConfig);
 
         // Create AsyncCoordinator for v6 operations
         const coordinator = new AsyncCoordinator();
@@ -1809,11 +1813,9 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
               onGroupingChange={handleGroupingChange}
               collapsedContainers={collapsedContainers}
               onToggleContainer={handleToggleContainer}
-              legendData={{
-                title: "Node Types",
-                items: [] // Will be generated from visualizationState
-              }}
+
               edgeStyleConfig={edgeStyleConfig}
+              nodeTypeConfig={nodeTypeConfig}
               colorPalette={colorPalette}
               onSearchUpdate={(query, matches, current) => {
                 // Handle search updates - maintain backward compatibility

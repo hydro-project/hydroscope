@@ -60,6 +60,7 @@ export interface InfoPanelProps extends BaseComponentProps {
   reactFlowData?: { nodes: any[]; edges: any[] };
   legendData?: LegendData;
   edgeStyleConfig?: EdgeStyleConfig;
+  nodeTypeConfig?: any;
 
   // Grouping & Hierarchy
   hierarchyChoices?: GroupingOption[];

@@ -18,12 +18,8 @@ import { CollapsibleSection } from "../CollapsibleSection";
 import { GroupingControls } from "../GroupingControls";
 import { HierarchyTree } from "../HierarchyTree";
 import { Legend } from "../Legend";
+import { SearchControls, SearchMatch, SearchControlsRef } from "../SearchControls";
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
-import {
-  SearchControls,
-  type SearchMatch,
-  type SearchControlsRef,
-} from "../SearchControls";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
 
 interface VisualizationNode {
@@ -71,6 +67,7 @@ export const InfoPanel = forwardRef<
       visualizationState,
       legendData,
       edgeStyleConfig,
+      nodeTypeConfig,
       hierarchyChoices = [],
       currentGrouping,
       onGroupingChange,
@@ -111,27 +108,52 @@ export const InfoPanel = forwardRef<
 
     // Generate legend data from actual node types in the visualization
     const generateLegendFromState = (): LegendData => {
-      if (!visualizationState) return defaultLegendData;
+      if (!visualizationState) {
+        return defaultLegendData;
+      }
 
       const nodeTypes = new Set<string>();
 
       // Collect all unique node types from visible nodes
-      visualizationState.visibleNodes.forEach((node) => {
-        // Support nodeType possibly nested under a data field
+      const visibleNodes = visualizationState.visibleNodes || [];
+      visibleNodes.forEach((node, index) => {
+        // Support type property (standard) and nodeType (legacy) possibly nested under a data field
         const nodeType =
+          (node as any).type ||
           (node as any).nodeType ||
           (node as any)?.data?.nodeType ||
           (node as any).style ||
           "default";
+        
         nodeTypes.add(nodeType);
+      });
+
+      // If no visible nodes or no node types found, fall back to nodeTypeConfig
+      if (nodeTypes.size === 0 && nodeTypeConfig?.types) {
+        nodeTypeConfig.types.forEach((typeConfig: { id: string; label?: string; colorIndex?: number; description?: string }) => {
+          nodeTypes.add(typeConfig.id);
+        });
+      }
+
+
+      // Create legend items, using nodeTypeConfig if available
+      const items = Array.from(nodeTypes).map((nodeType) => {
+        // Look for this node type in nodeTypeConfig
+        const typeConfig = nodeTypeConfig?.types?.find(
+          (t: any) => t.id === nodeType,
+        );
+
+        return {
+          type: nodeType,
+          label: typeConfig?.label || nodeType.charAt(0).toUpperCase() + nodeType.slice(1),
+          description: typeConfig?.description,
+          color: typeConfig?.colorIndex !== undefined ? `color-${typeConfig.colorIndex}` : undefined,
+        };
       });
 
       return {
         title: "Node Types",
-        items: Array.from(nodeTypes).map((nodeType) => ({
-          type: nodeType,
-          label: nodeType.charAt(0).toUpperCase() + nodeType.slice(1),
-        })),
+        items,
       };
     };
 
@@ -140,6 +162,7 @@ export const InfoPanel = forwardRef<
       legendData && legendData.items && Array.isArray(legendData.items)
         ? legendData
         : generateLegendFromState();
+
 
     // Ensure hierarchyChoices is always an array
     const safeHierarchyChoices = Array.isArray(hierarchyChoices)
@@ -160,7 +183,7 @@ export const InfoPanel = forwardRef<
       }> = [];
       // Containers from visualizationState
       if (visualizationState) {
-        visualizationState.visibleContainers.forEach((container) => {
+        visualizationState.visibleContainers?.forEach((container) => {
           const label =
             (container as any)?.data?.label || container?.label || container.id;
           items.push({ id: container.id, label, type: "container" });
@@ -294,6 +317,7 @@ export const InfoPanel = forwardRef<
               isCollapsed={groupingCollapsed}
               onToggle={() => setGroupingCollapsed(!groupingCollapsed)}
             >
+
               {/* Grouping Controls */}
               {safeHierarchyChoices.length > 0 && (
                 <div
@@ -312,16 +336,16 @@ export const InfoPanel = forwardRef<
                 </div>
               )}
               {/* Search + Hierarchy Tree */}
-              {visualizationState &&
-                visualizationState.visibleContainers.length > 0 && (
+              {visualizationState && (
                   <div>
+
                     <SearchControls
                       ref={searchControlsRef}
                       searchableItems={searchableItems}
                       onSearch={handleSearch}
                       onClear={handleSearchClear}
                       onNavigate={handleSearchNavigate}
-                      placeholder="Search containers (wildcards: * ?)"
+                      placeholder="Search nodes and containers..."
                       compact
                     />
                     <HierarchyTree

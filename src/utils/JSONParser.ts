@@ -32,6 +32,7 @@ export interface ParseResult {
   hierarchyChoices: HierarchyChoice[];
   selectedHierarchy: string | null;
   edgeStyleConfig?: any; // Edge style configuration from JSON
+  nodeTypeConfig?: any; // Node type configuration from JSON
   warnings: ValidationResult[];
   stats: {
     nodeCount: number;
@@ -148,6 +149,7 @@ export class JSONParser {
         hierarchyChoices,
         selectedHierarchy,
         edgeStyleConfig: data.edgeStyleConfig || null,
+        nodeTypeConfig: data.nodeTypeConfig || null,
         warnings,
         stats: {
           nodeCount,
