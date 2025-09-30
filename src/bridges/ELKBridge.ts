@@ -97,7 +97,9 @@ export class ELKBridge {
 
       if (!parentContainer) {
         // Node is not in a container or container is collapsed
-        console.log(`[ELKBridge] Adding node ${node.id} to root (no parent container)`);
+        console.log(
+          `[ELKBridge] Adding node ${node.id} to root (no parent container)`,
+        );
         const nodeSize = this.calculateOptimalNodeSize(node, optimizedConfig);
         elkNode.children!.push({
           id: node.id,
@@ -106,7 +108,9 @@ export class ELKBridge {
           layoutOptions: this.getNodeLayoutOptions(node, optimizedConfig),
         });
       } else {
-        console.log(`[ELKBridge] Node ${node.id} will be added as child of container ${parentContainer.id}`);
+        console.log(
+          `[ELKBridge] Node ${node.id} will be added as child of container ${parentContainer.id}`,
+        );
       }
     }
 
@@ -133,7 +137,9 @@ export class ELKBridge {
         const containerChildren = visibleNodes
           .filter((node) => container.children.has(node.id))
           .map((node) => {
-            console.log(`[ELKBridge] Adding node ${node.id} as child of container ${container.id}`);
+            console.log(
+              `[ELKBridge] Adding node ${node.id} as child of container ${container.id}`,
+            );
             const nodeSize = this.calculateOptimalNodeSize(
               node,
               optimizedConfig,
@@ -590,7 +596,7 @@ export class ELKBridge {
     if (collapsed) {
       // Use consistent collapsed container dimensions from config
       return {
-        width: 200,  // COLLAPSED_CONTAINER_WIDTH from config
+        width: 200, // COLLAPSED_CONTAINER_WIDTH from config
         height: 150, // COLLAPSED_CONTAINER_HEIGHT from config
       };
     } else {
@@ -840,8 +846,6 @@ export class ELKBridge {
       }
     }
   }
-
-
 
   // Validation
   validateELKGraph(elkGraph: ELKNode): ELKValidationResult {

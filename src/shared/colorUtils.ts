@@ -4,10 +4,12 @@
  * Simple color utilities for the visualization system.
  */
 
-import { COLOR_PALETTES } from './config';
+import { COLOR_PALETTES } from "./config";
 
 // Basic color utility functions
-export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+export function hexToRgb(
+  hex: string,
+): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
@@ -19,16 +21,16 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 }
 
 export function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
 export function getContrastColor(backgroundColor: string): string {
   const rgb = hexToRgb(backgroundColor);
-  if (!rgb) return '#000000';
+  if (!rgb) return "#000000";
 
   // Calculate brightness using YIQ formula
   const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-  return brightness > 128 ? '#000000' : '#ffffff';
+  return brightness > 128 ? "#000000" : "#ffffff";
 }
 
 /**
@@ -38,15 +40,15 @@ export function getSearchHighlightColors() {
   return {
     // Standard search match - bright yellow with high visibility
     match: {
-      background: '#fbbf24', // amber-400 - brighter for better visibility
-      border: '#f59e0b', // amber-500 - contrasting border
-      text: '#000000', // black text for maximum contrast on yellow
+      background: "#fbbf24", // amber-400 - brighter for better visibility
+      border: "#f59e0b", // amber-500 - contrasting border
+      text: "#000000", // black text for maximum contrast on yellow
     },
     // Current/strong search match - bright red-orange with maximum visibility
     current: {
-      background: '#f97316', // orange-500 - brighter orange for better visibility
-      border: '#ea580c', // orange-600 - darker border for definition
-      text: '#ffffff', // white text for maximum contrast on orange
+      background: "#f97316", // orange-500 - brighter orange for better visibility
+      border: "#ea580c", // orange-600 - darker border for definition
+      text: "#ffffff", // white text for maximum contrast on orange
     },
   };
 }
@@ -63,29 +65,35 @@ type NodeColorResult = NodeColor | Record<string, NodeColor>;
 
 // Function expected by Legend component
 
-export function generateNodeColors(nodeTypes: [string], palette?: string): NodeColor;
+export function generateNodeColors(
+  nodeTypes: [string],
+  palette?: string,
+): NodeColor;
 // eslint-disable-next-line no-redeclare
 export function generateNodeColors(
   nodeTypes: string[],
-  palette?: string
+  palette?: string,
 ): Record<string, NodeColor>;
 // eslint-disable-next-line no-redeclare
-export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'): NodeColorResult {
+export function generateNodeColors(
+  nodeTypes: string[],
+  palette: string = "Set3",
+): NodeColorResult {
   // Get the selected palette, fallback to Set3 if not found
   const palettes = COLOR_PALETTES as unknown as Record<
     string,
     Array<{ primary: string; secondary?: string }>
   >;
-  const selectedPalette = palettes[palette] || palettes['Set3'] || [];
+  const selectedPalette = palettes[palette] || palettes["Set3"] || [];
 
   if (nodeTypes.length === 1) {
     // Single node type - return object with expected properties
     const nodeType = nodeTypes[0];
     // Use a hash of the node type to pick a consistent color
     const colorIndex =
-      Math.abs(nodeType.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) %
+      Math.abs(nodeType.split("").reduce((a, b) => a + b.charCodeAt(0), 0)) %
       selectedPalette.length;
-    const paletteColor = selectedPalette[colorIndex] || { primary: '#8dd3c7' };
+    const paletteColor = selectedPalette[colorIndex] || { primary: "#8dd3c7" };
 
     return {
       primary: paletteColor.primary,
@@ -97,7 +105,9 @@ export function generateNodeColors(nodeTypes: string[], palette: string = 'Set3'
   // Multiple node types - return a map
   const colors: Record<string, NodeColor> = {};
   nodeTypes.forEach((nodeType, index) => {
-    const paletteColor = selectedPalette[index % selectedPalette.length] || { primary: '#8dd3c7' };
+    const paletteColor = selectedPalette[index % selectedPalette.length] || {
+      primary: "#8dd3c7",
+    };
     colors[nodeType] = {
       primary: paletteColor.primary,
       border: paletteColor.primary,

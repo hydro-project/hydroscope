@@ -969,9 +969,11 @@ describe("ReactFlowBridge", () => {
       };
 
       state.addNode(node2);
-      
+
       // VisualizationState should reject invalid edges
-      expect(() => state.addEdge(invalidEdge)).toThrow("Invalid edge: source cannot be empty");
+      expect(() => state.addEdge(invalidEdge)).toThrow(
+        "Invalid edge: source cannot be empty",
+      );
 
       await elkBridge.layout(state);
       const result = bridge.toReactFlowData(state);
@@ -998,9 +1000,11 @@ describe("ReactFlowBridge", () => {
       };
 
       state.addNode(node1);
-      
+
       // VisualizationState should reject invalid edges
-      expect(() => state.addEdge(invalidEdge)).toThrow("Invalid edge: target cannot be empty");
+      expect(() => state.addEdge(invalidEdge)).toThrow(
+        "Invalid edge: target cannot be empty",
+      );
 
       await elkBridge.layout(state);
       const result = bridge.toReactFlowData(state);
@@ -1027,9 +1031,11 @@ describe("ReactFlowBridge", () => {
       };
 
       state.addNode(node2);
-      
+
       // VisualizationState should reject edges with non-existent source
-      expect(() => state.addEdge(floatingEdge)).toThrow("references non-existent source");
+      expect(() => state.addEdge(floatingEdge)).toThrow(
+        "references non-existent source",
+      );
 
       // Don't call layout since the state might be inconsistent after validation failure
       // Just test that the bridge would handle it correctly if it somehow got through
@@ -1056,9 +1062,11 @@ describe("ReactFlowBridge", () => {
       };
 
       state.addNode(node1);
-      
+
       // VisualizationState should reject edges with non-existent target
-      expect(() => state.addEdge(floatingEdge)).toThrow("references non-existent target");
+      expect(() => state.addEdge(floatingEdge)).toThrow(
+        "references non-existent target",
+      );
 
       // Don't call layout since the state might be inconsistent after validation failure
       // Just test that the bridge would handle it correctly if it somehow got through
@@ -1123,7 +1131,7 @@ describe("ReactFlowBridge", () => {
         collapsed: true,
         hidden: false,
       };
-      
+
       // Create an aggregated edge manually
       const aggregatedEdge: AggregatedEdge = {
         id: "agg_edge1",
@@ -1158,7 +1166,10 @@ describe("ReactFlowBridge", () => {
         stroke: "#999999", // Default stroke color for unstyled edges
       });
       expect(result.edges[0].data?.aggregated).toBe(true);
-      expect(result.edges[0].data?.originalEdgeIds).toEqual(["original_edge1", "original_edge2"]);
+      expect(result.edges[0].data?.originalEdgeIds).toEqual([
+        "original_edge1",
+        "original_edge2",
+      ]);
     });
 
     it("should skip invalid aggregated edges", async () => {
@@ -1175,7 +1186,9 @@ describe("ReactFlowBridge", () => {
       };
 
       // VisualizationState should reject edges with non-existent source and target
-      expect(() => state.addEdge(invalidAggregatedEdge)).toThrow("references non-existent");
+      expect(() => state.addEdge(invalidAggregatedEdge)).toThrow(
+        "references non-existent",
+      );
 
       // Don't call layout since the state might be inconsistent after validation failure
       // Just test that the bridge would handle it correctly if it somehow got through
@@ -1249,10 +1262,10 @@ describe("ReactFlowBridge", () => {
       state.addEdge(validEdge);
 
       await elkBridge.layout(state);
-      
+
       // Capture console output to verify validation messages
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
       const result = bridge.toReactFlowData(state);
 
       expect(result.edges).toHaveLength(1); // Valid edge should be rendered
@@ -1260,7 +1273,7 @@ describe("ReactFlowBridge", () => {
 
       // Verify validation messages were logged
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Edge processing summary')
+        expect.stringContaining("Edge processing summary"),
       );
 
       consoleSpy.mockRestore();
@@ -1292,11 +1305,13 @@ describe("ReactFlowBridge", () => {
       expect(validRendered?.id).toBe("valid_edge");
 
       // Test with invalid edge
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
       const invalidRendered = bridge.renderOriginalEdge(invalidEdge);
       expect(invalidRendered).toBeNull(); // Should return null for invalid edge
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Cannot render original edge')
+        expect.stringContaining("Cannot render original edge"),
       );
       consoleSpy.mockRestore();
     });

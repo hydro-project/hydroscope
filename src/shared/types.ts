@@ -1,4 +1,5 @@
-import type { NodeStyle, EdgeStyle, ContainerStyle } from './config';
+import type { NodeStyle, EdgeStyle, ContainerStyle } from "./config";
+import type { GraphNode } from "../types/core.js";
 
 // External-facing container type (no expandedDimensions)
 export interface ExternalContainer {
@@ -40,14 +41,8 @@ export interface LayoutState {
   elkLayoutOptions?: Record<string, string>; // ELK-specific layout options
 }
 
-export interface GraphNode {
-  id: string;
-  label: string;
-  style: NodeStyle;
-  hidden: boolean;
-  layout?: LayoutState; // Layout-related properties
-  [key: string]: any; // Allow custom properties
-}
+// GraphNode moved to types/core.ts to avoid duplication
+// Import from there: import type { GraphNode } from '../types/core.js';
 
 export interface GraphEdge {
   id: string;
@@ -55,7 +50,7 @@ export interface GraphEdge {
   target: string;
   style?: EdgeStyle | string;
   hidden?: boolean;
-  type: 'graph';
+  type: "graph";
   edgeProperties?: string[];
 }
 
@@ -76,7 +71,7 @@ export interface HyperEdge {
   source: string;
   target: string;
   style: EdgeStyle;
-  type: 'hyper';
+  type: "hyper";
   edgeProperties?: string[];
   [key: string]: any; // Allow custom properties
 }

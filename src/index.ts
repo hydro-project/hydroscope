@@ -20,5 +20,25 @@ export {
   createTestVisualizationState,
 } from "./utils/testData.js";
 
-// Docusaurus-compatible React components
+// React Components
 export { HydroscopeEnhanced } from "./components/HydroscopeEnhanced.js";
+
+// New Clean Components (recommended for new projects)
+export {
+  Hydroscope,
+  type HydroscopeProps,
+  type RenderConfig,
+  InfoPanel,
+  type InfoPanelProps,
+  type InfoPanelRef,
+  type LegendData,
+  type LegendItem,
+  type EdgeStyleConfig,
+  type GroupingOption,
+  type SearchMatch,
+  StyleTuner,
+  type StyleTunerProps,
+  type StyleConfig,
+  type LayoutAlgorithm,
+  type ColorPaletteOption,
+} from "./components/index.js";

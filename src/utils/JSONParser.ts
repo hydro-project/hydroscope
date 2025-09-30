@@ -31,6 +31,7 @@ export interface ParseResult {
   visualizationState: VisualizationState;
   hierarchyChoices: HierarchyChoice[];
   selectedHierarchy: string | null;
+  edgeStyleConfig?: any; // Edge style configuration from JSON
   warnings: ValidationResult[];
   stats: {
     nodeCount: number;
@@ -146,6 +147,7 @@ export class JSONParser {
         visualizationState,
         hierarchyChoices,
         selectedHierarchy,
+        edgeStyleConfig: data.edgeStyleConfig || null,
         warnings,
         stats: {
           nodeCount,
@@ -444,7 +446,9 @@ export class JSONParser {
 
         // Debug: Log first few edges to verify source/target values
         if (edgeCount < 5) {
-          console.log(`[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`);
+          console.log(
+            `[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`,
+          );
         }
 
         state.addEdge(edge);

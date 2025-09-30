@@ -1,4 +1,4 @@
- /**
+/**
  * Performance Optimization Tests
  * Tests to verify performance improvements and optimizations
  */
@@ -72,7 +72,7 @@ describe("Performance Optimization Tests", () => {
       // Verify cache size increased after first call
       expect(cacheStatsAfterFirst.size).toBeGreaterThan(0);
       expect(cacheStatsAfterSecond.size).toBeGreaterThanOrEqual(
-        cacheStatsAfterFirst.size
+        cacheStatsAfterFirst.size,
       );
 
       console.log(`ELK Caching Test:
@@ -144,7 +144,7 @@ describe("Performance Optimization Tests", () => {
 
       const summary = testMonitor.getMetricSummary(
         "TestComponent",
-        "test_metric"
+        "test_metric",
       );
       expect(summary).toBeDefined();
       expect(summary!.current).toBe(25);
@@ -164,7 +164,7 @@ describe("Performance Optimization Tests", () => {
       recordPerformanceMetric(
         "JSONParser",
         "memory_growth",
-        metrics.memoryUsage.growth
+        metrics.memoryUsage.growth,
       );
 
       // Get performance metrics from VisualizationState
@@ -203,7 +203,7 @@ describe("Performance Optimization Tests", () => {
         console.log(`  ${result.operation}: ${result.duration.toFixed(2)}ms`);
         if (result.recommendations && result.recommendations.length > 0) {
           console.log(
-            `    Recommendations: ${result.recommendations.join(", ")}`
+            `    Recommendations: ${result.recommendations.join(", ")}`,
           );
         }
       });
@@ -229,7 +229,7 @@ describe("Performance Optimization Tests", () => {
         // Calculate layout so nodes have positions
         await elkBridge.layout(parseResult.visualizationState);
         const reactFlowData = reactFlowBridge.toReactFlowData(
-          parseResult.visualizationState
+          parseResult.visualizationState,
         );
 
         // Clear caches periodically to test memory management
@@ -296,7 +296,7 @@ describe("Performance Optimization Tests", () => {
               Array.from({ length: 1000 }, (_, i) => [
                 `node_${i}`,
                 `container_${Math.floor(i / 20)}`, // 20 nodes per container
-              ])
+              ]),
             ),
           },
         };
@@ -325,7 +325,7 @@ describe("Performance Optimization Tests", () => {
         const { result: reactFlowData, metrics: reactFlowMetrics } =
           measureSync(() => {
             return reactFlowBridge.toReactFlowData(
-              parseResult.visualizationState
+              parseResult.visualizationState,
             );
           });
 
@@ -339,7 +339,7 @@ describe("Performance Optimization Tests", () => {
         ELK Conversion: ${elkMetrics.duration.toFixed(2)}ms
         ReactFlow Conversion: ${reactFlowMetrics.duration.toFixed(2)}ms
         Total Pipeline: ${(parseMetrics.duration + elkMetrics.duration + reactFlowMetrics.duration).toFixed(2)}ms`);
-      }
+      },
     );
   });
 
@@ -350,7 +350,7 @@ describe("Performance Optimization Tests", () => {
       recordPerformanceMetric(
         "VisualizationState",
         "container_operation_duration",
-        25
+        25,
       );
       recordPerformanceMetric("ELKBridge", "conversion_duration", 85);
       recordPerformanceMetric("ReactFlowBridge", "conversion_duration", 120);

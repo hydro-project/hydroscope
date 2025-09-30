@@ -220,13 +220,22 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     it("should perform smart collapse on containers with many children", () => {
       // Create containers with different child counts
       const smallContainer = createTestContainer("small", ["node1", "node2"]);
-      const largeContainer = createTestContainer("large", ["node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10"]);
-      
+      const largeContainer = createTestContainer("large", [
+        "node3",
+        "node4",
+        "node5",
+        "node6",
+        "node7",
+        "node8",
+        "node9",
+        "node10",
+      ]);
+
       // Add test nodes
       for (let i = 1; i <= 10; i++) {
         state.addNode(createTestNode(`node${i}`));
       }
-      
+
       state.addContainer(smallContainer);
       state.addContainer(largeContainer);
 
@@ -236,26 +245,32 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       // Perform smart collapse
       expect(state.shouldRunSmartCollapse()).toBe(true);
-      
+
       // Check if performSmartCollapse method exists
-      expect(typeof state.performSmartCollapse).toBe('function');
-      
+      expect(typeof state.performSmartCollapse).toBe("function");
+
       state.performSmartCollapse();
 
       // Small container (2 children) should remain expanded
       expect(state.getContainer("small")?.collapsed).toBe(false);
-      
+
       // Large container (8 children > 7 threshold) should be collapsed
       expect(state.getContainer("large")?.collapsed).toBe(true);
     });
 
     it("should not perform smart collapse when disabled", () => {
-      const largeContainer = createTestContainer("large", ["node1", "node2", "node3", "node4", "node5"]);
-      
+      const largeContainer = createTestContainer("large", [
+        "node1",
+        "node2",
+        "node3",
+        "node4",
+        "node5",
+      ]);
+
       for (let i = 1; i <= 5; i++) {
         state.addNode(createTestNode(`node${i}`));
       }
-      
+
       state.addContainer(largeContainer);
       state.disableSmartCollapseForUserOperations();
 
@@ -267,12 +282,18 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     });
 
     it("should not perform smart collapse after first layout", () => {
-      const largeContainer = createTestContainer("large", ["node1", "node2", "node3", "node4", "node5"]);
-      
+      const largeContainer = createTestContainer("large", [
+        "node1",
+        "node2",
+        "node3",
+        "node4",
+        "node5",
+      ]);
+
       for (let i = 1; i <= 5; i++) {
         state.addNode(createTestNode(`node${i}`));
       }
-      
+
       state.addContainer(largeContainer);
       state.incrementLayoutCount(); // Simulate first layout completed
 

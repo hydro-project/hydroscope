@@ -319,7 +319,8 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       // Verify collapsed state
       const collapsedContainers = reactFlowData.nodes.filter(
-        (node) => node.data.nodeType === "container" && node.data.collapsed === true,
+        (node) =>
+          node.data.nodeType === "container" && node.data.collapsed === true,
       );
       expect(collapsedContainers.length).toBe(2);
 
@@ -783,7 +784,8 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       // Verify final state
       const collapsedContainers = reactFlowData.nodes.filter(
-        (node) => node.data.nodeType === "container" && node.data.collapsed === true,
+        (node) =>
+          node.data.nodeType === "container" && node.data.collapsed === true,
       );
       expect(collapsedContainers.length).toBe(10);
     });

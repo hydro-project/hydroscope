@@ -528,24 +528,35 @@ export class AsyncCoordinator {
       throw new Error("Container collapse event missing required payload");
     }
 
-    console.log(`[AsyncCoordinator] 🔄 Processing container collapse event for ${containerId}`);
+    console.log(
+      `[AsyncCoordinator] 🔄 Processing container collapse event for ${containerId}`,
+    );
 
     // Collapse the container in the state
     state.collapseContainer(containerId);
 
     // Trigger ReactFlow validation if requested
     if (triggerValidation) {
-      console.log(`[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse event`);
+      console.log(
+        `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse event`,
+      );
       try {
         // Import ReactFlowBridge dynamically to avoid circular dependency
-        const { ReactFlowBridge } = await import("../bridges/ReactFlowBridge.js");
+        const { ReactFlowBridge } = await import(
+          "../bridges/ReactFlowBridge.js"
+        );
         const reactFlowBridge = new ReactFlowBridge({});
-        
+
         // Run validation by calling toReactFlowData
         const reactFlowData = reactFlowBridge.toReactFlowData(state);
-        console.log(`[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse event`);
+        console.log(
+          `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse event`,
+        );
       } catch (error) {
-        console.error(`[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse event:`, error);
+        console.error(
+          `[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse event:`,
+          error,
+        );
         // Don't throw - validation failure shouldn't break the collapse operation
       }
     }
@@ -824,15 +835,22 @@ export class AsyncCoordinator {
 
     // Trigger ReactFlow validation after container collapse if requested
     if (options.triggerValidation) {
-      console.log(`[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse`);
+      console.log(
+        `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse`,
+      );
       try {
         await this.queueReactFlowRender(state, {
           timeout: options.timeout,
           maxRetries: options.maxRetries,
         });
-        console.log(`[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse`);
+        console.log(
+          `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse`,
+        );
       } catch (error) {
-        console.error(`[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse:`, error);
+        console.error(
+          `[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse:`,
+          error,
+        );
         // Don't throw - validation failure shouldn't break the collapse operation
       }
     }
@@ -888,7 +906,9 @@ export class AsyncCoordinator {
       (container: any) => !container.collapsed,
     );
 
-    console.log(`[AsyncCoordinator] 🔄 Collapsing ${expandedContainers.length} containers`);
+    console.log(
+      `[AsyncCoordinator] 🔄 Collapsing ${expandedContainers.length} containers`,
+    );
 
     // Collapse each container sequentially
     for (const container of expandedContainers) {
@@ -900,15 +920,22 @@ export class AsyncCoordinator {
 
     // Trigger ReactFlow validation after all containers are collapsed
     if (options.triggerValidation !== false) {
-      console.log(`[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container collapse`);
+      console.log(
+        `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container collapse`,
+      );
       try {
         await this.queueReactFlowRender(state, {
           timeout: options.timeout,
           maxRetries: options.maxRetries,
         });
-        console.log(`[AsyncCoordinator] ✅ ReactFlow validation completed after container collapse`);
+        console.log(
+          `[AsyncCoordinator] ✅ ReactFlow validation completed after container collapse`,
+        );
       } catch (error) {
-        console.error(`[AsyncCoordinator] ❌ ReactFlow validation failed after container collapse:`, error);
+        console.error(
+          `[AsyncCoordinator] ❌ ReactFlow validation failed after container collapse:`,
+          error,
+        );
         // Don't throw - validation failure shouldn't break the collapse operation
       }
     }

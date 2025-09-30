@@ -2,12 +2,15 @@
  * @fileoverview Container graph node component
  */
 
-import React from 'react';
-import { type NodeProps } from '@xyflow/react';
-import { truncateLabel } from '../shared/textUtils';
-import { useStyleConfig } from './StyleConfigContext';
-import { HandlesRenderer } from './handles';
-import { getSearchHighlightColors, getContrastColor } from '../shared/colorUtils';
+import React from "react";
+import { type NodeProps } from "@xyflow/react";
+import { truncateLabel } from "../shared/textUtils";
+import { useStyleConfig } from "./StyleConfigContext";
+import { HandlesRenderer } from "./handles";
+import {
+  getSearchHighlightColors,
+  getContrastColor,
+} from "../shared/colorUtils";
 
 export function ContainerNode({ id, data }: NodeProps) {
   const styleCfg = useStyleConfig();
@@ -17,43 +20,83 @@ export function ContainerNode({ id, data }: NodeProps) {
   // DEBUG: Log all ContainerNode renders with search highlight status
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
-  const colorPalette = String(data.colorPalette || 'Set3');
+  const colorPalette = String(data.colorPalette || "Set3");
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
 
   const generateContainerColors = (containerId: string, palette: string) => {
-    const hash = containerId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    const hash = containerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
     const colorPalettes: Record<string, string[]> = {
-      Set3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69'],
-      Pastel1: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6', '#ffffcc', '#e5d8bd'],
-      Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d'],
-      Set1: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628'],
-      Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494'],
+      Set3: [
+        "#8dd3c7",
+        "#ffffb3",
+        "#bebada",
+        "#fb8072",
+        "#80b1d3",
+        "#fdb462",
+        "#b3de69",
+      ],
+      Pastel1: [
+        "#fbb4ae",
+        "#b3cde3",
+        "#ccebc5",
+        "#decbe4",
+        "#fed9a6",
+        "#ffffcc",
+        "#e5d8bd",
+      ],
+      Dark2: [
+        "#1b9e77",
+        "#d95f02",
+        "#7570b3",
+        "#e7298a",
+        "#66a61e",
+        "#e6ab02",
+        "#a6761d",
+      ],
+      Set1: [
+        "#e41a1c",
+        "#377eb8",
+        "#4daf4a",
+        "#984ea3",
+        "#ff7f00",
+        "#ffff33",
+        "#a65628",
+      ],
+      Set2: [
+        "#66c2a5",
+        "#fc8d62",
+        "#8da0cb",
+        "#e78ac3",
+        "#a6d854",
+        "#ffd92f",
+        "#e5c494",
+      ],
     };
 
-    const colors = colorPalettes[palette] || colorPalettes['Set3'];
+    const colors = colorPalettes[palette] || colorPalettes["Set3"];
     const baseColor = colors[hash % colors.length];
 
     const lighten = (color: string, factor: number) => {
-      const hex = color.replace('#', '');
+      const hex = color.replace("#", "");
       const r = parseInt(hex.substring(0, 2), 16);
       const g = parseInt(hex.substring(2, 4), 16);
       const b = parseInt(hex.substring(4, 6), 16);
       const newR = Math.floor(r + (255 - r) * factor);
       const newG = Math.floor(g + (255 - g) * factor);
       const newB = Math.floor(b + (255 - b) * factor);
-      return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+      return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
     };
 
     const darken = (color: string, factor: number) => {
-      const hex = color.replace('#', '');
+      const hex = color.replace("#", "");
       const r = parseInt(hex.substring(0, 2), 16);
       const g = parseInt(hex.substring(2, 4), 16);
       const b = parseInt(hex.substring(4, 6), 16);
       const newR = Math.floor(r * (1 - factor));
       const newG = Math.floor(g * (1 - factor));
       const newB = Math.floor(b * (1 - factor));
-      return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+      return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
     };
 
     // Convert hex to rgba for transparency
@@ -78,17 +121,21 @@ export function ContainerNode({ id, data }: NodeProps) {
     // Apply search highlight colors if needed
     const containerColors = searchHighlight
       ? {
-        background: searchHighlightStrong
-          ? searchColors.current.background
-          : searchColors.match.background,
-        border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
-        text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
-      }
+          background: searchHighlightStrong
+            ? searchColors.current.background
+            : searchColors.match.background,
+          border: searchHighlightStrong
+            ? searchColors.current.border
+            : searchColors.match.border,
+          text: searchHighlightStrong
+            ? searchColors.current.text
+            : searchColors.match.text,
+        }
       : {
-        ...baseContainerColors,
-        // Ensure good contrast for non-highlighted containers too
-        text: getContrastColor(baseContainerColors.background),
-      };
+          ...baseContainerColors,
+          // Ensure good contrast for non-highlighted containers too
+          text: getContrastColor(baseContainerColors.background),
+        };
     return (
       <>
         {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -109,8 +156,8 @@ export function ContainerNode({ id, data }: NodeProps) {
             width: `${width}px`,
             height: `${height}px`,
             // COLLAPSED CONTAINERS: More opaque background to distinguish from expanded
-            background: containerColors.background.includes('rgba')
-              ? containerColors.background.replace(/0\.\d+\)$/, '0.9)')
+            background: containerColors.background.includes("rgba")
+              ? containerColors.background.replace(/0\.\d+\)$/, "0.9)")
               : containerColors.background,
             // COLLAPSED CONTAINERS: Thicker border to distinguish from expanded
             border: (() => {
@@ -123,53 +170,53 @@ export function ContainerNode({ id, data }: NodeProps) {
               }
             })(),
             borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
-            position: 'relative',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
+            position: "relative",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
             // COLLAPSED CONTAINERS: Stronger shadow to distinguish from expanded
             boxShadow: (() => {
               if (searchHighlightStrong) {
-                return '0 0 0 6px rgba(249, 115, 22, 0.4), 0 0 20px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.3)';
+                return "0 0 0 6px rgba(249, 115, 22, 0.4), 0 0 20px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.3)";
               } else if (searchHighlight) {
-                return '0 0 0 5px rgba(251, 191, 36, 0.4), 0 0 15px rgba(251, 191, 36, 0.5), 0 4px 6px -1px rgba(0,0,0,0.2)';
+                return "0 0 0 5px rgba(251, 191, 36, 0.4), 0 0 15px rgba(251, 191, 36, 0.5), 0 4px 6px -1px rgba(0,0,0,0.2)";
               } else {
-                return styleCfg.containerShadow === 'NONE'
-                  ? '0 2px 8px rgba(0,0,0,0.2)'
-                  : styleCfg.containerShadow === 'LARGE'
-                    ? '0 12px 20px -3px rgba(0,0,0,0.3)'
-                    : styleCfg.containerShadow === 'MEDIUM'
-                      ? '0 6px 10px -1px rgba(0,0,0,0.2)'
-                      : '0 4px 12px rgba(0,0,0,0.2)';
+                return styleCfg.containerShadow === "NONE"
+                  ? "0 2px 8px rgba(0,0,0,0.2)"
+                  : styleCfg.containerShadow === "LARGE"
+                    ? "0 12px 20px -3px rgba(0,0,0,0.3)"
+                    : styleCfg.containerShadow === "MEDIUM"
+                      ? "0 6px 10px -1px rgba(0,0,0,0.2)"
+                      : "0 4px 12px rgba(0,0,0,0.2)";
               }
             })(),
-            transition: 'all 0.2s ease',
+            transition: "all 0.2s ease",
             // Z-index for search highlighting
             zIndex: searchHighlightStrong ? 100 : searchHighlight ? 50 : 1,
             // Add prominent animation for search highlights
             animation: searchHighlight
               ? searchHighlightStrong
-                ? 'searchPulseStrong 1.5s ease-in-out infinite'
-                : 'searchPulse 2s ease-in-out infinite'
+                ? "searchPulseStrong 1.5s ease-in-out infinite"
+                : "searchPulse 2s ease-in-out infinite"
               : undefined,
           }}
         >
           <HandlesRenderer />
           <div
             style={{
-              fontSize: '13px',
-              fontWeight: '600',
+              fontSize: "13px",
+              fontWeight: "600",
               color: containerColors.text,
-              textAlign: 'center',
+              textAlign: "center",
               maxWidth: `${Number(width) - 16}px`,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              marginBottom: '4px',
-              cursor: 'pointer',
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              marginBottom: "4px",
+              cursor: "pointer",
             }}
           >
             {truncateLabel(containerLabel, {
@@ -180,13 +227,13 @@ export function ContainerNode({ id, data }: NodeProps) {
           </div>
           <div
             style={{
-              fontSize: '11px',
+              fontSize: "11px",
               color: containerColors.text,
               opacity: 0.8,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
-            {nodeCount} node{nodeCount !== 1 ? 's' : ''}
+            {nodeCount} node{nodeCount !== 1 ? "s" : ""}
           </div>
         </div>
       </>
@@ -197,17 +244,21 @@ export function ContainerNode({ id, data }: NodeProps) {
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
     ? {
-      background: searchHighlightStrong
-        ? searchColors.current.background
-        : searchColors.match.background,
-      border: searchHighlightStrong ? searchColors.current.border : searchColors.match.border,
-      text: searchHighlightStrong ? searchColors.current.text : searchColors.match.text,
-    }
+        background: searchHighlightStrong
+          ? searchColors.current.background
+          : searchColors.match.background,
+        border: searchHighlightStrong
+          ? searchColors.current.border
+          : searchColors.match.border,
+        text: searchHighlightStrong
+          ? searchColors.current.text
+          : searchColors.match.text,
+      }
     : {
-      background: 'rgba(25, 118, 210, 0.1)',
-      border: '#1976d2',
-      text: '#1976d2', // Blue text on light blue background provides good contrast
-    };
+        background: "rgba(25, 118, 210, 0.1)",
+        border: "#1976d2",
+        text: "#1976d2", // Blue text on light blue background provides good contrast
+      };
 
   return (
     <>
@@ -232,24 +283,24 @@ export function ContainerNode({ id, data }: NodeProps) {
           borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
           width: `${width}px`,
           height: `${height}px`,
-          position: 'relative',
-          boxSizing: 'border-box',
-          cursor: 'pointer',
+          position: "relative",
+          boxSizing: "border-box",
+          cursor: "pointer",
           boxShadow: (() => {
             if (searchHighlightStrong) {
-              return '0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2)';
+              return "0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2)";
             } else if (searchHighlight) {
-              return '0 0 0 4px rgba(251, 191, 36, 0.4), 0 4px 6px -1px rgba(0,0,0,0.15)';
+              return "0 0 0 4px rgba(251, 191, 36, 0.4), 0 4px 6px -1px rgba(0,0,0,0.15)";
             } else {
-              return 'none';
+              return "none";
             }
           })(),
-          transition: 'all 0.2s ease',
+          transition: "all 0.2s ease",
           // Add prominent animation for search highlights
           animation: searchHighlight
             ? searchHighlightStrong
-              ? 'searchPulseStrong 1.5s ease-in-out infinite'
-              : 'searchPulse 2s ease-in-out infinite'
+              ? "searchPulseStrong 1.5s ease-in-out infinite"
+              : "searchPulse 2s ease-in-out infinite"
             : undefined,
         }}
       >
@@ -257,25 +308,25 @@ export function ContainerNode({ id, data }: NodeProps) {
         {/* EXPANDED CONTAINERS: Only lower-right label, positioned to avoid occlusion */}
         <div
           style={{
-            position: 'absolute',
-            bottom: '8px', // Slightly inset from edge to avoid occlusion
-            right: '12px',
-            fontSize: '12px',
-            fontWeight: 'bold',
+            position: "absolute",
+            bottom: "8px", // Slightly inset from edge to avoid occlusion
+            right: "12px",
+            fontSize: "12px",
+            fontWeight: "bold",
             color: nonCollapsedColors.text,
             maxWidth: `${Number(width) - 36}px`,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            cursor: "pointer",
             // Enhanced label visibility with background
-            background: 'rgba(255, 255, 255, 0.9)',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            borderRadius: '4px',
-            padding: '2px 6px',
+            background: "rgba(255, 255, 255, 0.9)",
+            border: "1px solid rgba(0, 0, 0, 0.1)",
+            borderRadius: "4px",
+            padding: "2px 6px",
             zIndex: 10, // Ensure label appears above child containers
-            textShadow: 'none', // Remove text shadow since we have background
-            filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))',
+            textShadow: "none", // Remove text shadow since we have background
+            filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))",
           }}
         >
           {truncateLabel(containerLabel, {

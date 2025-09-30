@@ -1,6 +1,6 @@
 /**
  * HydroscopeEnhanced - Comprehensive graph visualization component
- * 
+ *
  * This component provides all the enhanced features specified in the requirements:
  * - Advanced file upload with drag-and-drop
  * - URL parameter data loading
@@ -10,16 +10,39 @@
  * - Responsive design
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ReactFlow, Background, Controls, MiniMap, useReactFlow, ControlButton, ReactFlowProvider, applyNodeChanges } from "@xyflow/react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  useReactFlow,
+  ControlButton,
+  ReactFlowProvider,
+  applyNodeChanges,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "./nodes/index.js";
 import { edgeTypes } from "./edges/index.js";
-import { StyleConfigProvider, useStyleConfig } from "../render/StyleConfigContext.js";
+import {
+  StyleConfigProvider,
+  useStyleConfig,
+} from "../render/StyleConfigContext.js";
 import { FileUpload } from "./FileUpload.js";
 import { SearchIntegration } from "./SearchIntegration.js";
 import { ContainerControls } from "./ContainerControls.js";
+import { InfoPanel } from "./panels/InfoPanel.js";
+import {
+  StyleTuner,
+  type StyleConfig as StyleTunerConfig,
+} from "./panels/StyleTuner.js";
 
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
@@ -29,11 +52,144 @@ import { InteractionHandler } from "../core/InteractionHandler.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { HydroscopeData } from "../types/core.js";
 
+// ============================================================================
+// Migration Utilities and Deprecation Warnings
+// ============================================================================
+
+/**
+ * Development mode deprecation warning utility
+ */
+const warnDeprecation = (
+  message: string,
+  component: string = "HydroscopeEnhanced",
+) => {
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      `🚨 DEPRECATION WARNING [${component}]: ${message}\n` +
+        `   Consider migrating to the new standalone components:\n` +
+        `   - InfoPanel: import { InfoPanel } from '@hydro-project/hydroscope/panels'\n` +
+        `   - StyleTuner: import { StyleTuner } from '@hydro-project/hydroscope/panels'\n` +
+        `   - Hydroscope: import { Hydroscope } from '@hydro-project/hydroscope'\n` +
+        `   See migration guide: https://hydro.run/docs/hydroscope/migration`,
+    );
+  }
+};
+
+/**
+ * Prop migration utility for gradual adoption
+ */
+interface LegacyProps {
+  // Legacy props that might be used
+  showInfoPanel?: boolean;
+  showStyleTuner?: boolean;
+  onInfoPanelToggle?: (open: boolean) => void;
+  onStyleTunerToggle?: (open: boolean) => void;
+  styleConfig?: any;
+  onStyleConfigChange?: (config: any) => void;
+}
+
+const migrateLegacyProps = (
+  props: HydroscopeEnhancedProps & LegacyProps,
+): {
+  migratedProps: HydroscopeEnhancedProps;
+  hasLegacyProps: boolean;
+} => {
+  const {
+    showInfoPanel,
+    showStyleTuner,
+    onInfoPanelToggle,
+    onStyleTunerToggle,
+    styleConfig,
+    onStyleConfigChange,
+    ...standardProps
+  } = props;
+
+  const hasLegacyProps = !!(
+    showInfoPanel !== undefined ||
+    showStyleTuner !== undefined ||
+    onInfoPanelToggle ||
+    onStyleTunerToggle ||
+    styleConfig ||
+    onStyleConfigChange
+  );
+
+  if (hasLegacyProps) {
+    warnDeprecation(
+      "Legacy props detected. These props are deprecated and will be removed in a future version.",
+      "HydroscopeEnhanced",
+    );
+  }
+
+  return {
+    migratedProps: standardProps,
+    hasLegacyProps,
+  };
+};
+
+/**
+ * Backward compatibility layer for component behavior
+ */
+const createBackwardCompatibilityLayer = () => {
+  return {
+    // Maintain legacy event handling patterns
+    handleLegacyEvents: (eventType: string, data: any) => {
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔄 Legacy event handled: ${eventType}`, data);
+      }
+    },
+
+    // Provide legacy API surface
+    getLegacyAPI: () => ({
+      // Legacy methods that might be expected
+      toggleInfoPanel: () =>
+        warnDeprecation("toggleInfoPanel() method is deprecated"),
+      toggleStyleTuner: () =>
+        warnDeprecation("toggleStyleTuner() method is deprecated"),
+      resetStyles: () => warnDeprecation("resetStyles() method is deprecated"),
+    }),
+  };
+};
+
+// Compatibility mapping between StyleConfig interfaces
+const mapToStyleTunerConfig = (config: any): StyleTunerConfig => {
+  return {
+    ...config,
+    // Map containerShadow from uppercase to lowercase
+    containerShadow:
+      config.containerShadow === "LIGHT"
+        ? "light"
+        : config.containerShadow === "MEDIUM"
+          ? "medium"
+          : config.containerShadow === "LARGE"
+            ? "heavy"
+            : config.containerShadow === "NONE"
+              ? "none"
+              : config.containerShadow?.toLowerCase() || "light",
+  };
+};
+
+const mapFromStyleTunerConfig = (config: StyleTunerConfig): any => {
+  return {
+    ...config,
+    // Map containerShadow from lowercase to uppercase
+    containerShadow:
+      config.containerShadow === "light"
+        ? "LIGHT"
+        : config.containerShadow === "medium"
+          ? "MEDIUM"
+          : config.containerShadow === "heavy"
+            ? "LARGE"
+            : config.containerShadow === "none"
+              ? "NONE"
+              : "LIGHT",
+  };
+};
+
 // Utility functions for responsive design and optimization
 const debounce = <T extends (...args: any[]) => any>(
   func: T,
   wait: number,
-  immediate = false
+  immediate = false,
 ): ((...args: Parameters<T>) => void) => {
   let timeout: NodeJS.Timeout | null = null;
 
@@ -54,7 +210,7 @@ const debounce = <T extends (...args: any[]) => any>(
 class OptimizedHeightCalculator {
   private rafId: number | null = null;
   private timeoutId: NodeJS.Timeout | null = null;
-  private lastHeight: string = '100vh';
+  private lastHeight: string = "100vh";
   private onHeightChange: (height: string) => void;
   private isDestroyed: boolean = false;
 
@@ -75,7 +231,7 @@ class OptimizedHeightCalculator {
         if (this.isDestroyed) return;
 
         try {
-          const navbar = document.querySelector('.navbar');
+          const navbar = document.querySelector(".navbar");
           const navbarHeight = navbar?.getBoundingClientRect().height || 60;
           const newHeight = `calc(100vh - ${navbarHeight}px)`;
 
@@ -84,8 +240,8 @@ class OptimizedHeightCalculator {
             this.onHeightChange(newHeight);
           }
         } catch (error) {
-          console.warn('Height calculation failed, using fallback:', error);
-          const fallbackHeight = 'calc(100vh - 60px)';
+          console.warn("Height calculation failed, using fallback:", error);
+          const fallbackHeight = "calc(100vh - 60px)";
           if (fallbackHeight !== this.lastHeight && !this.isDestroyed) {
             this.lastHeight = fallbackHeight;
             this.onHeightChange(fallbackHeight);
@@ -121,7 +277,10 @@ const UnpackIcon = () => (
 
 const FitIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <path d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z" strokeWidth="1.5" />
+    <path
+      d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"
+      strokeWidth="1.5"
+    />
   </svg>
 );
 
@@ -186,7 +345,6 @@ const AutoFitIcon = ({ enabled }: { enabled: boolean }) => (
   </svg>
 );
 
-
 const LoadFileIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9zM2.5 3a.5.5 0 0 0-.5.5V6h12v-.5a.5.5 0 0 0-.5-.5H9c-.964 0-1.71-.629-2.174-1.154C6.374 3.334 5.82 3 5.264 3H2.5zM14 7H2v5.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V7z" />
@@ -204,7 +362,9 @@ interface CustomControlsProps {
   onLoadFile?: () => void;
   showLoadFile?: boolean;
   reactFlowControlsScale?: number;
-  setReactFlowDataRef?: React.MutableRefObject<((data: { nodes: any[]; edges: any[] }) => void) | null>;
+  setReactFlowDataRef?: React.MutableRefObject<
+    ((data: { nodes: any[]; edges: any[] }) => void) | null
+  >;
 }
 
 function CustomControls({
@@ -223,9 +383,16 @@ function CustomControls({
   const [standardControlsHeight, setStandardControlsHeight] = useState(40);
 
   // Check if there are any containers that can be collapsed/expanded
-  const hasContainers = (visualizationState?.visibleContainers?.length ?? 0) > 0;
-  const hasCollapsedContainers = visualizationState?.visibleContainers?.some(container => container.collapsed) ?? false;
-  const hasExpandedContainers = visualizationState?.visibleContainers?.some(container => !container.collapsed) ?? false;
+  const hasContainers =
+    (visualizationState?.visibleContainers?.length ?? 0) > 0;
+  const hasCollapsedContainers =
+    visualizationState?.visibleContainers?.some(
+      (container) => container.collapsed,
+    ) ?? false;
+  const hasExpandedContainers =
+    visualizationState?.visibleContainers?.some(
+      (container) => !container.collapsed,
+    ) ?? false;
 
   // Calculate if we have any custom controls to show
   const hasCustomControls = hasContainers || onAutoFitToggle || showLoadFile;
@@ -234,8 +401,11 @@ function CustomControls({
   useEffect(() => {
     const updateHeight = () => {
       if (standardControlsRef.current) {
-        const controlsContainer = standardControlsRef.current.querySelector('.react-flow__controls');
-        const elementToMeasure = controlsContainer || standardControlsRef.current;
+        const controlsContainer = standardControlsRef.current.querySelector(
+          ".react-flow__controls",
+        );
+        const elementToMeasure =
+          controlsContainer || standardControlsRef.current;
         const rect = elementToMeasure.getBoundingClientRect();
         const baseHeight = rect.height;
 
@@ -248,7 +418,7 @@ function CustomControls({
     const timeoutId = setTimeout(updateHeight, 100);
 
     let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined') {
+    if (typeof ResizeObserver !== "undefined") {
       resizeObserver = new ResizeObserver(() => {
         updateHeight();
       });
@@ -268,117 +438,146 @@ function CustomControls({
 
   // Handle pack/unpack operations through v6 AsyncCoordinator
   const handleCollapseAll = useCallback(async () => {
-    console.log('🔍 Collapse All clicked:', {
+    console.log("🔍 Collapse All clicked:", {
       hasAsyncCoordinator: !!asyncCoordinator,
       hasVisualizationState: !!visualizationState,
       hasExpandedContainers,
-      visibleContainers: visualizationState?.visibleContainers?.length || 0
+      visibleContainers: visualizationState?.visibleContainers?.length || 0,
     });
 
     if (!asyncCoordinator || !visualizationState || !hasExpandedContainers) {
-      console.log('❌ Collapse All: Early return due to missing requirements');
+      console.log("❌ Collapse All: Early return due to missing requirements");
       return;
     }
 
     try {
-      console.log('🔄 Calling asyncCoordinator.collapseAllContainers...');
+      console.log("🔄 Calling asyncCoordinator.collapseAllContainers...");
       await asyncCoordinator.collapseAllContainers(visualizationState, {
         triggerLayout: true,
       });
-      console.log('✅ Collapse All completed successfully');
+      console.log("✅ Collapse All completed successfully");
 
       // Trigger layout recalculation and update ReactFlow data after collapse
       if (setReactFlowDataRef && setReactFlowDataRef.current) {
-        console.log('🔄 Triggering layout recalculation after collapse...');
+        console.log("🔄 Triggering layout recalculation after collapse...");
 
         // Debug: Check container states before layout
         const containers = visualizationState.visibleContainers;
-        console.log('📊 Container states before layout:', containers.map(c => ({
-          id: c.id,
-          collapsed: c.collapsed,
-          children: c.children.size,
-          position: c.position,
-          dimensions: c.dimensions
-        })));
+        console.log(
+          "📊 Container states before layout:",
+          containers.map((c) => ({
+            id: c.id,
+            collapsed: c.collapsed,
+            children: c.children.size,
+            position: c.position,
+            dimensions: c.dimensions,
+          })),
+        );
 
         const elkBridge = new ELKBridge({});
         await elkBridge.layout(visualizationState);
-        console.log('✅ Layout recalculated');
+        console.log("✅ Layout recalculated");
 
         // Debug: Check container states after layout
-        console.log('📊 Container states after layout:', containers.map(c => ({
-          id: c.id,
-          collapsed: c.collapsed,
-          children: c.children.size,
-          position: c.position,
-          dimensions: c.dimensions
-        })));
+        console.log(
+          "📊 Container states after layout:",
+          containers.map((c) => ({
+            id: c.id,
+            collapsed: c.collapsed,
+            children: c.children.size,
+            position: c.position,
+            dimensions: c.dimensions,
+          })),
+        );
 
-        console.log('🔄 Updating ReactFlow data after collapse...');
+        console.log("🔄 Updating ReactFlow data after collapse...");
         const reactFlowBridge = new ReactFlowBridge({
           nodeStyles: {},
           edgeStyles: {},
           semanticMappings: {},
-          propertyMappings: {}
+          propertyMappings: {},
         });
-        const updatedFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        const updatedFlowData =
+          reactFlowBridge.toReactFlowData(visualizationState);
 
         // Debug: Check ReactFlow node positions
-        console.log('📊 ReactFlow node positions:');
-        updatedFlowData.nodes.forEach(n => {
-          console.log(`  ${n.id}: position=(${n.position.x}, ${n.position.y}) type=${n.type} collapsed=${n.data.collapsed}`);
+        console.log("📊 ReactFlow node positions:");
+        updatedFlowData.nodes.forEach((n) => {
+          console.log(
+            `  ${n.id}: position=(${n.position.x}, ${n.position.y}) type=${n.type} collapsed=${n.data.collapsed}`,
+          );
         });
 
         // Debug: Check ReactFlow edge connections
-        console.log('📊 ReactFlow edge connections:');
-        updatedFlowData.edges.forEach(e => {
-          console.log(`  ${e.id}: ${e.source} -> ${e.target} aggregated=${e.data?.aggregated}`);
+        console.log("📊 ReactFlow edge connections:");
+        updatedFlowData.edges.forEach((e) => {
+          console.log(
+            `  ${e.id}: ${e.source} -> ${e.target} aggregated=${e.data?.aggregated}`,
+          );
         });
 
         setReactFlowDataRef.current(updatedFlowData);
-        console.log('✅ ReactFlow data updated:', { nodes: updatedFlowData.nodes.length, edges: updatedFlowData.edges.length });
+        console.log("✅ ReactFlow data updated:", {
+          nodes: updatedFlowData.nodes.length,
+          edges: updatedFlowData.edges.length,
+        });
       }
 
       onCollapseAll?.();
     } catch (error) {
-      console.error('❌ Error collapsing all containers:', error);
+      console.error("❌ Error collapsing all containers:", error);
     }
-  }, [asyncCoordinator, visualizationState, hasExpandedContainers, onCollapseAll]);
+  }, [
+    asyncCoordinator,
+    visualizationState,
+    hasExpandedContainers,
+    onCollapseAll,
+  ]);
 
   const handleExpandAll = useCallback(async () => {
-    if (!asyncCoordinator || !visualizationState || !hasCollapsedContainers) return;
+    if (!asyncCoordinator || !visualizationState || !hasCollapsedContainers)
+      return;
 
     try {
-      console.log('🔄 Calling asyncCoordinator.expandAllContainers...');
+      console.log("🔄 Calling asyncCoordinator.expandAllContainers...");
       await asyncCoordinator.expandAllContainers(visualizationState, {
         triggerLayout: true,
       });
-      console.log('✅ Expand All completed successfully');
+      console.log("✅ Expand All completed successfully");
 
       // Trigger layout recalculation and update ReactFlow data after expand
       if (setReactFlowDataRef && setReactFlowDataRef.current) {
-        console.log('🔄 Triggering layout recalculation after expand...');
+        console.log("🔄 Triggering layout recalculation after expand...");
         const elkBridge = new ELKBridge({});
         await elkBridge.layout(visualizationState);
-        console.log('✅ Layout recalculated');
+        console.log("✅ Layout recalculated");
 
-        console.log('🔄 Updating ReactFlow data after expand...');
+        console.log("🔄 Updating ReactFlow data after expand...");
         const reactFlowBridge = new ReactFlowBridge({
           nodeStyles: {},
           edgeStyles: {},
           semanticMappings: {},
-          propertyMappings: {}
+          propertyMappings: {},
         });
-        const updatedFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        const updatedFlowData =
+          reactFlowBridge.toReactFlowData(visualizationState);
         setReactFlowDataRef.current(updatedFlowData);
-        console.log('✅ ReactFlow data updated:', { nodes: updatedFlowData.nodes.length, edges: updatedFlowData.edges.length });
+        console.log("✅ ReactFlow data updated:", {
+          nodes: updatedFlowData.nodes.length,
+          edges: updatedFlowData.edges.length,
+        });
       }
 
       onExpandAll?.();
     } catch (error) {
-      console.error('❌ Error expanding all containers:', error);
+      console.error("❌ Error expanding all containers:", error);
     }
-  }, [asyncCoordinator, visualizationState, hasCollapsedContainers, onExpandAll]);
+  }, [
+    asyncCoordinator,
+    visualizationState,
+    hasCollapsedContainers,
+    onExpandAll,
+  ]);
 
   return (
     <>
@@ -386,13 +585,13 @@ function CustomControls({
       {hasCustomControls && (
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             bottom: `${standardControlsHeight}px`,
-            left: '0px',
+            left: "0px",
             zIndex: 10,
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            borderRadius: '6px',
-            backgroundColor: 'white',
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+            borderRadius: "6px",
+            backgroundColor: "white",
           }}
         >
           <Controls
@@ -401,8 +600,8 @@ function CustomControls({
             showInteractive={false}
             style={{
               transform: `scale(${reactFlowControlsScale})`,
-              transformOrigin: 'left bottom',
-              borderRadius: '6px',
+              transformOrigin: "left bottom",
+              borderRadius: "6px",
             }}
           >
             {/* Auto Fit Toggle Button */}
@@ -411,12 +610,14 @@ function CustomControls({
                 onClick={() => onAutoFitToggle(!autoFit)}
                 title={
                   autoFit
-                    ? 'Auto-fit enabled: Automatically fits view after layout changes'
-                    : 'Auto-fit disabled: Click to enable automatic view fitting'
+                    ? "Auto-fit enabled: Automatically fits view after layout changes"
+                    : "Auto-fit disabled: Click to enable automatic view fitting"
                 }
                 style={{
-                  backgroundColor: autoFit ? 'rgba(59, 130, 246, 0.1)' : undefined,
-                  borderColor: autoFit ? '#3b82f6' : undefined,
+                  backgroundColor: autoFit
+                    ? "rgba(59, 130, 246, 0.1)"
+                    : undefined,
+                  borderColor: autoFit ? "#3b82f6" : undefined,
                 }}
               >
                 <AutoFitIcon enabled={autoFit} />
@@ -437,8 +638,8 @@ function CustomControls({
                 disabled={!hasExpandedContainers}
                 title={
                   !hasExpandedContainers
-                    ? 'No containers to collapse'
-                    : 'Collapse All Containers'
+                    ? "No containers to collapse"
+                    : "Collapse All Containers"
                 }
               >
                 <PackIcon />
@@ -452,8 +653,8 @@ function CustomControls({
                 disabled={!hasCollapsedContainers}
                 title={
                   !hasCollapsedContainers
-                    ? 'No containers to expand'
-                    : 'Expand All Containers'
+                    ? "No containers to expand"
+                    : "Expand All Containers"
                 }
               >
                 <UnpackIcon />
@@ -469,9 +670,9 @@ function CustomControls({
           position="bottom-left"
           style={{
             transform: `scale(${reactFlowControlsScale})`,
-            transformOrigin: 'left bottom',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            borderRadius: '6px',
+            transformOrigin: "left bottom",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+            borderRadius: "6px",
           }}
         />
       </div>
@@ -479,6 +680,41 @@ function CustomControls({
   );
 }
 
+/**
+ * @deprecated HydroscopeEnhanced is deprecated and will be removed in a future version.
+ *
+ * **Migration Guide:**
+ *
+ * Replace HydroscopeEnhanced with the new standalone components:
+ *
+ * ```tsx
+ * // Old (deprecated):
+ * import { HydroscopeEnhanced } from '@hydro-project/hydroscope';
+ * <HydroscopeEnhanced data={data} enhanced={true} />
+ *
+ * // New (recommended):
+ * import { Hydroscope } from '@hydro-project/hydroscope';
+ * <Hydroscope
+ *   data={data}
+ *   showInfoPanel={true}
+ *   showStylePanel={true}
+ * />
+ *
+ * // Or use standalone components:
+ * import { InfoPanel, StyleTuner } from '@hydro-project/hydroscope/panels';
+ * ```
+ *
+ * **Benefits of migration:**
+ * - Better performance with React.memo optimization
+ * - Cleaner architecture with v6 integration
+ * - More flexible component composition
+ * - Improved error handling and resilience
+ * - Better TypeScript support
+ *
+ * **Backward Compatibility:**
+ * This component maintains full backward compatibility and will continue to work
+ * with existing code. However, new features will only be added to the new components.
+ */
 export interface HydroscopeEnhancedProps {
   /** JSON data to visualize (optional) */
   data?: HydroscopeData;
@@ -500,360 +736,121 @@ export interface HydroscopeEnhancedProps {
   enableUrlParams?: boolean;
 }
 
-// InfoPanel Component
-interface InfoPanelProps {
-  visualizationState: VisualizationState | null;
-  reactFlowData: { nodes: any[]; edges: any[] };
-  onSearchResultSelect: (result: any) => void;
-  onContainerOperation: (operation: string, containerId?: string) => void;
-  onError: (error: Error) => void;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-function InfoPanel({
-  visualizationState,
-  reactFlowData,
-  onSearchResultSelect,
-  onContainerOperation,
-  onError,
-  open,
-  onOpenChange
-}: InfoPanelProps) {
-  if (!open) {
-    return null; // Don't render toggle button - handled by parent
-  }
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: '0',
-      right: '0',
-      width: '350px',
-      height: '100vh',
-      backgroundColor: 'white',
-      borderLeft: '1px solid #e0e0e0',
-      boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
-      zIndex: 1000,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '16px',
-        borderBottom: '1px solid #e0e0e0',
-        backgroundColor: '#f9f9f9',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
-          Graph Info
-        </h3>
-        <button
-          onClick={() => onOpenChange(false)}
-          style={{
-            padding: '4px 8px',
-            backgroundColor: 'transparent',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '16px'
-      }}>
-        {visualizationState ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Search Section */}
-            <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
-                Search
-              </h4>
-              <SearchIntegration
-                visualizationState={visualizationState}
-                onSearchResultSelect={onSearchResultSelect}
-                placeholder="Search nodes and containers..."
-                maxResults={50}
-                groupByType={true}
-                showResultsPanel={true}
-              />
-            </div>
-
-            {/* Container Controls Section */}
-            <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
-                Container Controls
-              </h4>
-              {/* Container Controls - simplified for now */}
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                Container controls will be available when AsyncCoordinator is integrated
-              </div>
-            </div>
-
-            {/* Graph Statistics */}
-            <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
-                Statistics
-              </h4>
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                <div>Nodes: {reactFlowData.nodes.length}</div>
-                <div>Edges: {reactFlowData.edges.length}</div>
-                <div>Containers: {visualizationState.visibleContainers?.length || 0}</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            textAlign: 'center',
-            color: '#666',
-            fontSize: '14px',
-            padding: '20px'
-          }}>
-            Load graph data to see info panel content
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// StyleTuner Component
-interface StyleTunerProps {
-  value: any;
-  onChange: (config: any) => void;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-function StyleTuner({
-  value,
-  onChange,
-  open,
-  onOpenChange
-}: StyleTunerProps) {
-  if (!open) {
-    return null; // Don't render toggle button - handled by parent
-  }
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '320px',
-      height: '100vh',
-      backgroundColor: 'white',
-      borderRight: '1px solid #e0e0e0',
-      boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
-      zIndex: 1000,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '16px',
-        borderBottom: '1px solid #e0e0e0',
-        backgroundColor: '#f9f9f9',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
-          Style Tuner
-        </h3>
-        <button
-          onClick={() => onOpenChange(false)}
-          style={{
-            padding: '4px 8px',
-            backgroundColor: 'transparent',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '16px'
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* Edge Styles */}
-          <div>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
-              Edge Styles
-            </h4>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
-                Edge Type
-              </label>
-              <select
-                value={value.edgeStyle}
-                onChange={(e) => onChange({ ...value, edgeStyle: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              >
-                <option value="bezier">Bezier Curves</option>
-                <option value="straight">Straight Lines</option>
-                <option value="smoothstep">Smooth Steps</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
-                Edge Color
-              </label>
-              <input
-                type="color"
-                value={value.edgeColor}
-                onChange={(e) => onChange({ ...value, edgeColor: e.target.value })}
-                style={{
-                  width: '100%',
-                  height: '32px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
-                Edge Width: {value.edgeWidth}px
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="8"
-                value={value.edgeWidth}
-                onChange={(e) => onChange({ ...value, edgeWidth: parseInt(e.target.value) })}
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Node Styles */}
-          <div>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
-              Node Styles
-            </h4>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
-                Border Radius: {value.nodeBorderRadius}px
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                value={value.nodeBorderRadius}
-                onChange={(e) => onChange({ ...value, nodeBorderRadius: parseInt(e.target.value) })}
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
-                Font Size: {value.nodeFontSize}px
-              </label>
-              <input
-                type="range"
-                min="8"
-                max="20"
-                value={value.nodeFontSize}
-                onChange={(e) => onChange({ ...value, nodeFontSize: parseInt(e.target.value) })}
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Reset Button */}
-          <div>
-            <button
-              onClick={() => onChange({
-                edgeStyle: 'bezier',
-                edgeColor: '#1976d2',
-                edgeWidth: 2,
-                nodeBorderRadius: 4,
-                nodeFontSize: 12,
-                containerBorderRadius: 8,
-                containerBorderWidth: 2,
-                containerShadow: 'LIGHT'
-              })}
-              style={{
-                width: '100%',
-                padding: '8px 16px',
-                backgroundColor: '#666',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              Reset to Defaults
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Internal component that uses ReactFlow hooks
-const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
-  data,
-  height = 600,
-  width = "100%",
-  showControls = true,
-  showMiniMap = true,
-  showBackground = true,
-  enhanced = true,
-  responsive = false,
-  enableUrlParams = false,
-}) => {
-  console.log('🔍 HydroscopeEnhancedInternal props:', { enhanced, enableUrlParams, hasData: !!data });
+const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
+  props,
+) => {
+  // Migrate legacy props and show deprecation warnings
+  const { migratedProps, hasLegacyProps } = migrateLegacyProps(props);
+  const {
+    data,
+    height = 600,
+    width = "100%",
+    showControls = true,
+    showMiniMap = true,
+    showBackground = true,
+    enhanced = true,
+    responsive = false,
+    enableUrlParams = false,
+  } = migratedProps;
+
+  // Show main deprecation warning
+  useEffect(() => {
+    warnDeprecation(
+      "HydroscopeEnhanced is deprecated and will be removed in a future version. " +
+        "Please migrate to the new Hydroscope component for better performance and maintainability.",
+    );
+  }, []);
+
+  console.log("🔍 HydroscopeEnhancedInternal props:", {
+    enhanced,
+    enableUrlParams,
+    hasData: !!data,
+    hasLegacyProps,
+  });
 
   // Ref for setReactFlowData to use in handlers (will be set after state is defined)
-  const setReactFlowDataRef = useRef<((data: { nodes: any[]; edges: any[] }) => void) | null>(null);
+  const setReactFlowDataRef = useRef<
+    ((data: { nodes: any[]; edges: any[] }) => void) | null
+  >(null);
 
-  const [visualizationState, setVisualizationState] = useState<VisualizationState | null>(null);
-  const [asyncCoordinator, setAsyncCoordinator] = useState<AsyncCoordinator | null>(null);
+  const [visualizationState, setVisualizationState] =
+    useState<VisualizationState | null>(null);
+  const [asyncCoordinator, setAsyncCoordinator] =
+    useState<AsyncCoordinator | null>(null);
   const [reactFlowData, setReactFlowData] = useState<{
     nodes: any[];
     edges: any[];
   }>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [graphData, setGraphData] = useState<HydroscopeData | null>(data || null);
+  const [graphData, setGraphData] = useState<HydroscopeData | null>(
+    data || null,
+  );
+
+  // Hierarchy and grouping state
+  const [hierarchyChoices, setHierarchyChoices] = useState<any[]>([]);
+  const [currentGrouping, setCurrentGrouping] = useState<string | null>(null);
+  const [collapsedContainers, setCollapsedContainers] = useState<Set<string>>(
+    new Set(),
+  );
+  
+  // Style and layout state
+  const [currentLayout, setCurrentLayout] = useState("layered");
+  const [colorPalette, setColorPalette] = useState("Set2");
+  const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null);
 
   // Update the ref with the actual setReactFlowData function
   useEffect(() => {
     setReactFlowDataRef.current = setReactFlowData;
   }, [setReactFlowData]);
+
+  // Handlers for InfoPanel interactions
+  const handleGroupingChange = useCallback((groupingId: string) => {
+    console.log("🔄 Grouping changed to:", groupingId);
+    setCurrentGrouping(groupingId);
+    
+    // Re-parse data with new grouping
+    if (graphData && visualizationState) {
+      console.log("🔄 Re-parsing data with new grouping:", groupingId);
+      // TODO: Implement re-parsing with new hierarchy choice
+      // This would require re-running the JSONParser with the new grouping
+    }
+  }, [graphData, visualizationState]);
+
+  const handleToggleContainer = useCallback(
+    (containerId: string) => {
+      console.log("🔄 Toggling container:", containerId);
+      setCollapsedContainers((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(containerId)) {
+          newSet.delete(containerId);
+          visualizationState?.expandContainer(containerId);
+        } else {
+          newSet.add(containerId);
+          visualizationState?.collapseContainer(containerId);
+        }
+        return newSet;
+      });
+
+      // Trigger re-render of ReactFlow data
+      if (visualizationState && asyncCoordinator) {
+        console.log("🔄 Regenerating ReactFlow data after container toggle");
+        const reactFlowBridge = new ReactFlowBridge({
+          nodeStyles: {},
+          edgeStyles: {},
+          semanticMappings: edgeStyleConfig?.semanticMappings || {},
+          propertyMappings: edgeStyleConfig?.propertyMappings || {},
+        });
+        const newFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        console.log("🔄 New ReactFlow data:", { nodes: newFlowData.nodes.length, edges: newFlowData.edges.length });
+        setReactFlowData(newFlowData);
+      } else {
+        console.log("❌ Cannot regenerate ReactFlow data - missing visualizationState or asyncCoordinator");
+      }
+    },
+    [visualizationState, asyncCoordinator],
+  );
 
   // Minimal page state for UI visibility (Requirements 5.4, 11.1)
   const [pageState, setPageState] = useState({
@@ -864,31 +861,40 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
   // Debug: Log graphData changes
   useEffect(() => {
-    console.log('🔍 graphData changed:', graphData ? 'HAS DATA' : 'NULL');
+    console.log("🔍 graphData changed:", graphData ? "HAS DATA" : "NULL");
     if (graphData) {
-      console.log('   - Nodes:', graphData.nodes?.length || 0);
-      console.log('   - Toggle buttons should render:', enhanced && !!graphData);
+      console.log("   - Nodes:", graphData.nodes?.length || 0);
+      console.log(
+        "   - Toggle buttons should render:",
+        enhanced && !!graphData,
+      );
     }
   }, [graphData, enhanced]);
 
   // Style configuration state
   const [styleConfig, setStyleConfig] = useState({
-    edgeStyle: 'bezier' as const,
-    edgeColor: '#1976d2',
+    edgeStyle: "bezier" as const,
+    edgeColor: "#1976d2",
     edgeWidth: 2,
     nodeBorderRadius: 4,
     nodeFontSize: 12,
     containerBorderRadius: 8,
     containerBorderWidth: 2,
-    containerShadow: 'LIGHT' as const,
-    reactFlowControlsScale: 1.3
+    containerShadow: "LIGHT" as const,
+    reactFlowControlsScale: 1.3,
   });
 
   // Responsive design state
   const [dynamicHeight, setDynamicHeight] = useState<string>(
-    typeof height === 'string' ? height : `${height}px`
+    typeof height === "string" ? height : `${height}px`,
   );
   const [isResizing, setIsResizing] = useState(false);
+
+  // Backward compatibility layer
+  const compatibilityLayer = useMemo(
+    () => createBackwardCompatibilityLayer(),
+    [],
+  );
 
   // Refs for proper cleanup and memory management (Requirements 5.5, 11.2)
   const interactionHandlerRef = useRef<InteractionHandler | null>(null);
@@ -902,7 +908,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
   // Page state update helpers (Requirements 5.4, 11.1)
   const updatePageState = useCallback((updates: Partial<typeof pageState>) => {
-    setPageState(prev => ({ ...prev, ...updates }));
+    setPageState((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const toggleInfoPanel = useCallback(() => {
@@ -913,35 +919,44 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     updatePageState({ showStyleTuner: !pageState.showStyleTuner });
   }, [pageState.showStyleTuner, updatePageState]);
 
-  const toggleAutoFit = useCallback((enabled?: boolean) => {
-    const newAutoFit = enabled !== undefined ? enabled : !pageState.autoFit;
-    updatePageState({ autoFit: newAutoFit });
-  }, [pageState.autoFit, updatePageState]);
+  const toggleAutoFit = useCallback(
+    (enabled?: boolean) => {
+      const newAutoFit = enabled !== undefined ? enabled : !pageState.autoFit;
+      updatePageState({ autoFit: newAutoFit });
+    },
+    [pageState.autoFit, updatePageState],
+  );
 
   // Enhanced timeout and animation frame management (Requirements 5.5, 11.2)
-  const managedSetTimeout = useCallback((callback: () => void, delay: number): NodeJS.Timeout => {
-    const timeoutId = setTimeout(() => {
-      timeoutIdsRef.current.delete(timeoutId);
-      callback();
-    }, delay);
-    timeoutIdsRef.current.add(timeoutId);
-    return timeoutId;
-  }, []);
+  const managedSetTimeout = useCallback(
+    (callback: () => void, delay: number): NodeJS.Timeout => {
+      const timeoutId = setTimeout(() => {
+        timeoutIdsRef.current.delete(timeoutId);
+        callback();
+      }, delay);
+      timeoutIdsRef.current.add(timeoutId);
+      return timeoutId;
+    },
+    [],
+  );
 
-  const managedRequestAnimationFrame = useCallback((callback: FrameRequestCallback): number => {
-    const frameId = requestAnimationFrame((time) => {
-      animationFrameIdsRef.current.delete(frameId);
-      callback(time);
-    });
-    animationFrameIdsRef.current.add(frameId);
-    return frameId;
-  }, []);
+  const managedRequestAnimationFrame = useCallback(
+    (callback: FrameRequestCallback): number => {
+      const frameId = requestAnimationFrame((time) => {
+        animationFrameIdsRef.current.delete(frameId);
+        callback(time);
+      });
+      animationFrameIdsRef.current.add(frameId);
+      return frameId;
+    },
+    [],
+  );
 
   // Responsive height calculation with enhanced cleanup (Requirements 5.5, 11.2)
   useEffect(() => {
     if (!responsive) {
       // Reset to static height when responsive is disabled
-      setDynamicHeight(typeof height === 'string' ? height : `${height}px`);
+      setDynamicHeight(typeof height === "string" ? height : `${height}px`);
       return;
     }
 
@@ -950,7 +965,9 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     };
 
     // Initialize height calculator
-    heightCalculatorRef.current = new OptimizedHeightCalculator(handleHeightChange);
+    heightCalculatorRef.current = new OptimizedHeightCalculator(
+      handleHeightChange,
+    );
 
     // Initial calculation
     heightCalculatorRef.current.calculateHeight();
@@ -963,19 +980,19 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
       managedSetTimeout(() => setIsResizing(false), 300);
     }, 100);
 
-    window.addEventListener('resize', debouncedResize);
+    window.addEventListener("resize", debouncedResize);
     cleanupFunctionsRef.current.push(() => {
-      window.removeEventListener('resize', debouncedResize);
+      window.removeEventListener("resize", debouncedResize);
     });
 
     // Set up ResizeObserver for navbar changes
-    if (typeof ResizeObserver !== 'undefined') {
-      const navbar = document.querySelector('.navbar');
+    if (typeof ResizeObserver !== "undefined") {
+      const navbar = document.querySelector(".navbar");
       if (navbar) {
         resizeObserverRef.current = new ResizeObserver(
           debounce(() => {
             heightCalculatorRef.current?.calculateHeight();
-          }, 150)
+          }, 150),
         );
         resizeObserverRef.current.observe(navbar);
         cleanupFunctionsRef.current.push(() => {
@@ -991,9 +1008,15 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
   // URL parameter parsing with async operation cancellation (Requirements 5.5, 11.2)
   useEffect(() => {
-    console.log('🔍 URL parsing useEffect running:', { enableUrlParams, graphData: !!graphData });
+    console.log("🔍 URL parsing useEffect running:", {
+      enableUrlParams,
+      graphData: !!graphData,
+    });
     if (!enableUrlParams || graphData) {
-      console.log('🔍 URL parsing skipped:', { enableUrlParams, hasGraphData: !!graphData });
+      console.log("🔍 URL parsing skipped:", {
+        enableUrlParams,
+        hasGraphData: !!graphData,
+      });
       return;
     }
 
@@ -1008,29 +1031,37 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         const urlParams = new URLSearchParams(window.location.search);
 
         // Check for uncompressed data parameter
-        const dataParam = urlParams.get('data');
+        const dataParam = urlParams.get("data");
         if (dataParam) {
           try {
-            console.log('🔄 Parsing URL data parameter...');
+            console.log("🔄 Parsing URL data parameter...");
             const decodedData = decodeURIComponent(dataParam);
             const parsedData = JSON.parse(decodedData);
-            console.log('✅ URL data parsed successfully, setting graphData:', parsedData);
+            console.log(
+              "✅ URL data parsed successfully, setting graphData:",
+              parsedData,
+            );
             setGraphData(parsedData);
             return;
           } catch (error) {
-            console.error('Failed to parse data parameter:', error);
-            setError('Invalid data parameter in URL');
+            console.error("Failed to parse data parameter:", error);
+            setError("Invalid data parameter in URL");
             return;
           }
         }
 
         // Check for compressed data parameter
-        const compressedParam = urlParams.get('compressed');
+        const compressedParam = urlParams.get("compressed");
         if (compressedParam) {
           try {
             // Try to use Hydroscope's parseDataFromUrl if available
-            if (typeof window !== 'undefined' && (window as any).parseDataFromUrl) {
-              const parsedData = await (window as any).parseDataFromUrl(compressedParam);
+            if (
+              typeof window !== "undefined" &&
+              (window as any).parseDataFromUrl
+            ) {
+              const parsedData = await (window as any).parseDataFromUrl(
+                compressedParam,
+              );
               setGraphData(parsedData);
               return;
             } else {
@@ -1041,23 +1072,23 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
               return;
             }
           } catch (error) {
-            console.error('Failed to parse compressed parameter:', error);
-            setError('Invalid compressed data parameter in URL');
+            console.error("Failed to parse compressed parameter:", error);
+            setError("Invalid compressed data parameter in URL");
             return;
           }
         }
 
         // Check for file parameter (display only)
-        const fileParam = urlParams.get('file');
+        const fileParam = urlParams.get("file");
         if (fileParam) {
-          console.log('File parameter detected:', fileParam);
+          console.log("File parameter detected:", fileParam);
           // File parameter is for reference only, don't load data
         }
       } catch (error) {
         // Only set error if operation wasn't cancelled
         if (!abortController.signal.aborted) {
-          console.error('Error parsing URL parameters:', error);
-          setError('Failed to parse URL parameters');
+          console.error("Error parsing URL parameters:", error);
+          setError("Failed to parse URL parameters");
         }
       }
     };
@@ -1071,10 +1102,12 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
   }, [enableUrlParams, graphData]);
 
   // Track initialization to prevent double runs
-  const initializationRef = useRef<{ completed: boolean; inProgress: boolean }>({
-    completed: false,
-    inProgress: false
-  });
+  const initializationRef = useRef<{ completed: boolean; inProgress: boolean }>(
+    {
+      completed: false,
+      inProgress: false,
+    },
+  );
 
   // Set loading to false when there's no data to show FileUpload
   useEffect(() => {
@@ -1091,44 +1124,57 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
     // Allow re-initialization when data changes - only prevent if currently in progress
     if (initializationRef.current.inProgress) {
-      console.log('🔍 Skipping visualization init - already in progress');
+      console.log("🔍 Skipping visualization init - already in progress");
       return;
     }
 
-    console.log('🔍 Visualization init useEffect running:', { hasGraphData: !!graphData });
+    console.log("🔍 Visualization init useEffect running:", {
+      hasGraphData: !!graphData,
+    });
     initializationRef.current.inProgress = true;
 
     const initializeVisualization = async () => {
       try {
-        console.log('🔄 Starting visualization initialization...');
+        console.log("🔄 Starting visualization initialization...");
         setLoading(true);
         setError(null);
 
         const dataToUse = graphData;
 
         if (!dataToUse) {
-          console.log('🔍 No data to use, skipping initialization');
+          console.log("🔍 No data to use, skipping initialization");
           setLoading(false);
           return;
         }
 
-        console.log('🔄 Parsing data with JSONParser...');
+        console.log("🔄 Parsing data with JSONParser...");
         // Parse the data
         const parser = JSONParser.createPaxosParser({ debug: false });
         const parseResult = await parser.parseData(dataToUse);
         const state = parseResult.visualizationState;
-        console.log('✅ Data parsed successfully, state created');
+        const extractedEdgeStyleConfig = parseResult.edgeStyleConfig || null;
+        console.log("✅ Data parsed successfully, state created");
+
+        // Extract hierarchy and grouping data
+        setHierarchyChoices(parseResult.hierarchyChoices || []);
+        setCurrentGrouping(parseResult.selectedHierarchy);
+        setEdgeStyleConfig(extractedEdgeStyleConfig);
+        console.log("📊 Hierarchy data:", {
+          choices: parseResult.hierarchyChoices?.length || 0,
+          selected: parseResult.selectedHierarchy,
+        });
+        console.log("🎨 Edge style config:", extractedEdgeStyleConfig);
 
         // Create AsyncCoordinator for v6 operations
         const coordinator = new AsyncCoordinator();
 
-        // Set up bridges with default configs
+        // Set up bridges with edge style config
         const elkBridge = new ELKBridge({});
         const reactFlowBridge = new ReactFlowBridge({
           nodeStyles: {},
           edgeStyles: {},
-          semanticMappings: {},
-          propertyMappings: {}
+          semanticMappings: extractedEdgeStyleConfig?.semanticMappings || {},
+          propertyMappings: extractedEdgeStyleConfig?.propertyMappings || {},
         });
 
         // Perform layout using real ELK calculation
@@ -1138,34 +1184,44 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         const flowData = reactFlowBridge.toReactFlowData(state);
 
         // Debug: Check edge handles
-        console.log('🔍 [DEBUG] ReactFlow data after conversion:');
+        console.log("🔍 [DEBUG] ReactFlow data after conversion:");
         console.log(`  - Nodes: ${flowData.nodes.length}`);
         console.log(`  - Edges: ${flowData.edges.length}`);
 
-        const edgesWithHandles = flowData.edges.filter(e => e.sourceHandle && e.targetHandle);
-        const edgesWithoutHandles = flowData.edges.filter(e => !e.sourceHandle || !e.targetHandle);
+        const edgesWithHandles = flowData.edges.filter(
+          (e) => e.sourceHandle && e.targetHandle,
+        );
+        const edgesWithoutHandles = flowData.edges.filter(
+          (e) => !e.sourceHandle || !e.targetHandle,
+        );
 
         console.log(`  - Edges with handles: ${edgesWithHandles.length}`);
         console.log(`  - Edges without handles: ${edgesWithoutHandles.length}`);
 
         if (edgesWithoutHandles.length > 0) {
-          console.log('❌ Edges without handles:', edgesWithoutHandles.slice(0, 3).map(e => ({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            sourceHandle: e.sourceHandle,
-            targetHandle: e.targetHandle
-          })));
+          console.log(
+            "❌ Edges without handles:",
+            edgesWithoutHandles.slice(0, 3).map((e) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              sourceHandle: e.sourceHandle,
+              targetHandle: e.targetHandle,
+            })),
+          );
         }
 
         if (edgesWithHandles.length > 0) {
-          console.log('✅ Example edges with handles:', edgesWithHandles.slice(0, 3).map(e => ({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            sourceHandle: e.sourceHandle,
-            targetHandle: e.targetHandle
-          })));
+          console.log(
+            "✅ Example edges with handles:",
+            edgesWithHandles.slice(0, 3).map((e) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              sourceHandle: e.sourceHandle,
+              targetHandle: e.targetHandle,
+            })),
+          );
         }
 
         // Set up interaction handler
@@ -1173,15 +1229,18 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         interactionHandlerRef.current = interactionHandler;
 
         // Update state
-        console.log('✅ Setting visualization state and ReactFlow data...');
-        console.log('   ReactFlow data:', { nodes: flowData.nodes.length, edges: flowData.edges.length });
+        console.log("✅ Setting visualization state and ReactFlow data...");
+        console.log("   ReactFlow data:", {
+          nodes: flowData.nodes.length,
+          edges: flowData.edges.length,
+        });
         setVisualizationState(state);
         setAsyncCoordinator(coordinator);
         setReactFlowData(flowData);
         setLoading(false);
         initializationRef.current.completed = true;
         initializationRef.current.inProgress = false;
-        console.log('✅ Visualization initialization complete!');
+        console.log("✅ Visualization initialization complete!");
       } catch (err) {
         console.error("❌ Failed to initialize Hydroscope:", err);
         setError(err instanceof Error ? err.message : "Unknown error occurred");
@@ -1194,15 +1253,13 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
     initializeVisualization();
   }, [graphData]);
 
-
-
   // Prevent double initialization
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Enhanced cleanup effect with comprehensive memory management (Requirements 5.5, 11.2, 11.5)
   useEffect(() => {
     return () => {
-      console.log('🧹 Starting HydroscopeEnhanced cleanup...');
+      console.log("🧹 Starting HydroscopeEnhanced cleanup...");
 
       // Cancel all pending async operations
       if (abortControllerRef.current) {
@@ -1211,13 +1268,13 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
       }
 
       // Clear all managed timeouts
-      timeoutIdsRef.current.forEach(timeoutId => {
+      timeoutIdsRef.current.forEach((timeoutId) => {
         clearTimeout(timeoutId);
       });
       timeoutIdsRef.current.clear();
 
       // Cancel all managed animation frames
-      animationFrameIdsRef.current.forEach(frameId => {
+      animationFrameIdsRef.current.forEach((frameId) => {
         cancelAnimationFrame(frameId);
       });
       animationFrameIdsRef.current.clear();
@@ -1235,11 +1292,11 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
       }
 
       // Run all registered cleanup functions
-      cleanupFunctionsRef.current.forEach(cleanup => {
+      cleanupFunctionsRef.current.forEach((cleanup) => {
         try {
           cleanup();
         } catch (error) {
-          console.warn('Cleanup function failed:', error);
+          console.warn("Cleanup function failed:", error);
         }
       });
 
@@ -1258,7 +1315,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         autoFit: false,
       });
 
-      console.log('🧹 HydroscopeEnhanced cleanup completed');
+      console.log("🧹 HydroscopeEnhanced cleanup completed");
     };
   }, []);
 
@@ -1266,60 +1323,90 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
   const debouncedFileProcess = useCallback(
     debounce(async (data: HydroscopeData, filename: string) => {
       try {
-        console.log('✅ Processing file:', filename);
+        console.log("✅ Processing file:", filename);
         setLoading(true);
         setError(null);
 
         // Add small delay to show loading state using managed timeout
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           managedSetTimeout(() => resolve(undefined), 100);
         });
 
         setGraphData(data);
       } catch (error) {
-        console.error('❌ File processing error:', error);
-        setError(`Failed to process ${filename}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error("❌ File processing error:", error);
+        setError(
+          `Failed to process ${filename}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       } finally {
         setLoading(false);
       }
     }, 300),
-    [managedSetTimeout]
+    [managedSetTimeout],
   );
 
   // Handle file upload
-  const handleFileLoaded = useCallback((data: HydroscopeData, filename: string) => {
-    // Reset initialization state to allow re-initialization with new data
-    initializationRef.current.completed = false;
-    initializationRef.current.inProgress = false;
+  const handleFileLoaded = useCallback(
+    (data: HydroscopeData, filename: string) => {
+      // Reset initialization state to allow re-initialization with new data
+      initializationRef.current.completed = false;
+      initializationRef.current.inProgress = false;
 
-    // Clear existing state to force complete re-initialization
-    setVisualizationState(null);
-    setAsyncCoordinator(null);
-    setReactFlowData({ nodes: [], edges: [] });
+      // Clear existing state to force complete re-initialization
+      setVisualizationState(null);
+      setAsyncCoordinator(null);
+      setReactFlowData({ nodes: [], edges: [] });
 
-    // Create a new object reference to ensure React detects the change
-    const newData = { ...data, _timestamp: Date.now() };
+      // Create a new object reference to ensure React detects the change
+      const newData = { ...data, _timestamp: Date.now() };
 
-    // Set the new data directly instead of using debounced function
-    setGraphData(newData);
-    setLoading(true);
-    setError(null);
-  }, []);
+      // Set the new data directly instead of using debounced function
+      setGraphData(newData);
+      setLoading(true);
+      setError(null);
+    },
+    [],
+  );
 
   const handleFileError = useCallback((error: any, filename: string) => {
-    console.error('❌ File error:', error, filename);
-    setError(`Failed to load ${filename}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("❌ File error:", error, filename);
+    setError(
+      `Failed to load ${filename}: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
     setLoading(false);
   }, []);
 
   // Debounced style change handler
   const debouncedStyleChange = useCallback(
     debounce((newConfig: any) => {
+      console.log("🎨 Style config changed:", newConfig);
+      console.log("🎨 Previous config:", styleConfig);
       setStyleConfig(newConfig);
-      // Let v6 AsyncCoordinator handle style updates automatically
-      // No manual intervention needed - v6 handles operation sequencing
+      console.log("✅ StyleConfigProvider will update with new config");
+      
+      // Regenerate ReactFlow data with new styles
+      if (visualizationState) {
+        console.log("🔄 Regenerating ReactFlow data with new styles");
+        const reactFlowBridge = new ReactFlowBridge({
+          nodeStyles: {},
+          edgeStyles: {
+            default: {
+              type: newConfig.edgeStyle || 'bezier',
+              style: {
+                strokeWidth: newConfig.edgeWidth || 2,
+                strokeDasharray: newConfig.edgeDashed ? '5,5' : undefined
+              }
+            }
+          },
+          semanticMappings: edgeStyleConfig?.semanticMappings || {},
+          propertyMappings: edgeStyleConfig?.propertyMappings || {}
+        });
+        const newFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        setReactFlowData(newFlowData);
+        console.log("✅ ReactFlow data regenerated with new styles");
+      }
     }, 150),
-    []
+    [styleConfig],
   );
 
   // Handle fit view
@@ -1333,27 +1420,30 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         padding: 0.1,
         minZoom: 0.05,
         maxZoom: 2.0,
-        duration: 300
+        duration: 300,
       });
     } catch (error) {
-      console.error('Error fitting view:', error);
+      console.error("Error fitting view:", error);
     }
   }, [reactFlowInstance]);
 
   // Handle auto-fit toggle
-  const handleAutoFitToggle = useCallback((enabled: boolean) => {
-    toggleAutoFit(enabled);
-    if (enabled) {
-      handleFitView();
-    }
-  }, [handleFitView, toggleAutoFit]);
+  const handleAutoFitToggle = useCallback(
+    (enabled: boolean) => {
+      toggleAutoFit(enabled);
+      if (enabled) {
+        handleFitView();
+      }
+    },
+    [handleFitView, toggleAutoFit],
+  );
 
   // Handle load file (trigger file input)
   const handleLoadFile = useCallback(() => {
     // Create a hidden file input and trigger it
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -1404,12 +1494,13 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
             nodeStyles: {},
             edgeStyles: {},
             semanticMappings: {},
-            propertyMappings: {}
+            propertyMappings: {},
           });
 
           try {
             await elkBridge.layout(visualizationState);
-            const flowData = reactFlowBridge.toReactFlowData(visualizationState);
+            const flowData =
+              reactFlowBridge.toReactFlowData(visualizationState);
             setReactFlowData(flowData);
           } catch (err) {
             console.error("Error updating layout:", err);
@@ -1427,7 +1518,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
             nodeStyles: {},
             edgeStyles: {},
             semanticMappings: {},
-            propertyMappings: {}
+            propertyMappings: {},
           });
           const flowData = reactFlowBridge.toReactFlowData(visualizationState);
           setReactFlowData(flowData);
@@ -1439,54 +1530,72 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
   };
 
   // Handle node drag events
-  const handleNodesChange = useCallback((changes: any[]) => {
-    if (!visualizationState || !reactFlowData) return;
+  const handleNodesChange = useCallback(
+    (changes: any[]) => {
+      if (!visualizationState || !reactFlowData) return;
 
-    try {
-      // Apply changes to ReactFlow nodes for immediate visual feedback
-      const updatedNodes = applyNodeChanges(changes, reactFlowData.nodes);
+      try {
+        // Apply changes to ReactFlow nodes for immediate visual feedback
+        const updatedNodes = applyNodeChanges(changes, reactFlowData.nodes);
 
-      // Update ReactFlow data with the new node positions
-      setReactFlowData({
-        nodes: updatedNodes,
-        edges: reactFlowData.edges
-      });
-
-      // Also update visualization state for final positions (when drag is complete)
-      const finalPositionChanges = changes.filter(change =>
-        change.type === 'position' && change.dragging === false && change.position
-      );
-
-      if (finalPositionChanges.length > 0) {
-        finalPositionChanges.forEach(change => {
-          const { id, position } = change;
-
-          // Check if it's a container
-          const container = visualizationState.getContainer(id);
-          if (container) {
-            container.position = position;
-            console.log(`Updated container ${id} position to (${position.x}, ${position.y})`);
-          } else {
-            // Check if it's a node
-            const node = visualizationState.getGraphNode(id);
-            if (node) {
-              node.position = position;
-              console.log(`Updated node ${id} position to (${position.x}, ${position.y})`);
-            }
-          }
+        // Update ReactFlow data with the new node positions
+        setReactFlowData({
+          nodes: updatedNodes,
+          edges: reactFlowData.edges,
         });
 
-        console.log('Drag completed, positions saved to visualization state');
-      }
+        // Also update visualization state for final positions (when drag is complete)
+        const finalPositionChanges = changes.filter(
+          (change) =>
+            change.type === "position" &&
+            change.dragging === false &&
+            change.position,
+        );
 
-    } catch (err) {
-      console.error("Error handling node drag:", err);
-    }
-  }, [visualizationState, reactFlowData]);
+        if (finalPositionChanges.length > 0) {
+          finalPositionChanges.forEach((change) => {
+            const { id, position } = change;
+
+            // Check if it's a container
+            const container = visualizationState.getContainer(id);
+            if (container) {
+              container.position = position;
+              console.log(
+                `Updated container ${id} position to (${position.x}, ${position.y})`,
+              );
+            } else {
+              // Check if it's a node
+              const node = visualizationState.getGraphNode(id);
+              if (node) {
+                node.position = position;
+                console.log(
+                  `Updated node ${id} position to (${position.x}, ${position.y})`,
+                );
+              }
+            }
+          });
+
+          console.log("Drag completed, positions saved to visualization state");
+        }
+      } catch (err) {
+        console.error("Error handling node drag:", err);
+      }
+    },
+    [visualizationState, reactFlowData],
+  );
 
   if (loading) {
     return (
-      <div className="hydroscope-loading" style={{ height, width, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        className="hydroscope-loading"
+        style={{
+          height,
+          width,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <div>Loading Hydroscope visualization...</div>
       </div>
     );
@@ -1494,8 +1603,17 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
   if (error) {
     return (
-      <div className="hydroscope-error" style={{ height, width, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#d32f2f' }}>
+      <div
+        className="hydroscope-error"
+        style={{
+          height,
+          width,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ textAlign: "center", color: "#d32f2f" }}>
           <div>Error loading visualization: {error}</div>
           <button
             onClick={() => {
@@ -1503,13 +1621,13 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
               setLoading(true);
             }}
             style={{
-              marginTop: '10px',
-              padding: '8px 16px',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              marginTop: "10px",
+              padding: "8px 16px",
+              backgroundColor: "#1976d2",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
             }}
           >
             Retry
@@ -1520,7 +1638,11 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
   }
 
   // Calculate final height
-  const finalHeight = responsive ? dynamicHeight : (typeof height === 'string' ? height : `${height}px`);
+  const finalHeight = responsive
+    ? dynamicHeight
+    : typeof height === "string"
+      ? height
+      : `${height}px`;
 
   return (
     <StyleConfigProvider value={styleConfig}>
@@ -1529,30 +1651,32 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         style={{
           height: finalHeight,
           width,
-          position: 'relative',
-          transition: isResizing ? 'none' : 'height 0.3s ease',
-          overflow: 'hidden'
+          position: "relative",
+          transition: isResizing ? "none" : "height 0.3s ease",
+          overflow: "hidden",
         }}
       >
         {/* File Upload Landing Page (when no data) */}
         {!graphData && enhanced && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 50,
+            }}
+          >
             <FileUpload
               onFileLoaded={handleFileLoaded}
               onParseError={handleFileError}
               onValidationError={handleFileError}
-              acceptedTypes={['.json']}
+              acceptedTypes={[".json"]}
               maxFileSize={100 * 1024 * 1024} // 100MB
               showDetailedErrors={true}
             />
@@ -1592,66 +1716,85 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
         </ReactFlow>
 
         {/* Panel Toggle Buttons (upper right corner) */}
-        {enhanced && (() => {
-          console.log('🔍 Rendering toggle buttons!');
-          return <div style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            zIndex: 1001,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}>
-            <button
-              onClick={toggleInfoPanel}
-              style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: pageState.showInfoPanel ? '#4caf50' : 'rgba(255, 255, 255, 0.9)',
-                color: '#222',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s ease'
-              }}
-              title="Toggle Info Panel"
-            >
-              <svg width="20" height="20" viewBox="0 0 1024 1024" fill="currentColor">
-                <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" />
-                <path d="M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z" />
-              </svg>
-            </button>
-            <button
-              onClick={toggleStyleTuner}
-              style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: pageState.showStyleTuner ? '#4caf50' : 'rgba(255, 255, 255, 0.9)',
-                color: '#222',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s ease'
-              }}
-              title="Toggle Style Tuner"
-            >
-              <svg width="20" height="20" viewBox="0 0 1024 1024" fill="currentColor">
-                <path d="M924.8 625.7l-65.5-56c3.1-19 4.7-38.4 4.7-57.8s-1.6-38.8-4.7-57.8l65.5-56a32.03 32.03 0 0 0 9.3-35.2l-.9-2.6a443.74 443.74 0 0 0-79.7-137.9l-1.8-2.1a32.12 32.12 0 0 0-35.1-9.5l-81.3 28.9c-30-24.6-63.5-44-99.7-57.6l-15.7-85a32.05 32.05 0 0 0-25.8-25.7l-2.7-.5c-52.1-9.4-106.9-9.4-159 0l-2.7.5a32.05 32.05 0 0 0-25.8 25.7l-15.8 85.4a351.86 351.86 0 0 0-99 57.4l-81.9-29.1a32 32 0 0 0-35.1 9.5l-1.8 2.1a446.02 446.02 0 0 0-79.7 137.9l-.9 2.6c-4.5 12.5-.8 26.5 9.3 35.2l66.3 56.6c-3.1 18.8-4.6 38-4.6 57.1 0 19.2 1.5 38.4 4.6 57.1L99 625.5a32.03 32.03 0 0 0-9.3 35.2l.9 2.6c18.1 50.4 44.9 96.9 79.7 137.9l1.8 2.1a32.12 32.12 0 0 0 35.1 9.5l81.9-29.1c29.8 24.5 63.1 43.9 99 57.4l15.8 85.4a32.05 32.05 0 0 0 25.8 25.7l2.7.5a449.4 449.4 0 0 0 159 0l2.7-.5a32.05 32.05 0 0 0 25.8-25.7l15.7-85a350 350 0 0 0 99.7-57.6l81.3 28.9a32 32 0 0 0 35.1-9.5l1.8-2.1c34.8-41.1 61.6-87.5 79.7-137.9l.9-2.6c4.5-12.3.8-26.3-9.3-35zM512 701c-104.9 0-190-85.1-190-190s85.1-190 190-190 190 85.1 190 190-85.1 190-190 190z" />
-              </svg>
-            </button>
-          </div>;
-        })()}
+        {enhanced &&
+          (() => {
+            console.log("🔍 Rendering toggle buttons!");
+            return (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  zIndex: 1001,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <button
+                  onClick={toggleInfoPanel}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: pageState.showInfoPanel
+                      ? "#4caf50"
+                      : "rgba(255, 255, 255, 0.9)",
+                    color: "#222",
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    transition: "all 0.2s ease",
+                  }}
+                  title="Toggle Info Panel"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 1024 1024"
+                    fill="currentColor"
+                  >
+                    <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" />
+                    <path d="M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={toggleStyleTuner}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: pageState.showStyleTuner
+                      ? "#4caf50"
+                      : "rgba(255, 255, 255, 0.9)",
+                    color: "#222",
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    transition: "all 0.2s ease",
+                  }}
+                  title="Toggle Style Tuner"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 1024 1024"
+                    fill="currentColor"
+                  >
+                    <path d="M924.8 625.7l-65.5-56c3.1-19 4.7-38.4 4.7-57.8s-1.6-38.8-4.7-57.8l65.5-56a32.03 32.03 0 0 0 9.3-35.2l-.9-2.6a443.74 443.74 0 0 0-79.7-137.9l-1.8-2.1a32.12 32.12 0 0 0-35.1-9.5l-81.3 28.9c-30-24.6-63.5-44-99.7-57.6l-15.7-85a32.05 32.05 0 0 0-25.8-25.7l-2.7-.5c-52.1-9.4-106.9-9.4-159 0l-2.7.5a32.05 32.05 0 0 0-25.8 25.7l-15.8 85.4a351.86 351.86 0 0 0-99 57.4l-81.9-29.1a32 32 0 0 0-35.1 9.5l-1.8 2.1a446.02 446.02 0 0 0-79.7 137.9l-.9 2.6c-4.5 12.5-.8 26.5 9.3 35.2l66.3 56.6c-3.1 18.8-4.6 38-4.6 57.1 0 19.2 1.5 38.4 4.6 57.1L99 625.5a32.03 32.03 0 0 0-9.3 35.2l.9 2.6c18.1 50.4 44.9 96.9 79.7 137.9l1.8 2.1a32.12 32.12 0 0 0 35.1 9.5l81.9-29.1c29.8 24.5 63.1 43.9 99 57.4l15.8 85.4a32.05 32.05 0 0 0 25.8 25.7l2.7.5a449.4 449.4 0 0 0 159 0l2.7-.5a32.05 32.05 0 0 0 25.8-25.7l15.7-85a350 350 0 0 0 99.7-57.6l81.3 28.9a32 32 0 0 0 35.1-9.5l1.8-2.1c34.8-41.1 61.6-87.5 79.7-137.9l.9-2.6c4.5-12.3.8-26.3-9.3-35zM512 701c-104.9 0-190-85.1-190-190s85.1-190 190-190 190 85.1 190 190-85.1 190-190 190z" />
+                  </svg>
+                </button>
+              </div>
+            );
+          })()}
 
         {/* Enhanced UI Components */}
         {enhanced && graphData && (
@@ -1660,8 +1803,26 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
             <InfoPanel
               visualizationState={visualizationState}
               reactFlowData={reactFlowData}
-              onSearchResultSelect={() => { }}
-              onContainerOperation={() => { }}
+              asyncCoordinator={asyncCoordinator}
+              hierarchyChoices={hierarchyChoices}
+              currentGrouping={currentGrouping}
+              onGroupingChange={handleGroupingChange}
+              collapsedContainers={collapsedContainers}
+              onToggleContainer={handleToggleContainer}
+              legendData={{
+                title: "Node Types",
+                items: [] // Will be generated from visualizationState
+              }}
+              edgeStyleConfig={edgeStyleConfig}
+              colorPalette={colorPalette}
+              onSearchUpdate={(query, matches, current) => {
+                // Handle search updates - maintain backward compatibility
+                console.log("Search updated:", {
+                  query,
+                  matches: matches.length,
+                  current: current?.id,
+                });
+              }}
               onError={(error: Error) => setError(error.message)}
               open={pageState.showInfoPanel}
               onOpenChange={(open) => updatePageState({ showInfoPanel: open })}
@@ -1669,8 +1830,25 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 
             {/* StyleTuner */}
             <StyleTuner
-              value={styleConfig}
-              onChange={debouncedStyleChange}
+              value={mapToStyleTunerConfig(styleConfig)}
+              onChange={(config) =>
+                debouncedStyleChange(mapFromStyleTunerConfig(config))
+              }
+              colorPalette={colorPalette}
+              onPaletteChange={(palette) => {
+                console.log("🎨 Color palette changed:", palette);
+                setColorPalette(palette);
+                // TODO: Apply palette change to visualization
+              }}
+              currentLayout={currentLayout}
+              onLayoutChange={(layout) => {
+                console.log("🔄 Layout changed:", layout);
+                setCurrentLayout(layout);
+                // TODO: Apply layout change to visualization
+              }}
+              visualizationState={visualizationState}
+              asyncCoordinator={asyncCoordinator}
+              onError={(error: Error) => setError(error.message)}
               open={pageState.showStyleTuner}
               onOpenChange={(open) => updatePageState({ showStyleTuner: open })}
             />
@@ -1682,7 +1860,9 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = ({
 };
 
 // Main component wrapped with ReactFlowProvider
-export const HydroscopeEnhanced: React.FC<HydroscopeEnhancedProps> = (props) => {
+export const HydroscopeEnhanced: React.FC<HydroscopeEnhancedProps> = (
+  props,
+) => {
   return (
     <ReactFlowProvider>
       <HydroscopeEnhancedInternal {...props} />

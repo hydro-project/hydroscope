@@ -235,7 +235,7 @@ describe("ContainerControls Component", () => {
       // Ensure we have expanded containers to collapse
       visualizationState.expandContainer("container1");
       visualizationState.expandContainer("container3");
-      
+
       let operationCompleted = false;
       const onOperationComplete = (operation: "expand" | "collapse") => {
         if (operation === "collapse") {
@@ -664,7 +664,7 @@ describe("useContainerControls Hook", () => {
     // Ensure we have expanded containers to collapse
     visualizationState.expandContainer("container1");
     visualizationState.expandContainer("container3");
-    
+
     render(<TestComponent />);
 
     const collapseButton = screen.getByText("Collapse All");

@@ -2,13 +2,13 @@
  * Tests for proper cleanup of event listeners and async operations
  */
 
-import React from 'react';
-import { render, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { HydroscopeEnhanced } from '../components/HydroscopeEnhanced';
+import React from "react";
+import { render, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { HydroscopeEnhanced } from "../components/HydroscopeEnhanced";
 
 // Mock Hydroscope modules
-vi.mock('../core/VisualizationState', () => ({
+vi.mock("../core/VisualizationState", () => ({
   VisualizationState: class MockVisualizationState {
     visibleContainers = [];
     getContainer = vi.fn();
@@ -19,26 +19,26 @@ vi.mock('../core/VisualizationState', () => ({
   },
 }));
 
-vi.mock('../core/AsyncCoordinator', () => ({
+vi.mock("../core/AsyncCoordinator", () => ({
   AsyncCoordinator: class MockAsyncCoordinator {
     collapseAllContainers = vi.fn();
     expandAllContainers = vi.fn();
   },
 }));
 
-vi.mock('../bridges/ReactFlowBridge', () => ({
+vi.mock("../bridges/ReactFlowBridge", () => ({
   ReactFlowBridge: class MockReactFlowBridge {
     toReactFlowData = vi.fn().mockReturnValue({ nodes: [], edges: [] });
   },
 }));
 
-vi.mock('../bridges/ELKBridge', () => ({
+vi.mock("../bridges/ELKBridge", () => ({
   ELKBridge: class MockELKBridge {
     layout = vi.fn();
   },
 }));
 
-vi.mock('../utils/JSONParser', () => ({
+vi.mock("../utils/JSONParser", () => ({
   JSONParser: {
     createPaxosParser: () => ({
       parseData: vi.fn().mockResolvedValue({
@@ -48,11 +48,11 @@ vi.mock('../utils/JSONParser', () => ({
   },
 }));
 
-vi.mock('../core/InteractionHandler', () => ({
+vi.mock("../core/InteractionHandler", () => ({
   InteractionHandler: class MockInteractionHandler {},
 }));
 
-describe('Cleanup', () => {
+describe("Cleanup", () => {
   let mockNavbar: HTMLElement;
   let originalQuerySelector: typeof document.querySelector;
   let resizeObserverMock: any;
@@ -65,15 +65,15 @@ describe('Cleanup', () => {
 
   beforeEach(() => {
     // Mock navbar element
-    mockNavbar = document.createElement('div');
-    mockNavbar.className = 'navbar';
-    Object.defineProperty(mockNavbar, 'getBoundingClientRect', {
+    mockNavbar = document.createElement("div");
+    mockNavbar.className = "navbar";
+    Object.defineProperty(mockNavbar, "getBoundingClientRect", {
       value: () => ({ height: 80 }),
     });
 
     originalQuerySelector = document.querySelector;
     document.querySelector = vi.fn((selector) => {
-      if (selector === '.navbar') return mockNavbar;
+      if (selector === ".navbar") return mockNavbar;
       return originalQuerySelector.call(document, selector);
     });
 
@@ -86,23 +86,27 @@ describe('Cleanup', () => {
     global.ResizeObserver = vi.fn(() => resizeObserverMock);
 
     // Spy on event listeners
-    addEventListenerSpy = vi.spyOn(window, 'addEventListener');
-    removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+    addEventListenerSpy = vi.spyOn(window, "addEventListener");
+    removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
 
     // Spy on animation frame methods
-    requestAnimationFrameSpy = vi.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
-      setTimeout(cb, 16);
-      return 1;
-    });
-    cancelAnimationFrameSpy = vi.spyOn(global, 'cancelAnimationFrame').mockImplementation(() => {});
+    requestAnimationFrameSpy = vi
+      .spyOn(global, "requestAnimationFrame")
+      .mockImplementation((cb) => {
+        setTimeout(cb, 16);
+        return 1;
+      });
+    cancelAnimationFrameSpy = vi
+      .spyOn(global, "cancelAnimationFrame")
+      .mockImplementation(() => {});
 
     // Spy on timeout methods
-    setTimeoutSpy = vi.spyOn(global, 'setTimeout');
-    clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    setTimeoutSpy = vi.spyOn(global, "setTimeout");
+    clearTimeoutSpy = vi.spyOn(global, "clearTimeout");
 
     // Mock window location
-    Object.defineProperty(window, 'location', {
-      value: { search: '' },
+    Object.defineProperty(window, "location", {
+      value: { search: "" },
       writable: true,
     });
   });
@@ -113,38 +117,36 @@ describe('Cleanup', () => {
     vi.restoreAllMocks();
   });
 
-  it('should clean up resize event listeners on unmount', async () => {
+  it("should clean up resize event listeners on unmount", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Wait for component to set up event listeners
     await waitFor(() => {
-      expect(addEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        "resize",
+        expect.any(Function),
+      );
     });
 
     const resizeHandler = addEventListenerSpy.mock.calls.find(
-      call => call[0] === 'resize'
+      (call) => call[0] === "resize",
     )?.[1];
 
     // Unmount component
     unmount();
 
     // Should remove the resize event listener
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('resize', resizeHandler);
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      "resize",
+      resizeHandler,
+    );
   });
 
-  it('should clean up ResizeObserver on unmount', async () => {
+  it("should clean up ResizeObserver on unmount", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Wait for ResizeObserver to be set up
@@ -159,13 +161,9 @@ describe('Cleanup', () => {
     expect(resizeObserverMock.disconnect).toHaveBeenCalled();
   });
 
-  it('should cancel pending animation frames on unmount', async () => {
+  it("should cancel pending animation frames on unmount", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Wait for component to be ready
@@ -180,13 +178,9 @@ describe('Cleanup', () => {
     expect(cancelAnimationFrameSpy).toHaveBeenCalled();
   });
 
-  it('should clear pending timeouts on unmount', async () => {
+  it("should clear pending timeouts on unmount", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Wait for component to set up timeouts
@@ -201,13 +195,9 @@ describe('Cleanup', () => {
     expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
-  it('should handle cleanup function failures gracefully', async () => {
+  it("should handle cleanup function failures gracefully", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Wait for component to be ready
@@ -220,17 +210,14 @@ describe('Cleanup', () => {
     expect(() => unmount()).not.toThrow();
   });
 
-  it('should clean up interaction handler references', async () => {
+  it("should clean up interaction handler references", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced height="600px" demo={true} />,
     );
 
     // Wait for component to initialize
     await waitFor(() => {
-      const container = document.querySelector('.hydroscope-enhanced');
+      const container = document.querySelector(".hydroscope-enhanced");
       expect(container).toBeInTheDocument();
     });
 
@@ -242,55 +229,52 @@ describe('Cleanup', () => {
     expect(true).toBe(true); // Test passes if no errors thrown
   });
 
-  it('should not set up cleanup when responsive is disabled', async () => {
+  it("should not set up cleanup when responsive is disabled", async () => {
     // Clear previous calls
     vi.clearAllMocks();
-    
+
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={false}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={false} height="600px" demo={true} />,
     );
 
     // Wait for component to render
     await waitFor(() => {
-      const container = document.querySelector('.hydroscope-enhanced');
+      const container = document.querySelector(".hydroscope-enhanced");
       expect(container).toBeInTheDocument();
     });
 
     // When responsive is disabled, resize listeners may still be added by ReactFlow
     // but they should be properly cleaned up on unmount
-    const resizeCallCount = addEventListenerSpy.mock.calls.filter(call => call[0] === 'resize').length;
-    
+    const resizeCallCount = addEventListenerSpy.mock.calls.filter(
+      (call) => call[0] === "resize",
+    ).length;
+
     // Note: ResizeObserver might be used by other components (like CustomControls)
     // so we don't test for it specifically here
 
     // Unmount should still work without errors
     unmount();
-    
+
     // Verify that resize listeners are cleaned up (if any were added)
     if (resizeCallCount > 0) {
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        "resize",
+        expect.any(Function),
+      );
     }
     expect(true).toBe(true); // Test passes if no errors thrown
   });
 
-  it('should handle multiple rapid mount/unmount cycles', async () => {
+  it("should handle multiple rapid mount/unmount cycles", async () => {
     // Mount and unmount multiple times rapidly
     for (let i = 0; i < 3; i++) {
       const { unmount } = render(
-        <HydroscopeEnhanced
-          responsive={true}
-          height="600px"
-          demo={true}
-        />
+        <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
       );
 
       // Brief wait
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       // Unmount
       unmount();
     }
@@ -299,18 +283,14 @@ describe('Cleanup', () => {
     expect(true).toBe(true); // Test passes if no errors thrown
   });
 
-  it('should clean up debounced functions', async () => {
+  it("should clean up debounced functions", async () => {
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Trigger resize to create debounced function calls
-    window.dispatchEvent(new Event('resize'));
-    
+    window.dispatchEvent(new Event("resize"));
+
     // Wait for debounced operations to be set up
     await waitFor(() => {
       expect(setTimeoutSpy).toHaveBeenCalled();
@@ -323,15 +303,11 @@ describe('Cleanup', () => {
     expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
-  it('should log cleanup completion', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    
+  it("should log cleanup completion", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
     const { unmount } = render(
-      <HydroscopeEnhanced
-        responsive={true}
-        height="600px"
-        demo={true}
-      />
+      <HydroscopeEnhanced responsive={true} height="600px" demo={true} />,
     );
 
     // Wait for component to be ready
@@ -343,8 +319,10 @@ describe('Cleanup', () => {
     unmount();
 
     // Should log cleanup completion
-    expect(consoleSpy).toHaveBeenCalledWith('🧹 HydroscopeEnhanced cleanup completed');
-    
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "🧹 HydroscopeEnhanced cleanup completed",
+    );
+
     consoleSpy.mockRestore();
   });
 });

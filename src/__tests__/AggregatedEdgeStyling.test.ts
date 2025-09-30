@@ -7,7 +7,12 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { processAggregatedSemanticTags } from "../utils/StyleProcessor.js";
-import type { GraphNode, GraphEdge, Container, StyleConfig } from "../types/core.js";
+import type {
+  GraphNode,
+  GraphEdge,
+  Container,
+  StyleConfig,
+} from "../types/core.js";
 
 describe("Aggregated Edge Styling with Conflict Resolution", () => {
   let state: VisualizationState;
@@ -114,13 +119,15 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       const result = reactFlowBridge.toReactFlowData(state);
 
       // Find aggregated edge
-      const aggregatedEdges = result.edges.filter(e => e.type === "aggregated");
+      const aggregatedEdges = result.edges.filter(
+        (e) => e.type === "aggregated",
+      );
       console.log("ReactFlow aggregated edges:", aggregatedEdges.length);
       expect(aggregatedEdges).toHaveLength(1);
 
       const aggEdge = aggregatedEdges[0];
       console.log("Aggregated edge style:", aggEdge.style);
-      
+
       // Should have some styling applied
       expect(aggEdge.style).toBeDefined();
       expect(typeof aggEdge.style).toBe("object");
@@ -200,35 +207,43 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       // Debug: Check aggregated edges in state
       const stateAggregatedEdges = state.getAggregatedEdges();
-      console.log("State aggregated edges:", stateAggregatedEdges.map(e => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        semanticTags: e.semanticTags,
-        originalEdgeIds: e.originalEdgeIds,
-      })));
+      console.log(
+        "State aggregated edges:",
+        stateAggregatedEdges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          semanticTags: e.semanticTags,
+          originalEdgeIds: e.originalEdgeIds,
+        })),
+      );
 
       // Convert to ReactFlow data
       const result = reactFlowBridge.toReactFlowData(state);
 
       // Debug: Log all edges to see what we got
-      console.log("All ReactFlow edges:", result.edges.map(e => ({
-        id: e.id,
-        type: e.type,
-        source: e.source,
-        target: e.target,
-        style: e.style,
-        animated: e.animated,
-        data: e.data,
-      })));
+      console.log(
+        "All ReactFlow edges:",
+        result.edges.map((e) => ({
+          id: e.id,
+          type: e.type,
+          source: e.source,
+          target: e.target,
+          style: e.style,
+          animated: e.animated,
+          data: e.data,
+        })),
+      );
 
       // Find aggregated edge
-      const aggregatedEdges = result.edges.filter(e => e.type === "aggregated");
+      const aggregatedEdges = result.edges.filter(
+        (e) => e.type === "aggregated",
+      );
       console.log("Found aggregated edges:", aggregatedEdges.length);
       expect(aggregatedEdges).toHaveLength(1);
 
       const aggEdge = aggregatedEdges[0];
-      
+
       // Debug: Log the actual aggregated edge to see what we got
       console.log("Aggregated edge data:", {
         id: aggEdge.id,
@@ -237,9 +252,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
         markerEnd: aggEdge.markerEnd,
         data: aggEdge.data,
       });
-      
+
       // ✅ Verify the new aggregated edge styling system is working!
-      
+
       // Should merge all compatible semantic styles correctly
       expect(aggEdge.style).toMatchObject({
         strokeWidth: 4, // Critical importance (line-width: 4)
@@ -254,7 +269,10 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       // Should track applied semantic tags
       expect(aggEdge.data.appliedSemanticTags).toEqual([
-        "Critical", "Solid", "Static", "Forward"
+        "Critical",
+        "Solid",
+        "Static",
+        "Forward",
       ]);
 
       // Should have aggregation metadata
@@ -343,11 +361,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       const result = reactFlowBridge.toReactFlowData(state);
 
       // Find aggregated edge
-      const aggregatedEdges = result.edges.filter(e => e.type === "aggregated");
+      const aggregatedEdges = result.edges.filter(
+        (e) => e.type === "aggregated",
+      );
       expect(aggregatedEdges).toHaveLength(1);
 
       const aggEdge = aggregatedEdges[0];
-      
+
       // Should use neutral defaults for conflicting properties
       expect(aggEdge.style).toMatchObject({
         strokeWidth: 2, // Neutral default for conflicting line-width (Critical=4 vs Low=1)
@@ -435,11 +455,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       const result = reactFlowBridge.toReactFlowData(state);
 
       // Find aggregated edge
-      const aggregatedEdges = result.edges.filter(e => e.type === "aggregated");
+      const aggregatedEdges = result.edges.filter(
+        (e) => e.type === "aggregated",
+      );
       expect(aggregatedEdges).toHaveLength(1);
 
       const aggEdge = aggregatedEdges[0];
-      
+
       // Should use neutral default for conflicting line-width, but keep non-conflicting properties
       expect(aggEdge.style).toMatchObject({
         strokeWidth: 2, // Neutral default for conflicting line-width (Critical=4 vs Normal=2)
@@ -459,7 +481,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
           semanticTags: ["Critical", "Solid", "Forward"],
         },
         {
-          id: "edge2", 
+          id: "edge2",
           semanticTags: ["Critical", "Solid", "Forward"],
         },
       ];
@@ -471,7 +493,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
         strokeDasharray: undefined, // Solid
       });
       expect(result.markerEnd).toBeDefined(); // Forward
-      expect(result.appliedTags).toEqual(expect.arrayContaining(["Critical", "Solid", "Forward"]));
+      expect(result.appliedTags).toEqual(
+        expect.arrayContaining(["Critical", "Solid", "Forward"]),
+      );
     });
 
     it("should process aggregated semantic tags with conflicts", () => {
@@ -492,7 +516,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
         strokeWidth: 2, // Neutral default for Critical vs Low conflict
         strokeDasharray: undefined, // Neutral default "solid" for Solid vs Dashed conflict
       });
-      expect(result.appliedTags).toEqual(expect.arrayContaining(["Critical", "Solid", "Low", "Dashed"]));
+      expect(result.appliedTags).toEqual(
+        expect.arrayContaining(["Critical", "Solid", "Low", "Dashed"]),
+      );
     });
 
     it("should handle empty original edges", () => {
@@ -540,11 +566,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
     it("should add +1 thickness in the React component", () => {
       // This tests the component-level styling logic
       const baseStyle = { strokeWidth: 2, stroke: "#2196f3" };
-      
+
       // Simulate what the AggregatedEdge component does
       const aggregatedStyle = {
         ...baseStyle,
-        strokeWidth: baseStyle.strokeWidth ? (baseStyle.strokeWidth as number) + 1 : 3,
+        strokeWidth: baseStyle.strokeWidth
+          ? (baseStyle.strokeWidth as number) + 1
+          : 3,
       };
 
       expect(aggregatedStyle.strokeWidth).toBe(3); // 2 + 1
@@ -553,11 +581,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
     it("should handle missing strokeWidth in component", () => {
       const baseStyle = { stroke: "#2196f3" }; // No strokeWidth
-      
+
       // Simulate what the AggregatedEdge component does
       const aggregatedStyle = {
         ...baseStyle,
-        strokeWidth: baseStyle.strokeWidth ? (baseStyle.strokeWidth as number) + 1 : 3,
+        strokeWidth: baseStyle.strokeWidth
+          ? (baseStyle.strokeWidth as number) + 1
+          : 3,
       };
 
       expect(aggregatedStyle.strokeWidth).toBe(3); // Default when missing

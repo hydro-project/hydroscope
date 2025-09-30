@@ -4,9 +4,9 @@
  * Renders ReactFlow handles based on the current handle configuration.
  */
 
-import React from 'react';
-import { Handle, Position } from '@xyflow/react';
-import { getHandleConfig, HANDLE_STYLES } from './handleConfig';
+import React from "react";
+import { Handle, Position } from "@xyflow/react";
+import { getHandleConfig, HANDLE_STYLES } from "./handleConfig";
 
 export function HandlesRenderer() {
   const config = getHandleConfig();
@@ -34,7 +34,7 @@ export function HandlesRenderer() {
   // Discrete handles if configured
   return (
     <>
-      {config.sourceHandles.map(handle => (
+      {config.sourceHandles.map((handle) => (
         <Handle
           key={handle.id}
           id={handle.id}
@@ -44,7 +44,7 @@ export function HandlesRenderer() {
           isConnectable={true}
         />
       ))}
-      {config.targetHandles.map(handle => (
+      {config.targetHandles.map((handle) => (
         <Handle
           key={handle.id}
           id={handle.id}

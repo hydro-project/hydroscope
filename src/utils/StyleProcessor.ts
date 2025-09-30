@@ -99,20 +99,27 @@ export function processAggregatedSemanticTags(
 
   if (!styleConfig?.semanticMappings) {
     // Fallback to merging all semantic tags if no mappings
-    const allTags = [...new Set(originalEdges.flatMap(e => e.semanticTags || []))];
-    const result = processSemanticTags(allTags, styleConfig, originalLabel, "edge");
-    
+    const allTags = [
+      ...new Set(originalEdges.flatMap((e) => e.semanticTags || [])),
+    ];
+    const result = processSemanticTags(
+      allTags,
+      styleConfig,
+      originalLabel,
+      "edge",
+    );
+
     // Ensure we always have some default styling for aggregated edges
     if (!result.style || Object.keys(result.style).length === 0) {
       return getDefaultStyle("edge");
     }
-    
+
     return result;
   }
 
   // Process each original edge to get its style settings
   const edgeStyleSettings: Record<string, string | number>[] = [];
-  
+
   for (const edge of originalEdges) {
     const edgeTags = edge.semanticTags || [];
     if (edgeTags.length > 0) {
@@ -124,11 +131,14 @@ export function processAggregatedSemanticTags(
   }
 
   // Merge style settings with conflict resolution
-  const mergedSettings = mergeStyleSettingsWithConflictResolution(edgeStyleSettings);
-  
+  const mergedSettings =
+    mergeStyleSettingsWithConflictResolution(edgeStyleSettings);
+
   // Convert merged settings to visual format
   if (Object.keys(mergedSettings).length > 0) {
-    const appliedTags = [...new Set(originalEdges.flatMap(e => e.semanticTags || []))];
+    const appliedTags = [
+      ...new Set(originalEdges.flatMap((e) => e.semanticTags || [])),
+    ];
     return convertStyleSettingsToVisual(
       mergedSettings,
       appliedTags,
@@ -148,7 +158,7 @@ function extractStyleSettingsFromTags(
   styleConfig: StyleConfig,
 ): Record<string, string | number> {
   const styleSettings: Record<string, string | number> = {};
-  
+
   if (!styleConfig.semanticMappings) {
     return styleSettings;
   }
@@ -184,7 +194,7 @@ function mergeStyleSettingsWithConflictResolution(
 
   // Collect all style properties and their values across edges
   const propertyValues: Record<string, Set<string | number>> = {};
-  
+
   for (const settings of edgeStyleSettings) {
     for (const [property, value] of Object.entries(settings)) {
       if (!propertyValues[property]) {
@@ -196,7 +206,7 @@ function mergeStyleSettingsWithConflictResolution(
 
   // Resolve conflicts
   const mergedSettings: Record<string, string | number> = {};
-  
+
   for (const [property, values] of Object.entries(propertyValues)) {
     if (values.size === 1) {
       // No conflict - use the single value
@@ -217,15 +227,17 @@ function mergeStyleSettingsWithConflictResolution(
 /**
  * Get neutral default values for conflicting style properties
  */
-function getNeutralDefaultForProperty(property: string): string | number | undefined {
+function getNeutralDefaultForProperty(
+  property: string,
+): string | number | undefined {
   const neutralDefaults: Record<string, string | number> = {
     "line-pattern": "solid",
     "line-width": 2,
-    "animation": "static",
+    animation: "static",
     "line-style": "single",
-    "halo": "none",
-    "arrowhead": "triangle-open", // Neutral arrow for aggregated edges
-    "waviness": "none",
+    halo: "none",
+    arrowhead: "triangle-open", // Neutral arrow for aggregated edges
+    waviness: "none",
   };
 
   return neutralDefaults[property];

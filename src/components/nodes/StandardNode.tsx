@@ -1,6 +1,6 @@
-import React from 'react';
-import { Handle, Position } from '@xyflow/react';
-import { HandlesRenderer } from '../../render/handles';
+import React from "react";
+import { Handle, Position } from "@xyflow/react";
+import { HandlesRenderer } from "../../render/handles";
 
 export interface StandardNodeProps {
   data: {
@@ -9,7 +9,7 @@ export interface StandardNodeProps {
     showingLongLabel?: boolean;
     nodeType: string;
     semanticTags?: string[];
-    onClick?: (elementId: string, elementType: 'node' | 'container') => void;
+    onClick?: (elementId: string, elementType: "node" | "container") => void;
   };
   id: string;
 }
@@ -17,7 +17,7 @@ export interface StandardNodeProps {
 export const StandardNode: React.FC<StandardNodeProps> = ({ data, id }) => {
   const handleClick = () => {
     if (data.onClick) {
-      data.onClick(id, 'node');
+      data.onClick(id, "node");
     }
   };
 
@@ -25,14 +25,14 @@ export const StandardNode: React.FC<StandardNodeProps> = ({ data, id }) => {
     <div
       onClick={handleClick}
       style={{
-        padding: '8px 12px',
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        backgroundColor: 'white',
-        cursor: 'pointer',
-        minWidth: '80px',
-        textAlign: 'center',
-        fontSize: '12px'
+        padding: "8px 12px",
+        border: "1px solid #ddd",
+        borderRadius: "4px",
+        backgroundColor: "white",
+        cursor: "pointer",
+        minWidth: "80px",
+        textAlign: "center",
+        fontSize: "12px",
       }}
     >
       <HandlesRenderer />

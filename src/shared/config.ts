@@ -12,28 +12,28 @@
 
 // Node styling constants
 export const NODE_STYLES = {
-  DEFAULT: 'default',
-  HIGHLIGHTED: 'highlighted',
-  SELECTED: 'selected',
-  WARNING: 'warning',
-  ERROR: 'error',
+  DEFAULT: "default",
+  HIGHLIGHTED: "highlighted",
+  SELECTED: "selected",
+  WARNING: "warning",
+  ERROR: "error",
 } as const;
 
 // Edge styling constants
 export const EDGE_STYLES = {
-  DEFAULT: 'default',
-  HIGHLIGHTED: 'highlighted',
-  DASHED: 'dashed',
-  THICK: 'thick',
-  WARNING: 'warning',
+  DEFAULT: "default",
+  HIGHLIGHTED: "highlighted",
+  DASHED: "dashed",
+  THICK: "thick",
+  WARNING: "warning",
 } as const;
 
 // Container styling constants
 export const CONTAINER_STYLES = {
-  DEFAULT: 'default',
-  HIGHLIGHTED: 'highlighted',
-  SELECTED: 'selected',
-  MINIMIZED: 'minimized',
+  DEFAULT: "default",
+  HIGHLIGHTED: "highlighted",
+  SELECTED: "selected",
+  MINIMIZED: "minimized",
 } as const;
 
 // Layout constants
@@ -167,8 +167,8 @@ export const COLOR_CONSTANTS = {
 
 // HyperEdge constants
 export const HYPEREDGE_CONSTANTS = {
-  PREFIX: 'hyper_', // Prefix for hyperEdge IDs
-  SEPARATOR: '_to_', // Separator for hyperEdge naming
+  PREFIX: "hyper_", // Prefix for hyperEdge IDs
+  SEPARATOR: "_to_", // Separator for hyperEdge naming
 } as const;
 
 // Edge style tag mappings
@@ -180,184 +180,185 @@ export const EDGE_STYLE_TAG_MAPPINGS = {
   edge_style_1: {
     style: { strokeDasharray: undefined }, // solid line
     animated: false,
-    label: '1',
+    label: "1",
   },
   edge_style_1_alt: {
-    style: { strokeDasharray: '4,4' }, // dashed line
+    style: { strokeDasharray: "4,4" }, // dashed line
     animated: false,
-    label: '1*',
+    label: "1*",
   },
 
   // Style 2 pair: Line thickness (bounds)
   edge_style_2: {
     style: { strokeWidth: 1 }, // thin
     animated: false,
-    label: '2',
+    label: "2",
   },
   edge_style_2_alt: {
     style: { strokeWidth: 3 }, // thick
     animated: false,
-    label: '2*',
+    label: "2*",
   },
 
   // Style 3 pair: Animation (scope)
   edge_style_3: {
     style: {},
     animated: false,
-    label: '3',
+    label: "3",
   },
   edge_style_3_alt: {
     style: {},
     animated: true,
-    label: '3*',
+    label: "3*",
   },
 
   // Single properties: Double line (keyed), wavy (cycle)
   edge_style_4: {
-    style: { strokeDasharray: '8,2,2,2' }, // double-line pattern
+    style: { strokeDasharray: "8,2,2,2" }, // double-line pattern
     animated: false,
-    label: '4',
+    label: "4",
   },
   edge_style_5: {
-    style: { strokeDasharray: '2,2' }, // dotted for cycles
+    style: { strokeDasharray: "2,2" }, // dotted for cycles
     animated: true,
-    label: '5',
+    label: "5",
   },
 
   // Legacy compound visual styles (for backward compatibility)
-  'dashed-animated': {
-    style: { strokeDasharray: '8,4' },
+  "dashed-animated": {
+    style: { strokeDasharray: "8,4" },
     animated: true,
-    label: '- ->',
+    label: "- ->",
   },
-  'thin-stroke': {
+  "thin-stroke": {
     style: { strokeWidth: 1 },
     animated: false,
-    label: 'thin',
+    label: "thin",
   },
-  'thick-stroke': {
+  "thick-stroke": {
     style: { strokeWidth: 3 },
     animated: false,
-    label: 'thick',
+    label: "thick",
   },
-  'wavy-line': {
-    style: { strokeDasharray: '5,5' },
+  "wavy-line": {
+    style: { strokeDasharray: "5,5" },
     animated: true,
-    label: '~',
+    label: "~",
   },
-  'smooth-line': {
+  "smooth-line": {
     style: { strokeDasharray: undefined },
     animated: false,
-    label: '—',
+    label: "—",
   },
-  'double-line': {
-    style: { strokeDasharray: '10,2,2,2' },
+  "double-line": {
+    style: { strokeDasharray: "10,2,2,2" },
     animated: false,
-    label: '=',
+    label: "=",
   },
 
   // Basic line patterns
   solid: {
     style: { strokeDasharray: undefined },
     animated: false,
-    label: '—',
+    label: "—",
   },
   dashed: {
-    style: { strokeDasharray: '8,4' },
+    style: { strokeDasharray: "8,4" },
     animated: false,
-    label: '- -',
+    label: "- -",
   },
   dotted: {
-    style: { strokeDasharray: '2,2' },
+    style: { strokeDasharray: "2,2" },
     animated: false,
-    label: '...',
+    label: "...",
   },
   wavy: {
-    style: { strokeDasharray: '5,5' },
+    style: { strokeDasharray: "5,5" },
     animated: true,
-    label: '~',
+    label: "~",
   },
   double: {
-    style: { strokeDasharray: '10,2,2,2' },
+    style: { strokeDasharray: "10,2,2,2" },
     animated: false,
-    label: '=',
+    label: "=",
   },
 
   // Line thickness
   thin: {
     style: { strokeWidth: 1 },
     animated: false,
-    label: 'T',
+    label: "T",
   },
   normal: {
     style: { strokeWidth: 2 },
     animated: false,
-    label: 'N',
+    label: "N",
   },
   thick: {
     style: { strokeWidth: 3 },
     animated: false,
-    label: 'B',
+    label: "B",
   },
-  'extra-thick': {
+  "extra-thick": {
     style: { strokeWidth: 4 },
     animated: false,
-    label: 'BB',
+    label: "BB",
   },
 
   // Animation
   animated: {
     style: {},
     animated: true,
-    label: '>',
+    label: ">",
   },
   static: {
     style: {},
     animated: false,
-    label: '',
+    label: "",
   },
 } as const;
 
 // Halo color mappings
 export const HALO_COLOR_MAPPINGS = {
-  'light-blue': '#4a90e2',
-  'light-red': '#e74c3c',
-  'light-green': '#27ae60',
+  "light-blue": "#4a90e2",
+  "light-red": "#e74c3c",
+  "light-green": "#27ae60",
 } as const;
 
 // Edge property abbreviations
 export const EDGE_PROPERTY_ABBREVIATIONS = {
-  Network: 'N',
-  Cycle: 'C',
-  Bounded: 'B',
-  Unbounded: 'U',
-  NoOrder: '~',
-  TotalOrder: 'O',
-  Keyed: 'K',
+  Network: "N",
+  Cycle: "C",
+  Bounded: "B",
+  Unbounded: "U",
+  NoOrder: "~",
+  TotalOrder: "O",
+  Keyed: "K",
 } as const;
 
 // Edge property descriptions
 export const EDGE_PROPERTY_DESCRIPTIONS = {
-  Network: 'Network communication',
-  Cycle: 'Cyclic data flow',
-  Bounded: 'Finite data stream',
-  Unbounded: 'Infinite data stream',
-  NoOrder: 'Unordered data',
-  TotalOrder: 'Ordered data',
-  Keyed: 'Key-value pairs',
+  Network: "Network communication",
+  Cycle: "Cyclic data flow",
+  Bounded: "Finite data stream",
+  Unbounded: "Infinite data stream",
+  NoOrder: "Unordered data",
+  TotalOrder: "Ordered data",
+  Keyed: "Key-value pairs",
 } as const;
 
 // Default edge style values
 export const DEFAULT_EDGE_STYLE = {
-  STROKE_COLOR: '#666666',
+  STROKE_COLOR: "#666666",
   STROKE_WIDTH: 2,
-  DEFAULT_STROKE_COLOR: '#999999', // For edges with no properties
+  DEFAULT_STROKE_COLOR: "#999999", // For edges with no properties
 } as const;
 
 // Type exports
 export type NodeStyle = (typeof NODE_STYLES)[keyof typeof NODE_STYLES];
 export type EdgeStyle = (typeof EDGE_STYLES)[keyof typeof EDGE_STYLES];
-export type ContainerStyle = (typeof CONTAINER_STYLES)[keyof typeof CONTAINER_STYLES];
+export type ContainerStyle =
+  (typeof CONTAINER_STYLES)[keyof typeof CONTAINER_STYLES];
 export type EdgeStyleTagMapping =
   (typeof EDGE_STYLE_TAG_MAPPINGS)[keyof typeof EDGE_STYLE_TAG_MAPPINGS];
 
@@ -378,66 +379,66 @@ export const OPERATION_MANAGER_CONSTANTS = {
 
 // Additional exports expected by components
 export const COMPONENT_COLORS = {
-  BACKGROUND_PRIMARY: '#ffffff',
-  BACKGROUND_SECONDARY: '#f9fafb',
-  PANEL_BACKGROUND: '#ffffff',
-  PANEL_HEADER_BACKGROUND: '#f9fafb',
-  BORDER_LIGHT: '#e5e7eb',
-  BORDER_MEDIUM: '#d1d5db',
-  TEXT_PRIMARY: '#111827',
-  TEXT_SECONDARY: '#6b7280',
-  TEXT_TERTIARY: '#9ca3af',
-  TEXT_DISABLED: '#d1d5db',
-  BUTTON_HOVER_BACKGROUND: '#f3f4f6',
+  BACKGROUND_PRIMARY: "#ffffff",
+  BACKGROUND_SECONDARY: "#f9fafb",
+  PANEL_BACKGROUND: "#ffffff",
+  PANEL_HEADER_BACKGROUND: "#f9fafb",
+  BORDER_LIGHT: "#e5e7eb",
+  BORDER_MEDIUM: "#d1d5db",
+  TEXT_PRIMARY: "#111827",
+  TEXT_SECONDARY: "#6b7280",
+  TEXT_TERTIARY: "#9ca3af",
+  TEXT_DISABLED: "#d1d5db",
+  BUTTON_HOVER_BACKGROUND: "#f3f4f6",
 };
 
 export const COLOR_PALETTES = {
   Set2: [
-    { primary: '#66c2a5', secondary: '#e0f2ef', name: 'Teal Green' },
-    { primary: '#fc8d62', secondary: '#ffe1d6', name: 'Soft Orange' },
-    { primary: '#8da0cb', secondary: '#e6e9f5', name: 'Dusty Blue' },
-    { primary: '#e78ac3', secondary: '#fbe1f2', name: 'Pink Purple' },
-    { primary: '#a6d854', secondary: '#eef8d9', name: 'Lime Green' },
-    { primary: '#ffd92f', secondary: '#fff6bf', name: 'Soft Yellow' },
-    { primary: '#e5c494', secondary: '#f6ebd9', name: 'Tan' },
+    { primary: "#66c2a5", secondary: "#e0f2ef", name: "Teal Green" },
+    { primary: "#fc8d62", secondary: "#ffe1d6", name: "Soft Orange" },
+    { primary: "#8da0cb", secondary: "#e6e9f5", name: "Dusty Blue" },
+    { primary: "#e78ac3", secondary: "#fbe1f2", name: "Pink Purple" },
+    { primary: "#a6d854", secondary: "#eef8d9", name: "Lime Green" },
+    { primary: "#ffd92f", secondary: "#fff6bf", name: "Soft Yellow" },
+    { primary: "#e5c494", secondary: "#f6ebd9", name: "Tan" },
   ],
   Set3: [
-    { primary: '#8dd3c7', secondary: '#ffffb3', name: 'Light Teal' },
-    { primary: '#bebada', secondary: '#fb8072', name: 'Light Purple' },
-    { primary: '#80b1d3', secondary: '#fdb462', name: 'Light Blue' },
-    { primary: '#fccde5', secondary: '#b3de69', name: 'Light Pink' },
-    { primary: '#d9d9d9', secondary: '#fccde5', name: 'Light Gray' },
-    { primary: '#bc80bd', secondary: '#ccebc5', name: 'Medium Purple' },
-    { primary: '#ccebc5', secondary: '#ffed6f', name: 'Light Green' },
-    { primary: '#ffed6f', secondary: '#8dd3c7', name: 'Light Yellow' },
+    { primary: "#8dd3c7", secondary: "#ffffb3", name: "Light Teal" },
+    { primary: "#bebada", secondary: "#fb8072", name: "Light Purple" },
+    { primary: "#80b1d3", secondary: "#fdb462", name: "Light Blue" },
+    { primary: "#fccde5", secondary: "#b3de69", name: "Light Pink" },
+    { primary: "#d9d9d9", secondary: "#fccde5", name: "Light Gray" },
+    { primary: "#bc80bd", secondary: "#ccebc5", name: "Medium Purple" },
+    { primary: "#ccebc5", secondary: "#ffed6f", name: "Light Green" },
+    { primary: "#ffed6f", secondary: "#8dd3c7", name: "Light Yellow" },
   ],
   Pastel1: [
-    { primary: '#fbb4ae', secondary: '#b3cde3', name: 'Soft Red' },
-    { primary: '#b3cde3', secondary: '#ccebc5', name: 'Soft Blue' },
-    { primary: '#ccebc5', secondary: '#decbe4', name: 'Soft Green' },
-    { primary: '#decbe4', secondary: '#fed9a6', name: 'Soft Lavender' },
-    { primary: '#fed9a6', secondary: '#ffffcc', name: 'Soft Orange' },
-    { primary: '#ffffcc', secondary: '#e5d8bd', name: 'Soft Yellow' },
-    { primary: '#e5d8bd', secondary: '#fddaec', name: 'Soft Beige' },
-    { primary: '#fddaec', secondary: '#f2f2f2', name: 'Soft Pink' },
+    { primary: "#fbb4ae", secondary: "#b3cde3", name: "Soft Red" },
+    { primary: "#b3cde3", secondary: "#ccebc5", name: "Soft Blue" },
+    { primary: "#ccebc5", secondary: "#decbe4", name: "Soft Green" },
+    { primary: "#decbe4", secondary: "#fed9a6", name: "Soft Lavender" },
+    { primary: "#fed9a6", secondary: "#ffffcc", name: "Soft Orange" },
+    { primary: "#ffffcc", secondary: "#e5d8bd", name: "Soft Yellow" },
+    { primary: "#e5d8bd", secondary: "#fddaec", name: "Soft Beige" },
+    { primary: "#fddaec", secondary: "#f2f2f2", name: "Soft Pink" },
   ],
   Dark2: [
-    { primary: '#1b9e77', secondary: '#d95f02', name: 'Dark Teal' },
-    { primary: '#d95f02', secondary: '#7570b3', name: 'Dark Orange' },
-    { primary: '#7570b3', secondary: '#e7298a', name: 'Dark Purple' },
-    { primary: '#e7298a', secondary: '#66a61e', name: 'Dark Pink' },
-    { primary: '#66a61e', secondary: '#e6ab02', name: 'Dark Green' },
-    { primary: '#e6ab02', secondary: '#a6761d', name: 'Dark Gold' },
-    { primary: '#a6761d', secondary: '#666666', name: 'Dark Brown' },
-    { primary: '#666666', secondary: '#1b9e77', name: 'Dark Gray' },
+    { primary: "#1b9e77", secondary: "#d95f02", name: "Dark Teal" },
+    { primary: "#d95f02", secondary: "#7570b3", name: "Dark Orange" },
+    { primary: "#7570b3", secondary: "#e7298a", name: "Dark Purple" },
+    { primary: "#e7298a", secondary: "#66a61e", name: "Dark Pink" },
+    { primary: "#66a61e", secondary: "#e6ab02", name: "Dark Green" },
+    { primary: "#e6ab02", secondary: "#a6761d", name: "Dark Gold" },
+    { primary: "#a6761d", secondary: "#666666", name: "Dark Brown" },
+    { primary: "#666666", secondary: "#1b9e77", name: "Dark Gray" },
   ],
 };
 
 export const SIZES = {
-  SMALL: 'small',
-  MEDIUM: 'medium',
-  LARGE: 'large',
-  BORDER_RADIUS_DEFAULT: '6px',
+  SMALL: "small",
+  MEDIUM: "medium",
+  LARGE: "large",
+  BORDER_RADIUS_DEFAULT: "6px",
   COLLAPSED_CONTAINER_WIDTH: 200,
   COLLAPSED_CONTAINER_HEIGHT: 150,
 };
@@ -445,31 +446,31 @@ export const SIZES = {
 // Typography and font size constants
 export const TYPOGRAPHY = {
   // InfoPanel font sizes - increased from tiny sizes for better readability
-  INFOPANEL_BASE: '14px', // Main InfoPanel content (was 10px)
-  INFOPANEL_TITLE: '16px', // Section titles
-  INFOPANEL_HIERARCHY_NODE: '13px', // Hierarchy tree nodes (was 9-10px)
-  INFOPANEL_HIERARCHY_DETAILS: '12px', // Node details and counts (was 9px)
-  INFOPANEL_LEGEND: '13px', // Legend items (was 10-11px)
+  INFOPANEL_BASE: "14px", // Main InfoPanel content (was 10px)
+  INFOPANEL_TITLE: "16px", // Section titles
+  INFOPANEL_HIERARCHY_NODE: "13px", // Hierarchy tree nodes (was 9-10px)
+  INFOPANEL_HIERARCHY_DETAILS: "12px", // Node details and counts (was 9px)
+  INFOPANEL_LEGEND: "13px", // Legend items (was 10-11px)
 
   // General UI font sizes
-  UI_SMALL: '12px',
-  UI_MEDIUM: '14px',
-  UI_LARGE: '16px',
-  UI_HEADING: '18px',
+  UI_SMALL: "12px",
+  UI_MEDIUM: "14px",
+  UI_LARGE: "16px",
+  UI_HEADING: "18px",
 
   // Page-level typography
-  PAGE_TITLE: '24px',
-  PAGE_SUBTITLE: '14px',
-  BUTTON_SMALL: '14px',
-  BUTTON_MEDIUM: '16px',
+  PAGE_TITLE: "24px",
+  PAGE_SUBTITLE: "14px",
+  BUTTON_SMALL: "14px",
+  BUTTON_MEDIUM: "16px",
 };
 
 export const SHADOWS = {
-  LIGHT: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-  MEDIUM: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-  LARGE: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-  PANEL_DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-  PANEL_DRAGGING: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+  LIGHT: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+  MEDIUM: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+  LARGE: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+  PANEL_DEFAULT: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+  PANEL_DRAGGING: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
 };
 
 // ============================================================================
@@ -491,8 +492,8 @@ export const DEFAULT_RENDER_CONFIG = {
   enableSelection: true,
 
   // Visual style defaults (kept here to avoid importing types and to satisfy FlowGraph expectations)
-  edgeStyle: 'bezier', // 'bezier' | 'straight' | 'smoothstep'
-  edgeColor: '#1976d2', // default blue edge color
+  edgeStyle: "bezier", // 'bezier' | 'straight' | 'smoothstep'
+  edgeColor: "#1976d2", // default blue edge color
   edgeWidth: 2, // px
   edgeDashed: false, // solid by default
 
@@ -502,7 +503,7 @@ export const DEFAULT_RENDER_CONFIG = {
 
   containerBorderRadius: 8, // px
   containerBorderWidth: 2, // px
-  containerShadow: 'LIGHT', // 'LIGHT' | 'MEDIUM' | 'LARGE' | 'NONE'
+  containerShadow: "LIGHT", // 'LIGHT' | 'MEDIUM' | 'LARGE' | 'NONE'
 } as const;
 
 // Wavy edge rendering configuration
@@ -531,11 +532,11 @@ export const WAVY_EDGE_CONFIG = {
 
 // ELK Layout exports expected by ELKStateManager
 export const ELK_ALGORITHMS = {
-  LAYERED: 'layered',
-  MRTREE: 'mrtree',
-  FORCE: 'force',
-  STRESS: 'stress',
-  RADIAL: 'radial',
+  LAYERED: "layered",
+  MRTREE: "mrtree",
+  FORCE: "force",
+  STRESS: "stress",
+  RADIAL: "radial",
 } as const;
 
 // Default algorithm - single source of truth
@@ -544,7 +545,7 @@ export const DEFAULT_ELK_ALGORITHM = ELK_ALGORITHMS.LAYERED;
 // Default layout configuration - single source of truth for all layout settings
 export const DEFAULT_LAYOUT_CONFIG = {
   algorithm: DEFAULT_ELK_ALGORITHM,
-  direction: 'DOWN',
+  direction: "DOWN",
   enableSmartCollapse: true,
   spacing: 100,
   nodeSize: { width: 180, height: 60 },
@@ -564,16 +565,17 @@ export const LAYOUT_SPACING = {
 };
 
 export const ELK_LAYOUT_OPTIONS = {
-  'elk.algorithm': DEFAULT_ELK_ALGORITHM,
-  'elk.direction': 'DOWN',
-  'elk.spacing.nodeNode': LAYOUT_SPACING.NODE_TO_NODE_NORMAL.toString(),
-  'elk.spacing.edgeNode': LAYOUT_SPACING.EDGE_TO_NODE.toString(),
-  'elk.spacing.edgeEdge': LAYOUT_SPACING.EDGE_TO_EDGE.toString(),
-  'elk.spacing.componentComponent': LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
-  'elk.layered.spacing.nodeNodeBetweenLayers': '50', // Match Visualizer layer separation
-  'elk.edgeRouting': 'ORTHOGONAL', // less edge overlap
-  'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX', // stagger nodes
-  'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE', // Respect our specified dimensions
+  "elk.algorithm": DEFAULT_ELK_ALGORITHM,
+  "elk.direction": "DOWN",
+  "elk.spacing.nodeNode": LAYOUT_SPACING.NODE_TO_NODE_NORMAL.toString(),
+  "elk.spacing.edgeNode": LAYOUT_SPACING.EDGE_TO_NODE.toString(),
+  "elk.spacing.edgeEdge": LAYOUT_SPACING.EDGE_TO_EDGE.toString(),
+  "elk.spacing.componentComponent":
+    LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
+  "elk.layered.spacing.nodeNodeBetweenLayers": "50", // Match Visualizer layer separation
+  "elk.edgeRouting": "ORTHOGONAL", // less edge overlap
+  "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX", // stagger nodes
+  "elk.nodeSize.options": "DEFAULT_MINIMUM_SIZE", // Respect our specified dimensions
 };
 
 export type ELKAlgorithm = (typeof ELK_ALGORITHMS)[keyof typeof ELK_ALGORITHMS];
@@ -590,12 +592,12 @@ export function getELKLayoutOptions(algorithm: string = DEFAULT_ELK_ALGORITHM) {
   const normalized = allowed[algorithm] ?? DEFAULT_ELK_ALGORITHM;
   return {
     ...ELK_LAYOUT_OPTIONS,
-    'elk.algorithm': normalized,
+    "elk.algorithm": normalized,
     // TRUST ELK: Enable proper hierarchical layout handling
-    'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+    "elk.hierarchyHandling": "INCLUDE_CHILDREN",
     // Use absolute coordinates for ReactFlow integration
-    'elk.json.shapeCoords': 'ROOT',
-    'elk.json.edgeCoords': 'ROOT',
+    "elk.json.shapeCoords": "ROOT",
+    "elk.json.edgeCoords": "ROOT",
   };
 }
 
@@ -603,19 +605,19 @@ export function createFixedPositionOptions(x?: number, y?: number) {
   const options = {
     ...ELK_LAYOUT_OPTIONS,
     // Use stronger position constraints based on ELK documentation
-    'elk.position': 'FIXED',
+    "elk.position": "FIXED",
     // Fixed size constraints - empty means size is already fixed and should not be changed
-    'elk.nodeSize.constraints': '',
-    'elk.nodeSize.options': 'DEFAULT_MINIMUM_SIZE',
+    "elk.nodeSize.constraints": "",
+    "elk.nodeSize.options": "DEFAULT_MINIMUM_SIZE",
     // Interactive layout to respect existing positions
-    'elk.interactive': 'true',
+    "elk.interactive": "true",
   };
 
   if (x !== undefined && y !== undefined) {
     return {
       ...options,
-      'elk.position.x': x.toString(),
-      'elk.position.y': y.toString(),
+      "elk.position.x": x.toString(),
+      "elk.position.y": y.toString(),
     };
   }
 
@@ -625,6 +627,6 @@ export function createFixedPositionOptions(x?: number, y?: number) {
 export function createFreePositionOptions() {
   return {
     ...ELK_LAYOUT_OPTIONS,
-    'elk.position': 'FREE',
+    "elk.position": "FREE",
   };
 }

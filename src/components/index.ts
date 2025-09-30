@@ -27,3 +27,27 @@ export {
   SearchIntegration,
   type SearchIntegrationProps,
 } from "./SearchIntegration.js";
+
+// Panel Components
+export {
+  InfoPanel,
+  type InfoPanelProps,
+  type InfoPanelRef,
+  type LegendData,
+  type LegendItem,
+  type EdgeStyleConfig,
+  type GroupingOption,
+  type SearchMatch,
+  StyleTuner,
+  type StyleTunerProps,
+  type StyleConfig,
+  type LayoutAlgorithm,
+  type ColorPaletteOption,
+} from "./panels/index.js";
+
+// New Clean Hydroscope Component
+export {
+  Hydroscope,
+  type HydroscopeProps,
+  type RenderConfig,
+} from "./Hydroscope.js";

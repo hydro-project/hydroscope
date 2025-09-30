@@ -37,7 +37,10 @@ const createPaxosLikeData = () => ({
   ],
   nodeAssignments: {
     location: Object.fromEntries(
-      Array.from({ length: 50 }, (_, i) => [`node${i}`, `loc_${Math.floor(i / 10)}`])
+      Array.from({ length: 50 }, (_, i) => [
+        `node${i}`,
+        `loc_${Math.floor(i / 10)}`,
+      ]),
     ),
   },
 });
@@ -79,10 +82,12 @@ describe("Layout Viewport Fit", () => {
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
 
       // Calculate bounding box of all nodes
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        maxX = -Infinity;
+      let minY = Infinity,
+        maxY = -Infinity;
 
-      reactFlowData.nodes.forEach(node => {
+      reactFlowData.nodes.forEach((node) => {
         const x = node.position.x;
         const y = node.position.y;
         const width = node.data.width || 120;
@@ -98,7 +103,9 @@ describe("Layout Viewport Fit", () => {
       const layoutHeight = maxY - minY;
 
       console.log(`Layout dimensions: ${layoutWidth} x ${layoutHeight}`);
-      console.log(`Nodes: ${reactFlowData.nodes.length}, Edges: ${reactFlowData.edges.length}`);
+      console.log(
+        `Nodes: ${reactFlowData.nodes.length}, Edges: ${reactFlowData.edges.length}`,
+      );
       console.log(`Containers: ${containers.length}`);
 
       // Test that the layout is valid and non-degenerate
@@ -111,12 +118,14 @@ describe("Layout Viewport Fit", () => {
       const viewportWidth = 1200;
       const viewportHeight = 800;
       const padding = 0.1; // 10% padding
-      
+
       const requiredZoomX = (viewportWidth * (1 - padding * 2)) / layoutWidth;
       const requiredZoomY = (viewportHeight * (1 - padding * 2)) / layoutHeight;
       const requiredZoom = Math.min(requiredZoomX, requiredZoomY);
 
-      console.log(`Required zoom to fit in ${viewportWidth}x${viewportHeight}: ${requiredZoom.toFixed(3)}`);
+      console.log(
+        `Required zoom to fit in ${viewportWidth}x${viewportHeight}: ${requiredZoom.toFixed(3)}`,
+      );
 
       // With our new zoom range (0.05 to 2.0), we should be able to fit graphs up to 20x larger
       // than the viewport (at 0.05 zoom = 5% = 1/20th scale)
@@ -150,10 +159,12 @@ describe("Layout Viewport Fit", () => {
       expect(reactFlowData.edges.length).toBeGreaterThan(0);
 
       // Calculate bounding box
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        maxX = -Infinity;
+      let minY = Infinity,
+        maxY = -Infinity;
 
-      reactFlowData.nodes.forEach(node => {
+      reactFlowData.nodes.forEach((node) => {
         const x = node.position.x;
         const y = node.position.y;
         const width = node.data.width || 120;
@@ -171,12 +182,14 @@ describe("Layout Viewport Fit", () => {
       // Test that we can zoom out enough to see the entire graph
       // At 0.05 zoom (5%), we can see 20x larger graphs
       const maxSupportableWidth = 1200 / 0.05; // 24,000px
-      const maxSupportableHeight = 800 / 0.05;  // 16,000px
+      const maxSupportableHeight = 800 / 0.05; // 16,000px
 
       expect(layoutWidth).toBeLessThan(maxSupportableWidth);
       expect(layoutHeight).toBeLessThan(maxSupportableHeight);
 
-      console.log(`Layout: ${layoutWidth}x${layoutHeight}, Max supportable: ${maxSupportableWidth}x${maxSupportableHeight}`);
+      console.log(
+        `Layout: ${layoutWidth}x${layoutHeight}, Max supportable: ${maxSupportableWidth}x${maxSupportableHeight}`,
+      );
     });
 
     it("should provide smooth zoom experience across the full range", async () => {
@@ -188,32 +201,36 @@ describe("Layout Viewport Fit", () => {
 
       // Test both collapsed and expanded states
       const containers = state.visibleContainers;
-      
+
       // Test collapsed state
       await elkBridge.layout(state);
       const collapsedData = reactFlowBridge.toReactFlowData(state);
-      
+
       // Expand all containers
       for (const container of containers) {
         if (container.collapsed) {
           state.expandContainer(container.id);
         }
       }
-      
+
       // Test expanded state
       await elkBridge.layout(state);
       const expandedData = reactFlowBridge.toReactFlowData(state);
 
       // Verify that expansion significantly increases the graph size
-      expect(expandedData.nodes.length).toBeGreaterThanOrEqual(collapsedData.nodes.length);
-      
+      expect(expandedData.nodes.length).toBeGreaterThanOrEqual(
+        collapsedData.nodes.length,
+      );
+
       // Both states should be valid
       expect(collapsedData.nodes.length).toBeGreaterThan(0);
       expect(expandedData.nodes.length).toBeGreaterThan(0);
       expect(collapsedData.edges.length).toBeGreaterThan(0);
       expect(expandedData.edges.length).toBeGreaterThan(0);
 
-      console.log(`Collapsed: ${collapsedData.nodes.length} nodes, Expanded: ${expandedData.nodes.length} nodes`);
+      console.log(
+        `Collapsed: ${collapsedData.nodes.length} nodes, Expanded: ${expandedData.nodes.length} nodes`,
+      );
     });
   });
 });

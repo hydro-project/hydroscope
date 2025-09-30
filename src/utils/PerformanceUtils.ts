@@ -287,14 +287,10 @@ export function measureAsync<T>(
   const profiler = new PerformanceProfiler();
 
   return (async () => {
-    try {
-      profiler.start();
-      const result = await fn();
-      const metrics = profiler.stop();
-      return { result, metrics };
-    } catch (error) {
-      throw error;
-    }
+    profiler.start();
+    const result = await fn();
+    const metrics = profiler.stop();
+    return { result, metrics };
   })();
 }
 

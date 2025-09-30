@@ -1017,30 +1017,30 @@ describe("AsyncCoordinator", () => {
 
     beforeEach(() => {
       state = new VisualizationState();
-      
+
       // Add some test containers
       state.addContainer({
         id: "container1",
         label: "Container 1",
         children: new Set<string>(),
         collapsed: true,
-        hidden: false
+        hidden: false,
       });
 
       state.addContainer({
-        id: "container2", 
+        id: "container2",
         label: "Container 2",
         children: new Set<string>(),
         collapsed: false,
-        hidden: false
+        hidden: false,
       });
 
       state.addContainer({
         id: "container3",
-        label: "Container 3", 
+        label: "Container 3",
         children: new Set<string>(),
         collapsed: true,
-        hidden: false
+        hidden: false,
       });
     });
 
@@ -1095,7 +1095,7 @@ describe("AsyncCoordinator", () => {
       const container1 = state.getContainer("container1");
       const container2 = state.getContainer("container2");
       const container3 = state.getContainer("container3");
-      
+
       expect(container1?.collapsed).toBe(false);
       expect(container2?.collapsed).toBe(false); // Was already expanded
       expect(container3?.collapsed).toBe(false);
@@ -1111,7 +1111,7 @@ describe("AsyncCoordinator", () => {
       const container1 = state.getContainer("container1");
       const container2 = state.getContainer("container2");
       const container3 = state.getContainer("container3");
-      
+
       expect(container1?.collapsed).toBe(true); // Was already collapsed
       expect(container2?.collapsed).toBe(true); // Should be collapsed now
       expect(container3?.collapsed).toBe(true); // Was already collapsed
@@ -1135,7 +1135,7 @@ describe("AsyncCoordinator", () => {
     it("should retry failed container operations", async () => {
       let attemptCount = 0;
       const originalExpandContainer = state.expandContainer.bind(state);
-      
+
       // Mock the expandContainer method to fail on first attempt
       state.expandContainer = vi.fn((containerId: string) => {
         attemptCount++;
@@ -1232,21 +1232,27 @@ describe("AsyncCoordinator", () => {
       // Mock the container operations to track order
       const originalExpandContainer = state.expandContainer.bind(state);
       const originalCollapseContainer = state.collapseContainer.bind(state);
-      
+
       state.expandContainer = vi.fn((containerId: string) => {
         operationOrder.push(`expand-${containerId}`);
         return originalExpandContainer(containerId);
       });
-      
+
       state.collapseContainer = vi.fn((containerId: string) => {
         operationOrder.push(`collapse-${containerId}`);
         return originalCollapseContainer(containerId);
       });
 
       // Queue multiple operations sequentially
-      await coordinator.expandContainer("container1", state, { triggerLayout: false });
-      await coordinator.collapseContainer("container2", state, { triggerLayout: false });
-      await coordinator.expandContainer("container3", state, { triggerLayout: false });
+      await coordinator.expandContainer("container1", state, {
+        triggerLayout: false,
+      });
+      await coordinator.collapseContainer("container2", state, {
+        triggerLayout: false,
+      });
+      await coordinator.expandContainer("container3", state, {
+        triggerLayout: false,
+      });
 
       // Operations should be executed in the order they were queued
       expect(operationOrder).toEqual([
@@ -1271,7 +1277,7 @@ describe("AsyncCoordinator", () => {
       const container1 = state.getContainer("container1");
       const container2 = state.getContainer("container2");
       const container3 = state.getContainer("container3");
-      
+
       expect(container1?.collapsed).toBe(false);
       expect(container2?.collapsed).toBe(false);
       expect(container3?.collapsed).toBe(false);

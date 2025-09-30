@@ -21,13 +21,16 @@ export interface TruncationOptions {
 /**
  * Default delimiters commonly found in container/node names
  */
-export const DEFAULT_DELIMITERS = ['::', '.', '_', '-', '/', ' '];
+export const DEFAULT_DELIMITERS = ["::", ".", "_", "-", "/", " "];
 
 /**
  * Smart truncation that preserves meaningful parts of labels
  * Based on the logic from HierarchyTree.tsx
  */
-export function truncateLabel(label: string, options: TruncationOptions): string {
+export function truncateLabel(
+  label: string,
+  options: TruncationOptions,
+): string {
   const {
     maxLength,
     preferDelimiters = true,
@@ -51,7 +54,9 @@ export function truncateLabel(label: string, options: TruncationOptions): string
   }
 
   // Fallback to simple truncation
-  return leftTruncate ? `…${label.slice(-(maxLength - 1))}` : `${label.slice(0, maxLength - 1)}…`;
+  return leftTruncate
+    ? `…${label.slice(-(maxLength - 1))}`
+    : `${label.slice(0, maxLength - 1)}…`;
 }
 
 /**
@@ -61,7 +66,7 @@ export function truncateLabel(label: string, options: TruncationOptions): string
 function leftTruncateWithDelimiters(
   label: string,
   maxLength: number,
-  delimiters: string[]
+  delimiters: string[],
 ): string {
   // Try each delimiter to find the best truncation
   for (const delimiter of delimiters) {
@@ -111,7 +116,7 @@ function leftTruncateWithDelimiters(
 function rightTruncateWithDelimiters(
   label: string,
   maxLength: number,
-  delimiters: string[]
+  delimiters: string[],
 ): string {
   // Try to split on common delimiters and keep meaningful parts
   for (const delimiter of delimiters) {
@@ -146,12 +151,12 @@ function rightTruncateWithDelimiters(
   // Fallback: smart truncation from the end, keeping whole words when possible
   if (label.length > maxLength) {
     const truncated = label.slice(0, maxLength - 1);
-    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    const lastSpaceIndex = truncated.lastIndexOf(" ");
     if (lastSpaceIndex > maxLength * 0.7) {
       // Only break on word if it's not too short
-      return truncated.slice(0, lastSpaceIndex) + '…';
+      return truncated.slice(0, lastSpaceIndex) + "…";
     }
-    return truncated + '…';
+    return truncated + "…";
   }
 
   return label;
@@ -161,11 +166,14 @@ function rightTruncateWithDelimiters(
  * Specialized truncation for container names in collapsed state
  * Optimized for Rust-style paths and hierarchical names
  */
-export function truncateContainerName(name: string, maxLength: number = 22): string {
+export function truncateContainerName(
+  name: string,
+  maxLength: number = 22,
+): string {
   return truncateLabel(name, {
     maxLength,
     preferDelimiters: true,
-    delimiters: ['::', '_', '.', '-', '/'],
+    delimiters: ["::", "_", ".", "-", "/"],
     leftTruncate: true,
   });
 }
@@ -178,7 +186,7 @@ export function calculateCollapsedWidth(
   label: string,
   minWidth: number = 200,
   charWidth: number = 8,
-  padding: number = 16
+  padding: number = 16,
 ): number {
   const truncated = truncateContainerName(label);
   const calculatedWidth = truncated.length * charWidth + padding;

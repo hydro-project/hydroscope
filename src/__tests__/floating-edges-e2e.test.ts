@@ -48,7 +48,7 @@ describe("Floating Edges E2E Test", () => {
     console.log("📊 Initial state:");
     console.log(`  - Visible nodes: ${visualizationState.visibleNodes.length}`);
     console.log(
-      `  - Visible containers: ${visualizationState.visibleContainers.length}`
+      `  - Visible containers: ${visualizationState.visibleContainers.length}`,
     );
     console.log(`  - Visible edges: ${visualizationState.visibleEdges.length}`);
 
@@ -68,7 +68,7 @@ describe("Floating Edges E2E Test", () => {
 
     // Verify containers are collapsed
     const collapsedContainers = Array.from(
-      visualizationState.visibleContainers
+      visualizationState.visibleContainers,
     ).filter((c) => c.collapsed);
     console.log(`📦 Collapsed containers: ${collapsedContainers.length}`);
     expect(collapsedContainers.length).toBeGreaterThan(0);
@@ -116,7 +116,7 @@ describe("Floating Edges E2E Test", () => {
     // Step 6: Report results
     console.log("\n📋 Test Results:");
     console.log(
-      `  - Floating edges (missing endpoints): ${floatingEdges.length}`
+      `  - Floating edges (missing endpoints): ${floatingEdges.length}`,
     );
     console.log(`  - Edges with handles: ${edgesWithHandles.length}`);
     console.log(`  - Edges without handles: ${edgesWithoutHandles.length}`);
@@ -127,17 +127,17 @@ describe("Floating Edges E2E Test", () => {
 
     if (edgesWithoutHandles.length > 0) {
       console.log(
-        `⚠️  EDGES WITHOUT HANDLES: ${edgesWithoutHandles.join(", ")}`
+        `⚠️  EDGES WITHOUT HANDLES: ${edgesWithoutHandles.join(", ")}`,
       );
     }
 
     // Step 7: Validate node structure
     console.log("\n🔍 Validating node structure...");
     const containerNodes = reactFlowData.nodes.filter(
-      (n) => n.type === "container" || n.data.collapsed
+      (n) => n.type === "container" || n.data.collapsed,
     );
     const standardNodes = reactFlowData.nodes.filter(
-      (n) => n.type === "standard" || n.type === "node"
+      (n) => n.type === "standard" || n.type === "node",
     );
 
     console.log(`📦 Container nodes: ${containerNodes.length}`);
@@ -149,7 +149,7 @@ describe("Floating Edges E2E Test", () => {
       console.log(`   - Collapsed: ${node.data.collapsed}`);
       console.log(`   - Position: (${node.position.x}, ${node.position.y})`);
       console.log(
-        `   - Dimensions: ${node.style?.width}x${node.style?.height}`
+        `   - Dimensions: ${node.style?.width}x${node.style?.height}`,
       );
     }
 
@@ -161,7 +161,7 @@ describe("Floating Edges E2E Test", () => {
     if (floatingEdges.length > 0) {
       console.error(`❌ FLOATING EDGES DETECTED: ${floatingEdges.join(", ")}`);
       console.error(
-        "This indicates edges are trying to connect to non-existent nodes"
+        "This indicates edges are trying to connect to non-existent nodes",
       );
     }
     expect(floatingEdges).toHaveLength(0);
@@ -169,7 +169,7 @@ describe("Floating Edges E2E Test", () => {
     // All edges should have proper handle assignments when using discrete strategy
     if (edgesWithoutHandles.length > 0) {
       console.error(
-        `❌ EDGES WITHOUT HANDLES: ${edgesWithoutHandles.join(", ")}`
+        `❌ EDGES WITHOUT HANDLES: ${edgesWithoutHandles.join(", ")}`,
       );
       console.error("This indicates smart handle selection is not working");
     }
@@ -194,7 +194,7 @@ describe("Floating Edges E2E Test", () => {
     const config = getHandleConfig();
     console.log("🔧 Handle configuration:");
     console.log(
-      `  - Enable continuous handles: ${config.enableContinuousHandles}`
+      `  - Enable continuous handles: ${config.enableContinuousHandles}`,
     );
     console.log(`  - Source handles: ${config.sourceHandles.length}`);
     console.log(`  - Target handles: ${config.targetHandles.length}`);
@@ -227,22 +227,22 @@ describe("Floating Edges E2E Test", () => {
 
   test("should validate ReactFlowBridge smart handle selection", async () => {
     console.log(
-      "\n🧪 [E2E Test] Testing ReactFlowBridge smart handle selection"
+      "\n🧪 [E2E Test] Testing ReactFlowBridge smart handle selection",
     );
 
     // Test the bridge's smart handle selection with real paxos data
     const reactFlowData = reactFlowBridge.toReactFlowData(visualizationState);
 
     console.log(
-      `📊 ReactFlow data: ${reactFlowData.nodes.length} nodes, ${reactFlowData.edges.length} edges`
+      `📊 ReactFlow data: ${reactFlowData.nodes.length} nodes, ${reactFlowData.edges.length} edges`,
     );
 
     // Check if any edges have handles assigned
     const edgesWithHandles = reactFlowData.edges.filter(
-      (e) => e.sourceHandle && e.targetHandle
+      (e) => e.sourceHandle && e.targetHandle,
     );
     const edgesWithoutHandles = reactFlowData.edges.filter(
-      (e) => !e.sourceHandle || !e.targetHandle
+      (e) => !e.sourceHandle || !e.targetHandle,
     );
 
     console.log(`🔗 Edges with handles: ${edgesWithHandles.length}`);
@@ -253,7 +253,7 @@ describe("Floating Edges E2E Test", () => {
       console.log("✅ Example edges with handles:");
       edgesWithHandles.slice(0, 3).forEach((edge) => {
         console.log(
-          `   - ${edge.id}: ${edge.source}[${edge.sourceHandle}] -> ${edge.target}[${edge.targetHandle}]`
+          `   - ${edge.id}: ${edge.source}[${edge.sourceHandle}] -> ${edge.target}[${edge.targetHandle}]`,
         );
       });
     }
@@ -262,7 +262,7 @@ describe("Floating Edges E2E Test", () => {
       console.log("❌ Example edges without handles:");
       edgesWithoutHandles.slice(0, 3).forEach((edge) => {
         console.log(
-          `   - ${edge.id}: ${edge.source}[${edge.sourceHandle || "NONE"}] -> ${edge.target}[${edge.targetHandle || "NONE"}]`
+          `   - ${edge.id}: ${edge.source}[${edge.sourceHandle || "NONE"}] -> ${edge.target}[${edge.targetHandle || "NONE"}]`,
         );
       });
     }

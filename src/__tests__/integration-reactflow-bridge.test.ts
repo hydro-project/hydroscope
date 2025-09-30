@@ -366,7 +366,8 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       reactFlowData = bridge.toReactFlowData(state);
 
       const collapsedContainers = reactFlowData.nodes.filter(
-        (node) => node.data.nodeType === "container" && node.data.collapsed === true,
+        (node) =>
+          node.data.nodeType === "container" && node.data.collapsed === true,
       );
       expect(collapsedContainers.length).toBe(2);
     });

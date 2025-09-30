@@ -94,7 +94,7 @@ export class VisualizationState {
     // Debug: Log first few edges to verify they're still valid when added to state
     if (this._edges.size < 5) {
       console.log(
-        `[VisualizationState] 🔍 Adding edge ${edge.id}: ${edge.source} -> ${edge.target}`
+        `[VisualizationState] 🔍 Adding edge ${edge.id}: ${edge.source} -> ${edge.target}`,
       );
     }
 
@@ -188,7 +188,7 @@ export class VisualizationState {
   updateContainer(id: string, container: Container): void {
     if (!this._containers.has(id)) {
       console.warn(
-        "[VisualizationState] updateContainer called with invalid id"
+        "[VisualizationState] updateContainer called with invalid id",
       );
       return; // Handle non-existent container gracefully
     }
@@ -207,11 +207,11 @@ export class VisualizationState {
 
   private _validateContainerData(
     container: Container,
-    validateId: boolean = true
+    validateId: boolean = true,
   ): void {
     if (!container) {
       throw new Error(
-        "Invalid container: container cannot be null or undefined"
+        "Invalid container: container cannot be null or undefined",
       );
     }
     if (validateId && (!container.id || container.id.trim() === "")) {
@@ -293,7 +293,7 @@ export class VisualizationState {
     // Check that each container referenced only once. Prevents DAGs and cycles
     if (container.children.has(container.id)) {
       throw new Error(
-        `Non-tree dependency detected: Container ${container.id} cannot contain itself`
+        `Non-tree dependency detected: Container ${container.id} cannot contain itself`,
       );
     }
 
@@ -303,7 +303,7 @@ export class VisualizationState {
       if (existingContainer.children.has(container.id)) {
         // container.id is already a child of existingId
         throw new Error(
-          `Non-tree dependency detected: ${existingId} already referenced ${container.id} as a child`
+          `Non-tree dependency detected: ${existingId} already referenced ${container.id} as a child`,
         );
       }
     }
@@ -333,7 +333,7 @@ export class VisualizationState {
         // Only show their contents if they are not collapsed
         if (!childContainer.collapsed) {
           console.warn(
-            "_showImmediateChildren: nested call suggests nested expended containers"
+            "_showImmediateChildren: nested call suggests nested expended containers",
           );
           this._showImmediateChildren(childId);
         }
@@ -415,19 +415,19 @@ export class VisualizationState {
           const bridge = new ReactFlowBridge({});
           const result = bridge.toReactFlowData(this);
           console.log(
-            `[VisualizationState] ✅ ReactFlow validation completed - ${result.nodes.length} nodes, ${result.edges.length} edges`
+            `[VisualizationState] ✅ ReactFlow validation completed - ${result.nodes.length} nodes, ${result.edges.length} edges`,
           );
         })
         .catch((error) => {
           console.error(
             `[VisualizationState] ❌ ReactFlow validation failed:`,
-            error
+            error,
           );
         });
     } catch (error) {
       console.error(
         `[VisualizationState] ❌ ReactFlow validation import failed:`,
-        error
+        error,
       );
     }
   }
@@ -443,7 +443,7 @@ export class VisualizationState {
     // Get all descendants of this container (including nested containers)
     const allDescendants = this._getAllDescendantIds(containerId);
     console.log(
-      `[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(", ")}`
+      `[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(", ")}`,
     );
 
     const edgesToAggregate = new Map<string, GraphEdge[]>(); // key: source-target, value: edges
@@ -590,7 +590,7 @@ export class VisualizationState {
         const newOriginalIds = edges.map((e) => e.id);
         // Only add edge IDs that aren't already in the list to prevent duplicates
         const uniqueNewIds = newOriginalIds.filter(
-          (id) => !existingAggEdge.originalEdgeIds.includes(id)
+          (id) => !existingAggEdge.originalEdgeIds.includes(id),
         );
         existingAggEdge.originalEdgeIds.push(...uniqueNewIds);
         existingAggEdge.semanticTags = [
@@ -618,7 +618,7 @@ export class VisualizationState {
         // Update tracking structures
         this._aggregatedToOriginalMap.set(
           aggregatedEdge.id,
-          aggregatedEdge.originalEdgeIds
+          aggregatedEdge.originalEdgeIds,
         );
         for (const originalId of aggregatedEdge.originalEdgeIds) {
           this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
@@ -635,7 +635,7 @@ export class VisualizationState {
     // Record aggregation history
     const edgeCount = Array.from(edgesBySourceTarget.values()).reduce(
       (sum, edgeGroup) => sum + edgeGroup.edges.length,
-      0
+      0,
     );
     if (edgeCount > 0) {
       this._aggregationHistory.push({
@@ -741,7 +741,7 @@ export class VisualizationState {
     const containerAggregations =
       this._containerAggregationMap.get(containerId) || [];
     const updatedAggregations = containerAggregations.filter(
-      (id) => !aggregatedEdgesToRemove.includes(id)
+      (id) => !aggregatedEdgesToRemove.includes(id),
     );
     if (updatedAggregations.length === 0) {
       this._containerAggregationMap.delete(containerId);
@@ -769,7 +769,7 @@ export class VisualizationState {
     const sourceNode = this._nodes.get(edge.source);
     if (sourceNode && sourceNode.hidden) {
       sourceContainer = this._findSmallestCollapsedContainerForNode(
-        edge.source
+        edge.source,
       );
     }
 
@@ -778,7 +778,7 @@ export class VisualizationState {
     const targetNode = this._nodes.get(edge.target);
     if (targetNode && targetNode.hidden) {
       targetContainer = this._findSmallestCollapsedContainerForNode(
-        edge.target
+        edge.target,
       );
     }
 
@@ -840,7 +840,7 @@ export class VisualizationState {
   }
 
   private _findSmallestCollapsedContainerForNode(
-    nodeId: string
+    nodeId: string,
   ): string | undefined {
     let currentContainer = this._nodeContainerMap.get(nodeId);
 
@@ -857,7 +857,7 @@ export class VisualizationState {
 
   getAggregatedEdges(): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
-      (edge) => !edge.hidden
+      (edge) => !edge.hidden,
     );
   }
 
@@ -872,17 +872,17 @@ export class VisualizationState {
 
   get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge> {
     const regularEdges = Array.from(this._edges.values()).filter(
-      (edge) => !edge.hidden
+      (edge) => !edge.hidden,
     );
     const aggregatedEdges = Array.from(this._aggregatedEdges.values()).filter(
-      (edge) => !edge.hidden
+      (edge) => !edge.hidden,
     );
     return [...regularEdges, ...aggregatedEdges];
   }
 
   get visibleContainers(): ReadonlyArray<Container> {
     return Array.from(this._containers.values()).filter(
-      (container) => !container.hidden
+      (container) => !container.hidden,
     );
   }
 
@@ -1102,7 +1102,7 @@ export class VisualizationState {
 
     if (!this.shouldRunSmartCollapse()) {
       console.log(
-        `[VisualizationState] ⏭️ Smart collapse skipped - not enabled or not first layout`
+        `[VisualizationState] ⏭️ Smart collapse skipped - not enabled or not first layout`,
       );
       return;
     }
@@ -1112,7 +1112,7 @@ export class VisualizationState {
       (container) =>
         !container.collapsed &&
         !container.hidden &&
-        this._shouldCollapseContainer(container)
+        this._shouldCollapseContainer(container),
     );
 
     console.log(`[VisualizationState] 📊 Smart collapse analysis:`);
@@ -1128,14 +1128,14 @@ export class VisualizationState {
     let collapsedCount = 0;
     for (const container of collapsibleContainers) {
       console.log(
-        `[VisualizationState] 🔄 Smart collapsing container: ${container.id} (${container.children.size} children)`
+        `[VisualizationState] 🔄 Smart collapsing container: ${container.id} (${container.children.size} children)`,
       );
       this.collapseContainerSystemOperation(container.id);
       collapsedCount++;
     }
 
     console.log(
-      `[VisualizationState] ✅ Smart collapse completed: ${collapsedCount} containers collapsed`
+      `[VisualizationState] ✅ Smart collapse completed: ${collapsedCount} containers collapsed`,
     );
   }
 
@@ -1155,7 +1155,7 @@ export class VisualizationState {
 
     if (shouldCollapse) {
       console.log(
-        `[VisualizationState] 🎯 Container ${container.id} meets smart collapse criteria (${childCount} children > 3)`
+        `[VisualizationState] 🎯 Container ${container.id} meets smart collapse criteria (${childCount} children > 3)`,
       );
     }
 
@@ -1205,7 +1205,7 @@ export class VisualizationState {
     const container = this._containers.get(id);
     if (!container) {
       console.warn(
-        `[VisualizationState] ❌ Container ${id} not found in _collapseContainerInternal`
+        `[VisualizationState] ❌ Container ${id} not found in _collapseContainerInternal`,
       );
       return;
     }
@@ -1252,18 +1252,18 @@ export class VisualizationState {
   }
 
   getAggregatedEdgesByContainer(
-    containerId: string
+    containerId: string,
   ): ReadonlyArray<AggregatedEdge> {
     const edgeIds = this._containerAggregationMap.get(containerId) || [];
     return edgeIds
       .map((id) => this._aggregatedEdges.get(id))
       .filter(
-        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden
+        (edge): edge is AggregatedEdge => edge !== undefined && !edge.hidden,
       );
   }
 
   getOriginalEdgesForAggregated(
-    aggregatedEdgeId: string
+    aggregatedEdgeId: string,
   ): ReadonlyArray<GraphEdge> {
     const originalIds =
       this._aggregatedToOriginalMap.get(aggregatedEdgeId) || [];
@@ -1273,11 +1273,11 @@ export class VisualizationState {
   }
 
   getAggregatedEdgesAffectingNode(
-    nodeId: string
+    nodeId: string,
   ): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
       (edge) =>
-        !edge.hidden && (edge.source === nodeId || edge.target === nodeId)
+        !edge.hidden && (edge.source === nodeId || edge.target === nodeId),
     );
   }
 
@@ -1313,7 +1313,7 @@ export class VisualizationState {
 
     const totalOriginalEdges = this._edges.size;
     const visibleOriginalEdges = Array.from(this._edges.values()).filter(
-      (e) => !e.hidden
+      (e) => !e.hidden,
     ).length;
     const totalVisibleEdges = visibleOriginalEdges + activeAggregations;
     const edgeReductionRatio =
@@ -1347,7 +1347,7 @@ export class VisualizationState {
         const originalEdge = this._edges.get(originalId);
         if (!originalEdge) {
           errors.push(
-            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`
+            `Aggregated edge ${aggId} references non-existent original edge ${originalId}`,
           );
         }
       }
@@ -1358,7 +1358,7 @@ export class VisualizationState {
       const aggEdge = this._aggregatedEdges.get(aggId);
       if (!aggEdge) {
         errors.push(
-          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`
+          `Original edge ${originalId} maps to non-existent aggregated edge ${aggId}`,
         );
       }
     }
@@ -1394,7 +1394,7 @@ export class VisualizationState {
 
   getNodesShowingLongLabels(): ReadonlyArray<GraphNode> {
     return Array.from(this._nodes.values()).filter(
-      (node) => node.showingLongLabel
+      (node) => node.showingLongLabel,
     );
   }
 
@@ -1404,15 +1404,15 @@ export class VisualizationState {
     expandedContainers: number;
   } {
     const nodesWithLongLabels = Array.from(this._nodes.values()).filter(
-      (node) => node.showingLongLabel
+      (node) => node.showingLongLabel,
     ).length;
 
     const collapsedContainers = Array.from(this._containers.values()).filter(
-      (container) => container.collapsed
+      (container) => container.collapsed,
     ).length;
 
     const expandedContainers = Array.from(this._containers.values()).filter(
-      (container) => !container.collapsed
+      (container) => !container.collapsed,
     ).length;
 
     return {
@@ -1444,7 +1444,7 @@ export class VisualizationState {
     for (const [nodeId, node] of this._nodes) {
       if (node.showingLongLabel && !node.longLabel) {
         errors.push(
-          `Node ${nodeId} is showing long label but has no longLabel property`
+          `Node ${nodeId} is showing long label but has no longLabel property`,
         );
       }
     }
@@ -1536,7 +1536,7 @@ export class VisualizationState {
   // TODO: Use a library for this.
   private _findMatches(
     text: string,
-    query: string
+    query: string,
   ): { matches: boolean; indices: number[][]; isExact: boolean } {
     const textLower = text.toLowerCase();
     const indices: number[][] = [];
@@ -1621,7 +1621,7 @@ export class VisualizationState {
   // Advanced search methods
   searchByType(
     query: string,
-    entityType: "node" | "container"
+    entityType: "node" | "container",
   ): SearchResult[] {
     const allResults = this.search(query);
     return allResults.filter((result) => result.type === entityType);
@@ -1634,7 +1634,7 @@ export class VisualizationState {
     for (const node of this._nodes.values()) {
       if (
         node.semanticTags.some((nodeTag) =>
-          nodeTag.toLowerCase().includes(tag.toLowerCase())
+          nodeTag.toLowerCase().includes(tag.toLowerCase()),
         )
       ) {
         this._searchResults.push({
@@ -1650,7 +1650,7 @@ export class VisualizationState {
     for (const edge of this._edges.values()) {
       if (
         edge.semanticTags.some((edgeTag) =>
-          edgeTag.toLowerCase().includes(tag.toLowerCase())
+          edgeTag.toLowerCase().includes(tag.toLowerCase()),
         )
       ) {
         // Add source and target nodes if not already in results
@@ -1725,7 +1725,7 @@ export class VisualizationState {
       this._performanceMetrics.operationCounts.get(operationName) || 0;
     this._performanceMetrics.operationCounts.set(
       operationName,
-      currentCount + 1
+      currentCount + 1,
     );
 
     // Track operation times (keep last 10 for average calculation)
@@ -1753,12 +1753,12 @@ export class VisualizationState {
       // Generate recommendations based on performance
       if (avg > 50 && operation.includes("search")) {
         recommendations.push(
-          `Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`
+          `Search operations averaging ${avg.toFixed(2)}ms - consider search indexing`,
         );
       }
       if (avg > 100 && operation.includes("container")) {
         recommendations.push(
-          `Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`
+          `Container operations averaging ${avg.toFixed(2)}ms - consider lazy loading`,
         );
       }
     }
@@ -1836,7 +1836,7 @@ export class VisualizationState {
 
   private validateDescendantsCollapsed(
     containerId: string,
-    violations: InvariantViolation[]
+    violations: InvariantViolation[],
   ): void {
     const children = this.getContainerChildren(containerId);
 
@@ -1875,7 +1875,7 @@ export class VisualizationState {
 
   private validateAncestorsVisible(
     containerId: string,
-    violations: InvariantViolation[]
+    violations: InvariantViolation[],
   ): void {
     let current = this.getNodeContainer(containerId);
 
@@ -2018,10 +2018,10 @@ export class VisualizationState {
     if (errors.length > 0) {
       console.error(
         "[VisualizationState] CRITICAL: Invariant violations:",
-        errors
+        errors,
       );
       throw new Error(
-        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`
+        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`,
       );
     }
   }

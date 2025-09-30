@@ -1,0 +1,1669 @@
+/**
+ * InfoPanel - Standalone panel component for graph information and controls
+ * 
+ * Extracted from HydroscopeEnhanced to provide:
+ * - Search functionality with wildcard support for containers and nodes
+ * - Container hierarchy tree with expand/collapse functionality
+ * - Legend display for node types with color palette support
+ * - Edge style legend display functionality
+ * - Collapsible sections for organizing interface
+ * - Search navigation and highlighting
+ * - Reset to defaults functionality for panel settings
+ * - Settings persistence to localStorage with error handling
+ * - Integration with v6 VisualizationState and AsyncCoordinator
+ * 
+ * ## V6 Architecture Integration
+ * 
+ * This component integrates with the v6 architecture through:
+ * - **VisualizationState**: Single source of truth for graph data and search operations
+ * - **AsyncCoordinator**: Proper operation sequencing for container operations
+ * - **Error Handling**: Graceful degradation when v6 components are unavailable
+ * 
+ * ## Usage Example
+ * 
+ * ```tsx
+ * import { InfoPanel } from '@hydro-project/hydroscope';
+ * 
+ * function MyComponent() {
+ *   const [infoPanelOpen, setInfoPanelOpen] = useState(true);
+ *   const [visualizationState, setVisualizationState] = useState(null);
+ *   
+ *   return (
+ *     <InfoPanel
+ *       visualizationState={visualizationState}
+ *       open={infoPanelOpen}
+ *       onOpenChange={setInfoPanelOpen}
+ *       onSearchUpdate={(query, matches, current) => {
+ *         console.log(`Search: ${query}, ${matches.length} matches`);
+ *       }}
+ *       onToggleContainer={(containerId) => {
+ *         console.log(`Toggle container: ${containerId}`);
+ *       }}
+ *       onError={(error) => {
+ *         console.error('InfoPanel error:', error);
+ *       }}
+ *     />
+ *   );
+ * }
+ * ```
+ * 
+ * ## Migration from Embedded Implementation
+ * 
+ * If migrating from HydroscopeEnhanced's embedded InfoPanel:
+ * 1. Replace embedded usage with standalone InfoPanel component
+ * 2. Pass VisualizationState as prop instead of accessing internally
+ * 3. Handle panel visibility state in parent component
+ * 4. Update callback signatures to match new interface
+ * 
+ * @since 1.0.0-alpha.7
+ */
+
+import React, { useState, useEffect, useCallback, useMemo, useRef, forwardRef, useImperativeHandle } from "react";
+import { SearchIntegration } from "../SearchIntegration.js";
+import { VisualizationState } from "../../core/VisualizationState.js";
+import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
+import type { SearchResult, Container } from "../../types/core.js";
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+/**
+ * Props interface for the InfoPanel component
+ * 
+ * @interface InfoPanelProps
+ */
+export interface InfoPanelProps {
+    /** 
+     * Current visualization state from v6 architecture
+     * 
+     * This is the single source of truth for graph data and provides:
+     * - Search functionality across nodes and containers
+     * - Container hierarchy information
+     * - Graph statistics and metadata
+     * 
+     * @required
+     */
+    visualizationState: VisualizationState | null;
+
+    /** 
+     * ReactFlow data for statistics display
+     * 
+     * Used to display node and edge counts in the panel.
+     * If not provided, statistics will be derived from visualizationState.
+     * 
+     * @optional
+     */
+    reactFlowData?: { nodes: any[]; edges: any[] };
+
+    /** 
+     * Legend data for node types
+     * 
+     * Defines the legend items to display in the collapsible legend section.
+     * Each item represents a node type with its label and optional description.
+     * 
+     * @optional
+     */
+    legendData?: LegendData;
+
+    /** 
+     * Edge style configuration for legend
+     * 
+     * Configuration object that defines how different edge types should be styled
+     * and displayed in the edge style legend section.
+     * 
+     * @optional
+     */
+    edgeStyleConfig?: EdgeStyleConfig;
+
+    /** 
+     * Available grouping/hierarchy choices
+     * 
+     * Array of grouping options that users can select from to organize
+     * the container hierarchy display.
+     * 
+     * @optional
+     */
+    hierarchyChoices?: GroupingOption[];
+
+    /** 
+     * Current selected grouping
+     * 
+     * ID of the currently selected grouping option. Should match one of
+     * the IDs in hierarchyChoices array.
+     * 
+     * @optional
+     */
+    currentGrouping?: string | null;
+
+    /** 
+     * Callback when grouping changes
+     * 
+     * Called when user selects a different grouping option from the dropdown.
+     * Parent component should update currentGrouping state accordingly.
+     * 
+     * @param groupingId - ID of the selected grouping option
+     * @optional
+     */
+    onGroupingChange?: (groupingId: string) => void;
+
+    /** 
+     * Set of collapsed container IDs
+     * 
+     * Contains IDs of containers that are currently collapsed in the hierarchy tree.
+     * Used to maintain expand/collapse state across re-renders.
+     * 
+     * @optional
+     */
+    collapsedContainers?: Set<string>;
+
+    /** 
+     * Callback for container toggle operations
+     * 
+     * Called when user clicks expand/collapse buttons for individual containers
+     * or uses the expand/collapse all functionality.
+     * 
+     * @param containerId - ID of the container to toggle
+     * @optional
+     */
+    onToggleContainer?: (containerId: string) => void;
+
+    /** 
+     * AsyncCoordinator for coordinated operations
+     * 
+     * Used to coordinate container operations with other components
+     * and prevent timing conflicts in the v6 architecture.
+     * 
+     * @optional
+     */
+    asyncCoordinator?: AsyncCoordinator | null;
+
+    /** 
+     * Color palette for legend
+     * 
+     * Name of the color palette to use for legend display.
+     * Should match one of the available palettes (Set2, Set3, Pastel1, Dark2).
+     * 
+     * @optional
+     */
+    colorPalette?: string;
+
+    /** 
+     * Panel visibility state
+     * 
+     * Controls whether the InfoPanel is currently visible/open.
+     * When false, panel slides out of view.
+     * 
+     * @required
+     */
+    open: boolean;
+
+    /** 
+     * Callback to change panel visibility
+     * 
+     * Called when user clicks the panel toggle button or when panel
+     * needs to be programmatically shown/hidden.
+     * 
+     * @param open - New visibility state
+     * @required
+     */
+    onOpenChange: (open: boolean) => void;
+
+    /** 
+     * Search update callback
+     * 
+     * Called whenever search query changes or search results are updated.
+     * Provides current query, all matches, and currently selected match.
+     * 
+     * @param query - Current search query string
+     * @param matches - Array of all search results
+     * @param current - Currently selected/highlighted search result
+     * @optional
+     */
+    onSearchUpdate?: (query: string, matches: SearchResult[], current?: SearchResult) => void;
+
+    /** 
+     * Callback for reset to defaults
+     * 
+     * Called when user clicks the "Reset to Defaults" button.
+     * Parent component should reset all InfoPanel-related settings.
+     * 
+     * @optional
+     */
+    onResetToDefaults?: () => void;
+
+    /** 
+     * Error handling callback
+     * 
+     * Called when InfoPanel encounters errors during operation.
+     * Allows parent component to handle errors gracefully.
+     * 
+     * @param error - The error that occurred
+     * @optional
+     */
+    onError?: (error: Error) => void;
+
+    /** 
+     * Optional custom styling
+     * 
+     * CSS class name to apply to the InfoPanel root element
+     * for custom styling.
+     * 
+     * @optional
+     */
+    className?: string;
+
+    /** 
+     * Optional style overrides
+     * 
+     * Inline styles to apply to the InfoPanel root element.
+     * Use sparingly - prefer className for styling.
+     * 
+     * @optional
+     */
+    style?: React.CSSProperties;
+}
+
+/**
+ * Ref interface for imperative InfoPanel methods
+ * 
+ * Provides programmatic access to InfoPanel functionality through React refs.
+ * 
+ * @example
+ * ```tsx
+ * const infoPanelRef = useRef<InfoPanelRef>(null);
+ * 
+ * // Focus search input programmatically
+ * const handleKeyPress = (e: KeyboardEvent) => {
+ *   if (e.ctrlKey && e.key === 'f') {
+ *     e.preventDefault();
+ *     infoPanelRef.current?.focusSearch();
+ *   }
+ * };
+ * 
+ * return <InfoPanel ref={infoPanelRef} {...props} />;
+ * ```
+ * 
+ * @interface InfoPanelRef
+ */
+export interface InfoPanelRef {
+    /** 
+     * Focus the search input
+     * 
+     * Programmatically focuses the search input field, useful for
+     * implementing keyboard shortcuts (e.g., Ctrl+F).
+     */
+    focusSearch: () => void;
+
+    /** 
+     * Clear the search query
+     * 
+     * Clears the current search query and resets search results.
+     * Also removes any search highlighting from the visualization.
+     */
+    clearSearch: () => void;
+}
+
+/**
+ * Legend data structure for node type display
+ * 
+ * @interface LegendData
+ */
+export interface LegendData {
+    /** Title displayed at the top of the legend section */
+    title: string;
+    /** Array of legend items to display */
+    items: LegendItem[];
+}
+
+/**
+ * Individual legend item for node types
+ * 
+ * @interface LegendItem
+ */
+export interface LegendItem {
+    /** Node type identifier */
+    type: string;
+    /** Human-readable label for the node type */
+    label: string;
+    /** Optional description providing more details */
+    description?: string;
+    /** Optional color override for this legend item */
+    color?: string;
+}
+
+/**
+ * Configuration for edge style legend display
+ * 
+ * Maps edge type identifiers to their visual styling properties.
+ * Used to generate the edge style legend section.
+ * 
+ * @interface EdgeStyleConfig
+ */
+export interface EdgeStyleConfig {
+    /** Edge type configurations indexed by type ID */
+    [key: string]: {
+        /** Edge color (hex, rgb, or named color) */
+        color?: string;
+        /** Edge width in pixels */
+        width?: number;
+        /** Edge line style */
+        style?: 'solid' | 'dashed' | 'dotted';
+        /** Edge curve type */
+        type?: 'bezier' | 'straight' | 'smoothstep';
+    };
+}
+
+/**
+ * Grouping option for container hierarchy organization
+ * 
+ * @interface GroupingOption
+ */
+export interface GroupingOption {
+    /** Unique identifier for this grouping option */
+    id: string;
+    /** Human-readable name displayed in dropdown */
+    name: string;
+    /** Optional description explaining the grouping */
+    description?: string;
+}
+
+/**
+ * Search result item returned by search operations
+ * 
+ * @interface SearchMatch
+ */
+export interface SearchMatch {
+    /** Unique identifier of the matched item */
+    id: string;
+    /** Display label of the matched item */
+    label: string;
+    /** Type of the matched item */
+    type: 'container' | 'node';
+    /** Character indices where matches occur in the label */
+    matchIndices?: number[][];
+}
+
+// ============================================================================
+// Internal State Interfaces
+// ============================================================================
+
+interface InfoPanelState {
+    legendCollapsed: boolean;
+    edgeStyleCollapsed: boolean;
+    groupingCollapsed: boolean;
+    hierarchyCollapsed: boolean;
+    statisticsCollapsed: boolean;
+    searchQuery: string;
+    searchMatches: SearchResult[];
+    currentSearchMatch: SearchResult | undefined;
+    settingsStatus: 'idle' | 'saving' | 'saved' | 'error';
+}
+
+interface InfoPanelSettings {
+    legendCollapsed: boolean;
+    edgeStyleCollapsed: boolean;
+    groupingCollapsed: boolean;
+    hierarchyCollapsed: boolean;
+    statisticsCollapsed: boolean;
+    selectedGrouping?: string;
+}
+
+// ============================================================================
+// Settings Persistence Utilities
+// ============================================================================
+
+const STORAGE_KEY = 'hydroscope-infopanel-settings';
+
+const saveSettings = (settings: InfoPanelSettings): void => {
+    try {
+        const settingsJson = JSON.stringify(settings);
+        localStorage.setItem(STORAGE_KEY, settingsJson);
+        console.log('InfoPanel: Settings saved to localStorage');
+    } catch (error) {
+        console.error('InfoPanel: Failed to save settings to localStorage:', error);
+        // Check if it's a quota exceeded error
+        if (error instanceof Error && error.name === 'QuotaExceededError') {
+            console.warn('InfoPanel: localStorage quota exceeded, settings not saved');
+        }
+    }
+};
+
+const loadSettings = (): InfoPanelSettings | null => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+            console.log('InfoPanel: No saved settings found, using defaults');
+            return null;
+        }
+
+        const parsed = JSON.parse(stored);
+        console.log('InfoPanel: Settings loaded from localStorage');
+
+        // Validate the loaded settings structure
+        const defaultSettings = getDefaultSettings();
+        const validatedSettings: InfoPanelSettings = {
+            legendCollapsed: typeof parsed.legendCollapsed === 'boolean' ? parsed.legendCollapsed : defaultSettings.legendCollapsed,
+            edgeStyleCollapsed: typeof parsed.edgeStyleCollapsed === 'boolean' ? parsed.edgeStyleCollapsed : defaultSettings.edgeStyleCollapsed,
+            groupingCollapsed: typeof parsed.groupingCollapsed === 'boolean' ? parsed.groupingCollapsed : defaultSettings.groupingCollapsed,
+            hierarchyCollapsed: typeof parsed.hierarchyCollapsed === 'boolean' ? parsed.hierarchyCollapsed : defaultSettings.hierarchyCollapsed,
+            statisticsCollapsed: typeof parsed.statisticsCollapsed === 'boolean' ? parsed.statisticsCollapsed : defaultSettings.statisticsCollapsed,
+            selectedGrouping: typeof parsed.selectedGrouping === 'string' ? parsed.selectedGrouping : undefined,
+        };
+
+        return validatedSettings;
+    } catch (error) {
+        console.error('InfoPanel: Failed to load settings from localStorage:', error);
+        console.warn('InfoPanel: Using default settings due to load error');
+        return null;
+    }
+};
+
+const getDefaultSettings = (): InfoPanelSettings => ({
+    legendCollapsed: false,
+    edgeStyleCollapsed: false,
+    groupingCollapsed: false,
+    hierarchyCollapsed: false,
+    statisticsCollapsed: false,
+});
+
+// ============================================================================
+// InfoPanel Component
+// ============================================================================
+
+export const InfoPanel = forwardRef<InfoPanelRef, InfoPanelProps>(({
+    visualizationState,
+    reactFlowData = { nodes: [], edges: [] },
+    legendData,
+    edgeStyleConfig,
+    hierarchyChoices = [],
+    currentGrouping,
+    onGroupingChange,
+    collapsedContainers = new Set(),
+    onToggleContainer,
+    asyncCoordinator,
+    colorPalette,
+    open,
+    onOpenChange,
+    onSearchUpdate,
+    onResetToDefaults,
+    onError,
+    className,
+    style,
+}, ref) => {
+    // ============================================================================
+    // State Management
+    // ============================================================================
+
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Load initial settings from localStorage
+    const [state, setState] = useState<InfoPanelState>(() => {
+        const savedSettings = loadSettings() || getDefaultSettings();
+        return {
+            ...savedSettings,
+            searchQuery: '',
+            searchMatches: [],
+            currentSearchMatch: undefined,
+            settingsStatus: 'idle',
+        };
+    });
+
+    // ============================================================================
+    // Imperative Methods (via ref)
+    // ============================================================================
+
+    useImperativeHandle(ref, () => ({
+        focusSearch: () => {
+            searchInputRef.current?.focus();
+        },
+        clearSearch: () => {
+            setState(prev => ({
+                ...prev,
+                searchQuery: '',
+                searchMatches: [],
+                currentSearchMatch: undefined,
+            }));
+            if (visualizationState) {
+                visualizationState.clearSearch();
+            }
+        },
+    }), [visualizationState]);
+
+    // ============================================================================
+    // Settings Persistence
+    // ============================================================================
+
+    // Save settings when collapsible states change (debounced to avoid excessive saves)
+    useEffect(() => {
+        setState(prev => ({ ...prev, settingsStatus: 'saving' }));
+
+        const timeoutId = setTimeout(() => {
+            try {
+                const settings: InfoPanelSettings = {
+                    legendCollapsed: state.legendCollapsed,
+                    edgeStyleCollapsed: state.edgeStyleCollapsed,
+                    groupingCollapsed: state.groupingCollapsed,
+                    hierarchyCollapsed: state.hierarchyCollapsed,
+                    statisticsCollapsed: state.statisticsCollapsed,
+                    selectedGrouping: currentGrouping || undefined,
+                };
+                saveSettings(settings);
+                setState(prev => ({ ...prev, settingsStatus: 'saved' }));
+
+                // Clear saved status after 2 seconds
+                setTimeout(() => {
+                    setState(prev => ({ ...prev, settingsStatus: 'idle' }));
+                }, 2000);
+            } catch (error) {
+                console.error('InfoPanel: Error saving settings:', error);
+                setState(prev => ({ ...prev, settingsStatus: 'error' }));
+                onError?.(error as Error);
+            }
+        }, 500); // Debounce saves by 500ms
+
+        return () => clearTimeout(timeoutId);
+    }, [
+        state.legendCollapsed,
+        state.edgeStyleCollapsed,
+        state.groupingCollapsed,
+        state.hierarchyCollapsed,
+        state.statisticsCollapsed,
+        currentGrouping,
+        onError,
+    ]);
+
+    // ============================================================================
+    // Event Handlers
+    // ============================================================================
+
+    const handleSectionToggle = useCallback((section: keyof InfoPanelState) => {
+        setState(prev => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    }, []);
+
+    const handleSearchResultSelect = useCallback((result: SearchResult) => {
+        try {
+            setState(prev => ({
+                ...prev,
+                currentSearchMatch: result,
+            }));
+
+            onSearchUpdate?.(state.searchQuery, state.searchMatches, result);
+        } catch (error) {
+            console.error('InfoPanel: Error handling search result selection:', error);
+            onError?.(error as Error);
+        }
+    }, [state.searchQuery, state.searchMatches, onSearchUpdate, onError]);
+
+    const handleContainerOperation = useCallback(async (operation: string, containerId?: string) => {
+        // Graceful degradation when v6 components are unavailable
+        if (!visualizationState) {
+            console.error('InfoPanel: Cannot perform container operation - VisualizationState unavailable');
+            onError?.(new Error('VisualizationState is not available'));
+            return;
+        }
+
+        if (!asyncCoordinator) {
+            console.error('InfoPanel: Cannot perform container operation - AsyncCoordinator unavailable, falling back to direct operations');
+
+            // Fallback to direct operations when AsyncCoordinator is unavailable
+            try {
+                switch (operation) {
+                    case 'expand_all':
+                        visualizationState.expandAllContainers();
+                        break;
+                    case 'collapse_all':
+                        visualizationState.collapseAllContainers();
+                        break;
+                    case 'toggle':
+                        if (containerId) {
+                            onToggleContainer?.(containerId);
+                        }
+                        break;
+                    default:
+                        console.warn(`InfoPanel: Unknown container operation: ${operation}`);
+                }
+            } catch (error) {
+                console.error(`InfoPanel: Error performing fallback container operation ${operation}:`, error);
+                onError?.(error as Error);
+            }
+            return;
+        }
+
+        try {
+            switch (operation) {
+                case 'expand_all':
+                    await asyncCoordinator.expandAllContainers(visualizationState, { triggerLayout: true });
+                    break;
+                case 'collapse_all':
+                    await asyncCoordinator.collapseAllContainers(visualizationState, { triggerLayout: true });
+                    break;
+                case 'toggle':
+                    if (containerId) {
+                        onToggleContainer?.(containerId);
+                    }
+                    break;
+                default:
+                    console.warn(`InfoPanel: Unknown container operation: ${operation}`);
+            }
+        } catch (error) {
+            console.error(`InfoPanel: Error performing container operation ${operation}:`, error);
+            onError?.(error as Error);
+        }
+    }, [visualizationState, asyncCoordinator, onToggleContainer, onError]);
+
+    const handleResetToDefaults = useCallback(() => {
+        try {
+            const defaultSettings = getDefaultSettings();
+            setState(prev => ({
+                ...prev,
+                ...defaultSettings,
+                // Also reset search state
+                searchQuery: '',
+                searchMatches: [],
+                currentSearchMatch: undefined,
+            }));
+
+            // Clear localStorage
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                console.log('InfoPanel: Settings reset to defaults and localStorage cleared');
+            } catch (storageError) {
+                console.error('InfoPanel: Failed to clear settings from localStorage:', storageError);
+            }
+
+            // Clear search in VisualizationState if available
+            if (visualizationState) {
+                try {
+                    visualizationState.clearSearch();
+                } catch (searchError) {
+                    console.error('InfoPanel: Failed to clear search in VisualizationState:', searchError);
+                }
+            }
+
+            onResetToDefaults?.();
+        } catch (error) {
+            console.error('InfoPanel: Error resetting to defaults:', error);
+            onError?.(error as Error);
+        }
+    }, [onResetToDefaults, onError, visualizationState]);
+
+    const navigateSearchResults = useCallback((direction: 'next' | 'previous') => {
+        try {
+            if (state.searchMatches.length === 0) return;
+
+            const currentIndex = state.currentSearchMatch
+                ? state.searchMatches.findIndex(match => match.id === state.currentSearchMatch?.id)
+                : -1;
+
+            let newIndex: number;
+            if (direction === 'next') {
+                newIndex = currentIndex < state.searchMatches.length - 1 ? currentIndex + 1 : 0;
+            } else {
+                newIndex = currentIndex > 0 ? currentIndex - 1 : state.searchMatches.length - 1;
+            }
+
+            const newMatch = state.searchMatches[newIndex];
+            setState(prev => ({
+                ...prev,
+                currentSearchMatch: newMatch,
+            }));
+
+            onSearchUpdate?.(state.searchQuery, state.searchMatches, newMatch);
+        } catch (error) {
+            console.error('InfoPanel: Error navigating search results:', error);
+            onError?.(error as Error);
+        }
+    }, [state.searchMatches, state.currentSearchMatch, state.searchQuery, onSearchUpdate, onError]);
+
+    // ============================================================================
+    // Computed Values
+    // ============================================================================
+
+    const statistics = useMemo(() => {
+        if (!visualizationState) {
+            return {
+                nodes: reactFlowData.nodes.length,
+                edges: reactFlowData.edges.length,
+                containers: 0,
+                visibleNodes: 0,
+                visibleEdges: 0,
+                visibleContainers: 0,
+            };
+        }
+
+        return {
+            nodes: reactFlowData.nodes.length,
+            edges: reactFlowData.edges.length,
+            containers: visualizationState.visibleContainers?.length || 0,
+            visibleNodes: visualizationState.visibleNodes?.length || 0,
+            visibleEdges: visualizationState.visibleEdges?.length || 0,
+            visibleContainers: visualizationState.visibleContainers?.length || 0,
+        };
+    }, [visualizationState, reactFlowData]);
+
+    // ============================================================================
+    // Render
+    // ============================================================================
+
+    if (!open) {
+        return null;
+    }
+
+    return (
+        <div
+            className={`info-panel ${className || ''}`}
+            style={{
+                position: 'fixed',
+                top: '0',
+                right: '0',
+                width: '350px',
+                height: '100vh',
+                backgroundColor: 'white',
+                borderLeft: '1px solid #e0e0e0',
+                boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+                zIndex: 1000,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                transform: 'translateX(0)',
+                transition: 'transform 0.3s ease-in-out',
+                ...style,
+            }}
+        >
+            {/* CSS Animations */}
+            <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            max-height: 0;
+          }
+          to {
+            opacity: 1;
+            max-height: 500px;
+          }
+        }
+        
+        .info-panel-enter {
+          transform: translateX(100%);
+        }
+        
+        .info-panel-enter-active {
+          transform: translateX(0);
+          transition: transform 0.3s ease-in-out;
+        }
+        
+        .info-panel-exit {
+          transform: translateX(0);
+        }
+        
+        .info-panel-exit-active {
+          transform: translateX(100%);
+          transition: transform 0.3s ease-in-out;
+        }
+      `}</style>
+
+            {/* Header */}
+            <div style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e0e0e0',
+                backgroundColor: '#f8f9fa',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#2c3e50',
+                    }}>
+                        Graph Info
+                    </h3>
+                    {state.settingsStatus === 'saving' && (
+                        <span style={{ fontSize: '10px', color: '#666' }}>💾</span>
+                    )}
+                    {state.settingsStatus === 'saved' && (
+                        <span style={{ fontSize: '10px', color: '#28a745' }}>✓</span>
+                    )}
+                    {state.settingsStatus === 'error' && (
+                        <span style={{ fontSize: '10px', color: '#dc3545' }}>⚠</span>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                        onClick={handleResetToDefaults}
+                        title="Reset to defaults"
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            transition: 'background-color 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#5a6268';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#6c757d';
+                        }}
+                    >
+                        Reset
+                    </button>
+                    <button
+                        onClick={() => onOpenChange(false)}
+                        title="Close panel"
+                        style={{
+                            padding: '4px 8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#666',
+                            transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f0f0f0';
+                            e.currentTarget.style.borderColor = '#999';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = '#ccc';
+                        }}
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: '20px',
+                backgroundColor: '#ffffff',
+            }}>
+                {visualizationState ? (
+                    <ErrorBoundary onError={onError}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                            {/* V6 Architecture Status */}
+                            {(!visualizationState || !asyncCoordinator) && (
+                                <div style={{
+                                    padding: '12px',
+                                    backgroundColor: '#fff3cd',
+                                    border: '1px solid #ffeaa7',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    color: '#856404',
+                                }}>
+                                    <strong>Limited functionality:</strong> {
+                                        !visualizationState ? 'VisualizationState unavailable' :
+                                            !asyncCoordinator ? 'AsyncCoordinator unavailable - using fallback operations' :
+                                                ''
+                                    }
+                                </div>
+                            )}
+
+                            {/* Search Section */}
+                            <CollapsibleSection
+                                title="Search"
+                                collapsed={state.legendCollapsed}
+                                onToggle={() => handleSectionToggle('legendCollapsed')}
+                            >
+                                <div>
+                                    <SearchIntegration
+                                        visualizationState={visualizationState}
+                                        onSearchResultSelect={handleSearchResultSelect}
+                                        placeholder="Search nodes and containers..."
+                                        maxResults={50}
+                                        groupByType={true}
+                                        showResultsPanel={true}
+                                    />
+
+                                    {/* Search Navigation */}
+                                    {state.searchMatches.length > 0 && (
+                                        <div style={{
+                                            marginTop: '8px',
+                                            padding: '8px',
+                                            backgroundColor: '#f5f5f5',
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                        }}>
+                                            <span>
+                                                {state.searchMatches.length} result{state.searchMatches.length !== 1 ? 's' : ''}
+                                            </span>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                <button
+                                                    onClick={() => navigateSearchResults('previous')}
+                                                    disabled={state.searchMatches.length === 0}
+                                                    style={{
+                                                        padding: '2px 6px',
+                                                        fontSize: '11px',
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #ccc',
+                                                        borderRadius: '3px',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    ↑
+                                                </button>
+                                                <button
+                                                    onClick={() => navigateSearchResults('next')}
+                                                    disabled={state.searchMatches.length === 0}
+                                                    style={{
+                                                        padding: '2px 6px',
+                                                        fontSize: '11px',
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #ccc',
+                                                        borderRadius: '3px',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    ↓
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </CollapsibleSection>
+
+                            {/* Container Hierarchy Section */}
+                            <CollapsibleSection
+                                title="Container Hierarchy"
+                                collapsed={state.hierarchyCollapsed}
+                                onToggle={() => handleSectionToggle('hierarchyCollapsed')}
+                            >
+                                <ContainerHierarchyTree
+                                    visualizationState={visualizationState}
+                                    collapsedContainers={collapsedContainers}
+                                    onToggleContainer={onToggleContainer}
+                                    asyncCoordinator={asyncCoordinator}
+                                    searchQuery={state.searchQuery}
+                                    searchMatches={state.searchMatches}
+                                    currentSearchMatch={state.currentSearchMatch}
+                                />
+
+                                {/* Container Controls */}
+                                <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                                    <button
+                                        onClick={() => handleContainerOperation('expand_all')}
+                                        style={{
+                                            flex: 1,
+                                            padding: '6px 12px',
+                                            backgroundColor: '#f0f0f0',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontSize: '12px',
+                                        }}
+                                    >
+                                        Expand All
+                                    </button>
+                                    <button
+                                        onClick={() => handleContainerOperation('collapse_all')}
+                                        style={{
+                                            flex: 1,
+                                            padding: '6px 12px',
+                                            backgroundColor: '#f0f0f0',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontSize: '12px',
+                                        }}
+                                    >
+                                        Collapse All
+                                    </button>
+                                </div>
+                            </CollapsibleSection>
+
+                            {/* Grouping Controls Section */}
+                            {hierarchyChoices.length > 0 && (
+                                <CollapsibleSection
+                                    title="Grouping"
+                                    collapsed={state.groupingCollapsed}
+                                    onToggle={() => handleSectionToggle('groupingCollapsed')}
+                                >
+                                    <GroupingControls
+                                        hierarchyChoices={hierarchyChoices}
+                                        currentGrouping={currentGrouping}
+                                        onGroupingChange={onGroupingChange}
+                                    />
+                                </CollapsibleSection>
+                            )}
+
+                            {/* Legend Section */}
+                            {legendData && (
+                                <CollapsibleSection
+                                    title="Node Types Legend"
+                                    collapsed={state.legendCollapsed}
+                                    onToggle={() => handleSectionToggle('legendCollapsed')}
+                                >
+                                    <LegendDisplay
+                                        legendData={legendData}
+                                        colorPalette={colorPalette}
+                                    />
+                                </CollapsibleSection>
+                            )}
+
+                            {/* Edge Style Legend Section */}
+                            {edgeStyleConfig && (
+                                <CollapsibleSection
+                                    title="Edge Styles Legend"
+                                    collapsed={state.edgeStyleCollapsed}
+                                    onToggle={() => handleSectionToggle('edgeStyleCollapsed')}
+                                >
+                                    <EdgeStyleLegend
+                                        edgeStyleConfig={edgeStyleConfig}
+                                    />
+                                </CollapsibleSection>
+                            )}
+
+                            {/* Statistics Section */}
+                            <CollapsibleSection
+                                title="Statistics"
+                                collapsed={state.statisticsCollapsed}
+                                onToggle={() => handleSectionToggle('statisticsCollapsed')}
+                            >
+                                <StatisticsDisplay statistics={statistics} />
+                            </CollapsibleSection>
+
+                        </div>
+                    </ErrorBoundary>
+                ) : (
+                    <div style={{
+                        textAlign: 'center',
+                        color: '#666',
+                        fontSize: '14px',
+                        padding: '20px',
+                    }}>
+                        Load graph data to see info panel content
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+});
+
+InfoPanel.displayName = 'InfoPanel';
+
+// ============================================================================
+// Helper Components
+// ============================================================================
+
+interface CollapsibleSectionProps {
+    title: string;
+    collapsed: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+}
+
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+    title,
+    collapsed,
+    onToggle,
+    children,
+}) => (
+    <div style={{
+        border: '1px solid #e0e0e0',
+        borderRadius: '6px',
+        overflow: 'hidden',
+    }}>
+        <button
+            onClick={onToggle}
+            style={{
+                width: '100%',
+                padding: '12px 16px',
+                backgroundColor: '#f8f9fa',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                textAlign: 'left',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'background-color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e9ecef';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8f9fa';
+            }}
+        >
+            {title}
+            <span style={{
+                fontSize: '12px',
+                color: '#666',
+                transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+            }}>
+                ▼
+            </span>
+        </button>
+        {!collapsed && (
+            <div style={{
+                padding: '16px',
+                backgroundColor: 'white',
+                borderTop: '1px solid #e0e0e0',
+                animation: 'slideDown 0.2s ease-out',
+            }}>
+                {children}
+            </div>
+        )}
+    </div>
+);
+
+// ============================================================================
+// Container Hierarchy Tree Component
+// ============================================================================
+
+interface ContainerHierarchyTreeProps {
+    visualizationState: VisualizationState;
+    collapsedContainers: Set<string>;
+    onToggleContainer?: (containerId: string) => void;
+    asyncCoordinator?: AsyncCoordinator | null;
+    searchQuery?: string;
+    searchMatches?: SearchResult[];
+    currentSearchMatch?: SearchResult;
+}
+
+interface HierarchyTreeNode {
+    id: string;
+    label: string;
+    shortLabel: string;
+    children: HierarchyTreeNode[];
+    nodeCount: number;
+    collapsed: boolean;
+    isSearchMatch: boolean;
+    isCurrentMatch: boolean;
+}
+
+const ContainerHierarchyTree: React.FC<ContainerHierarchyTreeProps> = ({
+    visualizationState,
+    collapsedContainers,
+    onToggleContainer,
+    asyncCoordinator,
+    searchQuery = '',
+    searchMatches = [],
+    currentSearchMatch,
+}) => {
+    // Build hierarchy tree from visualization state
+    const hierarchyTree = useMemo(() => {
+        if (!visualizationState) return [];
+
+        const containers = visualizationState.visibleContainers || [];
+        const containerMap = new Map(containers.map(c => [c.id, c]));
+        const rootContainers: HierarchyTreeNode[] = [];
+        const processedContainers = new Set<string>();
+
+        // Helper function to build tree node
+        const buildTreeNode = (container: Container): HierarchyTreeNode => {
+            const isSearchMatch = searchMatches.some(match => match.id === container.id && match.type === 'container');
+            const isCurrentMatch = currentSearchMatch?.id === container.id && currentSearchMatch?.type === 'container';
+
+            // Count nodes in this container
+            let nodeCount = 0;
+            for (const childId of container.children) {
+                if (visualizationState.getGraphNode && visualizationState.getGraphNode(childId)) {
+                    nodeCount++;
+                }
+            }
+
+            const node: HierarchyTreeNode = {
+                id: container.id,
+                label: container.label,
+                shortLabel: container.label.length > 30 ? container.label.substring(0, 27) + '...' : container.label,
+                children: [],
+                nodeCount,
+                collapsed: container.collapsed,
+                isSearchMatch,
+                isCurrentMatch,
+            };
+
+            // Add child containers
+            for (const childId of container.children) {
+                const childContainer = containerMap.get(childId);
+                if (childContainer && !processedContainers.has(childId)) {
+                    processedContainers.add(childId);
+                    node.children.push(buildTreeNode(childContainer));
+                }
+            }
+
+            return node;
+        };
+
+        // Find root containers (containers that are not children of other containers)
+        const allChildIds = new Set<string>();
+        for (const container of containers) {
+            for (const childId of container.children) {
+                if (containerMap.has(childId)) {
+                    allChildIds.add(childId);
+                }
+            }
+        }
+
+        for (const container of containers) {
+            if (!allChildIds.has(container.id) && !processedContainers.has(container.id)) {
+                processedContainers.add(container.id);
+                rootContainers.push(buildTreeNode(container));
+            }
+        }
+
+        return rootContainers;
+    }, [visualizationState, searchMatches, currentSearchMatch]);
+
+    const handleToggleContainer = useCallback(async (containerId: string) => {
+        if (!onToggleContainer) return;
+
+        try {
+            onToggleContainer(containerId);
+        } catch (error) {
+            console.error(`Error toggling container ${containerId}:`, error);
+        }
+    }, [onToggleContainer]);
+
+    if (hierarchyTree.length === 0) {
+        return (
+            <div style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+                No containers found
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ fontSize: '14px' }}>
+            {hierarchyTree.map(node => (
+                <HierarchyTreeNodeComponent
+                    key={node.id}
+                    node={node}
+                    level={0}
+                    onToggle={handleToggleContainer}
+                    searchQuery={searchQuery}
+                />
+            ))}
+        </div>
+    );
+};
+
+interface HierarchyTreeNodeComponentProps {
+    node: HierarchyTreeNode;
+    level: number;
+    onToggle: (containerId: string) => void;
+    searchQuery: string;
+}
+
+const HierarchyTreeNodeComponent: React.FC<HierarchyTreeNodeComponentProps> = ({
+    node,
+    level,
+    onToggle,
+    searchQuery,
+}) => {
+    const indentSize = level * 16;
+
+    const handleClick = useCallback(() => {
+        onToggle(node.id);
+    }, [node.id, onToggle]);
+
+    // Highlight search matches
+    const highlightText = useCallback((text: string, query: string) => {
+        if (!query.trim()) return text;
+
+        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const parts = text.split(regex);
+
+        return parts.map((part, index) =>
+            regex.test(part) ? (
+                <span key={index} style={{ backgroundColor: '#ffeb3b', fontWeight: 'bold' }}>
+                    {part}
+                </span>
+            ) : part
+        );
+    }, []);
+
+    return (
+        <div>
+            <div
+                style={{
+                    paddingLeft: `${indentSize}px`,
+                    paddingTop: '4px',
+                    paddingBottom: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    backgroundColor: node.isCurrentMatch ? '#e3f2fd' : node.isSearchMatch ? '#f3e5f5' : 'transparent',
+                    borderRadius: '4px',
+                    marginBottom: '2px',
+                }}
+                onClick={handleClick}
+            >
+                <span style={{ marginRight: '6px', fontSize: '12px', color: '#666' }}>
+                    {node.children.length > 0 ? (node.collapsed ? '▶' : '▼') : '•'}
+                </span>
+                <span style={{ flex: 1 }}>
+                    {highlightText(node.shortLabel, searchQuery)}
+                </span>
+                <span style={{ fontSize: '12px', color: '#999', marginLeft: '8px' }}>
+                    {node.nodeCount > 0 && `${node.nodeCount} nodes`}
+                </span>
+            </div>
+
+            {!node.collapsed && node.children.map(child => (
+                <HierarchyTreeNodeComponent
+                    key={child.id}
+                    node={child}
+                    level={level + 1}
+                    onToggle={onToggle}
+                    searchQuery={searchQuery}
+                />
+            ))}
+        </div>
+    );
+};
+
+// ============================================================================
+// Grouping Controls Component
+// ============================================================================
+
+interface GroupingControlsProps {
+    hierarchyChoices: GroupingOption[];
+    currentGrouping?: string | null;
+    onGroupingChange?: (groupingId: string) => void;
+}
+
+const GroupingControls: React.FC<GroupingControlsProps> = ({
+    hierarchyChoices,
+    currentGrouping,
+    onGroupingChange,
+}) => {
+    const handleGroupingChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedGrouping = event.target.value;
+        if (selectedGrouping && onGroupingChange) {
+            onGroupingChange(selectedGrouping);
+        }
+    }, [onGroupingChange]);
+
+    if (hierarchyChoices.length === 0) {
+        return (
+            <div style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+                No grouping options available
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '6px', color: '#666' }}>
+                Group containers by:
+            </label>
+            <select
+                value={currentGrouping || ''}
+                onChange={handleGroupingChange}
+                style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    backgroundColor: 'white',
+                }}
+            >
+                <option value="">No grouping</option>
+                {hierarchyChoices.map(choice => (
+                    <option key={choice.id} value={choice.id}>
+                        {choice.name}
+                    </option>
+                ))}
+            </select>
+
+            {currentGrouping && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                    {hierarchyChoices.find(c => c.id === currentGrouping)?.description}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// Legend Display Component
+// ============================================================================
+
+interface LegendDisplayProps {
+    legendData: LegendData;
+    colorPalette?: string;
+}
+
+const LegendDisplay: React.FC<LegendDisplayProps> = ({
+    legendData,
+    colorPalette = 'Set2',
+}) => {
+    // Color palette mappings
+    const colorPalettes = useMemo(() => ({
+        Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'],
+        Set3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5'],
+        Pastel1: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6', '#ffffcc', '#e5d8bd', '#fddaec'],
+        Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
+    }), []);
+
+    const getColorForType = useCallback((type: string, index: number) => {
+        const palette = colorPalettes[colorPalette as keyof typeof colorPalettes] || colorPalettes.Set2;
+        return palette[index % palette.length];
+    }, [colorPalette, colorPalettes]);
+
+    if (!legendData || legendData.items.length === 0) {
+        return (
+            <div style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+                No legend data available
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                {legendData.title}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {legendData.items.map((item, index) => (
+                    <div
+                        key={item.type}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '14px',
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '3px',
+                                backgroundColor: item.color || getColorForType(item.type, index),
+                                border: '1px solid #ccc',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '500' }}>{item.label}</div>
+                            {item.description && (
+                                <div style={{ fontSize: '12px', color: '#666' }}>
+                                    {item.description}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// Edge Style Legend Component
+// ============================================================================
+
+interface EdgeStyleLegendProps {
+    edgeStyleConfig: EdgeStyleConfig;
+}
+
+const EdgeStyleLegend: React.FC<EdgeStyleLegendProps> = ({
+    edgeStyleConfig,
+}) => {
+    const edgeStyles = Object.entries(edgeStyleConfig);
+
+    if (edgeStyles.length === 0) {
+        return (
+            <div style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
+                No edge styles configured
+            </div>
+        );
+    }
+
+    const renderEdgeLine = useCallback((style: EdgeStyleConfig[string]) => {
+        const strokeDasharray = style.style === 'dashed' ? '5,5' :
+            style.style === 'dotted' ? '2,2' :
+                'none';
+
+        return (
+            <svg width="40" height="20" style={{ flexShrink: 0 }}>
+                <line
+                    x1="2"
+                    y1="10"
+                    x2="38"
+                    y2="10"
+                    stroke={style.color || '#666'}
+                    strokeWidth={style.width || 2}
+                    strokeDasharray={strokeDasharray}
+                />
+            </svg>
+        );
+    }, []);
+
+    return (
+        <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {edgeStyles.map(([styleKey, styleConfig]) => (
+                    <div
+                        key={styleKey}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            fontSize: '14px',
+                        }}
+                    >
+                        {renderEdgeLine(styleConfig)}
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '500', textTransform: 'capitalize' }}>
+                                {styleKey.replace(/([A-Z])/g, ' $1').trim()}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                                {styleConfig.type || 'bezier'} • {styleConfig.style || 'solid'} • {styleConfig.width || 2}px
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const StatisticsDisplay: React.FC<{ statistics: any }> = ({ statistics }) => (
+    <div style={{ fontSize: '14px', color: '#666' }}>
+        <div>Nodes: {statistics.nodes}</div>
+        <div>Edges: {statistics.edges}</div>
+        <div>Containers: {statistics.containers}</div>
+        <div>Visible Nodes: {statistics.visibleNodes}</div>
+        <div>Visible Edges: {statistics.visibleEdges}</div>
+        <div>Visible Containers: {statistics.visibleContainers}</div>
+    </div>
+);
+
+// ============================================================================
+// Error Boundary Component
+// ============================================================================
+
+interface ErrorBoundaryProps {
+    children: React.ReactNode;
+    onError?: (error: Error) => void;
+}
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error('InfoPanel ErrorBoundary caught an error:', error, errorInfo);
+        this.props.onError?.(error);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{
+                    padding: '20px',
+                    textAlign: 'center',
+                    color: '#d32f2f',
+                    backgroundColor: '#ffebee',
+                    border: '1px solid #ffcdd2',
+                    borderRadius: '4px',
+                    margin: '10px',
+                }}>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>
+                        InfoPanel Error
+                    </h4>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '12px' }}>
+                        {this.state.error?.message || 'An unexpected error occurred'}
+                    </p>
+                    <button
+                        onClick={() => this.setState({ hasError: false, error: null })}
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#d32f2f',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                        }}
+                    >
+                        Retry
+                    </button>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+export default InfoPanel;
