@@ -294,7 +294,11 @@ export function StyleTunerPanel({
             onChange={(e) => {
               // Update immediately for responsive UI and execute synchronously
               const newLayout = e.target.value;
-              onLayoutChange?.(newLayout);
+              try {
+                onLayoutChange?.(newLayout);
+              } catch (error) {
+                console.error("Layout change failed:", error);
+              }
             }}
           >
             {Object.entries(layoutOptions).map(([key, label]) => (
@@ -330,7 +334,11 @@ export function StyleTunerPanel({
             onChange={(e) => {
               // Update immediately for responsive UI and execute synchronously
               const newPalette = e.target.value;
-              onPaletteChange?.(newPalette);
+              try {
+                onPaletteChange?.(newPalette);
+              } catch (error) {
+                console.error("Palette change failed:", error);
+              }
             }}
             style={inputStyle}
           >

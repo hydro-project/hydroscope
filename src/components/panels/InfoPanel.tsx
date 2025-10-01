@@ -189,7 +189,8 @@ export const InfoPanel = forwardRef<
           items.push({ id: container.id, label, type: "container" });
         });
         // Use visible nodes since allNodes doesn't exist in v6
-        visualizationState.visibleNodes.forEach((node) => {
+        const visibleNodes = visualizationState.visibleNodes || [];
+        visibleNodes.forEach((node) => {
           const label =
             (node as any)?.data?.label || (node as any)?.label || node.id;
           items.push({ id: node.id, label, type: "node" });
@@ -311,6 +312,7 @@ export const InfoPanel = forwardRef<
           {/* Grouping & Hierarchy Section */}
           {(safeHierarchyChoices.length > 0 ||
             (visualizationState &&
+              visualizationState.visibleContainers &&
               visualizationState.visibleContainers.length > 0)) && (
             <CollapsibleSection
               title="Grouping"
