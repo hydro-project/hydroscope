@@ -614,7 +614,7 @@ export class ELKBridge {
 
   private getNodeLayoutOptions(
     node: GraphNode,
-    config: LayoutConfig,
+    _config: LayoutConfig,
   ): Record<string, any> {
     const options: Record<string, any> = {};
 

@@ -149,7 +149,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   currentResultIndex,
   onResultClick,
   onResultHover,
-  query,
+  query: _query,
   maxResults,
   groupByType = false,
 }) => {

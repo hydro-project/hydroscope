@@ -6,6 +6,12 @@
 
 import { VisualizationState } from "../core/VisualizationState";
 import { AsyncCoordinator } from "../core/AsyncCoordinator";
+import type {
+  ReactFlowNode,
+  ReactFlowEdge,
+  NodeTypeConfig as CoreNodeTypeConfig,
+  LayoutConfig,
+} from "../types/core.js";
 
 // Define EdgeStyleConfig locally since EdgeStyleProcessor doesn't exist in v6
 export interface EdgeStyleConfig {
@@ -20,7 +26,9 @@ export interface EdgeStyleConfig {
 // Define LayoutOrchestrator type locally since it doesn't exist in v6
 export interface LayoutOrchestrator {
   // Placeholder for layout orchestrator functionality
-  [key: string]: any;
+  triggerLayout?: (config?: LayoutConfig) => Promise<void>;
+  getCurrentLayout?: () => LayoutConfig | null;
+  isLayoutInProgress?: () => boolean;
 }
 
 // ============ Base Component Props ============
@@ -57,10 +65,10 @@ interface NodeTypeConfig {
 export interface InfoPanelProps extends BaseComponentProps {
   // Data
   visualizationState?: VisualizationState | null;
-  reactFlowData?: { nodes: any[]; edges: any[] };
+  reactFlowData?: { nodes: ReactFlowNode[]; edges: ReactFlowEdge[] };
   legendData?: LegendData;
   edgeStyleConfig?: EdgeStyleConfig;
-  nodeTypeConfig?: any;
+  nodeTypeConfig?: CoreNodeTypeConfig;
 
   // Grouping & Hierarchy
   hierarchyChoices?: GroupingOption[];

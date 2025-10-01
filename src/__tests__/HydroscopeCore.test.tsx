@@ -18,6 +18,8 @@ import type {
   QueueStatus,
 } from "../types/core.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 
 // Mock the core modules
 vi.mock("../core/VisualizationState.js", () => ({
@@ -429,7 +431,7 @@ describe("HydroscopeCore Component", () => {
       };
 
       vi.mocked(AsyncCoordinator).mockImplementationOnce(
-        () => mockAsyncCoordinator as any,
+        () => mockAsyncCoordinator as AsyncCoordinator,
       );
 
       const ref = React.createRef<HydroscopeCoreRef>();
@@ -473,7 +475,7 @@ describe("HydroscopeCore Component", () => {
 
       // Replace the bridge instance to trigger error during updateReactFlowData
       vi.mocked(ReactFlowBridge).mockImplementationOnce(
-        () => mockBridge as any,
+        () => mockBridge as ReactFlowBridge,
       );
 
       // Update style config to trigger ReactFlow bridge recreation and error

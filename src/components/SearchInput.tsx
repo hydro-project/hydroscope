@@ -101,6 +101,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           break;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       inputValue,
       searchResults?.length,

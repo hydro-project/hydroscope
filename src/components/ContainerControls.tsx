@@ -6,7 +6,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import type { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import type { Container, QueueStatus } from "../types/core.js";
+import type { Container } from "../types/core.js";
 
 export interface ContainerControlsProps {
   /** VisualizationState instance */
@@ -57,7 +57,7 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
   // Monitor async coordinator status
   useEffect(() => {
     const checkAsyncStatus = () => {
-      const status = asyncCoordinator.getQueueStatus();
+      const _status = asyncCoordinator.getQueueStatus();
       const containerStatus = asyncCoordinator.getContainerOperationStatus();
 
       setState((prevState) => ({
@@ -222,7 +222,7 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
   ]);
 
   // Expand specific container
-  const handleExpandContainer = useCallback(
+  const _handleExpandContainer = useCallback(
     async (containerId: string) => {
       if (disabled || state.expandingContainers.has(containerId)) return;
 
@@ -280,7 +280,7 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
   );
 
   // Collapse specific container
-  const handleCollapseContainer = useCallback(
+  const _handleCollapseContainer = useCallback(
     async (containerId: string) => {
       if (disabled || state.collapsingContainers.has(containerId)) return;
 

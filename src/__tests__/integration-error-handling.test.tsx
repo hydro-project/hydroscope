@@ -135,7 +135,7 @@ const ErrorTestApplication: React.FC<{
     (errors: ValidationError[], filename: string) => {
       const errorMsg = `Validation failed for ${filename}: ${errors.map((e) => e.message).join(", ")}`;
       // Check if we're in a valid environment before updating state
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         setErrorMessage(errorMsg);
       }
       onValidationError?.(errors, filename);
@@ -147,7 +147,7 @@ const ErrorTestApplication: React.FC<{
     (error: ParseError, filename: string) => {
       const errorMsg = `Parse error in ${filename}: ${error.message}`;
       // Check if we're in a valid environment before updating state
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         setErrorMessage(errorMsg);
       }
       onParseError?.(error, filename);
@@ -158,7 +158,7 @@ const ErrorTestApplication: React.FC<{
   const handleCoreError = React.useCallback(
     (error: Error, context: string) => {
       // Check if we're in a valid environment before updating state
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         setErrorMessage(`Core error (${context}): ${error.message}`);
       }
       onError?.(error, context);

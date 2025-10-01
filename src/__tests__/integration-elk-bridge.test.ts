@@ -18,7 +18,7 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData.js";
-import type { LayoutConfig } from "../types/core.js";
+import type { LayoutConfig, ELKNode } from "../types/core.js";
 
 describe("VisualizationState + ELKBridge Integration", () => {
   let state: VisualizationState;
@@ -135,15 +135,15 @@ describe("VisualizationState + ELKBridge Integration", () => {
     });
 
     // Helper function to create mock ELK results
-    function createMockELKResult(elkGraph: any) {
-      const result: any = {
+    function createMockELKResult(elkGraph: ELKNode) {
+      const result: ELKNode = {
         id: "root",
         children: [],
       };
 
       if (elkGraph.children) {
         result.children = elkGraph.children.map(
-          (child: any, index: number) => ({
+          (child: ELKNode, index: number) => ({
             id: child.id,
             x: index * 150 + 50,
             y: index * 100 + 50,
@@ -290,28 +290,30 @@ describe("VisualizationState + ELKBridge Integration", () => {
     });
 
     // Helper function for container tests
-    function createContainerMockELKResult(elkGraph: any) {
-      const result: any = {
+    function createContainerMockELKResult(elkGraph: ELKNode) {
+      const result: ELKNode = {
         id: "root",
         children: [],
       };
 
       if (elkGraph.children) {
         result.children = elkGraph.children.map(
-          (child: any, index: number) => ({
+          (child: ELKNode, index: number) => ({
             id: child.id,
             x: index * 150 + 50,
             y: index * 100 + 50,
             width: child.width || 120,
             height: child.height || 60,
             children: child.children
-              ? child.children.map((nestedChild: any, nestedIndex: number) => ({
-                  id: nestedChild.id,
-                  x: nestedIndex * 130 + 20,
-                  y: nestedIndex * 80 + 20,
-                  width: nestedChild.width || 120,
-                  height: nestedChild.height || 60,
-                }))
+              ? child.children.map(
+                  (nestedChild: ELKNode, nestedIndex: number) => ({
+                    id: nestedChild.id,
+                    x: nestedIndex * 130 + 20,
+                    y: nestedIndex * 80 + 20,
+                    width: nestedChild.width || 120,
+                    height: nestedChild.height || 60,
+                  }),
+                )
               : undefined,
           }),
         );

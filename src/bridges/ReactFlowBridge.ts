@@ -908,7 +908,11 @@ export class ReactFlowBridge {
           appliedTags = processedStyle.appliedTags;
           animated = processedStyle.animated;
           label = processedStyle.label || edge.label;
-          markerEnd = processedStyle.markerEnd || edge.markerEnd;
+          markerEnd =
+            (processedStyle.markerEnd as
+              | string
+              | { type: string; color?: string; strokeWidth?: number }
+              | undefined) || edge.markerEnd;
           lineStyle = processedStyle.lineStyle || "single";
 
           console.log(
@@ -949,7 +953,11 @@ export class ReactFlowBridge {
         appliedTags = processedStyle.appliedTags;
         animated = processedStyle.animated;
         label = processedStyle.label || edge.label;
-        markerEnd = processedStyle.markerEnd || edge.markerEnd;
+        markerEnd =
+          (processedStyle.markerEnd as
+            | string
+            | { type: string; color?: string; strokeWidth?: number }
+            | undefined) || edge.markerEnd;
         lineStyle = processedStyle.lineStyle || "single";
       }
 

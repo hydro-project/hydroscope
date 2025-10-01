@@ -20,7 +20,7 @@ export function loadPaxosTestData(): TestGraphData {
   return getMinimalTestData();
 }
 
-function convertToTestData(rawData: any): TestGraphData {
+function _convertToTestData(rawData: any): TestGraphData {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
   const containers: Container[] = [];

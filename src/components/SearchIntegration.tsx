@@ -3,7 +3,7 @@
  * Integrates search functionality with container expansion and smart collapse prevention
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Search } from "./Search.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { SearchResult } from "../types/core.js";
@@ -31,11 +31,7 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
 }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Get search results from VisualizationState
-  const searchResults = useMemo(() => {
-    return visualizationState.getSearchResults();
-  }, [visualizationState, searchQuery]); // Re-compute when query changes
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
   // Find containers that need to be expanded for search results
   const findContainersToExpand = useCallback(
@@ -89,6 +85,7 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
       try {
         // Perform search in VisualizationState
         const results = visualizationState.search(query);
+        setSearchResults(results);
 
         if (results.length > 0) {
           // Find containers that need to be expanded to show search results
@@ -134,6 +131,7 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
   // Handle search clear
   const handleClear = useCallback(() => {
     setSearchQuery("");
+    setSearchResults([]);
     visualizationState.clearSearch();
     setIsSearching(false);
   }, [visualizationState]);

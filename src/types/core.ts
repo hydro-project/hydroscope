@@ -113,9 +113,9 @@ export interface PerformanceHints {
 }
 
 export interface StyleConfig {
-  nodeStyles?: Record<string, any>;
-  edgeStyles?: Record<string, any>;
-  containerStyles?: Record<string, any>;
+  nodeStyles?: Record<string, NodeStyleConfig>;
+  edgeStyles?: Record<string, EdgeStyleConfig>;
+  containerStyles?: Record<string, ContainerStyleConfig>;
   // Semantic tag to visual style mappings
   semanticMappings?: Record<
     string,
@@ -123,6 +123,37 @@ export interface StyleConfig {
   >;
   // Direct property mappings (legacy support)
   propertyMappings?: Record<string, string | EdgeStyleMapping>;
+}
+
+export interface NodeStyleConfig {
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  borderRadius?: number;
+  color?: string;
+  fontSize?: number;
+  fontWeight?: string | number;
+  padding?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface EdgeStyleConfig {
+  stroke?: string;
+  strokeWidth?: number;
+  strokeDasharray?: string;
+  markerEnd?: string;
+  animated?: boolean;
+  type?: "bezier" | "straight" | "smoothstep";
+}
+
+export interface ContainerStyleConfig {
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  borderRadius?: number;
+  padding?: number;
+  opacity?: number;
 }
 
 interface EdgeStyleMapping {
@@ -142,26 +173,29 @@ export interface ReactFlowNode {
   id: string;
   type: string;
   position: { x: number; y: number };
-  data: {
-    label: string;
-    longLabel?: string;
-    showingLongLabel?: boolean;
-    nodeType: string;
-    collapsed?: boolean;
-    containerChildren?: number;
-    semanticTags?: string[];
-    appliedSemanticTags?: string[];
-    onClick?: (elementId: string, elementType: "node" | "container") => void;
-    width?: number;
-    height?: number;
-    nodeCount?: number;
-    colorPalette?: string;
-    style?: string;
-  };
-  style?: Record<string, any>;
+  data: ReactFlowNodeData;
+  style?: Record<string, string | number>;
   parentNode?: string;
   parentId?: string;
   extent?: "parent" | [[number, number], [number, number]];
+}
+
+export interface ReactFlowNodeData {
+  label: string;
+  longLabel?: string;
+  showingLongLabel?: boolean;
+  nodeType: string;
+  collapsed?: boolean;
+  containerChildren?: number;
+  semanticTags?: string[];
+  appliedSemanticTags?: string[];
+  onClick?: (elementId: string, elementType: "node" | "container") => void;
+  width?: number;
+  height?: number;
+  nodeCount?: number;
+  colorPalette?: string;
+  style?: string;
+  [key: string]: unknown; // Index signature for compatibility
 }
 
 export interface ReactFlowEdge {
@@ -171,30 +205,34 @@ export interface ReactFlowEdge {
   sourceHandle?: string;
   targetHandle?: string;
   type: string;
-  style?: Record<string, any>;
+  style?: Record<string, string | number>;
   animated?: boolean;
   label?: string;
-  markerEnd?: string | object;
-  data?: {
-    semanticTags?: string[];
-    appliedSemanticTags?: string[];
-    lineStyle?: "single" | "double";
-    originalEdge?: any;
-    originalEdgeIds?: string[];
-    aggregationSource?: string;
-    aggregated?: boolean;
-  };
+  markerEnd?: string | { type: string; color?: string; strokeWidth?: number };
+  data?: ReactFlowEdgeData;
+}
+
+export interface ReactFlowEdgeData {
+  semanticTags?: string[];
+  appliedSemanticTags?: string[];
+  lineStyle?: "single" | "double";
+  originalEdge?: GraphEdge;
+  originalEdgeIds?: string[];
+  aggregationSource?: string;
+  aggregated?: boolean;
 }
 
 export interface ELKNode {
   id: string;
   children?: ELKNode[];
   edges?: ELKEdge[];
-  layoutOptions?: Record<string, any>;
+  layoutOptions?: Record<string, string | number | boolean>;
   x?: number;
   y?: number;
   width?: number;
   height?: number;
+  labels?: Array<{ text: string; width?: number; height?: number }>;
+  ports?: Array<{ id: string; x?: number; y?: number }>;
 }
 
 export interface ELKEdge {
@@ -246,7 +284,7 @@ export interface ApplicationEvent {
 
 export interface ApplicationEventPayload {
   // Common fields
-  state?: any; // VisualizationState - using any to avoid circular dependency
+  state?: unknown; // VisualizationState - avoiding circular dependency
   triggerLayout?: boolean;
   layoutConfig?: LayoutConfig;
   triggerValidation?: boolean; // New field for triggering ReactFlow validation
@@ -264,14 +302,60 @@ export interface ApplicationEventPayload {
 
 // File upload and parsing types
 export interface HydroscopeData {
-  nodes: any[]; // Raw node data from JSON
-  edges: any[]; // Raw edge data from JSON
+  nodes: RawNodeData[]; // Raw node data from JSON
+  edges: RawEdgeData[]; // Raw edge data from JSON
   hierarchyChoices: HierarchyChoice[];
   nodeAssignments: Record<string, Record<string, string>>;
-  nodeTypeConfig?: any;
-  edgeStyleConfig?: any;
-  legend?: any;
-  styles?: any;
+  nodeTypeConfig?: NodeTypeConfig;
+  edgeStyleConfig?: Record<string, EdgeStyleConfig>;
+  legend?: LegendConfig;
+  styles?: StyleConfig;
+}
+
+export interface RawNodeData {
+  id: string;
+  label?: string;
+  longLabel?: string;
+  type?: string;
+  style?: string;
+  semanticTags?: string[];
+  position?: { x: number; y: number };
+  dimensions?: { width: number; height: number };
+  hidden?: boolean;
+  [key: string]: unknown; // Allow additional properties from JSON
+}
+
+export interface RawEdgeData {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+  style?: string;
+  semanticTags?: string[];
+  edgeProperties?: string[];
+  hidden?: boolean;
+  label?: string;
+  [key: string]: unknown; // Allow additional properties from JSON
+}
+
+export interface NodeTypeConfig {
+  types: Array<{
+    id: string;
+    label?: string;
+    colorIndex?: number;
+    description?: string;
+    style?: NodeStyleConfig;
+  }>;
+}
+
+export interface LegendConfig {
+  title?: string;
+  items: Array<{
+    type: string;
+    label: string;
+    description?: string;
+    color?: string;
+  }>;
 }
 
 export interface HierarchyChoice {
@@ -292,5 +376,5 @@ export interface ValidationResult {
   type: string;
   message: string;
   severity: "error" | "warning" | "info";
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }

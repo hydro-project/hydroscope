@@ -9,7 +9,7 @@ import {
 // Aggregated Edge Component
 // This edge type is used when multiple edges are collapsed into a single aggregated edge
 export const AggregatedEdge: React.FC<EdgeProps> = ({
-  id,
+  id: _id,
   sourceX,
   sourceY,
   targetX,
@@ -85,7 +85,7 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
 // Default Edge Component
 // This is the standard edge type with default arrowhead
 export const DefaultEdge: React.FC<EdgeProps> = ({
-  id,
+  id: _id,
   sourceX,
   sourceY,
   targetX,
@@ -93,7 +93,7 @@ export const DefaultEdge: React.FC<EdgeProps> = ({
   sourcePosition,
   targetPosition,
   style = {},
-  data,
+  data: _data,
   markerEnd,
 }) => {
   const [edgePath] = getBezierPath({

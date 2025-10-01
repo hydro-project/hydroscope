@@ -23,11 +23,12 @@ import {
   createPerformanceBaseline,
   type PerformanceBaseline,
 } from "./performance.config.js";
+import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
 
 describe("Performance Regression Tests", () => {
-  let paxosData: any;
+  let paxosData: HydroscopeData;
   let batchTester: BatchPerformanceTester;
   let performanceBaseline: PerformanceBaseline | null = null;
   const baselinePath = path.join(process.cwd(), "performance-baseline.json");
@@ -56,7 +57,7 @@ describe("Performance Regression Tests", () => {
     // Save performance results as new baseline if none exists
     if (!performanceBaseline) {
       const results = batchTester.getAllResults();
-      const baselineData: Record<string, any> = {};
+      const baselineData: Record<string, unknown> = {};
 
       for (const [testName, metrics] of results) {
         if (metrics.length > 0) {

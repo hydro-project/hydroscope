@@ -13,6 +13,7 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData";
+import type { Container } from "../types/core.js";
 
 describe("ELKBridge", () => {
   let bridge: ELKBridge;
@@ -443,7 +444,7 @@ describe("ELKBridge", () => {
     it("should validate layout configuration", () => {
       expect(() => {
         new ELKBridge({
-          algorithm: "invalid" as any,
+          algorithm: "invalid" as "layered",
           direction: "DOWN",
           spacing: 50,
         });
@@ -452,7 +453,7 @@ describe("ELKBridge", () => {
       expect(() => {
         new ELKBridge({
           algorithm: "layered",
-          direction: "INVALID" as any,
+          direction: "INVALID" as "DOWN",
           spacing: 50,
         });
       }).toThrow("Invalid ELK direction: INVALID");
@@ -564,7 +565,7 @@ describe("ELKBridge", () => {
         createTestNode("n2", "Node 2"),
       ];
       const edges = [createTestEdge("e1", "n1", "n2")];
-      const containers: any[] = [];
+      const containers: Container[] = [];
 
       nodes.forEach((node) => state.addNode(node));
       edges.forEach((edge) => state.addEdge(edge));

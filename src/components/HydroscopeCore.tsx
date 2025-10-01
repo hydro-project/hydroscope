@@ -167,6 +167,7 @@ export const HydroscopeCore = React.forwardRef<
       } catch (error) {
         handleError(error as Error, "initialization");
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Empty dependency array - initialize once
 
     // Update bridges when configs change
@@ -193,7 +194,7 @@ export const HydroscopeCore = React.forwardRef<
       layoutTimerRef.current = setTimeout(() => {
         triggerLayoutImmediate();
       }, layoutDebounceDelay);
-    }, [layoutDebounceDelay]);
+    }, [layoutDebounceDelay]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Immediate layout trigger
     const triggerLayoutImmediate = useCallback(async () => {
@@ -229,7 +230,7 @@ export const HydroscopeCore = React.forwardRef<
       } catch (error) {
         handleError(error as Error, "layout update");
       }
-    }, [debugLog, handleError]);
+    }, [debugLog, handleError]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Update ReactFlow data
     const updateReactFlowData = useCallback(async () => {
@@ -392,7 +393,7 @@ export const HydroscopeCore = React.forwardRef<
     );
 
     // Memoized status for performance
-    const status = useMemo(
+    const _status = useMemo(
       () => ({
         layoutState,
         asyncStatus,

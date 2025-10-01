@@ -8,7 +8,6 @@ import type {
   HydroscopeData,
   ParseError,
   ValidationResult,
-  HierarchyChoice,
 } from "../types/core.js";
 
 export interface FileUploadProps {
@@ -46,7 +45,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   maxFileSize = 50 * 1024 * 1024, // 50MB default
   debug = false,
   customValidator,
-  showDetailedErrors = false,
+  showDetailedErrors: _showDetailedErrors = false,
 }) => {
   const [state, setState] = useState<FileUploadState>({
     isDragOver: false,
@@ -476,6 +475,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       onFileLoaded,
       onParseError,
       onValidationError,
+      safeSetState,
     ],
   );
 
@@ -491,17 +491,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   // Handle drag events
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    safeSetState((prev) => ({ ...prev, isDragOver: true }));
-  }, []);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      safeSetState((prev) => ({ ...prev, isDragOver: true }));
+    },
+    [safeSetState],
+  );
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    safeSetState((prev) => ({ ...prev, isDragOver: false }));
-  }, []);
+  const handleDragLeave = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      safeSetState((prev) => ({ ...prev, isDragOver: false }));
+    },
+    [safeSetState],
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -512,7 +518,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const files = e.dataTransfer.files;
       handleFileSelect(files);
     },
-    [handleFileSelect],
+    [handleFileSelect, safeSetState],
   );
 
   // Handle click to open file dialog

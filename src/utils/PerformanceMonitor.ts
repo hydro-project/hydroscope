@@ -153,7 +153,7 @@ export class PerformanceMonitor {
   private generateRecommendations(
     component: string,
     metric: string,
-    value: number,
+    _value: number,
   ): string[] {
     const recommendations: string[] = [];
 

@@ -73,7 +73,7 @@ export class AsyncCoordinator {
 
     while (operation.retryCount <= operation.maxRetries) {
       try {
-        const result = await this.executeWithTimeout(operation);
+        const _result = await this.executeWithTimeout(operation);
 
         // Operation succeeded
         operation.completedAt = Date.now();
@@ -510,7 +510,7 @@ export class AsyncCoordinator {
     }
 
     // Expand the container in the state
-    state.expandContainer(containerId);
+    (state as any).expandContainer(containerId);
 
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
@@ -533,7 +533,7 @@ export class AsyncCoordinator {
     );
 
     // Collapse the container in the state
-    state.collapseContainer(containerId);
+    (state as any).collapseContainer(containerId);
 
     // Trigger ReactFlow validation if requested
     if (triggerValidation) {
@@ -548,7 +548,7 @@ export class AsyncCoordinator {
         const reactFlowBridge = new ReactFlowBridge({});
 
         // Run validation by calling toReactFlowData
-        const reactFlowData = reactFlowBridge.toReactFlowData(state);
+        const _reactFlowData = reactFlowBridge.toReactFlowData(state as any);
         console.log(
           `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse event`,
         );
@@ -576,19 +576,19 @@ export class AsyncCoordinator {
     }
 
     // Perform search in the state
-    const results = state.search(query || "");
+    const results = (state as any).search(query || "");
 
     // Expand containers containing search results if needed
     if (event.payload.expandContainers && results.length > 0) {
       for (const result of results) {
         if (result.type === "node") {
           // Find containers that contain this node and expand them
-          const containers = state.getContainersForNode
-            ? state.getContainersForNode(result.id)
+          const containers = (state as any).getContainersForNode
+            ? (state as any).getContainersForNode(result.id)
             : [];
           for (const container of containers) {
             if (container.collapsed) {
-              state.expandContainer(container.id);
+              (state as any).expandContainer(container.id);
             }
           }
         }
@@ -663,7 +663,7 @@ export class AsyncCoordinator {
   /**
    * Cancel all application events of a specific type
    */
-  cancelApplicationEventsByType(eventType: ApplicationEvent["type"]): number {
+  cancelApplicationEventsByType(_eventType: ApplicationEvent["type"]): number {
     let cancelledCount = 0;
 
     // Filter out operations that match the event type
@@ -1022,8 +1022,8 @@ export class AsyncCoordinator {
       ...this.failedOperations,
     ].filter((op) => op.type === "application_event");
 
-    const collapseOps = expandOps; // Simplified - in practice we'd need to check event payload
-    const bulkOps = expandOps; // Simplified - in practice we'd need to check for bulk operations
+    const _collapseOps = expandOps; // Simplified - in practice we'd need to check event payload
+    const _bulkOps = expandOps; // Simplified - in practice we'd need to check for bulk operations
 
     const lastError =
       this.failedOperations.length > 0

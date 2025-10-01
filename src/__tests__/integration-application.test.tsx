@@ -31,8 +31,8 @@ import type {
 class MockFileReader {
   result: string | null = null;
   error: Error | null = null;
-  onload: ((event: any) => void) | null = null;
-  onerror: ((event: any) => void) | null = null;
+  onload: ((event: ProgressEvent<FileReader>) => void) | null = null;
+  onerror: ((event: ProgressEvent<FileReader>) => void) | null = null;
 
   readAsText(file: File) {
     setTimeout(() => {
@@ -59,7 +59,9 @@ const setupFileReaderMock = (
   const mockInstance = new MockFileReader();
   mockInstance.result = result;
   mockInstance.error = error;
-  global.FileReader = vi.fn().mockImplementation(() => mockInstance) as any;
+  global.FileReader = vi
+    .fn()
+    .mockImplementation(() => mockInstance) as typeof FileReader;
   return mockInstance;
 };
 

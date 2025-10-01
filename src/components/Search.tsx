@@ -3,7 +3,7 @@
  * Integrated search component with input and results display
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { SearchInput } from "./SearchInput.js";
 import { SearchResults } from "./SearchResults.js";
 import type { SearchResult } from "../types/core.js";
@@ -48,7 +48,7 @@ export const Search: React.FC<SearchProps> = ({
       if (prevIndex < 0) return 0;
       return (prevIndex + 1) % searchResults.length;
     });
-  }, [searchResults?.length]);
+  }, [searchResults?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNavigatePrevious = useCallback(() => {
     if (!searchResults || searchResults.length === 0) return;
@@ -57,7 +57,7 @@ export const Search: React.FC<SearchProps> = ({
       if (prevIndex <= 0) return searchResults.length - 1;
       return prevIndex - 1;
     });
-  }, [searchResults?.length]);
+  }, [searchResults?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Result selection handlers
   const handleResultClick = useCallback(

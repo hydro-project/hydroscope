@@ -20,7 +20,7 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData.js";
-import type { StyleConfig } from "../types/core.js";
+import type { StyleConfig, ReactFlowNode, RawNodeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
 
@@ -183,15 +183,17 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       const rawPaxosData = JSON.parse(paxosContent);
 
       // Convert raw paxos data to test format
-      const paxosNodes = rawPaxosData.nodes.slice(0, 20).map((node: any) => ({
-        id: node.id,
-        label: node.shortLabel || node.label || `Node ${node.id}`,
-        longLabel:
-          node.fullLabel || node.longLabel || node.label || `Node ${node.id}`,
-        type: node.nodeType || node.type || "node",
-        semanticTags: node.semanticTags || [],
-        hidden: false,
-      }));
+      const paxosNodes = rawPaxosData.nodes
+        .slice(0, 20)
+        .map((node: RawNodeData) => ({
+          id: node.id,
+          label: node.shortLabel || node.label || `Node ${node.id}`,
+          longLabel:
+            node.fullLabel || node.longLabel || node.label || `Node ${node.id}`,
+          type: node.nodeType || node.type || "node",
+          semanticTags: node.semanticTags || [],
+          hidden: false,
+        }));
 
       // Add nodes to state
       for (const node of paxosNodes) {
@@ -205,7 +207,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       const reactFlowData = bridge.toReactFlowData(state);
 
       // Check that different node types get different styles
-      const nodesByType = new Map<string, any[]>();
+      const nodesByType = new Map<string, ReactFlowNode[]>();
       for (const node of reactFlowData.nodes) {
         const nodeType = node.data.nodeType;
         if (!nodesByType.has(nodeType)) {
@@ -218,7 +220,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       expect(nodesByType.size).toBeGreaterThan(1);
 
       // Verify different types have different styles
-      const stylesByType = new Map<string, any>();
+      const stylesByType = new Map<string, Record<string, string | number>>();
       for (const [nodeType, nodes] of nodesByType) {
         if (nodes.length > 0 && nodes[0].style) {
           stylesByType.set(nodeType, nodes[0].style);
@@ -735,7 +737,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
 
       // Try to modify the result - should throw error due to immutability
       expect(() => {
-        (result.nodes[0].data as any).label = "Modified";
+        (result.nodes[0].data as Record<string, unknown>).label = "Modified";
       }).toThrow();
 
       // Original should be unchanged

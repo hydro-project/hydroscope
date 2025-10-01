@@ -455,7 +455,7 @@ export class VisualizationState {
     >();
 
     // TODO: seems inefficient to iterate through all edges. Should walk the tree downward from here.
-    for (const [edgeId, edge] of this._edges) {
+    for (const [_edgeId, edge] of this._edges) {
       // Process ALL edges, including hidden ones, since they might need aggregation
       const sourceInContainer = allDescendants.has(edge.source);
       const targetInContainer = allDescendants.has(edge.target);
@@ -537,7 +537,7 @@ export class VisualizationState {
 
     // Also check existing aggregated edges that might need to be updated
     // TODO: Can this be DRYed up? Seems quite similar to the above.
-    for (const [aggId, aggEdge] of this._aggregatedEdges) {
+    for (const [_aggId, aggEdge] of this._aggregatedEdges) {
       if (aggEdge.hidden) continue;
 
       const sourceInContainer = allDescendants.has(aggEdge.source);
@@ -578,7 +578,7 @@ export class VisualizationState {
     }
 
     // Create new aggregated edges
-    for (const [key, edgeGroup] of edgesBySourceTarget) {
+    for (const [_key, edgeGroup] of edgesBySourceTarget) {
       const { source, target, edges } = edgeGroup;
       const aggregatedEdgeId = `agg-${containerId}-${source}-${target}`;
 
@@ -795,7 +795,7 @@ export class VisualizationState {
 
       // Create or update aggregated edge
       // TODO: this is redundant with similar code above. DRY up.
-      const key = `${aggregatedSource}-${aggregatedTarget}`;
+      const _key = `${aggregatedSource}-${aggregatedTarget}`;
       const aggregatedEdgeId = `agg-${sourceContainer || targetContainer}-${aggregatedSource}-${aggregatedTarget}`;
 
       let existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
@@ -1336,7 +1336,7 @@ export class VisualizationState {
     const errors: string[] = [];
 
     // Check that all aggregated edges have valid original edges
-    for (const [aggId, aggEdge] of this._aggregatedEdges) {
+    for (const [aggId, _aggEdge] of this._aggregatedEdges) {
       const originalIds = this._aggregatedToOriginalMap.get(aggId);
       if (!originalIds || originalIds.length === 0) {
         errors.push(`Aggregated edge ${aggId} has no original edges`);

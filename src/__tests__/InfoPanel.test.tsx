@@ -9,11 +9,7 @@
  */
 
 import React from "react";
-import {
-  render,
-  screen,
-  fireEvent,
-} from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   InfoPanel,
@@ -83,14 +79,9 @@ describe("InfoPanel Component", () => {
 
     it("should accept custom style prop", () => {
       const customStyle = { fontSize: "20px" };
-      
+
       expect(() => {
-        render(
-          <InfoPanel
-            {...mockProps}
-            style={customStyle}
-          />,
-        );
+        render(<InfoPanel {...mockProps} style={customStyle} />);
       }).not.toThrow();
 
       // Should render successfully with custom style
@@ -108,21 +99,25 @@ describe("InfoPanel Component", () => {
     });
 
     it("should render gracefully when v6 components unavailable", () => {
-      expect(() => render(
-        <InfoPanel
-          {...mockProps}
-          visualizationState={null}
-          asyncCoordinator={null}
-        />,
-      )).not.toThrow();
+      expect(() =>
+        render(
+          <InfoPanel
+            {...mockProps}
+            visualizationState={null}
+            asyncCoordinator={null}
+          />,
+        ),
+      ).not.toThrow();
 
       // Should still show the basic panel structure
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
     });
 
     it("should render gracefully with null visualization state", () => {
-      expect(() => render(<InfoPanel {...mockProps} visualizationState={null} />)).not.toThrow();
-      
+      expect(() =>
+        render(<InfoPanel {...mockProps} visualizationState={null} />),
+      ).not.toThrow();
+
       // Should still show the basic panel structure
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
     });
@@ -182,9 +177,9 @@ describe("InfoPanel Component", () => {
 
   describe("Error Handling", () => {
     it("should handle null VisualizationState gracefully", () => {
-      expect(() => render(
-        <InfoPanel {...mockProps} visualizationState={null} />,
-      )).not.toThrow();
+      expect(() =>
+        render(<InfoPanel {...mockProps} visualizationState={null} />),
+      ).not.toThrow();
 
       // Should still show the basic panel structure
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
@@ -193,7 +188,9 @@ describe("InfoPanel Component", () => {
     it("should handle missing onError callback gracefully", () => {
       const propsWithoutErrorHandler = { ...mockProps, onError: undefined };
 
-      expect(() => render(<InfoPanel {...propsWithoutErrorHandler} />)).not.toThrow();
+      expect(() =>
+        render(<InfoPanel {...propsWithoutErrorHandler} />),
+      ).not.toThrow();
 
       // Should still render basic UI
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
@@ -201,7 +198,9 @@ describe("InfoPanel Component", () => {
 
     it("should handle component errors gracefully", () => {
       // Mock console.error to avoid noise
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       expect(() => render(<InfoPanel {...mockProps} />)).not.toThrow();
 
@@ -218,7 +217,7 @@ describe("InfoPanel Component", () => {
 
       // Should have the basic panel
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
-      
+
       // Node Types section should be present (it's always rendered)
       expect(screen.getByText("Node Types")).toBeInTheDocument();
     });
@@ -235,7 +234,7 @@ describe("InfoPanel Component", () => {
 
       // Should show basic panel structure
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
-      
+
       // Should have legend section
       expect(screen.getByText("Node Types")).toBeInTheDocument();
     });

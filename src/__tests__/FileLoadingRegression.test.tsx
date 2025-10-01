@@ -8,12 +8,7 @@
  */
 
 import React from "react";
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-} from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { HydroscopeEnhanced } from "../components/HydroscopeEnhanced.js";
 import type { HydroscopeData } from "../types/core.js";
@@ -33,14 +28,14 @@ vi.mock("@xyflow/react", () => ({
     <button {...props}>{children}</button>
   ),
   Position: {
-    Top: 'top',
-    Bottom: 'bottom',
-    Left: 'left',
-    Right: 'right',
+    Top: "top",
+    Bottom: "bottom",
+    Left: "left",
+    Right: "right",
   },
   MarkerType: {
-    Arrow: 'arrow',
-    ArrowClosed: 'arrowclosed',
+    Arrow: "arrow",
+    ArrowClosed: "arrowclosed",
   },
   useReactFlow: () => ({
     fitView: vi.fn(),
@@ -94,13 +89,15 @@ vi.mock("../utils/JSONParser.js", () => {
       processingTime: 0,
     },
   });
-  
+
   const mockJSONParser = {
     parseData: mockParseData,
   };
 
   const MockJSONParserClass = vi.fn().mockImplementation(() => mockJSONParser);
-  MockJSONParserClass.createPaxosParser = vi.fn().mockReturnValue(mockJSONParser);
+  MockJSONParserClass.createPaxosParser = vi
+    .fn()
+    .mockReturnValue(mockJSONParser);
 
   return {
     JSONParser: MockJSONParserClass,
@@ -124,9 +121,7 @@ const newData: HydroscopeData = {
     { id: "nodeA", label: "New Node A", type: "operator" },
     { id: "nodeB", label: "New Node B", type: "sink" },
   ],
-  edges: [
-    { id: "edgeA", source: "nodeA", target: "nodeB", label: "New Edge" },
-  ],
+  edges: [{ id: "edgeA", source: "nodeA", target: "nodeB", label: "New Edge" }],
   containers: [],
 };
 
@@ -148,14 +143,18 @@ describe("File Loading Regression Tests", () => {
 
     // Should render the component (either successfully or with error state)
     await waitFor(() => {
-      const component = document.querySelector('.hydroscope-error') || document.querySelector('[data-testid="react-flow"]');
+      const component =
+        document.querySelector(".hydroscope-error") ||
+        document.querySelector('[data-testid="react-flow"]');
       expect(component).toBeInTheDocument();
     });
   });
 
   it("should reload visualization when a different file is loaded via file input", async () => {
     expect(() => {
-      const { rerender } = render(<HydroscopeEnhanced data={initialData} enhanced={true} />);
+      const { rerender } = render(
+        <HydroscopeEnhanced data={initialData} enhanced={true} />,
+      );
 
       // Simulate loading new data
       rerender(<HydroscopeEnhanced data={newData} enhanced={true} />);
@@ -163,7 +162,9 @@ describe("File Loading Regression Tests", () => {
 
     // Should still render the component (either successfully or with error state)
     await waitFor(() => {
-      const component = document.querySelector('.hydroscope-error') || document.querySelector('[data-testid="react-flow"]');
+      const component =
+        document.querySelector(".hydroscope-error") ||
+        document.querySelector('[data-testid="react-flow"]');
       expect(component).toBeInTheDocument();
     });
   });
@@ -172,12 +173,14 @@ describe("File Loading Regression Tests", () => {
     // This test is skipped until the basic file loading is fixed
     const datasets = [initialData, newData, initialData];
 
-    const { rerender } = render(<HydroscopeEnhanced data={datasets[0]} enhanced={true} />);
+    const { rerender } = render(
+      <HydroscopeEnhanced data={datasets[0]} enhanced={true} />,
+    );
 
     for (let i = 1; i < datasets.length; i++) {
       mockParseData.mockReturnValue(datasets[i]);
       rerender(<HydroscopeEnhanced data={datasets[i]} enhanced={true} />);
-      
+
       // Should render without crashing
       expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     }
@@ -205,7 +208,7 @@ describe("File Loading Regression Tests", () => {
         data={initialData}
         enhanced={true}
         onFileLoaded={handleFileLoaded}
-      />
+      />,
     );
 
     // This test would require complex file input mocking

@@ -11,6 +11,7 @@ import React, {
   useRef,
   useImperativeHandle,
   forwardRef,
+  memo,
 } from "react";
 import { Button } from "antd";
 import { InfoPanelProps, LegendData } from "../types";
@@ -18,39 +19,20 @@ import { CollapsibleSection } from "../CollapsibleSection";
 import { GroupingControls } from "../GroupingControls";
 import { HierarchyTree } from "../HierarchyTree";
 import { Legend } from "../Legend";
-import { SearchControls, SearchMatch, SearchControlsRef } from "../SearchControls";
+import {
+  SearchControls,
+  SearchMatch,
+  SearchControlsRef,
+} from "../SearchControls";
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
-
-interface VisualizationNode {
-  id: string;
-  nodeType?: string;
-  style?: string;
-  label?: string;
-  data?: {
-    nodeType?: string;
-    label?: string;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
-
-interface VisualizationContainer {
-  id: string;
-  label?: string;
-  data?: {
-    label?: string;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
 
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
 }
 
-export const InfoPanel = forwardRef<
+const InfoPanelInternal = forwardRef<
   InfoPanelRef,
   InfoPanelProps & {
     open?: boolean;
@@ -116,7 +98,7 @@ export const InfoPanel = forwardRef<
 
       // Collect all unique node types from visible nodes
       const visibleNodes = visualizationState.visibleNodes || [];
-      visibleNodes.forEach((node, index) => {
+      visibleNodes.forEach((node) => {
         // Support type property (standard) and nodeType (legacy) possibly nested under a data field
         const nodeType =
           (node as any).type ||
@@ -124,30 +106,53 @@ export const InfoPanel = forwardRef<
           (node as any)?.data?.nodeType ||
           (node as any).style ||
           "default";
-        
+
         nodeTypes.add(nodeType);
       });
 
       // If no visible nodes or no node types found, fall back to nodeTypeConfig
-      if (nodeTypes.size === 0 && nodeTypeConfig?.types) {
-        nodeTypeConfig.types.forEach((typeConfig: { id: string; label?: string; colorIndex?: number; description?: string }) => {
-          nodeTypes.add(typeConfig.id);
-        });
+      if (
+        nodeTypes.size === 0 &&
+        nodeTypeConfig?.types &&
+        Array.isArray(nodeTypeConfig.types)
+      ) {
+        nodeTypeConfig.types.forEach(
+          (typeConfig: {
+            id: string;
+            label?: string;
+            colorIndex?: number;
+            description?: string;
+          }) => {
+            nodeTypes.add(typeConfig.id);
+          },
+        );
       }
-
 
       // Create legend items, using nodeTypeConfig if available
       const items = Array.from(nodeTypes).map((nodeType) => {
         // Look for this node type in nodeTypeConfig
-        const typeConfig = nodeTypeConfig?.types?.find(
-          (t: any) => t.id === nodeType,
-        );
+        const typeConfig =
+          nodeTypeConfig?.types && Array.isArray(nodeTypeConfig.types)
+            ? nodeTypeConfig.types.find(
+                (t: {
+                  id: string;
+                  label?: string;
+                  colorIndex?: number;
+                  description?: string;
+                }) => t.id === nodeType,
+              )
+            : undefined;
 
         return {
           type: nodeType,
-          label: typeConfig?.label || nodeType.charAt(0).toUpperCase() + nodeType.slice(1),
+          label:
+            typeConfig?.label ||
+            nodeType.charAt(0).toUpperCase() + nodeType.slice(1),
           description: typeConfig?.description,
-          color: typeConfig?.colorIndex !== undefined ? `color-${typeConfig.colorIndex}` : undefined,
+          color:
+            typeConfig?.colorIndex !== undefined
+              ? `color-${typeConfig.colorIndex}`
+              : undefined,
         };
       });
 
@@ -162,7 +167,6 @@ export const InfoPanel = forwardRef<
       legendData && legendData.items && Array.isArray(legendData.items)
         ? legendData
         : generateLegendFromState();
-
 
     // Ensure hierarchyChoices is always an array
     const safeHierarchyChoices = Array.isArray(hierarchyChoices)
@@ -319,7 +323,6 @@ export const InfoPanel = forwardRef<
               isCollapsed={groupingCollapsed}
               onToggle={() => setGroupingCollapsed(!groupingCollapsed)}
             >
-
               {/* Grouping Controls */}
               {safeHierarchyChoices.length > 0 && (
                 <div
@@ -339,38 +342,37 @@ export const InfoPanel = forwardRef<
               )}
               {/* Search + Hierarchy Tree */}
               {visualizationState && (
-                  <div>
-
-                    <SearchControls
-                      ref={searchControlsRef}
-                      searchableItems={searchableItems}
-                      onSearch={handleSearch}
-                      onClear={handleSearchClear}
-                      onNavigate={handleSearchNavigate}
-                      placeholder="Search nodes and containers..."
-                      compact
-                    />
-                    <HierarchyTree
-                      collapsedContainers={collapsedContainers}
-                      visualizationState={visualizationState}
-                      onToggleContainer={(containerId) => {
-                        // Ensure both tree and graph stay in sync
-                        if (onToggleContainer) {
-                          onToggleContainer(containerId);
-                        }
-                      }}
-                      layoutOrchestrator={layoutOrchestrator}
-                      title={`${currentGroupingName} Hierarchy`}
-                      showNodeCounts={true}
-                      truncateLabels={true}
-                      maxLabelLength={15}
-                      // search integration - pass ALL matches (containers + nodes), not just containers
-                      searchQuery={searchQuery}
-                      searchMatches={searchMatches}
-                      currentSearchMatch={currentSearchMatch}
-                    />
-                  </div>
-                )}
+                <div>
+                  <SearchControls
+                    ref={searchControlsRef}
+                    searchableItems={searchableItems}
+                    onSearch={handleSearch}
+                    onClear={handleSearchClear}
+                    onNavigate={handleSearchNavigate}
+                    placeholder="Search nodes and containers..."
+                    compact
+                  />
+                  <HierarchyTree
+                    collapsedContainers={collapsedContainers}
+                    visualizationState={visualizationState}
+                    onToggleContainer={(containerId) => {
+                      // Ensure both tree and graph stay in sync
+                      if (onToggleContainer) {
+                        onToggleContainer(containerId);
+                      }
+                    }}
+                    layoutOrchestrator={layoutOrchestrator}
+                    title={`${currentGroupingName} Hierarchy`}
+                    showNodeCounts={true}
+                    truncateLabels={true}
+                    maxLabelLength={15}
+                    // search integration - pass ALL matches (containers + nodes), not just containers
+                    searchQuery={searchQuery}
+                    searchMatches={searchMatches}
+                    currentSearchMatch={currentSearchMatch}
+                  />
+                </div>
+              )}
             </CollapsibleSection>
           )}
           {/* Edge Style Legend Section - Show whenever edgeStyleConfig exists */}
@@ -404,7 +406,10 @@ export const InfoPanel = forwardRef<
   },
 );
 
-InfoPanel.displayName = "InfoPanel";
+InfoPanelInternal.displayName = "InfoPanelInternal";
+
+// Memoized component for performance optimization
+export const InfoPanel = memo(InfoPanelInternal);
 
 // Re-export sub-components for individual use
 export { Legend } from "../Legend";

@@ -63,7 +63,7 @@ export class ComponentProfiler {
     return session;
   }
 
-  startOperation(operationName: string, metadata?: Record<string, any>): void {
+  startOperation(operationName: string, _metadata?: Record<string, any>): void {
     if (!this.currentSession) {
       throw new Error("No active profiling session");
     }

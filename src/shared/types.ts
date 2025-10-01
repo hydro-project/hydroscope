@@ -8,7 +8,14 @@ export interface ExternalContainer {
   hidden: boolean;
   children: Set<string>;
   layout?: LayoutState;
-  [key: string]: any;
+  label?: string;
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  expandedDimensions?: Dimensions;
+  style?: ContainerStyle | string;
+  semanticTags?: string[];
 }
 /**
  * @fileoverview Type definitions for the Vis component
@@ -63,7 +70,11 @@ export interface Container {
   height?: number;
   expandedDimensions?: Dimensions;
   layout?: LayoutState; // Layout-related properties
-  [key: string]: any; // Allow custom properties
+  label?: string;
+  x?: number;
+  y?: number;
+  style?: ContainerStyle | string;
+  semanticTags?: string[];
 }
 
 export interface HyperEdge {
@@ -73,26 +84,37 @@ export interface HyperEdge {
   style: EdgeStyle;
   type: "hyper";
   edgeProperties?: string[];
-  [key: string]: any; // Allow custom properties
+  hidden?: boolean;
+  layout?: LayoutState;
+  semanticTags?: string[];
+  label?: string;
 }
 
 // ============ Input Types for Methods ============
 
 export interface CreateNodeProps {
   label: string;
-  style?: NodeStyle;
+  style?: NodeStyle | string;
   hidden?: boolean;
   layout?: LayoutState;
-  [key: string]: any;
+  longLabel?: string;
+  type?: string;
+  semanticTags?: string[];
+  showingLongLabel?: boolean;
+  position?: Position;
+  dimensions?: Dimensions;
 }
 
 export interface CreateEdgeProps {
   source: string;
   target: string;
-  style?: EdgeStyle;
+  style?: EdgeStyle | string;
   hidden?: boolean;
   layout?: LayoutState;
-  [key: string]: any;
+  type?: string;
+  semanticTags?: string[];
+  edgeProperties?: string[];
+  label?: string;
 }
 
 export interface CreateContainerProps {
@@ -101,7 +123,13 @@ export interface CreateContainerProps {
   hidden?: boolean;
   children?: string[];
   layout?: LayoutState;
-  [key: string]: any;
+  label?: string;
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  style?: ContainerStyle | string;
+  semanticTags?: string[];
 }
 
 // Re-export style types for convenience in other modules
@@ -110,12 +138,15 @@ export type { NodeStyle, EdgeStyle, ContainerStyle };
 // ============ Parser Types ============
 
 export interface ParseResult {
-  state: any; // Will be replaced with actual VisualizationState type
+  state: VisualizationState;
   metadata: {
     selectedGrouping: string | null;
     nodeCount: number;
     edgeCount: number;
     containerCount: number;
+    hierarchyChoices?: Array<{ id: string; name: string }>;
+    nodeTypeConfig?: Record<string, unknown>;
+    edgeStyleConfig?: Record<string, unknown>;
   };
 }
 

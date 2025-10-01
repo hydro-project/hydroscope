@@ -15,14 +15,10 @@
  * because those callbacks trigger refreshLayout() which needs to acquire the same lock.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import {
-  LAYOUT_CONSTANTS,
-  PANEL_CONSTANTS,
-  UI_CONSTANTS,
-} from "../../shared/config";
+import { LAYOUT_CONSTANTS, PANEL_CONSTANTS } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
 
@@ -69,13 +65,13 @@ export interface StyleTunerPanelProps {
   defaultCollapsed?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  // V6 Architecture Integration
+  // V6 Architecture Integration (reserved for future use)
   visualizationState?: VisualizationState | null;
   asyncCoordinator?: AsyncCoordinator | null;
   onError?: (error: Error) => void;
 }
 
-export function StyleTunerPanel({
+const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   value,
   onChange,
   colorPalette = "Set2",
@@ -87,10 +83,10 @@ export function StyleTunerPanel({
   defaultCollapsed: _defaultCollapsed = false,
   open = true,
   onOpenChange,
-  visualizationState,
-  asyncCoordinator,
-  onError,
-}: StyleTunerPanelProps) {
+  visualizationState: _visualizationState,
+  asyncCoordinator: _asyncCoordinator,
+  onError: _onError,
+}: StyleTunerPanelProps) => {
   const [local, setLocal] = useState(value);
   useEffect(() => setLocal(value), [value]);
 
@@ -179,14 +175,7 @@ export function StyleTunerPanel({
     };
   }, []);
 
-  const _update = (patch: Partial<typeof local>) => {
-    const next = { ...local, ...patch };
-    // Update local state immediately for responsive UI
-    setLocal(next);
-
-    // Execute synchronously to prevent race conditions with layout operations
-    onChange(next);
-  };
+  // Removed unused _update function - using direct state updates instead
 
   const inputStyle: React.CSSProperties = {
     padding: "4px 8px",
@@ -400,7 +389,10 @@ export function StyleTunerPanel({
       </div>
     </div>
   );
-}
+};
+
+// Memoized component for performance optimization
+export const StyleTunerPanel = memo(StyleTunerPanelInternal);
 
 export default StyleTunerPanel;
 

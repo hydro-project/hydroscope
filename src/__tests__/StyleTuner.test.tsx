@@ -155,7 +155,7 @@ describe("StyleTuner Component", () => {
 
       const layoutSelect = screen.getByDisplayValue("Layered (Default)");
       expect(layoutSelect).toBeInTheDocument();
-      
+
       // Check options exist
       expect(screen.getByText("Layered (Default)")).toBeInTheDocument();
       expect(screen.getByText("MR Tree")).toBeInTheDocument();
@@ -174,8 +174,10 @@ describe("StyleTuner Component", () => {
     });
 
     it("should handle layout change errors gracefully", async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       mockCallbacks.onLayoutChange.mockImplementation(() => {
         throw new Error("Layout change failed");
       });
@@ -183,14 +185,14 @@ describe("StyleTuner Component", () => {
       render(<StyleTuner {...mockProps} />);
 
       const layoutSelect = screen.getByDisplayValue("Layered (Default)");
-      
+
       // Should not crash when error occurs
       expect(() => {
         fireEvent.change(layoutSelect, { target: { value: "force" } });
       }).not.toThrow();
 
       expect(mockCallbacks.onLayoutChange).toHaveBeenCalledWith("force");
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -201,7 +203,7 @@ describe("StyleTuner Component", () => {
 
       const paletteSelect = screen.getByDisplayValue("Set2");
       expect(paletteSelect).toBeInTheDocument();
-      
+
       // Check options exist
       expect(screen.getByText("Set2")).toBeInTheDocument();
       expect(screen.getByText("Set3")).toBeInTheDocument();
@@ -219,8 +221,10 @@ describe("StyleTuner Component", () => {
     });
 
     it("should handle palette change errors gracefully", async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       mockCallbacks.onPaletteChange.mockImplementation(() => {
         throw new Error("Palette change failed");
       });
@@ -228,14 +232,14 @@ describe("StyleTuner Component", () => {
       render(<StyleTuner {...mockProps} />);
 
       const paletteSelect = screen.getByDisplayValue("Set2");
-      
+
       // Should not crash when error occurs
       expect(() => {
         fireEvent.change(paletteSelect, { target: { value: "Set3" } });
       }).not.toThrow();
 
       expect(mockCallbacks.onPaletteChange).toHaveBeenCalledWith("Set3");
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -274,7 +278,7 @@ describe("StyleTuner Component", () => {
     it("should display controls scale slider", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
       expect(controlsScaleInput).toBeInTheDocument();
       expect(controlsScaleInput).toHaveValue("1.3");
     });
@@ -282,27 +286,33 @@ describe("StyleTuner Component", () => {
     it("should call onControlsScaleChange when scale is modified", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
 
       // Wait for throttled callback
-      await waitFor(() => {
-        expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
+        },
+        { timeout: 1000 },
+      );
     });
 
     it("should validate scale range (0.8-1.9)", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
-      
+      const controlsScaleInput = screen.getByRole("slider");
+
       // Test within range
       fireEvent.change(controlsScaleInput, { target: { value: "1.0" } });
-      
+
       // Wait for throttled callback
-      await waitFor(() => {
-        expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.0);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.0);
+        },
+        { timeout: 1000 },
+      );
     });
   });
 
@@ -336,13 +346,16 @@ describe("StyleTuner Component", () => {
 
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
 
       // The component handles errors internally, so we just check it doesn't crash
-      await waitFor(() => {
-        expect(controlsScaleInput).toHaveValue("1.5");
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(controlsScaleInput).toHaveValue("1.5");
+        },
+        { timeout: 1000 },
+      );
     });
 
     it("should handle missing onError callback gracefully", async () => {
@@ -353,7 +366,7 @@ describe("StyleTuner Component", () => {
 
       render(<StyleTuner {...propsWithoutErrorHandler} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
 
       // Should not throw even without error handler
@@ -376,22 +389,25 @@ describe("StyleTuner Component", () => {
     it("should provide immediate UI updates with local state", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
 
       // Change should be immediately reflected in UI
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
       expect(controlsScaleInput).toHaveValue("1.5");
 
       // And should call onControlsScaleChange (after throttling)
-      await waitFor(() => {
-        expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
+        },
+        { timeout: 1000 },
+      );
     });
 
     it("should handle rapid successive changes", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
 
       // Make rapid changes
       fireEvent.change(controlsScaleInput, { target: { value: "1.3" } });
@@ -399,9 +415,12 @@ describe("StyleTuner Component", () => {
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
 
       // Should handle changes (though may be throttled)
-      await waitFor(() => {
-        expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalled();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
     });
   });
 
@@ -409,19 +428,22 @@ describe("StyleTuner Component", () => {
     it("should integrate with VisualizationState when available", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
 
       // Should work with VisualizationState integration (after throttling)
-      await waitFor(() => {
-        expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
+        },
+        { timeout: 1000 },
+      );
     });
 
     it("should integrate with AsyncCoordinator when available", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const layoutSelect = screen.getAllByRole('combobox')[0]; // First select is layout
+      const layoutSelect = screen.getAllByRole("combobox")[0]; // First select is layout
       fireEvent.change(layoutSelect, { target: { value: "force" } });
 
       // Should work with AsyncCoordinator integration
@@ -441,13 +463,16 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText("Style Tuner")).toBeInTheDocument();
 
       // Style changes should still work without v6 components
-      const controlsScaleInput = screen.getByRole('slider');
+      const controlsScaleInput = screen.getByRole("slider");
       fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
 
       // Wait for throttled callback
-      await waitFor(() => {
-        expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
+        },
+        { timeout: 1000 },
+      );
     });
   });
 });

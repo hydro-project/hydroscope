@@ -20,7 +20,7 @@ import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
 import { TYPOGRAPHY } from "../shared/config";
 import { COMPONENT_COLORS } from "../shared/config";
 import type { VisualizationState } from "../core/VisualizationState";
-import type { AsyncCoordinator } from "../core/AsyncCoordinator";
+// import type { AsyncCoordinator } from "../core/AsyncCoordinator";
 import type { Container } from "../shared/types";
 import type { GraphNode } from "../types/core";
 
@@ -383,7 +383,7 @@ export function HierarchyTree({
     }
 
     // Simple search expansion logic for v6
-    const currentCollapsed = new Set(collapsedContainers);
+    const _currentCollapsed = new Set(collapsedContainers);
     const expansionKeys = new Set<string>();
 
     // For each search match, expand its container hierarchy
@@ -528,9 +528,13 @@ export function HierarchyTree({
           `[HierarchyTree] 🚀 Executing search expansion for ${containersToToggle.length} containers`,
         );
 
-        if (layoutOrchestrator) {
+        if (
+          layoutOrchestrator &&
+          "expandForSearch" in layoutOrchestrator &&
+          typeof layoutOrchestrator.expandForSearch === "function"
+        ) {
           // CRITICAL: Use proper operation coordination and clear flag when done
-          layoutOrchestrator
+          (layoutOrchestrator as any)
             .expandForSearch(containersToToggle, searchQuery || "")
             .then(() => {
               searchExpansionInProgressRef.current = false;
@@ -579,7 +583,7 @@ export function HierarchyTree({
       // Batch container toggle operations to prevent ResizeObserver loops
       if (containersToToggle.length > 0) {
         // Use the same synchronous approach for consistency
-        const operationId = `hierarchy-sync-${Date.now()}`;
+        const _operationId = `hierarchy-sync-${Date.now()}`;
 
         // Use AsyncCoordinator for v6 architecture if available
         if (asyncCoordinator && visualizationState) {
@@ -627,6 +631,7 @@ export function HierarchyTree({
     onToggleContainer,
     layoutOrchestrator,
     visualizationState,
+    asyncCoordinator,
   ]);
 
   const treeData = useMemo(() => {
