@@ -6,6 +6,7 @@
 
 // 🎯 CORE COMPONENTS
 export { Hydroscope } from "./components/Hydroscope.js";
+export { Hydroscope as HydroscopeNew } from "./components/HydroscopeNew.js";
 export { HydroscopeViewer } from "./components/HydroscopeViewer.js";
 export { HydroscopeCore } from "./components/HydroscopeCoreNew.js";
 
@@ -14,6 +15,7 @@ export { InfoPanel, StyleTuner } from "./components/panels/index.js";
 
 // 📝 ESSENTIAL TYPES
 export type { HydroscopeProps, RenderConfig } from "./components/Hydroscope.js";
+export type { HydroscopeProps as HydroscopeNewProps, RenderConfig as HydroscopeNewRenderConfig } from "./components/HydroscopeNew.js";
 export type { HydroscopeViewerProps } from "./components/HydroscopeViewer.js";
 export type { HydroscopeCoreProps } from "./components/HydroscopeCoreNew.js";
 export type { HydroscopeData } from "./types/core.js";

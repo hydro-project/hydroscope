@@ -26,6 +26,8 @@ import React, {
   useCallback,
   useMemo,
   memo,
+  useImperativeHandle,
+  forwardRef,
 } from "react";
 import {
   ReactFlow,
@@ -53,6 +55,19 @@ import type { HydroscopeData, ReactFlowData } from "../types/core.js";
 // ============================================================================
 // TypeScript Interfaces
 // ============================================================================
+
+/**
+ * Imperative handle interface for HydroscopeCore component
+ * 
+ * Provides methods that can be called imperatively on the component instance.
+ */
+export interface HydroscopeCoreHandle {
+  /** Collapse all containers atomically */
+  collapseAll: () => Promise<void>;
+  
+  /** Expand all containers atomically */
+  expandAll: () => Promise<void>;
+}
 
 /**
  * Props interface for the HydroscopeCore component
@@ -107,6 +122,12 @@ export interface HydroscopeCoreProps {
     visualizationState?: VisualizationState,
   ) => void;
   
+  /** Callback when bulk collapse all operation completes */
+  onCollapseAll?: (visualizationState?: VisualizationState) => void;
+  
+  /** Callback when bulk expand all operation completes */
+  onExpandAll?: (visualizationState?: VisualizationState) => void;
+  
   /** Callback when error occurs */
   onError?: (error: Error) => void;
   
@@ -148,7 +169,7 @@ interface HydroscopeCoreState {
  * Internal component that uses ReactFlow hooks
  * This component must be wrapped in ReactFlowProvider
  */
-const HydroscopeCoreInternal: React.FC<HydroscopeCoreProps> = ({
+const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCoreProps>(({
   data,
   height = "100%",
   width = "100%",
@@ -160,10 +181,12 @@ const HydroscopeCoreInternal: React.FC<HydroscopeCoreProps> = ({
   onNodeClick,
   onContainerCollapse,
   onContainerExpand,
+  onCollapseAll,
+  onExpandAll,
   onError,
   className,
   style,
-}) => {
+}, ref) => {
   // ReactFlow instance for programmatic control
   const reactFlowInstance = useReactFlow();
   
@@ -579,6 +602,160 @@ const HydroscopeCoreInternal: React.FC<HydroscopeCoreProps> = ({
     }
   }, []);
 
+  // Bulk operations with atomic state management and error handling
+  const handleCollapseAll = useCallback(async () => {
+    if (!state.visualizationState || !state.asyncCoordinator) {
+      console.warn('[HydroscopeCore] Cannot collapse all - missing dependencies');
+      return;
+    }
+
+    // Capture initial state for rollback
+    const initialContainerStates = new Map();
+    try {
+      // Store initial container states for potential rollback
+      state.visualizationState.visibleContainers.forEach((container: any) => {
+        initialContainerStates.set(container.id, container.collapsed);
+      });
+
+      console.log('[HydroscopeCore] Starting collapseAll operation through AsyncCoordinator');
+      
+      // Step 1: Atomic bulk state changes through AsyncCoordinator
+      await state.asyncCoordinator.collapseAllContainers(state.visualizationState, {
+        triggerLayout: false, // Don't trigger layout for individual containers
+        triggerValidation: false, // We'll handle ReactFlow update separately
+      });
+      
+      // Step 2: Single coordinated re-layout after all state changes
+      console.log('[HydroscopeCore] Clearing caches and queuing ELK layout after collapseAll');
+      if (reactFlowBridgeRef.current) {
+        console.log('[HydroscopeCore] 🔄 Clearing ReactFlow caches before bulk layout');
+        reactFlowBridgeRef.current.clearCaches();
+      }
+      
+      await state.asyncCoordinator.queueELKLayout(
+        state.visualizationState,
+        elkBridgeRef.current!,
+      );
+      
+      // Step 3: Single coordinated re-render
+      console.log('[HydroscopeCore] Updating ReactFlow data after collapseAll atomic pipeline');
+      await updateReactFlowDataWithState(state.visualizationState);
+      
+      console.log('[HydroscopeCore] CollapseAll atomic pipeline complete');
+      
+      // Call success callback
+      onCollapseAll?.(state.visualizationState);
+    } catch (error) {
+      console.error('[HydroscopeCore] Error in collapseAll operation, attempting rollback:', error);
+      
+      // Attempt rollback to initial state
+      try {
+        console.log('[HydroscopeCore] Rolling back collapseAll operation');
+        for (const [containerId, wasCollapsed] of initialContainerStates) {
+          const container = state.visualizationState.getContainer(containerId);
+          if (container && container.collapsed !== wasCollapsed) {
+            if (wasCollapsed) {
+              state.visualizationState.collapseContainer(containerId);
+            } else {
+              state.visualizationState.expandContainer(containerId);
+            }
+          }
+        }
+        
+        // Re-render after rollback
+        await updateReactFlowDataWithState(state.visualizationState);
+        console.log('[HydroscopeCore] CollapseAll rollback completed');
+        
+        // Show user-friendly error message
+        const rollbackError = new Error(`Bulk collapse operation failed and was rolled back: ${(error as Error).message}`);
+        handleError(rollbackError, 'bulk collapse operation');
+      } catch (rollbackError) {
+        console.error('[HydroscopeCore] Rollback failed:', rollbackError);
+        const compoundError = new Error(`Bulk collapse operation failed and rollback also failed. Please refresh the component. Original error: ${(error as Error).message}`);
+        handleError(compoundError, 'bulk collapse operation');
+      }
+    }
+  }, [state.visualizationState, state.asyncCoordinator, updateReactFlowDataWithState, handleError]);
+
+  const handleExpandAll = useCallback(async () => {
+    if (!state.visualizationState || !state.asyncCoordinator) {
+      console.warn('[HydroscopeCore] Cannot expand all - missing dependencies');
+      return;
+    }
+
+    // Capture initial state for rollback
+    const initialContainerStates = new Map();
+    try {
+      // Store initial container states for potential rollback
+      state.visualizationState.visibleContainers.forEach((container: any) => {
+        initialContainerStates.set(container.id, container.collapsed);
+      });
+
+      console.log('[HydroscopeCore] Starting expandAll operation through AsyncCoordinator');
+      
+      // Step 1: Atomic bulk state changes through AsyncCoordinator
+      await state.asyncCoordinator.expandAllContainers(state.visualizationState, {
+        triggerLayout: false, // Don't trigger layout for individual containers
+      });
+      
+      // Step 2: Single coordinated re-layout after all state changes
+      console.log('[HydroscopeCore] Clearing caches and queuing ELK layout after expandAll');
+      if (reactFlowBridgeRef.current) {
+        console.log('[HydroscopeCore] 🔄 Clearing ReactFlow caches before bulk layout');
+        reactFlowBridgeRef.current.clearCaches();
+      }
+      
+      await state.asyncCoordinator.queueELKLayout(
+        state.visualizationState,
+        elkBridgeRef.current!,
+      );
+      
+      // Step 3: Single coordinated re-render
+      console.log('[HydroscopeCore] Updating ReactFlow data after expandAll atomic pipeline');
+      await updateReactFlowDataWithState(state.visualizationState);
+      
+      console.log('[HydroscopeCore] ExpandAll atomic pipeline complete');
+      
+      // Call success callback
+      onExpandAll?.(state.visualizationState);
+    } catch (error) {
+      console.error('[HydroscopeCore] Error in expandAll operation, attempting rollback:', error);
+      
+      // Attempt rollback to initial state
+      try {
+        console.log('[HydroscopeCore] Rolling back expandAll operation');
+        for (const [containerId, wasCollapsed] of initialContainerStates) {
+          const container = state.visualizationState.getContainer(containerId);
+          if (container && container.collapsed !== wasCollapsed) {
+            if (wasCollapsed) {
+              state.visualizationState.collapseContainer(containerId);
+            } else {
+              state.visualizationState.expandContainer(containerId);
+            }
+          }
+        }
+        
+        // Re-render after rollback
+        await updateReactFlowDataWithState(state.visualizationState);
+        console.log('[HydroscopeCore] ExpandAll rollback completed');
+        
+        // Show user-friendly error message
+        const rollbackError = new Error(`Bulk expand operation failed and was rolled back: ${(error as Error).message}`);
+        handleError(rollbackError, 'bulk expand operation');
+      } catch (rollbackError) {
+        console.error('[HydroscopeCore] Rollback failed:', rollbackError);
+        const compoundError = new Error(`Bulk expand operation failed and rollback also failed. Please refresh the component. Original error: ${(error as Error).message}`);
+        handleError(compoundError, 'bulk expand operation');
+      }
+    }
+  }, [state.visualizationState, state.asyncCoordinator, updateReactFlowDataWithState, handleError]);
+
+  // Expose bulk operations through imperative handle
+  useImperativeHandle(ref, () => ({
+    collapseAll: handleCollapseAll,
+    expandAll: handleExpandAll,
+  }), [handleCollapseAll, handleExpandAll]);
+
   // Handle node clicks
   const handleNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -765,7 +942,7 @@ const HydroscopeCoreInternal: React.FC<HydroscopeCoreProps> = ({
       `}</style>
     </div>
   );
-};
+});
 
 // ============================================================================
 // Main HydroscopeCore Component
@@ -777,7 +954,7 @@ const HydroscopeCoreInternal: React.FC<HydroscopeCoreProps> = ({
  * Provides core graph visualization and interaction functionality without
  * UI enhancements. Must be provided with JSON data to visualize.
  */
-export const HydroscopeCore: React.FC<HydroscopeCoreProps> = memo((props) => {
+export const HydroscopeCore = memo(forwardRef<HydroscopeCoreHandle, HydroscopeCoreProps>((props, ref) => {
   return (
     <ErrorBoundary
       fallback={(_, __, retry, ___) => (
@@ -819,10 +996,10 @@ export const HydroscopeCore: React.FC<HydroscopeCoreProps> = memo((props) => {
       )}
     >
       <ReactFlowProvider>
-        <HydroscopeCoreInternal {...props} />
+        <HydroscopeCoreInternal {...props} ref={ref} />
       </ReactFlowProvider>
     </ErrorBoundary>
   );
-});
+}));
 
 HydroscopeCore.displayName = 'HydroscopeCore';
