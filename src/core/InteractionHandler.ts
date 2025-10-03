@@ -131,7 +131,22 @@ export class InteractionHandler {
 
   private _handleContainerClickInternal(event: ClickEvent): void {
     // Toggle container between collapsed and expanded
+    console.log('[InteractionHandler] Toggling container:', event.elementId);
+    const containerBefore = this._visualizationState.getContainer(event.elementId);
+    console.log('[InteractionHandler] Container state before toggle:', { 
+      id: event.elementId, 
+      collapsed: containerBefore?.collapsed,
+      exists: !!containerBefore 
+    });
+    
     this._visualizationState.toggleContainer(event.elementId);
+    
+    const containerAfter = this._visualizationState.getContainer(event.elementId);
+    console.log('[InteractionHandler] Container state after toggle:', { 
+      id: event.elementId, 
+      collapsed: containerAfter?.collapsed,
+      stateChanged: containerBefore?.collapsed !== containerAfter?.collapsed
+    });
   }
 
   private _triggerLayoutUpdateIfNeeded(event: ClickEvent): void {

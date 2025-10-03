@@ -6,9 +6,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { AsyncCoordinator } from "../core/AsyncCoordinator";
 import { ELKBridge } from "../bridges/ELKBridge";
-import { ReactFlowBridge } from "../bridges/ReactFlowBridge";
-import { VisualizationState } from "../core/VisualizationState";
-import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
+import { ApplicationEvent } from "../types/core";
 
 describe("AsyncCoordinator", () => {
   let coordinator: AsyncCoordinator;
@@ -854,7 +852,7 @@ describe("AsyncCoordinator", () => {
       };
 
       const id1 = coordinator.queueApplicationEvent(event);
-      const id2 = coordinator.queueApplicationEvent(event);
+      const _id2 = coordinator.queueApplicationEvent(event);
 
       expect(coordinator.getApplicationEventStatus().queued).toBe(2);
 
@@ -941,7 +939,7 @@ describe("AsyncCoordinator", () => {
       let attemptCount = 0;
       const flakyState = {
         ...mockState,
-        expandContainer: vi.fn((containerId) => {
+        expandContainer: vi.fn((_containerId) => {
           attemptCount++;
           if (attemptCount < 2) {
             throw new Error("Temporary failure");

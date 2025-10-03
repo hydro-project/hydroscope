@@ -14,6 +14,11 @@ export {
   type HydroscopeViewerProps,
 } from "./HydroscopeViewer.js";
 
+export {
+  HydroscopeCore,
+  type HydroscopeCoreProps,
+} from "./HydroscopeCoreNew.js";
+
 // Panel Components (for advanced users)
 export {
   InfoPanel,

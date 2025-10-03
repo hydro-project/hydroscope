@@ -14,8 +14,13 @@ import {
 
 export function ContainerNode({ id, data }: NodeProps) {
   const styleCfg = useStyleConfig();
+  
+  // Use dimensions from ReactFlow data (calculated by ELK) with fallbacks
   const width = data.width || 180;
   const height = data.height || (data.collapsed ? 100 : 120);
+  
+  // DEBUG: Log container dimensions to verify they're correct
+  console.log(`[ContainerNode] ${id}: width=${width}, height=${height}, collapsed=${data.collapsed}`);
 
   // DEBUG: Log all ContainerNode renders with search highlight status
   const searchHighlight = (data as any).searchHighlight;
@@ -152,6 +157,11 @@ export function ContainerNode({ id, data }: NodeProps) {
           `}
         </style>
         <div
+          onClick={() => {
+            if (data.onClick && typeof data.onClick === 'function') {
+              data.onClick(id, 'container');
+            }
+          }}
           style={{
             width: `${width}px`,
             height: `${height}px`,
@@ -276,6 +286,11 @@ export function ContainerNode({ id, data }: NodeProps) {
         `}
       </style>
       <div
+        onClick={() => {
+          if (data.onClick && typeof data.onClick === 'function') {
+            data.onClick(id, 'container');
+          }
+        }}
         style={{
           padding: `${Math.max((styleCfg.nodePadding ?? 12) + 4, 8)}px`,
           background: nonCollapsedColors.background,
@@ -286,6 +301,9 @@ export function ContainerNode({ id, data }: NodeProps) {
           position: "relative",
           boxSizing: "border-box",
           cursor: "pointer",
+          // Ensure large containers can contain their children properly
+          overflow: "visible", // Allow child nodes to be visible
+          zIndex: 0, // Ensure container is behind child nodes
           boxShadow: (() => {
             if (searchHighlightStrong) {
               return "0 0 0 5px rgba(249, 115, 22, 0.5), 0 10px 15px -3px rgba(0,0,0,0.2)";

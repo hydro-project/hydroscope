@@ -200,6 +200,7 @@ import {
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
+import { InteractionHandler } from "../core/InteractionHandler.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { useResourceManager } from "../utils/ResourceManager.js";
 import { ErrorBoundary, useErrorHandler } from "./ErrorBoundary.js";
@@ -1363,6 +1364,9 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
     clearSearch: () => void;
   } | null>(null);
 
+  // Ref for InteractionHandler to enable container clicks
+  const interactionHandlerRef = useRef<InteractionHandler | null>(null);
+
   // Load initial settings from localStorage
   const [state, setState] = useState<HydroscopeState>(() => {
     const savedSettings = loadSettings() || getDefaultSettings();
@@ -1489,6 +1493,7 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
       if (state.visualizationState && state.asyncCoordinator) {
         const newFlowData = reactFlowBridge.toReactFlowData(
           state.visualizationState,
+          interactionHandlerRef.current,
         );
         setReactFlowData(newFlowData);
       }
@@ -1774,6 +1779,12 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
           // Create AsyncCoordinator for v6 operations
           const coordinator = new AsyncCoordinator();
 
+          // Create InteractionHandler for container clicks
+          const interactionHandler = new InteractionHandler(
+            visualizationState,
+            coordinator,
+          );
+
           // Set up bridges with edge style config
           const elkBridge = new ELKBridge({});
 
@@ -1781,7 +1792,10 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
           await elkBridge.layout(visualizationState);
 
           // Convert to ReactFlow format
-          const flowData = reactFlowBridge.toReactFlowData(visualizationState);
+          const flowData = reactFlowBridge.toReactFlowData(
+            visualizationState,
+            interactionHandler,
+          );
 
           return { visualizationState, coordinator, flowData };
         })();
@@ -1792,6 +1806,12 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
           coordinator: AsyncCoordinator;
           flowData: { nodes: any[]; edges: any[] };
         };
+
+        // Store InteractionHandler in ref for later use
+        interactionHandlerRef.current = new InteractionHandler(
+          result.visualizationState,
+          result.coordinator,
+        );
 
         // Update state
         safeSetState((prev) => ({
@@ -1893,6 +1913,12 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
     return () => {
       // Mark component as unmounted
       mountedRef.current = false;
+
+      // Clean up InteractionHandler
+      if (interactionHandlerRef.current) {
+        interactionHandlerRef.current.cleanup();
+        interactionHandlerRef.current = null;
+      }
 
       // ResourceManager will automatically clean up all resources
       // This includes timeouts, intervals, observers, and event listeners
@@ -2087,6 +2113,7 @@ const HydroscopeInternal: React.FC<HydroscopeProps> = ({
           .then(() => {
             const flowData = reactFlowBridge.toReactFlowData(
               state.visualizationState!,
+              interactionHandlerRef.current,
             );
             setReactFlowData(flowData);
           })

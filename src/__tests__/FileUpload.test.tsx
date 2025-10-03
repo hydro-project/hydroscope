@@ -7,11 +7,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FileUpload } from "../components/FileUpload.js";
-import type {
-  HydroscopeData,
-  ParseError,
-  ValidationResult,
-} from "../types/core.js";
+import type { HydroscopeData } from "../types/core.js";
 
 // Mock FileReader
 class MockFileReader {

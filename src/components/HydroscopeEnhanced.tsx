@@ -497,8 +497,10 @@ function CustomControls({
           semanticMappings: {},
           propertyMappings: {},
         });
-        const updatedFlowData =
-          reactFlowBridge.toReactFlowData(visualizationState);
+        const updatedFlowData = reactFlowBridge.toReactFlowData(
+          visualizationState,
+          undefined,
+        );
 
         // Debug: Check ReactFlow node positions
         console.log("📊 ReactFlow node positions:");
@@ -560,8 +562,10 @@ function CustomControls({
           semanticMappings: {},
           propertyMappings: {},
         });
-        const updatedFlowData =
-          reactFlowBridge.toReactFlowData(visualizationState);
+        const updatedFlowData = reactFlowBridge.toReactFlowData(
+          visualizationState,
+          undefined,
+        );
         setReactFlowDataRef.current(updatedFlowData);
         console.log("✅ ReactFlow data updated:", {
           nodes: updatedFlowData.nodes.length,
@@ -848,7 +852,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
           semanticMappings: edgeStyleConfig?.semanticMappings || {},
           propertyMappings: edgeStyleConfig?.propertyMappings || {},
         });
-        const newFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        const newFlowData = reactFlowBridge.toReactFlowData(
+          visualizationState,
+          interactionHandlerRef.current,
+        );
         console.log("🔄 New ReactFlow data:", {
           nodes: newFlowData.nodes.length,
           edges: newFlowData.edges.length,
@@ -1199,8 +1206,15 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
         // Perform layout using real ELK calculation
         await elkBridge.layout(state);
 
+        // Set up interaction handler
+        const interactionHandler = new InteractionHandler(state);
+        interactionHandlerRef.current = interactionHandler;
+
         // Convert to ReactFlow format
-        const flowData = reactFlowBridge.toReactFlowData(state);
+        const flowData = reactFlowBridge.toReactFlowData(
+          state,
+          interactionHandler,
+        );
 
         // Debug: Check edge handles
         console.log("🔍 [DEBUG] ReactFlow data after conversion:");
@@ -1242,10 +1256,6 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
             })),
           );
         }
-
-        // Set up interaction handler
-        const interactionHandler = new InteractionHandler(state);
-        interactionHandlerRef.current = interactionHandler;
 
         // Update state
         console.log("✅ Setting visualization state and ReactFlow data...");
@@ -1426,7 +1436,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
           semanticMappings: edgeStyleConfig?.semanticMappings || {},
           propertyMappings: edgeStyleConfig?.propertyMappings || {},
         });
-        const newFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        const newFlowData = reactFlowBridge.toReactFlowData(
+          visualizationState,
+          interactionHandlerRef.current,
+        );
         setReactFlowData(newFlowData);
         console.log("✅ ReactFlow data regenerated with new styles");
       }
@@ -1524,8 +1537,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
 
           try {
             await elkBridge.layout(visualizationState);
-            const flowData =
-              reactFlowBridge.toReactFlowData(visualizationState);
+            const flowData = reactFlowBridge.toReactFlowData(
+              visualizationState,
+              interactionHandlerRef.current,
+            );
             setReactFlowData(flowData);
           } catch (err) {
             console.error("Error updating layout:", err);
@@ -1545,7 +1560,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
             semanticMappings: {},
             propertyMappings: {},
           });
-          const flowData = reactFlowBridge.toReactFlowData(visualizationState);
+          const flowData = reactFlowBridge.toReactFlowData(
+            visualizationState,
+            interactionHandlerRef.current,
+          );
           setReactFlowData(flowData);
         }
       }

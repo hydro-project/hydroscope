@@ -145,10 +145,16 @@ export class ReactFlowBridge {
     // Generate state hash for caching
     const stateHash = this.generateStateHash(state, interactionHandler);
 
+    // DEBUG: Log cache status
+    console.log(`[ReactFlowBridge] 🔄 CACHE CHECK: current=${stateHash}, last=${this.lastStateHash}, hit=${this.lastStateHash === stateHash}`);
+
     // Return cached result if state hasn't changed
     if (this.lastStateHash === stateHash && this.lastResult) {
+      console.log(`[ReactFlowBridge] 🔄 CACHE HIT: Returning cached result with ${this.lastResult.nodes.length} nodes`);
       return this.deepCloneReactFlowData(this.lastResult);
     }
+
+    console.log(`[ReactFlowBridge] 🔄 CACHE MISS: Recalculating layout`);
 
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
@@ -167,6 +173,31 @@ export class ReactFlowBridge {
       nodes: this.applyNodeStyles(nodes),
       edges: this.applyEdgeStyles(edges, state),
     };
+
+    // HIERARCHY LOGGING: Log final ReactFlow hierarchy
+    console.log(`[ReactFlowBridge] 🏗️ FINAL REACTFLOW HIERARCHY:`);
+    console.log(`[ReactFlowBridge] 🏗️ Total nodes: ${result.nodes.length}`);
+    console.log(`[ReactFlowBridge] 🏗️ Total edges: ${result.edges.length}`);
+    
+    const rootNodes = result.nodes.filter(n => !n.parentId);
+    const childNodes = result.nodes.filter(n => n.parentId);
+    
+    console.log(`[ReactFlowBridge] 🏗️ Root-level nodes: ${rootNodes.length}`);
+    rootNodes.forEach(node => {
+      const children = result.nodes.filter(n => n.parentId === node.id);
+      if (children.length > 0) {
+        console.log(`[ReactFlowBridge] 🏗️ Container ${node.id}: type=${node.type}, collapsed=${node.data?.collapsed}, children=${children.length}, position=(${node.position.x}, ${node.position.y})`);
+        children.forEach(child => {
+          console.log(`[ReactFlowBridge] 🏗️   └─ Child ${child.id}: type=${child.type}, position=(${child.position.x}, ${child.position.y})`);
+        });
+      } else {
+        console.log(`[ReactFlowBridge] 🏗️ Node ${node.id}: type=${node.type}, position=(${node.position.x}, ${node.position.y})`);
+      }
+    });
+    
+    if (childNodes.length > 0) {
+      console.log(`[ReactFlowBridge] 🏗️ Orphaned child nodes (should be 0): ${childNodes.filter(n => !rootNodes.find(r => r.id === n.parentId)).length}`);
+    }
 
     // Deep freeze the result for immutability while maintaining TypeScript compatibility
     this.deepFreezeReactFlowData(result);
@@ -196,7 +227,15 @@ export class ReactFlowBridge {
     // Include layout state for cache invalidation
     const layoutState = state.getLayoutState();
 
-    return `${nodeCount}-${edgeCount}-${containerCount}-${hasHandler}-${layoutState.lastUpdate}`;
+    // DEBUG: Include container collapsed states in hash
+    const containerStates = state.visibleContainers.map(c => `${c.id}:${c.collapsed}`).join(',');
+
+    const hash = `${nodeCount}-${edgeCount}-${containerCount}-${hasHandler}-${layoutState.lastUpdate}-${containerStates}`;
+    
+    console.log(`[ReactFlowBridge] 🔄 HASH COMPONENTS: nodes=${nodeCount}, edges=${edgeCount}, containers=${containerCount}, handler=${hasHandler}, layout=${layoutState.lastUpdate}, containerStates=${containerStates}`);
+    console.log(`[ReactFlowBridge] 🔄 GENERATED HASH: ${hash}`);
+
+    return hash;
   }
 
   private isLargeGraph(state: VisualizationState): boolean {
@@ -388,9 +427,22 @@ export class ReactFlowBridge {
       const width = container.dimensions?.width || container.width || 200;
       const height = container.dimensions?.height || container.height || 150;
 
-      // Debug: Log container info
+      // AGGRESSIVE DEBUG: Log container info with all dimension sources
       console.log(
-        `[ReactFlowBridge] Processing container ${container.id}: collapsed=${container.collapsed}, children=${container.children.size}, position=(${position.x}, ${position.y})`,
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id}: collapsed=${container.collapsed}, children=${container.children.size}`,
+      );
+      console.log(
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} POSITION: ELK=(${position.x}, ${position.y})`,
+      );
+      console.log(
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} DIMENSIONS: width=${width} (from: dimensions=${container.dimensions?.width}, width=${container.width}, fallback=200), height=${height} (from: dimensions=${container.dimensions?.height}, height=${container.height}, fallback=150)`,
+      );
+      console.log(
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} RAW DIMENSIONS:`, {
+          dimensions: container.dimensions,
+          width: container.width,
+          height: container.height,
+        },
       );
       if (container.children.size > 0) {
         const childIds = Array.from(container.children).slice(0, 5); // First 5 children
@@ -459,18 +511,59 @@ export class ReactFlowBridge {
         `[ReactFlowBridge] Node ${node.id} ELK position: (${position?.x}, ${position?.y}), assigned to container: ${parentId}`,
       );
 
-      // ELK already calculates positions relative to parent containers
-      // For nodes with parents, position is already relative - no conversion needed
+      // AGGRESSIVE DEBUG: Log node positioning pipeline
       let adjustedPosition = position || { x: 0, y: 0 };
+      
+      console.log(
+        `[ReactFlowBridge] 🔍 NODE ${node.id}: parentId=${parentId}, parentContainer=${!!parentContainer}, ELK position=(${adjustedPosition.x}, ${adjustedPosition.y})`,
+      );
 
-      if (parentId) {
+      if (parentId && parentContainer) {
+        // Get the parent container's position and dimensions
+        const parentPosition = parentContainer.position || { x: 0, y: 0 };
+        const parentDimensions = {
+          width: parentContainer.dimensions?.width || parentContainer.width || 200,
+          height: parentContainer.dimensions?.height || parentContainer.height || 150,
+        };
+        
         console.log(
-          `[ReactFlowBridge] Node ${node.id} using ELK relative position: (${adjustedPosition.x}, ${adjustedPosition.y}) in container ${parentId}`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id} PARENT INFO: position=(${parentPosition.x}, ${parentPosition.y}), dimensions=(${parentDimensions.width}x${parentDimensions.height}), collapsed=${parentContainer.collapsed}`,
         );
+        
+        // Calculate relative position by subtracting parent position
+        const relativePosition = {
+          x: adjustedPosition.x - parentPosition.x,
+          y: adjustedPosition.y - parentPosition.y
+        };
+        
+        console.log(
+          `[ReactFlowBridge] 🔍 NODE ${node.id} POSITION CALC: ELK absolute=(${adjustedPosition.x}, ${adjustedPosition.y}) - parent=(${parentPosition.x}, ${parentPosition.y}) = relative=(${relativePosition.x}, ${relativePosition.y})`,
+        );
+        
+        // Check if relative position is within parent bounds
+        const withinBounds = relativePosition.x >= 0 && relativePosition.y >= 0 && 
+                           relativePosition.x <= parentDimensions.width && 
+                           relativePosition.y <= parentDimensions.height;
+        
+        console.log(
+          `[ReactFlowBridge] 🔍 NODE ${node.id} BOUNDS CHECK: within parent bounds=${withinBounds}`,
+        );
+        
+        adjustedPosition = relativePosition;
       } else {
         console.log(
-          `[ReactFlowBridge] Node ${node.id} using ELK absolute position: (${adjustedPosition.x}, ${adjustedPosition.y}) (no parent)`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id}: NO PARENT - using absolute position=(${adjustedPosition.x}, ${adjustedPosition.y})`,
         );
+      }
+
+      // FINAL DEBUG: Log the position that will be used in ReactFlow node
+      console.log(
+        `[ReactFlowBridge] 🔍 NODE ${node.id} FINAL POSITION: (${adjustedPosition.x}, ${adjustedPosition.y}) - parentId=${parentId}`,
+      );
+      
+      // CRITICAL DEBUG: Check ReactFlow parent-child setup
+      if (parentId) {
+        console.log(`[ReactFlowBridge] 🔍 NODE ${node.id} REACTFLOW SETUP: parentId="${parentId}", parentNode="${parentId}", extent="parent", position=(${adjustedPosition.x}, ${adjustedPosition.y})`);
       }
 
       const reactFlowNode: ReactFlowNode = {

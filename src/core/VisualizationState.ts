@@ -1179,26 +1179,61 @@ export class VisualizationState {
 
   // Toggle container (user operation)
   toggleContainer(id: string): void {
+    console.log('[VisualizationState] toggleContainer called for:', id);
     const container = this._containers.get(id);
-    if (!container) return;
+    if (!container) {
+      console.warn('[VisualizationState] Container not found:', id);
+      return;
+    }
+
+    console.log('[VisualizationState] Container state before toggle:', { 
+      id, 
+      collapsed: container.collapsed,
+      hidden: container.hidden 
+    });
 
     if (container.collapsed) {
+      console.log('[VisualizationState] Expanding container:', id);
       this.expandContainer(id);
     } else {
+      console.log('[VisualizationState] Collapsing container:', id);
       this.collapseContainer(id);
     }
+
+    const containerAfter = this._containers.get(id);
+    console.log('[VisualizationState] Container state after toggle:', { 
+      id, 
+      collapsed: containerAfter?.collapsed,
+      hidden: containerAfter?.hidden 
+    });
   }
 
   // Internal methods for container operations
   private _expandContainerInternal(id: string): void {
     const container = this._containers.get(id);
-    if (!container) return;
+    if (!container) {
+      console.warn(`[VisualizationState] ❌ Container ${id} not found for expansion`);
+      return;
+    }
+
+    console.log(`[VisualizationState] 🔍 EXPANDING CONTAINER ${id}:`);
+    console.log(`[VisualizationState] 🔍 BEFORE: collapsed=${container.collapsed}, hidden=${container.hidden}, children=${container.children.size}`);
+    console.log(`[VisualizationState] 🔍 BEFORE: position=(${container.position?.x || 0}, ${container.position?.y || 0}), dimensions=(${container.dimensions?.width || container.width || 'none'}x${container.dimensions?.height || container.height || 'none'})`);
 
     container.collapsed = false;
     container.hidden = false;
+    
+    console.log(`[VisualizationState] 🔄 Showing immediate children of ${id}`);
     this._showImmediateChildren(id);
+    
+    console.log(`[VisualizationState] 🔄 Restoring edges for ${id}`);
     this.restoreEdgesForContainer(id);
+    
+    console.log(`[VisualizationState] 🔍 AFTER: collapsed=${container.collapsed}, hidden=${container.hidden}, children=${container.children.size}`);
+    console.log(`[VisualizationState] 🔍 AFTER: position=(${container.position?.x || 0}, ${container.position?.y || 0}), dimensions=(${container.dimensions?.width || container.width || 'none'}x${container.dimensions?.height || container.height || 'none'})`);
+    
     this.validateInvariants();
+    console.log(`[VisualizationState] ✅ Container ${id} expansion complete`);
   }
 
   private _collapseContainerInternal(id: string): void {

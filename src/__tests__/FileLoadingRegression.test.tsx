@@ -8,7 +8,7 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { HydroscopeEnhanced } from "../components/HydroscopeEnhanced.js";
 import type { HydroscopeData } from "../types/core.js";

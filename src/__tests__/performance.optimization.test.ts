@@ -14,7 +14,6 @@ import {
   PerformanceMonitor,
 } from "../utils/PerformanceMonitor.js";
 import {
-  ComponentProfiler,
   globalProfiler,
   profileFunction,
   profileAsyncFunction,
@@ -26,7 +25,6 @@ import path from "path";
 describe("Performance Optimization Tests", () => {
   let paxosData: any;
   let monitor: PerformanceMonitor;
-  let profiler: ComponentProfiler;
 
   beforeAll(async () => {
     // Load paxos.json data
@@ -39,8 +37,6 @@ describe("Performance Optimization Tests", () => {
       enabled: true,
       samplingInterval: 1000,
     });
-
-    profiler = new ComponentProfiler();
   });
 
   afterAll(() => {

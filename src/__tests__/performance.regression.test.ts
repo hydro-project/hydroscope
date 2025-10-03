@@ -9,7 +9,6 @@ import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import {
-  PerformanceProfiler,
   PerformanceAnalyzer,
   BatchPerformanceTester,
   measureSync,

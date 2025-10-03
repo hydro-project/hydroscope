@@ -13,7 +13,6 @@ import { JSONParser } from "../utils/JSONParser.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import {
-  PerformanceProfiler,
   BatchPerformanceTester,
   measureSync,
   measureAsync,

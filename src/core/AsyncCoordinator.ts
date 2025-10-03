@@ -228,6 +228,10 @@ export class AsyncCoordinator {
         // Set layout phase to indicate processing
         state.setLayoutPhase("laying_out");
 
+        // RESET: Clear ELK caches and state before layout calculation
+        console.log('[AsyncCoordinator] 🔄 Clearing ELK caches before layout');
+        elkBridge.clearCaches();
+
         // Call real ELK layout calculation
         await elkBridge.layout(state);
 
@@ -324,6 +328,10 @@ export class AsyncCoordinator {
       try {
         // Create ReactFlow bridge with default style config
         const reactFlowBridge = new ReactFlowBridge({});
+
+        // RESET: Clear ReactFlow caches and state before rendering
+        console.log('[AsyncCoordinator] 🔄 Clearing ReactFlow caches before render');
+        reactFlowBridge.clearCaches();
 
         // Set layout phase to indicate rendering
         state.setLayoutPhase("rendering");
@@ -839,6 +847,9 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse`,
       );
       try {
+        // Clear caches before validation to ensure fresh state
+        console.log(`[AsyncCoordinator] 🔄 Clearing caches before validation after container ${containerId} collapse`);
+        
         await this.queueReactFlowRender(state, {
           timeout: options.timeout,
           maxRetries: options.maxRetries,
