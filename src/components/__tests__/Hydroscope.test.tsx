@@ -3,12 +3,12 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { Hydroscope } from '../HydroscopeNew';
+import { Hydroscope } from '../Hydroscope';
 
 import { vi } from 'vitest';
 
 // Mock the HydroscopeCore component since it has complex dependencies
-vi.mock('../HydroscopeCoreNew', () => ({
+vi.mock('../HydroscopeCore', () => ({
   HydroscopeCore: ({ data, onError }: any) => {
     if (!data) {
       onError?.(new Error('No data provided'));

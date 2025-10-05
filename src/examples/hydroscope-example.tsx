@@ -7,8 +7,8 @@
  */
 
 import React, { useState } from 'react';
-import { Hydroscope } from '../components/HydroscopeNew';
-import type { HydroscopeData, RenderConfig } from '../components/HydroscopeNew';
+import { Hydroscope } from '../components/Hydroscope';
+import type { HydroscopeData, RenderConfig } from '../components/Hydroscope';
 
 // Sample data for demonstration
 const sampleData: HydroscopeData = {
@@ -54,7 +54,7 @@ const sampleData: HydroscopeData = {
   }
 };
 
-export default function HydroscopeNewExample() {
+export default function HydroscopeExample() {
   const [data, setData] = useState<HydroscopeData | undefined>(sampleData);
   const [config, setConfig] = useState<RenderConfig>({});
 

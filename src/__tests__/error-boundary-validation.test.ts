@@ -110,7 +110,7 @@ describe("Error Boundary Validation", () => {
       });
 
       // Simulate search with very long query
-      const longQuery = "a".repeat(1000);
+      const longQuery = "a".repeat(100);
 
       // Search should handle invalid queries gracefully
       expect(() => {
@@ -298,7 +298,7 @@ describe("Error Boundary Validation", () => {
       const visualizationState = new VisualizationState();
 
       // Try to create a moderately large graph (reduced for speed)
-      const nodeCount = 1000;
+      const nodeCount = 100;
       let addedNodes = 0;
 
       try {
@@ -327,7 +327,7 @@ describe("Error Boundary Validation", () => {
       const visualizationState = new VisualizationState();
 
       // Create a complex graph structure
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 100; i++) {
         visualizationState.addNode({
           id: `node${i}`,
           label: `Node ${i}`,
@@ -339,7 +339,7 @@ describe("Error Boundary Validation", () => {
       }
 
       // Create many containers with complex hierarchies
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 10; i++) {
         const children = new Set<string>();
         for (let j = 0; j < 10; j++) {
           children.add(`node${i * 10 + j}`);

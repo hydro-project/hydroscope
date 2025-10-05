@@ -33,11 +33,11 @@ import { nodeTypes } from "./nodes/index.js";
 import { edgeTypes } from "./edges/index.js";
 import {
   StyleConfigProvider,
-  // useStyleConfig,
+  useStyleConfig,
 } from "../render/StyleConfigContext.js";
 import { FileUpload } from "./FileUpload.js";
-// import { SearchIntegration } from "./SearchIntegration.js";
-// import { ContainerControls } from "./ContainerControls.js";
+import { SearchIntegration } from "./SearchIntegration.js";
+import { ContainerControls } from "./ContainerControls.js";
 import { InfoPanel } from "./panels/InfoPanel.js";
 import {
   StyleTuner,
@@ -275,7 +275,7 @@ const UnpackIcon = () => (
   </svg>
 );
 
-const _FitIcon = () => (
+const FitIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <path
       d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"
@@ -497,10 +497,8 @@ function CustomControls({
           semanticMappings: {},
           propertyMappings: {},
         });
-        const updatedFlowData = reactFlowBridge.toReactFlowData(
-          visualizationState,
-          undefined,
-        );
+        const updatedFlowData =
+          reactFlowBridge.toReactFlowData(visualizationState);
 
         // Debug: Check ReactFlow node positions
         console.log("📊 ReactFlow node positions:");
@@ -534,7 +532,6 @@ function CustomControls({
     visualizationState,
     hasExpandedContainers,
     onCollapseAll,
-    setReactFlowDataRef,
   ]);
 
   const handleExpandAll = useCallback(async () => {
@@ -562,10 +559,8 @@ function CustomControls({
           semanticMappings: {},
           propertyMappings: {},
         });
-        const updatedFlowData = reactFlowBridge.toReactFlowData(
-          visualizationState,
-          undefined,
-        );
+        const updatedFlowData =
+          reactFlowBridge.toReactFlowData(visualizationState);
         setReactFlowDataRef.current(updatedFlowData);
         console.log("✅ ReactFlow data updated:", {
           nodes: updatedFlowData.nodes.length,
@@ -582,7 +577,6 @@ function CustomControls({
     visualizationState,
     hasCollapsedContainers,
     onExpandAll,
-    setReactFlowDataRef,
   ]);
 
   return (
@@ -800,12 +794,11 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   const [collapsedContainers, setCollapsedContainers] = useState<Set<string>>(
     new Set(),
   );
-
+  
   // Style and layout state
   const [currentLayout, setCurrentLayout] = useState("layered");
   const [colorPalette, setColorPalette] = useState("Set2");
   const [edgeStyleConfig, setEdgeStyleConfig] = useState<any>(null);
-  const [nodeTypeConfig, setNodeTypeConfig] = useState<any>(null);
 
   // Update the ref with the actual setReactFlowData function
   useEffect(() => {
@@ -813,20 +806,17 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   }, [setReactFlowData]);
 
   // Handlers for InfoPanel interactions
-  const handleGroupingChange = useCallback(
-    (groupingId: string) => {
-      console.log("🔄 Grouping changed to:", groupingId);
-      setCurrentGrouping(groupingId);
-
-      // Re-parse data with new grouping
-      if (graphData && visualizationState) {
-        console.log("🔄 Re-parsing data with new grouping:", groupingId);
-        // TODO: Implement re-parsing with new hierarchy choice
-        // This would require re-running the JSONParser with the new grouping
-      }
-    },
-    [graphData, visualizationState],
-  );
+  const handleGroupingChange = useCallback((groupingId: string) => {
+    console.log("🔄 Grouping changed to:", groupingId);
+    setCurrentGrouping(groupingId);
+    
+    // Re-parse data with new grouping
+    if (graphData && visualizationState) {
+      console.log("🔄 Re-parsing data with new grouping:", groupingId);
+      // TODO: Implement re-parsing with new hierarchy choice
+      // This would require re-running the JSONParser with the new grouping
+    }
+  }, [graphData, visualizationState]);
 
   const handleToggleContainer = useCallback(
     (containerId: string) => {
@@ -852,27 +842,14 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
           semanticMappings: edgeStyleConfig?.semanticMappings || {},
           propertyMappings: edgeStyleConfig?.propertyMappings || {},
         });
-        const newFlowData = reactFlowBridge.toReactFlowData(
-          visualizationState,
-          interactionHandlerRef.current,
-        );
-        console.log("🔄 New ReactFlow data:", {
-          nodes: newFlowData.nodes.length,
-          edges: newFlowData.edges.length,
-        });
+        const newFlowData = reactFlowBridge.toReactFlowData(visualizationState);
+        console.log("🔄 New ReactFlow data:", { nodes: newFlowData.nodes.length, edges: newFlowData.edges.length });
         setReactFlowData(newFlowData);
       } else {
-        console.log(
-          "❌ Cannot regenerate ReactFlow data - missing visualizationState or asyncCoordinator",
-        );
+        console.log("❌ Cannot regenerate ReactFlow data - missing visualizationState or asyncCoordinator");
       }
     },
-    [
-      visualizationState,
-      asyncCoordinator,
-      edgeStyleConfig?.propertyMappings,
-      edgeStyleConfig?.semanticMappings,
-    ],
+    [visualizationState, asyncCoordinator],
   );
 
   // Minimal page state for UI visibility (Requirements 5.4, 11.1)
@@ -914,7 +891,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   const [isResizing, setIsResizing] = useState(false);
 
   // Backward compatibility layer
-  const _compatibilityLayer = useMemo(
+  const compatibilityLayer = useMemo(
     () => createBackwardCompatibilityLayer(),
     [],
   );
@@ -963,7 +940,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
     [],
   );
 
-  const _managedRequestAnimationFrame = useCallback(
+  const managedRequestAnimationFrame = useCallback(
     (callback: FrameRequestCallback): number => {
       const frameId = requestAnimationFrame((time) => {
         animationFrameIdsRef.current.delete(frameId);
@@ -1176,20 +1153,17 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
         const parseResult = await parser.parseData(dataToUse);
         const state = parseResult.visualizationState;
         const extractedEdgeStyleConfig = parseResult.edgeStyleConfig || null;
-        const extractedNodeTypeConfig = parseResult.nodeTypeConfig || null;
         console.log("✅ Data parsed successfully, state created");
 
         // Extract hierarchy and grouping data
         setHierarchyChoices(parseResult.hierarchyChoices || []);
         setCurrentGrouping(parseResult.selectedHierarchy);
         setEdgeStyleConfig(extractedEdgeStyleConfig);
-        setNodeTypeConfig(extractedNodeTypeConfig);
         console.log("📊 Hierarchy data:", {
           choices: parseResult.hierarchyChoices?.length || 0,
           selected: parseResult.selectedHierarchy,
         });
         console.log("🎨 Edge style config:", extractedEdgeStyleConfig);
-        console.log("🎨 Node type config:", extractedNodeTypeConfig);
 
         // Create AsyncCoordinator for v6 operations
         const coordinator = new AsyncCoordinator();
@@ -1206,15 +1180,8 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
         // Perform layout using real ELK calculation
         await elkBridge.layout(state);
 
-        // Set up interaction handler
-        const interactionHandler = new InteractionHandler(state);
-        interactionHandlerRef.current = interactionHandler;
-
         // Convert to ReactFlow format
-        const flowData = reactFlowBridge.toReactFlowData(
-          state,
-          interactionHandler,
-        );
+        const flowData = reactFlowBridge.toReactFlowData(state);
 
         // Debug: Check edge handles
         console.log("🔍 [DEBUG] ReactFlow data after conversion:");
@@ -1257,6 +1224,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
           );
         }
 
+        // Set up interaction handler
+        const interactionHandler = new InteractionHandler(state);
+        interactionHandlerRef.current = interactionHandler;
+
         // Update state
         console.log("✅ Setting visualization state and ReactFlow data...");
         console.log("   ReactFlow data:", {
@@ -1283,14 +1254,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   }, [graphData]);
 
   // Prevent double initialization
-  const [_isInitialized, _setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Enhanced cleanup effect with comprehensive memory management (Requirements 5.5, 11.2, 11.5)
   useEffect(() => {
-    // Copy ref values to variables for cleanup function
-    const timeoutIds = timeoutIdsRef.current;
-    const animationFrameIds = animationFrameIdsRef.current;
-
     return () => {
       console.log("🧹 Starting HydroscopeEnhanced cleanup...");
 
@@ -1301,16 +1268,16 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
       }
 
       // Clear all managed timeouts
-      timeoutIds.forEach((timeoutId) => {
+      timeoutIdsRef.current.forEach((timeoutId) => {
         clearTimeout(timeoutId);
       });
-      timeoutIds.clear();
+      timeoutIdsRef.current.clear();
 
       // Cancel all managed animation frames
-      animationFrameIds.forEach((frameId) => {
+      animationFrameIdsRef.current.forEach((frameId) => {
         cancelAnimationFrame(frameId);
       });
-      animationFrameIds.clear();
+      animationFrameIdsRef.current.clear();
 
       // Clean up height calculator
       if (heightCalculatorRef.current) {
@@ -1353,11 +1320,10 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   }, []);
 
   // Debounced file processing with managed timeouts (Requirements 5.5, 11.2)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const _debouncedFileProcess = useCallback(
-    debounce(async (data: HydroscopeData, _filename: string) => {
+  const debouncedFileProcess = useCallback(
+    debounce(async (data: HydroscopeData, filename: string) => {
       try {
-        console.log("✅ Processing file:", _filename);
+        console.log("✅ Processing file:", filename);
         setLoading(true);
         setError(null);
 
@@ -1370,18 +1336,18 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
       } catch (error) {
         console.error("❌ File processing error:", error);
         setError(
-          `Failed to process ${_filename}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Failed to process ${filename}: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       } finally {
         setLoading(false);
       }
     }, 300),
-    [managedSetTimeout], // eslint-disable-line react-hooks/exhaustive-deps
+    [managedSetTimeout],
   );
 
   // Handle file upload
   const handleFileLoaded = useCallback(
-    (data: HydroscopeData, _filename: string) => {
+    (data: HydroscopeData, filename: string) => {
       // Reset initialization state to allow re-initialization with new data
       initializationRef.current.completed = false;
       initializationRef.current.inProgress = false;
@@ -1411,14 +1377,13 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   }, []);
 
   // Debounced style change handler
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedStyleChange = useCallback(
     debounce((newConfig: any) => {
       console.log("🎨 Style config changed:", newConfig);
       console.log("🎨 Previous config:", styleConfig);
       setStyleConfig(newConfig);
       console.log("✅ StyleConfigProvider will update with new config");
-
+      
       // Regenerate ReactFlow data with new styles
       if (visualizationState) {
         console.log("🔄 Regenerating ReactFlow data with new styles");
@@ -1426,25 +1391,22 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
           nodeStyles: {},
           edgeStyles: {
             default: {
-              type: newConfig.edgeStyle || "bezier",
+              type: newConfig.edgeStyle || 'bezier',
               style: {
                 strokeWidth: newConfig.edgeWidth || 2,
-                strokeDasharray: newConfig.edgeDashed ? "5,5" : undefined,
-              },
-            } as any, // Legacy component - type assertion for compatibility
+                strokeDasharray: newConfig.edgeDashed ? '5,5' : undefined
+              }
+            }
           },
           semanticMappings: edgeStyleConfig?.semanticMappings || {},
-          propertyMappings: edgeStyleConfig?.propertyMappings || {},
+          propertyMappings: edgeStyleConfig?.propertyMappings || {}
         });
-        const newFlowData = reactFlowBridge.toReactFlowData(
-          visualizationState,
-          interactionHandlerRef.current,
-        );
+        const newFlowData = reactFlowBridge.toReactFlowData(visualizationState);
         setReactFlowData(newFlowData);
         console.log("✅ ReactFlow data regenerated with new styles");
       }
     }, 150),
-    [styleConfig], // eslint-disable-line react-hooks/exhaustive-deps
+    [styleConfig],
   );
 
   // Handle fit view
@@ -1466,7 +1428,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
   }, [reactFlowInstance]);
 
   // Handle auto-fit toggle
-  const _handleAutoFitToggle = useCallback(
+  const handleAutoFitToggle = useCallback(
     (enabled: boolean) => {
       toggleAutoFit(enabled);
       if (enabled) {
@@ -1537,10 +1499,8 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
 
           try {
             await elkBridge.layout(visualizationState);
-            const flowData = reactFlowBridge.toReactFlowData(
-              visualizationState,
-              interactionHandlerRef.current,
-            );
+            const flowData =
+              reactFlowBridge.toReactFlowData(visualizationState);
             setReactFlowData(flowData);
           } catch (err) {
             console.error("Error updating layout:", err);
@@ -1560,10 +1520,7 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
             semanticMappings: {},
             propertyMappings: {},
           });
-          const flowData = reactFlowBridge.toReactFlowData(
-            visualizationState,
-            interactionHandlerRef.current,
-          );
+          const flowData = reactFlowBridge.toReactFlowData(visualizationState);
           setReactFlowData(flowData);
         }
       }
@@ -1852,8 +1809,11 @@ const HydroscopeEnhancedInternal: React.FC<HydroscopeEnhancedProps> = (
               onGroupingChange={handleGroupingChange}
               collapsedContainers={collapsedContainers}
               onToggleContainer={handleToggleContainer}
+              legendData={{
+                title: "Node Types",
+                items: [] // Will be generated from visualizationState
+              }}
               edgeStyleConfig={edgeStyleConfig}
-              nodeTypeConfig={nodeTypeConfig}
               colorPalette={colorPalette}
               onSearchUpdate={(query, matches, current) => {
                 // Handle search updates - maintain backward compatibility

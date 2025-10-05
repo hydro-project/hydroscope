@@ -264,13 +264,43 @@ export class JSONParser {
 
     let containerCount = 0;
 
-    // Create containers from hierarchy children (these are the actual containers)
+    // First, collect all containers in the hierarchy
+    const allContainers: Array<{ node: any; parentId?: string }> = [];
+    
+    const collectContainersRecursively = (hierarchyNode: any, parentId?: string) => {
+      allContainers.push({ node: hierarchyNode, parentId });
+      
+      // Recursively collect children
+      if (hierarchyNode.children && hierarchyNode.children.length > 0) {
+        for (const child of hierarchyNode.children) {
+          collectContainersRecursively(child, hierarchyNode.id);
+        }
+      }
+    };
+
+    // Collect all containers first
     for (const child of hierarchy.children || []) {
+      collectContainersRecursively(child);
+    }
+
+    // Create containers in reverse order (deepest children first)
+    // This ensures child containers exist before their parents try to reference them
+    for (let i = allContainers.length - 1; i >= 0; i--) {
+      const { node: hierarchyNode, parentId } = allContainers[i];
+      
       try {
+        // Collect children IDs for this container
+        const childrenIds = new Set<string>();
+        if (hierarchyNode.children && hierarchyNode.children.length > 0) {
+          for (const child of hierarchyNode.children) {
+            childrenIds.add(child.id);
+          }
+        }
+
         const container: Container = {
-          id: child.id,
-          label: child.name,
-          children: new Set<string>(),
+          id: hierarchyNode.id,
+          label: hierarchyNode.name,
+          children: childrenIds,
           collapsed: false, // Start expanded by default to avoid invariant violations
           hidden: false,
         };
@@ -278,16 +308,23 @@ export class JSONParser {
         state.addContainer(container);
         containerCount++;
 
-        this.debugLog("Created container", { id: child.id, name: child.name });
+        this.debugLog("Created container", { 
+          id: hierarchyNode.id, 
+          name: hierarchyNode.name,
+          parentId: parentId || 'none',
+          childrenCount: childrenIds.size
+        });
       } catch (error) {
         warnings.push({
           type: "container_creation_error",
-          message: `Failed to create container ${child.id}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          message: `Failed to create container ${hierarchyNode.id}: ${error instanceof Error ? error.message : "Unknown error"}`,
           severity: "warning",
-          context: { containerId: child.id, containerName: child.name },
+          context: { containerId: hierarchyNode.id, containerName: hierarchyNode.name },
         });
       }
     }
+
+    // Containers are now created above in the correct order
 
     return containerCount;
   }

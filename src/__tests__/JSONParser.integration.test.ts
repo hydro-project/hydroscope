@@ -10,6 +10,56 @@ import fs from "fs";
 import path from "path";
 
 describe("JSONParser Integration Tests", () => {
+  describe("Chat.json Integration", () => {
+    it("parses chat.json with nested backtrace hierarchy successfully", async () => {
+      // Read chat.json file
+      const chatPath = path.join(process.cwd(), "test-data", "chat.json");
+      const chatContent = fs.readFileSync(chatPath, "utf-8");
+      const chatData = JSON.parse(chatContent) as HydroscopeData;
+
+      // Create parser with backtrace hierarchy
+      const parser = new JSONParser({ 
+        defaultHierarchyChoice: "backtrace",
+        debug: false 
+      });
+
+      // Parse the data
+      const result = await parser.parseData(chatData);
+
+      // Verify basic structure
+      expect(result.visualizationState).toBeDefined();
+      expect(result.selectedHierarchy).toBe("backtrace");
+      expect(result.stats.nodeCount).toBe(9);
+      expect(result.stats.edgeCount).toBe(8);
+      
+      // Verify that nested containers were created
+      expect(result.stats.containerCount).toBeGreaterThan(2);
+      
+      // Verify specific nested containers exist (bt_6 and bt_10 from node assignments)
+      const container_bt6 = result.visualizationState.getContainer("bt_6");
+      const container_bt10 = result.visualizationState.getContainer("bt_10");
+      expect(container_bt6).toBeDefined();
+      expect(container_bt10).toBeDefined();
+      
+      // Verify nodes are properly assigned to nested containers
+      expect(result.visualizationState.getNodeContainer("0")).toBe("bt_6");
+      expect(result.visualizationState.getNodeContainer("6")).toBe("bt_10");
+      
+      // Verify no warnings about missing containers
+      const containerWarnings = result.warnings.filter(w => 
+        w.type === "container_assignment_error" && 
+        w.message.includes("non-existent container")
+      );
+      expect(containerWarnings).toHaveLength(0);
+      
+      // Verify container hierarchy is established correctly
+      // bt_6 should be a child of bt_8, which should be a child of bt_2, etc.
+      expect(result.visualizationState.getContainerParent("bt_6")).toBe("bt_8");
+      expect(result.visualizationState.getContainerParent("bt_8")).toBe("bt_2");
+      expect(result.visualizationState.getContainerParent("bt_10")).toBe("bt_7");
+    });
+  });
+
   describe("Paxos.json Integration", () => {
     it("parses paxos.json successfully", async () => {
       // Read paxos.json file
@@ -83,53 +133,47 @@ describe("JSONParser Integration Tests", () => {
 
       console.log(`Paxos.json processed in ${endTime - startTime}ms`);
       console.log(
-        `Nodes: ${result.stats.nodeCount}, Edges: ${result.stats.edgeCount}, Containers: ${result.stats.containerCount}`,
+        `Nodes: ${result.stats.nodeCount}, Edges: ${result.stats.edgeCount}, Containers: ${result.stats.containerCount}`
       );
     }, 30000);
   });
 
-  describe("Simple Test Data Integration", () => {
-    it("parses simple-collapsed-test.json successfully", async () => {
-      // Read simple test file
-      const simplePath = path.join(
-        process.cwd(),
-        "test-data",
-        "simple-collapsed-test.json",
-      );
-      const simpleContent = fs.readFileSync(simplePath, "utf-8");
-      const simpleData = JSON.parse(simpleContent) as HydroscopeData;
+  describe("Chat Test Data Integration", () => {
+    it("parses chat.json successfully", async () => {
+      // Read chat test file
+      const chatPath = path.join(process.cwd(), "test-data", "chat.json");
+      const chatContent = fs.readFileSync(chatPath, "utf-8");
+      const chatData = JSON.parse(chatContent) as HydroscopeData;
 
       // Create parser
       const parser = new JSONParser({ debug: false });
 
       // Parse the data
-      const result = await parser.parseData(simpleData);
+      const result = await parser.parseData(chatData);
 
       // Verify structure
       expect(result.visualizationState).toBeDefined();
-      expect(result.stats.nodeCount).toBe(2);
-      expect(result.stats.edgeCount).toBe(2);
+      expect(result.stats.nodeCount).toBe(9);
+      expect(result.stats.edgeCount).toBe(8);
       expect(result.stats.containerCount).toBe(2);
 
-      // Verify nodes
-      const node1 = result.visualizationState.getGraphNode("node1");
-      const node2 = result.visualizationState.getGraphNode("node2");
-      expect(node1?.label).toBe("Node 1");
-      expect(node2?.label).toBe("Node 2");
+      // Verify specific nodes exist
+      const node0 = result.visualizationState.getGraphNode("0");
+      const node5 = result.visualizationState.getGraphNode("5");
+      expect(node0?.label).toBe("source_iter");
+      expect(node0?.longLabel).toContain("source_iter");
+      expect(node5?.label).toBe("persist");
+      expect(node5?.longLabel).toBe("persist [state storage]");
 
-      // Verify containers
-      const containerA = result.visualizationState.getContainer("container_a");
-      const containerB = result.visualizationState.getContainer("container_b");
-      expect(containerA?.label).toBe("Container A");
-      expect(containerB?.label).toBe("Container B");
+      // Verify containers exist for location hierarchy
+      const loc0 = result.visualizationState.getContainer("loc_0");
+      const loc1 = result.visualizationState.getContainer("loc_1");
+      expect(loc0?.label).toBe("hydro_test::cluster::chat::Clients");
+      expect(loc1?.label).toBe("hydro_test::cluster::chat::Server");
 
-      // Verify assignments
-      expect(result.visualizationState.getNodeContainer("node1")).toBe(
-        "container_a",
-      );
-      expect(result.visualizationState.getNodeContainer("node2")).toBe(
-        "container_b",
-      );
+      // Verify node assignments to location containers
+      expect(result.visualizationState.getNodeContainer("0")).toBe("loc_0");
+      expect(result.visualizationState.getNodeContainer("2")).toBe("loc_1");
     });
   });
 });

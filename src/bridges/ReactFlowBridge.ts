@@ -179,6 +179,16 @@ export class ReactFlowBridge {
     console.log(`[ReactFlowBridge] 🏗️ Total nodes: ${result.nodes.length}`);
     console.log(`[ReactFlowBridge] 🏗️ Total edges: ${result.edges.length}`);
     
+    // DEBUG: Log actual ReactFlow node structure
+    console.log(`[ReactFlowBridge] 🔍 REACTFLOW NODE STRUCTURE:`);
+    result.nodes.forEach(node => {
+      if (node.type === 'container') {
+        console.log(`[ReactFlowBridge] 🔍 Container ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y})`);
+      } else {
+        console.log(`[ReactFlowBridge] 🔍 Node ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y}), extent=${node.extent}`);
+      }
+    });
+    
     const rootNodes = result.nodes.filter(n => !n.parentId);
     const childNodes = result.nodes.filter(n => n.parentId);
     
@@ -196,7 +206,12 @@ export class ReactFlowBridge {
     });
     
     if (childNodes.length > 0) {
-      console.log(`[ReactFlowBridge] 🏗️ Orphaned child nodes (should be 0): ${childNodes.filter(n => !rootNodes.find(r => r.id === n.parentId)).length}`);
+      // Check for truly orphaned nodes (parent doesn't exist in the node list at all)
+      const orphanedNodes = childNodes.filter(n => !result.nodes.find(r => r.id === n.parentId));
+      console.log(`[ReactFlowBridge] 🏗️ Orphaned child nodes (should be 0): ${orphanedNodes.length}`);
+      if (orphanedNodes.length > 0) {
+        console.log(`[ReactFlowBridge] ⚠️ Truly orphaned nodes:`, orphanedNodes.map(n => `${n.id} (parent: ${n.parentId})`));
+      }
     }
 
     // Deep freeze the result for immutability while maintaining TypeScript compatibility
@@ -418,8 +433,27 @@ export class ReactFlowBridge {
       }
     }
 
-    // Add containers first (parents before children)
+    // Map containers to their parent containers
     for (const container of state.visibleContainers) {
+      const parentContainerId = state.getContainerParent(container.id);
+      if (parentContainerId) {
+        containerParentMap.set(container.id, parentContainerId);
+        console.log(
+          `[ReactFlowBridge] Container ${container.id} assigned to parent container ${parentContainerId}`,
+        );
+      }
+    }
+
+    // Sort containers so parents come before children
+    // Use hierarchy depth to ensure parents appear before children
+    const sortedContainers = [...state.visibleContainers].sort((a, b) => {
+      const aDepth = state.getContainerAncestors(a.id).length;
+      const bDepth = state.getContainerAncestors(b.id).length;
+      return aDepth - bDepth; // Parents (lower depth) come first
+    });
+    
+    // Add containers first (parents before children)
+    for (const container of sortedContainers) {
       const parentId = containerParentMap.get(container.id);
 
       // Get position and dimensions from ELK layout
@@ -456,6 +490,9 @@ export class ReactFlowBridge {
         ? this.countContainerNodes(container, state)
         : 0;
 
+      // CRITICAL DEBUG: Check if position needs adjustment for nested containers
+      console.log(`[ReactFlowBridge] 🔍 CONTAINER ${container.id}: parentId=${parentId}, position from ELK=(${position.x}, ${position.y})`);
+      
       const containerNode: ReactFlowNode = {
         id: container.id,
         type: container.collapsed ? "standard" : "container", // Critical: Make sure to use 'standard' type for collapsed containers (to avoid edge connection bugs), 'container' type only for expanded (proper UI)
@@ -488,7 +525,11 @@ export class ReactFlowBridge {
             : {}),
         },
         parentId: parentId,
-        extent: parentId ? "parent" : undefined,
+        parentNode: parentId, // React Flow uses parentNode
+        // CRITICAL: Do NOT set extent: "parent" on container nodes themselves!
+        // Only leaf nodes (regular nodes) should have extent set.
+        // Container nodes are positioned via parentNode, but need freedom to size themselves.
+        extent: undefined,
       };
 
       nodes.push(containerNode);
@@ -519,37 +560,35 @@ export class ReactFlowBridge {
       );
 
       if (parentId && parentContainer) {
-        // Get the parent container's position and dimensions
-        const parentPosition = parentContainer.position || { x: 0, y: 0 };
+        // Get the parent container's position and dimensions for bounds checking
         const parentDimensions = {
           width: parentContainer.dimensions?.width || parentContainer.width || 200,
           height: parentContainer.dimensions?.height || parentContainer.height || 150,
         };
         
         console.log(
-          `[ReactFlowBridge] 🔍 NODE ${node.id} PARENT INFO: position=(${parentPosition.x}, ${parentPosition.y}), dimensions=(${parentDimensions.width}x${parentDimensions.height}), collapsed=${parentContainer.collapsed}`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id} PARENT INFO: dimensions=(${parentDimensions.width}x${parentDimensions.height}), collapsed=${parentContainer.collapsed}`,
         );
         
-        // Calculate relative position by subtracting parent position
-        const relativePosition = {
-          x: adjustedPosition.x - parentPosition.x,
-          y: adjustedPosition.y - parentPosition.y
-        };
+        // CRITICAL FIX: ELK already returns child positions relative to their parent container!
+        // We should NOT subtract the parent position. The position from ELK is already correct.
+        // See: https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/coordinatesystem.html
+        // "The coordinates of most elements are relative to their parent element."
         
         console.log(
-          `[ReactFlowBridge] 🔍 NODE ${node.id} POSITION CALC: ELK absolute=(${adjustedPosition.x}, ${adjustedPosition.y}) - parent=(${parentPosition.x}, ${parentPosition.y}) = relative=(${relativePosition.x}, ${relativePosition.y})`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id} POSITION: ELK relative=(${adjustedPosition.x}, ${adjustedPosition.y}) (already relative to parent)`,
         );
         
-        // Check if relative position is within parent bounds
-        const withinBounds = relativePosition.x >= 0 && relativePosition.y >= 0 && 
-                           relativePosition.x <= parentDimensions.width && 
-                           relativePosition.y <= parentDimensions.height;
+        // Check if position is within parent bounds (for debugging only)
+        const withinBounds = adjustedPosition.x >= 0 && adjustedPosition.y >= 0 && 
+                           adjustedPosition.x <= parentDimensions.width && 
+                           adjustedPosition.y <= parentDimensions.height;
         
         console.log(
           `[ReactFlowBridge] 🔍 NODE ${node.id} BOUNDS CHECK: within parent bounds=${withinBounds}`,
         );
         
-        adjustedPosition = relativePosition;
+        // adjustedPosition already contains the correct relative position from ELK
       } else {
         console.log(
           `[ReactFlowBridge] 🔍 NODE ${node.id}: NO PARENT - using absolute position=(${adjustedPosition.x}, ${adjustedPosition.y})`,
@@ -566,6 +605,12 @@ export class ReactFlowBridge {
         console.log(`[ReactFlowBridge] 🔍 NODE ${node.id} REACTFLOW SETUP: parentId="${parentId}", parentNode="${parentId}", extent="parent", position=(${adjustedPosition.x}, ${adjustedPosition.y})`);
       }
 
+      // CRITICAL FIX: Get node dimensions from ELK to ensure rendered size matches layout
+      const width = node.dimensions?.width || 120;
+      const height = node.dimensions?.height || 60;
+      
+      console.log(`[ReactFlowBridge] 🔍 NODE ${node.id} DIMENSIONS: from ELK=${node.dimensions?.width}x${node.dimensions?.height}, using=${width}x${height}`);
+
       const reactFlowNode: ReactFlowNode = {
         id: node.id,
         type: "standard",
@@ -578,6 +623,8 @@ export class ReactFlowBridge {
           semanticTags: node.semanticTags || [],
           colorPalette: "Set3",
           style: node.type || "default",
+          width,  // Pass ELK-calculated width to match layout
+          height, // Pass ELK-calculated height to match layout
           onClick: interactionHandler
             ? (elementId: string, elementType: "node" | "container") => {
                 if (elementType === "node") {
@@ -588,7 +635,12 @@ export class ReactFlowBridge {
         },
         parentId: parentId,
         parentNode: parentId, // React Flow uses parentNode
-        extent: parentId ? "parent" : undefined,
+        // CRITICAL: Do NOT set extent="parent" for nodes inside containers!
+        // ReactFlow has a bug where extent="parent" breaks positioning for nodes
+        // in deeply nested containers, causing nodes to overlap even when ELK
+        // calculated correct non-overlapping positions. The parentNode property
+        // alone is sufficient for React Flow to understand the hierarchy.
+        // See: chat.json Backtrace hierarchy bug where nodes overlapped in bt_6
       };
 
       nodes.push(reactFlowNode);

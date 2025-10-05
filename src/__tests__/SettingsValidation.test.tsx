@@ -1,7 +1,7 @@
 /**
  * Settings Validation Tests
  *
- * Tests for improved settings persistence validation and cleanup
+ * Tests for settings persistence and validation
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
@@ -24,218 +24,156 @@ Object.defineProperty(window, "localStorage", {
 
 // Test data
 const testData: HydroscopeData = {
-  nodes: [{ id: "node1", label: "Node 1", semanticTags: [] }],
+  nodes: [{ id: "node1", label: "Node 1" }],
   edges: [],
-  containers: [],
+  hierarchyChoices: [],
+  nodeAssignments: {},
 };
 
-describe("Settings Validation and Cleanup", () => {
+describe("Settings Validation and Persistence", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockReturnValue(null);
   });
 
-  describe("Legacy Settings Cleanup", () => {
-    it("should clean up legacy storage keys", () => {
-      // Mock legacy keys existing
-      mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === "hydroscope_settings") return '{"old": "data"}';
-        if (key === "hydroscope-config") return '{"old": "config"}';
-        if (key === "hydroscope-state") return '{"old": "state"}';
-        return null;
-      });
-
-      render(<Hydroscope data={testData} />);
-
-      // Should attempt to remove legacy keys
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        "hydroscope_settings",
-      );
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        "hydroscope-config",
-      );
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
-        "hydroscope-state",
-      );
-    });
-
-    it("should not attempt to remove non-existent legacy keys", () => {
-      mockLocalStorage.getItem.mockReturnValue(null);
-
-      render(<Hydroscope data={testData} />);
-
-      // Should not call removeItem for non-existent keys
-      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("RenderConfig Validation", () => {
-    it("should validate and sanitize renderConfig", () => {
-      const invalidSettings = JSON.stringify({
-        infoPanelOpen: false,
-        stylePanelOpen: false,
-        autoFitEnabled: true,
-        colorPalette: "Set3",
-        layoutAlgorithm: "layered",
-        renderConfig: {
-          edgeStyle: "invalid-style", // Invalid
-          edgeWidth: -5, // Invalid (negative)
-          edgeDashed: "not-boolean", // Invalid type
-          nodePadding: "invalid", // Invalid type
-          nodeFontSize: 0, // Invalid (zero)
-          containerBorderWidth: null, // Invalid type
-          colorPalette: 123, // Invalid type
-          fitView: "yes", // Invalid type
-        },
-      });
-
-      mockLocalStorage.getItem.mockReturnValue(invalidSettings);
-
-      render(<Hydroscope data={testData} />);
-
-      // Component should render without errors despite invalid renderConfig
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        "hydroscope-settings",
-      );
-    });
-
-    it("should preserve valid renderConfig values", () => {
-      const validSettings = JSON.stringify({
+  describe("Settings Loading", () => {
+    it("should load settings from localStorage", () => {
+      const mockSettings = JSON.stringify({
         infoPanelOpen: true,
         stylePanelOpen: false,
-        autoFitEnabled: false,
-        colorPalette: "Set2",
-        layoutAlgorithm: "force",
-        renderConfig: {
-          edgeStyle: "straight",
-          edgeWidth: 3,
-          edgeDashed: true,
-          nodePadding: 12,
-          nodeFontSize: 16,
-          containerBorderWidth: 4,
-          colorPalette: "Set2",
-          fitView: false,
-        },
-      });
-
-      mockLocalStorage.getItem.mockReturnValue(validSettings);
-
-      render(<Hydroscope data={testData} />);
-
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        "hydroscope-settings",
-      );
-    });
-  });
-
-  describe("Settings Versioning", () => {
-    it("should add version to saved settings", async () => {
-      render(<Hydroscope data={testData} />);
-
-      // Wait for settings to be saved
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      // Check if setItem was called with versioned settings
-      if (mockLocalStorage.setItem.mock.calls.length > 0) {
-        const savedData = mockLocalStorage.setItem.mock.calls[0][1];
-        const parsedData = JSON.parse(savedData);
-        expect(parsedData).toHaveProperty("version", 1);
-      }
-    });
-
-    it("should handle settings without version gracefully", () => {
-      const settingsWithoutVersion = JSON.stringify({
-        infoPanelOpen: false,
-        stylePanelOpen: false,
         autoFitEnabled: true,
-        colorPalette: "Set3",
+        colorPalette: "Set2",
         layoutAlgorithm: "layered",
         renderConfig: {
           edgeStyle: "bezier",
           edgeWidth: 2,
-          edgeDashed: false,
-          nodePadding: 8,
-          nodeFontSize: 12,
-          containerBorderWidth: 2,
-          colorPalette: "Set3",
-          fitView: true,
         },
+        version: 1,
       });
 
-      mockLocalStorage.getItem.mockReturnValue(settingsWithoutVersion);
+      mockLocalStorage.getItem.mockReturnValue(mockSettings);
 
       render(<Hydroscope data={testData} />);
 
+      // Should attempt to load settings
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+        "hydroscope-settings",
+      );
+    });
+
+    it("should handle missing settings gracefully", () => {
+      mockLocalStorage.getItem.mockReturnValue(null);
+
+      render(<Hydroscope data={testData} />);
+
+      // Should still render without settings
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+        "hydroscope-settings",
+      );
+    });
+
+    it("should handle corrupted settings gracefully", () => {
+      mockLocalStorage.getItem.mockReturnValue("invalid json");
+
+      render(<Hydroscope data={testData} />);
+
+      // Should still render with corrupted settings
       expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
         "hydroscope-settings",
       );
     });
   });
 
-  describe("Error Handling Improvements", () => {
-    it("should handle array renderConfig gracefully", () => {
-      const invalidSettings = JSON.stringify({
-        infoPanelOpen: false,
-        stylePanelOpen: false,
-        autoFitEnabled: true,
-        colorPalette: "Set3",
-        layoutAlgorithm: "layered",
-        renderConfig: [], // Array instead of object
-      });
-
-      mockLocalStorage.getItem.mockReturnValue(invalidSettings);
-
+  describe("Settings Saving", () => {
+    it("should save settings to localStorage", () => {
       render(<Hydroscope data={testData} />);
 
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+      // Component should attempt to save settings
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         "hydroscope-settings",
+        expect.stringContaining("version"),
       );
     });
 
-    it("should handle null renderConfig gracefully", () => {
-      const invalidSettings = JSON.stringify({
-        infoPanelOpen: false,
-        stylePanelOpen: false,
-        autoFitEnabled: true,
-        colorPalette: "Set3",
-        layoutAlgorithm: "layered",
-        renderConfig: null,
+    it("should handle localStorage save errors gracefully", () => {
+      mockLocalStorage.setItem.mockImplementation(() => {
+        throw new Error("Storage quota exceeded");
       });
 
-      mockLocalStorage.getItem.mockReturnValue(invalidSettings);
+      // Should not throw when localStorage fails
+      expect(() => {
+        render(<Hydroscope data={testData} />);
+      }).not.toThrow();
+    });
+  });
+
+  describe("Settings Structure", () => {
+    it("should save settings with correct structure", () => {
+      render(<Hydroscope data={testData} />);
+
+      const savedSettings = mockLocalStorage.setItem.mock.calls.find(
+        call => call[0] === "hydroscope-settings"
+      );
+
+      expect(savedSettings).toBeDefined();
+      
+      if (savedSettings) {
+        const settingsData = JSON.parse(savedSettings[1]);
+        
+        // Should have version
+        expect(settingsData.version).toBeDefined();
+        
+        // Should have expected properties
+        expect(settingsData).toHaveProperty('infoPanelOpen');
+        expect(settingsData).toHaveProperty('stylePanelOpen');
+        expect(settingsData).toHaveProperty('autoFitEnabled');
+        expect(settingsData).toHaveProperty('colorPalette');
+        expect(settingsData).toHaveProperty('layoutAlgorithm');
+        expect(settingsData).toHaveProperty('renderConfig');
+      }
+    });
+
+    it("should merge loaded settings with defaults", () => {
+      const partialSettings = JSON.stringify({
+        infoPanelOpen: false,
+        // Missing other properties
+        version: 1,
+      });
+
+      mockLocalStorage.getItem.mockReturnValue(partialSettings);
 
       render(<Hydroscope data={testData} />);
 
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        "hydroscope-settings",
+      // Should still save complete settings structure
+      const savedSettings = mockLocalStorage.setItem.mock.calls.find(
+        call => call[0] === "hydroscope-settings"
       );
+
+      if (savedSettings) {
+        const settingsData = JSON.parse(savedSettings[1]);
+        
+        // Should have all expected properties even if not in loaded settings
+        expect(settingsData).toHaveProperty('infoPanelOpen');
+        expect(settingsData).toHaveProperty('stylePanelOpen');
+        expect(settingsData).toHaveProperty('autoFitEnabled');
+        expect(settingsData).toHaveProperty('colorPalette');
+        expect(settingsData).toHaveProperty('layoutAlgorithm');
+        expect(settingsData).toHaveProperty('renderConfig');
+      }
     });
   });
 
   describe("Storage Key Consistency", () => {
-    it("should use the correct storage key", () => {
+    it("should use consistent storage key", () => {
       render(<Hydroscope data={testData} />);
 
+      // Should use the same key for loading and saving
       expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
         "hydroscope-settings",
       );
-    });
-
-    it("should check legacy keys for cleanup but use correct key for loading", () => {
-      render(<Hydroscope data={testData} />);
-
-      // Should check legacy keys for cleanup
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        "hydroscope_settings",
-      );
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        "hydroscope-config",
-      );
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith("hydroscope-state");
-
-      // Should use correct key for actual settings loading
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         "hydroscope-settings",
+        expect.any(String),
       );
     });
   });

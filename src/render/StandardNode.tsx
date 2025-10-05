@@ -195,6 +195,9 @@ export function StandardNode({ id, data }: NodeProps) {
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
 
+  // DEBUG: Log dimensions to verify they match ELK calculations
+  console.log(`[StandardNode] ${id}: data.width=${data.width}, data.height=${data.height}, using width=${width}, height=${height}`);
+
   // Dev-only: log computed color mapping to verify at runtime
   if (process.env.NODE_ENV !== "production") {
     // Only log a small sample to avoid noise
@@ -351,14 +354,17 @@ export function StandardNode({ id, data }: NodeProps) {
       <div
         onClick={handleClick}
         style={{
-          padding: `${styleCfg.nodePadding ?? 12}px 16px`,
+          width: `${width}px`,
+          height: `${height}px`,
+          padding: `${styleCfg.nodePadding ?? 8}px 16px`,
           backgroundColor: colors.backgroundColor,
           border: `2px solid ${isShowingLongLabel ? "#2563eb" : colors.borderColor}`,
           borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
-          fontSize: `${styleCfg.nodeFontSize ?? 12}px`,
+          fontSize: `${styleCfg.nodeFontSize ?? 11}px`,
           textAlign: "center",
-          minWidth: "120px",
+          boxSizing: "border-box",
           position: "relative",
+          overflow: "hidden",
           cursor: "pointer",
           transition: "all 0.2s ease",
           display: "flex",

@@ -8,7 +8,7 @@
 import React, { useRef } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { HydroscopeCore, type HydroscopeCoreHandle } from '../HydroscopeCoreNew.js';
+import { HydroscopeCore, type HydroscopeCoreHandle } from '../HydroscopeCore.js';
 import type { HydroscopeData } from '../../types/core.js';
 
 // Simple mock data that should parse correctly
@@ -90,6 +90,35 @@ describe('HydroscopeCore Bulk Operations', () => {
           expect(hydroscopeRef.current.expandAll).toBeDefined();
           expect(typeof hydroscopeRef.current.collapseAll).toBe('function');
           expect(typeof hydroscopeRef.current.expandAll).toBe('function');
+        }
+      });
+
+      return (
+        <HydroscopeCore
+          ref={hydroscopeRef}
+          data={mockSimpleData}
+          height="400px"
+          width="600px"
+        />
+      );
+    };
+
+    render(<RefTestComponent />);
+  });
+
+  it('should expose individual container methods through ref', () => {
+    const RefTestComponent: React.FC = () => {
+      const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
+
+      React.useEffect(() => {
+        // Test the ref after component mounts
+        if (hydroscopeRef.current) {
+          expect(hydroscopeRef.current.collapse).toBeDefined();
+          expect(hydroscopeRef.current.expand).toBeDefined();
+          expect(hydroscopeRef.current.toggle).toBeDefined();
+          expect(typeof hydroscopeRef.current.collapse).toBe('function');
+          expect(typeof hydroscopeRef.current.expand).toBe('function');
+          expect(typeof hydroscopeRef.current.toggle).toBe('function');
         }
       });
 

@@ -95,8 +95,8 @@ describe("ELKBridge", () => {
       // Should only show the container, not the internal nodes
       expect(elkGraph.children).toHaveLength(1);
       expect(elkGraph.children![0].id).toBe("c1");
-      expect(elkGraph.children![0].width).toBe(200);
-      expect(elkGraph.children![0].height).toBeGreaterThanOrEqual(80); // Size may be optimized
+      expect(elkGraph.children![0].width).toBe(120); // Updated for new collapsed container size
+      expect(elkGraph.children![0].height).toBe(60); // Updated for new collapsed container size
       expect(elkGraph.children![0].layoutOptions).toBeDefined();
     });
 
@@ -116,8 +116,9 @@ describe("ELKBridge", () => {
       expect(elkGraph.children).toHaveLength(1);
       const elkContainer = elkGraph.children![0];
       expect(elkContainer.id).toBe("c1");
-      expect(elkContainer.width).toBeGreaterThanOrEqual(200); // Size may be optimized
-      expect(elkContainer.height).toBeGreaterThanOrEqual(150); // Size may be optimized
+      // ELK will determine container size automatically - width/height should be undefined
+      expect(elkContainer.width).toBeUndefined();
+      expect(elkContainer.height).toBeUndefined();
       expect(elkContainer.children).toHaveLength(2);
       expect(elkContainer.layoutOptions).toBeDefined();
 

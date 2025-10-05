@@ -20,69 +20,6 @@ export function loadPaxosTestData(): TestGraphData {
   return getMinimalTestData();
 }
 
-function _convertToTestData(rawData: any): TestGraphData {
-  const nodes: GraphNode[] = [];
-  const edges: GraphEdge[] = [];
-  const containers: Container[] = [];
-
-  // Convert nodes
-  if (rawData.nodes) {
-    for (const node of rawData.nodes) {
-      nodes.push({
-        id: node.id || `node_${nodes.length}`,
-        label:
-          node.shortLabel || node.label || node.name || `Node ${nodes.length}`,
-        longLabel:
-          node.fullLabel ||
-          node.longLabel ||
-          node.label ||
-          node.name ||
-          `Node ${nodes.length}`,
-        type: node.nodeType || node.type || "node",
-        semanticTags: node.semanticTags || [],
-        hidden: false,
-      });
-    }
-  }
-
-  // Convert edges
-  if (rawData.edges) {
-    for (const edge of rawData.edges) {
-      edges.push({
-        id: edge.id || `edge_${edges.length}`,
-        source: edge.source || edge.from,
-        target: edge.target || edge.to,
-        type: edge.type || "edge",
-        semanticTags: edge.semanticTags || [],
-        hidden: false,
-      });
-    }
-  }
-
-  // Convert containers from hierarchyChoices (paxos.json format)
-  if (rawData.hierarchyChoices) {
-    for (const hierarchy of rawData.hierarchyChoices) {
-      convertHierarchyToContainers(hierarchy, containers);
-    }
-  }
-
-  // Convert containers (direct format)
-  if (rawData.containers) {
-    for (const container of rawData.containers) {
-      containers.push({
-        id: container.id || `container_${containers.length}`,
-        label:
-          container.label || container.name || `Container ${containers.length}`,
-        children: new Set(container.children || []),
-        collapsed: container.collapsed || false,
-        hidden: false,
-      });
-    }
-  }
-
-  return { nodes, edges, containers };
-}
-
 function convertHierarchyToContainers(
   hierarchy: any,
   containers: Container[],

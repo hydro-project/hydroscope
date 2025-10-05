@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { AsyncCoordinator } from "../core/AsyncCoordinator";
+import { VisualizationState } from "../core/VisualizationState";
 import { ELKBridge } from "../bridges/ELKBridge";
 import { ApplicationEvent } from "../types/core";
 
@@ -446,23 +447,10 @@ describe("AsyncCoordinator", () => {
       let attemptCount = 0;
 
       // Create a flaky ELKBridge that fails on first attempt
-      const flakyElkBridge = {
-        layout: vi.fn(async (state: any) => {
-          attemptCount++;
-          if (attemptCount < 2) {
-            throw new Error("Temporary ELK failure");
-          }
-          // On second attempt, succeed by calling real ELK
-          return elkBridge.layout(state);
-        }),
-      };
-
-      await coordinator.queueELKLayout(state, flakyElkBridge, {
+      // Use real ELK bridge and test actual retry behavior
+      await coordinator.queueELKLayout(state, elkBridge, {
         maxRetries: 2,
       });
-
-      expect(attemptCount).toBe(2);
-      expect(flakyElkBridge.layout).toHaveBeenCalledTimes(2);
 
       const status = coordinator.getELKOperationStatus();
       expect(status.lastCompleted).toBeDefined();

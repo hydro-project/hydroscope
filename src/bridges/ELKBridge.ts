@@ -123,69 +123,78 @@ export class ELKBridge {
       }
     }
 
-    // Convert containers
-    for (const container of visibleContainers) {
+    // Helper function to recursively convert containers with proper nesting
+    const convertContainerRecursively = (container: Container, state: VisualizationState): any => {
       if (container.collapsed) {
-        // Collapsed container as single node
-        console.log(`[ELKBridge] 🏗️ Adding COLLAPSED container ${container.id} to ROOT`);
-        const containerSize = this.calculateOptimalContainerSize(
-          container,
-          optimizedConfig,
-          true,
-        );
-        elkNode.children!.push({
+        // Collapsed container as single node - still need some size for collapsed containers
+        console.log(`[ELKBridge] 🏗️ Converting COLLAPSED container ${container.id}`);
+        return {
           id: container.id,
-          width: containerSize.width,
-          height: containerSize.height,
+          // Minimal size for collapsed containers - ELK can adjust if needed
+          width: 120,
+          height: 60,
           layoutOptions: this.getContainerLayoutOptions(
             container,
             optimizedConfig,
           ),
-        });
+        };
       } else {
-        // Expanded container with children
-        console.log(`[ELKBridge] 🏗️ Adding EXPANDED container ${container.id} to ROOT with children`);
-        const containerChildren = visibleNodes
-          .filter((node) => container.children.has(node.id))
-          .map((node) => {
-            console.log(
-              `[ELKBridge] 🏗️ Adding node ${node.id} as CHILD of expanded container ${container.id}`,
-            );
-            const nodeSize = this.calculateOptimalNodeSize(
-              node,
-              optimizedConfig,
-            );
-            return {
-              id: node.id,
-              width: nodeSize.width,
-              height: nodeSize.height,
-              layoutOptions: this.getNodeLayoutOptions(node, optimizedConfig),
-            };
+        // Expanded container with children - let ELK determine size
+        console.log(`[ELKBridge] 🏗️ Converting EXPANDED container ${container.id} with children`);
+        
+        const elkChildren: any[] = [];
+        
+        // Add direct child nodes
+        const childNodes = visibleNodes.filter((node) => container.children.has(node.id));
+        for (const node of childNodes) {
+          console.log(`[ELKBridge] 🏗️ Adding node ${node.id} as CHILD of container ${container.id}`);
+          const nodeSize = this.calculateOptimalNodeSize(node, optimizedConfig);
+          elkChildren.push({
+            id: node.id,
+            width: nodeSize.width,
+            height: nodeSize.height,
+            layoutOptions: this.getNodeLayoutOptions(node, optimizedConfig),
           });
-
-        const containerSize = this.calculateOptimalContainerSize(
-          container,
-          optimizedConfig,
-          false,
-          containerChildren.length,
+        }
+        
+        // Add direct child containers (recursively)
+        const childContainers = visibleContainers.filter((childContainer) => 
+          container.children.has(childContainer.id)
         );
-        
-        console.log(`[ELKBridge] 🏗️ EXPANDED container ${container.id}: size=(${containerSize.width}x${containerSize.height}), children=${containerChildren.length}`);
-        containerChildren.forEach(child => {
-          console.log(`[ELKBridge] 🏗️   Child ${child.id}: size=(${child.width}x${child.height})`);
+        for (const childContainer of childContainers) {
+          console.log(`[ELKBridge] 🏗️ Adding container ${childContainer.id} as CHILD of container ${container.id}`);
+          elkChildren.push(convertContainerRecursively(childContainer, state));
+        }
+
+        console.log(`[ELKBridge] 🏗️ EXPANDED container ${container.id}: letting ELK determine size, children=${elkChildren.length}`);
+        elkChildren.forEach(child => {
+          console.log(`[ELKBridge] 🏗️   Child ${child.id}: size=(${child.width || 'auto'}x${child.height || 'auto'})`);
         });
         
-        elkNode.children!.push({
+        const containerLayoutOptions = this.getContainerLayoutOptions(container, optimizedConfig);
+        // Let ELK compute the size based on content
+        containerLayoutOptions["elk.nodeSize.constraints"] = "MINIMUM_SIZE";
+        containerLayoutOptions["elk.nodeSize.options"] = "DEFAULT_MINIMUM_SIZE COMPUTE_PADDING";
+        
+        return {
           id: container.id,
-          width: containerSize.width,
-          height: containerSize.height,
-          children: containerChildren,
-          layoutOptions: this.getContainerLayoutOptions(
-            container,
-            optimizedConfig,
-          ),
-        });
+          // Don't specify width/height - let ELK determine based on content
+          children: elkChildren,
+          layoutOptions: containerLayoutOptions,
+        };
       }
+    };
+
+    // Only add root-level containers (containers with no parent) to the ELK root
+    const rootContainers = visibleContainers.filter(container => 
+      !state.getContainerParent(container.id)
+    );
+    
+    console.log(`[ELKBridge] 🏗️ Found ${rootContainers.length} root-level containers out of ${visibleContainers.length} total`);
+    
+    for (const container of rootContainers) {
+      console.log(`[ELKBridge] 🏗️ Adding ROOT container ${container.id}`);
+      elkNode.children!.push(convertContainerRecursively(container, state));
     }
 
     // Convert regular edges (for expanded containers)
@@ -206,21 +215,11 @@ export class ELKBridge {
       });
     }
 
-    // HIERARCHY LOGGING: Log final ELK graph structure
-    console.log(`[ELKBridge] 🏗️ FINAL ELK GRAPH HIERARCHY:`);
+    // HIERARCHY LOGGING: Log complete ELK graph structure recursively
+    console.log(`[ELKBridge] 🏗️ FINAL ELK GRAPH HIERARCHY (INPUT TO ELK):`);
     console.log(`[ELKBridge] 🏗️ Root children: ${elkNode.children?.length || 0}`);
     console.log(`[ELKBridge] 🏗️ Root edges: ${elkNode.edges?.length || 0}`);
-    
-    elkNode.children?.forEach(child => {
-      if (child.children && child.children.length > 0) {
-        console.log(`[ELKBridge] 🏗️ Container ${child.id}: size=(${child.width}x${child.height}), children=${child.children.length}`);
-        child.children.forEach(grandchild => {
-          console.log(`[ELKBridge] 🏗️   └─ Child ${grandchild.id}: size=(${grandchild.width}x${grandchild.height})`);
-        });
-      } else {
-        console.log(`[ELKBridge] 🏗️ Node/Collapsed Container ${child.id}: size=(${child.width}x${child.height})`);
-      }
-    });
+    this.logELKHierarchyRecursively(elkNode.children || [], 0);
 
     // Cache the result
     this.layoutCache.set(graphHash, this.deepCloneELKNode(elkNode));
@@ -256,6 +255,30 @@ export class ELKBridge {
 
   private deepCloneELKNode(node: ELKNode): ELKNode {
     return JSON.parse(JSON.stringify(node));
+  }
+
+  /**
+   * Recursively log ELK hierarchy structure for debugging
+   */
+  private logELKHierarchyRecursively(
+    elkChildren: ELKNode[], 
+    depth: number, 
+    includePositions: boolean = false
+  ): void {
+    const indent = "  ".repeat(depth);
+    
+    for (const child of elkChildren) {
+      const positionInfo = includePositions && child.x !== undefined && child.y !== undefined 
+        ? `, position=(${child.x}, ${child.y})` 
+        : "";
+      
+      if (child.children && child.children.length > 0) {
+        console.log(`[ELKBridge] 🏗️ ${indent}Container ${child.id}: size=(${child.width || 'auto'}x${child.height || 'auto'}), children=${child.children.length}${positionInfo}`);
+        this.logELKHierarchyRecursively(child.children, depth + 1, includePositions);
+      } else {
+        console.log(`[ELKBridge] 🏗️ ${indent}Node ${child.id}: size=(${child.width || 'auto'}x${child.height || 'auto'})${positionInfo}`);
+      }
+    }
   }
 
   // Clear caches for memory management
@@ -315,6 +338,12 @@ export class ELKBridge {
         width: layoutResult.width,
         height: layoutResult.height,
       });
+
+      // HIERARCHY LOGGING: Log complete ELK layout result recursively
+      console.log(`[ELKBridge] 🏗️ FINAL ELK LAYOUT RESULT (OUTPUT FROM ELK):`);
+      console.log(`[ELKBridge] 🏗️ Root children: ${layoutResult.children?.length || 0}`);
+      console.log(`[ELKBridge] 🏗️ Root edges: ${layoutResult.edges?.length || 0}`);
+      this.logELKHierarchyRecursively(layoutResult.children || [], 0, true);
 
       // Apply the calculated positions back to VisualizationState
       console.log(`[ELKBridge] 🔄 Applying ELK results to VisualizationState`);
@@ -703,8 +732,11 @@ export class ELKBridge {
     const options: Record<string, any> = {};
 
     // Container-specific layout options
+    // CRITICAL FIX: Increase padding for deeply nested containers to make nesting visible
+    // Use larger padding (40px instead of 20px) to create visual separation between nested levels
+    const padding = config.containerPadding || 40; // Increased from 20 to 40
     options["elk.padding"] =
-      `[top=${config.containerPadding || 20},left=${config.containerPadding || 20},bottom=${config.containerPadding || 20},right=${config.containerPadding || 20}]`;
+      `[top=${padding},left=${padding},bottom=${padding},right=${padding}]`;
 
     if (config.hierarchicalLayout) {
       options["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";

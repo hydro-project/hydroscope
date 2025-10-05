@@ -10,7 +10,7 @@
 import React from "react";
 import { render, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { HydroscopeEnhanced } from "../components/HydroscopeEnhanced.js";
+import { Hydroscope } from "../components/Hydroscope.js";
 import type { HydroscopeData } from "../types/core.js";
 
 // Mock ReactFlow components
@@ -113,7 +113,8 @@ const initialData: HydroscopeData = {
   edges: [
     { id: "edge1", source: "node1", target: "node2", label: "Initial Edge" },
   ],
-  containers: [],
+  hierarchyChoices: [],
+  nodeAssignments: {},
 };
 
 const newData: HydroscopeData = {
@@ -122,7 +123,8 @@ const newData: HydroscopeData = {
     { id: "nodeB", label: "New Node B", type: "sink" },
   ],
   edges: [{ id: "edgeA", source: "nodeA", target: "nodeB", label: "New Edge" }],
-  containers: [],
+  hierarchyChoices: [],
+  nodeAssignments: {},
 };
 
 describe("File Loading Regression Tests", () => {
@@ -138,14 +140,14 @@ describe("File Loading Regression Tests", () => {
 
   it("should load initial file and display visualization", async () => {
     expect(() => {
-      render(<HydroscopeEnhanced data={initialData} enhanced={true} />);
+      render(<Hydroscope data={initialData} showInfoPanel={true} showStylePanel={true} />);
     }).not.toThrow();
 
     // Should render the component (either successfully or with error state)
     await waitFor(() => {
       const component =
-        document.querySelector(".hydroscope-error") ||
-        document.querySelector('[data-testid="react-flow"]');
+        document.querySelector('[data-testid="react-flow"]') ||
+        document.querySelector('h3'); // Error messages show as h3 elements
       expect(component).toBeInTheDocument();
     });
   });
@@ -153,18 +155,18 @@ describe("File Loading Regression Tests", () => {
   it("should reload visualization when a different file is loaded via file input", async () => {
     expect(() => {
       const { rerender } = render(
-        <HydroscopeEnhanced data={initialData} enhanced={true} />,
+        <Hydroscope data={initialData} showInfoPanel={true} showStylePanel={true} />,
       );
 
       // Simulate loading new data
-      rerender(<HydroscopeEnhanced data={newData} enhanced={true} />);
+      rerender(<Hydroscope data={newData} showInfoPanel={true} showStylePanel={true} />);
     }).not.toThrow();
 
     // Should still render the component (either successfully or with error state)
     await waitFor(() => {
       const component =
-        document.querySelector(".hydroscope-error") ||
-        document.querySelector('[data-testid="react-flow"]');
+        document.querySelector('[data-testid="react-flow"]') ||
+        document.querySelector('h3'); // Error messages show as h3 elements
       expect(component).toBeInTheDocument();
     });
   });
@@ -174,12 +176,12 @@ describe("File Loading Regression Tests", () => {
     const datasets = [initialData, newData, initialData];
 
     const { rerender } = render(
-      <HydroscopeEnhanced data={datasets[0]} enhanced={true} />,
+      <Hydroscope data={datasets[0]} showInfoPanel={true} showStylePanel={true} />,
     );
 
     for (let i = 1; i < datasets.length; i++) {
       mockParseData.mockReturnValue(datasets[i]);
-      rerender(<HydroscopeEnhanced data={datasets[i]} enhanced={true} />);
+      rerender(<Hydroscope data={datasets[i]} showInfoPanel={true} showStylePanel={true} />);
 
       // Should render without crashing
       expect(document.querySelector(".hydroscope")).toBeInTheDocument();
@@ -191,7 +193,7 @@ describe("File Loading Regression Tests", () => {
     mockParseData.mockRejectedValue(new Error("Parse error"));
 
     expect(() => {
-      render(<HydroscopeEnhanced data={initialData} enhanced={true} />);
+      render(<Hydroscope data={initialData} showInfoPanel={true} showStylePanel={true} />);
     }).not.toThrow();
 
     // Should still render the component (with error state)
@@ -204,9 +206,10 @@ describe("File Loading Regression Tests", () => {
     const handleFileLoaded = vi.fn();
 
     render(
-      <HydroscopeEnhanced
+      <Hydroscope
         data={initialData}
-        enhanced={true}
+        showInfoPanel={true}
+        showStylePanel={true}
         onFileLoaded={handleFileLoaded}
       />,
     );

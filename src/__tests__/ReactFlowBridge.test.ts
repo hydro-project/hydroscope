@@ -1937,4 +1937,88 @@ describe("ReactFlowBridge", () => {
       expect(typeof result2.nodes[0].data.onClick).toBe("function");
     });
   });
+
+  describe("Regression Tests", () => {
+    it("should NOT set extent='parent' on nodes in containers to prevent ReactFlow positioning bugs", async () => {
+      // Regression test for chat.json Backtrace hierarchy bug
+      // Where nodes in deeply nested containers overlapped when extent="parent" was set
+      
+      // Create a deeply nested container hierarchy
+      const container1: Container = {
+        id: "container1",
+        label: "Parent Container",
+        children: new Set(["container2", "node1"]),
+        collapsed: false,
+        hidden: false,
+      };
+      
+      const container2: Container = {
+        id: "container2",
+        label: "Child Container",
+        children: new Set(["node2", "node3"]),
+        collapsed: false,
+        hidden: false,
+      };
+
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node in Parent",
+        longLabel: "Node in Parent Container",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+        showingLongLabel: false,
+      };
+
+      const node2: GraphNode = {
+        id: "node2",
+        label: "Node in Child 1",
+        longLabel: "First Node in Child Container",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+        showingLongLabel: false,
+      };
+
+      const node3: GraphNode = {
+        id: "node3",
+        label: "Node in Child 2",
+        longLabel: "Second Node in Child Container",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+        showingLongLabel: false,
+      };
+
+      // Add containers in dependency order (child before parent)
+      state.addContainer(container2);
+      state.addContainer(container1);
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addNode(node3);
+
+      await elkBridge.layout(state);
+      const result = bridge.toReactFlowData(state, interactionHandler);
+
+      // Find nodes that have parents
+      const nodesWithParents = result.nodes.filter(n => n.parentNode !== undefined);
+
+      // CRITICAL: None of these nodes should have extent="parent" set
+      // This was causing ReactFlow to incorrectly position nodes in deeply nested containers
+      for (const node of nodesWithParents) {
+        expect(node.extent).toBeUndefined();
+      }
+
+      // Verify that parentNode IS set (for hierarchy)
+      const childNodes = result.nodes.filter(n => 
+        n.id === "node1" || n.id === "node2" || n.id === "node3"
+      );
+      
+      expect(childNodes.length).toBeGreaterThan(0);
+      for (const node of childNodes) {
+        expect(node.parentNode).toBeDefined();
+        expect(node.parentNode).not.toBe("");
+      }
+    });
+  });
 });
