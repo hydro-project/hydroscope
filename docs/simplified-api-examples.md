@@ -4,19 +4,19 @@ The new Hydroscope API provides a clean, focused interface with just the essenti
 
 ## 🎯 Core Components
 
-### HydroscopeViewer - Simple Read-Only Display
+### HydroscopeCore - Simple Read-Only Display
 
 Perfect for embedding graphs in documentation or dashboards:
 
 ```tsx
-import { HydroscopeViewer } from '@hydro-project/hydroscope';
+import { HydroscopeCore } from '@hydro-project/hydroscope';
 
 function MyDashboard() {
   return (
-    <HydroscopeViewer
+    <HydroscopeCore
       data={graphData}
       height="400px"
-      layoutAlgorithm="layered"
+      readOnly={true}
       showControls={true}
       showMiniMap={false}
     />
@@ -57,7 +57,7 @@ function CustomLayout() {
   return (
     <div style={{ display: 'flex' }}>
       <div style={{ flex: 1 }}>
-        <HydroscopeViewer data={graphData} />
+        <HydroscopeCore data={graphData} readOnly={true} />
       </div>
       <div style={{ width: '300px' }}>
         <InfoPanel visualizationState={state} />
@@ -99,7 +99,7 @@ import {
 // Just what you need
 import { 
   Hydroscope,           // Full-featured component
-  HydroscopeViewer,     // Simple read-only component
+  HydroscopeCore,       // Simple core component (use readOnly={true} for read-only)
   InfoPanel,            // Optional: standalone panel
   StyleTuner,           // Optional: standalone panel
   parseDataFromUrl      // Optional: utility function
@@ -110,6 +110,6 @@ import {
 
 1. **Simpler** - 80% fewer exports to understand
 2. **Clearer** - Obvious what each component does
-3. **Flexible** - Choose simple viewer or full component
+3. **Flexible** - Use HydroscopeCore with readOnly prop or full Hydroscope component
 4. **Maintainable** - Smaller public API surface
 5. **Typical** - Follows standard React library patterns
