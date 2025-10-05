@@ -495,7 +495,7 @@ export class ReactFlowBridge {
       
       const containerNode: ReactFlowNode = {
         id: container.id,
-        type: container.collapsed ? "standard" : "container", // Critical: Make sure to use 'standard' type for collapsed containers (to avoid edge connection bugs), 'container' type only for expanded (proper UI)
+        type: "container", // Always use container type for proper styling and sizing
         position,
         data: {
           label: container.label || container.id,

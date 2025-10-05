@@ -13,6 +13,7 @@ import type {
   Container,
   PerformanceHints,
 } from "../types/core.js";
+import { SIZES } from "../shared/config.js";
 
 export class ELKBridge {
   private performanceHints?: PerformanceHints;
@@ -130,9 +131,9 @@ export class ELKBridge {
         console.log(`[ELKBridge] 🏗️ Converting COLLAPSED container ${container.id}`);
         return {
           id: container.id,
-          // Minimal size for collapsed containers - ELK can adjust if needed
-          width: 120,
-          height: 60,
+          // Use proper collapsed container dimensions from config
+          width: SIZES.COLLAPSED_CONTAINER_WIDTH,
+          height: SIZES.COLLAPSED_CONTAINER_HEIGHT,
           layoutOptions: this.getContainerLayoutOptions(
             container,
             optimizedConfig,
