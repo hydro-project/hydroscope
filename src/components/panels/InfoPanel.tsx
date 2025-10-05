@@ -314,10 +314,7 @@ const InfoPanelInternal = forwardRef<
           }}
         >
           {/* Grouping & Hierarchy Section */}
-          {(safeHierarchyChoices.length > 0 ||
-            (visualizationState &&
-              visualizationState.visibleContainers &&
-              visualizationState.visibleContainers.length > 0)) && (
+          {(safeHierarchyChoices.length > 0 || visualizationState) && (
             <CollapsibleSection
               title="Grouping"
               isCollapsed={groupingCollapsed}

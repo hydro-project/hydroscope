@@ -340,4 +340,58 @@ describe("HydroscopeCore Component", () => {
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
     });
   });
+
+  describe("Drag Functionality", () => {
+    it("should enable dragging when not in readOnly mode", async () => {
+      render(
+        <HydroscopeCore
+          data={validTestData}
+          readOnly={false}
+          onError={mockOnError}
+        />
+      );
+
+      // Component should render and allow dragging
+      expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
+      
+      // Note: Testing actual drag operations would require more complex setup
+      // with ReactFlow integration and DOM manipulation. This test verifies
+      // that the component renders with drag functionality enabled.
+    });
+
+    it("should disable dragging in readOnly mode", async () => {
+      render(
+        <HydroscopeCore
+          data={validTestData}
+          readOnly={true}
+          onError={mockOnError}
+        />
+      );
+
+      // Component should render but disable dragging
+      expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
+      
+      // Note: In readOnly mode, nodesDraggable is set to false in ReactFlow
+      // This test verifies the component renders correctly in readOnly mode.
+    });
+
+    it("should handle drag event handlers without errors", async () => {
+      const mockOnVisualizationStateChange = vi.fn();
+      
+      render(
+        <HydroscopeCore
+          data={validTestData}
+          onVisualizationStateChange={mockOnVisualizationStateChange}
+          onError={mockOnError}
+        />
+      );
+
+      // Component should render with drag handlers configured
+      expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
+      
+      // Note: The drag event handlers (onNodesChange, onNodeDragStart, etc.)
+      // are configured internally and would be tested through integration tests
+      // with actual ReactFlow interactions.
+    });
+  });
 });

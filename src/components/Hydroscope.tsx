@@ -24,6 +24,7 @@ import {
   ReactFlowProvider,
   ControlButton,
   Controls,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -114,6 +115,9 @@ interface HydroscopeState {
   searchQuery: string;
   searchMatches: SearchMatch[];
   currentSearchMatch: SearchMatch | undefined;
+  
+  /** Current visualization state from HydroscopeCore */
+  currentVisualizationState: VisualizationState | null;
   
   /** File upload state */
   uploadedData: HydroscopeData | null;
@@ -256,6 +260,7 @@ interface CustomControlsProps {
   onExpandAll?: () => void;
   onAutoFitToggle?: () => void;
   onLoadFile?: () => void;
+  onManualFit?: () => void; // Add manual fit callback
   showLoadFile?: boolean;
   autoFitEnabled?: boolean;
   reactFlowControlsScale?: number;
@@ -267,8 +272,9 @@ const CustomControls = memo<CustomControlsProps>(({
   onExpandAll,
   onAutoFitToggle,
   onLoadFile,
+  onManualFit,
   showLoadFile = false,
-  autoFitEnabled = false,
+  autoFitEnabled = true, // Default to true to match the component's default behavior
   reactFlowControlsScale = 1.3,
 }) => {
   const standardControlsRef = useRef<HTMLDivElement>(null);
@@ -354,14 +360,33 @@ const CustomControls = memo<CustomControlsProps>(({
             {/* Auto Fit Toggle Button - always show when callback provided */}
             {onAutoFitToggle && (
               <ControlButton
-                onClick={onAutoFitToggle}
-                title="Toggle Auto-Fit"
+                onClick={() => {
+                  console.log('[Hydroscope] AutoFit button clicked, current state:', autoFitEnabled);
+                  onAutoFitToggle();
+                }}
+                title={`Toggle Auto-Fit (currently ${autoFitEnabled ? 'ON' : 'OFF'})`}
                 style={{
-                  backgroundColor: autoFitEnabled ? 'rgba(59, 130, 246, 0.1)' : undefined,
-                  borderColor: autoFitEnabled ? '#3b82f6' : undefined
+                  backgroundColor: autoFitEnabled ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                  borderColor: autoFitEnabled ? '#3b82f6' : '#d1d5db',
+                  borderWidth: '2px',
+                  borderStyle: 'solid'
                 }}
               >
                 <AutoFitIcon enabled={autoFitEnabled} />
+              </ControlButton>
+            )}
+            {/* Manual Fit Button - always show when callback provided */}
+            {onManualFit && (
+              <ControlButton
+                onClick={() => {
+                  console.log('[Hydroscope] Manual fit button clicked');
+                  onManualFit();
+                }}
+                title="Fit View"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
               </ControlButton>
             )}
             {/* Load File Button - at the top when enabled */}
@@ -414,6 +439,9 @@ const CustomControls = memo<CustomControlsProps>(({
       <div ref={standardControlsRef}>
         <Controls 
           position="bottom-left" 
+          showZoom={true}
+          showFitView={false} // We have our own manual fit button
+          showInteractive={true}
           style={{ 
             transform: `scale(${reactFlowControlsScale})`, 
             transformOrigin: 'left bottom',
@@ -427,6 +455,8 @@ const CustomControls = memo<CustomControlsProps>(({
 });
 
 CustomControls.displayName = "CustomControls";
+
+
 
 // ============================================================================
 // Main Hydroscope Component
@@ -472,10 +502,11 @@ export const Hydroscope = memo<HydroscopeProps>(({
     colorPalette: initialColorPalette || settings.colorPalette,
     layoutAlgorithm: initialLayoutAlgorithm || settings.layoutAlgorithm,
     renderConfig: settings.renderConfig,
-    autoFitEnabled: settings.autoFitEnabled,
+    autoFitEnabled: true, // Always start with autoFit enabled, regardless of saved settings
     searchQuery: "",
     searchMatches: [],
     currentSearchMatch: undefined,
+    currentVisualizationState: null,
     uploadedData: null,
     uploadedFilename: null,
     error: null,
@@ -601,12 +632,32 @@ export const Hydroscope = memo<HydroscopeProps>(({
 
   // Handle auto-fit toggle
   const handleAutoFitToggle = useCallback(() => {
-    setState(prev => ({ ...prev, autoFitEnabled: !prev.autoFitEnabled }));
+    setState(prev => {
+      const newAutoFitEnabled = !prev.autoFitEnabled;
+      
+      // If we're enabling auto-fit, trigger a fit view immediately
+      if (newAutoFitEnabled && hydroscopeCoreRef.current) {
+        console.log('[Hydroscope] AutoFit enabled - triggering fit view');
+        hydroscopeCoreRef.current.fitView();
+      }
+      
+      return { ...prev, autoFitEnabled: newAutoFitEnabled };
+    });
   }, []);
 
   // Handle load file button
   const handleLoadFile = useCallback(() => {
     fileInputRef.current?.click();
+  }, []);
+
+  // Handle manual fit - uses the same approach as AutoFit toggle
+  const handleManualFit = useCallback(() => {
+    console.log('[Hydroscope] Manual fit triggered via HydroscopeCore ref');
+    if (hydroscopeCoreRef.current) {
+      hydroscopeCoreRef.current.fitView();
+    } else {
+      console.warn('[Hydroscope] HydroscopeCore ref not available for manual fit');
+    }
   }, []);
 
   // Handle search updates from InfoPanel
@@ -620,6 +671,14 @@ export const Hydroscope = memo<HydroscopeProps>(({
       searchQuery: query,
       searchMatches: matches,
       currentSearchMatch: current,
+    }));
+  }, []);
+
+  // Handle visualization state changes from HydroscopeCore
+  const handleVisualizationStateChange = useCallback((visualizationState: VisualizationState) => {
+    setState(prev => ({
+      ...prev,
+      currentVisualizationState: visualizationState,
     }));
   }, []);
 
@@ -715,19 +774,22 @@ export const Hydroscope = memo<HydroscopeProps>(({
                 initialLayoutAlgorithm={state.layoutAlgorithm}
                 initialColorPalette={state.colorPalette}
                 defaultHierarchyChoice={currentGrouping}
+                autoFitEnabled={state.autoFitEnabled}
                 onNodeClick={onNodeClick}
                 onContainerCollapse={onContainerCollapse}
                 onContainerExpand={onContainerExpand}
+                onVisualizationStateChange={handleVisualizationStateChange}
                 onError={onError}
               />
 
               {/* Custom Controls */}
               <CustomControls
-                visualizationState={null} // Will be updated when we get access to it from HydroscopeCore
+                visualizationState={state.currentVisualizationState}
                 onCollapseAll={handleCollapseAll}
                 onExpandAll={handleExpandAll}
                 onAutoFitToggle={handleAutoFitToggle}
                 onLoadFile={handleLoadFile}
+                onManualFit={handleManualFit}
                 showLoadFile={true}
                 autoFitEnabled={state.autoFitEnabled}
                 reactFlowControlsScale={state.renderConfig.reactFlowControlsScale}
@@ -740,7 +802,7 @@ export const Hydroscope = memo<HydroscopeProps>(({
                   open={state.infoPanelOpen}
                   onOpenChange={(open) => setState(prev => ({ ...prev, infoPanelOpen: open }))}
                   onSearchUpdate={handleSearchUpdate}
-                  visualizationState={null} // Will be passed from HydroscopeCore via callback
+                  visualizationState={state.currentVisualizationState}
                   hierarchyChoices={state.data?.hierarchyChoices || []}
                   currentGrouping={currentGrouping}
                   onGroupingChange={(groupingId) => {

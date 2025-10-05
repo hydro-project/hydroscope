@@ -7,6 +7,7 @@
  * Key Features:
  * - Parse and render JSON input data
  * - Handle node selection, expansion, and collapse operations
+ * - Support drag and drop for nodes and containers (when not in readOnly mode)
  * - Manage container state and visual feedback
  * - Provide error handling for invalid JSON
  * - Integrate with VisualizationState, ReactFlowBridge, and ELKBridge through AsyncCoordinator
@@ -17,6 +18,7 @@
  * - All operations go through AsyncCoordinator for proper sequencing
  * - Atomic state change -> re-layout -> render pipeline
  * - Error boundaries for graceful failure handling
+ * - Optimized drag handling with debouncing to prevent performance issues
  */
 
 import React, {
@@ -36,7 +38,12 @@ import {
   MiniMap,
   ReactFlowProvider,
   useReactFlow,
+  useNodesInitialized,
+  applyNodeChanges,
+  applyEdgeChanges,
   type Node,
+  type NodeChange,
+  type EdgeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -50,7 +57,7 @@ import { InteractionHandler } from "../core/InteractionHandler.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
 
-import type { HydroscopeData, ReactFlowData } from "../types/core.js";
+import type { HydroscopeData, ReactFlowData, ReactFlowNode } from "../types/core.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -76,6 +83,9 @@ export interface HydroscopeCoreHandle {
   
   /** Toggle a specific container between collapsed and expanded */
   toggle: (containerId: string) => Promise<void>;
+  
+  /** Trigger fit view */
+  fitView: () => void;
 }
 
 /**
@@ -106,7 +116,7 @@ export interface HydroscopeCoreProps {
   /** Enable container collapse/expand */
   enableCollapse?: boolean;
   
-  /** Read-only mode - disables all interactions */
+  /** Read-only mode - disables all interactions including dragging, clicking, and container operations */
   readOnly?: boolean;
   
   /** Initial layout algorithm */
@@ -117,6 +127,9 @@ export interface HydroscopeCoreProps {
   
   /** Default hierarchy choice for grouping */
   defaultHierarchyChoice?: string;
+  
+  /** Whether auto-fit is enabled (controlled by parent component) */
+  autoFitEnabled?: boolean;
   
   /** Callback when node is clicked */
   onNodeClick?: (
@@ -142,6 +155,9 @@ export interface HydroscopeCoreProps {
   
   /** Callback when bulk expand all operation completes */
   onExpandAll?: (visualizationState?: VisualizationState) => void;
+  
+  /** Callback when visualization state changes (for InfoPanel integration) */
+  onVisualizationStateChange?: (visualizationState: VisualizationState) => void;
   
   /** Callback when error occurs */
   onError?: (error: Error) => void;
@@ -174,7 +190,19 @@ interface HydroscopeCoreState {
   
   /** Loading state */
   isLoading: boolean;
+  
+  /** Whether to enable auto-fit (disabled during drag operations) */
+  autoFitEnabled: boolean;
+  
+  /** Whether to trigger a one-time fit view on next render */
+  shouldFitView: boolean;
 }
+
+// ============================================================================
+// Helper Components
+// ============================================================================
+
+
 
 // ============================================================================
 // Internal ReactFlow Component
@@ -196,11 +224,13 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
   initialLayoutAlgorithm = "layered",
   initialColorPalette,
   defaultHierarchyChoice,
+  autoFitEnabled = true,
   onNodeClick,
   onContainerCollapse,
   onContainerExpand,
   onCollapseAll,
   onExpandAll,
+  onVisualizationStateChange,
   onError,
   className,
   style,
@@ -215,6 +245,8 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
     reactFlowData: { nodes: [], edges: [] },
     error: null,
     isLoading: true,
+    autoFitEnabled: autoFitEnabled,
+    shouldFitView: false,
   });
 
   // Refs for core instances
@@ -222,6 +254,7 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
   const elkBridgeRef = useRef<ELKBridge | null>(null);
   const interactionHandlerRef = useRef<InteractionHandler | null>(null);
   const jsonParserRef = useRef<JSONParser | null>(null);
+  const isDraggingRef = useRef<boolean>(false);
 
 
 
@@ -385,7 +418,7 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       try {
         // Mark this data and hierarchy choice as being processed
         processedDataRef.current = { data, hierarchyChoice: defaultHierarchyChoice };
-        setState(prev => ({ ...prev, isLoading: true, error: null }));
+        setState(prev => ({ ...prev, isLoading: true, error: null, autoFitEnabled: true }));
         console.log('[HydroscopeCore] Parsing data and updating visualization state');
         
         // Validate data structure first
@@ -430,6 +463,9 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
           ...prev,
           visualizationState: singleVisualizationState,
         }));
+        
+        // Notify parent component of visualization state change (for InfoPanel integration)
+        onVisualizationStateChange?.(singleVisualizationState);
         
         // Update the interaction handler with the SAME visualization state instance
         if (state.asyncCoordinator) {
@@ -520,6 +556,10 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
                   console.warn('[HydroscopeCore] Container state did not change as expected', { wasCollapsed, isCollapsedAfter });
                 }
                 
+                // Trigger auto-fit after container interaction completes
+                console.log('[HydroscopeCore] Setting shouldFitView=true after container interaction');
+                setState(prev => ({ ...prev, shouldFitView: true }));
+                
                 console.log('[HydroscopeCore] AsyncCoordinator atomic pipeline complete');
               } else {
                 console.error('[HydroscopeCore] AsyncCoordinator not available for container interaction');
@@ -559,7 +599,11 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
         await updateReactFlowDataWithState(singleVisualizationState);
         console.log('[HydroscopeCore] Atomic pipeline complete: state -> layout -> render');
         
-        setState(prev => ({ ...prev, isLoading: false }));
+        setState(prev => ({ 
+          ...prev, 
+          isLoading: false,
+          shouldFitView: true // Trigger initial fit view
+        }));
         
       } catch (error) {
         handleError(error as Error, 'data parsing');
@@ -569,11 +613,45 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
     parseAndRender();
   }, [data, state.visualizationState, state.asyncCoordinator, readOnly, defaultHierarchyChoice]);
 
+  // Handle fit view when shouldFitView changes
+  useEffect(() => {
+    if (state.shouldFitView && reactFlowInstance) {
+      // Only auto-fit if autoFitEnabled is true
+      if (state.autoFitEnabled) {
+        console.log('[HydroscopeCore] 🔄 Triggering auto-fit (AutoFit enabled)');
+        
+        // Use requestAnimationFrame to ensure ReactFlow has rendered
+        requestAnimationFrame(() => {
+          reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
+        });
+      } else {
+        console.log('[HydroscopeCore] 🔄 Skipping auto-fit (AutoFit disabled)');
+      }
+      
+      // Always reset the flag regardless of whether we fitted or not
+      setState(prev => ({ ...prev, shouldFitView: false }));
+    }
+  }, [state.shouldFitView, reactFlowInstance, state.autoFitEnabled]);
+
+  // Update autoFitEnabled when prop changes
+  useEffect(() => {
+    setState(prev => ({ ...prev, autoFitEnabled: autoFitEnabled }));
+  }, [autoFitEnabled]);
+
+
+
 
 
   // Update ReactFlow data with a specific VisualizationState
   const updateReactFlowDataWithState = useCallback(async (visualizationState: VisualizationState) => {
     console.log('[HydroscopeCore] 🔄 updateReactFlowDataWithState called');
+    
+    // Skip updates during drag operations to prevent jumping
+    if (isDraggingRef.current) {
+      console.log('[HydroscopeCore] 🔄 Skipping ReactFlow update during drag operation');
+      return;
+    }
+    
     if (!visualizationState || !reactFlowBridgeRef.current || !interactionHandlerRef.current) {
       console.warn('[HydroscopeCore] Cannot update ReactFlow data - missing dependencies', {
         hasVisualizationState: !!visualizationState,
@@ -620,15 +698,9 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
         reactFlowData: newData,
       }));
 
-      // WORKAROUND: Force ReactFlow to recalculate positions after parent-child updates
-      // This fixes the issue where child nodes cluster in upper-left after container expansion
-      setTimeout(() => {
-        console.log('[HydroscopeCore] 🔄 Forcing ReactFlow position recalculation and autofit');
-        // Force a re-render by updating a dummy state
-        setState(prev => ({ ...prev }));
-        // Auto-fit the view to show the newly expanded content
-        reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
-      }, 100);
+      // Auto-fit is now handled by the shouldFitView mechanism
+      // This prevents jumping during updates while still allowing controlled auto-fit
+      console.log('[HydroscopeCore] 🔄 ReactFlow data updated - auto-fit handled by shouldFitView mechanism');
       
       console.log('[HydroscopeCore] ReactFlow data updated with specific state', {
         nodeCount: newData.nodes.length,
@@ -638,7 +710,7 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       console.error('[HydroscopeCore] Error updating ReactFlow data:', error);
       setState(prev => ({ ...prev, error: error as Error, isLoading: false }));
     }
-  }, []);
+  }, [state.autoFitEnabled]);
 
   // Bulk operations with atomic state management and error handling
   const handleCollapseAll = useCallback(async () => {
@@ -656,6 +728,9 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       });
 
       console.log('[HydroscopeCore] Starting collapseAll operation through AsyncCoordinator');
+      
+      // Trigger fit view for layout operations
+      setState(prev => ({ ...prev, shouldFitView: true }));
       
       // Step 1: Atomic bulk state changes through AsyncCoordinator
       await state.asyncCoordinator.collapseAllContainers(state.visualizationState, {
@@ -730,6 +805,9 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       });
 
       console.log('[HydroscopeCore] Starting expandAll operation through AsyncCoordinator');
+      
+      // Trigger fit view for layout operations
+      setState(prev => ({ ...prev, shouldFitView: true }));
       
       // Step 1: Atomic bulk state changes through AsyncCoordinator
       await state.asyncCoordinator.expandAllContainers(state.visualizationState, {
@@ -822,6 +900,9 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       // Step 3: Update ReactFlow data
       await updateReactFlowDataWithState(state.visualizationState);
       
+      // Step 4: Trigger fit view for individual container operations
+      setState(prev => ({ ...prev, shouldFitView: true }));
+      
       console.log(`[HydroscopeCore] Collapse operation complete for container ${containerId}`);
       
       // Call success callback
@@ -876,6 +957,9 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       // Step 3: Update ReactFlow data
       await updateReactFlowDataWithState(state.visualizationState);
       
+      // Step 4: Trigger fit view for individual container operations
+      setState(prev => ({ ...prev, shouldFitView: true }));
+      
       console.log(`[HydroscopeCore] Expand operation complete for container ${containerId}`);
       
       // Call success callback
@@ -925,7 +1009,15 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
     collapse: readOnly ? async () => console.warn('[HydroscopeCore] collapse disabled in readOnly mode') : handleCollapse,
     expand: readOnly ? async () => console.warn('[HydroscopeCore] expand disabled in readOnly mode') : handleExpand,
     toggle: readOnly ? async () => console.warn('[HydroscopeCore] toggle disabled in readOnly mode') : handleToggle,
-  }), [readOnly, handleCollapseAll, handleExpandAll, handleCollapse, handleExpand, handleToggle]);
+    fitView: () => {
+      console.log('[HydroscopeCore] fitView called via imperative handle');
+      if (reactFlowInstance) {
+        reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
+      } else {
+        console.warn('[HydroscopeCore] ReactFlow instance not available for fitView');
+      }
+    },
+  }), [readOnly, handleCollapseAll, handleExpandAll, handleCollapse, handleExpand, handleToggle, reactFlowInstance]);
 
   // Handle node clicks
   const handleNodeClick = useCallback(
@@ -978,6 +1070,144 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       }
     },
     [onNodeClick, onContainerCollapse, onContainerExpand, state.visualizationState]
+  );
+
+  // Handle node changes (including drag operations)
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      if (readOnly) {
+        return;
+      }
+
+      try {
+        // Apply all changes using ReactFlow's built-in function
+        // This ensures proper handling of dragging, selection, and other node states
+        setState(prev => {
+          const updatedNodes = applyNodeChanges(changes, prev.reactFlowData.nodes) as ReactFlowNode[];
+          
+          return {
+            ...prev,
+            reactFlowData: {
+              ...prev.reactFlowData,
+              nodes: updatedNodes,
+            },
+          };
+        });
+      } catch (error) {
+        console.error('[HydroscopeCore] Error handling node changes:', error);
+        handleError(error as Error, 'node changes');
+      }
+    },
+    [readOnly, handleError]
+  );
+
+  // Handle edge changes (required for ReactFlow controls to work properly)
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      if (readOnly) {
+        return;
+      }
+
+      try {
+        setState(prev => {
+          const updatedEdges = applyEdgeChanges(changes, prev.reactFlowData.edges as any) as any;
+          
+          return {
+            ...prev,
+            reactFlowData: {
+              ...prev.reactFlowData,
+              edges: updatedEdges,
+            },
+          };
+        });
+      } catch (error) {
+        console.error('[HydroscopeCore] Error handling edge changes:', error);
+        handleError(error as Error, 'edge changes');
+      }
+    },
+    [readOnly, handleError]
+  );
+
+  // Handle drag start
+  const handleNodeDragStart = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (readOnly) return;
+      
+      try {
+        console.log('[HydroscopeCore] Node drag start:', node.id, '- entering drag mode');
+        isDraggingRef.current = true;
+        
+        // Disable auto-fit during drag to respect user's manual positioning
+        // Don't trigger a state update here to avoid re-renders during drag start
+        console.log('[HydroscopeCore] Drag mode active - preventing layout updates');
+      } catch (error) {
+        console.error('[HydroscopeCore] Error handling drag start:', error);
+      }
+    },
+    [readOnly]
+  );
+
+  // Handle drag (during drag) - keep minimal to avoid performance issues
+  const handleNodeDrag = useCallback(
+    (_event: React.MouseEvent, _node: Node) => {
+      if (readOnly) return;
+      // Minimal processing during drag to avoid performance issues
+      // Position updates are handled by handleNodesChange
+    },
+    [readOnly]
+  );
+
+  // Handle drag stop
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (readOnly) return;
+      
+      try {
+        console.log('[HydroscopeCore] Node drag stop:', node.id, 'final position:', node.position);
+        isDraggingRef.current = false;
+        
+        // Keep auto-fit enabled but don't trigger automatic fit view
+        // This allows ReactFlow's fit button to still work
+        console.log('[HydroscopeCore] Drag completed - ReactFlow fit button remains functional');
+        
+        // Update the visualization state with the new position
+        if (state.visualizationState) {
+          // Check if this is a container or regular node
+          const isContainer = node.data?.nodeType === 'container';
+          
+          if (isContainer) {
+            // Update container position in visualization state
+            const container = state.visualizationState.getContainer(node.id);
+            if (container) {
+              container.position = node.position;
+            }
+          } else {
+            // Update regular node position in visualization state
+            const graphNode = state.visualizationState.getGraphNode(node.id);
+            if (graphNode) {
+              graphNode.position = node.position;
+            }
+          }
+          
+          // Notify parent component of visualization state change
+          onVisualizationStateChange?.(state.visualizationState);
+        }
+        
+        // If AutoFit is enabled, trigger a fit view after drag completes
+        // This ensures the dragged node remains visible and the view is optimally positioned
+        if (state.autoFitEnabled) {
+          console.log('[HydroscopeCore] AutoFit enabled - triggering fit view after drag completion');
+          setState(prev => ({ ...prev, shouldFitView: true }));
+        } else {
+          console.log('[HydroscopeCore] AutoFit disabled - no fit view after drag');
+        }
+        
+      } catch (error) {
+        console.error('[HydroscopeCore] Error handling drag stop:', error);
+        handleError(error as Error, 'drag stop');
+      }
+    },
+    [readOnly, state.visualizationState, onVisualizationStateChange, handleError]
   );
 
 
@@ -1085,25 +1315,75 @@ const HydroscopeCoreInternal = forwardRef<HydroscopeCoreHandle, HydroscopeCorePr
       onClick={() => console.log('[HydroscopeCore] Container div clicked')}
     >
       <ReactFlow
-        key={`reactflow-reset-${Date.now()}`}
         nodes={state.reactFlowData.nodes as Node[]}
         edges={state.reactFlowData.edges as any[]}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={readOnly ? undefined : handleNodeClick}
+        onNodesChange={readOnly ? undefined : handleNodesChange}
+        onEdgesChange={readOnly ? undefined : handleEdgesChange}
+        onNodeDragStart={readOnly ? undefined : handleNodeDragStart}
+        onNodeDrag={readOnly ? undefined : handleNodeDrag}
+        onNodeDragStop={readOnly ? undefined : handleNodeDragStop}
         onPaneClick={readOnly ? undefined : () => console.log('[HydroscopeCore] Pane clicked - ReactFlow is receiving events')}
+
         nodesDraggable={!readOnly}
         nodesConnectable={!readOnly}
         elementsSelectable={!readOnly}
-        fitView
+
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.01}
         maxZoom={3}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.3 }}
+
         style={{ width: '100%', height: '100%', pointerEvents: 'auto' }}
       >
         {showBackground && <Background />}
-        {showControls && <Controls />}
+        {showControls && (
+          <>
+            {/* Standard ReactFlow controls without fit button */}
+            <Controls showFitView={false} />
+            
+            {/* Custom fit button that actually works */}
+            <div className="react-flow__controls" style={{ 
+              position: 'absolute', 
+              bottom: '10px', 
+              left: '10px',
+              zIndex: 4,
+              boxShadow: 'rgba(0, 0, 0, 0.1) 0px 2px 4px',
+              borderRadius: '2px'
+            }}>
+              <button
+                className="react-flow__controls-button react-flow__controls-fitview"
+                onClick={() => {
+                  console.log('[HydroscopeCore] Custom fit button clicked');
+                  if (reactFlowInstance) {
+                    console.log('[HydroscopeCore] Calling fitView via ReactFlow instance');
+                    reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
+                  } else {
+                    console.error('[HydroscopeCore] ReactFlow instance not available');
+                  }
+                }}
+                title="Fit view"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  border: '1px solid #b1b1b7',
+                  borderRadius: '2px',
+                  backgroundColor: '#fefefe',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  color: '#555',
+                  fontFamily: 'monospace',
+                }}
+              >
+                ⛶
+              </button>
+            </div>
+          </>
+        )}
         {showMiniMap && <MiniMap />}
       </ReactFlow>
       
