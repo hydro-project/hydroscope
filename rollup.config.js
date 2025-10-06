@@ -6,11 +6,19 @@ import postcss from 'rollup-plugin-postcss';
 export default {
   input: 'src/index.ts',
   external: ['react', 'react-dom', 'react/jsx-runtime', '@xyflow/react', 'elkjs', 'antd'],
+  onwarn(warning, warn) {
+    // Suppress "use client" directive warnings from Ant Design
+    if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && warning.message.includes('use client')) {
+      return;
+    }
+    warn(warning);
+  },
   output: [
     {
       file: 'dist/index.cjs',
       format: 'cjs',
       sourcemap: true,
+      inlineDynamicImports: true,
       globals: {
         'react': 'React',
         'react-dom': 'ReactDOM',
@@ -21,6 +29,7 @@ export default {
       file: 'dist/index.esm.js',
       format: 'esm',
       sourcemap: true,
+      inlineDynamicImports: true,
     },
   ],
   plugins: [

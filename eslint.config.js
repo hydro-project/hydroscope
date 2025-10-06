@@ -5,6 +5,7 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
+import hydroscopeArchitecture from './eslint-rules/index.js';
 
 export default [
     js.configs.recommended,
@@ -40,6 +41,7 @@ export default [
             react,
             'react-hooks': reactHooks,
             prettier,
+            'hydroscope-architecture': hydroscopeArchitecture,
         },
         settings: {
             react: {
@@ -85,6 +87,10 @@ export default [
 
             // Prettier integration
             'prettier/prettier': 'error',
+
+            // Hydroscope architecture compliance rules
+            'hydroscope-architecture/no-bridge-state': 'error',
+            'hydroscope-architecture/enforce-bridge-interfaces': 'error',
         },
     },
     {

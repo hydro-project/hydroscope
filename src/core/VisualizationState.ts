@@ -405,10 +405,11 @@ export class VisualizationState {
         childNode.hidden = true;
       }
       if (childContainer) {
-        // When a parent container collapses, ALL child containers must be hidden
-        // They should not be visible in the UI at all
-        console.log(`[VisualizationState] 🙈 HIDING container ${childContainer.id} (parent ${containerId} collapsed)`);
+        // When a parent container collapses, ALL child containers must be hidden AND collapsed
+        // This prevents the illegal "Expanded/Hidden" state (collapsed: false, hidden: true)
+        console.log(`[VisualizationState] 🙈 HIDING and COLLAPSING container ${childContainer.id} (parent ${containerId} collapsed)`);
         childContainer.hidden = true;
+        childContainer.collapsed = true; // CRITICAL FIX: Also collapse child containers to avoid invariant violations
         // Recursively hide descendants of child containers
         this._hideAllDescendants(childId);
       }

@@ -353,9 +353,44 @@ export class ELKBridge implements IELKBridge {
         edges: elkGraph.edges?.length || 0,
       });
 
-      // Call real ELK library to calculate layout
+      // Call real ELK library to calculate layout with fallback mechanism
       console.log(`[ELKBridge] ⚡ Calling ELK layout engine`);
-      const layoutResult = await this.elk.layout(elkGraph);
+      let layoutResult;
+      
+      try {
+        layoutResult = await this.elk.layout(elkGraph);
+        console.log(`[ELKBridge] ✅ Primary layout succeeded with default configuration`);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        // Check if this is the specific hitbox error that affects complex nested hierarchies
+        if (errorMessage.includes("Invalid hitboxes for scanline constraint calculation")) {
+          console.log(`[ELKBridge] 🔄 Primary layout failed with hitbox error, trying stress algorithm fallback`);
+          console.log(`[ELKBridge] 📊 Original error: ${errorMessage}`);
+          
+          // Create a fallback ELK graph with stress algorithm configuration
+          const fallbackElkGraph = { 
+            ...elkGraph,
+            layoutOptions: {
+              ...elkGraph.layoutOptions,
+              "elk.algorithm": "stress",
+              "elk.hierarchyHandling": "SEPARATE_CHILDREN" // Disable hierarchical layout
+            }
+          };
+          
+          try {
+            layoutResult = await this.elk.layout(fallbackElkGraph);
+            console.log(`[ELKBridge] ✅ Stress algorithm fallback succeeded!`);
+          } catch (fallbackError) {
+            console.error(`[ELKBridge] ❌ Stress algorithm fallback also failed:`, fallbackError);
+            throw error; // Throw the original error
+          }
+        } else {
+          // For other errors, just re-throw
+          console.log(`[ELKBridge] ❌ Layout failed with non-hitbox error: ${errorMessage}`);
+          throw error;
+        }
+      }
 
       console.log(`[ELKBridge] 🔍 ELK LAYOUT RESULT:`, {
         id: layoutResult.id,
