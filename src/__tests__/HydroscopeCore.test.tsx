@@ -6,7 +6,10 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { HydroscopeCore, type HydroscopeCoreHandle } from "../components/HydroscopeCore.js";
+import {
+  HydroscopeCore,
+  type HydroscopeCoreHandle,
+} from "../components/HydroscopeCore.js";
 import type { HydroscopeData } from "../types/core.js";
 
 // Test data
@@ -16,12 +19,8 @@ const validTestData: HydroscopeData = {
     { id: "node2", label: "Node 2" },
     { id: "container1", label: "Container 1" },
   ],
-  edges: [
-    { id: "edge1", source: "node1", target: "node2" },
-  ],
-  hierarchyChoices: [
-    { id: "choice1", name: "Test Choice" },
-  ],
+  edges: [{ id: "edge1", source: "node1", target: "node2" }],
+  hierarchyChoices: [{ id: "choice1", name: "Test Choice" }],
   nodeAssignments: {
     choice1: { node1: "container1", node2: "container1" },
   },
@@ -49,24 +48,14 @@ describe("HydroscopeCore Component", () => {
 
   describe("Basic Rendering", () => {
     it("should render with valid data", async () => {
-      render(
-        <HydroscopeCore
-          data={validTestData}
-          onError={mockOnError}
-        />
-      );
+      render(<HydroscopeCore data={validTestData} onError={mockOnError} />);
 
       // Should show loading state initially
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
     });
 
     it("should handle invalid data gracefully", async () => {
-      render(
-        <HydroscopeCore
-          data={invalidTestData}
-          onError={mockOnError}
-        />
-      );
+      render(<HydroscopeCore data={invalidTestData} onError={mockOnError} />);
 
       // Should show error message for invalid data
       await waitFor(() => {
@@ -81,7 +70,7 @@ describe("HydroscopeCore Component", () => {
           height="500px"
           width="800px"
           onError={mockOnError}
-        />
+        />,
       );
 
       // Should render without throwing (dimensions are applied internally)
@@ -94,7 +83,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           readOnly={true}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Should still render in readOnly mode
@@ -111,11 +100,7 @@ describe("HydroscopeCore Component", () => {
 
     it("should provide container operation methods", async () => {
       render(
-        <HydroscopeCore
-          ref={ref}
-          data={validTestData}
-          onError={mockOnError}
-        />
+        <HydroscopeCore ref={ref} data={validTestData} onError={mockOnError} />,
       );
 
       await waitFor(() => {
@@ -137,7 +122,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           onError={mockOnError}
           onContainerCollapse={mockOnContainerCollapse}
-        />
+        />,
       );
 
       await waitFor(() => {
@@ -155,7 +140,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           onError={mockOnError}
           onContainerExpand={mockOnContainerExpand}
-        />
+        />,
       );
 
       await waitFor(() => {
@@ -168,11 +153,7 @@ describe("HydroscopeCore Component", () => {
 
     it("should handle individual container operations", async () => {
       render(
-        <HydroscopeCore
-          ref={ref}
-          data={validTestData}
-          onError={mockOnError}
-        />
+        <HydroscopeCore ref={ref} data={validTestData} onError={mockOnError} />,
       );
 
       await waitFor(() => {
@@ -192,7 +173,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           readOnly={true}
           onError={mockOnError}
-        />
+        />,
       );
 
       await waitFor(() => {
@@ -212,7 +193,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           onNodeClick={mockOnNodeClick}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Wait for component to initialize
@@ -232,7 +213,7 @@ describe("HydroscopeCore Component", () => {
           onContainerCollapse={mockOnContainerCollapse}
           onContainerExpand={mockOnContainerExpand}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Wait for component to initialize
@@ -248,12 +229,7 @@ describe("HydroscopeCore Component", () => {
 
   describe("Error Handling", () => {
     it("should call onError for invalid data", async () => {
-      render(
-        <HydroscopeCore
-          data={invalidTestData}
-          onError={mockOnError}
-        />
-      );
+      render(<HydroscopeCore data={invalidTestData} onError={mockOnError} />);
 
       // Should call onError for invalid data
       await waitFor(() => {
@@ -263,11 +239,7 @@ describe("HydroscopeCore Component", () => {
 
     it("should handle missing required props", async () => {
       // Test with minimal props
-      render(
-        <HydroscopeCore
-          data={validTestData}
-        />
-      );
+      render(<HydroscopeCore data={validTestData} />);
 
       // Should still render without error callback
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
@@ -276,16 +248,32 @@ describe("HydroscopeCore Component", () => {
 
   describe("Component Configuration", () => {
     it("should respect showControls prop", async () => {
-      render(
+      // Test with showControls=false
+      const { rerender } = render(
         <HydroscopeCore
           data={validTestData}
           showControls={false}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should still render
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
+      
+      // Test with showControls=true
+      rerender(
+        <HydroscopeCore
+          data={validTestData}
+          showControls={true}
+          onError={mockOnError}
+        />,
+      );
+
+      // Controls should be present when showControls=true
+      // Note: In test environment, ReactFlow Controls are mocked, so we check for the mock
+      await waitFor(() => {
+        expect(screen.getByTestId("controls")).toBeInTheDocument();
+      });
     });
 
     it("should respect showMiniMap prop", async () => {
@@ -294,7 +282,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           showMiniMap={false}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should still render
@@ -307,7 +295,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           showBackground={false}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should still render
@@ -320,7 +308,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           initialLayoutAlgorithm="force"
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should still render with different layout algorithm
@@ -333,7 +321,7 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           initialColorPalette="Dark2"
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should still render with different color palette
@@ -348,12 +336,12 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           readOnly={false}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should render and allow dragging
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
-      
+
       // Note: Testing actual drag operations would require more complex setup
       // with ReactFlow integration and DOM manipulation. This test verifies
       // that the component renders with drag functionality enabled.
@@ -365,30 +353,30 @@ describe("HydroscopeCore Component", () => {
           data={validTestData}
           readOnly={true}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should render but disable dragging
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
-      
+
       // Note: In readOnly mode, nodesDraggable is set to false in ReactFlow
       // This test verifies the component renders correctly in readOnly mode.
     });
 
     it("should handle drag event handlers without errors", async () => {
       const mockOnVisualizationStateChange = vi.fn();
-      
+
       render(
         <HydroscopeCore
           data={validTestData}
           onVisualizationStateChange={mockOnVisualizationStateChange}
           onError={mockOnError}
-        />
+        />,
       );
 
       // Component should render with drag handlers configured
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
-      
+
       // Note: The drag event handlers (onNodesChange, onNodeDragStart, etc.)
       // are configured internally and would be tested through integration tests
       // with actual ReactFlow interactions.

@@ -1,62 +1,68 @@
 /**
  * Bulk Operations Atomicity Tests
- * 
+ *
  * Comprehensive tests for bulk operation correctness and atomicity
  * Tests that bulk operations (collapseAll/expandAll) are atomic and consistent
  * Uses minimal mocking to test real behavior
  */
 
-import React, { useRef } from 'react';
-import { render, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { HydroscopeCore, type HydroscopeCoreHandle } from '../components/HydroscopeCore.js';
-import { VisualizationState } from '../core/VisualizationState.js';
-import type { HydroscopeData } from '../types/core.js';
+import React, { useRef } from "react";
+import { render, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import {
+  HydroscopeCore,
+  type HydroscopeCoreHandle,
+} from "../components/HydroscopeCore.js";
+import { VisualizationState } from "../core/VisualizationState.js";
+import type { HydroscopeData } from "../types/core.js";
 
 // Create test data with multiple containers for atomicity testing
 function createAtomicityTestData(): HydroscopeData {
   return {
     nodes: [
       // Container 1 nodes
-      { id: 'c1_n1', label: 'Container 1 Node 1', type: 'process' },
-      { id: 'c1_n2', label: 'Container 1 Node 2', type: 'process' },
-      { id: 'c1_n3', label: 'Container 1 Node 3', type: 'process' },
-      
+      { id: "c1_n1", label: "Container 1 Node 1", type: "process" },
+      { id: "c1_n2", label: "Container 1 Node 2", type: "process" },
+      { id: "c1_n3", label: "Container 1 Node 3", type: "process" },
+
       // Container 2 nodes
-      { id: 'c2_n1', label: 'Container 2 Node 1', type: 'service' },
-      { id: 'c2_n2', label: 'Container 2 Node 2', type: 'service' },
-      
+      { id: "c2_n1", label: "Container 2 Node 1", type: "service" },
+      { id: "c2_n2", label: "Container 2 Node 2", type: "service" },
+
       // Container 3 nodes (nested)
-      { id: 'c3_n1', label: 'Container 3 Node 1', type: 'storage' },
-      { id: 'c3_n2', label: 'Container 3 Node 2', type: 'storage' },
-      { id: 'c3_n3', label: 'Container 3 Node 3', type: 'storage' },
-      { id: 'c3_n4', label: 'Container 3 Node 4', type: 'storage' },
-      
+      { id: "c3_n1", label: "Container 3 Node 1", type: "storage" },
+      { id: "c3_n2", label: "Container 3 Node 2", type: "storage" },
+      { id: "c3_n3", label: "Container 3 Node 3", type: "storage" },
+      { id: "c3_n4", label: "Container 3 Node 4", type: "storage" },
+
       // Standalone nodes
-      { id: 'standalone_1', label: 'Standalone Node 1', type: 'client' },
-      { id: 'standalone_2', label: 'Standalone Node 2', type: 'client' },
+      { id: "standalone_1", label: "Standalone Node 1", type: "client" },
+      { id: "standalone_2", label: "Standalone Node 2", type: "client" },
     ],
     edges: [
-      { id: 'e1', source: 'c1_n1', target: 'c1_n2', type: 'flow' },
-      { id: 'e2', source: 'c1_n2', target: 'c2_n1', type: 'flow' },
-      { id: 'e3', source: 'c2_n1', target: 'c3_n1', type: 'flow' },
-      { id: 'e4', source: 'c3_n1', target: 'standalone_1', type: 'flow' },
-      { id: 'e5', source: 'standalone_1', target: 'standalone_2', type: 'flow' },
+      { id: "e1", source: "c1_n1", target: "c1_n2", type: "flow" },
+      { id: "e2", source: "c1_n2", target: "c2_n1", type: "flow" },
+      { id: "e3", source: "c2_n1", target: "c3_n1", type: "flow" },
+      { id: "e4", source: "c3_n1", target: "standalone_1", type: "flow" },
+      {
+        id: "e5",
+        source: "standalone_1",
+        target: "standalone_2",
+        type: "flow",
+      },
     ],
-    hierarchyChoices: [
-      { id: 'functional', name: 'Functional Groups' },
-    ],
+    hierarchyChoices: [{ id: "functional", name: "Functional Groups" }],
     nodeAssignments: {
       functional: {
-        'c1_n1': 'container_1',
-        'c1_n2': 'container_1',
-        'c1_n3': 'container_1',
-        'c2_n1': 'container_2',
-        'c2_n2': 'container_2',
-        'c3_n1': 'container_3',
-        'c3_n2': 'container_3',
-        'c3_n3': 'container_3',
-        'c3_n4': 'container_3',
+        c1_n1: "container_1",
+        c1_n2: "container_1",
+        c1_n3: "container_1",
+        c2_n1: "container_2",
+        c2_n2: "container_2",
+        c3_n1: "container_3",
+        c3_n2: "container_3",
+        c3_n3: "container_3",
+        c3_n4: "container_3",
       },
     },
   };
@@ -96,39 +102,42 @@ const AtomicityTestComponent: React.FC<{
   );
 };
 
-describe('Bulk Operations Atomicity Tests', () => {
+describe("Bulk Operations Atomicity Tests", () => {
   let testData: HydroscopeData;
 
   beforeEach(() => {
     testData = createAtomicityTestData();
   });
 
-  describe('CollapseAll Atomicity', () => {
-    it('should collapse all containers atomically with full ELK layout', async () => {
+  describe("CollapseAll Atomicity", () => {
+    it("should collapse all containers atomically with full ELK layout", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
       // Wait for component to be fully ready with ELK initialized
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         // Verify collapseAll method exists and is callable
         expect(hydroscopeHandle.collapseAll).toBeDefined();
-        expect(typeof hydroscopeHandle.collapseAll).toBe('function');
+        expect(typeof hydroscopeHandle.collapseAll).toBe("function");
 
         // Perform collapseAll operation with full ELK layout
         const startTime = Date.now();
@@ -143,34 +152,41 @@ describe('Bulk Operations Atomicity Tests', () => {
       }
     });
 
-    it('should maintain consistency during collapseAll', async () => {
+    it("should maintain consistency during collapseAll", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       let visualizationState: VisualizationState | null = null;
       const onError = vi.fn();
-      
-      const onReady = (handle: HydroscopeCoreHandle, state: VisualizationState) => {
+
+      const onReady = (
+        handle: HydroscopeCoreHandle,
+        state: VisualizationState,
+      ) => {
         hydroscopeHandle = handle;
         visualizationState = state;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-        expect(visualizationState).not.toBeNull();
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+          expect(visualizationState).not.toBeNull();
+        },
+        { timeout: 5000 },
+      );
 
       if (hydroscopeHandle && visualizationState) {
         // Record initial state
         const initialNodeCount = visualizationState.visibleNodes.length;
         const initialEdgeCount = visualizationState.visibleEdges.length;
-        const initialContainerCount = visualizationState.visibleContainers.length;
+        const initialContainerCount =
+          visualizationState.visibleContainers.length;
 
         // Perform collapseAll
         await hydroscopeHandle.collapseAll();
@@ -178,75 +194,81 @@ describe('Bulk Operations Atomicity Tests', () => {
         // Verify data consistency is maintained
         expect(visualizationState.visibleNodes.length).toBe(initialNodeCount);
         expect(visualizationState.visibleEdges.length).toBe(initialEdgeCount);
-        expect(visualizationState.visibleContainers.length).toBe(initialContainerCount);
+        expect(visualizationState.visibleContainers.length).toBe(
+          initialContainerCount,
+        );
 
         // Verify invariants are maintained
         expect(() => visualizationState.validateInvariants()).not.toThrow();
       }
     });
 
-    it('should handle collapseAll with no containers gracefully', async () => {
+    it("should handle collapseAll with no containers gracefully", async () => {
       const emptyData: HydroscopeData = {
         nodes: [
-          { id: 'n1', label: 'Node 1', type: 'process' },
-          { id: 'n2', label: 'Node 2', type: 'process' },
+          { id: "n1", label: "Node 1", type: "process" },
+          { id: "n2", label: "Node 2", type: "process" },
         ],
-        edges: [
-          { id: 'e1', source: 'n1', target: 'n2', type: 'flow' },
-        ],
+        edges: [{ id: "e1", source: "n1", target: "n2", type: "flow" }],
         hierarchyChoices: [],
         nodeAssignments: {},
       };
 
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={emptyData} 
+        <AtomicityTestComponent
+          data={emptyData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         // Should complete successfully when no containers exist
         await hydroscopeHandle.collapseAll();
-        
+
         // Should not have errors for empty container case
         expect(onError).not.toHaveBeenCalled();
       }
     });
   });
 
-  describe('ExpandAll Atomicity', () => {
-    it('should expand all containers atomically with full ELK layout', async () => {
+  describe("ExpandAll Atomicity", () => {
+    it("should expand all containers atomically with full ELK layout", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         // First collapse all containers
@@ -265,28 +287,34 @@ describe('Bulk Operations Atomicity Tests', () => {
       }
     });
 
-    it('should maintain consistency during expandAll', async () => {
+    it("should maintain consistency during expandAll", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       let visualizationState: VisualizationState | null = null;
       const onError = vi.fn();
-      
-      const onReady = (handle: HydroscopeCoreHandle, state: VisualizationState) => {
+
+      const onReady = (
+        handle: HydroscopeCoreHandle,
+        state: VisualizationState,
+      ) => {
         hydroscopeHandle = handle;
         visualizationState = state;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-        expect(visualizationState).not.toBeNull();
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+          expect(visualizationState).not.toBeNull();
+        },
+        { timeout: 5000 },
+      );
 
       if (hydroscopeHandle && visualizationState) {
         // Collapse first
@@ -295,7 +323,8 @@ describe('Bulk Operations Atomicity Tests', () => {
         // Record state before expand
         const beforeNodeCount = visualizationState.visibleNodes.length;
         const beforeEdgeCount = visualizationState.visibleEdges.length;
-        const beforeContainerCount = visualizationState.visibleContainers.length;
+        const beforeContainerCount =
+          visualizationState.visibleContainers.length;
 
         // Perform expandAll
         await hydroscopeHandle.expandAll();
@@ -303,7 +332,9 @@ describe('Bulk Operations Atomicity Tests', () => {
         // Verify data consistency is maintained
         expect(visualizationState.visibleNodes.length).toBe(beforeNodeCount);
         expect(visualizationState.visibleEdges.length).toBe(beforeEdgeCount);
-        expect(visualizationState.visibleContainers.length).toBe(beforeContainerCount);
+        expect(visualizationState.visibleContainers.length).toBe(
+          beforeContainerCount,
+        );
 
         // Verify invariants are maintained
         expect(() => visualizationState.validateInvariants()).not.toThrow();
@@ -311,26 +342,29 @@ describe('Bulk Operations Atomicity Tests', () => {
     });
   });
 
-  describe('Bulk Operation Sequencing', () => {
-    it('should handle sequential bulk operations', async () => {
+  describe("Bulk Operation Sequencing", () => {
+    it("should handle sequential bulk operations", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         const startTime = Date.now();
@@ -350,28 +384,34 @@ describe('Bulk Operations Atomicity Tests', () => {
       }
     });
 
-    it('should handle concurrent bulk operations gracefully', async () => {
+    it("should handle concurrent bulk operations gracefully", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       let visualizationState: VisualizationState | null = null;
       const onError = vi.fn();
-      
-      const onReady = (handle: HydroscopeCoreHandle, state: VisualizationState) => {
+
+      const onReady = (
+        handle: HydroscopeCoreHandle,
+        state: VisualizationState,
+      ) => {
         hydroscopeHandle = handle;
         visualizationState = state;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-        expect(visualizationState).not.toBeNull();
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+          expect(visualizationState).not.toBeNull();
+        },
+        { timeout: 5000 },
+      );
 
       if (hydroscopeHandle && visualizationState) {
         // Start multiple operations concurrently
@@ -390,26 +430,29 @@ describe('Bulk Operations Atomicity Tests', () => {
     });
   });
 
-  describe('Individual vs Bulk Operation Consistency', () => {
-    it('should handle both bulk and individual operations', async () => {
+  describe("Individual vs Bulk Operation Consistency", () => {
+    it("should handle both bulk and individual operations", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         // Test bulk operations
@@ -417,41 +460,44 @@ describe('Bulk Operations Atomicity Tests', () => {
         await hydroscopeHandle.expandAll();
 
         // Test individual operations (should not throw even if containers don't exist)
-        await hydroscopeHandle.collapse('container_1');
-        await hydroscopeHandle.expand('container_1');
-        await hydroscopeHandle.toggle('container_2');
+        await hydroscopeHandle.collapse("container_1");
+        await hydroscopeHandle.expand("container_1");
+        await hydroscopeHandle.toggle("container_2");
 
         // Should complete without errors
         expect(onError).not.toHaveBeenCalled();
       }
     });
 
-    it('should handle mixed individual and bulk operations', async () => {
+    it("should handle mixed individual and bulk operations", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         // Mixed operations
         await hydroscopeHandle.collapseAll(); // Bulk collapse
-        await hydroscopeHandle.expand('container_1'); // Individual expand
+        await hydroscopeHandle.expand("container_1"); // Individual expand
         await hydroscopeHandle.expandAll(); // Bulk expand
-        await hydroscopeHandle.collapse('container_2'); // Individual collapse
+        await hydroscopeHandle.collapse("container_2"); // Individual collapse
 
         // Should complete mixed operations without errors
         expect(onError).not.toHaveBeenCalled();
@@ -459,29 +505,35 @@ describe('Bulk Operations Atomicity Tests', () => {
     });
   });
 
-  describe('Error Handling in Bulk Operations', () => {
-    it('should handle bulk operations with invalid container IDs gracefully', async () => {
+  describe("Error Handling in Bulk Operations", () => {
+    it("should handle bulk operations with invalid container IDs gracefully", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       let visualizationState: VisualizationState | null = null;
       const onError = vi.fn();
-      
-      const onReady = (handle: HydroscopeCoreHandle, state: VisualizationState) => {
+
+      const onReady = (
+        handle: HydroscopeCoreHandle,
+        state: VisualizationState,
+      ) => {
         hydroscopeHandle = handle;
         visualizationState = state;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-        expect(visualizationState).not.toBeNull();
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+          expect(visualizationState).not.toBeNull();
+        },
+        { timeout: 5000 },
+      );
 
       if (hydroscopeHandle && visualizationState) {
         // Bulk operations should work even if some containers don't exist
@@ -489,7 +541,9 @@ describe('Bulk Operations Atomicity Tests', () => {
         await expect(hydroscopeHandle.expandAll()).resolves.not.toThrow();
 
         // Individual operations with invalid IDs should not crash bulk operations
-        await expect(hydroscopeHandle.collapse('nonexistent_container')).resolves.not.toThrow();
+        await expect(
+          hydroscopeHandle.collapse("nonexistent_container"),
+        ).resolves.not.toThrow();
         await expect(hydroscopeHandle.collapseAll()).resolves.not.toThrow();
 
         // System should remain consistent
@@ -497,25 +551,28 @@ describe('Bulk Operations Atomicity Tests', () => {
       }
     });
 
-    it('should maintain consistency during bulk operations', async () => {
+    it("should maintain consistency during bulk operations", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
       const onError = vi.fn();
-      
+
       const onReady = (handle: HydroscopeCoreHandle) => {
         hydroscopeHandle = handle;
       };
 
       render(
-        <AtomicityTestComponent 
-          data={testData} 
+        <AtomicityTestComponent
+          data={testData}
           onReady={onReady}
           onError={onError}
-        />
+        />,
       );
 
-      await waitFor(() => {
-        expect(hydroscopeHandle).not.toBeNull();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(hydroscopeHandle).not.toBeNull();
+        },
+        { timeout: 10000 },
+      );
 
       if (hydroscopeHandle) {
         // Perform bulk operation

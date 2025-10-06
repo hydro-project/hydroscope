@@ -107,12 +107,12 @@ export function StandardNode({ id, data }: NodeProps) {
 
   // Handle click animation
   const handleClick = useCallback(() => {
-    console.log('[StandardNode] Click detected on node:', id);
-    console.log('[StandardNode] Node data:', { 
-      collapsed: data.collapsed, 
+    console.log("[StandardNode] Click detected on node:", id);
+    console.log("[StandardNode] Node data:", {
+      collapsed: data.collapsed,
       nodeType: data.nodeType,
       hasOnClick: !!data.onClick,
-      onClickType: typeof data.onClick
+      onClickType: typeof data.onClick,
     });
 
     // Trigger the visual pop-out effect
@@ -124,11 +124,17 @@ export function StandardNode({ id, data }: NodeProps) {
     }, 200); // 200ms animation duration
 
     // Check if this is a collapsed container and call its onClick handler
-    if (data.collapsed === true && data.onClick && typeof data.onClick === 'function') {
-      console.log('[StandardNode] Calling container onClick handler for:', id);
-      data.onClick(id, 'container');
+    if (
+      data.collapsed === true &&
+      data.onClick &&
+      typeof data.onClick === "function"
+    ) {
+      console.log("[StandardNode] Calling container onClick handler for:", id);
+      data.onClick(id, "container");
     } else {
-      console.log('[StandardNode] Not a collapsed container or no onClick handler');
+      console.log(
+        "[StandardNode] Not a collapsed container or no onClick handler",
+      );
     }
 
     // Don't prevent the event from bubbling up to ReactFlow
@@ -196,7 +202,9 @@ export function StandardNode({ id, data }: NodeProps) {
   const containerLabel = String(data.label || id);
 
   // DEBUG: Log dimensions to verify they match ELK calculations
-  console.log(`[StandardNode] ${id}: data.width=${data.width}, data.height=${data.height}, using width=${width}, height=${height}`);
+  console.log(
+    `[StandardNode] ${id}: data.width=${data.width}, data.height=${data.height}, using width=${width}, height=${height}`,
+  );
 
   // Dev-only: log computed color mapping to verify at runtime
   if (process.env.NODE_ENV !== "production") {

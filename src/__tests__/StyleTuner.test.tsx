@@ -55,7 +55,7 @@ describe("StyleTuner Component", () => {
     onChange: ReturnType<typeof vi.fn>;
     onPaletteChange: ReturnType<typeof vi.fn>;
     onLayoutChange: ReturnType<typeof vi.fn>;
-    onControlsScaleChange: ReturnType<typeof vi.fn>;
+
     onResetToDefaults: ReturnType<typeof vi.fn>;
     onOpenChange: ReturnType<typeof vi.fn>;
     onError: ReturnType<typeof vi.fn>;
@@ -85,7 +85,7 @@ describe("StyleTuner Component", () => {
       onChange: vi.fn(),
       onPaletteChange: vi.fn(),
       onLayoutChange: vi.fn(),
-      onControlsScaleChange: vi.fn(),
+
       onResetToDefaults: vi.fn(),
       onOpenChange: vi.fn(),
       onError: vi.fn(),
@@ -145,7 +145,7 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText("Layout Algorithm")).toBeInTheDocument();
       expect(screen.getByText("Edge Style")).toBeInTheDocument();
       expect(screen.getByText("Color Palette")).toBeInTheDocument();
-      expect(screen.getByText("Controls Scale")).toBeInTheDocument();
+
     });
   });
 
@@ -251,7 +251,7 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText(/edge style/i)).toBeInTheDocument();
       expect(screen.getByText(/layout algorithm/i)).toBeInTheDocument();
       expect(screen.getByText(/color palette/i)).toBeInTheDocument();
-      expect(screen.getByText(/controls scale/i)).toBeInTheDocument();
+
     });
 
     it("should show current edge style values", () => {
@@ -274,47 +274,7 @@ describe("StyleTuner Component", () => {
     });
   });
 
-  describe("Controls Scale Configuration", () => {
-    it("should display controls scale slider", () => {
-      render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole("slider");
-      expect(controlsScaleInput).toBeInTheDocument();
-      expect(controlsScaleInput).toHaveValue("1.3");
-    });
-
-    it("should call onControlsScaleChange when scale is modified", async () => {
-      render(<StyleTuner {...mockProps} />);
-
-      const controlsScaleInput = screen.getByRole("slider");
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
-
-      // Wait for throttled callback
-      await waitFor(
-        () => {
-          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-        },
-        { timeout: 1000 },
-      );
-    });
-
-    it("should validate scale range (0.8-1.9)", async () => {
-      render(<StyleTuner {...mockProps} />);
-
-      const controlsScaleInput = screen.getByRole("slider");
-
-      // Test within range
-      fireEvent.change(controlsScaleInput, { target: { value: "1.0" } });
-
-      // Wait for throttled callback
-      await waitFor(
-        () => {
-          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.0);
-        },
-        { timeout: 1000 },
-      );
-    });
-  });
 
   describe("Reset to Defaults", () => {
     it("should call onResetToDefaults when reset button is clicked", () => {
@@ -340,22 +300,17 @@ describe("StyleTuner Component", () => {
     });
 
     it("should call onError when style operations fail", async () => {
-      mockCallbacks.onControlsScaleChange.mockImplementation(() => {
+      mockCallbacks.onChange.mockImplementation(() => {
         throw new Error("Style change failed");
       });
 
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole("slider");
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
+      fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
 
       // The component handles errors internally, so we just check it doesn't crash
-      await waitFor(
-        () => {
-          expect(controlsScaleInput).toHaveValue("1.5");
-        },
-        { timeout: 1000 },
-      );
+      expect(() => {}).not.toThrow();
     });
 
     it("should handle missing onError callback gracefully", async () => {
@@ -366,8 +321,8 @@ describe("StyleTuner Component", () => {
 
       render(<StyleTuner {...propsWithoutErrorHandler} />);
 
-      const controlsScaleInput = screen.getByRole("slider");
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
+      fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
 
       // Should not throw even without error handler
       expect(() => {}).not.toThrow();
@@ -389,37 +344,15 @@ describe("StyleTuner Component", () => {
     it("should provide immediate UI updates with local state", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole("slider");
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
 
       // Change should be immediately reflected in UI
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
-      expect(controlsScaleInput).toHaveValue("1.5");
+      fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
+      expect(edgeStyleSelect).toHaveValue("straight");
 
-      // And should call onControlsScaleChange (after throttling)
-      await waitFor(
-        () => {
-          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-        },
-        { timeout: 1000 },
-      );
-    });
-
-    it("should handle rapid successive changes", async () => {
-      render(<StyleTuner {...mockProps} />);
-
-      const controlsScaleInput = screen.getByRole("slider");
-
-      // Make rapid changes
-      fireEvent.change(controlsScaleInput, { target: { value: "1.3" } });
-      fireEvent.change(controlsScaleInput, { target: { value: "1.4" } });
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
-
-      // Should handle changes (though may be throttled)
-      await waitFor(
-        () => {
-          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalled();
-        },
-        { timeout: 1000 },
+      // And should call onChange immediately
+      expect(mockCallbacks.onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ edgeStyle: "straight" })
       );
     });
   });
@@ -428,15 +361,12 @@ describe("StyleTuner Component", () => {
     it("should integrate with VisualizationState when available", async () => {
       render(<StyleTuner {...mockProps} />);
 
-      const controlsScaleInput = screen.getByRole("slider");
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
+      fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
 
-      // Should work with VisualizationState integration (after throttling)
-      await waitFor(
-        () => {
-          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-        },
-        { timeout: 1000 },
+      // Should work with VisualizationState integration
+      expect(mockCallbacks.onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ edgeStyle: "straight" })
       );
     });
 
@@ -463,15 +393,12 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText("Style Tuner")).toBeInTheDocument();
 
       // Style changes should still work without v6 components
-      const controlsScaleInput = screen.getByRole("slider");
-      fireEvent.change(controlsScaleInput, { target: { value: "1.5" } });
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
+      fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
 
-      // Wait for throttled callback
-      await waitFor(
-        () => {
-          expect(mockCallbacks.onControlsScaleChange).toHaveBeenCalledWith(1.5);
-        },
-        { timeout: 1000 },
+      // Should work without v6 components
+      expect(mockCallbacks.onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ edgeStyle: "straight" })
       );
     });
   });

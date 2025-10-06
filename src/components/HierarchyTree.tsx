@@ -17,12 +17,16 @@ import React, { useMemo, useEffect, useState, useRef } from "react";
 import { Tree } from "antd";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
-import { TYPOGRAPHY } from "../shared/config";
-import { COMPONENT_COLORS } from "../shared/config";
+import { 
+  TYPOGRAPHY, 
+  COMPONENT_COLORS, 
+  SEARCH_HIGHLIGHT_COLORS, 
+  SEARCH_CURRENT_COLORS 
+} from "../shared/config";
 import type { VisualizationState } from "../core/VisualizationState";
 // import type { AsyncCoordinator } from "../core/AsyncCoordinator";
 import type { Container } from "../shared/types";
-import type { GraphNode } from "../types/core";
+import type { GraphNode, SearchResult } from "../types/core";
 
 // ============ TREE DATA FORMATTING UTILITIES ============
 
@@ -73,7 +77,7 @@ function truncateHierarchyLabel(
 }
 
 /**
- * Helper function to create search highlight element
+ * Helper function to create search highlight element with proper color constants
  */
 function createSearchHighlightDiv(
   text: string,
@@ -81,36 +85,20 @@ function createSearchHighlightDiv(
   isCurrent: boolean,
   baseStyle: React.CSSProperties,
 ): React.ReactNode {
-  // Import search highlight colors for consistency with graph nodes
-  const searchColors = {
-    match: {
-      background: "#fbbf24", // amber-400 - same as StandardNode
-      border: "#f59e0b", // amber-500
-      text: "#000000",
-    },
-    current: {
-      background: "#f97316", // orange-500 - same as StandardNode
-      border: "#ea580c", // orange-600
-      text: "#ffffff",
-    },
-  };
-
   return (
     <div
       style={
         match
           ? {
               backgroundColor: isCurrent
-                ? searchColors.current.background
-                : searchColors.match.background,
+                ? SEARCH_CURRENT_COLORS.backgroundColor
+                : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
               borderRadius: 4,
               padding: "2px 4px",
               margin: "-1px -2px",
               fontWeight: isCurrent ? "600" : "500",
-              border: `1px solid ${isCurrent ? searchColors.current.border : searchColors.match.border}`,
-              color: isCurrent
-                ? searchColors.current.text
-                : searchColors.match.text,
+              border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
+              color: isCurrent ? "#ffffff" : "#000000",
               ...baseStyle,
             }
           : baseStyle
@@ -122,7 +110,36 @@ function createSearchHighlightDiv(
 }
 
 /**
- * Helper function to create container display title
+ * Helper function to check if a container has matching descendants in search results
+ */
+function hasMatchingDescendants(
+  containerId: string,
+  searchResults: SearchResult[],
+  visualizationState: VisualizationState,
+): boolean {
+  // Check if any search result is a descendant of this container
+  return searchResults.some((result) => {
+    if (result.type === "node") {
+      // Check if this node is contained within the container
+      const nodeContainer = visualizationState.getNodeContainer(result.id);
+      if (nodeContainer === containerId) return true;
+      
+      // Check if the node's container is a descendant of this container
+      if (nodeContainer) {
+        const ancestors = visualizationState.getContainerAncestors(nodeContainer);
+        return ancestors.includes(containerId);
+      }
+    } else if (result.type === "container") {
+      // Check if this container is a descendant
+      const ancestors = visualizationState.getContainerAncestors(result.id);
+      return ancestors.includes(containerId);
+    }
+    return false;
+  });
+}
+
+/**
+ * Helper function to create container display title with enhanced search highlighting
  */
 function createContainerDisplayTitle(
   truncatedLabel: string,
@@ -133,30 +150,41 @@ function createContainerDisplayTitle(
   match: boolean,
   isCurrent: boolean,
   showNodeCounts: boolean,
+  hasCollapsedMatchingDescendants: boolean = false,
 ): React.ReactNode {
   const countText =
     showNodeCounts && hasLeafChildren ? ` (${leafChildrenCount})` : "";
 
+  // Determine highlight style based on match type
+  let highlightStyle: React.CSSProperties = {};
+  
+  if (match) {
+    // Direct match - use full highlight
+    highlightStyle = {
+      backgroundColor: isCurrent
+        ? SEARCH_CURRENT_COLORS.backgroundColor
+        : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
+      borderRadius: 4,
+      padding: "2px 4px",
+      margin: "-1px -2px",
+      fontWeight: isCurrent ? "600" : "500",
+      border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
+    };
+  } else if (hasCollapsedMatchingDescendants) {
+    // Collapsed ancestor containing matches - use subtle highlight
+    highlightStyle = {
+      backgroundColor: `${SEARCH_HIGHLIGHT_COLORS.backgroundColor}20`, // 20% opacity
+      borderRadius: 4,
+      padding: "2px 4px",
+      margin: "-1px -2px",
+      fontWeight: "500",
+      border: `1px solid ${SEARCH_HIGHLIGHT_COLORS.border}40`, // 40% opacity
+    };
+  }
+
   return (
-    <div
-      style={
-        match
-          ? {
-              backgroundColor: isCurrent
-                ? "rgba(255,107,53,0.35)"
-                : "rgba(251,191,36,0.28)",
-              borderRadius: 4,
-              padding: "2px 4px",
-              margin: "-1px -2px",
-              fontWeight: isCurrent ? "600" : "500",
-              border: isCurrent
-                ? "1px solid rgba(255,107,53,0.4)"
-                : "1px solid rgba(251,191,36,0.3)",
-            }
-          : {}
-      }
-    >
-      <span style={{ fontWeight: 500 }}>
+    <div style={highlightStyle}>
+      <span style={{ fontWeight: match ? (isCurrent ? 600 : 500) : hasCollapsedMatchingDescendants ? 500 : 400 }}>
         {truncatedLabel}
         {countText && (
           <span style={{ fontSize: "10px", opacity: 0.75, fontWeight: 400 }}>
@@ -175,13 +203,8 @@ function createContainerDisplayTitle(
 function getTreeDataStructure(
   visualizationState: VisualizationState,
   collapsedContainers: Set<string>,
-  searchMatches?: Array<{
-    id: string;
-    label: string;
-    type: "container" | "node";
-    matchIndices?: number[][];
-  }>,
-  currentSearchMatch?: { id: string } | undefined,
+  searchResults?: SearchResult[],
+  currentSearchResult?: SearchResult,
   truncateLabels: boolean = true,
   maxLabelLength: number = 20,
   showNodeCounts: boolean = true,
@@ -228,13 +251,11 @@ function getTreeDataStructure(
         if (!isCollapsed && hasLeafChildren) {
           // Add actual leaf nodes when expanded
           const leafTreeNodes = leafNodes.map((leafNode: GraphNode) => {
-            const match = searchMatches?.some(
-              (m) => m.id === leafNode.id && m.type === "node",
-            )
-              ? true
-              : false;
+            const match = searchResults?.some(
+              (result) => result.id === leafNode.id && result.type === "node",
+            ) ?? false;
             const isCurrent = !!(
-              currentSearchMatch && currentSearchMatch.id === leafNode.id
+              currentSearchResult && currentSearchResult.id === leafNode.id
             );
 
             return {
@@ -277,13 +298,11 @@ function getTreeDataStructure(
         } else {
           // Expanded - show actual leaf nodes
           children = leafNodes.map((leafNode: GraphNode) => {
-            const match = searchMatches?.some(
-              (m) => m.id === leafNode.id && m.type === "node",
-            )
-              ? true
-              : false;
+            const match = searchResults?.some(
+              (result) => result.id === leafNode.id && result.type === "node",
+            ) ?? false;
             const isCurrent = !!(
-              currentSearchMatch && currentSearchMatch.id === leafNode.id
+              currentSearchResult && currentSearchResult.id === leafNode.id
             );
 
             return {
@@ -312,11 +331,15 @@ function getTreeDataStructure(
         }
       }
 
-      // Create display title with better formatting + optional search highlight
-      const match = searchMatches?.some((m) => m.id === node.id) ? true : false;
+      // Check for search matches
+      const match = searchResults?.some((result) => result.id === node.id) ?? false;
       const isCurrent = !!(
-        currentSearchMatch && currentSearchMatch.id === node.id
+        currentSearchResult && currentSearchResult.id === node.id
       );
+
+      // Check if this collapsed container has matching descendants
+      const hasCollapsedMatchingDescendants = isCollapsed && searchResults ? 
+        hasMatchingDescendants(node.id, searchResults, visualizationState) : false;
 
       const displayTitle = createContainerDisplayTitle(
         truncatedLabel,
@@ -327,6 +350,7 @@ function getTreeDataStructure(
         match,
         isCurrent,
         showNodeCounts,
+        hasCollapsedMatchingDescendants,
       );
 
       return {
@@ -334,6 +358,8 @@ function getTreeDataStructure(
         title: displayTitle,
         children: children,
         isLeaf: !hasChildren && !hasLeafChildren, // Only true leaf nodes (no children at all)
+        // Add custom className for collapsed containers with matching descendants
+        className: hasCollapsedMatchingDescendants ? 'search-match-ancestor' : undefined,
         // Add custom properties for styling
         data: {
           originalLabel: labelToUse,
@@ -342,6 +368,7 @@ function getTreeDataStructure(
           leafChildrenCount,
           hasLeafChildren: hasLeafChildren && !hasChildren,
           isContainer: hasChildren,
+          hasCollapsedMatchingDescendants,
         },
       };
     });
@@ -353,6 +380,7 @@ function getTreeDataStructure(
 export function HierarchyTree({
   collapsedContainers = new Set(),
   onToggleContainer,
+  onElementNavigation,
   layoutOrchestrator,
   asyncCoordinator,
   title = "Container Hierarchy",
@@ -362,42 +390,42 @@ export function HierarchyTree({
   className = "",
   style,
   visualizationState,
-  // optional search wiring
+  // Enhanced search integration props
   searchQuery,
-  searchMatches,
-  currentSearchMatch,
-}: HierarchyTreeProps & {
-  searchQuery?: string;
-  searchMatches?: Array<{
-    id: string;
-    label: string;
-    type: "container" | "node";
-    matchIndices?: number[][];
-  }>;
-  currentSearchMatch?: { id: string } | undefined;
-}) {
+  searchResults,
+  currentSearchResult,
+  onTreeExpansion,
+}: HierarchyTreeProps) {
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
-    if (!visualizationState || !searchMatches || searchMatches.length === 0) {
+    if (!visualizationState || !searchResults || searchResults.length === 0) {
       return [];
     }
 
-    // Simple search expansion logic for v6
-    const _currentCollapsed = new Set(collapsedContainers);
+    // Enhanced search expansion logic for v6
     const expansionKeys = new Set<string>();
 
-    // For each search match, expand its container hierarchy
-    searchMatches.forEach((match) => {
-      if (match.type === "container") {
+    // For each search result, expand its container hierarchy
+    searchResults.forEach((result) => {
+      if (result.type === "container") {
         // Expand ancestors of matched containers
-        const ancestors =
-          visualizationState?.getContainerAncestors(match.id) || [];
+        const ancestors = visualizationState.getContainerAncestors(result.id) || [];
         ancestors.forEach((ancestorId) => expansionKeys.add(ancestorId));
+      } else if (result.type === "node") {
+        // For node matches, expand the container hierarchy to make the node visible
+        const nodeContainer = visualizationState.getNodeContainer(result.id);
+        if (nodeContainer) {
+          // Expand the direct container
+          expansionKeys.add(nodeContainer);
+          // Expand all ancestors of the container
+          const ancestors = visualizationState.getContainerAncestors(nodeContainer) || [];
+          ancestors.forEach((ancestorId) => expansionKeys.add(ancestorId));
+        }
       }
     });
 
     return Array.from(expansionKeys);
-  }, [visualizationState, searchMatches, collapsedContainers]);
+  }, [visualizationState, searchResults, collapsedContainers]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -415,13 +443,13 @@ export function HierarchyTree({
     if (
       searchQuery &&
       searchQuery.trim() &&
-      searchMatches &&
-      searchMatches.length &&
+      searchResults &&
+      searchResults.length &&
       onToggleContainer
     ) {
       // Create a stable key for this search expansion to prevent duplicates
-      const searchKey = `${searchQuery.trim()}-${searchMatches
-        .map((m) => m.id)
+      const searchKey = `${searchQuery.trim()}-${searchResults
+        .map((result) => result.id)
         .sort()
         .join(",")}`;
 
@@ -472,8 +500,8 @@ export function HierarchyTree({
       if (
         searchQuery &&
         searchQuery.trim() &&
-        searchMatches &&
-        searchMatches.length > 0
+        searchResults &&
+        searchResults.length > 0
       ) {
         shouldBeExpanded.forEach((containerId: string) => {
           if (
@@ -558,8 +586,8 @@ export function HierarchyTree({
     } else if (
       (!searchQuery ||
         !searchQuery.trim() ||
-        !searchMatches ||
-        !searchMatches.length) &&
+        !searchResults ||
+        !searchResults.length) &&
       onToggleContainer
     ) {
       // Clear the search expansion ref when search is cleared
@@ -626,7 +654,7 @@ export function HierarchyTree({
   }, [
     derivedExpandedKeys,
     searchQuery,
-    searchMatches,
+    searchResults,
     collapsedContainers,
     onToggleContainer,
     layoutOrchestrator,
@@ -639,8 +667,8 @@ export function HierarchyTree({
     return getTreeDataStructure(
       visualizationState,
       collapsedContainers,
-      searchMatches,
-      currentSearchMatch,
+      searchResults,
+      currentSearchResult,
       truncateLabels,
       maxLabelLength,
       showNodeCounts,
@@ -648,8 +676,8 @@ export function HierarchyTree({
   }, [
     visualizationState,
     collapsedContainers,
-    searchMatches,
-    currentSearchMatch,
+    searchResults,
+    currentSearchResult,
     truncateLabels,
     maxLabelLength,
     showNodeCounts,
@@ -680,10 +708,25 @@ export function HierarchyTree({
     _selectedKeys: React.Key[],
     info: { node: TreeDataNode },
   ) => {
-    if (onToggleContainer && info.node) {
+    if (info.node) {
       const nodeKey = info.node.key as string;
-      // Execute synchronously to prevent race conditions with layout operations
-      onToggleContainer(nodeKey);
+      
+      // Check if this is a graph node (leaf) or container
+      const isGraphNode = (info.node as any).data?.isGraphNode;
+      
+      if (isGraphNode) {
+        // This is a leaf node - trigger navigation if callback is provided
+        if (onElementNavigation) {
+          onElementNavigation(nodeKey, "node");
+        }
+      } else {
+        // This is a container - trigger navigation if callback is provided
+        if (onElementNavigation) {
+          onElementNavigation(nodeKey, "container");
+        }
+        // Note: Don't fallback to toggle behavior to avoid conflicting with navigation
+        // The parent component should handle both navigation and expansion separately
+      }
     }
   };
 
@@ -729,6 +772,18 @@ export function HierarchyTree({
           /* Hide virtual children in the tree */
           .ant-tree-treenode[data-key*="__virtual__"] {
             display: none !important;
+          }
+          
+          /* Highlight caret icons for collapsed containers with search matches */
+          .ant-tree-treenode .ant-tree-switcher.search-match-ancestor {
+            background-color: ${SEARCH_HIGHLIGHT_COLORS.backgroundColor}40 !important;
+            border-radius: 3px;
+            border: 1px solid ${SEARCH_HIGHLIGHT_COLORS.border}60;
+          }
+          
+          .ant-tree-treenode .ant-tree-switcher.search-match-ancestor .ant-tree-switcher-icon {
+            color: ${SEARCH_HIGHLIGHT_COLORS.border} !important;
+            font-weight: bold;
           }
         `}
       </style>

@@ -112,24 +112,24 @@ describe("Settings Validation and Persistence", () => {
       render(<Hydroscope data={testData} />);
 
       const savedSettings = mockLocalStorage.setItem.mock.calls.find(
-        call => call[0] === "hydroscope-settings"
+        (call) => call[0] === "hydroscope-settings",
       );
 
       expect(savedSettings).toBeDefined();
-      
+
       if (savedSettings) {
         const settingsData = JSON.parse(savedSettings[1]);
-        
+
         // Should have version
         expect(settingsData.version).toBeDefined();
-        
+
         // Should have expected properties
-        expect(settingsData).toHaveProperty('infoPanelOpen');
-        expect(settingsData).toHaveProperty('stylePanelOpen');
-        expect(settingsData).toHaveProperty('autoFitEnabled');
-        expect(settingsData).toHaveProperty('colorPalette');
-        expect(settingsData).toHaveProperty('layoutAlgorithm');
-        expect(settingsData).toHaveProperty('renderConfig');
+        expect(settingsData).toHaveProperty("infoPanelOpen");
+        expect(settingsData).toHaveProperty("stylePanelOpen");
+        expect(settingsData).toHaveProperty("autoFitEnabled");
+        expect(settingsData).toHaveProperty("colorPalette");
+        expect(settingsData).toHaveProperty("layoutAlgorithm");
+        expect(settingsData).toHaveProperty("renderConfig");
       }
     });
 
@@ -146,19 +146,19 @@ describe("Settings Validation and Persistence", () => {
 
       // Should still save complete settings structure
       const savedSettings = mockLocalStorage.setItem.mock.calls.find(
-        call => call[0] === "hydroscope-settings"
+        (call) => call[0] === "hydroscope-settings",
       );
 
       if (savedSettings) {
         const settingsData = JSON.parse(savedSettings[1]);
-        
+
         // Should have all expected properties even if not in loaded settings
-        expect(settingsData).toHaveProperty('infoPanelOpen');
-        expect(settingsData).toHaveProperty('stylePanelOpen');
-        expect(settingsData).toHaveProperty('autoFitEnabled');
-        expect(settingsData).toHaveProperty('colorPalette');
-        expect(settingsData).toHaveProperty('layoutAlgorithm');
-        expect(settingsData).toHaveProperty('renderConfig');
+        expect(settingsData).toHaveProperty("infoPanelOpen");
+        expect(settingsData).toHaveProperty("stylePanelOpen");
+        expect(settingsData).toHaveProperty("autoFitEnabled");
+        expect(settingsData).toHaveProperty("colorPalette");
+        expect(settingsData).toHaveProperty("layoutAlgorithm");
+        expect(settingsData).toHaveProperty("renderConfig");
       }
     });
   });

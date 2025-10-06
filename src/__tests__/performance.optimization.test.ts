@@ -43,37 +43,26 @@ describe("Performance Optimization Tests", () => {
     monitor.stop();
   });
 
-  describe("Caching Optimizations", () => {
-    it("should demonstrate ELK Bridge caching benefits", async () => {
+  describe("Stateless Bridge Behavior", () => {
+    it("should demonstrate ELK Bridge stateless consistency", async () => {
       const parser = new JSONParser();
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
 
-      // Clear any existing cache
-      elkBridge.clearCaches();
-
-      // First conversion (cache miss)
+      // First conversion
       const elkGraph1 = elkBridge.toELKGraph(parseResult.visualizationState);
-      const cacheStatsAfterFirst = elkBridge.getCacheStats();
 
-      // Second conversion with same state (should be cache hit)
+      // Second conversion with same state (should produce identical results)
       const elkGraph2 = elkBridge.toELKGraph(parseResult.visualizationState);
-      const cacheStatsAfterSecond = elkBridge.getCacheStats();
 
-      // Verify cache is working by checking that results are identical
+      // Verify stateless bridge produces identical results for identical inputs
       expect(elkGraph1).toBeDefined();
       expect(elkGraph2).toBeDefined();
       expect(JSON.stringify(elkGraph1)).toBe(JSON.stringify(elkGraph2));
 
-      // Verify cache size increased after first call
-      expect(cacheStatsAfterFirst.size).toBeGreaterThan(0);
-      expect(cacheStatsAfterSecond.size).toBeGreaterThanOrEqual(
-        cacheStatsAfterFirst.size,
-      );
-
-      console.log(`ELK Caching Test:
-        Cache size after first call: ${cacheStatsAfterFirst.size}
-        Cache size after second call: ${cacheStatsAfterSecond.size}
+      console.log(`ELK Stateless Test:
+        First conversion successful: ${elkGraph1 !== undefined}
+        Second conversion successful: ${elkGraph2 !== undefined}
         Results identical: ${JSON.stringify(elkGraph1) === JSON.stringify(elkGraph2)}`);
     });
 
@@ -103,16 +92,15 @@ describe("Performance Optimization Tests", () => {
         return reactFlowBridge.toReactFlowData(parseResult.visualizationState);
       });
 
-      // Verify cache statistics
-      const cacheStats = reactFlowBridge.getCacheStats();
-      // Note: Cache hit rate might be 0 if caching isn't implemented yet
-      expect(cacheStats.totalRequests).toBeGreaterThanOrEqual(0);
+      // ReactFlowBridge is now stateless - no cache statistics available
+      // Verify that both conversions complete successfully
+      expect(metrics1.duration).toBeGreaterThan(0);
+      expect(metrics2.duration).toBeGreaterThan(0);
 
-      console.log(`ReactFlow Caching Performance:
+      console.log(`ReactFlow Stateless Performance:
         First conversion: ${metrics1.duration.toFixed(2)}ms
         Second conversion: ${metrics2.duration.toFixed(2)}ms
-        Cache hit rate: ${(cacheStats.hitRate * 100).toFixed(1)}%
-        Cache sizes: nodes=${cacheStats.cacheSize.nodes}, edges=${cacheStats.cacheSize.edges}`);
+        Note: Bridge is now stateless (no caching)`);
     });
   });
 
@@ -228,11 +216,8 @@ describe("Performance Optimization Tests", () => {
           parseResult.visualizationState,
         );
 
-        // Clear caches periodically to test memory management
-        if (i % 2 === 0) {
-          elkBridge.clearCaches();
-          reactFlowBridge.clearCaches();
-        }
+        // Both bridges are now stateless - no caches to clear
+        // Memory management is handled by VisualizationState if needed
       }
 
       // Force garbage collection if available

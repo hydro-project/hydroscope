@@ -76,9 +76,7 @@ describe("Performance Optimization Tests", () => {
           // Wait for component to be ready
           await waitFor(
             () => {
-              expect(
-                screen.getByTestId("react-flow"),
-              ).toBeInTheDocument();
+              expect(screen.getByTestId("react-flow")).toBeInTheDocument();
             },
             { timeout: 5000 },
           );
@@ -422,15 +420,13 @@ describe("Performance Optimization Tests", () => {
           );
 
           await waitFor(() => {
-            expect(
-              screen.getByTestId("react-flow"),
-            ).toBeInTheDocument();
+            expect(screen.getByTestId("react-flow")).toBeInTheDocument();
           });
 
           // Perform a series of operations that should benefit from memoization
           // Look for actual UI elements that exist
           const reactFlow = screen.getByTestId("react-flow");
-          
+
           // Simulate some interactions that would trigger re-renders
           fireEvent.mouseMove(reactFlow);
           fireEvent.mouseMove(reactFlow);

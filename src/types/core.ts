@@ -68,6 +68,8 @@ export interface SearchResult {
   label: string;
   type: "node" | "container";
   matchIndices: number[][];
+  hierarchyPath?: string[]; // Path from root to item
+  confidence?: number; // Search relevance score
 }
 
 export interface InvariantViolation {
@@ -75,6 +77,27 @@ export interface InvariantViolation {
   message: string;
   entityId?: string;
   severity: "error" | "warning";
+}
+
+export interface SearchNavigationState {
+  // Search state
+  searchQuery: string;
+  searchResults: SearchResult[];
+  treeSearchHighlights: Set<string>; // IDs of highlighted elements in tree hierarchy
+  graphSearchHighlights: Set<string>; // IDs of highlighted elements in ReactFlow graph
+
+  // Navigation state
+  navigationSelection: string | null; // Currently selected element
+  treeNavigationHighlights: Set<string>; // Navigation highlights in tree hierarchy
+  graphNavigationHighlights: Set<string>; // Navigation highlights in ReactFlow graph
+
+  // Expansion state (persists through search operations)
+  expandedTreeNodes: Set<string>; // Currently expanded tree hierarchy nodes
+  expandedGraphContainers: Set<string>; // Currently expanded ReactFlow graph containers
+
+  // Viewport state
+  lastNavigationTarget: string | null;
+  shouldFocusViewport: boolean;
 }
 
 export interface LayoutConfig {
@@ -250,7 +273,7 @@ export interface ELKValidationResult {
 // AsyncCoordinator types
 export interface QueuedOperation<T = any> {
   id: string;
-  type: "elk_layout" | "reactflow_render" | "application_event";
+  type: "elk_layout" | "reactflow_render" | "application_event" | "expand-tree-node" | "collapse-tree-node" | "expand-all-tree-nodes" | "collapse-all-tree-nodes" | "navigate-to-element" | "focus-viewport";
   operation: () => Promise<T>;
   timeout?: number;
   retryCount: number;
@@ -288,6 +311,7 @@ export interface ApplicationEventPayload {
   triggerLayout?: boolean;
   layoutConfig?: LayoutConfig;
   triggerValidation?: boolean; // New field for triggering ReactFlow validation
+  isTreeOperation?: boolean; // New field for tree hierarchy operations
 
   // Container operation fields
   containerId?: string;

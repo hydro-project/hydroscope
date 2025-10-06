@@ -255,7 +255,7 @@ describe("ReactFlowBridge", () => {
       expect(result.nodes).toHaveLength(1);
       expect(result.nodes[0]).toMatchObject({
         id: "container1",
-        type: "standard", // Collapsed containers use 'standard' type for edge connections
+        type: "container", // Collapsed containers use 'container' type for proper styling and sizing
         position: expect.objectContaining({
           x: expect.any(Number),
           y: expect.any(Number),
@@ -459,6 +459,128 @@ describe("ReactFlowBridge", () => {
         strokeWidth: 2, // Default thickness (component adds +1 when rendering)
         stroke: "#999999", // Default stroke color for unstyled edges
       });
+    });
+
+    it("should maintain consistent aggregated edge IDs and rendering after expand/collapse cycle", async () => {
+      // This test ensures that the ReactFlow bridge correctly renders aggregated edges
+      // with consistent IDs after an expand/collapse cycle, preventing floating edges
+      const node1: GraphNode = {
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const node2: GraphNode = {
+        id: "node2",
+        label: "Node 2",
+        longLabel: "Node 2",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+      const externalNode: GraphNode = {
+        id: "external",
+        label: "External",
+        longLabel: "External",
+        type: "process",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      const container: Container = {
+        id: "container1",
+        label: "Container",
+        children: new Set(["node1", "node2"]),
+        collapsed: false,
+        hidden: false,
+      };
+
+      const edge1: GraphEdge = {
+        id: "edge1",
+        source: "node1",
+        target: "external",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+      const edge2: GraphEdge = {
+        id: "edge2",
+        source: "external",
+        target: "node2",
+        type: "dataflow",
+        semanticTags: [],
+        hidden: false,
+      };
+
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addNode(externalNode);
+      state.addContainer(container);
+      state.assignNodeToContainer("node1", "container1");
+      state.assignNodeToContainer("node2", "container1");
+      state.addEdge(edge1);
+      state.addEdge(edge2);
+
+      // Initial collapse
+      state.collapseContainer("container1");
+      await elkBridge.layout(state);
+
+      const initialResult = bridge.toReactFlowData(state);
+      const initialAggregatedEdges = initialResult.edges.filter(
+        (e) => e.type === "aggregated",
+      );
+      const initialEdgeIds = initialAggregatedEdges.map((e) => e.id).sort();
+
+      expect(initialAggregatedEdges).toHaveLength(2);
+      expect(initialEdgeIds).toEqual([
+        "agg-container1-external",
+        "agg-external-container1",
+      ]);
+
+      // Expand
+      state.expandContainer("container1");
+      await elkBridge.layout(state);
+
+      const expandedResult = bridge.toReactFlowData(state);
+      const expandedAggregatedEdges = expandedResult.edges.filter(
+        (e) => e.type === "aggregated",
+      );
+      expect(expandedAggregatedEdges).toHaveLength(0);
+
+      // Collapse again
+      state.collapseContainer("container1");
+      await elkBridge.layout(state);
+
+      const secondResult = bridge.toReactFlowData(state);
+      const secondAggregatedEdges = secondResult.edges.filter(
+        (e) => e.type === "aggregated",
+      );
+      const secondEdgeIds = secondAggregatedEdges.map((e) => e.id).sort();
+
+      // Edge IDs should be identical to prevent floating edges
+      expect(secondAggregatedEdges).toHaveLength(2);
+      expect(secondEdgeIds).toEqual(initialEdgeIds);
+
+      // Verify source/target consistency
+      const initialOutgoing = initialAggregatedEdges.find(
+        (e) => e.source === "container1",
+      );
+      const initialIncoming = initialAggregatedEdges.find(
+        (e) => e.target === "container1",
+      );
+      const secondOutgoing = secondAggregatedEdges.find(
+        (e) => e.source === "container1",
+      );
+      const secondIncoming = secondAggregatedEdges.find(
+        (e) => e.target === "container1",
+      );
+
+      expect(initialOutgoing?.id).toBe(secondOutgoing?.id);
+      expect(initialIncoming?.id).toBe(secondIncoming?.id);
+      expect(initialOutgoing?.target).toBe(secondOutgoing?.target);
+      expect(initialIncoming?.source).toBe(secondIncoming?.source);
     });
   });
 
@@ -1762,7 +1884,7 @@ describe("ReactFlowBridge", () => {
       expect(Object.isFrozen(result.nodes[nodeCount - 1])).toBe(true);
     });
 
-    it("should clear caches when requested", async () => {
+    it("should work consistently without caches (stateless behavior)", async () => {
       const node: GraphNode = {
         id: "node1",
         label: "Test",
@@ -1774,22 +1896,23 @@ describe("ReactFlowBridge", () => {
 
       state.addNode(node);
 
-      // Populate cache
       // Calculate layout so nodes have positions
       await elkBridge.layout(state);
 
-      bridge.toReactFlowData(state);
+      // First call
+      const result1 = bridge.toReactFlowData(state);
 
-      // Clear caches
-      bridge.clearCaches();
+      // Second call with same state should produce identical results (stateless)
+      const result2 = bridge.toReactFlowData(state);
 
-      // Should still work after clearing caches
-      // Calculate layout so nodes have positions
-      await elkBridge.layout(state);
+      expect(result1.nodes).toHaveLength(1);
+      expect(result1.nodes[0].id).toBe("node1");
+      expect(result2.nodes).toHaveLength(1);
+      expect(result2.nodes[0].id).toBe("node1");
 
-      const result = bridge.toReactFlowData(state);
-      expect(result.nodes).toHaveLength(1);
-      expect(result.nodes[0].id).toBe("node1");
+      // Results should be deeply equal (same structure, different objects)
+      expect(result1.nodes[0].id).toBe(result2.nodes[0].id);
+      expect(result1.nodes[0].position).toEqual(result2.nodes[0].position);
     });
 
     it("should maintain performance with repeated style applications", async () => {
@@ -1942,7 +2065,7 @@ describe("ReactFlowBridge", () => {
     it("should NOT set extent='parent' on nodes in containers to prevent ReactFlow positioning bugs", async () => {
       // Regression test for chat.json Backtrace hierarchy bug
       // Where nodes in deeply nested containers overlapped when extent="parent" was set
-      
+
       // Create a deeply nested container hierarchy
       const container1: Container = {
         id: "container1",
@@ -1951,7 +2074,7 @@ describe("ReactFlowBridge", () => {
         collapsed: false,
         hidden: false,
       };
-      
+
       const container2: Container = {
         id: "container2",
         label: "Child Container",
@@ -2001,7 +2124,9 @@ describe("ReactFlowBridge", () => {
       const result = bridge.toReactFlowData(state, interactionHandler);
 
       // Find nodes that have parents
-      const nodesWithParents = result.nodes.filter(n => n.parentNode !== undefined);
+      const nodesWithParents = result.nodes.filter(
+        (n) => n.parentNode !== undefined,
+      );
 
       // CRITICAL: None of these nodes should have extent="parent" set
       // This was causing ReactFlow to incorrectly position nodes in deeply nested containers
@@ -2010,10 +2135,10 @@ describe("ReactFlowBridge", () => {
       }
 
       // Verify that parentNode IS set (for hierarchy)
-      const childNodes = result.nodes.filter(n => 
-        n.id === "node1" || n.id === "node2" || n.id === "node3"
+      const childNodes = result.nodes.filter(
+        (n) => n.id === "node1" || n.id === "node2" || n.id === "node3",
       );
-      
+
       expect(childNodes.length).toBeGreaterThan(0);
       for (const node of childNodes) {
         expect(node.parentNode).toBeDefined();

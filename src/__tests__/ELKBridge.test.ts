@@ -95,8 +95,8 @@ describe("ELKBridge", () => {
       // Should only show the container, not the internal nodes
       expect(elkGraph.children).toHaveLength(1);
       expect(elkGraph.children![0].id).toBe("c1");
-      expect(elkGraph.children![0].width).toBe(120); // Updated for new collapsed container size
-      expect(elkGraph.children![0].height).toBe(60); // Updated for new collapsed container size
+      expect(elkGraph.children![0].width).toBe(200); // COLLAPSED_CONTAINER_WIDTH from config
+      expect(elkGraph.children![0].height).toBe(150); // COLLAPSED_CONTAINER_HEIGHT from config
       expect(elkGraph.children![0].layoutOptions).toBeDefined();
     });
 

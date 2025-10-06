@@ -9,12 +9,7 @@ export {
   type RenderConfig,
 } from "./Hydroscope.js";
 
-
-
-export {
-  HydroscopeCore,
-  type HydroscopeCoreProps,
-} from "./HydroscopeCore.js";
+export { HydroscopeCore, type HydroscopeCoreProps } from "./HydroscopeCore.js";
 
 // Panel Components (for advanced users)
 export {

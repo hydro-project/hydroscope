@@ -3,6 +3,7 @@
  * Architectural constraints: Stateless, synchronous conversions, immutable output
  */
 
+import React from "react";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import type {
   StyleConfig,
@@ -10,151 +11,69 @@ import type {
   ReactFlowNode,
   ReactFlowEdge,
 } from "../types/core.js";
+import type { IReactFlowBridge } from "../types/bridges.js";
 import {
   processSemanticTags,
   processAggregatedSemanticTags,
 } from "../utils/StyleProcessor.js";
 import { CURRENT_HANDLE_STRATEGY } from "../render/handleConfig.js";
+import {
+  SEARCH_HIGHLIGHT_COLORS,
+  SEARCH_CURRENT_COLORS,
+  NAVIGATION_HIGHLIGHT_COLORS,
+  COMBINED_HIGHLIGHT_COLORS,
+} from "../shared/config.js";
+import { searchNavigationErrorHandler } from "../core/ErrorHandler.js";
 
 // Performance optimization constants
 const LARGE_GRAPH_NODE_THRESHOLD = 1000;
 const LARGE_GRAPH_EDGE_THRESHOLD = 2000;
-const PERFORMANCE_CACHE_SIZE = 100;
-const CACHE_CLEANUP_THRESHOLD = 500; // Clean cache when it exceeds this size
 
-export class ReactFlowBridge {
-  private styleCache = new Map<string, any>();
-  private nodeCache = new Map<string, ReactFlowNode>();
-  private containerCache = new Map<string, ReactFlowNode[]>();
-  private edgeCache = new Map<string, ReactFlowEdge>();
-  private lastStateHash: string | null = null;
-  private lastResult: ReactFlowData | null = null;
-  private cacheHits = 0;
-  private cacheMisses = 0;
-  private lastCacheCleanup = Date.now();
-
+export class ReactFlowBridge implements IReactFlowBridge {
   constructor(private styleConfig: StyleConfig) {}
 
-  // Clear caches when needed (for testing or memory management)
-  clearCaches(): void {
-    this.styleCache.clear();
-    this.nodeCache.clear();
-    this.containerCache.clear();
-    this.edgeCache.clear();
-    this.lastStateHash = null;
-    this.lastResult = null;
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
-  }
-
-  // Get cache statistics for performance monitoring
-  getCacheStats(): {
-    hitRate: number;
-    totalRequests: number;
-    cacheSize: {
-      styles: number;
-      nodes: number;
-      edges: number;
-    };
-  } {
-    const totalRequests = this.cacheHits + this.cacheMisses;
-    return {
-      hitRate: totalRequests > 0 ? this.cacheHits / totalRequests : 0,
-      totalRequests,
-      cacheSize: {
-        styles: this.styleCache.size,
-        nodes: this.nodeCache.size,
-        edges: this.edgeCache.size,
-      },
-    };
-  }
-
-  // Intelligent cache cleanup
-  private cleanupCaches(): void {
-    const now = Date.now();
-
-    // Only cleanup if enough time has passed and caches are large
-    if (
-      now - this.lastCacheCleanup < 60000 || // 1 minute
-      this.nodeCache.size + this.edgeCache.size < CACHE_CLEANUP_THRESHOLD
-    ) {
-      return;
-    }
-
-    // Keep only the most recently used items (simple LRU approximation)
-    if (this.nodeCache.size > PERFORMANCE_CACHE_SIZE) {
-      const entries = Array.from(this.nodeCache.entries());
-      this.nodeCache.clear();
-      // Keep last 50% of entries
-      entries
-        .slice(-Math.floor(PERFORMANCE_CACHE_SIZE / 2))
-        .forEach(([key, value]) => {
-          this.nodeCache.set(key, value);
-        });
-    }
-
-    if (this.edgeCache.size > PERFORMANCE_CACHE_SIZE) {
-      const entries = Array.from(this.edgeCache.entries());
-      this.edgeCache.clear();
-      entries
-        .slice(-Math.floor(PERFORMANCE_CACHE_SIZE / 2))
-        .forEach(([key, value]) => {
-          this.edgeCache.set(key, value);
-        });
-    }
-
-    this.lastCacheCleanup = now;
-  }
-
-  // Synchronous Conversion with immutability and performance optimizations
+  // Synchronous Conversion - pure function without caching
   toReactFlowData(
     state: VisualizationState,
-    interactionHandler?: any,
+    interactionHandler?: any
   ): ReactFlowData {
     // Debug: Log collapsed containers and aggregated edges
     console.log(`[ReactFlowBridge] 🔍 Converting to ReactFlow data:`);
     console.log(`  - Visible nodes: ${state.visibleNodes.length}`);
     console.log(`  - Visible containers: ${state.visibleContainers.length}`);
     console.log(`  - Visible edges: ${state.visibleEdges.length}`);
+    
+    // CRITICAL DEBUG: Log container states
+    if (state.visibleContainers.length === 0) {
+      console.error(`[ReactFlowBridge] ❌ NO VISIBLE CONTAINERS! This is the bug!`);
+      console.error(`[ReactFlowBridge] 🔍 This means visibleContainers getter is returning empty array`);
+      console.error(`[ReactFlowBridge] 🔍 But smart collapse was creating aggregated edges, so containers should exist`);
+    }
 
     // Debug collapsed containers
     const collapsedContainers = state.visibleContainers.filter(
-      (c) => c.collapsed,
+      (c) => c.collapsed
     );
     console.log(`  - Collapsed containers: ${collapsedContainers.length}`);
     if (collapsedContainers.length > 0 && collapsedContainers.length < 10) {
       console.log(
-        `  - Collapsed container IDs: ${collapsedContainers.map((c) => c.id).join(", ")}`,
+        `  - Collapsed container IDs: ${collapsedContainers.map((c) => c.id).join(", ")}`
       );
     }
 
     // Debug aggregated edges
     const aggregatedEdges = state.visibleEdges.filter(
-      (e) => "aggregated" in e && (e as any).aggregated,
+      (e) => "aggregated" in e && (e as any).aggregated
     );
     console.log(`  - Aggregated edges: ${aggregatedEdges.length}`);
     if (aggregatedEdges.length > 0 && aggregatedEdges.length < 20) {
       console.log(`  - Aggregated edge details:`);
       aggregatedEdges.forEach((e) => {
         console.log(
-          `    - ${e.id}: ${e.source} -> ${e.target} (aggregated: ${(e as any).aggregated})`,
+          `    - ${e.id}: ${e.source} -> ${e.target} (aggregated: ${(e as any).aggregated})`
         );
       });
     }
-
-    // Generate state hash for caching
-    const stateHash = this.generateStateHash(state, interactionHandler);
-
-    // DEBUG: Log cache status
-    console.log(`[ReactFlowBridge] 🔄 CACHE CHECK: current=${stateHash}, last=${this.lastStateHash}, hit=${this.lastStateHash === stateHash}`);
-
-    // Return cached result if state hasn't changed
-    if (this.lastStateHash === stateHash && this.lastResult) {
-      console.log(`[ReactFlowBridge] 🔄 CACHE HIT: Returning cached result with ${this.lastResult.nodes.length} nodes`);
-      return this.deepCloneReactFlowData(this.lastResult);
-    }
-
-    console.log(`[ReactFlowBridge] 🔄 CACHE MISS: Recalculating layout`);
 
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
@@ -168,89 +87,84 @@ export class ReactFlowBridge {
       ? this.convertEdgesOptimized(state)
       : this.convertEdges(state);
 
+    // Apply basic styling first
+    let styledNodes = this.applyNodeStyles(nodes);
+    let styledEdges = this.applyEdgeStyles(edges, state);
+
+    // Apply search and navigation highlights
+    styledNodes = this.applySearchHighlights(styledNodes, state);
+    styledNodes = this.applyNavigationHighlights(styledNodes, state);
+    styledEdges = this.applySearchHighlightsToEdges(styledEdges, state);
+    styledEdges = this.applyNavigationHighlightsToEdges(styledEdges, state);
+
     // Create result with mutable arrays for ReactFlow compatibility
     const result: ReactFlowData = {
-      nodes: this.applyNodeStyles(nodes),
-      edges: this.applyEdgeStyles(edges, state),
+      nodes: styledNodes,
+      edges: styledEdges,
     };
 
     // HIERARCHY LOGGING: Log final ReactFlow hierarchy
     console.log(`[ReactFlowBridge] 🏗️ FINAL REACTFLOW HIERARCHY:`);
     console.log(`[ReactFlowBridge] 🏗️ Total nodes: ${result.nodes.length}`);
     console.log(`[ReactFlowBridge] 🏗️ Total edges: ${result.edges.length}`);
-    
+
     // DEBUG: Log actual ReactFlow node structure
     console.log(`[ReactFlowBridge] 🔍 REACTFLOW NODE STRUCTURE:`);
-    result.nodes.forEach(node => {
-      if (node.type === 'container') {
-        console.log(`[ReactFlowBridge] 🔍 Container ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y})`);
+    result.nodes.forEach((node) => {
+      if (node.type === "container") {
+        console.log(
+          `[ReactFlowBridge] 🔍 Container ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y})`
+        );
       } else {
-        console.log(`[ReactFlowBridge] 🔍 Node ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y}), extent=${node.extent}`);
+        console.log(
+          `[ReactFlowBridge] 🔍 Node ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y}), extent=${node.extent}`
+        );
       }
     });
-    
-    const rootNodes = result.nodes.filter(n => !n.parentId);
-    const childNodes = result.nodes.filter(n => n.parentId);
-    
+
+    const rootNodes = result.nodes.filter((n) => !n.parentId);
+    const childNodes = result.nodes.filter((n) => n.parentId);
+
     console.log(`[ReactFlowBridge] 🏗️ Root-level nodes: ${rootNodes.length}`);
-    rootNodes.forEach(node => {
-      const children = result.nodes.filter(n => n.parentId === node.id);
+    rootNodes.forEach((node) => {
+      const children = result.nodes.filter((n) => n.parentId === node.id);
       if (children.length > 0) {
-        console.log(`[ReactFlowBridge] 🏗️ Container ${node.id}: type=${node.type}, collapsed=${node.data?.collapsed}, children=${children.length}, position=(${node.position.x}, ${node.position.y})`);
-        children.forEach(child => {
-          console.log(`[ReactFlowBridge] 🏗️   └─ Child ${child.id}: type=${child.type}, position=(${child.position.x}, ${child.position.y})`);
+        console.log(
+          `[ReactFlowBridge] 🏗️ Container ${node.id}: type=${node.type}, collapsed=${node.data?.collapsed}, children=${children.length}, position=(${node.position.x}, ${node.position.y})`
+        );
+        children.forEach((child) => {
+          console.log(
+            `[ReactFlowBridge] 🏗️   └─ Child ${child.id}: type=${child.type}, position=(${child.position.x}, ${child.position.y})`
+          );
         });
       } else {
-        console.log(`[ReactFlowBridge] 🏗️ Node ${node.id}: type=${node.type}, position=(${node.position.x}, ${node.position.y})`);
+        console.log(
+          `[ReactFlowBridge] 🏗️ Node ${node.id}: type=${node.type}, position=(${node.position.x}, ${node.position.y})`
+        );
       }
     });
-    
+
     if (childNodes.length > 0) {
       // Check for truly orphaned nodes (parent doesn't exist in the node list at all)
-      const orphanedNodes = childNodes.filter(n => !result.nodes.find(r => r.id === n.parentId));
-      console.log(`[ReactFlowBridge] 🏗️ Orphaned child nodes (should be 0): ${orphanedNodes.length}`);
+      const orphanedNodes = childNodes.filter(
+        (n) => !result.nodes.find((r) => r.id === n.parentId)
+      );
+      console.log(
+        `[ReactFlowBridge] 🏗️ Orphaned child nodes (should be 0): ${orphanedNodes.length}`
+      );
       if (orphanedNodes.length > 0) {
-        console.log(`[ReactFlowBridge] ⚠️ Truly orphaned nodes:`, orphanedNodes.map(n => `${n.id} (parent: ${n.parentId})`));
+        console.log(
+          `[ReactFlowBridge] ⚠️ Truly orphaned nodes:`,
+          orphanedNodes.map((n) => `${n.id} (parent: ${n.parentId})`)
+        );
       }
     }
 
     // Deep freeze the result for immutability while maintaining TypeScript compatibility
     this.deepFreezeReactFlowData(result);
 
-    // Cache result for performance
-    this.lastStateHash = stateHash;
-    this.lastResult = result;
-
-    // Cleanup caches periodically for memory management
-    this.cleanupCaches();
-
     // Return deep clone to ensure immutability
     return this.deepCloneReactFlowData(result);
-  }
-
-  // Performance optimization helpers
-  private generateStateHash(
-    state: VisualizationState,
-    interactionHandler?: any,
-  ): string {
-    // Simple hash based on visible element counts and interaction handler presence
-    const nodeCount = state.visibleNodes.length;
-    const edgeCount = state.visibleEdges.length;
-    const containerCount = state.visibleContainers.length;
-    const hasHandler = !!interactionHandler;
-
-    // Include layout state for cache invalidation
-    const layoutState = state.getLayoutState();
-
-    // DEBUG: Include container collapsed states in hash
-    const containerStates = state.visibleContainers.map(c => `${c.id}:${c.collapsed}`).join(',');
-
-    const hash = `${nodeCount}-${edgeCount}-${containerCount}-${hasHandler}-${layoutState.lastUpdate}-${containerStates}`;
-    
-    console.log(`[ReactFlowBridge] 🔄 HASH COMPONENTS: nodes=${nodeCount}, edges=${edgeCount}, containers=${containerCount}, handler=${hasHandler}, layout=${layoutState.lastUpdate}, containerStates=${containerStates}`);
-    console.log(`[ReactFlowBridge] 🔄 GENERATED HASH: ${hash}`);
-
-    return hash;
   }
 
   private isLargeGraph(state: VisualizationState): boolean {
@@ -342,7 +256,7 @@ export class ReactFlowBridge {
   // Optimized conversion for large graphs - use same logic as regular conversion
   private convertNodesOptimized(
     state: VisualizationState,
-    interactionHandler?: any,
+    interactionHandler?: any
   ): ReactFlowNode[] {
     // For now, use the same logic as regular conversion
     // TODO: Add caching and batching optimizations
@@ -354,68 +268,47 @@ export class ReactFlowBridge {
     const visibleEdges = state.visibleEdges;
 
     console.log(
-      `[ReactFlowBridge] 🚀 Using optimized edge conversion for ${visibleEdges.length} edges`,
+      `[ReactFlowBridge] 🚀 Using optimized edge conversion for ${visibleEdges.length} edges`
     );
 
-    let cacheHits = 0;
-    let cacheMisses = 0;
     let validEdges = 0;
     let invalidEdges = 0;
 
     // Batch process edges for better performance
     for (let i = 0; i < visibleEdges.length; i++) {
       const edge = visibleEdges[i];
-      const cacheKey = `edge-${edge.id}-${edge.type}`;
 
-      let reactFlowEdge = this.edgeCache.get(cacheKey);
-      if (!reactFlowEdge) {
-        cacheMisses++;
-
-        let renderedEdge: ReactFlowEdge | null;
-        if ("aggregated" in edge && (edge as any).aggregated) {
-          renderedEdge = this.renderAggregatedEdge(edge, state);
-        } else {
-          renderedEdge = this.renderOriginalEdge(edge, state);
-        }
-
-        // Only cache and add valid edges
-        if (renderedEdge) {
-          validEdges++;
-          reactFlowEdge = renderedEdge;
-          // Limit cache size to prevent memory issues
-          if (this.edgeCache.size < PERFORMANCE_CACHE_SIZE) {
-            this.edgeCache.set(cacheKey, reactFlowEdge);
-          }
-          edges.push(reactFlowEdge);
-        } else {
-          invalidEdges++;
-          console.warn(
-            `[ReactFlowBridge] ⚠️ Optimized conversion: Edge ${edge.id} failed to render`,
-          );
-        }
+      let renderedEdge: ReactFlowEdge | null;
+      if ("aggregated" in edge && (edge as any).aggregated) {
+        renderedEdge = this.renderAggregatedEdge(edge, state);
       } else {
-        cacheHits++;
+        renderedEdge = this.renderOriginalEdge(edge, state);
+      }
+
+      // Only add valid edges
+      if (renderedEdge) {
         validEdges++;
-        edges.push(reactFlowEdge);
+        edges.push(renderedEdge);
+      } else {
+        invalidEdges++;
+        console.warn(
+          `[ReactFlowBridge] ⚠️ Optimized conversion: Edge ${edge.id} failed to render`
+        );
       }
     }
 
     console.log(`[ReactFlowBridge] 📊 Optimized edge conversion summary:`);
-    console.log(`  - Cache hits: ${cacheHits}, Cache misses: ${cacheMisses}`);
     console.log(
-      `  - Valid edges: ${validEdges}, Invalid edges: ${invalidEdges}`,
+      `  - Valid edges: ${validEdges}, Invalid edges: ${invalidEdges}`
     );
     console.log(`  - Final edge count: ${edges.length}`);
-
-    // Trigger cache cleanup if needed
-    this.cleanupCaches();
 
     return edges;
   }
 
   private convertNodes(
     state: VisualizationState,
-    interactionHandler?: any,
+    interactionHandler?: any
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
 
@@ -428,7 +321,7 @@ export class ReactFlowBridge {
       for (const childId of container.children) {
         nodeParentMap.set(childId, container.id);
         console.log(
-          `[ReactFlowBridge] Node ${childId} assigned to container ${container.id}`,
+          `[ReactFlowBridge] Node ${childId} assigned to container ${container.id}`
         );
       }
     }
@@ -439,7 +332,7 @@ export class ReactFlowBridge {
       if (parentContainerId) {
         containerParentMap.set(container.id, parentContainerId);
         console.log(
-          `[ReactFlowBridge] Container ${container.id} assigned to parent container ${parentContainerId}`,
+          `[ReactFlowBridge] Container ${container.id} assigned to parent container ${parentContainerId}`
         );
       }
     }
@@ -451,7 +344,7 @@ export class ReactFlowBridge {
       const bDepth = state.getContainerAncestors(b.id).length;
       return aDepth - bDepth; // Parents (lower depth) come first
     });
-    
+
     // Add containers first (parents before children)
     for (const container of sortedContainers) {
       const parentId = containerParentMap.get(container.id);
@@ -463,26 +356,27 @@ export class ReactFlowBridge {
 
       // AGGRESSIVE DEBUG: Log container info with all dimension sources
       console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id}: collapsed=${container.collapsed}, children=${container.children.size}`,
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id}: collapsed=${container.collapsed}, children=${container.children.size}`
       );
       console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} POSITION: ELK=(${position.x}, ${position.y})`,
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} POSITION: ELK=(${position.x}, ${position.y})`
       );
       console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} DIMENSIONS: width=${width} (from: dimensions=${container.dimensions?.width}, width=${container.width}, fallback=200), height=${height} (from: dimensions=${container.dimensions?.height}, height=${container.height}, fallback=150)`,
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} DIMENSIONS: width=${width} (from: dimensions=${container.dimensions?.width}, width=${container.width}, fallback=200), height=${height} (from: dimensions=${container.dimensions?.height}, height=${container.height}, fallback=150)`
       );
       console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} RAW DIMENSIONS:`, {
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} RAW DIMENSIONS:`,
+        {
           dimensions: container.dimensions,
           width: container.width,
           height: container.height,
-        },
+        }
       );
       if (container.children.size > 0) {
         const childIds = Array.from(container.children).slice(0, 5); // First 5 children
         console.log(
           `[ReactFlowBridge] Container ${container.id} children (first 5):`,
-          childIds,
+          childIds
         );
       }
 
@@ -491,11 +385,13 @@ export class ReactFlowBridge {
         : 0;
 
       // CRITICAL DEBUG: Check if position needs adjustment for nested containers
-      console.log(`[ReactFlowBridge] 🔍 CONTAINER ${container.id}: parentId=${parentId}, position from ELK=(${position.x}, ${position.y})`);
-      
+      console.log(
+        `[ReactFlowBridge] 🔍 CONTAINER ${container.id}: parentId=${parentId}, position from ELK=(${position.x}, ${position.y})`
+      );
+
       const containerNode: ReactFlowNode = {
         id: container.id,
-        type: "container", // Always use container type for proper styling and sizing
+        type: container.collapsed ? "standard" : "container", // Collapsed containers use 'standard' type for edge connections
         position,
         data: {
           label: container.label || container.id,
@@ -549,67 +445,75 @@ export class ReactFlowBridge {
 
       // Debug: Log all node positions from ELK
       console.log(
-        `[ReactFlowBridge] Node ${node.id} ELK position: (${position?.x}, ${position?.y}), assigned to container: ${parentId}`,
+        `[ReactFlowBridge] Node ${node.id} ELK position: (${position?.x}, ${position?.y}), assigned to container: ${parentId}`
       );
 
       // AGGRESSIVE DEBUG: Log node positioning pipeline
       let adjustedPosition = position || { x: 0, y: 0 };
-      
+
       console.log(
-        `[ReactFlowBridge] 🔍 NODE ${node.id}: parentId=${parentId}, parentContainer=${!!parentContainer}, ELK position=(${adjustedPosition.x}, ${adjustedPosition.y})`,
+        `[ReactFlowBridge] 🔍 NODE ${node.id}: parentId=${parentId}, parentContainer=${!!parentContainer}, ELK position=(${adjustedPosition.x}, ${adjustedPosition.y})`
       );
 
       if (parentId && parentContainer) {
         // Get the parent container's position and dimensions for bounds checking
         const parentDimensions = {
-          width: parentContainer.dimensions?.width || parentContainer.width || 200,
-          height: parentContainer.dimensions?.height || parentContainer.height || 150,
+          width:
+            parentContainer.dimensions?.width || parentContainer.width || 200,
+          height:
+            parentContainer.dimensions?.height || parentContainer.height || 150,
         };
-        
+
         console.log(
-          `[ReactFlowBridge] 🔍 NODE ${node.id} PARENT INFO: dimensions=(${parentDimensions.width}x${parentDimensions.height}), collapsed=${parentContainer.collapsed}`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id} PARENT INFO: dimensions=(${parentDimensions.width}x${parentDimensions.height}), collapsed=${parentContainer.collapsed}`
         );
-        
+
         // CRITICAL FIX: ELK already returns child positions relative to their parent container!
         // We should NOT subtract the parent position. The position from ELK is already correct.
         // See: https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/coordinatesystem.html
         // "The coordinates of most elements are relative to their parent element."
-        
+
         console.log(
-          `[ReactFlowBridge] 🔍 NODE ${node.id} POSITION: ELK relative=(${adjustedPosition.x}, ${adjustedPosition.y}) (already relative to parent)`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id} POSITION: ELK relative=(${adjustedPosition.x}, ${adjustedPosition.y}) (already relative to parent)`
         );
-        
+
         // Check if position is within parent bounds (for debugging only)
-        const withinBounds = adjustedPosition.x >= 0 && adjustedPosition.y >= 0 && 
-                           adjustedPosition.x <= parentDimensions.width && 
-                           adjustedPosition.y <= parentDimensions.height;
-        
+        const withinBounds =
+          adjustedPosition.x >= 0 &&
+          adjustedPosition.y >= 0 &&
+          adjustedPosition.x <= parentDimensions.width &&
+          adjustedPosition.y <= parentDimensions.height;
+
         console.log(
-          `[ReactFlowBridge] 🔍 NODE ${node.id} BOUNDS CHECK: within parent bounds=${withinBounds}`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id} BOUNDS CHECK: within parent bounds=${withinBounds}`
         );
-        
+
         // adjustedPosition already contains the correct relative position from ELK
       } else {
         console.log(
-          `[ReactFlowBridge] 🔍 NODE ${node.id}: NO PARENT - using absolute position=(${adjustedPosition.x}, ${adjustedPosition.y})`,
+          `[ReactFlowBridge] 🔍 NODE ${node.id}: NO PARENT - using absolute position=(${adjustedPosition.x}, ${adjustedPosition.y})`
         );
       }
 
       // FINAL DEBUG: Log the position that will be used in ReactFlow node
       console.log(
-        `[ReactFlowBridge] 🔍 NODE ${node.id} FINAL POSITION: (${adjustedPosition.x}, ${adjustedPosition.y}) - parentId=${parentId}`,
+        `[ReactFlowBridge] 🔍 NODE ${node.id} FINAL POSITION: (${adjustedPosition.x}, ${adjustedPosition.y}) - parentId=${parentId}`
       );
-      
+
       // CRITICAL DEBUG: Check ReactFlow parent-child setup
       if (parentId) {
-        console.log(`[ReactFlowBridge] 🔍 NODE ${node.id} REACTFLOW SETUP: parentId="${parentId}", parentNode="${parentId}", extent="parent", position=(${adjustedPosition.x}, ${adjustedPosition.y})`);
+        console.log(
+          `[ReactFlowBridge] 🔍 NODE ${node.id} REACTFLOW SETUP: parentId="${parentId}", parentNode="${parentId}", extent="parent", position=(${adjustedPosition.x}, ${adjustedPosition.y})`
+        );
       }
 
       // CRITICAL FIX: Get node dimensions from ELK to ensure rendered size matches layout
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
-      
-      console.log(`[ReactFlowBridge] 🔍 NODE ${node.id} DIMENSIONS: from ELK=${node.dimensions?.width}x${node.dimensions?.height}, using=${width}x${height}`);
+
+      console.log(
+        `[ReactFlowBridge] 🔍 NODE ${node.id} DIMENSIONS: from ELK=${node.dimensions?.width}x${node.dimensions?.height}, using=${width}x${height}`
+      );
 
       const reactFlowNode: ReactFlowNode = {
         id: node.id,
@@ -623,7 +527,7 @@ export class ReactFlowBridge {
           semanticTags: node.semanticTags || [],
           colorPalette: "Set3",
           style: node.type || "default",
-          width,  // Pass ELK-calculated width to match layout
+          width, // Pass ELK-calculated width to match layout
           height, // Pass ELK-calculated height to match layout
           onClick: interactionHandler
             ? (elementId: string, elementType: "node" | "container") => {
@@ -651,7 +555,7 @@ export class ReactFlowBridge {
 
   private countContainerNodes(
     container: any,
-    state: VisualizationState,
+    state: VisualizationState
   ): number {
     let count = 0;
     for (const childId of container.children) {
@@ -671,17 +575,23 @@ export class ReactFlowBridge {
 
     // Debug: Create a set of visible node IDs for validation
     const visibleNodeIds = new Set(state.visibleNodes.map((node) => node.id));
+    const visibleContainers = state.visibleContainers;
+    console.log(`[ReactFlowBridge] 🔍 Debug visibleContainers:`, visibleContainers.length);
+    for (const container of visibleContainers) {
+      console.log(`  - Container ${container.id}: hidden=${container.hidden}, collapsed=${container.collapsed}`);
+    }
+    
     const visibleContainerIds = new Set(
-      state.visibleContainers.map((container) => container.id),
+      visibleContainers.map((container) => container.id)
     );
     const allVisibleIds = new Set([...visibleNodeIds, ...visibleContainerIds]);
 
     console.log(`[ReactFlowBridge] 🔍 Edge validation context:`);
     console.log(
-      `  - Visible nodes: ${visibleNodeIds.size} (${Array.from(visibleNodeIds).slice(0, 5).join(", ")}${visibleNodeIds.size > 5 ? "..." : ""})`,
+      `  - Visible nodes: ${visibleNodeIds.size} (${Array.from(visibleNodeIds).slice(0, 5).join(", ")}${visibleNodeIds.size > 5 ? "..." : ""})`
     );
     console.log(
-      `  - Visible containers: ${visibleContainerIds.size} (${Array.from(visibleContainerIds).slice(0, 5).join(", ")}${visibleContainerIds.size > 5 ? "..." : ""})`,
+      `  - Visible containers: ${visibleContainerIds.size} (${Array.from(visibleContainerIds).slice(0, 5).join(", ")}${visibleContainerIds.size > 5 ? "..." : ""})`
     );
     console.log(`  - Total visible elements: ${allVisibleIds.size}`);
     console.log(`  - Edges to process: ${state.visibleEdges.length}`);
@@ -691,7 +601,7 @@ export class ReactFlowBridge {
       console.log(`[ReactFlowBridge] 🔍 First few edges to validate:`);
       state.visibleEdges.slice(0, 5).forEach((edge, index) => {
         console.log(
-          `  ${index + 1}. ${edge.id}: "${edge.source}" -> "${edge.target}" (type: ${edge.type})`,
+          `  ${index + 1}. ${edge.id}: "${edge.source}" -> "${edge.target}" (type: ${edge.type})`
         );
       });
     }
@@ -707,7 +617,7 @@ export class ReactFlowBridge {
         allVisibleIds,
         visibleNodeIds,
         visibleContainerIds,
-        state,
+        state
       );
 
       if (!edgeValidation.isValid) {
@@ -720,21 +630,21 @@ export class ReactFlowBridge {
         if (invalidEdgeCount <= 10) {
           console.error(
             `[ReactFlowBridge] ❌ Invalid edge ${edge.id}:`,
-            edgeValidation.reason,
+            edgeValidation.reason
           );
           console.error(
-            `  - Source: ${edge.source} (visible: ${edgeValidation.sourceExists}, exists: ${edgeValidation.sourceInAllNodes}, type: ${edgeValidation.sourceType})`,
+            `  - Source: ${edge.source} (visible: ${edgeValidation.sourceExists}, exists: ${edgeValidation.sourceInAllNodes}, type: ${edgeValidation.sourceType})`
           );
           console.error(
-            `  - Target: ${edge.target} (visible: ${edgeValidation.targetExists}, exists: ${edgeValidation.targetInAllNodes}, type: ${edgeValidation.targetType})`,
+            `  - Target: ${edge.target} (visible: ${edgeValidation.targetExists}, exists: ${edgeValidation.targetInAllNodes}, type: ${edgeValidation.targetType})`
           );
           if (edgeValidation.isFloating) {
             console.error(
-              `  - 🔴 FLOATING EDGE DETECTED: One or both endpoints don't exist in the graph!`,
+              `  - 🔴 FLOATING EDGE DETECTED: One or both endpoints don't exist in the graph!`
             );
           } else {
             console.error(
-              `  - ⚠️ HIDDEN EDGE: Edge endpoints exist but are not visible (likely in collapsed containers)`,
+              `  - ⚠️ HIDDEN EDGE: Edge endpoints exist but are not visible (likely in collapsed containers)`
             );
           }
         }
@@ -746,7 +656,7 @@ export class ReactFlowBridge {
       if (validEdgeCount <= 5) {
         // Log first few valid edges
         console.log(
-          `[ReactFlowBridge] ✅ Valid edge ${edge.id}: ${edge.source} (${edgeValidation.sourceType}) -> ${edge.target} (${edgeValidation.targetType})`,
+          `[ReactFlowBridge] ✅ Valid edge ${edge.id}: ${edge.source} (${edgeValidation.sourceType}) -> ${edge.target} (${edgeValidation.targetType})`
         );
       }
 
@@ -763,7 +673,7 @@ export class ReactFlowBridge {
       } else {
         skippedEdgeCount++;
         console.warn(
-          `[ReactFlowBridge] ⚠️ Edge ${edge.id} was valid but failed to render`,
+          `[ReactFlowBridge] ⚠️ Edge ${edge.id} was valid but failed to render`
         );
       }
     }
@@ -778,7 +688,7 @@ export class ReactFlowBridge {
 
     if (floatingEdgeCount > 0) {
       console.error(
-        `[ReactFlowBridge] 🚨 FLOATING EDGE PROBLEM: ${floatingEdgeCount} edges are floating (missing endpoints)!`,
+        `[ReactFlowBridge] 🚨 FLOATING EDGE PROBLEM: ${floatingEdgeCount} edges are floating (missing endpoints)!`
       );
     }
 
@@ -787,7 +697,7 @@ export class ReactFlowBridge {
       edges,
       visibleNodeIds,
       visibleContainerIds,
-      state,
+      state
     );
 
     return edges;
@@ -798,7 +708,7 @@ export class ReactFlowBridge {
     allVisibleIds: Set<string>,
     visibleNodeIds: Set<string>,
     visibleContainerIds: Set<string>,
-    state: VisualizationState,
+    state: VisualizationState
   ): {
     isValid: boolean;
     isFloating: boolean;
@@ -898,7 +808,7 @@ export class ReactFlowBridge {
     // Check for self-loops (optional validation)
     if (edge.source === edge.target) {
       console.warn(
-        `[ReactFlowBridge] ⚠️ Self-loop detected: ${edge.id} (${edge.source} -> ${edge.target})`,
+        `[ReactFlowBridge] ⚠️ Self-loop detected: ${edge.id} (${edge.source} -> ${edge.target})`
       );
       // Self-loops are valid but worth noting
     }
@@ -916,22 +826,9 @@ export class ReactFlowBridge {
     };
   }
 
-  // Styling with immutability and performance optimizations
+  // Styling with immutability - pure function without caching
   applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[] {
     return nodes.map((node) => {
-      // Create style cache key for performance
-      const styleCacheKey = `node-style-${node.data.nodeType}-${node.data.label}`;
-
-      // Check style cache first
-      let cachedStyle = this.styleCache.get(styleCacheKey);
-      if (cachedStyle) {
-        return this.createImmutableNode(
-          node,
-          cachedStyle.style,
-          cachedStyle.appliedTags,
-        );
-      }
-
       // Get semantic tags from node data
       const semanticTags = node.data.semanticTags || [];
 
@@ -951,7 +848,7 @@ export class ReactFlowBridge {
           semanticTags,
           this.styleConfig,
           node.data.label,
-          "node",
+          "node"
         );
         semanticStyle = processedStyle.style;
         appliedTags = processedStyle.appliedTags;
@@ -964,14 +861,6 @@ export class ReactFlowBridge {
         ...node.style,
       };
 
-      // Cache the computed style for performance
-      if (this.styleCache.size < PERFORMANCE_CACHE_SIZE) {
-        this.styleCache.set(styleCacheKey, {
-          style: combinedStyle,
-          appliedTags,
-        });
-      }
-
       return this.createImmutableNode(node, combinedStyle, appliedTags);
     });
   }
@@ -979,7 +868,7 @@ export class ReactFlowBridge {
   private createImmutableNode(
     node: ReactFlowNode,
     style: any,
-    appliedTags: string[],
+    appliedTags: string[]
   ): ReactFlowNode {
     const result = {
       ...node,
@@ -1004,22 +893,13 @@ export class ReactFlowBridge {
 
   applyEdgeStyles(
     edges: ReactFlowEdge[],
-    state?: VisualizationState,
+    state?: VisualizationState
   ): ReactFlowEdge[] {
     return edges.map((edge) => {
       // Get semantic tags from edge data
       const edgeData = edge.data as any;
       const semanticTags = edgeData?.semanticTags || [];
       const isAggregated = edgeData?.aggregated === true;
-
-      // Create style cache key for performance
-      const styleCacheKey = `edge-style-${edge.type}-${semanticTags.join(",")}-${edge.id}-${isAggregated}`;
-
-      // Check style cache first
-      let cachedStyle = this.styleCache.get(styleCacheKey);
-      if (cachedStyle) {
-        return this.createImmutableEdge(edge, cachedStyle);
-      }
 
       // Start with type-based styles
       const typeBasedStyle = this.styleConfig.edgeStyles?.[edge.type] || {};
@@ -1035,7 +915,7 @@ export class ReactFlowBridge {
       if (isAggregated && state && edgeData?.originalEdgeIds) {
         // For aggregated edges, use conflict resolution system
         console.log(
-          `[ReactFlowBridge] 🔄 Processing aggregated edge ${edge.id} with ${edgeData.originalEdgeIds.length} original edges`,
+          `[ReactFlowBridge] 🔄 Processing aggregated edge ${edge.id} with ${edgeData.originalEdgeIds.length} original edges`
         );
 
         // Get original edges from state
@@ -1047,7 +927,7 @@ export class ReactFlowBridge {
           const processedStyle = processAggregatedSemanticTags(
             originalEdges,
             this.styleConfig,
-            edge.label as string,
+            edge.label as string
           );
           semanticStyle = processedStyle.style;
           appliedTags = processedStyle.appliedTags;
@@ -1067,18 +947,18 @@ export class ReactFlowBridge {
               appliedTags,
               hasStyle: Object.keys(semanticStyle).length > 0,
               hasSemanticMappings: !!this.styleConfig.semanticMappings,
-            },
+            }
           );
         } else {
           // No original edges found, use default styling
           console.log(
-            `[ReactFlowBridge] ⚠️ Aggregated edge ${edge.id} has no original edges, using default styling`,
+            `[ReactFlowBridge] ⚠️ Aggregated edge ${edge.id} has no original edges, using default styling`
           );
           const defaultStyle = processSemanticTags(
             [],
             this.styleConfig,
             edge.label as string,
-            "edge",
+            "edge"
           );
           semanticStyle = defaultStyle.style;
           appliedTags = defaultStyle.appliedTags;
@@ -1092,7 +972,7 @@ export class ReactFlowBridge {
           semanticTags,
           this.styleConfig,
           edge.label as string,
-          "edge",
+          "edge"
         );
         semanticStyle = processedStyle.style;
         appliedTags = processedStyle.appliedTags;
@@ -1122,18 +1002,13 @@ export class ReactFlowBridge {
         lineStyle: lineStyle,
       };
 
-      // Cache the computed style for performance
-      if (this.styleCache.size < PERFORMANCE_CACHE_SIZE) {
-        this.styleCache.set(styleCacheKey, styleData);
-      }
-
       return this.createImmutableEdge(edge, styleData);
     });
   }
 
   private createImmutableEdge(
     edge: ReactFlowEdge,
-    styleData: any,
+    styleData: any
   ): ReactFlowEdge {
     const result = {
       ...edge,
@@ -1166,18 +1041,18 @@ export class ReactFlowBridge {
   private getSmartHandles(
     visState: VisualizationState,
     sourceId: string,
-    targetId: string,
+    targetId: string
   ): { sourceHandle?: string; targetHandle?: string } {
     console.log(
-      `[ReactFlowBridge] 🎯 Getting smart handles for ${sourceId} -> ${targetId}`,
+      `[ReactFlowBridge] 🎯 Getting smart handles for ${sourceId} -> ${targetId}`
     );
     console.log(
-      `[ReactFlowBridge] 🎯 CURRENT_HANDLE_STRATEGY = "${CURRENT_HANDLE_STRATEGY}"`,
+      `[ReactFlowBridge] 🎯 CURRENT_HANDLE_STRATEGY = "${CURRENT_HANDLE_STRATEGY}"`
     );
 
     if (CURRENT_HANDLE_STRATEGY !== "discrete") {
       console.log(
-        `[ReactFlowBridge] Strategy is ${CURRENT_HANDLE_STRATEGY}, skipping handle selection`,
+        `[ReactFlowBridge] Strategy is ${CURRENT_HANDLE_STRATEGY}, skipping handle selection`
       );
       return {}; // No handle selection needed for other strategies
     }
@@ -1199,12 +1074,13 @@ export class ReactFlowBridge {
 
       if (!sourceElement || !targetElement) {
         console.log(
-          `[ReactFlowBridge] ⚠️ Missing elements for ${sourceId} -> ${targetId}: sourceElement=${!!sourceElement}, targetElement=${!!targetElement}`,
+          `[ReactFlowBridge] ⚠️ Missing elements for ${sourceId} -> ${targetId}: sourceElement=${!!sourceElement}, targetElement=${!!targetElement}`
         );
         return { sourceHandle: "out-bottom", targetHandle: "in-top" };
       }
 
-      // Get positions with fallbacks
+      // CRITICAL FIX: Get positions from ELK layout data, not stale VisualizationState positions
+      // Use the same position source that ReactFlow nodes use to ensure consistency
       const sourcePos = {
         x: sourceElement.position?.x ?? (sourceElement as any).x ?? 0,
         y: sourceElement.position?.y ?? (sourceElement as any).y ?? 0,
@@ -1214,13 +1090,17 @@ export class ReactFlowBridge {
         y: targetElement.position?.y ?? (targetElement as any).y ?? 0,
       };
 
+      console.log(
+        `[EdgeDebug] Smart handles using positions: source=(${sourcePos.x}, ${sourcePos.y}), target=(${targetPos.x}, ${targetPos.y})`
+      );
+
       // Validate positions
       if (
         !this.isValidPosition(sourcePos) ||
         !this.isValidPosition(targetPos)
       ) {
         console.log(
-          `[ReactFlowBridge] ⚠️ Invalid positions for ${sourceId} -> ${targetId}: sourcePos=${JSON.stringify(sourcePos)}, targetPos=${JSON.stringify(targetPos)}`,
+          `[ReactFlowBridge] ⚠️ Invalid positions for ${sourceId} -> ${targetId}: sourcePos=${JSON.stringify(sourcePos)}, targetPos=${JSON.stringify(targetPos)}`
         );
         return { sourceHandle: "out-bottom", targetHandle: "in-top" };
       }
@@ -1228,19 +1108,19 @@ export class ReactFlowBridge {
       // Get dimensions with fallbacks
       const sourceWidth = Math.max(
         1,
-        sourceElement.dimensions?.width ?? (sourceElement as any).width ?? 120,
+        sourceElement.dimensions?.width ?? (sourceElement as any).width ?? 120
       );
       const sourceHeight = Math.max(
         1,
-        sourceElement.dimensions?.height ?? (sourceElement as any).height ?? 40,
+        sourceElement.dimensions?.height ?? (sourceElement as any).height ?? 40
       );
       const targetWidth = Math.max(
         1,
-        targetElement.dimensions?.width ?? (targetElement as any).width ?? 120,
+        targetElement.dimensions?.width ?? (targetElement as any).width ?? 120
       );
       const targetHeight = Math.max(
         1,
-        targetElement.dimensions?.height ?? (targetElement as any).height ?? 40,
+        targetElement.dimensions?.height ?? (targetElement as any).height ?? 40
       );
 
       // Calculate centers
@@ -1303,7 +1183,7 @@ export class ReactFlowBridge {
       const result = { sourceHandle: "out-bottom", targetHandle: "in-top" };
       console.log(
         `[ReactFlowBridge] 🎯 Selected handles for ${sourceId} -> ${targetId}:`,
-        result,
+        result
       );
       return result;
     } catch (error) {
@@ -1325,7 +1205,7 @@ export class ReactFlowBridge {
 
   private validateEdgeForRendering(
     edge: any,
-    edgeType: "original" | "aggregated",
+    edgeType: "original" | "aggregated"
   ): {
     isValid: boolean;
     reason: string;
@@ -1364,7 +1244,7 @@ export class ReactFlowBridge {
 
       if (!edge.originalEdgeIds || !Array.isArray(edge.originalEdgeIds)) {
         console.warn(
-          `[ReactFlowBridge] ⚠️ Aggregated edge ${edge.id} missing or invalid originalEdgeIds`,
+          `[ReactFlowBridge] ⚠️ Aggregated edge ${edge.id} missing or invalid originalEdgeIds`
         );
         // This is a warning, not a failure - some aggregated edges might not have this
       }
@@ -1382,7 +1262,7 @@ export class ReactFlowBridge {
           id: renderedEdge.id,
           source: renderedEdge.source,
           target: renderedEdge.target,
-        },
+        }
       );
       return false;
     }
@@ -1390,7 +1270,7 @@ export class ReactFlowBridge {
     // Check for circular references (source === target)
     if (renderedEdge.source === renderedEdge.target) {
       console.warn(
-        `[ReactFlowBridge] ⚠️ Self-loop edge detected: ${renderedEdge.id} (${renderedEdge.source})`,
+        `[ReactFlowBridge] ⚠️ Self-loop edge detected: ${renderedEdge.id} (${renderedEdge.source})`
       );
       // Self-loops are valid in ReactFlow, just log a warning
     }
@@ -1401,7 +1281,7 @@ export class ReactFlowBridge {
       typeof renderedEdge.sourceHandle !== "string"
     ) {
       console.warn(
-        `[ReactFlowBridge] ⚠️ Invalid sourceHandle type for edge ${renderedEdge.id}: ${typeof renderedEdge.sourceHandle}`,
+        `[ReactFlowBridge] ⚠️ Invalid sourceHandle type for edge ${renderedEdge.id}: ${typeof renderedEdge.sourceHandle}`
       );
     }
 
@@ -1410,7 +1290,7 @@ export class ReactFlowBridge {
       typeof renderedEdge.targetHandle !== "string"
     ) {
       console.warn(
-        `[ReactFlowBridge] ⚠️ Invalid targetHandle type for edge ${renderedEdge.id}: ${typeof renderedEdge.targetHandle}`,
+        `[ReactFlowBridge] ⚠️ Invalid targetHandle type for edge ${renderedEdge.id}: ${typeof renderedEdge.targetHandle}`
       );
     }
 
@@ -1420,19 +1300,19 @@ export class ReactFlowBridge {
   // Edge Handling
   renderOriginalEdge(
     edge: any,
-    visState?: VisualizationState,
+    visState?: VisualizationState
   ): ReactFlowEdge | null {
     // Enhanced validation for original edges
     const validation = this.validateEdgeForRendering(edge, "original");
     if (!validation.isValid) {
       console.error(
-        `[ReactFlowBridge] ❌ Cannot render original edge ${edge.id}: ${validation.reason}`,
+        `[ReactFlowBridge] ❌ Cannot render original edge ${edge.id}: ${validation.reason}`
       );
       return null;
     }
 
     console.log(
-      `[ReactFlowBridge] ✅ Rendering original edge ${edge.id}: ${edge.source} -> ${edge.target}`,
+      `[ReactFlowBridge] ✅ Rendering original edge ${edge.id}: ${edge.source} -> ${edge.target}`
     );
 
     const handles = visState
@@ -1455,42 +1335,42 @@ export class ReactFlowBridge {
     // Final validation of rendered edge
     if (!this.validateRenderedEdge(renderedEdge)) {
       console.error(
-        `[ReactFlowBridge] ❌ Rendered edge ${edge.id} failed final validation`,
+        `[ReactFlowBridge] ❌ Rendered edge ${edge.id} failed final validation`
       );
       return null;
     }
 
     console.log(
-      `[ReactFlowBridge] 🎯 Successfully rendered original edge ${edge.id}`,
+      `[ReactFlowBridge] 🎯 Successfully rendered original edge ${edge.id}`
     );
     return renderedEdge;
   }
 
   renderAggregatedEdge(
     aggregatedEdge: any,
-    visState?: VisualizationState,
+    visState?: VisualizationState
   ): ReactFlowEdge | null {
     // Enhanced validation for aggregated edges
     const validation = this.validateEdgeForRendering(
       aggregatedEdge,
-      "aggregated",
+      "aggregated"
     );
     if (!validation.isValid) {
       console.error(
-        `[ReactFlowBridge] ❌ Cannot render aggregated edge ${aggregatedEdge.id}: ${validation.reason}`,
+        `[ReactFlowBridge] ❌ Cannot render aggregated edge ${aggregatedEdge.id}: ${validation.reason}`
       );
       return null;
     }
 
     console.log(
-      `[ReactFlowBridge] ✅ Rendering aggregated edge ${aggregatedEdge.id}: ${aggregatedEdge.source} -> ${aggregatedEdge.target} (aggregating ${aggregatedEdge.originalEdgeIds?.length || 0} edges)`,
+      `[ReactFlowBridge] ✅ Rendering aggregated edge ${aggregatedEdge.id}: ${aggregatedEdge.source} -> ${aggregatedEdge.target} (aggregating ${aggregatedEdge.originalEdgeIds?.length || 0} edges)`
     );
 
     const handles = visState
       ? this.getSmartHandles(
           visState,
           aggregatedEdge.source,
-          aggregatedEdge.target,
+          aggregatedEdge.target
         )
       : {};
 
@@ -1512,13 +1392,13 @@ export class ReactFlowBridge {
     // Final validation of rendered edge
     if (!this.validateRenderedEdge(renderedEdge)) {
       console.error(
-        `[ReactFlowBridge] ❌ Rendered aggregated edge ${aggregatedEdge.id} failed final validation`,
+        `[ReactFlowBridge] ❌ Rendered aggregated edge ${aggregatedEdge.id} failed final validation`
       );
       return null;
     }
 
     console.log(
-      `[ReactFlowBridge] 🎯 Successfully rendered aggregated edge ${aggregatedEdge.id}`,
+      `[ReactFlowBridge] 🎯 Successfully rendered aggregated edge ${aggregatedEdge.id}`
     );
     return renderedEdge;
   }
@@ -1527,10 +1407,10 @@ export class ReactFlowBridge {
     edges: ReactFlowEdge[],
     visibleNodeIds: Set<string>,
     visibleContainerIds: Set<string>,
-    state: VisualizationState,
+    state: VisualizationState
   ): void {
     console.log(
-      `[ReactFlowBridge] 🔍 Final edge validation - checking ${edges.length} rendered edges`,
+      `[ReactFlowBridge] 🔍 Final edge validation - checking ${edges.length} rendered edges`
     );
 
     let potentialFloatingEdges = 0;
@@ -1571,7 +1451,7 @@ export class ReactFlowBridge {
           !isFinite(sourceElement.position.y))
       ) {
         issues.push(
-          `source ${edge.source} has invalid position: ${JSON.stringify(sourceElement.position)}`,
+          `source ${edge.source} has invalid position: ${JSON.stringify(sourceElement.position)}`
         );
         hasIssues = true;
         invalidPositionEdges++;
@@ -1586,7 +1466,7 @@ export class ReactFlowBridge {
           !isFinite(targetElement.position.y))
       ) {
         issues.push(
-          `target ${edge.target} has invalid position: ${JSON.stringify(targetElement.position)}`,
+          `target ${edge.target} has invalid position: ${JSON.stringify(targetElement.position)}`
         );
         hasIssues = true;
         invalidPositionEdges++;
@@ -1611,7 +1491,7 @@ export class ReactFlowBridge {
       if (sourceElement?.position && targetElement?.position) {
         const distance = Math.sqrt(
           Math.pow(targetElement.position.x - sourceElement.position.x, 2) +
-            Math.pow(targetElement.position.y - sourceElement.position.y, 2),
+            Math.pow(targetElement.position.y - sourceElement.position.y, 2)
         );
 
         if (distance > 2000) {
@@ -1624,25 +1504,25 @@ export class ReactFlowBridge {
       if (hasIssues) {
         potentialFloatingEdges++;
         console.error(
-          `[ReactFlowBridge] 🔴 Potential floating edge ${edge.id}: ${issues.join(", ")}`,
+          `[ReactFlowBridge] 🔴 Potential floating edge ${edge.id}: ${issues.join(", ")}`
         );
         console.error(
-          `  - Source: ${edge.source} (${sourceElement ? "exists" : "missing"})`,
+          `  - Source: ${edge.source} (${sourceElement ? "exists" : "missing"}, visible: ${visibleNodeIds.has(edge.source) || visibleContainerIds.has(edge.source)})`
         );
         console.error(
-          `  - Target: ${edge.target} (${targetElement ? "exists" : "missing"})`,
+          `  - Target: ${edge.target} (${targetElement ? "exists" : "missing"}, visible: ${visibleNodeIds.has(edge.target) || visibleContainerIds.has(edge.target)})`
         );
         console.error(`  - Source handle: ${edge.sourceHandle || "none"}`);
         console.error(`  - Target handle: ${edge.targetHandle || "none"}`);
 
         if (sourceElement?.position) {
           console.error(
-            `  - Source position: (${sourceElement.position.x}, ${sourceElement.position.y})`,
+            `  - Source position: (${sourceElement.position.x}, ${sourceElement.position.y})`
           );
         }
         if (targetElement?.position) {
           console.error(
-            `  - Target position: (${targetElement.position.x}, ${targetElement.position.y})`,
+            `  - Target position: (${targetElement.position.x}, ${targetElement.position.y})`
           );
         }
       }
@@ -1656,8 +1536,308 @@ export class ReactFlowBridge {
 
     if (potentialFloatingEdges > 0) {
       console.error(
-        `[ReactFlowBridge] 🚨 REACTFLOW FLOATING EDGE PROBLEM: ${potentialFloatingEdges} edges may render as floating!`,
+        `[ReactFlowBridge] 🚨 REACTFLOW FLOATING EDGE PROBLEM: ${potentialFloatingEdges} edges may render as floating!`
       );
     }
+  }
+
+  // ============================================================================
+  // SEARCH AND NAVIGATION HIGHLIGHTING
+  // ============================================================================
+
+  /**
+   * Apply search highlights to nodes with error handling
+   */
+  private applySearchHighlights(
+    nodes: ReactFlowNode[],
+    state: VisualizationState
+  ): ReactFlowNode[] {
+    try {
+      return nodes.map((node) => {
+        try {
+          const highlightType = state.getGraphElementHighlightType ? 
+            state.getGraphElementHighlightType(node.id) : null;
+          
+          if (highlightType === "search" || highlightType === "both") {
+            // Apply search highlight styling
+            const searchStyle = this.getSearchHighlightStyle(node, state);
+            return this.createHighlightedNode(node, searchStyle, "search");
+          }
+          
+          return node;
+        } catch (error) {
+          console.warn(`[ReactFlowBridge] Failed to apply search highlight to node ${node.id}:`, error);
+          // Return original node on error
+          return node;
+        }
+      });
+    } catch (error) {
+      console.error(`[ReactFlowBridge] Search highlighting failed:`, error);
+      
+      // Handle error through error handler
+      searchNavigationErrorHandler.handleHighlightingFailure(
+        nodes.map(n => n.id),
+        'search',
+        state,
+        error as Error,
+        { operation: 'search_highlighting', nodeCount: nodes.length }
+      );
+      
+      // Return original nodes as fallback
+      return nodes;
+    }
+  }
+
+  /**
+   * Apply navigation highlights to nodes with error handling
+   */
+  private applyNavigationHighlights(
+    nodes: ReactFlowNode[],
+    state: VisualizationState
+  ): ReactFlowNode[] {
+    try {
+      return nodes.map((node) => {
+        try {
+          const highlightType = state.getGraphElementHighlightType ? 
+            state.getGraphElementHighlightType(node.id) : null;
+          
+          if (highlightType === "navigation" || highlightType === "both") {
+            // Apply navigation highlight styling
+            const navigationStyle = this.getNavigationHighlightStyle(node, state);
+            return this.createHighlightedNode(node, navigationStyle, "navigation");
+          }
+          
+          return node;
+        } catch (error) {
+          console.warn(`[ReactFlowBridge] Failed to apply navigation highlight to node ${node.id}:`, error);
+          // Return original node on error
+          return node;
+        }
+      });
+    } catch (error) {
+      console.error(`[ReactFlowBridge] Navigation highlighting failed:`, error);
+      
+      // Handle error through error handler
+      searchNavigationErrorHandler.handleHighlightingFailure(
+        nodes.map(n => n.id),
+        'navigation',
+        state,
+        error as Error,
+        { operation: 'navigation_highlighting', nodeCount: nodes.length }
+      );
+      
+      // Return original nodes as fallback
+      return nodes;
+    }
+  }
+
+  /**
+   * Apply search highlights to edges with error handling
+   */
+  private applySearchHighlightsToEdges(
+    edges: ReactFlowEdge[],
+    state: VisualizationState
+  ): ReactFlowEdge[] {
+    try {
+      return edges.map((edge) => {
+        try {
+          const highlightType = state.getGraphElementHighlightType ? 
+            state.getGraphElementHighlightType(edge.id) : null;
+          
+          if (highlightType === "search" || highlightType === "both") {
+            // Apply search highlight styling to edge
+            const searchStyle = this.getSearchHighlightStyleForEdge(edge, state);
+            return this.createHighlightedEdge(edge, searchStyle, "search");
+          }
+          
+          return edge;
+        } catch (error) {
+          console.warn(`[ReactFlowBridge] Failed to apply search highlight to edge ${edge.id}:`, error);
+          // Return original edge on error
+          return edge;
+        }
+      });
+    } catch (error) {
+      console.error(`[ReactFlowBridge] Edge search highlighting failed:`, error);
+      
+      // Handle error through error handler
+      searchNavigationErrorHandler.handleHighlightingFailure(
+        edges.map(e => e.id),
+        'search',
+        state,
+        error as Error,
+        { operation: 'edge_search_highlighting', edgeCount: edges.length }
+      );
+      
+      // Return original edges as fallback
+      return edges;
+    }
+  }
+
+  /**
+   * Apply navigation highlights to edges with error handling
+   */
+  private applyNavigationHighlightsToEdges(
+    edges: ReactFlowEdge[],
+    state: VisualizationState
+  ): ReactFlowEdge[] {
+    try {
+      return edges.map((edge) => {
+        try {
+          const highlightType = state.getGraphElementHighlightType ? 
+            state.getGraphElementHighlightType(edge.id) : null;
+          
+          if (highlightType === "navigation" || highlightType === "both") {
+            // Apply navigation highlight styling to edge
+            const navigationStyle = this.getNavigationHighlightStyleForEdge(edge, state);
+            return this.createHighlightedEdge(edge, navigationStyle, "navigation");
+          }
+          
+          return edge;
+        } catch (error) {
+          console.warn(`[ReactFlowBridge] Failed to apply navigation highlight to edge ${edge.id}:`, error);
+          // Return original edge on error
+          return edge;
+        }
+      });
+    } catch (error) {
+      console.error(`[ReactFlowBridge] Edge navigation highlighting failed:`, error);
+      
+      // Handle error through error handler
+      searchNavigationErrorHandler.handleHighlightingFailure(
+        edges.map(e => e.id),
+        'navigation',
+        state,
+        error as Error,
+        { operation: 'edge_navigation_highlighting', edgeCount: edges.length }
+      );
+      
+      // Return original edges as fallback
+      return edges;
+    }
+  }
+
+  /**
+   * Get search highlight style for a node
+   */
+  private getSearchHighlightStyle(
+    node: ReactFlowNode,
+    state: VisualizationState
+  ): React.CSSProperties {
+    // Check if this is the current search result
+    const isCurrentResult = state.getCurrentSearchResult()?.id === node.id;
+    const colors = isCurrentResult ? SEARCH_CURRENT_COLORS : SEARCH_HIGHLIGHT_COLORS;
+    
+    return {
+      backgroundColor: colors.backgroundColor,
+      border: `2px solid ${colors.border}`,
+      boxShadow: `0 0 8px ${colors.border}40`, // Add glow effect with 40% opacity
+    };
+  }
+
+  /**
+   * Get navigation highlight style for a node
+   */
+  private getNavigationHighlightStyle(
+    node: ReactFlowNode,
+    state: VisualizationState
+  ): React.CSSProperties {
+    return {
+      backgroundColor: NAVIGATION_HIGHLIGHT_COLORS.backgroundColor,
+      border: `2px solid ${NAVIGATION_HIGHLIGHT_COLORS.border}`,
+      boxShadow: `0 0 8px ${NAVIGATION_HIGHLIGHT_COLORS.border}40`, // Add glow effect
+    };
+  }
+
+  /**
+   * Get search highlight style for an edge
+   */
+  private getSearchHighlightStyleForEdge(
+    edge: ReactFlowEdge,
+    state: VisualizationState
+  ): React.CSSProperties {
+    return {
+      stroke: SEARCH_HIGHLIGHT_COLORS.border,
+      strokeWidth: 3,
+    };
+  }
+
+  /**
+   * Get navigation highlight style for an edge
+   */
+  private getNavigationHighlightStyleForEdge(
+    edge: ReactFlowEdge,
+    state: VisualizationState
+  ): React.CSSProperties {
+    return {
+      stroke: NAVIGATION_HIGHLIGHT_COLORS.border,
+      strokeWidth: 3,
+    };
+  }
+
+  /**
+   * Create a highlighted node with immutable properties
+   */
+  private createHighlightedNode(
+    node: ReactFlowNode,
+    highlightStyle: React.CSSProperties,
+    highlightType: "search" | "navigation"
+  ): ReactFlowNode {
+    // Combine existing style with highlight style
+    const combinedStyle = {
+      ...node.style,
+      ...highlightStyle,
+    };
+
+    // Create new node with highlight data
+    const result = {
+      ...node,
+      style: combinedStyle,
+      data: {
+        ...node.data,
+        highlightType,
+        isHighlighted: true,
+      },
+    };
+
+    // Freeze for immutability
+    Object.freeze(result);
+    Object.freeze(result.style);
+    Object.freeze(result.data);
+
+    return result;
+  }
+
+  /**
+   * Create a highlighted edge with immutable properties
+   */
+  private createHighlightedEdge(
+    edge: ReactFlowEdge,
+    highlightStyle: React.CSSProperties,
+    highlightType: "search" | "navigation"
+  ): ReactFlowEdge {
+    // Combine existing style with highlight style
+    const combinedStyle = {
+      ...edge.style,
+      ...highlightStyle,
+    };
+
+    // Create new edge with highlight data
+    const result = {
+      ...edge,
+      style: combinedStyle,
+      data: {
+        ...edge.data,
+        highlightType,
+        isHighlighted: true,
+      },
+    };
+
+    // Freeze for immutability
+    Object.freeze(result);
+    Object.freeze(result.style);
+    Object.freeze(result.data);
+
+    return result;
   }
 }

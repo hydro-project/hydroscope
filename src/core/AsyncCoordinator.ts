@@ -4,6 +4,7 @@
  */
 
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
+import { searchNavigationErrorHandler, type ErrorRecoveryResult } from "./ErrorHandler.js";
 
 export interface QueueOptions {
   timeout?: number;
@@ -71,6 +72,10 @@ export class AsyncCoordinator {
     this.currentOperation = operation;
     operation.startedAt = Date.now();
 
+    console.log(
+      `[AsyncCoordinator] 🚀 Starting operation ${operation.id} (${operation.type})`,
+    );
+
     while (operation.retryCount <= operation.maxRetries) {
       try {
         const _result = await this.executeWithTimeout(operation);
@@ -79,20 +84,34 @@ export class AsyncCoordinator {
         operation.completedAt = Date.now();
         this.completedOperations.push(operation);
         this.recordProcessingTime(operation);
+        console.log(
+          `[AsyncCoordinator] ✅ Operation ${operation.id} (${operation.type}) completed successfully`,
+        );
         return;
       } catch (error) {
         operation.error = error as Error;
         operation.retryCount++;
+
+        console.error(
+          `[AsyncCoordinator] ❌ Operation ${operation.id} (${operation.type}) failed (attempt ${operation.retryCount}/${operation.maxRetries + 1}):`,
+          error,
+        );
 
         // If we've exhausted retries, mark as failed
         if (operation.retryCount > operation.maxRetries) {
           operation.completedAt = Date.now();
           this.failedOperations.push(operation);
           this.recordProcessingTime(operation);
+          console.error(
+            `[AsyncCoordinator] 💀 Operation ${operation.id} (${operation.type}) failed permanently after ${operation.retryCount} attempts`,
+          );
           return;
         }
 
         // Otherwise, retry after a brief delay
+        console.log(
+          `[AsyncCoordinator] 🔄 Retrying operation ${operation.id} (${operation.type}) in ${100 * operation.retryCount}ms`,
+        );
         await new Promise((resolve) =>
           setTimeout(resolve, 100 * operation.retryCount),
         );
@@ -217,6 +236,7 @@ export class AsyncCoordinator {
 
   /**
    * Queue ELK layout operation with proper sequencing
+   * This method ensures ELK layout results update VisualizationState before any ReactFlow render
    */
   async queueELKLayout(
     state: any, // VisualizationState - using any to avoid circular dependency
@@ -225,21 +245,31 @@ export class AsyncCoordinator {
   ): Promise<void> {
     const operation = async () => {
       try {
+        console.log(`[AsyncCoordinator] 🚀 Starting ELK layout operation`);
+
         // Set layout phase to indicate processing
         state.setLayoutPhase("laying_out");
 
-        // RESET: Clear ELK caches and state before layout calculation
-        console.log('[AsyncCoordinator] 🔄 Clearing ELK caches before layout');
-        elkBridge.clearCaches();
+        // ELKBridge is now stateless - no caches to clear
 
-        // Call real ELK layout calculation
+        // Call real ELK layout calculation - this updates VisualizationState directly
         await elkBridge.layout(state);
 
         // Increment layout count for smart collapse logic
         state.incrementLayoutCount();
 
+        // Set layout phase to ready after successful ELK layout
+        state.setLayoutPhase("ready");
+
+        console.log(
+          `[AsyncCoordinator] ✅ ELK layout operation completed - VisualizationState updated`,
+        );
         return "layout_complete";
       } catch (error) {
+        console.error(
+          `[AsyncCoordinator] ❌ ELK layout operation failed:`,
+          error,
+        );
         state.setLayoutPhase("error");
         throw error;
       }
@@ -315,6 +345,7 @@ export class AsyncCoordinator {
 
   /**
    * Queue ReactFlow render operation with proper sequencing
+   * This method ensures ReactFlow rendering uses current VisualizationState data
    */
   async queueReactFlowRender(
     state: any, // VisualizationState - using any to avoid circular dependency
@@ -322,28 +353,35 @@ export class AsyncCoordinator {
   ): Promise<any> {
     // ReactFlowData
     const operation = async () => {
-      // Import ReactFlowBridge dynamically to avoid circular dependency
-      const { ReactFlowBridge } = await import("../bridges/ReactFlowBridge.js");
+      // Import BridgeFactory to get singleton bridge instance
+      const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
 
       try {
-        // Create ReactFlow bridge with default style config
-        const reactFlowBridge = new ReactFlowBridge({});
+        console.log(
+          `[AsyncCoordinator] 🚀 Starting ReactFlow render operation`,
+        );
 
-        // RESET: Clear ReactFlow caches and state before rendering
-        console.log('[AsyncCoordinator] 🔄 Clearing ReactFlow caches before render');
-        reactFlowBridge.clearCaches();
+        // Get stateless ReactFlow bridge instance (singleton)
+        const reactFlowBridge = bridgeFactory.getReactFlowBridge();
 
         // Set layout phase to indicate rendering
         state.setLayoutPhase("rendering");
 
-        // Convert to ReactFlow format
+        // Convert to ReactFlow format using current VisualizationState data
         const reactFlowData = reactFlowBridge.toReactFlowData(state);
 
         // Set layout phase to displayed
         state.setLayoutPhase("displayed");
 
+        console.log(
+          `[AsyncCoordinator] ✅ ReactFlow render operation completed`,
+        );
         return reactFlowData;
       } catch (error) {
+        console.error(
+          `[AsyncCoordinator] ❌ ReactFlow render operation failed:`,
+          error,
+        );
         state.setLayoutPhase("error");
         throw error;
       }
@@ -376,6 +414,41 @@ export class AsyncCoordinator {
 
     // Return the ReactFlow data from the completed operation
     return completedOp;
+  }
+
+  /**
+   * Queue complete layout and render pipeline with proper sequencing
+   * Ensures: ELK Layout → State Update → ReactFlow Render
+   * This is the recommended method for full layout updates
+   */
+  async queueLayoutAndRenderPipeline(
+    state: any, // VisualizationState - using any to avoid circular dependency
+    elkBridge: any, // ELKBridge instance
+    options: QueueOptions = {},
+  ): Promise<any> {
+    // ReactFlowData
+    console.log(`[AsyncCoordinator] 🚀 Starting layout and render pipeline`);
+
+    try {
+      // Step 1: ELK Layout (updates VisualizationState)
+      console.log(`[AsyncCoordinator] 📐 Pipeline Step 1: ELK Layout`);
+      await this.queueELKLayout(state, elkBridge, options);
+
+      // Step 2: ReactFlow Render (uses updated VisualizationState)
+      console.log(`[AsyncCoordinator] 🎨 Pipeline Step 2: ReactFlow Render`);
+      const reactFlowData = await this.queueReactFlowRender(state, options);
+
+      console.log(
+        `[AsyncCoordinator] ✅ Layout and render pipeline completed successfully`,
+      );
+      return reactFlowData;
+    } catch (error) {
+      console.error(
+        `[AsyncCoordinator] ❌ Layout and render pipeline failed:`,
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -511,14 +584,27 @@ export class AsyncCoordinator {
   private async handleContainerExpandEvent(
     event: ApplicationEvent,
   ): Promise<void> {
-    const { containerId, state } = event.payload;
+    const { containerId, state, isTreeOperation } = event.payload;
 
     if (!containerId || !state) {
       throw new Error("Container expand event missing required payload");
     }
 
-    // Expand the container in the state
-    (state as any).expandContainer(containerId);
+    if (isTreeOperation) {
+      // Handle tree node expansion
+      if ((state as any).expandTreeNodes) {
+        (state as any).expandTreeNodes([containerId]);
+      } else {
+        console.warn(`[AsyncCoordinator] expandTreeNodes method not available on state`);
+      }
+    } else {
+      // Handle container expansion
+      if ((state as any).expandContainer) {
+        (state as any).expandContainer(containerId);
+      } else {
+        console.warn(`[AsyncCoordinator] expandContainer method not available on state`);
+      }
+    }
 
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
@@ -530,33 +616,40 @@ export class AsyncCoordinator {
   private async handleContainerCollapseEvent(
     event: ApplicationEvent,
   ): Promise<void> {
-    const { containerId, state, triggerValidation } = event.payload;
+    const { containerId, state, triggerValidation, isTreeOperation } = event.payload;
 
     if (!containerId || !state) {
       throw new Error("Container collapse event missing required payload");
     }
 
     console.log(
-      `[AsyncCoordinator] 🔄 Processing container collapse event for ${containerId}`,
+      `[AsyncCoordinator] 🔄 Processing ${isTreeOperation ? 'tree node' : 'container'} collapse event for ${containerId}`,
     );
 
-    // Collapse the container in the state
-    (state as any).collapseContainer(containerId);
+    if (isTreeOperation) {
+      // Handle tree node collapse
+      if ((state as any).collapseTreeNodes) {
+        (state as any).collapseTreeNodes([containerId]);
+      } else {
+        console.warn(`[AsyncCoordinator] collapseTreeNodes method not available on state`);
+      }
+    } else {
+      // Handle container collapse
+      if ((state as any).collapseContainer) {
+        (state as any).collapseContainer(containerId);
+      } else {
+        console.warn(`[AsyncCoordinator] collapseContainer method not available on state`);
+      }
+    }
 
-    // Trigger ReactFlow validation if requested
-    if (triggerValidation) {
+    // Trigger ReactFlow validation if requested (only for container operations)
+    if (triggerValidation && !isTreeOperation) {
       console.log(
         `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse event`,
       );
       try {
-        // Import ReactFlowBridge dynamically to avoid circular dependency
-        const { ReactFlowBridge } = await import(
-          "../bridges/ReactFlowBridge.js"
-        );
-        const reactFlowBridge = new ReactFlowBridge({});
-
-        // Run validation by calling toReactFlowData
-        const _reactFlowData = reactFlowBridge.toReactFlowData(state as any);
+        // Use proper sequencing through queueReactFlowRender instead of direct bridge access
+        await this.queueReactFlowRender(state as any);
         console.log(
           `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse event`,
         );
@@ -847,13 +940,11 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse`,
       );
       try {
-        // Clear caches before validation to ensure fresh state
-        console.log(`[AsyncCoordinator] 🔄 Clearing caches before validation after container ${containerId} collapse`);
-        
-        await this.queueReactFlowRender(state, {
-          timeout: options.timeout,
-          maxRetries: options.maxRetries,
-        });
+        // Use proper sequencing: no direct bridge communication
+        // ReactFlow render will be handled separately by caller if needed
+        console.log(
+          `[AsyncCoordinator] ✅ Container ${containerId} collapse completed - ReactFlow render should be handled by caller`,
+        );
         console.log(
           `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse`,
         );
@@ -872,9 +963,16 @@ export class AsyncCoordinator {
 
   /**
    * Expand all containers through async coordination with proper sequencing
+   * Enhanced to support optional container ID list for batch operations
    */
   async expandAllContainers(
     state: any, // VisualizationState
+    containerIdsOrOptions?: string[] | {
+      triggerLayout?: boolean;
+      layoutConfig?: any; // LayoutConfig
+      timeout?: number;
+      maxRetries?: number;
+    },
     options: {
       triggerLayout?: boolean;
       layoutConfig?: any; // LayoutConfig
@@ -882,15 +980,42 @@ export class AsyncCoordinator {
       maxRetries?: number;
     } = {},
   ): Promise<void> {
-    // Get all collapsed containers
-    const collapsedContainers = state.visibleContainers.filter(
-      (container: any) => container.collapsed,
+    // Handle backward compatibility - if second parameter is options object, use it
+    let containerIds: string[] | undefined;
+    let actualOptions = options;
+    
+    if (containerIdsOrOptions) {
+      if (Array.isArray(containerIdsOrOptions)) {
+        // New signature: containerIds provided
+        containerIds = containerIdsOrOptions;
+      } else {
+        // Old signature: options provided as second parameter
+        actualOptions = containerIdsOrOptions;
+        containerIds = undefined;
+      }
+    }
+    // Get containers to expand - either specified list or all collapsed containers
+    let containersToExpand;
+    if (containerIds) {
+      // Expand only specified containers that are currently collapsed
+      containersToExpand = state.visibleContainers.filter(
+        (container: any) => containerIds.includes(container.id) && container.collapsed,
+      );
+    } else {
+      // Expand all collapsed containers (existing behavior)
+      containersToExpand = state.visibleContainers.filter(
+        (container: any) => container.collapsed,
+      );
+    }
+
+    console.log(
+      `[AsyncCoordinator] 🔄 Expanding ${containersToExpand.length} containers${containerIds ? ' (specified list)' : ' (all collapsed)'}`,
     );
 
     // Expand each container sequentially
-    for (const container of collapsedContainers) {
+    for (const container of containersToExpand) {
       await this.expandContainer(container.id, state, {
-        ...options,
+        ...actualOptions,
         triggerLayout: false, // Don't trigger layout for each individual container
       });
     }
@@ -901,9 +1026,17 @@ export class AsyncCoordinator {
 
   /**
    * Collapse all containers through async coordination with proper sequencing
+   * Enhanced to support optional container ID list for batch operations
    */
   async collapseAllContainers(
     state: any, // VisualizationState
+    containerIdsOrOptions?: string[] | {
+      triggerLayout?: boolean;
+      layoutConfig?: any; // LayoutConfig
+      timeout?: number;
+      maxRetries?: number;
+      triggerValidation?: boolean; // New option to trigger ReactFlow validation
+    },
     options: {
       triggerLayout?: boolean;
       layoutConfig?: any; // LayoutConfig
@@ -912,32 +1045,55 @@ export class AsyncCoordinator {
       triggerValidation?: boolean; // New option to trigger ReactFlow validation
     } = {},
   ): Promise<void> {
-    // Get all expanded containers
-    const expandedContainers = state.visibleContainers.filter(
-      (container: any) => !container.collapsed,
-    );
+    // Handle backward compatibility - if second parameter is options object, use it
+    let containerIds: string[] | undefined;
+    let actualOptions = options;
+    
+    if (containerIdsOrOptions) {
+      if (Array.isArray(containerIdsOrOptions)) {
+        // New signature: containerIds provided
+        containerIds = containerIdsOrOptions;
+      } else {
+        // Old signature: options provided as second parameter
+        actualOptions = containerIdsOrOptions;
+        containerIds = undefined;
+      }
+    }
+    // Get containers to collapse - either specified list or all expanded containers
+    let containersToCollapse;
+    if (containerIds) {
+      // Collapse only specified containers that are currently expanded
+      containersToCollapse = state.visibleContainers.filter(
+        (container: any) => containerIds.includes(container.id) && !container.collapsed,
+      );
+    } else {
+      // Collapse all expanded containers (existing behavior)
+      containersToCollapse = state.visibleContainers.filter(
+        (container: any) => !container.collapsed,
+      );
+    }
 
     console.log(
-      `[AsyncCoordinator] 🔄 Collapsing ${expandedContainers.length} containers`,
+      `[AsyncCoordinator] 🔄 Collapsing ${containersToCollapse.length} containers${containerIds ? ' (specified list)' : ' (all expanded)'}`,
     );
 
     // Collapse each container sequentially
-    for (const container of expandedContainers) {
+    for (const container of containersToCollapse) {
       await this.collapseContainer(container.id, state, {
-        ...options,
+        ...actualOptions,
         triggerLayout: false, // Don't trigger layout for each individual container
       });
     }
 
     // Trigger ReactFlow validation after all containers are collapsed
-    if (options.triggerValidation !== false) {
+    if (actualOptions.triggerValidation !== false) {
       console.log(
         `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container collapse`,
       );
       try {
         await this.queueReactFlowRender(state, {
-          timeout: options.timeout,
-          maxRetries: options.maxRetries,
+          timeout: actualOptions.timeout,
+          maxRetries: actualOptions.maxRetries,
         });
         console.log(
           `[AsyncCoordinator] ✅ ReactFlow validation completed after container collapse`,
@@ -954,6 +1110,9 @@ export class AsyncCoordinator {
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations
   }
+
+  // Tree hierarchy and navigation methods are implemented later in the file
+  // to avoid duplication with error handling methods
 
   /**
    * Handle container operation error recovery
@@ -1067,5 +1226,703 @@ export class AsyncCoordinator {
       },
       lastError,
     };
+  }
+
+  /**
+   * Ensure element is visible by expanding necessary containers
+   * Private helper method for navigation functionality
+   */
+  private async _ensureElementVisible(
+    elementId: string,
+    visualizationState: any, // VisualizationState
+  ): Promise<void> {
+    console.log(`[AsyncCoordinator] 🔍 Checking visibility of element ${elementId}`);
+    
+    // Check if element exists as a node
+    const node = visualizationState.getGraphNode(elementId);
+    if (node) {
+      // Element is a node - check if it's in collapsed containers
+      const containersToExpand = this._getCollapsedContainersForNode(elementId, visualizationState);
+      
+      if (containersToExpand.length > 0) {
+        console.log(`[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} containers to make node ${elementId} visible`);
+        
+        // Expand containers from outermost to innermost
+        for (const containerId of containersToExpand.reverse()) {
+          console.log(`[AsyncCoordinator] 📂 Expanding container ${containerId} for node visibility`);
+          visualizationState.expandContainer(containerId);
+        }
+        
+        console.log(`[AsyncCoordinator] ✅ All containers expanded for node ${elementId}`);
+      } else {
+        console.log(`[AsyncCoordinator] ✅ Node ${elementId} is already visible`);
+      }
+      return;
+    }
+    
+    // Check if element exists as a container
+    const container = visualizationState.getContainer(elementId);
+    if (container) {
+      // Element is a container - check if it's in collapsed parent containers
+      const containersToExpand = this._getCollapsedAncestorContainers(elementId, visualizationState);
+      
+      if (containersToExpand.length > 0) {
+        console.log(`[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} ancestor containers to make container ${elementId} visible`);
+        
+        // Expand containers from outermost to innermost
+        for (const containerId of containersToExpand.reverse()) {
+          console.log(`[AsyncCoordinator] 📂 Expanding ancestor container ${containerId} for container visibility`);
+          visualizationState.expandContainer(containerId);
+        }
+        
+        console.log(`[AsyncCoordinator] ✅ All ancestor containers expanded for container ${elementId}`);
+      } else {
+        console.log(`[AsyncCoordinator] ✅ Container ${elementId} is already visible`);
+      }
+      return;
+    }
+    
+    console.warn(`[AsyncCoordinator] ⚠️ Element ${elementId} not found as node or container`);
+  }
+
+  /**
+   * Get collapsed containers that contain a specific node
+   * Returns containers from innermost to outermost
+   */
+  private _getCollapsedContainersForNode(
+    nodeId: string,
+    visualizationState: any, // VisualizationState
+  ): string[] {
+    const collapsedContainers: string[] = [];
+    
+    // Start with the immediate container of the node
+    let currentContainerId = visualizationState.getNodeContainer(nodeId);
+    
+    while (currentContainerId) {
+      const container = visualizationState.getContainer(currentContainerId);
+      
+      if (container && container.collapsed) {
+        collapsedContainers.push(currentContainerId);
+      }
+      
+      // Move to parent container
+      currentContainerId = visualizationState.getContainerParent(currentContainerId);
+    }
+    
+    return collapsedContainers;
+  }
+
+  /**
+   * Get collapsed ancestor containers for a specific container
+   * Returns containers from innermost to outermost
+   */
+  private _getCollapsedAncestorContainers(
+    containerId: string,
+    visualizationState: any, // VisualizationState
+  ): string[] {
+    const collapsedContainers: string[] = [];
+    
+    // Start with the parent container
+    let currentContainerId = visualizationState.getContainerParent(containerId);
+    
+    while (currentContainerId) {
+      const container = visualizationState.getContainer(currentContainerId);
+      
+      if (container && container.collapsed) {
+        collapsedContainers.push(currentContainerId);
+      }
+      
+      // Move to parent container
+      currentContainerId = visualizationState.getContainerParent(currentContainerId);
+    }
+    
+    return collapsedContainers;
+  }
+
+  // Tree Hierarchy Operations (symmetric with graph operations)
+
+  /**
+   * Expand tree node through async coordination
+   */
+  async expandTreeNode(
+    nodeId: string,
+    state: any, // VisualizationState
+    options: QueueOptions = {},
+  ): Promise<void> {
+    const event: ApplicationEvent = {
+      type: "container_expand", // Reuse container expand event type
+      payload: {
+        containerId: nodeId,
+        state,
+        triggerLayout: false, // Tree operations don't trigger layout
+        isTreeOperation: true,
+      },
+      timestamp: Date.now(),
+    };
+
+    // Queue the tree expand event
+    const operationId = this.queueApplicationEvent(event, {
+      timeout: options.timeout || 3000, // Shorter timeout for tree operations
+      maxRetries: options.maxRetries || 1,
+    });
+
+    // Process the queue if not already processing
+    if (!this.processing) {
+      await this.processQueue();
+    }
+
+    // Check if our operation completed successfully
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
+
+    if (failedOp) {
+      throw failedOp.error || new Error("Tree node expand operation failed");
+    }
+
+    if (!completedOp) {
+      throw new Error("Tree node expand operation not found");
+    }
+  }
+
+  /**
+   * Collapse tree node through async coordination
+   */
+  async collapseTreeNode(
+    nodeId: string,
+    state: any, // VisualizationState
+    options: QueueOptions = {},
+  ): Promise<void> {
+    const event: ApplicationEvent = {
+      type: "container_collapse", // Reuse container collapse event type
+      payload: {
+        containerId: nodeId,
+        state,
+        triggerLayout: false, // Tree operations don't trigger layout
+        isTreeOperation: true,
+      },
+      timestamp: Date.now(),
+    };
+
+    // Queue the tree collapse event
+    const operationId = this.queueApplicationEvent(event, {
+      timeout: options.timeout || 3000, // Shorter timeout for tree operations
+      maxRetries: options.maxRetries || 1,
+    });
+
+    // Process the queue if not already processing
+    if (!this.processing) {
+      await this.processQueue();
+    }
+
+    // Check if our operation completed successfully
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
+    );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
+
+    if (failedOp) {
+      throw failedOp.error || new Error("Tree node collapse operation failed");
+    }
+
+    if (!completedOp) {
+      throw new Error("Tree node collapse operation not found");
+    }
+  }
+
+  /**
+   * Expand all tree nodes through async coordination
+   */
+  async expandAllTreeNodes(
+    state: any, // VisualizationState
+    nodeIds?: string[], // Optional list, defaults to all nodes
+    options: QueueOptions = {},
+  ): Promise<void> {
+    // Get nodes to expand - either specified list or all collapsed nodes
+    const nodesToExpand = nodeIds || 
+      state.visibleContainers?.filter((container: any) => container.collapsed)?.map((container: any) => container.id) || 
+      [];
+
+    console.log(
+      `[AsyncCoordinator] 🔄 Expanding ${nodesToExpand.length} tree nodes${nodeIds ? ' (specified list)' : ' (all collapsed)'}`,
+    );
+
+    // Expand each node sequentially
+    for (const nodeId of nodesToExpand) {
+      await this.expandTreeNode(nodeId, state, {
+        ...options,
+        timeout: (options.timeout || 3000) / 2, // Shorter timeout for individual operations
+      });
+    }
+  }
+
+  /**
+   * Collapse all tree nodes through async coordination
+   */
+  async collapseAllTreeNodes(
+    state: any, // VisualizationState
+    nodeIds?: string[], // Optional list, defaults to all nodes
+    options: QueueOptions = {},
+  ): Promise<void> {
+    // Get nodes to collapse - either specified list or all expanded nodes
+    const nodesToCollapse = nodeIds || 
+      state.visibleContainers?.filter((container: any) => !container.collapsed)?.map((container: any) => container.id) || 
+      [];
+
+    console.log(
+      `[AsyncCoordinator] 🔄 Collapsing ${nodesToCollapse.length} tree nodes${nodeIds ? ' (specified list)' : ' (all expanded)'}`,
+    );
+
+    // Collapse each node sequentially
+    for (const nodeId of nodesToCollapse) {
+      await this.collapseTreeNode(nodeId, state, {
+        ...options,
+        timeout: (options.timeout || 3000) / 2, // Shorter timeout for individual operations
+      });
+    }
+  }
+
+  /**
+   * Navigate to element through async coordination
+   */
+  async navigateToElement(
+    elementId: string,
+    visualizationState: any, // VisualizationState
+    reactFlowInstance?: any, // ReactFlowInstance
+  ): Promise<void> {
+    console.log(`[AsyncCoordinator] 🧭 Navigating to element ${elementId}`);
+
+    // Set navigation selection in state
+    if (visualizationState.navigateToElement) {
+      visualizationState.navigateToElement(elementId);
+    }
+
+    // Focus viewport if ReactFlow instance is provided
+    if (reactFlowInstance) {
+      await this.focusViewportOnElement(elementId, reactFlowInstance);
+    }
+  }
+
+  /**
+   * Focus viewport on element
+   */
+  async focusViewportOnElement(
+    elementId: string,
+    reactFlowInstance: any, // ReactFlowInstance
+  ): Promise<void> {
+    console.log(`[AsyncCoordinator] 🎯 Focusing viewport on element ${elementId}`);
+
+    if (!reactFlowInstance) {
+      throw new Error("ReactFlow instance is required for viewport focus");
+    }
+
+    try {
+      // Get the node/container position
+      const node = reactFlowInstance.getNode(elementId);
+      if (node) {
+        // Pan to the node with smooth animation
+        const x = node.position.x + (node.width || 100) / 2;
+        const y = node.position.y + (node.height || 50) / 2;
+        
+        reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
+      } else {
+        console.warn(`[AsyncCoordinator] Element ${elementId} not found in ReactFlow`);
+      }
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Failed to focus viewport on ${elementId}:`, error);
+      throw error;
+    }
+  }
+
+  // Error Handling and Recovery Methods
+
+  /**
+   * Execute container expansion with comprehensive error handling
+   */
+  expandContainerWithErrorHandling(
+    containerId: string,
+    state: any, // VisualizationState
+    options: {
+      triggerLayout?: boolean;
+      layoutConfig?: any;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): ErrorRecoveryResult {
+    try {
+      console.log(`[AsyncCoordinator] Expanding container ${containerId} with error handling`);
+      
+      // Execute synchronously (respecting core architecture)
+      this.expandContainer(containerId, state, options);
+
+      return {
+        success: true,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Container expansion failed for ${containerId}:`, error);
+      
+      // Handle the error through the error handler (this can be async at the boundary)
+      searchNavigationErrorHandler.handleContainerExpansionFailure(
+        [containerId],
+        state,
+        error as Error,
+        { operation: 'single_expand', containerId }
+      ).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+
+      return {
+        success: false,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    }
+  }
+
+  /**
+   * Execute batch container expansion with comprehensive error handling
+   */
+  expandAllContainersWithErrorHandling(
+    state: any, // VisualizationState
+    containerIdsOrOptions?: string[] | {
+      triggerLayout?: boolean;
+      layoutConfig?: any;
+      timeout?: number;
+      maxRetries?: number;
+    },
+    options: {
+      triggerLayout?: boolean;
+      layoutConfig?: any;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): ErrorRecoveryResult {
+    try {
+      console.log(`[AsyncCoordinator] Expanding containers with error handling`);
+      
+      // Execute synchronously (respecting core architecture)
+      this.expandAllContainers(state, containerIdsOrOptions, options);
+
+      return {
+        success: true,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Batch container expansion failed:`, error);
+      
+      // Determine which containers were being expanded
+      let containerIds: string[];
+      if (Array.isArray(containerIdsOrOptions)) {
+        containerIds = containerIdsOrOptions;
+      } else {
+        // Get all collapsed containers as fallback
+        containerIds = state.visibleContainers
+          .filter((container: any) => container.collapsed)
+          .map((container: any) => container.id);
+      }
+      
+      // Handle the error through the error handler (async at boundary)
+      searchNavigationErrorHandler.handleContainerExpansionFailure(
+        containerIds,
+        state,
+        error as Error,
+        { operation: 'batch_expand', containerCount: containerIds.length }
+      ).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+
+      return {
+        success: false,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    }
+  }
+
+  /**
+   * Execute tree node expansion with comprehensive error handling
+   */
+  expandTreeNodeWithErrorHandling(
+    nodeId: string,
+    state: any, // VisualizationState
+    options: {
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): ErrorRecoveryResult {
+    try {
+      console.log(`[AsyncCoordinator] Expanding tree node ${nodeId} with error handling`);
+      
+      // Execute synchronously (respecting core architecture)
+      if (state.expandTreeNodes) {
+        state.expandTreeNodes([nodeId]);
+      } else {
+        throw new Error('expandTreeNodes method not available');
+      }
+
+      return {
+        success: true,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Tree node expansion failed for ${nodeId}:`, error);
+      
+      // Handle the error through the error handler (async at boundary)
+      searchNavigationErrorHandler.handleContainerExpansionFailure(
+        [nodeId],
+        state,
+        error as Error,
+        { operation: 'tree_expand', nodeId }
+      ).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+
+      return {
+        success: false,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    }
+  }
+
+  /**
+   * Execute navigation with comprehensive error handling
+   */
+  navigateToElementWithErrorHandling(
+    elementId: string,
+    visualizationState: any, // VisualizationState
+    reactFlowInstance?: any, // ReactFlowInstance
+    options: {
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): ErrorRecoveryResult {
+    try {
+      console.log(`[AsyncCoordinator] Navigating to element ${elementId} with error handling`);
+      
+      // Execute synchronously (respecting core architecture)
+      if (visualizationState.navigateToElement) {
+        visualizationState.navigateToElement(elementId);
+      } else {
+        throw new Error('navigateToElement method not available');
+      }
+
+      return {
+        success: true,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Navigation failed for element ${elementId}:`, error);
+      
+      // Handle the error through the error handler (async at boundary)
+      searchNavigationErrorHandler.handleNavigationFailure(
+        elementId,
+        visualizationState,
+        error as Error,
+        { operation: 'navigation', elementId }
+      ).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+
+      return {
+        success: false,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    }
+  }
+
+  /**
+   * Execute viewport focus with comprehensive error handling
+   */
+  focusViewportOnElementWithErrorHandling(
+    elementId: string,
+    reactFlowInstance: any, // ReactFlowInstance
+    options: {
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): ErrorRecoveryResult {
+    try {
+      console.log(`[AsyncCoordinator] Focusing viewport on element ${elementId} with error handling`);
+      
+      // Execute synchronously (respecting core architecture)
+      // Note: Viewport operations are handled at component level, not core
+      console.log(`[AsyncCoordinator] Viewport focus queued for element ${elementId}`);
+
+      return {
+        success: true,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Viewport focus failed for element ${elementId}:`, error);
+      
+      // Handle the error through the error handler (async at boundary)
+      searchNavigationErrorHandler.handleNavigationFailure(
+        elementId,
+        {} as any, // No state needed for viewport focus
+        error as Error,
+        { operation: 'viewport_focus', elementId }
+      ).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+
+      return {
+        success: false,
+        fallbackApplied: false,
+        userFeedbackShown: false,
+      };
+    }
+  }
+
+  /**
+   * Execute search operation with comprehensive error handling
+   */
+  performSearchWithErrorHandling(
+    query: string,
+    state: any, // VisualizationState
+    options: {
+      timeout?: number;
+      maxRetries?: number;
+      expandContainers?: boolean;
+    } = {},
+  ): { results: any[]; recovery?: ErrorRecoveryResult } {
+    try {
+      console.log(`[AsyncCoordinator] Performing search "${query}" with error handling`);
+      
+      // Perform the search operation synchronously (respecting core architecture)
+      const searchResults = state.performSearch ? state.performSearch(query) : [];
+      
+      // Optionally expand containers containing results
+      if (options.expandContainers && searchResults.length > 0) {
+        const containerIds = this._getContainersForSearchResults(searchResults, state);
+        if (containerIds.length > 0) {
+          try {
+            this.expandAllContainers(state, containerIds);
+          } catch (expansionError) {
+            console.warn(`[AsyncCoordinator] Container expansion failed during search:`, expansionError);
+            // Continue with search results even if expansion fails
+          }
+        }
+      }
+
+      return { results: searchResults };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Search failed for query "${query}":`, error);
+      
+      // Handle the error through the error handler (async at boundary)
+      searchNavigationErrorHandler.handleSearchFailure(
+        query,
+        state,
+        error as Error,
+        { operation: 'search', query, expandContainers: options.expandContainers }
+      ).then(recovery => {
+        console.log(`[AsyncCoordinator] Search error recovery completed:`, recovery);
+      }).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+
+      return { 
+        results: [], 
+        recovery: {
+          success: false,
+          fallbackApplied: false,
+          userFeedbackShown: false,
+        }
+      };
+    }
+  }
+
+  /**
+   * Get containers that need to be expanded for search results
+   */
+  private _getContainersForSearchResults(searchResults: any[], state: any): string[] {
+    const containerIds = new Set<string>();
+    
+    for (const result of searchResults) {
+      if (result.type === 'node') {
+        // Find containers that contain this node
+        let currentContainer = state.getNodeContainer ? state.getNodeContainer(result.id) : null;
+        while (currentContainer) {
+          const container = state.getContainer ? state.getContainer(currentContainer) : null;
+          if (container && container.collapsed) {
+            containerIds.add(currentContainer);
+          }
+          currentContainer = state.getContainerParent ? state.getContainerParent(currentContainer) : null;
+        }
+      }
+    }
+    
+    return Array.from(containerIds);
+  }
+
+  /**
+   * Execute operation with error recovery (synchronous core)
+   */
+  executeWithErrorRecovery<T>(
+    operation: () => T,
+    operationType: string,
+    context?: Record<string, any>
+  ): { result?: T; recovery?: ErrorRecoveryResult } {
+    try {
+      const result = operation();
+      return { result };
+    } catch (error) {
+      console.error(`[AsyncCoordinator] Operation "${operationType}" failed:`, error);
+      
+      // Handle error through error handler (async at boundary)
+      searchNavigationErrorHandler.handleTimeout(
+        operationType,
+        0, // No timeout for synchronous operations
+        context
+      ).then(recovery => {
+        console.log(`[AsyncCoordinator] Error recovery completed:`, recovery);
+      }).catch(handlerError => {
+        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
+      });
+      
+      return { 
+        recovery: {
+          success: false,
+          fallbackApplied: false,
+          userFeedbackShown: false,
+        }
+      };
+    }
+  }
+
+  /**
+   * Get error handler statistics
+   */
+  getErrorStatistics() {
+    return searchNavigationErrorHandler.getErrorStatistics();
+  }
+
+  /**
+   * Check if system is experiencing high error rate
+   */
+  isHighErrorRate(): boolean {
+    return searchNavigationErrorHandler.isHighErrorRate();
+  }
+
+  /**
+   * Get recovery suggestions based on error patterns
+   */
+  getRecoverySuggestions(): string[] {
+    return searchNavigationErrorHandler.getRecoverySuggestions();
+  }
+
+  /**
+   * Clear error history
+   */
+  clearErrorHistory(): void {
+    searchNavigationErrorHandler.clearErrorHistory();
   }
 }

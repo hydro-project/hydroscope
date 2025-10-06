@@ -15,8 +15,6 @@ import type {
 } from "../types/core.js";
 
 export interface JSONParserOptions {
-  /** Default hierarchy choice to use for grouping */
-  defaultHierarchyChoice?: string;
   /** Enable debug logging */
   debug?: boolean;
   /** Custom node transformation function */
@@ -48,7 +46,6 @@ export class JSONParser {
 
   constructor(options: JSONParserOptions = {}) {
     this.options = {
-      defaultHierarchyChoice: options.defaultHierarchyChoice || "location",
       debug: options.debug || false,
       nodeTransformer: options.nodeTransformer || ((node) => node),
       edgeTransformer: options.edgeTransformer || ((edge) => edge),
@@ -81,7 +78,7 @@ export class JSONParser {
     try {
       // Step 1: Parse hierarchy choices
       const hierarchyChoices = this.parseHierarchyChoices(
-        data.hierarchyChoices,
+        data.hierarchyChoices
       );
       this.debugLog("Parsed hierarchy choices", {
         count: hierarchyChoices.length,
@@ -90,7 +87,7 @@ export class JSONParser {
       // Step 2: Determine which hierarchy to use for grouping
       const selectedHierarchy = this.selectDefaultHierarchy(
         hierarchyChoices,
-        data.nodeAssignments,
+        data.nodeAssignments
       );
       this.debugLog("Selected hierarchy", { hierarchy: selectedHierarchy });
 
@@ -100,8 +97,7 @@ export class JSONParser {
         containerCount = await this.createContainersFromHierarchy(
           visualizationState,
           hierarchyChoices.find((h) => h.id === selectedHierarchy),
-          data.nodeAssignments[selectedHierarchy],
-          warnings,
+          warnings
         );
       }
 
@@ -109,7 +105,7 @@ export class JSONParser {
       const nodeCount = await this.parseNodes(
         visualizationState,
         data.nodes,
-        warnings,
+        warnings
       );
       this.debugLog("Parsed nodes", { count: nodeCount });
 
@@ -118,7 +114,7 @@ export class JSONParser {
         await this.assignNodesToContainers(
           visualizationState,
           data.nodeAssignments[selectedHierarchy],
-          warnings,
+          warnings
         );
       }
 
@@ -126,7 +122,7 @@ export class JSONParser {
       const edgeCount = await this.parseEdges(
         visualizationState,
         data.edges,
-        warnings,
+        warnings
       );
       this.debugLog("Parsed edges", { count: edgeCount });
 
@@ -182,7 +178,7 @@ export class JSONParser {
     return rawChoices.map((choice, index) => {
       if (!choice.id || !choice.name) {
         throw new Error(
-          `Invalid hierarchy choice at index ${index}: missing id or name`,
+          `Invalid hierarchy choice at index ${index}: missing id or name`
         );
       }
 
@@ -208,7 +204,7 @@ export class JSONParser {
     return rawChildren.map((child, index) => {
       if (!child.id || !child.name) {
         throw new Error(
-          `Invalid hierarchy child at index ${index}: missing id or name`,
+          `Invalid hierarchy child at index ${index}: missing id or name`
         );
       }
 
@@ -222,25 +218,26 @@ export class JSONParser {
 
   /**
    * Select the default hierarchy for grouping
+   * Uses the first hierarchy choice as per JSON format specification
    */
   private selectDefaultHierarchy(
     hierarchyChoices: HierarchyChoice[],
-    nodeAssignments: Record<string, Record<string, string>>,
+    nodeAssignments: Record<string, Record<string, string>>
   ): string | null {
-    // First try the configured default
-    if (this.options.defaultHierarchyChoice) {
-      const hasChoice = hierarchyChoices.some(
-        (h) => h.id === this.options.defaultHierarchyChoice,
+    // Use the first hierarchy choice as default (per JSON format spec)
+    if (hierarchyChoices.length > 0) {
+      const firstChoice = hierarchyChoices[0];
+      this.debugLog(
+        `using first hierarchy choice as default: ${firstChoice.id}`
       );
-      const hasAssignments =
-        nodeAssignments[this.options.defaultHierarchyChoice];
-      if (hasChoice && hasAssignments) {
-        return this.options.defaultHierarchyChoice;
+      if (nodeAssignments[firstChoice.id]) {
+        return firstChoice.id;
       }
     }
 
-    // Fall back to first available hierarchy with assignments
+    // Fallback: any available hierarchy with assignments
     for (const choice of hierarchyChoices) {
+      this.debugLog(`falling back to hierarchy ${choice.id}`);
       if (nodeAssignments[choice.id]) {
         return choice.id;
       }
@@ -255,8 +252,7 @@ export class JSONParser {
   private async createContainersFromHierarchy(
     state: VisualizationState,
     hierarchy: HierarchyChoice | undefined,
-    assignments: Record<string, string>,
-    warnings: ValidationResult[],
+    warnings: ValidationResult[]
   ): Promise<number> {
     if (!hierarchy) {
       return 0;
@@ -266,10 +262,13 @@ export class JSONParser {
 
     // First, collect all containers in the hierarchy
     const allContainers: Array<{ node: any; parentId?: string }> = [];
-    
-    const collectContainersRecursively = (hierarchyNode: any, parentId?: string) => {
+
+    const collectContainersRecursively = (
+      hierarchyNode: any,
+      parentId?: string
+    ) => {
       allContainers.push({ node: hierarchyNode, parentId });
-      
+
       // Recursively collect children
       if (hierarchyNode.children && hierarchyNode.children.length > 0) {
         for (const child of hierarchyNode.children) {
@@ -287,7 +286,7 @@ export class JSONParser {
     // This ensures child containers exist before their parents try to reference them
     for (let i = allContainers.length - 1; i >= 0; i--) {
       const { node: hierarchyNode, parentId } = allContainers[i];
-      
+
       try {
         // Collect children IDs for this container
         const childrenIds = new Set<string>();
@@ -308,18 +307,21 @@ export class JSONParser {
         state.addContainer(container);
         containerCount++;
 
-        this.debugLog("Created container", { 
-          id: hierarchyNode.id, 
+        this.debugLog("Created container", {
+          id: hierarchyNode.id,
           name: hierarchyNode.name,
-          parentId: parentId || 'none',
-          childrenCount: childrenIds.size
+          parentId: parentId || "none",
+          childrenCount: childrenIds.size,
         });
       } catch (error) {
         warnings.push({
           type: "container_creation_error",
           message: `Failed to create container ${hierarchyNode.id}: ${error instanceof Error ? error.message : "Unknown error"}`,
           severity: "warning",
-          context: { containerId: hierarchyNode.id, containerName: hierarchyNode.name },
+          context: {
+            containerId: hierarchyNode.id,
+            containerName: hierarchyNode.name,
+          },
         });
       }
     }
@@ -335,7 +337,7 @@ export class JSONParser {
   private async parseNodes(
     state: VisualizationState,
     rawNodes: any[],
-    warnings: ValidationResult[],
+    warnings: ValidationResult[]
   ): Promise<number> {
     let nodeCount = 0;
 
@@ -396,7 +398,7 @@ export class JSONParser {
   private async assignNodesToContainers(
     state: VisualizationState,
     assignments: Record<string, string>,
-    warnings: ValidationResult[],
+    warnings: ValidationResult[]
   ): Promise<void> {
     let assignmentCount = 0;
 
@@ -452,7 +454,7 @@ export class JSONParser {
   private async parseEdges(
     state: VisualizationState,
     rawEdges: any[],
-    warnings: ValidationResult[],
+    warnings: ValidationResult[]
   ): Promise<number> {
     let edgeCount = 0;
 
@@ -479,14 +481,14 @@ export class JSONParser {
         // Validate required fields
         if (!edge.source || !edge.target) {
           throw new Error(
-            `Edge missing source or target: source=${edge.source}, target=${edge.target}`,
+            `Edge missing source or target: source=${edge.source}, target=${edge.target}`
           );
         }
 
         // Debug: Log first few edges to verify source/target values
         if (edgeCount < 5) {
           console.log(
-            `[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`,
+            `[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`
           );
         }
 
@@ -513,10 +515,9 @@ export class JSONParser {
    * Create a parser with paxos.json specific configuration
    */
   static createPaxosParser(
-    options: Partial<JSONParserOptions> = {},
+    options: Partial<JSONParserOptions> = {}
   ): JSONParser {
     return new JSONParser({
-      defaultHierarchyChoice: "location",
       debug: false,
       validateDuringParsing: true,
       ...options,

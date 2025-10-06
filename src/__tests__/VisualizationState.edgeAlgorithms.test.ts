@@ -119,6 +119,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(aggregatedEdges.length).toBe(1);
 
       const aggEdge = aggregatedEdges[0];
+      console.log(
+        `DEBUG: Aggregated edge: ${aggEdge.id}, source: ${aggEdge.source}, target: ${aggEdge.target}`,
+      );
       expect(
         (aggEdge.source === "container1" && aggEdge.target === "container2") ||
           (aggEdge.source === "container2" && aggEdge.target === "container1"),
@@ -472,6 +475,69 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
       expect(outgoing).toBeDefined();
       expect(incoming).toBeDefined();
+    });
+
+    it("should maintain consistent aggregated edge IDs after expand/collapse cycle", () => {
+      // This test specifically addresses the bug where hyperEdges become disconnected
+      // after expanding and then collapsing a container again
+      const container = createTestContainer("container1", ["node1", "node2"]);
+      const node1 = createTestNode("node1");
+      const node2 = createTestNode("node2");
+      const externalNode = createTestNode("external");
+
+      const edge1 = createTestEdge("edge1", "node1", "external");
+      const edge2 = createTestEdge("edge2", "external", "node2");
+
+      state.addContainer(container);
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addNode(externalNode);
+      state.addEdge(edge1);
+      state.addEdge(edge2);
+
+      // Initial collapse - capture the aggregated edge IDs
+      state.collapseContainerSystemOperation("container1");
+      const initialAggregatedEdges = state.getAggregatedEdges();
+      const initialEdgeIds = initialAggregatedEdges.map((e) => e.id).sort();
+
+      expect(initialAggregatedEdges.length).toBe(2);
+      expect(initialEdgeIds).toEqual([
+        "agg-container1-external",
+        "agg-external-container1",
+      ]);
+
+      // Expand the container
+      state.expandContainer("container1");
+      expect(state.getAggregatedEdges().length).toBe(0);
+      expect(state.getGraphEdge("edge1")?.hidden).toBe(false);
+      expect(state.getGraphEdge("edge2")?.hidden).toBe(false);
+
+      // Collapse again - the aggregated edge IDs should be identical
+      state.collapseContainerSystemOperation("container1");
+      const secondAggregatedEdges = state.getAggregatedEdges();
+      const secondEdgeIds = secondAggregatedEdges.map((e) => e.id).sort();
+
+      expect(secondAggregatedEdges.length).toBe(2);
+      expect(secondEdgeIds).toEqual(initialEdgeIds);
+
+      // Verify the edges have the same source/target relationships
+      const initialOutgoing = initialAggregatedEdges.find(
+        (e) => e.source === "container1",
+      );
+      const initialIncoming = initialAggregatedEdges.find(
+        (e) => e.target === "container1",
+      );
+      const secondOutgoing = secondAggregatedEdges.find(
+        (e) => e.source === "container1",
+      );
+      const secondIncoming = secondAggregatedEdges.find(
+        (e) => e.target === "container1",
+      );
+
+      expect(initialOutgoing?.id).toBe(secondOutgoing?.id);
+      expect(initialIncoming?.id).toBe(secondIncoming?.id);
+      expect(initialOutgoing?.target).toBe(secondOutgoing?.target);
+      expect(initialIncoming?.source).toBe(secondIncoming?.source);
     });
   });
 });

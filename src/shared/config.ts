@@ -78,9 +78,6 @@ export const LAYOUT_CONSTANTS = {
   // Validation and warning thresholds
   MAX_HYPEREDGE_WARNINGS: 10, // Maximum hyperEdge warnings before summary
 
-  // ReactFlow controls scaling
-  REACTFLOW_CONTROLS_SCALE: 1.3, // Scale factor for ReactFlow control buttons
-
   // Large container detection thresholds (derived from base constants)
   get LARGE_CONTAINER_WIDTH_THRESHOLD() {
     return this.MIN_CONTAINER_WIDTH * 1.5; // 300 (1.5x minimum width)
@@ -352,6 +349,27 @@ export const DEFAULT_EDGE_STYLE = {
   STROKE_COLOR: "#666666",
   STROKE_WIDTH: 2,
   DEFAULT_STROKE_COLOR: "#999999", // For edges with no properties
+} as const;
+
+// Search and Navigation Highlight Colors
+export const SEARCH_HIGHLIGHT_COLORS = {
+  backgroundColor: "#fbbf24", // Amber-400
+  border: "#f59e0b", // Amber-500
+} as const;
+
+export const SEARCH_CURRENT_COLORS = {
+  backgroundColor: "#f97316", // Orange-500
+  border: "#ea580c", // Orange-600
+} as const;
+
+export const NAVIGATION_HIGHLIGHT_COLORS = {
+  backgroundColor: "#3b82f6", // Blue-500
+  border: "#2563eb", // Blue-600
+} as const;
+
+export const COMBINED_HIGHLIGHT_COLORS = {
+  backgroundColor: "#8b5cf6", // Violet-500
+  border: "#7c3aed", // Violet-600
 } as const;
 
 // Type exports

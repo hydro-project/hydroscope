@@ -17,10 +17,9 @@ describe("JSONParser Integration Tests", () => {
       const chatContent = fs.readFileSync(chatPath, "utf-8");
       const chatData = JSON.parse(chatContent) as HydroscopeData;
 
-      // Create parser with backtrace hierarchy
-      const parser = new JSONParser({ 
-        defaultHierarchyChoice: "backtrace",
-        debug: false 
+      // Create parser (will use first hierarchy choice from JSON)
+      const parser = new JSONParser({
+        debug: false,
       });
 
       // Parse the data
@@ -28,35 +27,34 @@ describe("JSONParser Integration Tests", () => {
 
       // Verify basic structure
       expect(result.visualizationState).toBeDefined();
-      expect(result.selectedHierarchy).toBe("backtrace");
+      expect(result.selectedHierarchy).toBe("location"); // First hierarchy choice in chat.json
       expect(result.stats.nodeCount).toBe(9);
       expect(result.stats.edgeCount).toBe(8);
-      
-      // Verify that nested containers were created
-      expect(result.stats.containerCount).toBeGreaterThan(2);
-      
-      // Verify specific nested containers exist (bt_6 and bt_10 from node assignments)
-      const container_bt6 = result.visualizationState.getContainer("bt_6");
-      const container_bt10 = result.visualizationState.getContainer("bt_10");
-      expect(container_bt6).toBeDefined();
-      expect(container_bt10).toBeDefined();
-      
-      // Verify nodes are properly assigned to nested containers
-      expect(result.visualizationState.getNodeContainer("0")).toBe("bt_6");
-      expect(result.visualizationState.getNodeContainer("6")).toBe("bt_10");
-      
+
+      // Verify that location containers were created (2 containers: loc_0 and loc_1)
+      expect(result.stats.containerCount).toBe(2);
+
+      // Verify specific location containers exist
+      const container_loc0 = result.visualizationState.getContainer("loc_0");
+      const container_loc1 = result.visualizationState.getContainer("loc_1");
+      expect(container_loc0).toBeDefined();
+      expect(container_loc1).toBeDefined();
+
+      // Verify nodes are properly assigned to location containers
+      expect(result.visualizationState.getNodeContainer("0")).toBe("loc_0");
+      expect(result.visualizationState.getNodeContainer("6")).toBe("loc_1");
+
       // Verify no warnings about missing containers
-      const containerWarnings = result.warnings.filter(w => 
-        w.type === "container_assignment_error" && 
-        w.message.includes("non-existent container")
+      const containerWarnings = result.warnings.filter(
+        (w) =>
+          w.type === "container_assignment_error" &&
+          w.message.includes("non-existent container"),
       );
       expect(containerWarnings).toHaveLength(0);
-      
-      // Verify container hierarchy is established correctly
-      // bt_6 should be a child of bt_8, which should be a child of bt_2, etc.
-      expect(result.visualizationState.getContainerParent("bt_6")).toBe("bt_8");
-      expect(result.visualizationState.getContainerParent("bt_8")).toBe("bt_2");
-      expect(result.visualizationState.getContainerParent("bt_10")).toBe("bt_7");
+
+      // Verify location hierarchy is flat (no parent-child relationships between containers)
+      expect(result.visualizationState.getContainerParent("loc_0")).toBeUndefined();
+      expect(result.visualizationState.getContainerParent("loc_1")).toBeUndefined();
     });
   });
 
@@ -133,7 +131,7 @@ describe("JSONParser Integration Tests", () => {
 
       console.log(`Paxos.json processed in ${endTime - startTime}ms`);
       console.log(
-        `Nodes: ${result.stats.nodeCount}, Edges: ${result.stats.edgeCount}, Containers: ${result.stats.containerCount}`
+        `Nodes: ${result.stats.nodeCount}, Edges: ${result.stats.edgeCount}, Containers: ${result.stats.containerCount}`,
       );
     }, 30000);
   });

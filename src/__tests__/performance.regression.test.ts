@@ -94,7 +94,6 @@ describe("Performance Regression Tests", () => {
         "json-parse",
         async () => {
           const parser = new JSONParser({
-            defaultHierarchyChoice: "location",
             validateDuringParsing: true,
           });
           return await parser.parseData(paxosData);
@@ -369,38 +368,44 @@ describe("Performance Regression Tests", () => {
   });
 
   describe("Synthetic Data Performance", () => {
-    it("should handle large synthetic graphs efficiently", { timeout: 10000 }, async () => {
-      const largeGraphData = generateSyntheticGraphData("medium"); // Use medium size for faster testing
+    it(
+      "should handle large synthetic graphs efficiently",
+      { timeout: 10000 },
+      async () => {
+        const largeGraphData = generateSyntheticGraphData("medium"); // Use medium size for faster testing
 
-      const testResult = await batchTester.runTest(
-        "large-synthetic-graph",
-        async () => {
-          const parser = new JSONParser();
-          const parseResult = await parser.parseData(largeGraphData);
-          const elkBridge = new ELKBridge();
+        const testResult = await batchTester.runTest(
+          "large-synthetic-graph",
+          async () => {
+            const parser = new JSONParser();
+            const parseResult = await parser.parseData(largeGraphData);
+            const elkBridge = new ELKBridge();
 
-          // Test core operations with large data
-          const elkGraph = elkBridge.toELKGraph(parseResult.visualizationState);
-          parseResult.visualizationState.expandAllContainers();
+            // Test core operations with large data
+            const elkGraph = elkBridge.toELKGraph(
+              parseResult.visualizationState,
+            );
+            parseResult.visualizationState.expandAllContainers();
 
-          return { parseResult, elkGraph };
-        },
-        3,
-        1,
-      );
+            return { parseResult, elkGraph };
+          },
+          3,
+          1,
+        );
 
-      // Should handle large graphs within reasonable time
-      expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse * 2,
-      );
-      expect(testResult.average.memoryUsage.peak).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.memoryUsage * 2,
-      );
+        // Should handle large graphs within reasonable time
+        expect(testResult.average.duration).toBeLessThan(
+          DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse * 2,
+        );
+        expect(testResult.average.memoryUsage.peak).toBeLessThan(
+          DEFAULT_PERFORMANCE_THRESHOLDS.memoryUsage * 2,
+        );
 
-      console.log(
-        createPerformanceReport("Large Synthetic Graph", testResult.average),
-      );
-    });
+        console.log(
+          createPerformanceReport("Large Synthetic Graph", testResult.average),
+        );
+      },
+    );
   });
 
   describe("Throughput Testing", () => {

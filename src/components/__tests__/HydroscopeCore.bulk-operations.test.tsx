@@ -1,25 +1,26 @@
 /**
  * Test suite for HydroscopeCore bulk operations
- * 
+ *
  * Tests the atomic state management for collapseAll and expandAll operations.
  * These tests focus on the imperative API and error handling.
  */
 
-import React, { useRef } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { HydroscopeCore, type HydroscopeCoreHandle } from '../HydroscopeCore.js';
-import type { HydroscopeData } from '../../types/core.js';
+import React, { useRef } from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import {
+  HydroscopeCore,
+  type HydroscopeCoreHandle,
+} from "../HydroscopeCore.js";
+import type { HydroscopeData } from "../../types/core.js";
 
 // Simple mock data that should parse correctly
 const mockSimpleData: HydroscopeData = {
   nodes: [
-    { id: 'node1', label: 'Node 1' },
-    { id: 'node2', label: 'Node 2' },
+    { id: "node1", label: "Node 1" },
+    { id: "node2", label: "Node 2" },
   ],
-  edges: [
-    { id: 'edge1', source: 'node1', target: 'node2' },
-  ],
+  edges: [{ id: "edge1", source: "node1", target: "node2" }],
   hierarchyChoices: [],
   nodeAssignments: {},
 };
@@ -73,13 +74,13 @@ const TestComponent: React.FC<{
   );
 };
 
-describe('HydroscopeCore Bulk Operations', () => {
+describe("HydroscopeCore Bulk Operations", () => {
   beforeEach(() => {
     // Clear all mocks before each test
     vi.clearAllMocks();
   });
 
-  it('should expose collapseAll and expandAll methods through ref', () => {
+  it("should expose collapseAll and expandAll methods through ref", () => {
     const RefTestComponent: React.FC = () => {
       const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
 
@@ -88,8 +89,8 @@ describe('HydroscopeCore Bulk Operations', () => {
         if (hydroscopeRef.current) {
           expect(hydroscopeRef.current.collapseAll).toBeDefined();
           expect(hydroscopeRef.current.expandAll).toBeDefined();
-          expect(typeof hydroscopeRef.current.collapseAll).toBe('function');
-          expect(typeof hydroscopeRef.current.expandAll).toBe('function');
+          expect(typeof hydroscopeRef.current.collapseAll).toBe("function");
+          expect(typeof hydroscopeRef.current.expandAll).toBe("function");
         }
       });
 
@@ -106,7 +107,7 @@ describe('HydroscopeCore Bulk Operations', () => {
     render(<RefTestComponent />);
   });
 
-  it('should expose individual container methods through ref', () => {
+  it("should expose individual container methods through ref", () => {
     const RefTestComponent: React.FC = () => {
       const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
 
@@ -116,9 +117,9 @@ describe('HydroscopeCore Bulk Operations', () => {
           expect(hydroscopeRef.current.collapse).toBeDefined();
           expect(hydroscopeRef.current.expand).toBeDefined();
           expect(hydroscopeRef.current.toggle).toBeDefined();
-          expect(typeof hydroscopeRef.current.collapse).toBe('function');
-          expect(typeof hydroscopeRef.current.expand).toBe('function');
-          expect(typeof hydroscopeRef.current.toggle).toBe('function');
+          expect(typeof hydroscopeRef.current.collapse).toBe("function");
+          expect(typeof hydroscopeRef.current.expand).toBe("function");
+          expect(typeof hydroscopeRef.current.toggle).toBe("function");
         }
       });
 
@@ -135,7 +136,7 @@ describe('HydroscopeCore Bulk Operations', () => {
     render(<RefTestComponent />);
   });
 
-  it('should handle invalid data gracefully', async () => {
+  it("should handle invalid data gracefully", async () => {
     const onError = vi.fn();
 
     render(
@@ -144,16 +145,16 @@ describe('HydroscopeCore Bulk Operations', () => {
         height="400px"
         width="600px"
         onError={onError}
-      />
+      />,
     );
 
     // Component should render in loading state when data is invalid
     // The error handling is tested elsewhere, this test just ensures
     // the component doesn't crash
-    expect(screen.getByText('Loading visualization...')).toBeInTheDocument();
+    expect(screen.getByText("Loading visualization...")).toBeInTheDocument();
   });
 
-  it('should provide proper TypeScript interface', () => {
+  it("should provide proper TypeScript interface", () => {
     // This test ensures the TypeScript interface is properly exported
     // and compiles without errors
     const TestTypeComponent: React.FC = () => {
@@ -161,12 +162,20 @@ describe('HydroscopeCore Bulk Operations', () => {
 
       React.useEffect(() => {
         // TypeScript should allow these assignments without errors
-        const collapseAllMethod: (() => Promise<void>) | undefined = hydroscopeRef.current?.collapseAll;
-        const expandAllMethod: (() => Promise<void>) | undefined = hydroscopeRef.current?.expandAll;
+        const collapseAllMethod: (() => Promise<void>) | undefined =
+          hydroscopeRef.current?.collapseAll;
+        const expandAllMethod: (() => Promise<void>) | undefined =
+          hydroscopeRef.current?.expandAll;
 
         // These should be functions when defined
-        expect(typeof collapseAllMethod === 'function' || collapseAllMethod === undefined).toBe(true);
-        expect(typeof expandAllMethod === 'function' || expandAllMethod === undefined).toBe(true);
+        expect(
+          typeof collapseAllMethod === "function" ||
+            collapseAllMethod === undefined,
+        ).toBe(true);
+        expect(
+          typeof expandAllMethod === "function" ||
+            expandAllMethod === undefined,
+        ).toBe(true);
       });
 
       return (
@@ -182,7 +191,7 @@ describe('HydroscopeCore Bulk Operations', () => {
     render(<TestTypeComponent />);
   });
 
-  it('should handle bulk operations when no containers exist', async () => {
+  it("should handle bulk operations when no containers exist", async () => {
     const BulkOperationTestComponent: React.FC = () => {
       const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
       const [testComplete, setTestComplete] = React.useState(false);
@@ -224,7 +233,7 @@ describe('HydroscopeCore Bulk Operations', () => {
 
     // Wait for test to complete
     await waitFor(() => {
-      expect(getByTestId('test-complete')).toBeInTheDocument();
+      expect(getByTestId("test-complete")).toBeInTheDocument();
     });
   });
 });

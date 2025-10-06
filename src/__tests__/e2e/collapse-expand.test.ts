@@ -104,7 +104,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Initial state - container should be expanded
       let reactFlowData = reactFlowBridge.toReactFlowData(state);
       let container1Node = reactFlowData.nodes.find(
-        (n) => n.id === "container1",
+        (n) => n.id === "container1"
       );
 
       expect(container1Node).toBeDefined();
@@ -128,7 +128,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Child nodes should not be visible in ReactFlow data
       const childNodes = reactFlowData.nodes.filter((n) =>
-        ["node1", "node2"].includes(n.id),
+        ["node1", "node2"].includes(n.id)
       );
       expect(childNodes).toHaveLength(0);
     });
@@ -151,7 +151,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Verify visual representation
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
       const container1Node = reactFlowData.nodes.find(
-        (n) => n.id === "container1",
+        (n) => n.id === "container1"
       );
 
       expect(container1Node).toBeDefined();
@@ -160,7 +160,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Child nodes should be visible again
       const childNodes = reactFlowData.nodes.filter((n) =>
-        ["node1", "node2"].includes(n.id),
+        ["node1", "node2"].includes(n.id)
       );
       expect(childNodes).toHaveLength(2);
     });
@@ -182,7 +182,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Verify visual representation
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
       const containerNodes = reactFlowData.nodes.filter(
-        (n) => n.data.nodeType === "container",
+        (n) => n.data.nodeType === "container"
       );
 
       expect(containerNodes).toHaveLength(2);
@@ -193,7 +193,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // No child nodes should be visible
       const childNodes = reactFlowData.nodes.filter((n) =>
-        ["node1", "node2", "node3"].includes(n.id),
+        ["node1", "node2", "node3"].includes(n.id)
       );
       expect(childNodes).toHaveLength(0);
     });
@@ -216,7 +216,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Verify visual representation
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
       const containerNodes = reactFlowData.nodes.filter(
-        (n) => n.data.nodeType === "container",
+        (n) => n.data.nodeType === "container"
       );
 
       expect(containerNodes).toHaveLength(2);
@@ -227,7 +227,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // All child nodes should be visible
       const childNodes = reactFlowData.nodes.filter((n) =>
-        ["node1", "node2", "node3"].includes(n.id),
+        ["node1", "node2", "node3"].includes(n.id)
       );
       expect(childNodes).toHaveLength(3);
     });
@@ -241,7 +241,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Get ReactFlow data - should work without layout
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
       const container1Node = reactFlowData.nodes.find(
-        (n) => n.id === "container1",
+        (n) => n.id === "container1"
       );
 
       // Container should be marked as collapsed
@@ -250,7 +250,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Child nodes should not be visible
       const childNodes = reactFlowData.nodes.filter((n) =>
-        ["node1", "node2"].includes(n.id),
+        ["node1", "node2"].includes(n.id)
       );
       expect(childNodes).toHaveLength(0);
     });
@@ -284,7 +284,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Should have an aggregated edge from external to container1
       const aggregatedEdge = reactFlowData.edges.find(
-        (e) => e.source === "external" && e.target === "container1",
+        (e) => e.source === "external" && e.target === "container1"
       );
 
       expect(aggregatedEdge).toBeDefined();
@@ -343,13 +343,13 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Before collapse - edges should connect to actual nodes
       let reactFlowData = reactFlowBridge.toReactFlowData(state);
       let edgeToNode1 = reactFlowData.edges.find(
-        (e) => e.id === "edge_external1_to_node1",
+        (e) => e.id === "edge_external1_to_node1"
       );
       let edgeFromNode2 = reactFlowData.edges.find(
-        (e) => e.id === "edge_node2_to_external2",
+        (e) => e.id === "edge_node2_to_external2"
       );
       let edgeBetween = reactFlowData.edges.find(
-        (e) => e.id === "edge_node2_to_node3",
+        (e) => e.id === "edge_node2_to_node3"
       );
 
       expect(edgeToNode1?.target).toBe("node1");
@@ -365,28 +365,28 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Edge from external1 should now target container1
       const redirectedEdgeIn = reactFlowData.edges.find(
-        (e) => e.source === "external1" && e.target === "container1",
+        (e) => e.source === "external1" && e.target === "container1"
       );
       expect(redirectedEdgeIn).toBeDefined();
       expect(redirectedEdgeIn?.data?.aggregated).toBe(true);
 
       // Edge to external2 should now source from container1
       const redirectedEdgeOut = reactFlowData.edges.find(
-        (e) => e.source === "container1" && e.target === "external2",
+        (e) => e.source === "container1" && e.target === "external2"
       );
       expect(redirectedEdgeOut).toBeDefined();
       expect(redirectedEdgeOut?.data?.aggregated).toBe(true);
 
       // Edge between containers should now be container1 -> node3
       const redirectedEdgeBetween = reactFlowData.edges.find(
-        (e) => e.source === "container1" && e.target === "node3",
+        (e) => e.source === "container1" && e.target === "node3"
       );
       expect(redirectedEdgeBetween).toBeDefined();
       expect(redirectedEdgeBetween?.data?.aggregated).toBe(true);
 
       // Original edges to hidden nodes should not exist
       const originalEdges = reactFlowData.edges.filter(
-        (e) => e.target === "node1" || e.source === "node2",
+        (e) => e.target === "node1" || e.source === "node2"
       );
       expect(originalEdges).toHaveLength(0);
     });
@@ -440,7 +440,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Test expanded state
       let reactFlowData = reactFlowBridge.toReactFlowData(state);
       let containerNodes = reactFlowData.nodes.filter(
-        (n) => n.data.nodeType === "container",
+        (n) => n.data.nodeType === "container"
       );
 
       containerNodes.forEach((node) => {
@@ -452,7 +452,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       await coordinator.collapseAllContainers(state);
       reactFlowData = reactFlowBridge.toReactFlowData(state);
       containerNodes = reactFlowData.nodes.filter(
-        (n) => n.data.nodeType === "container",
+        (n) => n.data.nodeType === "container"
       );
 
       containerNodes.forEach((node) => {
@@ -464,7 +464,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
     it("should provide correct container metadata for rendering", async () => {
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
       const container1Node = reactFlowData.nodes.find(
-        (n) => n.id === "container1",
+        (n) => n.id === "container1"
       );
 
       expect(container1Node?.data).toMatchObject({
@@ -478,7 +478,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       await coordinator.collapseContainer("container1", state);
       const collapsedData = reactFlowBridge.toReactFlowData(state);
       const collapsedContainer = collapsedData.nodes.find(
-        (n) => n.id === "container1",
+        (n) => n.id === "container1"
       );
 
       expect(collapsedContainer?.data).toMatchObject({

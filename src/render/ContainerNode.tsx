@@ -18,10 +18,14 @@ export function ContainerNode({ id, data }: NodeProps) {
 
   // Use dimensions from ReactFlow data (calculated by ELK) with proper fallbacks from config
   const width = Number(data.width) || SIZES.COLLAPSED_CONTAINER_WIDTH;
-  const height = Number(data.height) || (data.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
+  const height =
+    Number(data.height) ||
+    (data.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
 
   // DEBUG: Log container dimensions to verify they're correct
-  console.log(`[ContainerNode] ${id}: width=${width}, height=${height}, collapsed=${data.collapsed}`);
+  console.log(
+    `[ContainerNode] ${id}: width=${width}, height=${height}, collapsed=${data.collapsed}`,
+  );
 
   // DEBUG: Log all ContainerNode renders with search highlight status
   const searchHighlight = (data as any).searchHighlight;
@@ -127,21 +131,21 @@ export function ContainerNode({ id, data }: NodeProps) {
     // Apply search highlight colors if needed
     const containerColors = searchHighlight
       ? {
-        background: searchHighlightStrong
-          ? searchColors.current.background
-          : searchColors.match.background,
-        border: searchHighlightStrong
-          ? searchColors.current.border
-          : searchColors.match.border,
-        text: searchHighlightStrong
-          ? searchColors.current.text
-          : searchColors.match.text,
-      }
+          background: searchHighlightStrong
+            ? searchColors.current.background
+            : searchColors.match.background,
+          border: searchHighlightStrong
+            ? searchColors.current.border
+            : searchColors.match.border,
+          text: searchHighlightStrong
+            ? searchColors.current.text
+            : searchColors.match.text,
+        }
       : {
-        ...baseContainerColors,
-        // Ensure good contrast for non-highlighted containers too
-        text: getContrastColor(baseContainerColors.background),
-      };
+          ...baseContainerColors,
+          // Ensure good contrast for non-highlighted containers too
+          text: getContrastColor(baseContainerColors.background),
+        };
     return (
       <>
         {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -159,8 +163,8 @@ export function ContainerNode({ id, data }: NodeProps) {
         </style>
         <div
           onClick={() => {
-            if (data.onClick && typeof data.onClick === 'function') {
-              data.onClick(id, 'container');
+            if (data.onClick && typeof data.onClick === "function") {
+              data.onClick(id, "container");
             }
           }}
           style={{
@@ -255,21 +259,21 @@ export function ContainerNode({ id, data }: NodeProps) {
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
     ? {
-      background: searchHighlightStrong
-        ? searchColors.current.background
-        : searchColors.match.background,
-      border: searchHighlightStrong
-        ? searchColors.current.border
-        : searchColors.match.border,
-      text: searchHighlightStrong
-        ? searchColors.current.text
-        : searchColors.match.text,
-    }
+        background: searchHighlightStrong
+          ? searchColors.current.background
+          : searchColors.match.background,
+        border: searchHighlightStrong
+          ? searchColors.current.border
+          : searchColors.match.border,
+        text: searchHighlightStrong
+          ? searchColors.current.text
+          : searchColors.match.text,
+      }
     : {
-      background: "rgba(25, 118, 210, 0.1)",
-      border: "#1976d2",
-      text: "#1976d2", // Blue text on light blue background provides good contrast
-    };
+        background: "rgba(25, 118, 210, 0.1)",
+        border: "#1976d2",
+        text: "#1976d2", // Blue text on light blue background provides good contrast
+      };
 
   return (
     <>
@@ -288,8 +292,8 @@ export function ContainerNode({ id, data }: NodeProps) {
       </style>
       <div
         onClick={() => {
-          if (data.onClick && typeof data.onClick === 'function') {
-            data.onClick(id, 'container');
+          if (data.onClick && typeof data.onClick === "function") {
+            data.onClick(id, "container");
           }
         }}
         style={{

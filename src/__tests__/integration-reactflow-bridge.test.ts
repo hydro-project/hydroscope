@@ -598,8 +598,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       const stateNodeAfterClick = freshState.getGraphNode("n1");
       expect(stateNodeAfterClick?.showingLongLabel).toBe(true);
 
-      // Clear cache to ensure fresh conversion
-      bridge.clearCaches();
+      // ReactFlowBridge is now stateless - no caches to clear
 
       // Get updated ReactFlow data
       // Calculate layout so nodes have positions
@@ -794,8 +793,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
 
       const result1 = bridge.toReactFlowData(state);
 
-      // Clear caches
-      bridge.clearCaches();
+      // ReactFlowBridge is now stateless - no caches to clear
 
       // Generate result again
       // Calculate layout so nodes have positions

@@ -124,7 +124,6 @@ describe("JSONParser", () => {
 
     it("creates parser with custom options", () => {
       const customParser = new JSONParser({
-        defaultHierarchyChoice: "custom",
         debug: true,
         validateDuringParsing: false,
       });
@@ -173,22 +172,24 @@ describe("JSONParser", () => {
       expect(result.selectedHierarchy).toBe("location");
     });
 
-    it("selects custom default hierarchy", async () => {
-      const customParser = new JSONParser({ defaultHierarchyChoice: "custom" });
-      const dataWithCustomHierarchy = {
+    it("selects first hierarchy choice as default", async () => {
+      const parser = new JSONParser();
+      const dataWithMultipleHierarchies = {
         ...simpleTestData,
         hierarchyChoices: [
+          { id: "first", name: "First Choice", children: [] },
+          { id: "second", name: "Second Choice", children: [] },
           ...simpleTestData.hierarchyChoices,
-          { id: "custom", name: "Custom", children: [] },
         ],
         nodeAssignments: {
+          first: { node1: "first_container" },
+          second: { node1: "second_container" },
           ...simpleTestData.nodeAssignments,
-          custom: { node1: "custom_container" },
         },
       };
 
-      const result = await customParser.parseData(dataWithCustomHierarchy);
-      expect(result.selectedHierarchy).toBe("custom");
+      const result = await parser.parseData(dataWithMultipleHierarchies);
+      expect(result.selectedHierarchy).toBe("first"); // Should select first hierarchy choice
     });
   });
 

@@ -118,13 +118,11 @@ describe("Cleanup", () => {
   });
 
   it("should clean up resize event listeners on unmount", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to render
     await waitFor(() => {
-      expect(document.querySelector('.hydroscope')).toBeInTheDocument();
+      expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     });
 
     // Unmount component - should not throw errors
@@ -132,13 +130,11 @@ describe("Cleanup", () => {
   });
 
   it("should clean up ResizeObserver on unmount", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to render
     await waitFor(() => {
-      expect(document.querySelector('.hydroscope')).toBeInTheDocument();
+      expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     });
 
     // Unmount component - should not throw errors
@@ -146,13 +142,11 @@ describe("Cleanup", () => {
   });
 
   it("should cancel pending animation frames on unmount", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to render
     await waitFor(() => {
-      expect(document.querySelector('.hydroscope')).toBeInTheDocument();
+      expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     });
 
     // Unmount component - should not throw errors
@@ -160,9 +154,7 @@ describe("Cleanup", () => {
   });
 
   it("should clear pending timeouts on unmount", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to set up timeouts
     await waitFor(() => {
@@ -177,13 +169,11 @@ describe("Cleanup", () => {
   });
 
   it("should handle cleanup function failures gracefully", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to render
     await waitFor(() => {
-      expect(document.querySelector('.hydroscope')).toBeInTheDocument();
+      expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     });
 
     // Unmount component (this should handle cleanup failures gracefully)
@@ -192,9 +182,7 @@ describe("Cleanup", () => {
   });
 
   it("should clean up interaction handler references", async () => {
-    const { unmount } = render(
-      <Hydroscope height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope height="600px" />);
 
     // Wait for component to initialize
     await waitFor(() => {
@@ -247,13 +235,11 @@ describe("Cleanup", () => {
   });
 
   it("should clean up debounced functions", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to render
     await waitFor(() => {
-      expect(document.querySelector('.hydroscope')).toBeInTheDocument();
+      expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     });
 
     // Unmount component - should not throw errors
@@ -261,13 +247,11 @@ describe("Cleanup", () => {
   });
 
   it("should log cleanup completion", async () => {
-    const { unmount } = render(
-      <Hydroscope responsive={true} height="600px" />,
-    );
+    const { unmount } = render(<Hydroscope responsive={true} height="600px" />);
 
     // Wait for component to render
     await waitFor(() => {
-      expect(document.querySelector('.hydroscope')).toBeInTheDocument();
+      expect(document.querySelector(".hydroscope")).toBeInTheDocument();
     });
 
     // Unmount component - should not throw errors

@@ -140,14 +140,20 @@ describe("File Loading Regression Tests", () => {
 
   it("should load initial file and display visualization", async () => {
     expect(() => {
-      render(<Hydroscope data={initialData} showInfoPanel={true} showStylePanel={true} />);
+      render(
+        <Hydroscope
+          data={initialData}
+          showInfoPanel={true}
+          showStylePanel={true}
+        />,
+      );
     }).not.toThrow();
 
     // Should render the component (either successfully or with error state)
     await waitFor(() => {
       const component =
         document.querySelector('[data-testid="react-flow"]') ||
-        document.querySelector('h3'); // Error messages show as h3 elements
+        document.querySelector("h3"); // Error messages show as h3 elements
       expect(component).toBeInTheDocument();
     });
   });
@@ -155,18 +161,28 @@ describe("File Loading Regression Tests", () => {
   it("should reload visualization when a different file is loaded via file input", async () => {
     expect(() => {
       const { rerender } = render(
-        <Hydroscope data={initialData} showInfoPanel={true} showStylePanel={true} />,
+        <Hydroscope
+          data={initialData}
+          showInfoPanel={true}
+          showStylePanel={true}
+        />,
       );
 
       // Simulate loading new data
-      rerender(<Hydroscope data={newData} showInfoPanel={true} showStylePanel={true} />);
+      rerender(
+        <Hydroscope
+          data={newData}
+          showInfoPanel={true}
+          showStylePanel={true}
+        />,
+      );
     }).not.toThrow();
 
     // Should still render the component (either successfully or with error state)
     await waitFor(() => {
       const component =
         document.querySelector('[data-testid="react-flow"]') ||
-        document.querySelector('h3'); // Error messages show as h3 elements
+        document.querySelector("h3"); // Error messages show as h3 elements
       expect(component).toBeInTheDocument();
     });
   });
@@ -176,12 +192,22 @@ describe("File Loading Regression Tests", () => {
     const datasets = [initialData, newData, initialData];
 
     const { rerender } = render(
-      <Hydroscope data={datasets[0]} showInfoPanel={true} showStylePanel={true} />,
+      <Hydroscope
+        data={datasets[0]}
+        showInfoPanel={true}
+        showStylePanel={true}
+      />,
     );
 
     for (let i = 1; i < datasets.length; i++) {
       mockParseData.mockReturnValue(datasets[i]);
-      rerender(<Hydroscope data={datasets[i]} showInfoPanel={true} showStylePanel={true} />);
+      rerender(
+        <Hydroscope
+          data={datasets[i]}
+          showInfoPanel={true}
+          showStylePanel={true}
+        />,
+      );
 
       // Should render without crashing
       expect(document.querySelector(".hydroscope")).toBeInTheDocument();
@@ -193,7 +219,13 @@ describe("File Loading Regression Tests", () => {
     mockParseData.mockRejectedValue(new Error("Parse error"));
 
     expect(() => {
-      render(<Hydroscope data={initialData} showInfoPanel={true} showStylePanel={true} />);
+      render(
+        <Hydroscope
+          data={initialData}
+          showInfoPanel={true}
+          showStylePanel={true}
+        />,
+      );
     }).not.toThrow();
 
     // Should still render the component (with error state)

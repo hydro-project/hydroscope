@@ -399,8 +399,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       const onClick = containerNode!.data.onClick!;
       onClick("c1", "container");
 
-      // Clear caches and run pipeline again
-      reactFlowBridge.clearCaches();
+      // ReactFlowBridge is now stateless - no caches to clear
 
       elkGraph = elkBridge.toELKGraph(state);
       elkResult = createMockELKResult(elkGraph);

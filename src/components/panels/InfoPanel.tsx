@@ -55,6 +55,7 @@ const InfoPanelInternal = forwardRef<
       onGroupingChange,
       collapsedContainers = new Set(),
       onToggleContainer,
+      onElementNavigation,
       layoutOrchestrator,
       colorPalette = "Set3",
       defaultCollapsed: _defaultCollapsed = false,
@@ -358,6 +359,7 @@ const InfoPanelInternal = forwardRef<
                         onToggleContainer(containerId);
                       }
                     }}
+                    onElementNavigation={onElementNavigation}
                     layoutOrchestrator={layoutOrchestrator}
                     title={`${currentGroupingName} Hierarchy`}
                     showNodeCounts={true}
@@ -365,8 +367,8 @@ const InfoPanelInternal = forwardRef<
                     maxLabelLength={15}
                     // search integration - pass ALL matches (containers + nodes), not just containers
                     searchQuery={searchQuery}
-                    searchMatches={searchMatches}
-                    currentSearchMatch={currentSearchMatch}
+                    searchResults={searchMatches}
+                    currentSearchResult={currentSearchMatch}
                   />
                 </div>
               )}

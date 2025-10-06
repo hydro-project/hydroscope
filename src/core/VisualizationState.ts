@@ -12,6 +12,7 @@ import type {
   LayoutState,
   SearchResult,
   InvariantViolation,
+  SearchNavigationState,
 } from "../types/core.js";
 
 export class VisualizationState {
@@ -51,6 +52,39 @@ export class VisualizationState {
     operationTimes: new Map<string, number[]>(),
     lastOptimization: Date.now(),
   };
+
+  // Search and Navigation State
+  private _searchNavigationState: SearchNavigationState = {
+    // Search state
+    searchQuery: "",
+    searchResults: [],
+    treeSearchHighlights: new Set<string>(),
+    graphSearchHighlights: new Set<string>(),
+
+    // Navigation state
+    navigationSelection: null,
+    treeNavigationHighlights: new Set<string>(),
+    graphNavigationHighlights: new Set<string>(),
+
+    // Expansion state (persists through search operations)
+    expandedTreeNodes: new Set<string>(),
+    expandedGraphContainers: new Set<string>(),
+
+    // Viewport state
+    lastNavigationTarget: null,
+    shouldFocusViewport: false,
+  };
+
+  // Search debouncing and caching
+  private _searchDebounceTimer: number | null = null;
+  private _searchCache = new Map<string, SearchResult[]>();
+  private _searchCacheMaxSize = 50;
+  private _searchCacheMaxAge = 5 * 60 * 1000; // 5 minutes
+  private _searchCacheTimestamps = new Map<string, number>();
+  
+  // State persistence
+  private _stateVersion = 1;
+  private _lastStateSnapshot: string | null = null;
 
   // Data Management
   addNode(node: GraphNode): void {
@@ -234,12 +268,15 @@ export class VisualizationState {
       this._cleanupContainerMappings(existingContainer);
     }
 
-    this._containers.set(container.id, {
+    const finalContainer = {
       ...container,
       children: new Set(container.children),
       collapsed: container.collapsed ?? false,
       hidden: container.hidden ?? false,
-    });
+    };
+    
+    console.log(`[VisualizationState] 📦 STORING container ${container.id}: hidden=${finalContainer.hidden}, collapsed=${finalContainer.collapsed}`);
+    this._containers.set(container.id, finalContainer);
 
     // Update mappings for all children
     this._updateChildMappings(container);
@@ -328,6 +365,7 @@ export class VisualizationState {
         childNode.hidden = false;
       }
       if (childContainer) {
+        console.log(`[VisualizationState] 👁️ SHOWING container ${childContainer.id} (was hidden: ${childContainer.hidden})`);
         childContainer.hidden = false;
         // Don't automatically expand child containers - they keep their collapsed state
         // Only show their contents if they are not collapsed
@@ -367,17 +405,23 @@ export class VisualizationState {
         childNode.hidden = true;
       }
       if (childContainer) {
+        // When a parent container collapses, ALL child containers must be hidden
+        // They should not be visible in the UI at all
+        console.log(`[VisualizationState] 🙈 HIDING container ${childContainer.id} (parent ${containerId} collapsed)`);
         childContainer.hidden = true;
-        childContainer.collapsed = true;
         // Recursively hide descendants of child containers
         this._hideAllDescendants(childId);
       }
     }
   }
 
-  expandAllContainers(): void {
-    for (const container of this._containers.values()) {
-      if (container.collapsed) {
+  expandAllContainers(containerIds?: string[]): void {
+    const containersToExpand = containerIds 
+      ? containerIds.map(id => this._containers.get(id)).filter(Boolean)
+      : Array.from(this._containers.values());
+
+    for (const container of containersToExpand) {
+      if (container && container.collapsed) {
         this._expandContainerInternal(container.id);
       }
     }
@@ -385,10 +429,15 @@ export class VisualizationState {
     this.disableSmartCollapseForUserOperations();
   }
 
-  collapseAllContainers(): void {
-    console.log(`[VisualizationState] 🔄 Collapsing all containers`);
-    for (const container of this._containers.values()) {
-      if (!container.collapsed) {
+  collapseAllContainers(containerIds?: string[]): void {
+    console.log(`[VisualizationState] 🔄 Collapsing ${containerIds ? 'specified' : 'all'} containers`);
+    
+    const containersToCollapse = containerIds 
+      ? containerIds.map(id => this._containers.get(id)).filter(Boolean)
+      : Array.from(this._containers.values());
+
+    for (const container of containersToCollapse) {
+      if (container && !container.collapsed) {
         this._collapseContainerInternal(container.id);
 
         // CRITICAL FIX: Aggregate edges when each container collapses
@@ -409,10 +458,10 @@ export class VisualizationState {
   triggerReactFlowValidation(): void {
     console.log(`[VisualizationState] 🔍 Triggering ReactFlow validation`);
     try {
-      // Import ReactFlowBridge dynamically to avoid circular dependency
-      import("../bridges/ReactFlowBridge.js")
-        .then(({ ReactFlowBridge }) => {
-          const bridge = new ReactFlowBridge({});
+      // Import BridgeFactory to get singleton bridge instance
+      import("../bridges/BridgeFactory.js")
+        .then(({ bridgeFactory }) => {
+          const bridge = bridgeFactory.getReactFlowBridge();
           const result = bridge.toReactFlowData(this);
           console.log(
             `[VisualizationState] ✅ ReactFlow validation completed - ${result.nodes.length} nodes, ${result.edges.length} edges`,
@@ -443,6 +492,9 @@ export class VisualizationState {
     // Get all descendants of this container (including nested containers)
     const allDescendants = this._getAllDescendantIds(containerId);
     console.log(
+      `[VisualizationState] 🔄 Aggregating edges for container ${containerId}`,
+    );
+    console.log(
       `[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(", ")}`,
     );
 
@@ -471,30 +523,51 @@ export class VisualizationState {
         let aggregatedSource = edge.source;
         let aggregatedTarget = edge.target;
 
+        console.log(
+          `[EdgeDebug] Processing edge ${edge.id}: ${edge.source} -> ${edge.target}`,
+        );
+        console.log(
+          `[EdgeDebug]   sourceInContainer: ${sourceInContainer}, targetInContainer: ${targetInContainer}`,
+        );
+
         // If source is in container, aggregate to container
         if (sourceInContainer) {
           aggregatedSource = containerId;
+          console.log(
+            `[EdgeDebug]   Aggregating source to container: ${aggregatedSource}`,
+          );
         }
 
         // If target is in container, aggregate to container
         if (targetInContainer) {
           aggregatedTarget = containerId;
+          console.log(
+            `[EdgeDebug]   Aggregating target to container: ${aggregatedTarget}`,
+          );
         }
 
         // TODO: DRY up the next two blocks into one block.
         // TODO: do these 2 blocks need to be made recursive?
         // CRITICAL FIX: Ensure both endpoints are visible containers or nodes
+        // For any node that's not visible, find the lowest visible ancestor in the hierarchy
+        
+        // CRITICAL FIX: Ensure both endpoints are visible containers or nodes
         // If source is a hidden node, find its visible container
         if (!this._containers.has(aggregatedSource)) {
           const sourceNode = this._nodes.get(aggregatedSource);
-          if (sourceNode && sourceNode.hidden) {
-            const sourceContainer =
-              this._nodeContainerMap.get(aggregatedSource);
-            if (sourceContainer && this._containers.has(sourceContainer)) {
-              const container = this._containers.get(sourceContainer);
-              if (container && !container.hidden) {
-                aggregatedSource = sourceContainer;
-              }
+          if (!sourceNode) {
+            throw new Error(`Edge ${edge.id} references non-existent source node: ${aggregatedSource}`);
+          }
+          if (sourceNode.hidden) {
+            // Use proper hierarchy traversal to find visible ancestor
+            const visibleAncestor = this.getLowestVisibleAncestorInGraph(aggregatedSource);
+            if (visibleAncestor) {
+              aggregatedSource = visibleAncestor;
+              console.log(`[EdgeDebug] Found visible ancestor for hidden source ${edge.source}: ${visibleAncestor}`);
+            } else {
+              console.warn(`[EdgeDebug] No visible ancestor found for hidden source ${edge.source}, skipping edge ${edge.id}`);
+              edge.hidden = true;
+              continue;
             }
           }
         }
@@ -502,14 +575,19 @@ export class VisualizationState {
         // If target is a hidden node, find its visible container
         if (!this._containers.has(aggregatedTarget)) {
           const targetNode = this._nodes.get(aggregatedTarget);
-          if (targetNode && targetNode.hidden) {
-            const targetContainer =
-              this._nodeContainerMap.get(aggregatedTarget);
-            if (targetContainer && this._containers.has(targetContainer)) {
-              const container = this._containers.get(targetContainer);
-              if (container && !container.hidden) {
-                aggregatedTarget = targetContainer;
-              }
+          if (!targetNode) {
+            throw new Error(`Edge ${edge.id} references non-existent target node: ${aggregatedTarget}`);
+          }
+          if (targetNode.hidden) {
+            // Use proper hierarchy traversal to find visible ancestor
+            const visibleAncestor = this.getLowestVisibleAncestorInGraph(aggregatedTarget);
+            if (visibleAncestor) {
+              aggregatedTarget = visibleAncestor;
+              console.log(`[EdgeDebug] Found visible ancestor for hidden target ${edge.target}: ${visibleAncestor}`);
+            } else {
+              console.warn(`[EdgeDebug] No visible ancestor found for hidden target ${edge.target}, skipping edge ${edge.id}`);
+              edge.hidden = true;
+              continue;
             }
           }
         }
@@ -580,7 +658,23 @@ export class VisualizationState {
     // Create new aggregated edges
     for (const [_key, edgeGroup] of edgesBySourceTarget) {
       const { source, target, edges } = edgeGroup;
-      const aggregatedEdgeId = `agg-${containerId}-${source}-${target}`;
+      // SIMPLIFIED FIX: Use source-target pair for consistent IDs while preserving directionality
+      const aggregatedEdgeId = `agg-${source}-${target}`;
+
+      console.log(`[EdgeDebug] Creating aggregated edge: ${aggregatedEdgeId}`);
+      console.log(
+        `[EdgeDebug]   Source: ${source} (exists: ${this._containers.has(source) || this._nodes.has(source)})`,
+      );
+      console.log(
+        `[EdgeDebug]   Target: ${target} (exists: ${this._containers.has(target) || this._nodes.has(target)})`,
+      );
+      console.log(
+        `[EdgeDebug]   Original edges: ${edges.map((e) => e.id).join(", ")}`,
+      );
+
+      console.log(
+        `[VisualizationState] 🔍 Creating/updating aggregated edge: ${aggregatedEdgeId} (${source} -> ${target}) from ${edges.length} original edges`,
+      );
 
       // Check if this aggregated edge already exists
       const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
@@ -592,7 +686,11 @@ export class VisualizationState {
         const uniqueNewIds = newOriginalIds.filter(
           (id) => !existingAggEdge.originalEdgeIds.includes(id),
         );
-        existingAggEdge.originalEdgeIds.push(...uniqueNewIds);
+        // Create new arrays to avoid modifying frozen objects
+        existingAggEdge.originalEdgeIds = [
+          ...existingAggEdge.originalEdgeIds,
+          ...uniqueNewIds,
+        ];
         existingAggEdge.semanticTags = [
           ...new Set([
             ...existingAggEdge.semanticTags,
@@ -668,21 +766,56 @@ export class VisualizationState {
   }
 
   restoreEdgesForContainer(containerId: string): void {
+    console.log(
+      `[VisualizationState] 🔄 Restoring edges for container ${containerId}`,
+    );
+
     // Get all descendants of this container
     const allDescendants = this._getAllDescendantIds(containerId);
+    console.log(
+      `[VisualizationState] 🔍 Container ${containerId} has ${allDescendants.size} descendants`,
+    );
 
     // Find aggregated edges that involve this container
     const aggregatedEdgesToRemove: string[] = [];
     const edgesToRestore: string[] = [];
+    const edgesToReaggregate: GraphEdge[] = [];
 
     // TODO: could be made more efficient with an index from container to aggregated edges
     for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
-      if (aggEdge.source === containerId || aggEdge.target === containerId) {
+      // Check if this aggregated edge involves the container or any of its descendants
+      const sourceInvolved = aggEdge.source === containerId || allDescendants.has(aggEdge.source);
+      const targetInvolved = aggEdge.target === containerId || allDescendants.has(aggEdge.target);
+      
+      if (sourceInvolved || targetInvolved) {
         // This aggregated edge involves the container being expanded
+        console.log(`[EdgeDebug] Removing aggregated edge: ${aggEdgeId}`);
+        console.log(
+          `[EdgeDebug]   Source: ${aggEdge.source}, Target: ${aggEdge.target}`,
+        );
+        console.log(
+          `[EdgeDebug]   Original edges: ${aggEdge.originalEdgeIds.join(", ")}`,
+        );
+        console.log(
+          `[VisualizationState] 🔍 Found aggregated edge to remove: ${aggEdgeId} (${aggEdge.source} -> ${aggEdge.target}) with ${aggEdge.originalEdgeIds.length} original edges`,
+        );
+        
+        // Collect original edges for potential re-aggregation
+        for (const originalEdgeId of aggEdge.originalEdgeIds) {
+          const originalEdge = this._edges.get(originalEdgeId);
+          if (originalEdge) {
+            edgesToReaggregate.push(originalEdge);
+          }
+        }
+        
         edgesToRestore.push(...aggEdge.originalEdgeIds);
         aggregatedEdgesToRemove.push(aggEdgeId);
       }
     }
+
+    console.log(
+      `[VisualizationState] 📊 Edge restoration summary: ${aggregatedEdgesToRemove.length} aggregated edges to remove, ${edgesToRestore.length} original edges to restore`,
+    );
 
     // Also restore internal edges that were simply hidden
     for (const [edgeId, edge] of this._edges) {
@@ -718,8 +851,9 @@ export class VisualizationState {
           originalEdge.hidden = false;
         } else {
           // If endpoints are still hidden due to other collapsed containers,
-          // we need to re-aggregate this edge to the appropriate container
-          this._reAggregateEdgeIfNeeded(originalEdge);
+          // leave the edge hidden - it will be re-aggregated when we call
+          // aggregateEdgesForContainer for the affected containers below
+          originalEdge.hidden = true;
         }
       }
     }
@@ -749,6 +883,96 @@ export class VisualizationState {
       this._containerAggregationMap.set(containerId, updatedAggregations);
     }
 
+    // CRITICAL FIX: Re-aggregate edges that still need aggregation
+    // When a container is expanded, some of its original edges might still need
+    // to be aggregated if they connect to other collapsed containers
+    if (edgesToReaggregate.length > 0) {
+      console.log(
+        `[VisualizationState] 🔄 Re-aggregating ${edgesToReaggregate.length} edges after container expansion`,
+      );
+      
+      // Group edges that still need aggregation by their effective source/target
+      const edgesBySourceTarget = new Map<string, { source: string; target: string; edges: GraphEdge[] }>();
+      
+      for (const edge of edgesToReaggregate) {
+        // Skip if edge is now visible (both endpoints visible)
+        if (!edge.hidden) continue;
+        
+        // Determine the effective source and target (container if collapsed, node if visible)
+        let effectiveSource = edge.source;
+        let effectiveTarget = edge.target;
+        
+        // Check if source is in a collapsed container
+        const sourceContainer = this._getContainerForNode(edge.source);
+        if (sourceContainer && sourceContainer.collapsed && sourceContainer.id !== containerId) {
+          effectiveSource = sourceContainer.id;
+        }
+        
+        // Check if target is in a collapsed container  
+        const targetContainer = this._getContainerForNode(edge.target);
+        if (targetContainer && targetContainer.collapsed && targetContainer.id !== containerId) {
+          effectiveTarget = targetContainer.id;
+        }
+        
+        // Only aggregate if at least one endpoint is still a collapsed container
+        if (effectiveSource !== edge.source || effectiveTarget !== edge.target) {
+          const key = `${effectiveSource}-${effectiveTarget}`;
+          if (!edgesBySourceTarget.has(key)) {
+            edgesBySourceTarget.set(key, {
+              source: effectiveSource,
+              target: effectiveTarget,
+              edges: []
+            });
+          }
+          edgesBySourceTarget.get(key)!.edges.push(edge);
+        }
+      }
+      
+      // Create new aggregated edges
+      for (const [_key, edgeGroup] of edgesBySourceTarget) {
+        const { source, target, edges } = edgeGroup;
+        const aggregatedEdgeId = `agg-${source}-${target}`;
+        
+        console.log(
+          `[VisualizationState] 🔍 Creating re-aggregated edge: ${aggregatedEdgeId} (${source} -> ${target}) from ${edges.length} original edges`,
+        );
+        
+        const aggregatedEdge: AggregatedEdge = {
+          id: aggregatedEdgeId,
+          source,
+          target,
+          type: "aggregated",
+          semanticTags: [],
+          originalEdgeIds: edges.map(e => e.id),
+          aggregated: true,
+          hidden: false,
+          aggregationSource: "re-aggregation",
+        };
+        
+        this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
+        
+        // Update tracking structures
+        this._aggregatedToOriginalMap.set(aggregatedEdge.id, aggregatedEdge.originalEdgeIds);
+        for (const originalId of aggregatedEdge.originalEdgeIds) {
+          this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
+        }
+        
+        // Update container aggregation maps
+        if (this._containers.has(source)) {
+          if (!this._containerAggregationMap.has(source)) {
+            this._containerAggregationMap.set(source, []);
+          }
+          this._containerAggregationMap.get(source)!.push(aggregatedEdge.id);
+        }
+        if (this._containers.has(target) && target !== source) {
+          if (!this._containerAggregationMap.has(target)) {
+            this._containerAggregationMap.set(target, []);
+          }
+          this._containerAggregationMap.get(target)!.push(aggregatedEdge.id);
+        }
+      }
+    }
+
     // Record restoration history
     if (edgesToRestore.length > 0) {
       this._aggregationHistory.push({
@@ -757,6 +981,81 @@ export class VisualizationState {
         edgeCount: edgesToRestore.length,
         timestamp: Date.now(),
       });
+    }
+  }
+
+  // Helper methods for canonical aggregated edge management
+  
+  private _getContainerForNode(nodeId: string): Container | undefined {
+    const containerId = this._nodeContainerMap.get(nodeId);
+    return containerId ? this._containers.get(containerId) : undefined;
+  }
+
+  private _getCanonicalKey(source: string, target: string): string {
+    // Always use lexicographically smaller ID first for consistency
+    return source < target ? `${source}-${target}` : `${target}-${source}`;
+  }
+
+  private _getOrCreateAggregatedEdge(
+    source: string,
+    target: string,
+    originalEdge: GraphEdge,
+  ): AggregatedEdge {
+    const canonicalKey = this._getCanonicalKey(source, target);
+    let aggregatedEdge = this._canonicalAggregatedEdges.get(canonicalKey);
+
+    if (!aggregatedEdge) {
+      // Create new aggregated edge with consistent ID
+      const aggregatedEdgeId = `agg-${canonicalKey}`;
+      aggregatedEdge = {
+        id: aggregatedEdgeId,
+        source,
+        target,
+        type: originalEdge.type,
+        semanticTags: [...originalEdge.semanticTags],
+        hidden: false,
+        aggregated: true,
+        originalEdgeIds: [],
+        aggregationSource: canonicalKey, // Use canonical key instead of container ID
+      };
+
+      this._canonicalAggregatedEdges.set(canonicalKey, aggregatedEdge);
+      this._aggregatedEdges.set(aggregatedEdgeId, aggregatedEdge);
+
+      console.log(
+        `[VisualizationState] 🔍 Created canonical aggregated edge: ${aggregatedEdgeId} (${source} -> ${target})`,
+      );
+    }
+
+    return aggregatedEdge;
+  }
+
+  private _reAggregateAllCollapsedContainers(): void {
+    console.log(
+      `[VisualizationState] 🔄 Re-aggregating edges for all collapsed containers`,
+    );
+
+    // Clear all existing aggregated edges
+    this._aggregatedEdges.clear();
+    this._originalToAggregatedMap.clear();
+    this._aggregatedToOriginalMap.clear();
+    this._containerAggregationMap.clear();
+
+    // Get all collapsed containers and sort them by ID for consistent ordering
+    const collapsedContainers = Array.from(this._containers.values())
+      .filter((container) => container.collapsed && !container.hidden)
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    console.log(
+      `[VisualizationState] 🔍 Found ${collapsedContainers.length} collapsed containers: ${collapsedContainers.map((c) => c.id).join(", ")}`,
+    );
+
+    // Aggregate edges for each container in consistent order
+    for (const container of collapsedContainers) {
+      console.log(
+        `[VisualizationState] 🔄 Aggregating edges for container: ${container.id}`,
+      );
+      this.aggregateEdgesForContainer(container.id);
     }
   }
 
@@ -793,10 +1092,8 @@ export class VisualizationState {
         return;
       }
 
-      // Create or update aggregated edge
-      // TODO: this is redundant with similar code above. DRY up.
-      const _key = `${aggregatedSource}-${aggregatedTarget}`;
-      const aggregatedEdgeId = `agg-${sourceContainer || targetContainer}-${aggregatedSource}-${aggregatedTarget}`;
+      // SIMPLIFIED FIX: Use source-target pair for consistent IDs while preserving directionality
+      const aggregatedEdgeId = `agg-${aggregatedSource}-${aggregatedTarget}`;
 
       let existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
       if (existingAggEdge) {
@@ -815,7 +1112,7 @@ export class VisualizationState {
           hidden: false,
           aggregated: true as const,
           originalEdgeIds: [edge.id],
-          aggregationSource: sourceContainer || targetContainer || "",
+          aggregationSource: `${aggregatedSource}-${aggregatedTarget}`,
         };
 
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
@@ -824,15 +1121,8 @@ export class VisualizationState {
         this._aggregatedToOriginalMap.set(aggregatedEdge.id, [edge.id]);
         this._originalToAggregatedMap.set(edge.id, aggregatedEdge.id);
 
-        const containerForTracking = sourceContainer || targetContainer;
-        if (containerForTracking) {
-          if (!this._containerAggregationMap.has(containerForTracking)) {
-            this._containerAggregationMap.set(containerForTracking, []);
-          }
-          this._containerAggregationMap
-            .get(containerForTracking)!
-            .push(aggregatedEdge.id);
-        }
+        // Note: We don't track container ownership for re-aggregated edges
+        // since they use the normalized key system
       }
 
       edge.hidden = true;
@@ -1124,11 +1414,25 @@ export class VisualizationState {
       return;
     }
 
-    // Collapse containers using system operations (doesn't disable future smart collapse)
+    // Find root containers (containers that are not children of other collapsible containers)
+    // This prevents collapsing child containers when their parent will also be collapsed
+    const rootContainers = collapsibleContainers.filter(container => {
+      // Check if this container is a child of any other collapsible container
+      for (const otherContainer of collapsibleContainers) {
+        if (otherContainer.id !== container.id && otherContainer.children.has(container.id)) {
+          return false; // This container is a child of another collapsible container
+        }
+      }
+      return true; // This is a root container
+    });
+    
+    console.log(`[VisualizationState] 🌳 Root containers to collapse: ${rootContainers.map(c => c.id).join(", ")}`);
+    
+    // Collapse only root containers using system operations (doesn't disable future smart collapse)
     let collapsedCount = 0;
-    for (const container of collapsibleContainers) {
+    for (const container of rootContainers) {
       console.log(
-        `[VisualizationState] 🔄 Smart collapsing container: ${container.id} (${container.children.size} children)`,
+        `[VisualizationState] 🔄 Smart collapsing root container: ${container.id} (${container.children.size} children)`,
       );
       this.collapseContainerSystemOperation(container.id);
       collapsedCount++;
@@ -1137,6 +1441,12 @@ export class VisualizationState {
     console.log(
       `[VisualizationState] ✅ Smart collapse completed: ${collapsedCount} containers collapsed`,
     );
+    
+    // Debug: Log final container states
+    console.log(`[VisualizationState] 📊 Final container states after smart collapse:`);
+    for (const container of this._containers.values()) {
+      console.log(`  - ${container.id}: hidden=${container.hidden}, collapsed=${container.collapsed}`);
+    }
   }
 
   /**
@@ -1173,38 +1483,39 @@ export class VisualizationState {
 
   // System vs User operation tracking
   collapseContainerSystemOperation(id: string): void {
+    console.log(`[VisualizationState] 🔧 collapseContainerSystemOperation called for ${id}`);
     this._collapseContainerInternal(id);
     // Note: System operations don't disable smart collapse
   }
 
   // Toggle container (user operation)
   toggleContainer(id: string): void {
-    console.log('[VisualizationState] toggleContainer called for:', id);
+    console.log("[VisualizationState] toggleContainer called for:", id);
     const container = this._containers.get(id);
     if (!container) {
-      console.warn('[VisualizationState] Container not found:', id);
+      console.warn("[VisualizationState] Container not found:", id);
       return;
     }
 
-    console.log('[VisualizationState] Container state before toggle:', { 
-      id, 
+    console.log("[VisualizationState] Container state before toggle:", {
+      id,
       collapsed: container.collapsed,
-      hidden: container.hidden 
+      hidden: container.hidden,
     });
 
     if (container.collapsed) {
-      console.log('[VisualizationState] Expanding container:', id);
+      console.log("[VisualizationState] Expanding container:", id);
       this.expandContainer(id);
     } else {
-      console.log('[VisualizationState] Collapsing container:', id);
+      console.log("[VisualizationState] Collapsing container:", id);
       this.collapseContainer(id);
     }
 
     const containerAfter = this._containers.get(id);
-    console.log('[VisualizationState] Container state after toggle:', { 
-      id, 
+    console.log("[VisualizationState] Container state after toggle:", {
+      id,
       collapsed: containerAfter?.collapsed,
-      hidden: containerAfter?.hidden 
+      hidden: containerAfter?.hidden,
     });
   }
 
@@ -1212,26 +1523,40 @@ export class VisualizationState {
   private _expandContainerInternal(id: string): void {
     const container = this._containers.get(id);
     if (!container) {
-      console.warn(`[VisualizationState] ❌ Container ${id} not found for expansion`);
+      console.warn(
+        `[VisualizationState] ❌ Container ${id} not found for expansion`,
+      );
       return;
     }
 
     console.log(`[VisualizationState] 🔍 EXPANDING CONTAINER ${id}:`);
-    console.log(`[VisualizationState] 🔍 BEFORE: collapsed=${container.collapsed}, hidden=${container.hidden}, children=${container.children.size}`);
-    console.log(`[VisualizationState] 🔍 BEFORE: position=(${container.position?.x || 0}, ${container.position?.y || 0}), dimensions=(${container.dimensions?.width || container.width || 'none'}x${container.dimensions?.height || container.height || 'none'})`);
+    console.log(
+      `[VisualizationState] 🔍 BEFORE: collapsed=${container.collapsed}, hidden=${container.hidden}, children=${container.children.size}`,
+    );
+    console.log(
+      `[VisualizationState] 🔍 BEFORE: position=(${container.position?.x || 0}, ${container.position?.y || 0}), dimensions=(${container.dimensions?.width || container.width || "none"}x${container.dimensions?.height || container.height || "none"})`,
+    );
 
     container.collapsed = false;
+    console.log(`[VisualizationState] 👁️ SHOWING container ${container.id} (was hidden: ${container.hidden})`);
     container.hidden = false;
-    
+
+    // Track expanded graph containers
+    this._searchNavigationState.expandedGraphContainers.add(id);
+
     console.log(`[VisualizationState] 🔄 Showing immediate children of ${id}`);
     this._showImmediateChildren(id);
-    
+
     console.log(`[VisualizationState] 🔄 Restoring edges for ${id}`);
     this.restoreEdgesForContainer(id);
-    
-    console.log(`[VisualizationState] 🔍 AFTER: collapsed=${container.collapsed}, hidden=${container.hidden}, children=${container.children.size}`);
-    console.log(`[VisualizationState] 🔍 AFTER: position=(${container.position?.x || 0}, ${container.position?.y || 0}), dimensions=(${container.dimensions?.width || container.width || 'none'}x${container.dimensions?.height || container.height || 'none'})`);
-    
+
+    console.log(
+      `[VisualizationState] 🔍 AFTER: collapsed=${container.collapsed}, hidden=${container.hidden}, children=${container.children.size}`,
+    );
+    console.log(
+      `[VisualizationState] 🔍 AFTER: position=(${container.position?.x || 0}, ${container.position?.y || 0}), dimensions=(${container.dimensions?.width || container.width || "none"}x${container.dimensions?.height || container.height || "none"})`,
+    );
+
     this.validateInvariants();
     console.log(`[VisualizationState] ✅ Container ${id} expansion complete`);
   }
@@ -1244,7 +1569,13 @@ export class VisualizationState {
       );
       return;
     }
+    console.log(`[VisualizationState] 🔄 COLLAPSING container ${id}: was collapsed=${container.collapsed}, was hidden=${container.hidden}`);
     container.collapsed = true;
+    
+    // Remove from expanded graph containers
+    this._searchNavigationState.expandedGraphContainers.delete(id);
+    
+    console.log(`[VisualizationState] 🔄 Container ${id} is now collapsed=${container.collapsed}, hidden=${container.hidden} - hiding descendants`);
     this._hideAllDescendants(id);
     this.aggregateEdgesForContainer(id);
     this.validateInvariants();
@@ -1260,6 +1591,10 @@ export class VisualizationState {
     edgeCount: number;
     timestamp: number;
   }> = [];
+
+  // SIMPLIFIED APPROACH: Canonical aggregated edge storage
+  // Key: normalized "source-target" pair, Value: aggregated edge
+  private _canonicalAggregatedEdges = new Map<string, AggregatedEdge>();
 
   getOriginalToAggregatedMapping(): ReadonlyMap<string, string> {
     return new Map(this._originalToAggregatedMap);
@@ -1490,13 +1825,16 @@ export class VisualizationState {
     };
   }
 
-  // Search
+  // Search (backward compatibility)
   search(query: string): SearchResult[] {
-    // Update search state
+    // Update both old and new search state for backward compatibility
     this._searchQuery = query.trim();
     this._searchState.isActive = this._searchQuery.length > 0;
     this._searchState.query = this._searchQuery;
     this._searchState.lastSearchTime = Date.now();
+
+    // Also update new search navigation state
+    this._searchNavigationState.searchQuery = this._searchQuery;
 
     // Add to search history if not empty
     if (this._searchQuery) {
@@ -1517,6 +1855,9 @@ export class VisualizationState {
 
     if (!this._searchQuery) {
       this._searchState.resultCount = 0;
+      this._searchNavigationState.searchResults = [];
+      this.updateTreeSearchHighlights([]);
+      this.updateGraphSearchHighlights([]);
       return this._searchResults;
     }
 
@@ -1526,45 +1867,52 @@ export class VisualizationState {
     for (const node of this._nodes.values()) {
       const matchResult = this._findMatches(node.label, queryLower);
       if (matchResult.matches) {
-        this._searchResults.push({
+        const result: SearchResult = {
           id: node.id,
           label: node.label,
           type: "node",
           matchIndices: matchResult.indices,
-        });
+          hierarchyPath: this._getHierarchyPath(node.id),
+          confidence: this._calculateSearchConfidence(node.label, queryLower, matchResult.isExact),
+        };
+        this._searchResults.push(result);
       }
     }
 
     // Search containers - prioritize exact matches
-    // TODO: DRY up and combine with previous block
     for (const container of this._containers.values()) {
       const matchResult = this._findMatches(container.label, queryLower);
       if (matchResult.matches) {
-        this._searchResults.push({
+        const result: SearchResult = {
           id: container.id,
           label: container.label,
           type: "container",
           matchIndices: matchResult.indices,
-        });
+          hierarchyPath: this._getHierarchyPath(container.id),
+          confidence: this._calculateSearchConfidence(container.label, queryLower, matchResult.isExact),
+        };
+        this._searchResults.push(result);
       }
     }
 
     // Sort results by relevance (exact matches first, then by match position)
     this._searchResults.sort((a, b) => {
-      const aExact = a.label.toLowerCase() === queryLower;
-      const bExact = b.label.toLowerCase() === queryLower;
+      const confidenceDiff = (b.confidence || 0) - (a.confidence || 0);
+      if (confidenceDiff !== 0) return confidenceDiff;
 
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
-
-      // Sort by first match position
+      // Sort by first match position as tiebreaker
       const aFirstMatch = a.matchIndices[0]?.[0] ?? Infinity;
       const bFirstMatch = b.matchIndices[0]?.[0] ?? Infinity;
-
       return aFirstMatch - bFirstMatch;
     });
 
     this._searchState.resultCount = this._searchResults.length;
+    
+    // Update new search navigation state
+    this._searchNavigationState.searchResults = [...this._searchResults];
+    this.updateTreeSearchHighlights(this._searchResults);
+    this.updateGraphSearchHighlights(this._searchResults);
+
     return [...this._searchResults];
   }
 
@@ -1616,15 +1964,25 @@ export class VisualizationState {
   }
 
   clearSearch(): void {
+    // Clear old search state for backward compatibility
     this._searchResults = [];
     this._searchQuery = "";
     this._searchState.isActive = false;
     this._searchState.query = "";
     this._searchState.resultCount = 0;
     this._searchState.expandedContainers.clear();
+
+    // Clear new search navigation state
+    this._searchNavigationState.searchQuery = "";
+    this._searchNavigationState.searchResults = [];
+    this._searchNavigationState.treeSearchHighlights.clear();
+    this._searchNavigationState.graphSearchHighlights.clear();
+    
+    // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
+    // This matches the requirement that expansion state persists through search operations
   }
 
-  // Search state getters
+  // Search state getters (backward compatibility)
   getSearchQuery(): string {
     return this._searchQuery;
   }
@@ -1751,6 +2109,689 @@ export class VisualizationState {
     }
 
     return Array.from(suggestions).slice(0, limit);
+  }
+
+  // ============================================================================
+  // ENHANCED SEARCH AND NAVIGATION METHODS
+  // ============================================================================
+
+  /**
+   * Perform search with debouncing and caching
+   */
+  performSearchDebounced(
+    query: string, 
+    callback?: (results: SearchResult[]) => void,
+    debounceMs: number = 300
+  ): void {
+    // Clear existing debounce timer
+    if (this._searchDebounceTimer !== null) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+
+    // Set up new debounced search
+    this._searchDebounceTimer = window.setTimeout(() => {
+      const results = this.performSearch(query);
+      if (callback) {
+        callback(results);
+      }
+      this._searchDebounceTimer = null;
+    }, debounceMs);
+  }
+
+  /**
+   * Get cached search results if available and not expired
+   */
+  private _getCachedSearchResults(query: string): SearchResult[] | null {
+    const trimmedQuery = query.trim().toLowerCase();
+    if (!this._searchCache.has(trimmedQuery)) {
+      return null;
+    }
+
+    const timestamp = this._searchCacheTimestamps.get(trimmedQuery);
+    if (!timestamp || Date.now() - timestamp > this._searchCacheMaxAge) {
+      // Cache expired, remove it
+      this._searchCache.delete(trimmedQuery);
+      this._searchCacheTimestamps.delete(trimmedQuery);
+      return null;
+    }
+
+    return this._searchCache.get(trimmedQuery) || null;
+  }
+
+  /**
+   * Cache search results with timestamp
+   */
+  private _cacheSearchResults(query: string, results: SearchResult[]): void {
+    const trimmedQuery = query.trim().toLowerCase();
+    
+    // Skip caching empty queries (but cache queries with no results)
+    if (!trimmedQuery) {
+      return;
+    }
+    
+    // Implement LRU cache eviction if we're at max size and adding a new entry
+    if (this._searchCache.size >= this._searchCacheMaxSize && !this._searchCache.has(trimmedQuery)) {
+      // Find oldest entry to evict
+      let oldestKey: string | null = null;
+      let oldestTime = Date.now();
+      
+      for (const [key, timestamp] of this._searchCacheTimestamps) {
+        if (timestamp < oldestTime) {
+          oldestTime = timestamp;
+          oldestKey = key;
+        }
+      }
+      
+      if (oldestKey) {
+        this._searchCache.delete(oldestKey);
+        this._searchCacheTimestamps.delete(oldestKey);
+      }
+    }
+
+    this._searchCache.set(trimmedQuery, [...results]);
+    this._searchCacheTimestamps.set(trimmedQuery, Date.now());
+  }
+
+  /**
+   * Clear search result cache
+   */
+  clearSearchCache(): void {
+    this._searchCache.clear();
+    this._searchCacheTimestamps.clear();
+  }
+
+  /**
+   * Perform search with enhanced result generation including hierarchy paths and caching
+   */
+  performSearch(query: string): SearchResult[] {
+    const trimmedQuery = query.trim();
+    this._searchNavigationState.searchQuery = trimmedQuery;
+    
+    // Update backward compatibility state
+    this._searchQuery = trimmedQuery;
+    this._searchState.query = trimmedQuery;
+    this._searchState.isActive = trimmedQuery.length > 0;
+    this._searchState.lastSearchTime = Date.now();
+
+    if (!trimmedQuery) {
+      this._searchNavigationState.searchResults = [];
+      this._searchResults = [];
+      this._searchState.resultCount = 0;
+      this.updateTreeSearchHighlights([]);
+      this.updateGraphSearchHighlights([]);
+      return [];
+    }
+
+    // Check cache first
+    const cachedResults = this._getCachedSearchResults(trimmedQuery);
+    if (cachedResults) {
+      this._searchNavigationState.searchResults = cachedResults;
+      this.expandTreeToShowMatches(cachedResults);
+      this.updateTreeSearchHighlights(cachedResults);
+      this.updateGraphSearchHighlights(cachedResults);
+      return [...cachedResults];
+    }
+
+    const queryLower = trimmedQuery.toLowerCase();
+    const results: SearchResult[] = [];
+
+    // Search nodes with hierarchy path calculation
+    for (const node of this._nodes.values()) {
+      const matchResult = this._findMatches(node.label, queryLower);
+      if (matchResult.matches) {
+        results.push({
+          id: node.id,
+          label: node.label,
+          type: "node",
+          matchIndices: matchResult.indices,
+          hierarchyPath: this._getHierarchyPath(node.id),
+          confidence: this._calculateSearchConfidence(node.label, queryLower, matchResult.isExact),
+        });
+      }
+    }
+
+    // Search containers with hierarchy path calculation
+    for (const container of this._containers.values()) {
+      const matchResult = this._findMatches(container.label, queryLower);
+      if (matchResult.matches) {
+        results.push({
+          id: container.id,
+          label: container.label,
+          type: "container",
+          matchIndices: matchResult.indices,
+          hierarchyPath: this._getHierarchyPath(container.id),
+          confidence: this._calculateSearchConfidence(container.label, queryLower, matchResult.isExact),
+        });
+      }
+    }
+
+    // Sort results by confidence (exact matches first, then by match position)
+    results.sort((a, b) => {
+      const confidenceDiff = (b.confidence || 0) - (a.confidence || 0);
+      if (confidenceDiff !== 0) return confidenceDiff;
+
+      // Sort by first match position as tiebreaker
+      const aFirstMatch = a.matchIndices[0]?.[0] ?? Infinity;
+      const bFirstMatch = b.matchIndices[0]?.[0] ?? Infinity;
+      return aFirstMatch - bFirstMatch;
+    });
+
+    this._searchNavigationState.searchResults = results;
+    
+    // Update backward compatibility state
+    this._searchResults = [...results];
+    this._searchState.resultCount = results.length;
+    
+    // Add to search history if not empty
+    if (trimmedQuery && results.length > 0) {
+      // Remove existing entry if present
+      const existingIndex = this._searchHistory.indexOf(trimmedQuery);
+      if (existingIndex !== -1) {
+        this._searchHistory.splice(existingIndex, 1);
+      }
+      // Add to front
+      this._searchHistory.unshift(trimmedQuery);
+      // Keep only last 10 searches
+      if (this._searchHistory.length > 10) {
+        this._searchHistory = this._searchHistory.slice(0, 10);
+      }
+    }
+    
+    // Automatically expand tree hierarchy to show search matches
+    this.expandTreeToShowMatches(results);
+    
+    this.updateTreeSearchHighlights(results);
+    this.updateGraphSearchHighlights(results);
+
+    // Cache the results for future use
+    this._cacheSearchResults(trimmedQuery, results);
+
+    return [...results];
+  }
+
+  /**
+   * Clear search state while preserving expansion state (enhanced version)
+   */
+  clearSearchEnhanced(): void {
+    // Clear any pending debounced search
+    if (this._searchDebounceTimer !== null) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+
+    // Clear search state
+    this._searchNavigationState.searchQuery = "";
+    this._searchNavigationState.searchResults = [];
+    this._searchNavigationState.treeSearchHighlights.clear();
+    this._searchNavigationState.graphSearchHighlights.clear();
+    
+    // Clear backward compatibility search state as well
+    this._searchQuery = "";
+    this._searchResults = [];
+    this._searchState.isActive = false;
+    this._searchState.query = "";
+    this._searchState.resultCount = 0;
+    
+    // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
+    // This matches the requirement that expansion state persists through search operations
+    // Note: Search cache is NOT cleared to maintain performance across searches
+  }
+
+  /**
+   * Update tree search highlights based on search results
+   */
+  updateTreeSearchHighlights(results: SearchResult[]): void {
+    this._searchNavigationState.treeSearchHighlights.clear();
+    
+    for (const result of results) {
+      this._searchNavigationState.treeSearchHighlights.add(result.id);
+    }
+    
+    // Update collapsed ancestors containing matches
+    this.updateCollapsedAncestorsInTree();
+  }
+
+  /**
+   * Update graph search highlights using lowest visible ancestor logic
+   */
+  updateGraphSearchHighlights(results: SearchResult[]): void {
+    this._searchNavigationState.graphSearchHighlights.clear();
+    
+    for (const result of results) {
+      const lowestVisibleAncestor = this.getLowestVisibleAncestorInGraph(result.id);
+      if (lowestVisibleAncestor) {
+        this._searchNavigationState.graphSearchHighlights.add(lowestVisibleAncestor);
+      } else if (this._isElementVisibleInGraph(result.id)) {
+        // Element is directly visible
+        this._searchNavigationState.graphSearchHighlights.add(result.id);
+      }
+    }
+  }
+
+  /**
+   * Navigate to a specific element
+   */
+  navigateToElement(elementId: string): void {
+    this._searchNavigationState.navigationSelection = elementId;
+    this._searchNavigationState.lastNavigationTarget = elementId;
+    this._searchNavigationState.shouldFocusViewport = true;
+    
+    // Update navigation highlights
+    this._searchNavigationState.treeNavigationHighlights.clear();
+    this._searchNavigationState.graphNavigationHighlights.clear();
+    
+    this._searchNavigationState.treeNavigationHighlights.add(elementId);
+    
+    // For graph navigation, use lowest visible ancestor logic
+    const lowestVisibleAncestor = this.getLowestVisibleAncestorInGraph(elementId);
+    if (lowestVisibleAncestor) {
+      this._searchNavigationState.graphNavigationHighlights.add(lowestVisibleAncestor);
+    } else if (this._isElementVisibleInGraph(elementId)) {
+      this._searchNavigationState.graphNavigationHighlights.add(elementId);
+    }
+  }
+
+  /**
+   * Clear navigation selection
+   */
+  clearNavigation(): void {
+    this._searchNavigationState.navigationSelection = null;
+    this._searchNavigationState.treeNavigationHighlights.clear();
+    this._searchNavigationState.graphNavigationHighlights.clear();
+    this._searchNavigationState.shouldFocusViewport = false;
+  }
+
+  /**
+   * Get highlight type for tree elements
+   */
+  getTreeElementHighlightType(elementId: string): "search" | "navigation" | "both" | null {
+    const hasSearch = this._searchNavigationState.treeSearchHighlights.has(elementId);
+    const hasNavigation = this._searchNavigationState.treeNavigationHighlights.has(elementId);
+    
+    if (hasSearch && hasNavigation) return "both";
+    if (hasSearch) return "search";
+    if (hasNavigation) return "navigation";
+    return null;
+  }
+
+  /**
+   * Get highlight type for graph elements
+   */
+  getGraphElementHighlightType(elementId: string): "search" | "navigation" | "both" | null {
+    const hasSearch = this._searchNavigationState.graphSearchHighlights.has(elementId);
+    const hasNavigation = this._searchNavigationState.graphNavigationHighlights.has(elementId);
+    
+    if (hasSearch && hasNavigation) return "both";
+    if (hasSearch) return "search";
+    if (hasNavigation) return "navigation";
+    return null;
+  }
+
+  /**
+   * Get the lowest visible ancestor in the ReactFlow graph for an element
+   */
+  getLowestVisibleAncestorInGraph(elementId: string): string | null {
+    // If element is directly visible, return null (no ancestor needed)
+    if (this._isElementVisibleInGraph(elementId)) {
+      return null;
+    }
+
+    // Walk up the hierarchy to find the lowest visible ancestor
+    const hierarchyPath = this._getHierarchyPath(elementId);
+    
+    // Start from the immediate parent and work up
+    for (let i = hierarchyPath.length - 1; i >= 0; i--) {
+      const ancestorId = hierarchyPath[i];
+      if (this._isElementVisibleInGraph(ancestorId)) {
+        return ancestorId;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get the lowest visible ancestor in the tree hierarchy for an element
+   */
+  getLowestVisibleAncestorInTree(elementId: string): string | null {
+    // If element is directly visible in tree, return null (no ancestor needed)
+    if (this._isElementVisibleInTree(elementId)) {
+      return null;
+    }
+
+    // Walk up the hierarchy to find the lowest visible ancestor
+    const hierarchyPath = this._getHierarchyPath(elementId);
+    
+    // Start from the immediate parent and work up
+    for (let i = hierarchyPath.length - 1; i >= 0; i--) {
+      const ancestorId = hierarchyPath[i];
+      if (this._isElementVisibleInTree(ancestorId)) {
+        return ancestorId;
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================================
+  // TREE HIERARCHY EXPANSION METHODS
+  // ============================================================================
+
+  /**
+   * Expand tree nodes (UI tree structure)
+   */
+  expandTreeNodes(containerIds: string[]): void {
+    for (const containerId of containerIds) {
+      this._searchNavigationState.expandedTreeNodes.add(containerId);
+    }
+  }
+
+  /**
+   * Collapse tree nodes (UI tree structure)
+   */
+  collapseTreeNodes(containerIds: string[]): void {
+    for (const containerId of containerIds) {
+      this._searchNavigationState.expandedTreeNodes.delete(containerId);
+    }
+  }
+
+  /**
+   * Get the expansion path needed to show an element in the tree
+   */
+  getTreeExpansionPath(elementId: string): string[] {
+    const hierarchyPath = this._getHierarchyPath(elementId);
+    return hierarchyPath.filter(ancestorId => {
+      const container = this._containers.get(ancestorId);
+      return container && !this._searchNavigationState.expandedTreeNodes.has(ancestorId);
+    });
+  }
+
+  /**
+   * Get the expansion path needed to show an element in the graph
+   */
+  getGraphExpansionPath(elementId: string): string[] {
+    const hierarchyPath = this._getHierarchyPath(elementId);
+    return hierarchyPath.filter(ancestorId => {
+      const container = this._containers.get(ancestorId);
+      return container && container.collapsed;
+    });
+  }
+
+  /**
+   * Expand tree hierarchy to show search matches
+   * This implements search-driven tree expansion logic that expands necessary parent nodes
+   */
+  expandTreeToShowMatches(searchResults: SearchResult[]): void {
+    const containersToExpand = new Set<string>();
+    
+    for (const result of searchResults) {
+      // Get the path of containers that need to be expanded to show this match
+      const expansionPath = this.getTreeExpansionPath(result.id);
+      for (const containerId of expansionPath) {
+        containersToExpand.add(containerId);
+      }
+    }
+    
+    // Expand all necessary containers
+    if (containersToExpand.size > 0) {
+      this.expandTreeNodes(Array.from(containersToExpand));
+    }
+  }
+
+  /**
+   * Update collapsed ancestors highlighting in tree hierarchy
+   * Highlights collapsed ancestors that contain search matches
+   */
+  updateCollapsedAncestorsInTree(): void {
+    // Get all current search results
+    const searchResults = this._searchNavigationState.searchResults;
+    
+    for (const result of searchResults) {
+      const hierarchyPath = result.hierarchyPath || [];
+      
+      for (const ancestorId of hierarchyPath) {
+        // Check if this ancestor is collapsed in the tree
+        if (!this._searchNavigationState.expandedTreeNodes.has(ancestorId)) {
+          const container = this._containers.get(ancestorId);
+          if (container) {
+            // Highlight this collapsed ancestor as it contains matches
+            this._searchNavigationState.treeSearchHighlights.add(ancestorId);
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // SEARCH AND NAVIGATION STATE GETTERS
+  // ============================================================================
+
+  /**
+   * Get current search query (enhanced version)
+   */
+  getSearchQueryEnhanced(): string {
+    return this._searchNavigationState.searchQuery;
+  }
+
+  /**
+   * Get current search results (enhanced version)
+   */
+  getSearchResultsEnhanced(): ReadonlyArray<SearchResult> {
+    return [...this._searchNavigationState.searchResults];
+  }
+
+  /**
+   * Get current search result (the one being navigated to)
+   */
+  getCurrentSearchResult(): SearchResult | null {
+    // For now, return the first search result if any exist
+    // This can be enhanced later to track which result is currently selected
+    const results = this._searchNavigationState.searchResults;
+    return results.length > 0 ? results[0] : null;
+  }
+
+  /**
+   * Get current navigation selection
+   */
+  getNavigationSelection(): string | null {
+    return this._searchNavigationState.navigationSelection;
+  }
+
+  /**
+   * Get tree search highlights
+   */
+  getTreeSearchHighlights(): ReadonlySet<string> {
+    return new Set(this._searchNavigationState.treeSearchHighlights);
+  }
+
+  /**
+   * Get graph search highlights
+   */
+  getGraphSearchHighlights(): ReadonlySet<string> {
+    return new Set(this._searchNavigationState.graphSearchHighlights);
+  }
+
+  /**
+   * Get tree navigation highlights
+   */
+  getTreeNavigationHighlights(): ReadonlySet<string> {
+    return new Set(this._searchNavigationState.treeNavigationHighlights);
+  }
+
+  /**
+   * Get graph navigation highlights
+   */
+  getGraphNavigationHighlights(): ReadonlySet<string> {
+    return new Set(this._searchNavigationState.graphNavigationHighlights);
+  }
+
+  /**
+   * Get expanded tree nodes
+   */
+  getExpandedTreeNodes(): ReadonlySet<string> {
+    return new Set(this._searchNavigationState.expandedTreeNodes);
+  }
+
+  /**
+   * Get expanded graph containers
+   */
+  getExpandedGraphContainers(): ReadonlySet<string> {
+    return new Set(this._searchNavigationState.expandedGraphContainers);
+  }
+
+  /**
+   * Check if viewport should focus on navigation target
+   */
+  getShouldFocusViewport(): boolean {
+    return this._searchNavigationState.shouldFocusViewport;
+  }
+
+  /**
+   * Get last navigation target
+   */
+  getLastNavigationTarget(): string | null {
+    return this._searchNavigationState.lastNavigationTarget;
+  }
+
+  /**
+   * Reset viewport focus flag
+   */
+  resetViewportFocus(): void {
+    this._searchNavigationState.shouldFocusViewport = false;
+  }
+
+  /**
+   * Get search cache statistics
+   */
+  getSearchCacheStats(): { size: number; maxSize: number; maxAge: number } {
+    return {
+      size: this._searchCache.size,
+      maxSize: this._searchCacheMaxSize,
+      maxAge: this._searchCacheMaxAge,
+    };
+  }
+
+  /**
+   * Check if a search is currently debouncing
+   */
+  isSearchDebouncing(): boolean {
+    return this._searchDebounceTimer !== null;
+  }
+
+  // ============================================================================
+  // PRIVATE HELPER METHODS
+  // ============================================================================
+
+  /**
+   * Calculate hierarchy path from root to element
+   */
+  private _getHierarchyPath(elementId: string): string[] {
+    const path: string[] = [];
+    
+    // Check if it's a node
+    let currentContainer = this._nodeContainerMap.get(elementId);
+    
+    // If not a node, check if it's a container
+    if (!currentContainer && this._containers.has(elementId)) {
+      currentContainer = this._containerParentMap.get(elementId);
+    }
+    
+    // Walk up the hierarchy
+    while (currentContainer) {
+      path.unshift(currentContainer);
+      currentContainer = this._containerParentMap.get(currentContainer);
+    }
+    
+    return path;
+  }
+
+  /**
+   * Calculate search confidence score
+   */
+  private _calculateSearchConfidence(label: string, query: string, isExact: boolean): number {
+    if (isExact) {
+      // Exact matches get higher scores
+      if (label.toLowerCase() === query) return 1.0; // Perfect match
+      if (label.toLowerCase().startsWith(query)) return 0.9; // Starts with query
+      return 0.8; // Contains query
+    }
+    
+    // Fuzzy matches get lower scores
+    return 0.5;
+  }
+
+  /**
+   * Check if element is visible in the ReactFlow graph
+   */
+  private _isElementVisibleInGraph(elementId: string): boolean {
+    const node = this._nodes.get(elementId);
+    if (node) {
+      return !node.hidden;
+    }
+    
+    const container = this._containers.get(elementId);
+    if (container) {
+      return !container.hidden;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Check if element is visible in the tree hierarchy
+   */
+  private _isElementVisibleInTree(elementId: string): boolean {
+    // In tree hierarchy, visibility is determined by expansion state
+    // An element is visible if all its ancestors are expanded
+    const hierarchyPath = this._getHierarchyPath(elementId);
+    
+    for (const ancestorId of hierarchyPath) {
+      if (!this._searchNavigationState.expandedTreeNodes.has(ancestorId)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  // Tree Hierarchy Expansion Methods (Enhanced)
+
+  /**
+   * Check if a tree container is collapsed and contains search matches
+   * Used for special highlighting of collapsed containers with matches
+   */
+  isCollapsedTreeContainerWithMatches(containerId: string): boolean {
+    // Container must not be expanded in tree
+    if (this._searchNavigationState.expandedTreeNodes.has(containerId)) {
+      return false;
+    }
+    
+    // Check if any search results are descendants of this container
+    const descendants = this._getAllDescendantIds(containerId);
+    
+    for (const result of this._searchNavigationState.searchResults) {
+      if (descendants.has(result.id)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get all tree containers that are collapsed but contain search matches
+   * Used for applying special highlighting to collapsed ancestors
+   */
+  getCollapsedTreeContainersWithMatches(): string[] {
+    const collapsedWithMatches: string[] = [];
+    
+    for (const [containerId] of this._containers) {
+      if (this.isCollapsedTreeContainerWithMatches(containerId)) {
+        collapsedWithMatches.push(containerId);
+      }
+    }
+    
+    return collapsedWithMatches;
   }
 
   // Performance Monitoring
@@ -2060,4 +3101,174 @@ export class VisualizationState {
       );
     }
   }
+
+  // State Persistence Methods
+
+  /**
+   * Create a snapshot of the current search and navigation state for persistence
+   */
+  createStateSnapshot(): string {
+    const snapshot = {
+      version: this._stateVersion,
+      timestamp: Date.now(),
+      searchNavigationState: {
+        searchQuery: this._searchNavigationState.searchQuery,
+        searchResults: this._searchNavigationState.searchResults,
+        treeSearchHighlights: Array.from(this._searchNavigationState.treeSearchHighlights),
+        graphSearchHighlights: Array.from(this._searchNavigationState.graphSearchHighlights),
+        navigationSelection: this._searchNavigationState.navigationSelection,
+        treeNavigationHighlights: Array.from(this._searchNavigationState.treeNavigationHighlights),
+        graphNavigationHighlights: Array.from(this._searchNavigationState.graphNavigationHighlights),
+        expandedTreeNodes: Array.from(this._searchNavigationState.expandedTreeNodes),
+        expandedGraphContainers: Array.from(this._searchNavigationState.expandedGraphContainers),
+        lastNavigationTarget: this._searchNavigationState.lastNavigationTarget,
+        shouldFocusViewport: this._searchNavigationState.shouldFocusViewport,
+      },
+      // Include backward compatibility state
+      searchState: {
+        isActive: this._searchState.isActive,
+        query: this._searchState.query,
+        resultCount: this._searchState.resultCount,
+        lastSearchTime: this._searchState.lastSearchTime,
+        expandedContainers: Array.from(this._searchState.expandedContainers),
+      },
+      searchQuery: this._searchQuery,
+      searchResults: this._searchResults,
+      searchHistory: this._searchHistory,
+    };
+
+    this._lastStateSnapshot = JSON.stringify(snapshot);
+    return this._lastStateSnapshot;
+  }
+
+  /**
+   * Restore state from a snapshot
+   */
+  restoreStateSnapshot(snapshotJson: string): boolean {
+    try {
+      const snapshot = JSON.parse(snapshotJson);
+      
+      // Version compatibility check
+      if (snapshot.version !== this._stateVersion) {
+        console.warn(`[VisualizationState] State snapshot version mismatch: expected ${this._stateVersion}, got ${snapshot.version}`);
+        return false;
+      }
+
+      // Restore search navigation state
+      if (snapshot.searchNavigationState) {
+        const sns = snapshot.searchNavigationState;
+        this._searchNavigationState.searchQuery = sns.searchQuery || "";
+        this._searchNavigationState.searchResults = sns.searchResults || [];
+        this._searchNavigationState.treeSearchHighlights = new Set(sns.treeSearchHighlights || []);
+        this._searchNavigationState.graphSearchHighlights = new Set(sns.graphSearchHighlights || []);
+        this._searchNavigationState.navigationSelection = sns.navigationSelection || null;
+        this._searchNavigationState.treeNavigationHighlights = new Set(sns.treeNavigationHighlights || []);
+        this._searchNavigationState.graphNavigationHighlights = new Set(sns.graphNavigationHighlights || []);
+        this._searchNavigationState.expandedTreeNodes = new Set(sns.expandedTreeNodes || []);
+        this._searchNavigationState.expandedGraphContainers = new Set(sns.expandedGraphContainers || []);
+        this._searchNavigationState.lastNavigationTarget = sns.lastNavigationTarget || null;
+        this._searchNavigationState.shouldFocusViewport = sns.shouldFocusViewport || false;
+      }
+
+      // Restore backward compatibility state
+      if (snapshot.searchState) {
+        const ss = snapshot.searchState;
+        this._searchState.isActive = ss.isActive || false;
+        this._searchState.query = ss.query || "";
+        this._searchState.resultCount = ss.resultCount || 0;
+        this._searchState.lastSearchTime = ss.lastSearchTime || 0;
+        this._searchState.expandedContainers = new Set(ss.expandedContainers || []);
+      }
+
+      this._searchQuery = snapshot.searchQuery || "";
+      this._searchResults = snapshot.searchResults || [];
+      this._searchHistory = snapshot.searchHistory || [];
+
+      this._lastStateSnapshot = snapshotJson;
+      return true;
+    } catch (error) {
+      console.error("[VisualizationState] Failed to restore state snapshot:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if the current state has changed since the last snapshot
+   */
+  hasStateChanged(): boolean {
+    if (!this._lastStateSnapshot) {
+      return true; // No previous snapshot, consider it changed
+    }
+
+    try {
+      const lastSnapshot = JSON.parse(this._lastStateSnapshot);
+      const currentState = {
+        searchNavigationState: {
+          searchQuery: this._searchNavigationState.searchQuery,
+          searchResults: this._searchNavigationState.searchResults,
+          treeSearchHighlights: Array.from(this._searchNavigationState.treeSearchHighlights),
+          graphSearchHighlights: Array.from(this._searchNavigationState.graphSearchHighlights),
+          navigationSelection: this._searchNavigationState.navigationSelection,
+          treeNavigationHighlights: Array.from(this._searchNavigationState.treeNavigationHighlights),
+          graphNavigationHighlights: Array.from(this._searchNavigationState.graphNavigationHighlights),
+          expandedTreeNodes: Array.from(this._searchNavigationState.expandedTreeNodes),
+          expandedGraphContainers: Array.from(this._searchNavigationState.expandedGraphContainers),
+          lastNavigationTarget: this._searchNavigationState.lastNavigationTarget,
+          shouldFocusViewport: this._searchNavigationState.shouldFocusViewport,
+        },
+        searchState: {
+          isActive: this._searchState.isActive,
+          query: this._searchState.query,
+          resultCount: this._searchState.resultCount,
+          expandedContainers: Array.from(this._searchState.expandedContainers),
+        },
+        searchQuery: this._searchQuery,
+        searchResults: this._searchResults,
+        searchHistory: this._searchHistory,
+      };
+
+      // Compare state objects (excluding timestamps)
+      return JSON.stringify(currentState) !== JSON.stringify({
+        searchNavigationState: lastSnapshot.searchNavigationState,
+        searchState: {
+          isActive: lastSnapshot.searchState?.isActive,
+          query: lastSnapshot.searchState?.query,
+          resultCount: lastSnapshot.searchState?.resultCount,
+          expandedContainers: lastSnapshot.searchState?.expandedContainers,
+        },
+        searchQuery: lastSnapshot.searchQuery,
+        searchResults: lastSnapshot.searchResults,
+        searchHistory: lastSnapshot.searchHistory,
+      });
+    } catch (error) {
+      console.warn("[VisualizationState] Error comparing state snapshots:", error);
+      return true; // Assume changed if comparison fails
+    }
+  }
+
+  /**
+   * Get the current state version for compatibility checking
+   */
+  getStateVersion(): number {
+    return this._stateVersion;
+  }
+
+  /**
+   * Clear all debounce timers (useful for cleanup)
+   */
+  clearDebounceTimers(): void {
+    if (this._searchDebounceTimer !== null) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+  }
+
+  /**
+   * Get the search and navigation state for error handling and external access
+   */
+  get searchNavigationState(): SearchNavigationState {
+    return this._searchNavigationState;
+  }
+
+
 }

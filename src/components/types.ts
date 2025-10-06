@@ -11,6 +11,7 @@ import type {
   ReactFlowEdge,
   NodeTypeConfig as CoreNodeTypeConfig,
   LayoutConfig,
+  SearchResult,
 } from "../types/core.js";
 
 // Define EdgeStyleConfig locally since EdgeStyleProcessor doesn't exist in v6
@@ -81,6 +82,12 @@ export interface InfoPanelProps extends BaseComponentProps {
   layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated operations
   asyncCoordinator?: AsyncCoordinator | null; // V6 AsyncCoordinator for operation coordination
 
+  // Navigation integration
+  onElementNavigation?: (
+    elementId: string,
+    elementType: "node" | "container"
+  ) => void;
+
   // Panel Control
   onPositionChange?: (panelId: string, position: PanelPosition) => void;
   onResetToDefaults?: () => void;
@@ -108,6 +115,18 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   onToggleContainer?: (containerId: string) => void;
   layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated search expansion
   asyncCoordinator?: AsyncCoordinator | null; // V6 AsyncCoordinator for operation coordination
+
+  // Navigation integration
+  onElementNavigation?: (
+    elementId: string,
+    elementType: "node" | "container"
+  ) => void;
+
+  // Search integration
+  searchQuery?: string;
+  searchResults?: SearchResult[];
+  currentSearchResult?: SearchResult;
+  onTreeExpansion?: (containerIds: string[]) => Promise<void>;
 
   // Display
   title?: string;

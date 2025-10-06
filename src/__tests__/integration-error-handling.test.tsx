@@ -7,7 +7,7 @@
  * Validates error messages and user feedback
  *
  * Requirements: 12.4, 6.2
- * 
+ *
  * This test suite focuses on:
  * - Uses the `data` prop for testing corrupted data scenarios
  * - Uses FileUpload component for file upload error scenarios
@@ -26,9 +26,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Hydroscope } from "../components/Hydroscope.js";
 import { HydroscopeCore } from "../components/HydroscopeCore.js";
 import { FileUpload } from "../components/FileUpload.js";
-import type {
-  HydroscopeData,
-} from "../types/core.js";
+import type { HydroscopeData } from "../types/core.js";
 
 // Mock FileReader for testing file upload scenarios
 class MockFileReader {
@@ -54,9 +52,7 @@ const validData: HydroscopeData = {
     { id: "node1", label: "Node 1" },
     { id: "node2", label: "Node 2" },
   ],
-  edges: [
-    { id: "edge1", source: "node1", target: "node2" },
-  ],
+  edges: [{ id: "edge1", source: "node1", target: "node2" }],
   hierarchyChoices: [],
   nodeAssignments: {},
 };
@@ -105,22 +101,21 @@ describe("Integration Error Handling Tests", () => {
       const onFileLoaded = vi.fn();
 
       render(
-        <FileUpload
-          onFileLoaded={onFileLoaded}
-          onParseError={onParseError}
-        />
+        <FileUpload onFileLoaded={onFileLoaded} onParseError={onParseError} />,
       );
 
       // Create a file with invalid JSON
-      const invalidFile = new File(['{ invalid json'], 'invalid.json', {
-        type: 'application/json',
+      const invalidFile = new File(["{ invalid json"], "invalid.json", {
+        type: "application/json",
       });
 
       // Mock FileReader to return invalid JSON
-      (global.FileReader as any).prototype.result = '{ invalid json';
+      (global.FileReader as any).prototype.result = "{ invalid json";
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [invalidFile] } });
@@ -141,17 +136,19 @@ describe("Integration Error Handling Tests", () => {
         <FileUpload
           onFileLoaded={onFileLoaded}
           onParseError={onParseError}
-          acceptedTypes={['.json']}
-        />
+          acceptedTypes={[".json"]}
+        />,
       );
 
       // Create a file with wrong MIME type
-      const wrongTypeFile = new File(['some content'], 'file.txt', {
-        type: 'text/plain',
+      const wrongTypeFile = new File(["some content"], "file.txt", {
+        type: "text/plain",
       });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [wrongTypeFile] } });
@@ -172,17 +169,19 @@ describe("Integration Error Handling Tests", () => {
           onFileLoaded={onFileLoaded}
           onParseError={onParseError}
           maxFileSize={1024} // 1KB limit
-        />
+        />,
       );
 
       // Create a large file (2KB)
-      const largeContent = 'x'.repeat(2048);
-      const largeFile = new File([largeContent], 'large.json', {
-        type: 'application/json',
+      const largeContent = "x".repeat(2048);
+      const largeFile = new File([largeContent], "large.json", {
+        type: "application/json",
       });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [largeFile] } });
@@ -199,19 +198,18 @@ describe("Integration Error Handling Tests", () => {
       const onFileLoaded = vi.fn();
 
       render(
-        <FileUpload
-          onFileLoaded={onFileLoaded}
-          onParseError={onParseError}
-        />
+        <FileUpload onFileLoaded={onFileLoaded} onParseError={onParseError} />,
       );
 
       // Create empty file
-      const emptyFile = new File([''], 'empty.json', {
-        type: 'application/json',
+      const emptyFile = new File([""], "empty.json", {
+        type: "application/json",
       });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [emptyFile] } });
@@ -228,22 +226,21 @@ describe("Integration Error Handling Tests", () => {
       const onFileLoaded = vi.fn();
 
       render(
-        <FileUpload
-          onFileLoaded={onFileLoaded}
-          onParseError={onParseError}
-        />
+        <FileUpload onFileLoaded={onFileLoaded} onParseError={onParseError} />,
       );
 
       // Mock FileReader to throw error
       const mockFileReader = global.FileReader as any;
-      mockFileReader.prototype.error = new Error('File read failed');
+      mockFileReader.prototype.error = new Error("File read failed");
 
-      const file = new File(['{}'], 'test.json', {
-        type: 'application/json',
+      const file = new File(["{}"], "test.json", {
+        type: "application/json",
       });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [file] } });
@@ -260,18 +257,21 @@ describe("Integration Error Handling Tests", () => {
       const onFileLoaded = vi.fn();
 
       render(
-        <FileUpload
-          onFileLoaded={onFileLoaded}
-          onParseError={onParseError}
-        />
+        <FileUpload onFileLoaded={onFileLoaded} onParseError={onParseError} />,
       );
 
       // Create multiple files
-      const file1 = new File(['{}'], 'test1.json', { type: 'application/json' });
-      const file2 = new File(['{}'], 'test2.json', { type: 'application/json' });
+      const file1 = new File(["{}"], "test1.json", {
+        type: "application/json",
+      });
+      const file2 = new File(["{}"], "test2.json", {
+        type: "application/json",
+      });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [file1, file2] } });
@@ -280,7 +280,9 @@ describe("Integration Error Handling Tests", () => {
       // Should handle multiple files - may show error or process one
       await waitFor(() => {
         // Check that either success or error callback was called
-        expect(onFileLoaded.mock.calls.length + onParseError.mock.calls.length).toBeGreaterThan(0);
+        expect(
+          onFileLoaded.mock.calls.length + onParseError.mock.calls.length,
+        ).toBeGreaterThan(0);
       });
     });
   });
@@ -293,13 +295,15 @@ describe("Integration Error Handling Tests", () => {
         <HydroscopeCore
           data={corruptedDataScenarios.missingNodes}
           onError={onError}
-        />
+        />,
       );
 
       // Should handle missing nodes gracefully by showing error message
       await waitFor(() => {
         expect(screen.getByText(/visualization error/i)).toBeInTheDocument();
-        expect(screen.getByText(/data must contain a nodes array/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/data must contain a nodes array/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -310,7 +314,7 @@ describe("Integration Error Handling Tests", () => {
         <HydroscopeCore
           data={corruptedDataScenarios.malformedStructure}
           onError={onError}
-        />
+        />,
       );
 
       // Should handle malformed structure gracefully by showing error message
@@ -327,7 +331,7 @@ describe("Integration Error Handling Tests", () => {
         <HydroscopeCore
           data={corruptedDataScenarios.invalidEdges}
           onError={onError}
-        />
+        />,
       );
 
       // Should handle invalid edge references gracefully
@@ -345,20 +349,13 @@ describe("Integration Error Handling Tests", () => {
           { id: "node2", label: "Node 2" },
         ],
         edges: [],
-        hierarchyChoices: [
-          { id: "choice1", name: "Circular Choice" },
-        ],
+        hierarchyChoices: [{ id: "choice1", name: "Circular Choice" }],
         nodeAssignments: {
-          choice1: { node1: "node2", node2: "node1" }
+          choice1: { node1: "node2", node2: "node1" },
         },
       };
 
-      render(
-        <HydroscopeCore
-          data={circularData}
-          onError={onError}
-        />
-      );
+      render(<HydroscopeCore data={circularData} onError={onError} />);
 
       // Should handle circular references gracefully
       await waitFor(() => {
@@ -378,12 +375,7 @@ describe("Integration Error Handling Tests", () => {
         nodeAssignments: {},
       };
 
-      render(
-        <HydroscopeCore
-          data={unicodeData}
-          onError={onError}
-        />
-      );
+      render(<HydroscopeCore data={unicodeData} onError={onError} />);
 
       // Should handle malformed Unicode gracefully
       await waitFor(() => {
@@ -397,22 +389,21 @@ describe("Integration Error Handling Tests", () => {
       const onError = vi.fn();
       const onFileLoaded = vi.fn();
 
-      render(
-        <FileUpload
-          onFileLoaded={onFileLoaded}
-          onParseError={onError}
-        />
-      );
+      render(<FileUpload onFileLoaded={onFileLoaded} onParseError={onError} />);
 
       // Create multiple rapid uploads
-      const files = Array.from({ length: 5 }, (_, i) =>
-        new File([JSON.stringify(validData)], `test${i}.json`, {
-          type: 'application/json',
-        })
+      const files = Array.from(
+        { length: 5 },
+        (_, i) =>
+          new File([JSON.stringify(validData)], `test${i}.json`, {
+            type: "application/json",
+          }),
       );
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       // Rapidly upload files
       for (const file of files) {
@@ -422,7 +413,7 @@ describe("Integration Error Handling Tests", () => {
       }
 
       // UI should remain responsive - file upload button should still be present
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      expect(screen.getByRole("button")).toBeInTheDocument();
     });
 
     it("should handle stress testing with large corrupted datasets", async () => {
@@ -444,18 +435,18 @@ describe("Integration Error Handling Tests", () => {
       };
 
       render(
-        <HydroscopeCore
-          data={largeCorruptedData as any}
-          onError={onError}
-        />
+        <HydroscopeCore data={largeCorruptedData as any} onError={onError} />,
       );
 
       // Should handle large corrupted data without crashing - may show loading or error
-      await waitFor(() => {
-        const hasLoading = screen.queryByText(/loading visualization/i);
-        const hasError = screen.queryByText(/visualization error/i);
-        expect(hasLoading || hasError).toBeTruthy();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          const hasLoading = screen.queryByText(/loading visualization/i);
+          const hasError = screen.queryByText(/visualization error/i);
+          expect(hasLoading || hasError).toBeTruthy();
+        },
+        { timeout: 10000 },
+      );
     });
 
     it("should handle memory pressure gracefully", async () => {
@@ -466,7 +457,7 @@ describe("Integration Error Handling Tests", () => {
         nodes: Array.from({ length: 50 }, (_, i) => ({
           id: `node${i}`,
           label: `Node ${i}`.repeat(5), // Smaller labels
-          data: { largeProperty: 'x'.repeat(50) }, // Smaller data objects
+          data: { largeProperty: "x".repeat(50) }, // Smaller data objects
         })),
         edges: Array.from({ length: 100 }, (_, i) => ({
           id: `edge${i}`,
@@ -478,18 +469,18 @@ describe("Integration Error Handling Tests", () => {
       };
 
       render(
-        <HydroscopeCore
-          data={memoryIntensiveData as any}
-          onError={onError}
-        />
+        <HydroscopeCore data={memoryIntensiveData as any} onError={onError} />,
       );
 
       // Should handle memory pressure gracefully - may show loading or error
-      await waitFor(() => {
-        const hasLoading = screen.queryByText(/loading visualization/i);
-        const hasError = screen.queryByText(/visualization error/i);
-        expect(hasLoading || hasError).toBeTruthy();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          const hasLoading = screen.queryByText(/loading visualization/i);
+          const hasError = screen.queryByText(/visualization error/i);
+          expect(hasLoading || hasError).toBeTruthy();
+        },
+        { timeout: 10000 },
+      );
     });
 
     it("should maintain UI responsiveness during error recovery", async () => {
@@ -498,7 +489,7 @@ describe("Integration Error Handling Tests", () => {
         <HydroscopeCore
           data={corruptedDataScenarios.missingNodes}
           onError={onError}
-        />
+        />,
       );
 
       // Wait for initial error state
@@ -507,12 +498,7 @@ describe("Integration Error Handling Tests", () => {
       });
 
       // Recover with valid data
-      rerender(
-        <HydroscopeCore
-          data={validData}
-          onError={onError}
-        />
-      );
+      rerender(<HydroscopeCore data={validData} onError={onError} />);
 
       // Should show loading state during recovery
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
@@ -524,19 +510,18 @@ describe("Integration Error Handling Tests", () => {
       const onParseError = vi.fn();
 
       render(
-        <FileUpload
-          onFileLoaded={() => { }}
-          onParseError={onParseError}
-        />
+        <FileUpload onFileLoaded={() => {}} onParseError={onParseError} />,
       );
 
       // Create invalid JSON file
-      const invalidFile = new File(['{ invalid'], 'invalid.json', {
-        type: 'application/json',
+      const invalidFile = new File(["{ invalid"], "invalid.json", {
+        type: "application/json",
       });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [invalidFile] } });
@@ -552,19 +537,21 @@ describe("Integration Error Handling Tests", () => {
 
       render(
         <FileUpload
-          onFileLoaded={() => { }}
+          onFileLoaded={() => {}}
           onParseError={onParseError}
-          acceptedTypes={['.json']}
-        />
+          acceptedTypes={[".json"]}
+        />,
       );
 
       // Test wrong file type
-      const wrongFile = new File(['content'], 'file.txt', {
-        type: 'text/plain',
+      const wrongFile = new File(["content"], "file.txt", {
+        type: "text/plain",
       });
 
-      const fileInput = screen.getByRole('button');
-      const input = fileInput.querySelector('input[type="file"]') as HTMLInputElement;
+      const fileInput = screen.getByRole("button");
+      const input = fileInput.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(input, { target: { files: [wrongFile] } });
@@ -573,7 +560,7 @@ describe("Integration Error Handling Tests", () => {
       // Should provide actionable feedback
       await waitFor(() => {
         // The exact message depends on implementation
-        expect(screen.getByRole('button')).toBeInTheDocument();
+        expect(screen.getByRole("button")).toBeInTheDocument();
       });
     });
 
@@ -589,16 +576,15 @@ describe("Integration Error Handling Tests", () => {
       };
 
       render(
-        <HydroscopeCore
-          data={problematicData as any}
-          onError={onError}
-        />
+        <HydroscopeCore data={problematicData as any} onError={onError} />,
       );
 
       // Should handle multiple errors gracefully by showing error message
       await waitFor(() => {
         expect(screen.getByText(/visualization error/i)).toBeInTheDocument();
-        expect(screen.getByText(/data must contain a nodes array/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/data must contain a nodes array/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -608,7 +594,7 @@ describe("Integration Error Handling Tests", () => {
         <HydroscopeCore
           data={corruptedDataScenarios.missingNodes}
           onError={onError}
-        />
+        />,
       );
 
       // Wait for initial error state
@@ -617,12 +603,7 @@ describe("Integration Error Handling Tests", () => {
       });
 
       // Provide valid data
-      rerender(
-        <HydroscopeCore
-          data={validData}
-          onError={onError}
-        />
-      );
+      rerender(<HydroscopeCore data={validData} onError={onError} />);
 
       // Should show loading state after recovery
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
@@ -635,7 +616,7 @@ describe("Integration Error Handling Tests", () => {
         <HydroscopeCore
           data={corruptedDataScenarios.invalidEdges}
           onError={onError}
-        />
+        />,
       );
 
       // Wait for initial state
@@ -644,12 +625,7 @@ describe("Integration Error Handling Tests", () => {
       });
 
       // Provide corrected data
-      rerender(
-        <HydroscopeCore
-          data={validData}
-          onError={onError}
-        />
-      );
+      rerender(<HydroscopeCore data={validData} onError={onError} />);
 
       // Should maintain loading state during recovery
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
@@ -669,16 +645,15 @@ describe("Integration Error Handling Tests", () => {
       };
 
       render(
-        <HydroscopeCore
-          data={problematicData as any}
-          onError={onError}
-        />
+        <HydroscopeCore data={problematicData as any} onError={onError} />,
       );
 
       // Should handle initialization errors gracefully by showing error message
       await waitFor(() => {
         expect(screen.getByText(/visualization error/i)).toBeInTheDocument();
-        expect(screen.getByText(/missing required.*id.*field/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/missing required.*id.*field/i),
+        ).toBeInTheDocument();
       });
     });
 
@@ -686,11 +661,7 @@ describe("Integration Error Handling Tests", () => {
       const onError = vi.fn();
 
       render(
-        <Hydroscope
-          data={validData}
-          showInfoPanel={true}
-          onError={onError}
-        />
+        <Hydroscope data={validData} showInfoPanel={true} onError={onError} />,
       );
 
       // Should render without errors - check for loading state or error boundary
@@ -708,7 +679,7 @@ describe("Integration Error Handling Tests", () => {
           showInfoPanel={true}
           enableCollapse={true}
           onError={onError}
-        />
+        />,
       );
 
       // Should render without container errors - check for loading state or error boundary
