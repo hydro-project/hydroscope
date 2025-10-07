@@ -1,6 +1,6 @@
 /**
  * Paxos-Flipped Nested Container Hierarchy Bug Test
- * 
+ *
  * This test reproduces the bug with nested container hierarchies
  * using the paxos-flipped.json test data. The issue occurs during
  * initial layout when ELK fails on the data we're feeding it.
@@ -24,8 +24,12 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
 
   beforeEach(async () => {
     // Load the actual paxos-flipped.json file
-    const paxosFlippedPath = path.join(process.cwd(), "test-data", "paxos-flipped.json");
-    
+    const paxosFlippedPath = path.join(
+      process.cwd(),
+      "test-data",
+      "paxos-flipped.json",
+    );
+
     if (!fs.existsSync(paxosFlippedPath)) {
       throw new Error(`Test data file not found: ${paxosFlippedPath}`);
     }
@@ -58,7 +62,7 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
 
       console.log("Parsing stats:", result.stats);
       console.log("Warnings:", result.warnings.length);
-      
+
       if (result.warnings.length > 0) {
         console.log("Warnings details:", result.warnings);
       }
@@ -70,16 +74,20 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
       // Parse the data first
       const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosFlippedData);
-      
+
       visualizationState = parseResult.visualizationState;
 
       // Get initial render data
       const renderData = reactFlowBridge.toReactFlowData(visualizationState);
-      
+
       // Log detailed information about the data structure
-      const containerNodes = renderData.nodes.filter(n => n.data?.nodeType === 'container');
-      const regularNodes = renderData.nodes.filter(n => n.data?.nodeType !== 'container');
-      
+      const containerNodes = renderData.nodes.filter(
+        (n) => n.data?.nodeType === "container",
+      );
+      const regularNodes = renderData.nodes.filter(
+        (n) => n.data?.nodeType !== "container",
+      );
+
       const debugInfo = `[PaxosFlippedBug] 📊 Data structure analysis:
   Total nodes: ${renderData.nodes.length}
   Container nodes: ${containerNodes.length}
@@ -87,67 +95,83 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
   Total edges: ${renderData.edges.length}
 `;
       fs.appendFileSync("debug-output.txt", debugInfo);
-      
+
       // Check for nested containers
-      const nestedContainers = containerNodes.filter(container => {
-        return renderData.nodes.some(node => 
-          node.parentId === container.id && node.data?.nodeType === 'container'
+      const nestedContainers = containerNodes.filter((container) => {
+        return renderData.nodes.some(
+          (node) =>
+            node.parentId === container.id &&
+            node.data?.nodeType === "container",
         );
       });
-      
+
       let nestedInfo = `  Containers with nested containers: ${nestedContainers.length}\n`;
-      
+
       if (nestedContainers.length > 0) {
         nestedInfo += `  Nested container details:\n`;
-        nestedContainers.forEach(container => {
-          const children = renderData.nodes.filter(n => n.parentId === container.id);
-          const childContainers = children.filter(n => n.data?.nodeType === 'container');
+        nestedContainers.forEach((container) => {
+          const children = renderData.nodes.filter(
+            (n) => n.parentId === container.id,
+          );
+          const childContainers = children.filter(
+            (n) => n.data?.nodeType === "container",
+          );
           nestedInfo += `    ${container.id}: ${children.length} children (${childContainers.length} containers)\n`;
         });
       }
-      
+
       fs.appendFileSync("debug-output.txt", nestedInfo);
 
       // This is where the bug should manifest - ELK layout should fail
       let layoutError: Error | null = null;
-      
+
       try {
         // Use the correct ELK bridge API - layout method that works with VisualizationState
         await elkBridge.layout(visualizationState);
-        
+
         // After layout, check if positions were applied
-        const nodesWithPositions = visualizationState.visibleNodes.filter(n => n.position);
-        const containersWithPositions = visualizationState.visibleContainers.filter(c => c.position);
-        
+        const nodesWithPositions = visualizationState.visibleNodes.filter(
+          (n) => n.position,
+        );
+        const containersWithPositions =
+          visualizationState.visibleContainers.filter((c) => c.position);
+
         const successInfo = `[PaxosFlippedBug] ✅ Layout completed successfully
   Nodes with positions: ${nodesWithPositions.length}/${visualizationState.visibleNodes.length}
   Containers with positions: ${containersWithPositions.length}/${visualizationState.visibleContainers.length}
 `;
         fs.appendFileSync("debug-output.txt", successInfo);
-        
+
         // Verify layout was applied
         expect(nodesWithPositions.length).toBeGreaterThan(0);
-        
       } catch (error) {
         layoutError = error as Error;
         const errorInfo = `[PaxosFlippedBug] ❌ ELK Layout failed:
   Error type: ${error.constructor.name}
   Error message: ${error.message}
-  Stack trace: ${error.stack?.split('\n').slice(0, 10).join('\n') || 'No stack trace'}
+  Stack trace: ${error.stack?.split("\n").slice(0, 10).join("\n") || "No stack trace"}
 `;
         fs.appendFileSync("debug-output.txt", errorInfo);
       }
 
       // Document the current state - if there's an error, we've found the bug
       if (layoutError) {
-        fs.appendFileSync("debug-output.txt", "[PaxosFlippedBug] 🐛 Bug reproduced - ELK layout failed with nested containers\n");
+        fs.appendFileSync(
+          "debug-output.txt",
+          "[PaxosFlippedBug] 🐛 Bug reproduced - ELK layout failed with nested containers\n",
+        );
         // For now, we expect this to fail - once fixed, we can change this expectation
         expect(layoutError).toBeDefined();
         expect(layoutError.message).toBeTruthy();
       } else {
-        fs.appendFileSync("debug-output.txt", "[PaxosFlippedBug] ✅ No bug detected - layout completed successfully\n");
+        fs.appendFileSync(
+          "debug-output.txt",
+          "[PaxosFlippedBug] ✅ No bug detected - layout completed successfully\n",
+        );
         // If no error, the layout should have been applied
-        const nodesWithPositions = visualizationState.visibleNodes.filter(n => n.position);
+        const nodesWithPositions = visualizationState.visibleNodes.filter(
+          (n) => n.position,
+        );
         expect(nodesWithPositions.length).toBeGreaterThan(0);
       }
     }, 30000);
@@ -156,19 +180,19 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
       // Parse the data to get container structure
       const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosFlippedData);
-      
+
       visualizationState = parseResult.visualizationState;
 
       // Analyze container hierarchy from VisualizationState
       const containers = visualizationState.visibleContainers;
       const containerHierarchy = new Map<string, string[]>();
-      
+
       // Build hierarchy map
       for (const container of containers) {
         const children: string[] = [];
         for (const childId of container.children) {
           // Check if child is also a container
-          const childContainer = containers.find(c => c.id === childId);
+          const childContainer = containers.find((c) => c.id === childId);
           if (childContainer) {
             children.push(childId);
           }
@@ -180,8 +204,10 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
 
       console.log("[PaxosFlippedBug] 🔍 Container hierarchy analysis:");
       console.log(`  Total containers: ${containers.length}`);
-      console.log(`  Containers with nested containers: ${containerHierarchy.size}`);
-      
+      console.log(
+        `  Containers with nested containers: ${containerHierarchy.size}`,
+      );
+
       if (containerHierarchy.size > 0) {
         console.log(`  Nested container relationships:`);
         for (const [parentId, childIds] of containerHierarchy) {
@@ -195,11 +221,13 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
 
       // Also analyze the ReactFlow data structure
       const renderData = reactFlowBridge.toReactFlowData(visualizationState);
-      const containerNodes = renderData.nodes.filter(n => n.data?.nodeType === 'container');
-      
+      const containerNodes = renderData.nodes.filter(
+        (n) => n.data?.nodeType === "container",
+      );
+
       console.log(`[PaxosFlippedBug] 🎨 ReactFlow data structure:`);
       console.log(`  Container nodes in ReactFlow: ${containerNodes.length}`);
-      
+
       // Check for parent-child relationships in ReactFlow data
       const parentChildMap = new Map<string, string[]>();
       for (const node of renderData.nodes) {
@@ -210,24 +238,32 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
           parentChildMap.get(node.parentId)!.push(node.id);
         }
       }
-      
-      console.log(`  Nodes with parent-child relationships: ${parentChildMap.size}`);
+
+      console.log(
+        `  Nodes with parent-child relationships: ${parentChildMap.size}`,
+      );
       for (const [parentId, childIds] of parentChildMap) {
-        const parentNode = renderData.nodes.find(n => n.id === parentId);
-        const parentType = parentNode?.data?.nodeType || 'unknown';
-        console.log(`    ${parentId} (${parentType}) -> ${childIds.length} children`);
+        const parentNode = renderData.nodes.find((n) => n.id === parentId);
+        const parentType = parentNode?.data?.nodeType || "unknown";
+        console.log(
+          `    ${parentId} (${parentType}) -> ${childIds.length} children`,
+        );
       }
 
       // This helps us understand the structure causing issues
       expect(containers.length).toBeGreaterThan(0);
-      
+
       // If we have deeply nested containers, that might be the issue
       if (maxDepth > 3) {
-        console.log(`[PaxosFlippedBug] ⚠️  Deep nesting detected (depth: ${maxDepth}) - potential ELK issue`);
+        console.log(
+          `[PaxosFlippedBug] ⚠️  Deep nesting detected (depth: ${maxDepth}) - potential ELK issue`,
+        );
       }
-      
+
       if (containerHierarchy.size > 10) {
-        console.log(`[PaxosFlippedBug] ⚠️  Many nested containers (${containerHierarchy.size}) - potential complexity issue`);
+        console.log(
+          `[PaxosFlippedBug] ⚠️  Many nested containers (${containerHierarchy.size}) - potential complexity issue`,
+        );
       }
     });
   });
@@ -237,7 +273,7 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
       // Parse the data first
       const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosFlippedData);
-      
+
       visualizationState = parseResult.visualizationState;
 
       // Convert to ReactFlow format - this should not throw
@@ -271,21 +307,21 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
  * Helper function to calculate maximum container nesting depth
  */
 function calculateMaxContainerDepth(containers: any[]): number {
-  const containerMap = new Map(containers.map(c => [c.id, c]));
+  const containerMap = new Map(containers.map((c) => [c.id, c]));
   const visited = new Set<string>();
-  
+
   function getDepth(containerId: string): number {
     if (visited.has(containerId)) {
       return 0; // Avoid infinite recursion
     }
-    
+
     visited.add(containerId);
     const container = containerMap.get(containerId);
-    
+
     if (!container) {
       return 0;
     }
-    
+
     let maxChildDepth = 0;
     for (const childId of container.children) {
       if (containerMap.has(childId)) {
@@ -293,16 +329,16 @@ function calculateMaxContainerDepth(containers: any[]): number {
         maxChildDepth = Math.max(maxChildDepth, childDepth);
       }
     }
-    
+
     visited.delete(containerId);
     return 1 + maxChildDepth;
   }
-  
+
   let maxDepth = 0;
   for (const container of containers) {
     const depth = getDepth(container.id);
     maxDepth = Math.max(maxDepth, depth);
   }
-  
+
   return maxDepth;
 }

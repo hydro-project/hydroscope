@@ -31,7 +31,11 @@ describe("Search and Navigation State Management", () => {
     hidden: false,
   });
 
-  const createTestContainer = (id: string, label: string, children: string[]): Container => ({
+  const createTestContainer = (
+    id: string,
+    label: string,
+    children: string[],
+  ): Container => ({
     id,
     label,
     children: new Set(children),
@@ -45,7 +49,7 @@ describe("Search and Navigation State Management", () => {
       state.addNode(node1);
 
       const callback = vi.fn();
-      
+
       // Trigger multiple rapid searches
       state.performSearchDebounced("Test", callback, 300);
       state.performSearchDebounced("Test", callback, 300);
@@ -61,7 +65,7 @@ describe("Search and Navigation State Management", () => {
       // Fast-forward by 1 more ms - should call now
       vi.advanceTimersByTime(1);
       expect(callback).toHaveBeenCalledOnce();
-      
+
       // Should have called with the final query
       const results = callback.mock.calls[0][0];
       expect(results).toHaveLength(1);
@@ -74,19 +78,19 @@ describe("Search and Navigation State Management", () => {
 
       const callback1 = vi.fn();
       const callback2 = vi.fn();
-      
+
       // Trigger first search
       state.performSearchDebounced("Test", callback1, 300);
-      
+
       // Fast-forward by 200ms
       vi.advanceTimersByTime(200);
-      
+
       // Trigger second search (should cancel first)
       state.performSearchDebounced("Different", callback2, 300);
-      
+
       // Fast-forward by 300ms
       vi.advanceTimersByTime(300);
-      
+
       // Only second callback should be called
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledOnce();
@@ -97,10 +101,10 @@ describe("Search and Navigation State Management", () => {
       state.addNode(node1);
 
       expect(state.isSearchDebouncing()).toBe(false);
-      
+
       state.performSearchDebounced("Test", undefined, 300);
       expect(state.isSearchDebouncing()).toBe(true);
-      
+
       vi.advanceTimersByTime(300);
       expect(state.isSearchDebouncing()).toBe(false);
     });
@@ -137,7 +141,7 @@ describe("Search and Navigation State Management", () => {
       // Search for different terms
       const results1 = state.performSearch("Test");
       const results2 = state.performSearch("Another");
-      
+
       expect(results1).toHaveLength(1);
       expect(results2).toHaveLength(1);
       expect(results1[0].id).toBe("node1");
@@ -183,14 +187,16 @@ describe("Search and Navigation State Management", () => {
   describe("Proper Cleanup of Highlights", () => {
     it("should clear search highlights while preserving expansion state", () => {
       const node1 = createTestNode("node1", "Test Node");
-      const container1 = createTestContainer("container1", "Test Container", ["node1"]);
-      
+      const container1 = createTestContainer("container1", "Test Container", [
+        "node1",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container1);
 
       // Expand tree nodes
       state.expandTreeNodes(["container1"]);
-      
+
       // Perform search
       state.performSearch("Test");
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
@@ -198,11 +204,11 @@ describe("Search and Navigation State Management", () => {
 
       // Clear search
       state.clearSearchEnhanced();
-      
+
       // Highlights should be cleared
       expect(state.getTreeSearchHighlights().size).toBe(0);
       expect(state.getGraphSearchHighlights().size).toBe(0);
-      
+
       // Expansion state should be preserved
       expect(state.getExpandedTreeNodes().has("container1")).toBe(true);
     });
@@ -237,8 +243,10 @@ describe("Search and Navigation State Management", () => {
   describe("State Persistence", () => {
     it("should create and restore state snapshots", () => {
       const node1 = createTestNode("node1", "Test Node");
-      const container1 = createTestContainer("container1", "Test Container", ["node1"]);
-      
+      const container1 = createTestContainer("container1", "Test Container", [
+        "node1",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container1);
 
@@ -255,7 +263,7 @@ describe("Search and Navigation State Management", () => {
       const newState = new VisualizationState();
       newState.addNode(node1);
       newState.addContainer(container1);
-      
+
       const restored = newState.restoreStateSnapshot(snapshot);
       expect(restored).toBe(true);
 

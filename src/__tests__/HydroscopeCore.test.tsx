@@ -259,7 +259,7 @@ describe("HydroscopeCore Component", () => {
 
       // Component should still render
       expect(screen.getByText(/loading visualization/i)).toBeInTheDocument();
-      
+
       // Test with showControls=true
       rerender(
         <HydroscopeCore

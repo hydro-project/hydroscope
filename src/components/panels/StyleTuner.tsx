@@ -87,8 +87,6 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   const [local, setLocal] = useState(value);
   useEffect(() => setLocal(value), [value]);
 
-
-
   // Removed unused _update function - using direct state updates instead
 
   const inputStyle: React.CSSProperties = {

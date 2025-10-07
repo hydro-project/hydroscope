@@ -5,7 +5,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Alert, Button, Space, Typography } from "antd";
-import { ExclamationCircleOutlined, ReloadOutlined, CloseOutlined } from "@ant-design/icons";
+import {
+  ExclamationCircleOutlined,
+  ReloadOutlined,
+  CloseOutlined,
+} from "@ant-design/icons";
 import type { UserFeedbackOptions } from "../core/ErrorHandler.js";
 
 const { Text } = Typography;
@@ -32,13 +36,13 @@ export const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({
   useEffect(() => {
     if (feedback) {
       setIsVisible(true);
-      
+
       // Auto-dismiss after duration if specified
       if (feedback.duration && feedback.duration > 0) {
         const timer = setTimeout(() => {
           handleDismiss();
         }, feedback.duration);
-        
+
         return () => clearTimeout(timer);
       }
     } else {
@@ -53,7 +57,7 @@ export const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({
 
   const handleRetry = useCallback(async () => {
     if (!feedback?.retryAction) return;
-    
+
     setIsRetrying(true);
     try {
       await feedback.retryAction();
@@ -67,22 +71,30 @@ export const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({
     }
   }, [feedback, handleDismiss]);
 
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Escape' && feedback?.dismissible) {
-      handleDismiss();
-    } else if (event.key === 'Enter' && feedback?.retryAction) {
-      handleRetry();
-    }
-  }, [feedback, handleDismiss, handleRetry]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "Escape" && feedback?.dismissible) {
+        handleDismiss();
+      } else if (event.key === "Enter" && feedback?.retryAction) {
+        handleRetry();
+      }
+    },
+    [feedback, handleDismiss, handleRetry],
+  );
 
   if (!feedback || !isVisible) {
     return null;
   }
 
-  const alertType = feedback.type === 'error' ? 'error' : 
-                   feedback.type === 'warning' ? 'warning' : 'info';
+  const alertType =
+    feedback.type === "error"
+      ? "error"
+      : feedback.type === "warning"
+        ? "warning"
+        : "info";
 
-  const icon = feedback.type === 'error' ? <ExclamationCircleOutlined /> : undefined;
+  const icon =
+    feedback.type === "error" ? <ExclamationCircleOutlined /> : undefined;
 
   const action = (
     <Space>
@@ -114,7 +126,7 @@ export const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({
     <div
       className={className}
       style={{
-        position: 'fixed',
+        position: "fixed",
         top: 16,
         right: 16,
         zIndex: 1000,
@@ -131,8 +143,11 @@ export const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({
         type={alertType}
         message={
           <Text strong>
-            {feedback.type === 'error' ? 'Error' : 
-             feedback.type === 'warning' ? 'Warning' : 'Information'}
+            {feedback.type === "error"
+              ? "Error"
+              : feedback.type === "warning"
+                ? "Warning"
+                : "Information"}
           </Text>
         }
         description={feedback.message}
@@ -141,10 +156,13 @@ export const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({
         closable={false} // We handle closing with our custom button
         showIcon
         style={{
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
           border: `1px solid ${
-            feedback.type === 'error' ? '#ff4d4f' :
-            feedback.type === 'warning' ? '#faad14' : '#1890ff'
+            feedback.type === "error"
+              ? "#ff4d4f"
+              : feedback.type === "warning"
+                ? "#faad14"
+                : "#1890ff"
           }`,
         }}
       />

@@ -6,7 +6,11 @@
 import { ReactFlowBridge } from "./ReactFlowBridge.js";
 import { ELKBridge } from "./ELKBridge.js";
 import type { LayoutConfig, StyleConfig } from "../types/core.js";
-import type { IBridgeFactory, IReactFlowBridge, IELKBridge } from "../types/bridges.js";
+import type {
+  IBridgeFactory,
+  IReactFlowBridge,
+  IELKBridge,
+} from "../types/bridges.js";
 
 export class BridgeFactory implements IBridgeFactory {
   private static instance: BridgeFactory;

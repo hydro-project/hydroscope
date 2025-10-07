@@ -7,7 +7,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SearchNavigationErrorHandler } from "../core/ErrorHandler.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
-import type { UserFeedbackOptions, ErrorRecoveryResult } from "../core/ErrorHandler.js";
+import type {
+  UserFeedbackOptions,
+  ErrorRecoveryResult,
+} from "../core/ErrorHandler.js";
 
 describe("Error Handling and Recovery", () => {
   let errorHandler: SearchNavigationErrorHandler;
@@ -50,7 +53,7 @@ describe("Error Handling and Recovery", () => {
         containerIds,
         visualizationState,
         mockError,
-        { operation: "test_expansion" }
+        { operation: "test_expansion" },
       );
 
       expect(result.success).toBe(true); // Should succeed with fallback
@@ -67,11 +70,13 @@ describe("Error Handling and Recovery", () => {
       await errorHandler.handleContainerExpansionFailure(
         containerIds,
         visualizationState,
-        mockError
+        mockError,
       );
 
       expect(mockUserFeedback).toBeTruthy();
-      expect(mockUserFeedback?.message).toContain("containers couldn't be expanded");
+      expect(mockUserFeedback?.message).toContain(
+        "containers couldn't be expanded",
+      );
       expect(mockUserFeedback?.retryAction).toBeDefined();
       expect(mockUserFeedback?.dismissible).toBe(true);
     });
@@ -81,19 +86,31 @@ describe("Error Handling and Recovery", () => {
       const mockError = new Error("Expansion failed");
 
       // Set up some existing highlights
-      visualizationState.searchNavigationState.treeSearchHighlights.add("existing1");
-      visualizationState.searchNavigationState.graphSearchHighlights.add("existing2");
+      visualizationState.searchNavigationState.treeSearchHighlights.add(
+        "existing1",
+      );
+      visualizationState.searchNavigationState.graphSearchHighlights.add(
+        "existing2",
+      );
 
       const result = await errorHandler.handleContainerExpansionFailure(
         containerIds,
         visualizationState,
-        mockError
+        mockError,
       );
 
       // Existing highlights should be preserved
-      expect(visualizationState.searchNavigationState.treeSearchHighlights.has("existing1")).toBe(true);
-      expect(visualizationState.searchNavigationState.graphSearchHighlights.has("existing2")).toBe(true);
-      
+      expect(
+        visualizationState.searchNavigationState.treeSearchHighlights.has(
+          "existing1",
+        ),
+      ).toBe(true);
+      expect(
+        visualizationState.searchNavigationState.graphSearchHighlights.has(
+          "existing2",
+        ),
+      ).toBe(true);
+
       // Fallback highlights should be added
       expect(result.fallbackApplied).toBe(true);
     });
@@ -108,32 +125,42 @@ describe("Error Handling and Recovery", () => {
         elementIds,
         "search",
         visualizationState,
-        mockError
+        mockError,
       );
 
       expect(result.success).toBe(true);
       expect(result.fallbackApplied).toBe(true);
-      
+
       // Check that fallback highlighting was applied
-      expect(visualizationState.searchNavigationState.treeSearchHighlights.has("node1")).toBe(true);
-      expect(visualizationState.searchNavigationState.treeSearchHighlights.has("node2")).toBe(true);
+      expect(
+        visualizationState.searchNavigationState.treeSearchHighlights.has(
+          "node1",
+        ),
+      ).toBe(true);
+      expect(
+        visualizationState.searchNavigationState.treeSearchHighlights.has(
+          "node2",
+        ),
+      ).toBe(true);
     });
 
     it("should show user feedback only when fallback highlighting also fails", async () => {
       const elementIds = ["node1"];
-      
+
       // Mock fallback highlighting to also fail
-      const originalApplyFallback = errorHandler['applyFallbackHighlighting'];
-      errorHandler['applyFallbackHighlighting'] = vi.fn().mockImplementation(() => {
-        throw new Error("Fallback highlighting failed");
-      });
+      const originalApplyFallback = errorHandler["applyFallbackHighlighting"];
+      errorHandler["applyFallbackHighlighting"] = vi
+        .fn()
+        .mockImplementation(() => {
+          throw new Error("Fallback highlighting failed");
+        });
 
       const mockError = new Error("Primary highlighting failed");
       const result = await errorHandler.handleHighlightingFailure(
         elementIds,
         "navigation",
         visualizationState,
-        mockError
+        mockError,
       );
 
       expect(result.success).toBe(false);
@@ -142,7 +169,7 @@ describe("Error Handling and Recovery", () => {
       expect(mockUserFeedback?.type).toBe("warning");
 
       // Restore original method
-      errorHandler['applyFallbackHighlighting'] = originalApplyFallback;
+      errorHandler["applyFallbackHighlighting"] = originalApplyFallback;
     });
   });
 
@@ -154,7 +181,7 @@ describe("Error Handling and Recovery", () => {
       const result = await errorHandler.handleSearchFailure(
         query,
         visualizationState,
-        mockError
+        mockError,
       );
 
       // With synchronous core, fallback should work
@@ -168,11 +195,17 @@ describe("Error Handling and Recovery", () => {
       const query = "test query";
       const mockError = new Error("Search timeout");
 
-      await errorHandler.handleSearchFailure(query, visualizationState, mockError);
+      await errorHandler.handleSearchFailure(
+        query,
+        visualizationState,
+        mockError,
+      );
 
       expect(mockUserFeedback?.retryAction).toBeDefined();
       // With fallback working, should show success message
-      expect(mockUserFeedback?.message).toContain("Search completed with limited functionality");
+      expect(mockUserFeedback?.message).toContain(
+        "Search completed with limited functionality",
+      );
     });
   });
 
@@ -184,24 +217,38 @@ describe("Error Handling and Recovery", () => {
       const result = await errorHandler.handleNavigationFailure(
         elementId,
         visualizationState,
-        mockError
+        mockError,
       );
 
       expect(result.success).toBe(true);
       expect(result.fallbackApplied).toBe(true);
-      
+
       // Check that fallback navigation highlighting was applied
-      expect(visualizationState.searchNavigationState.treeNavigationHighlights.has(elementId)).toBe(true);
-      expect(visualizationState.searchNavigationState.graphNavigationHighlights.has(elementId)).toBe(true);
+      expect(
+        visualizationState.searchNavigationState.treeNavigationHighlights.has(
+          elementId,
+        ),
+      ).toBe(true);
+      expect(
+        visualizationState.searchNavigationState.graphNavigationHighlights.has(
+          elementId,
+        ),
+      ).toBe(true);
     });
 
     it("should provide appropriate feedback for navigation failures", async () => {
       const elementId = "node1";
       const mockError = new Error("Navigation failed");
 
-      await errorHandler.handleNavigationFailure(elementId, visualizationState, mockError);
+      await errorHandler.handleNavigationFailure(
+        elementId,
+        visualizationState,
+        mockError,
+      );
 
-      expect(mockUserFeedback?.message).toContain("Navigation completed with limited functionality");
+      expect(mockUserFeedback?.message).toContain(
+        "Navigation completed with limited functionality",
+      );
       expect(mockUserFeedback?.type).toBe("warning");
       expect(mockUserFeedback?.retryAction).toBeDefined();
     });
@@ -209,11 +256,9 @@ describe("Error Handling and Recovery", () => {
 
   describe("Timeout Handling", () => {
     it("should handle operation timeouts appropriately", async () => {
-      const result = await errorHandler.handleTimeout(
-        "test_operation",
-        5000,
-        { context: "test" }
-      );
+      const result = await errorHandler.handleTimeout("test_operation", 5000, {
+        context: "test",
+      });
 
       expect(result.success).toBe(false);
       expect(result.userFeedbackShown).toBe(true);
@@ -222,10 +267,11 @@ describe("Error Handling and Recovery", () => {
     });
 
     it("should execute operations with timeout protection", async () => {
-      const slowOperation = () => new Promise(resolve => setTimeout(resolve, 2000));
+      const slowOperation = () =>
+        new Promise((resolve) => setTimeout(resolve, 2000));
 
       await expect(
-        errorHandler.executeWithTimeout(slowOperation, 100)
+        errorHandler.executeWithTimeout(slowOperation, 100),
       ).rejects.toThrow("Operation timed out after 100ms");
     });
 
@@ -248,7 +294,7 @@ describe("Error Handling and Recovery", () => {
       const result = asyncCoordinator.expandContainerWithErrorHandling(
         "container1",
         visualizationState,
-        { timeout: 100 }
+        { timeout: 100 },
       );
 
       // With synchronous architecture, error is handled but success is false
@@ -262,13 +308,13 @@ describe("Error Handling and Recovery", () => {
       const mockState = {
         performSearch: vi.fn().mockImplementation(() => {
           throw new Error("Search failed");
-        })
+        }),
       };
 
       const result = asyncCoordinator.performSearchWithErrorHandling(
         "test query",
         mockState,
-        { timeout: 100 }
+        { timeout: 100 },
       );
 
       expect(result.results).toEqual([]);
@@ -282,7 +328,7 @@ describe("Error Handling and Recovery", () => {
         "node1",
         visualizationState,
         null, // No ReactFlow instance
-        { timeout: 100 }
+        { timeout: 100 },
       );
 
       // Should succeed even without ReactFlow instance (fallback behavior)
@@ -293,12 +339,20 @@ describe("Error Handling and Recovery", () => {
   describe("Error Statistics and Monitoring", () => {
     it("should track error statistics", async () => {
       // Generate some errors
-      await errorHandler.handleSearchFailure("query1", visualizationState, new Error("Error 1"));
-      await errorHandler.handleNavigationFailure("node1", visualizationState, new Error("Error 2"));
+      await errorHandler.handleSearchFailure(
+        "query1",
+        visualizationState,
+        new Error("Error 1"),
+      );
+      await errorHandler.handleNavigationFailure(
+        "node1",
+        visualizationState,
+        new Error("Error 2"),
+      );
       await errorHandler.handleTimeout("operation1", 1000);
 
       const stats = errorHandler.getErrorStatistics();
-      
+
       expect(stats.totalErrors).toBe(3);
       expect(stats.errorsByType.search_failure).toBe(1);
       expect(stats.errorsByType.navigation_failure).toBe(1);
@@ -322,7 +376,9 @@ describe("Error Handling and Recovery", () => {
       }
 
       const suggestions = errorHandler.getRecoverySuggestions();
-      expect(suggestions).toContain("System may be under heavy load. Try reducing the number of simultaneous operations.");
+      expect(suggestions).toContain(
+        "System may be under heavy load. Try reducing the number of simultaneous operations.",
+      );
     });
   });
 
@@ -333,23 +389,41 @@ describe("Error Handling and Recovery", () => {
       const initialContainerCount = visualizationState.visibleContainers.length;
 
       // Cause multiple errors
-      await errorHandler.handleSearchFailure("query", visualizationState, new Error("Search error"));
-      await errorHandler.handleNavigationFailure("node1", visualizationState, new Error("Nav error"));
-      await errorHandler.handleContainerExpansionFailure(["container1"], visualizationState, new Error("Expansion error"));
+      await errorHandler.handleSearchFailure(
+        "query",
+        visualizationState,
+        new Error("Search error"),
+      );
+      await errorHandler.handleNavigationFailure(
+        "node1",
+        visualizationState,
+        new Error("Nav error"),
+      );
+      await errorHandler.handleContainerExpansionFailure(
+        ["container1"],
+        visualizationState,
+        new Error("Expansion error"),
+      );
 
       // Visualization state should remain intact
       expect(visualizationState.visibleNodes.length).toBe(initialNodeCount);
-      expect(visualizationState.visibleContainers.length).toBe(initialContainerCount);
+      expect(visualizationState.visibleContainers.length).toBe(
+        initialContainerCount,
+      );
     });
 
     it("should continue functioning after errors", async () => {
       // Cause an error
-      await errorHandler.handleSearchFailure("query", visualizationState, new Error("Search error"));
+      await errorHandler.handleSearchFailure(
+        "query",
+        visualizationState,
+        new Error("Search error"),
+      );
 
       // Should still be able to perform operations
       const result = await errorHandler.executeWithTimeout(
         () => Promise.resolve("success"),
-        1000
+        1000,
       );
 
       expect(result).toBe("success");
@@ -359,26 +433,30 @@ describe("Error Handling and Recovery", () => {
   describe("User Feedback Integration", () => {
     it("should register and unregister feedback callbacks", () => {
       let callbackCalled = false;
-      const callback = () => { callbackCalled = true; };
+      const callback = () => {
+        callbackCalled = true;
+      };
 
       errorHandler.onUserFeedback(callback);
-      errorHandler['showUserFeedback']({ message: "test", type: "info" });
+      errorHandler["showUserFeedback"]({ message: "test", type: "info" });
       expect(callbackCalled).toBe(true);
 
       callbackCalled = false;
       errorHandler.offUserFeedback(callback);
-      errorHandler['showUserFeedback']({ message: "test", type: "info" });
+      errorHandler["showUserFeedback"]({ message: "test", type: "info" });
       expect(callbackCalled).toBe(false);
     });
 
     it("should handle callback errors gracefully", () => {
-      const faultyCallback = () => { throw new Error("Callback error"); };
-      
+      const faultyCallback = () => {
+        throw new Error("Callback error");
+      };
+
       errorHandler.onUserFeedback(faultyCallback);
-      
+
       // Should not throw when callback fails
       expect(() => {
-        errorHandler['showUserFeedback']({ message: "test", type: "info" });
+        errorHandler["showUserFeedback"]({ message: "test", type: "info" });
       }).not.toThrow();
     });
   });

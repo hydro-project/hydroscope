@@ -251,10 +251,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       state.performSmartCollapse();
 
-      // Small container (2 children) should remain expanded
+      // With budget-based approach and budget of 25,000:
+      // - Small container (cost: 21,600) fits within budget and should be expanded
+      // - Large container (cost: 86,400) exceeds budget and should remain collapsed
+      // The algorithm starts everything collapsed, then expands lowest-cost containers first
       expect(state.getContainer("small")?.collapsed).toBe(false);
-
-      // Large container (8 children > 7 threshold) should be collapsed
       expect(state.getContainer("large")?.collapsed).toBe(true);
     });
 
@@ -302,6 +303,403 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       // Container should remain expanded
       expect(state.getContainer("large")?.collapsed).toBe(false);
+    });
+  });
+
+  describe("Cost Calculation", () => {
+    it("should calculate expansion cost correctly for containers with nodes only", () => {
+      // Create container with 3 nodes
+      const container = createTestContainer("container1", [
+        "node1",
+        "node2",
+        "node3",
+      ]);
+      const node1 = createTestNode("node1");
+      const node2 = createTestNode("node2");
+      const node3 = createTestNode("node3");
+
+      state.addContainer(container);
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addNode(node3);
+
+      const cost = state.calculateExpansionCost("container1");
+
+      // Expected cost: 0 containers × containerArea + 3 nodes × nodeArea
+      // containerArea = 200 × 150 = 30,000
+      // nodeArea = 180 × 60 = 10,800
+      // cost = 0 × 30,000 + 3 × 10,800 = 32,400
+      expect(cost).toBe(32400);
+    });
+
+    it("should calculate expansion cost correctly for containers with mixed children", () => {
+      // Create container with 2 nodes and 1 child container
+      const childContainer = createTestContainer("child", ["node3"]);
+      const parentContainer = createTestContainer("parent", [
+        "node1",
+        "node2",
+        "child",
+      ]);
+      const node1 = createTestNode("node1");
+      const node2 = createTestNode("node2");
+      const node3 = createTestNode("node3");
+
+      // Add child container first to avoid tree dependency validation error
+      state.addContainer(childContainer);
+      state.addContainer(parentContainer);
+      state.addNode(node1);
+      state.addNode(node2);
+      state.addNode(node3);
+
+      const cost = state.calculateExpansionCost("parent");
+
+      // Expected cost: 1 container × containerArea + 2 nodes × nodeArea
+      // containerArea = 200 × 150 = 30,000
+      // nodeArea = 180 × 60 = 10,800
+      // cost = 1 × 30,000 + 2 × 10,800 = 51,600
+      expect(cost).toBe(51600);
+    });
+
+    it("should return 0 for non-existent containers", () => {
+      const cost = state.calculateExpansionCost("nonexistent");
+      expect(cost).toBe(0);
+    });
+
+    it("should return 0 for empty containers", () => {
+      const emptyContainer = createTestContainer("empty", []);
+      state.addContainer(emptyContainer);
+
+      const cost = state.calculateExpansionCost("empty");
+      expect(cost).toBe(0);
+    });
+
+    it("should calculate cost for deeply nested container structures", () => {
+      // Create a 3-level hierarchy: grandparent -> parent -> child
+      const childContainer = createTestContainer("child", ["node1", "node2"]);
+      const parentContainer = createTestContainer("parent", ["node3", "child"]);
+      const grandparentContainer = createTestContainer("grandparent", [
+        "node4",
+        "parent",
+      ]);
+
+      // Add containers in dependency order
+      state.addContainer(childContainer);
+      state.addContainer(parentContainer);
+      state.addContainer(grandparentContainer);
+
+      // Add nodes
+      for (let i = 1; i <= 4; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      // Test cost calculation at each level
+      const childCost = state.calculateExpansionCost("child");
+      const parentCost = state.calculateExpansionCost("parent");
+      const grandparentCost = state.calculateExpansionCost("grandparent");
+
+      // Child: 2 nodes × 10,800 = 21,600
+      expect(childCost).toBe(21600);
+
+      // Parent: 1 node × 10,800 + 1 container × 30,000 = 40,800
+      expect(parentCost).toBe(40800);
+
+      // Grandparent: 1 node × 10,800 + 1 container × 30,000 = 40,800
+      expect(grandparentCost).toBe(40800);
+    });
+
+    it("should calculate cost for containers with many nodes", () => {
+      // Create container with 10 nodes to test larger costs
+      const nodeIds = Array.from({ length: 10 }, (_, i) => `node${i + 1}`);
+      const container = createTestContainer("large", nodeIds);
+
+      state.addContainer(container);
+      for (const nodeId of nodeIds) {
+        state.addNode(createTestNode(nodeId));
+      }
+
+      const cost = state.calculateExpansionCost("large");
+
+      // Expected cost: 10 nodes × 10,800 = 108,000
+      expect(cost).toBe(108000);
+    });
+  });
+
+  describe("Budget Enforcement", () => {
+    it("should respect budget limits when expanding containers", () => {
+      // Create containers with known costs
+      // Budget is 25,000, so we need containers that exceed this when combined
+      const smallContainer = createTestContainer("small", ["node1"]); // Cost: 10,800
+      const mediumContainer = createTestContainer("medium", ["node2", "node3"]); // Cost: 21,600
+      const largeContainer = createTestContainer("large", [
+        "node4",
+        "node5",
+        "node6",
+      ]); // Cost: 32,400
+
+      // Add containers and nodes
+      state.addContainer(smallContainer);
+      state.addContainer(mediumContainer);
+      state.addContainer(largeContainer);
+      for (let i = 1; i <= 6; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      // Perform smart collapse
+      state.performSmartCollapse();
+
+      // With budget of 25,000:
+      // - small (10,800) + medium (21,600) = 32,400 > budget
+      // - Only small (10,800) should be expanded as it's the lowest cost
+      expect(state.getContainer("small")?.collapsed).toBe(false);
+      expect(state.getContainer("medium")?.collapsed).toBe(true);
+      expect(state.getContainer("large")?.collapsed).toBe(true);
+    });
+
+    it("should expand multiple containers within budget", () => {
+      // Create containers that fit within budget when combined
+      const container1 = createTestContainer("container1", ["node1"]); // Cost: 10,800
+      const container2 = createTestContainer("container2", ["node2"]); // Cost: 10,800
+      const container3 = createTestContainer("container3", ["node3"]); // Cost: 10,800
+
+      // Add containers and nodes
+      state.addContainer(container1);
+      state.addContainer(container2);
+      state.addContainer(container3);
+      for (let i = 1; i <= 3; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      // Perform smart collapse
+      state.performSmartCollapse();
+
+      // Total cost: 3 × 10,800 = 32,400 > budget (25,000)
+      // Should expand containers until budget is reached
+      // First two containers: 2 × 10,800 = 21,600 < budget
+      const expandedCount = [
+        state.getContainer("container1")?.collapsed,
+        state.getContainer("container2")?.collapsed,
+        state.getContainer("container3")?.collapsed,
+      ].filter((collapsed) => !collapsed).length;
+
+      // Should expand exactly 2 containers (within budget)
+      expect(expandedCount).toBe(2);
+    });
+
+    it("should handle edge case where single container exceeds budget", () => {
+      // Create a container that exceeds the budget by itself
+      const nodeIds = Array.from({ length: 5 }, (_, i) => `node${i + 1}`);
+      const expensiveContainer = createTestContainer("expensive", nodeIds); // Cost: 5 × 10,800 = 54,000
+
+      state.addContainer(expensiveContainer);
+      for (const nodeId of nodeIds) {
+        state.addNode(createTestNode(nodeId));
+      }
+
+      // Perform smart collapse
+      state.performSmartCollapse();
+
+      // Container cost (54,000) exceeds budget (25,000), so it should remain collapsed
+      expect(state.getContainer("expensive")?.collapsed).toBe(true);
+    });
+
+    it("should prioritize lowest-cost containers for expansion", () => {
+      // Create containers with different costs
+      const cheapContainer = createTestContainer("cheap", ["node1"]); // Cost: 10,800
+      const expensiveContainer = createTestContainer("expensive", [
+        "node2",
+        "node3",
+        "node4",
+      ]); // Cost: 32,400
+
+      state.addContainer(cheapContainer);
+      state.addContainer(expensiveContainer);
+      for (let i = 1; i <= 4; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      // Perform smart collapse
+      state.performSmartCollapse();
+
+      // Should expand the cheaper container first
+      expect(state.getContainer("cheap")?.collapsed).toBe(false);
+      expect(state.getContainer("expensive")?.collapsed).toBe(true);
+    });
+
+    it("should handle hierarchical container expansion within budget", () => {
+      // Create nested structure where parent expansion reveals child containers
+      const childContainer = createTestContainer("child", ["node1"]); // Cost: 10,800
+      const parentContainer = createTestContainer("parent", ["node2", "child"]); // Cost: 40,800
+
+      state.addContainer(childContainer);
+      state.addContainer(parentContainer);
+      state.addNode(createTestNode("node1"));
+      state.addNode(createTestNode("node2"));
+
+      // Perform smart collapse
+      state.performSmartCollapse();
+
+      // Parent cost (40,800) exceeds budget (25,000), so both should remain collapsed
+      expect(state.getContainer("parent")?.collapsed).toBe(true);
+      expect(state.getContainer("child")?.collapsed).toBe(true);
+    });
+
+    it("should handle empty budget scenario", () => {
+      // Create containers where even the smallest exceeds budget
+      // This tests the edge case where budget is very restrictive
+      const container = createTestContainer("container", [
+        "node1",
+        "node2",
+        "node3",
+      ]); // Cost: 32,400
+
+      state.addContainer(container);
+      for (let i = 1; i <= 3; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      // Perform smart collapse
+      state.performSmartCollapse();
+
+      // Container exceeds budget, should remain collapsed
+      expect(state.getContainer("container")?.collapsed).toBe(true);
+    });
+  });
+
+  describe("Various Container Structures", () => {
+    it("should handle flat container structure with budget constraints", () => {
+      // Create multiple root-level containers
+      const containers = [
+        createTestContainer("root1", ["node1", "node2"]), // Cost: 21,600
+        createTestContainer("root2", ["node3"]), // Cost: 10,800
+        createTestContainer("root3", ["node4", "node5", "node6"]), // Cost: 32,400
+      ];
+
+      containers.forEach((container) => state.addContainer(container));
+      for (let i = 1; i <= 6; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      state.performSmartCollapse();
+
+      // With budget 25,000: root2 (10,800) should be expanded, others collapsed
+      expect(state.getContainer("root1")?.collapsed).toBe(true);
+      expect(state.getContainer("root2")?.collapsed).toBe(false);
+      expect(state.getContainer("root3")?.collapsed).toBe(true);
+    });
+
+    it("should handle deep hierarchical structure with budget constraints", () => {
+      // Create 4-level deep hierarchy
+      const level4 = createTestContainer("level4", ["node1"]);
+      const level3 = createTestContainer("level3", ["node2", "level4"]);
+      const level2 = createTestContainer("level2", ["node3", "level3"]);
+      const level1 = createTestContainer("level1", ["node4", "level2"]);
+
+      // Add in dependency order
+      state.addContainer(level4);
+      state.addContainer(level3);
+      state.addContainer(level2);
+      state.addContainer(level1);
+
+      for (let i = 1; i <= 4; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      state.performSmartCollapse();
+
+      // All containers should be collapsed due to high costs in hierarchy
+      expect(state.getContainer("level1")?.collapsed).toBe(true);
+      expect(state.getContainer("level2")?.collapsed).toBe(true);
+      expect(state.getContainer("level3")?.collapsed).toBe(true);
+      expect(state.getContainer("level4")?.collapsed).toBe(true);
+    });
+
+    it("should handle mixed structure with both flat and hierarchical containers", () => {
+      // Create mixed structure: some flat, some hierarchical
+      const flatContainer = createTestContainer("flat", ["node1"]); // Cost: 10,800
+      const childContainer = createTestContainer("child", ["node2"]); // Cost: 10,800
+      const parentContainer = createTestContainer("parent", ["node3", "child"]); // Cost: 40,800
+
+      state.addContainer(flatContainer);
+      state.addContainer(childContainer);
+      state.addContainer(parentContainer);
+
+      for (let i = 1; i <= 3; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      state.performSmartCollapse();
+
+      // Flat container should be expanded (lowest cost), hierarchical should be collapsed
+      expect(state.getContainer("flat")?.collapsed).toBe(false);
+      expect(state.getContainer("parent")?.collapsed).toBe(true);
+      expect(state.getContainer("child")?.collapsed).toBe(true);
+    });
+
+    it("should handle containers with only child containers (no direct nodes)", () => {
+      // Create containers that only contain other containers
+      const leafContainer1 = createTestContainer("leaf1", ["node1", "node2"]);
+      const leafContainer2 = createTestContainer("leaf2", ["node3"]);
+      const branchContainer = createTestContainer("branch", ["leaf1", "leaf2"]);
+
+      state.addContainer(leafContainer1);
+      state.addContainer(leafContainer2);
+      state.addContainer(branchContainer);
+
+      for (let i = 1; i <= 3; i++) {
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      state.performSmartCollapse();
+
+      // Branch container cost: 2 containers × 30,000 = 60,000 (exceeds budget)
+      // All should remain collapsed
+      expect(state.getContainer("branch")?.collapsed).toBe(true);
+      expect(state.getContainer("leaf1")?.collapsed).toBe(true);
+      expect(state.getContainer("leaf2")?.collapsed).toBe(true);
+    });
+
+    it("should handle containers with mixed node and container children", () => {
+      // Create containers with both nodes and child containers
+      const childContainer = createTestContainer("child", ["node1"]);
+      const mixedContainer = createTestContainer("mixed", [
+        "node2",
+        "node3",
+        "child",
+      ]);
+
+      state.addContainer(childContainer);
+      state.addContainer(mixedContainer);
+      state.addNode(createTestNode("node1"));
+      state.addNode(createTestNode("node2"));
+      state.addNode(createTestNode("node3"));
+
+      state.performSmartCollapse();
+
+      // Mixed container cost: 2 nodes × 10,800 + 1 container × 30,000 = 51,600 (exceeds budget)
+      // Both should remain collapsed
+      expect(state.getContainer("mixed")?.collapsed).toBe(true);
+      expect(state.getContainer("child")?.collapsed).toBe(true);
+    });
+
+    it("should handle wide container structure (many siblings)", () => {
+      // Create many sibling containers at the same level
+      const containers = [];
+      for (let i = 1; i <= 5; i++) {
+        const container = createTestContainer(`sibling${i}`, [`node${i}`]);
+        containers.push(container);
+        state.addContainer(container);
+        state.addNode(createTestNode(`node${i}`));
+      }
+
+      state.performSmartCollapse();
+
+      // Each container costs 10,800
+      // Budget 25,000 allows for 2 containers (21,600 total)
+      const expandedCount = containers
+        .map((c) => state.getContainer(c.id)?.collapsed)
+        .filter((collapsed) => !collapsed).length;
+
+      expect(expandedCount).toBe(2);
     });
   });
 

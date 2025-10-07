@@ -1,6 +1,6 @@
 /**
  * ReactFlow Controls Inspector
- * 
+ *
  * This test inspects the actual ReactFlow controls to get exact measurements
  * for positioning and styling, so we can match them precisely.
  */
@@ -16,13 +16,13 @@ vi.mock("@xyflow/react", async () => {
   return {
     ...actual,
     ReactFlow: ({ children }: any) => (
-      <div 
-        data-testid="react-flow" 
-        style={{ 
-          position: "relative", 
-          width: "100%", 
+      <div
+        data-testid="react-flow"
+        style={{
+          position: "relative",
+          width: "100%",
           height: "100%",
-          backgroundColor: "#f0f0f0" 
+          backgroundColor: "#f0f0f0",
         }}
       >
         {children}
@@ -34,7 +34,7 @@ vi.mock("@xyflow/react", async () => {
     Controls: ({ children, style, ...props }: any) => {
       const defaultStyle = {
         position: "absolute",
-        bottom: "10px", 
+        bottom: "10px",
         left: "10px",
         zIndex: 4,
         display: "flex",
@@ -42,23 +42,23 @@ vi.mock("@xyflow/react", async () => {
         gap: "0px", // ReactFlow default
         boxShadow: "rgba(0, 0, 0, 0.1) 0px 2px 4px",
         borderRadius: "2px",
-        ...style
+        ...style,
       };
-      
+
       return (
-        <div 
-          data-testid="reactflow-controls" 
+        <div
+          data-testid="reactflow-controls"
           className="react-flow__controls"
           style={defaultStyle}
           {...props}
         >
           {/* Standard ReactFlow control buttons with real styling */}
-          <button 
-            data-testid="zoom-in-btn" 
+          <button
+            data-testid="zoom-in-btn"
             className="react-flow__controls-button"
             style={{
               width: "26px",
-              height: "26px", 
+              height: "26px",
               border: "1px solid #b1b1b7",
               borderBottom: "1px solid #b1b1b7",
               borderRadius: "0px", // ReactFlow buttons have no border radius except container
@@ -76,20 +76,20 @@ vi.mock("@xyflow/react", async () => {
           >
             +
           </button>
-          <button 
-            data-testid="zoom-out-btn" 
+          <button
+            data-testid="zoom-out-btn"
             className="react-flow__controls-button"
             style={{
               width: "26px",
               height: "26px",
-              border: "1px solid #b1b1b7", 
+              border: "1px solid #b1b1b7",
               borderTop: "0px", // ReactFlow buttons share borders
               borderBottom: "1px solid #b1b1b7",
               borderRadius: "0px",
               backgroundColor: "#fefefe",
               cursor: "pointer",
               display: "flex",
-              alignItems: "center", 
+              alignItems: "center",
               justifyContent: "center",
               fontSize: "12px",
               color: "#555",
@@ -100,21 +100,21 @@ vi.mock("@xyflow/react", async () => {
           >
             -
           </button>
-          <button 
-            data-testid="fit-view-btn" 
+          <button
+            data-testid="fit-view-btn"
             className="react-flow__controls-button"
             style={{
               width: "26px",
               height: "26px",
               border: "1px solid #b1b1b7",
               borderTop: "0px",
-              borderBottom: "1px solid #b1b1b7", 
+              borderBottom: "1px solid #b1b1b7",
               borderRadius: "0px",
               backgroundColor: "#fefefe",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center", 
+              justifyContent: "center",
               fontSize: "12px",
               color: "#555",
               margin: "0",
@@ -124,11 +124,11 @@ vi.mock("@xyflow/react", async () => {
           >
             ⛶
           </button>
-          <button 
-            data-testid="lock-btn" 
+          <button
+            data-testid="lock-btn"
             className="react-flow__controls-button"
             style={{
-              width: "26px", 
+              width: "26px",
               height: "26px",
               border: "1px solid #b1b1b7",
               borderTop: "0px",
@@ -139,7 +139,7 @@ vi.mock("@xyflow/react", async () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "12px", 
+              fontSize: "12px",
               color: "#555",
               margin: "0",
               padding: "0",
@@ -165,11 +165,11 @@ vi.mock("@xyflow/react", async () => {
 });
 
 const mockData = {
-  nodes: [
-    { id: "1", label: "Node 1", type: "operator" },
-  ],
+  nodes: [{ id: "1", label: "Node 1", type: "operator" }],
   edges: [],
-  hierarchyChoices: [{ id: "default", name: "Default", description: "Default grouping" }],
+  hierarchyChoices: [
+    { id: "default", name: "Default", description: "Default grouping" },
+  ],
   nodeAssignments: { default: { "1": [] } },
 };
 
@@ -177,18 +177,18 @@ describe("ReactFlow Controls Inspector", () => {
   it("should measure actual ReactFlow controls properties", () => {
     render(
       <div style={{ width: "800px", height: "600px", position: "relative" }}>
-        <HydroscopeCore 
+        <HydroscopeCore
           data={mockData}
           showControls={true}
           showMiniMap={false}
           showBackground={false}
         />
-      </div>
+      </div>,
     );
 
     const reactFlowControls = screen.getByTestId("reactflow-controls");
     const controlsStyle = window.getComputedStyle(reactFlowControls);
-    
+
     // Measure container properties
     const containerProps = {
       position: controlsStyle.position,
@@ -201,14 +201,14 @@ describe("ReactFlow Controls Inspector", () => {
       boxShadow: controlsStyle.boxShadow,
       borderRadius: controlsStyle.borderRadius,
     };
-    
+
     console.log("📏 ReactFlow Controls Container Properties:");
     console.log(JSON.stringify(containerProps, null, 2));
-    
+
     // Measure button properties
     const zoomInBtn = screen.getByTestId("zoom-in-btn");
     const buttonStyle = window.getComputedStyle(zoomInBtn);
-    
+
     const buttonProps = {
       width: buttonStyle.width,
       height: buttonStyle.height,
@@ -224,10 +224,10 @@ describe("ReactFlow Controls Inspector", () => {
       margin: buttonStyle.margin,
       padding: buttonStyle.padding,
     };
-    
+
     console.log("🔘 ReactFlow Button Properties:");
     console.log(JSON.stringify(buttonProps, null, 2));
-    
+
     // Store measurements for comparison
     expect(containerProps.position).toBe("absolute");
     expect(containerProps.bottom).toBe("10px");
@@ -235,32 +235,32 @@ describe("ReactFlow Controls Inspector", () => {
     expect(buttonProps.width).toBe("26px");
     expect(buttonProps.height).toBe("26px");
   });
-  
+
   it("should measure ReactFlow controls container dimensions", () => {
     render(
       <div style={{ width: "800px", height: "600px", position: "relative" }}>
-        <HydroscopeCore 
+        <HydroscopeCore
           data={mockData}
           showControls={true}
           showMiniMap={false}
           showBackground={false}
         />
-      </div>
+      </div>,
     );
 
     const reactFlowControls = screen.getByTestId("reactflow-controls");
     const rect = reactFlowControls.getBoundingClientRect();
-    
+
     const dimensions = {
       width: rect.width,
       height: rect.height,
       totalButtons: 4,
       expectedHeight: 26 * 4, // 4 buttons × 26px each
     };
-    
+
     console.log("📐 ReactFlow Controls Dimensions:");
     console.log(JSON.stringify(dimensions, null, 2));
-    
+
     // The container should be exactly the height of all buttons
     expect(rect.height).toBe(26 * 4); // 104px total
     expect(rect.width).toBe(26); // 26px wide

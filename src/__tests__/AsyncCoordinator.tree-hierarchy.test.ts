@@ -1,6 +1,6 @@
 /**
  * AsyncCoordinator Tree Hierarchy Test
- * 
+ *
  * Tests the new tree hierarchy expansion and navigation methods
  */
 
@@ -27,7 +27,11 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
     hidden: false,
   });
 
-  const createTestContainer = (id: string, label: string, children: string[]): Container => ({
+  const createTestContainer = (
+    id: string,
+    label: string,
+    children: string[],
+  ): Container => ({
     id,
     label,
     children: new Set(children),
@@ -39,8 +43,10 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
     it("should expand tree node through async coordination", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node");
-      const container1 = createTestContainer("container1", "Test Container", ["node1"]);
-      
+      const container1 = createTestContainer("container1", "Test Container", [
+        "node1",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container1);
 
@@ -57,8 +63,10 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
     it("should collapse tree node through async coordination", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node");
-      const container1 = createTestContainer("container1", "Test Container", ["node1"]);
-      
+      const container1 = createTestContainer("container1", "Test Container", [
+        "node1",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container1);
 
@@ -77,9 +85,13 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
       const node2 = createTestNode("node2", "Test Node 2");
-      const container1 = createTestContainer("container1", "Test Container 1", ["node1"]);
-      const container2 = createTestContainer("container2", "Test Container 2", ["node2"]);
-      
+      const container1 = createTestContainer("container1", "Test Container 1", [
+        "node1",
+      ]);
+      const container2 = createTestContainer("container2", "Test Container 2", [
+        "node2",
+      ]);
+
       state.addNode(node1);
       state.addNode(node2);
       state.addContainer(container1);
@@ -100,9 +112,13 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
       const node2 = createTestNode("node2", "Test Node 2");
-      const container1 = createTestContainer("container1", "Test Container 1", ["node1"]);
-      const container2 = createTestContainer("container2", "Test Container 2", ["node2"]);
-      
+      const container1 = createTestContainer("container1", "Test Container 1", [
+        "node1",
+      ]);
+      const container2 = createTestContainer("container2", "Test Container 2", [
+        "node2",
+      ]);
+
       state.addNode(node1);
       state.addNode(node2);
       state.addContainer(container1);
@@ -166,7 +182,11 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       };
 
       // Navigate with viewport focus
-      await coordinator.navigateToElement("node1", state, mockReactFlowInstance);
+      await coordinator.navigateToElement(
+        "node1",
+        state,
+        mockReactFlowInstance,
+      );
 
       // Both navigation and viewport focus should work
       expect(state.getNavigationSelection()).toBe("node1");
@@ -179,9 +199,13 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
       const node2 = createTestNode("node2", "Test Node 2");
-      const container1 = createTestContainer("container1", "Test Container 1", ["node1"]);
-      const container2 = createTestContainer("container2", "Test Container 2", ["node2"]);
-      
+      const container1 = createTestContainer("container1", "Test Container 1", [
+        "node1",
+      ]);
+      const container2 = createTestContainer("container2", "Test Container 2", [
+        "node2",
+      ]);
+
       state.addNode(node1);
       state.addNode(node2);
       state.addContainer(container1);
@@ -202,9 +226,13 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
       const node2 = createTestNode("node2", "Test Node 2");
-      const container1 = createTestContainer("container1", "Test Container 1", ["node1"]);
-      const container2 = createTestContainer("container2", "Test Container 2", ["node2"]);
-      
+      const container1 = createTestContainer("container1", "Test Container 1", [
+        "node1",
+      ]);
+      const container2 = createTestContainer("container2", "Test Container 2", [
+        "node2",
+      ]);
+
       state.addNode(node1);
       state.addNode(node2);
       state.addContainer(container1);
@@ -225,8 +253,10 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
     it("should maintain backward compatibility with old signatures", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
-      const container1 = createTestContainer("container1", "Test Container 1", ["node1"]);
-      
+      const container1 = createTestContainer("container1", "Test Container 1", [
+        "node1",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container1);
 

@@ -1,6 +1,6 @@
 /**
  * ReactFlow Reference Test
- * 
+ *
  * This test creates a reference implementation of ReactFlow controls
  * to measure exact styling and positioning properties.
  */
@@ -12,13 +12,13 @@ import { vi } from "vitest";
 // Create a reference ReactFlow Controls component based on actual ReactFlow styling
 const ReferenceReactFlowControls = () => {
   return (
-    <div 
+    <div
       data-testid="reference-reactflow-controls"
       className="react-flow__controls"
       style={{
         position: "absolute",
         bottom: "10px",
-        left: "10px", 
+        left: "10px",
         zIndex: 4,
         display: "flex",
         flexDirection: "column",
@@ -28,7 +28,7 @@ const ReferenceReactFlowControls = () => {
         backgroundColor: "white", // Container background
       }}
     >
-      <button 
+      <button
         data-testid="ref-zoom-in"
         className="react-flow__controls-button"
         style={{
@@ -37,7 +37,7 @@ const ReferenceReactFlowControls = () => {
           border: "none",
           borderBottom: "1px solid #b1b1b7",
           color: "#555",
-          cursor: "pointer", 
+          cursor: "pointer",
           display: "flex",
           height: "26px",
           justifyContent: "center",
@@ -49,17 +49,17 @@ const ReferenceReactFlowControls = () => {
       >
         +
       </button>
-      <button 
+      <button
         data-testid="ref-zoom-out"
         className="react-flow__controls-button"
         style={{
           alignItems: "center",
-          background: "#fefefe", 
+          background: "#fefefe",
           border: "none",
           borderBottom: "1px solid #b1b1b7",
           color: "#555",
           cursor: "pointer",
-          display: "flex", 
+          display: "flex",
           height: "26px",
           justifyContent: "center",
           padding: "4px",
@@ -70,18 +70,18 @@ const ReferenceReactFlowControls = () => {
       >
         -
       </button>
-      <button 
+      <button
         data-testid="ref-fit-view"
         className="react-flow__controls-button"
         style={{
           alignItems: "center",
           background: "#fefefe",
-          border: "none", 
+          border: "none",
           borderBottom: "1px solid #b1b1b7",
           color: "#555",
           cursor: "pointer",
           display: "flex",
-          height: "26px", 
+          height: "26px",
           justifyContent: "center",
           padding: "4px",
           userSelect: "none",
@@ -91,20 +91,20 @@ const ReferenceReactFlowControls = () => {
       >
         ⛶
       </button>
-      <button 
+      <button
         data-testid="ref-lock"
         className="react-flow__controls-button"
         style={{
           alignItems: "center",
           background: "#fefefe",
           border: "none",
-          color: "#555", 
+          color: "#555",
           cursor: "pointer",
           display: "flex",
           height: "26px",
           justifyContent: "center",
           padding: "4px",
-          userSelect: "none", 
+          userSelect: "none",
           width: "26px",
           fontSize: "12px",
         }}
@@ -118,15 +118,22 @@ const ReferenceReactFlowControls = () => {
 describe("ReactFlow Reference Measurements", () => {
   it("should measure reference ReactFlow controls for exact styling", () => {
     render(
-      <div style={{ width: "800px", height: "600px", position: "relative", backgroundColor: "#f5f5f5" }}>
+      <div
+        style={{
+          width: "800px",
+          height: "600px",
+          position: "relative",
+          backgroundColor: "#f5f5f5",
+        }}
+      >
         <ReferenceReactFlowControls />
-      </div>
+      </div>,
     );
 
     const controls = screen.getByTestId("reference-reactflow-controls");
     const controlsStyle = window.getComputedStyle(controls);
     const controlsRect = controls.getBoundingClientRect();
-    
+
     // Measure container
     const containerMeasurements = {
       position: controlsStyle.position,
@@ -140,15 +147,15 @@ describe("ReactFlow Reference Measurements", () => {
       width: controlsRect.width,
       height: controlsRect.height,
     };
-    
+
     console.log("📏 REFERENCE ReactFlow Controls Container:");
     console.log(JSON.stringify(containerMeasurements, null, 2));
-    
+
     // Measure button
     const button = screen.getByTestId("ref-zoom-in");
     const buttonStyle = window.getComputedStyle(button);
     const buttonRect = button.getBoundingClientRect();
-    
+
     const buttonMeasurements = {
       width: buttonStyle.width,
       height: buttonStyle.height,
@@ -162,10 +169,10 @@ describe("ReactFlow Reference Measurements", () => {
       actualWidth: buttonRect.width,
       actualHeight: buttonRect.height,
     };
-    
+
     console.log("🔘 REFERENCE ReactFlow Button:");
     console.log(JSON.stringify(buttonMeasurements, null, 2));
-    
+
     // Calculate exact positioning for custom controls
     const customControlsPosition = {
       // Custom controls should be positioned above ReactFlow controls
@@ -175,27 +182,27 @@ describe("ReactFlow Reference Measurements", () => {
       alignedLeft: controlsStyle.left, // Same as ReactFlow
       alignedZIndex: parseInt(controlsStyle.zIndex) + 1, // Higher than ReactFlow
     };
-    
+
     console.log("🎯 RECOMMENDED Custom Controls Position:");
     console.log(JSON.stringify(customControlsPosition, null, 2));
-    
+
     // Verify measurements
     expect(controlsRect.width).toBe(26); // Should be 26px wide
     expect(controlsRect.height).toBe(104); // Should be 4 × 26px = 104px tall
     expect(buttonRect.width).toBe(26); // Button should be 26px wide
     expect(buttonRect.height).toBe(26); // Button should be 26px tall
   });
-  
+
   it("should create exact ReactFlow button styling template", () => {
     render(
       <div style={{ width: "800px", height: "600px", position: "relative" }}>
         <ReferenceReactFlowControls />
-      </div>
+      </div>,
     );
 
     const button = screen.getByTestId("ref-zoom-in");
     const style = window.getComputedStyle(button);
-    
+
     // Extract exact styling for template
     const exactButtonStyle = {
       alignItems: style.alignItems,
@@ -215,10 +222,14 @@ describe("ReactFlow Reference Measurements", () => {
       margin: style.margin,
       borderRadius: style.borderRadius,
     };
-    
+
     console.log("📋 EXACT ReactFlow Button Style Template:");
-    console.log("const reactFlowButtonStyle = " + JSON.stringify(exactButtonStyle, null, 2) + ";");
-    
+    console.log(
+      "const reactFlowButtonStyle = " +
+        JSON.stringify(exactButtonStyle, null, 2) +
+        ";",
+    );
+
     // This gives us the exact template to copy
     expect(style.width).toBe("26px");
     expect(style.height).toBe("26px");

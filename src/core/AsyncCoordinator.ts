@@ -4,7 +4,10 @@
  */
 
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
-import { searchNavigationErrorHandler, type ErrorRecoveryResult } from "./ErrorHandler.js";
+import {
+  searchNavigationErrorHandler,
+  type ErrorRecoveryResult,
+} from "./ErrorHandler.js";
 
 export interface QueueOptions {
   timeout?: number;
@@ -595,14 +598,18 @@ export class AsyncCoordinator {
       if ((state as any).expandTreeNodes) {
         (state as any).expandTreeNodes([containerId]);
       } else {
-        console.warn(`[AsyncCoordinator] expandTreeNodes method not available on state`);
+        console.warn(
+          `[AsyncCoordinator] expandTreeNodes method not available on state`,
+        );
       }
     } else {
       // Handle container expansion
       if ((state as any).expandContainer) {
         (state as any).expandContainer(containerId);
       } else {
-        console.warn(`[AsyncCoordinator] expandContainer method not available on state`);
+        console.warn(
+          `[AsyncCoordinator] expandContainer method not available on state`,
+        );
       }
     }
 
@@ -616,14 +623,15 @@ export class AsyncCoordinator {
   private async handleContainerCollapseEvent(
     event: ApplicationEvent,
   ): Promise<void> {
-    const { containerId, state, triggerValidation, isTreeOperation } = event.payload;
+    const { containerId, state, triggerValidation, isTreeOperation } =
+      event.payload;
 
     if (!containerId || !state) {
       throw new Error("Container collapse event missing required payload");
     }
 
     console.log(
-      `[AsyncCoordinator] 🔄 Processing ${isTreeOperation ? 'tree node' : 'container'} collapse event for ${containerId}`,
+      `[AsyncCoordinator] 🔄 Processing ${isTreeOperation ? "tree node" : "container"} collapse event for ${containerId}`,
     );
 
     if (isTreeOperation) {
@@ -631,14 +639,18 @@ export class AsyncCoordinator {
       if ((state as any).collapseTreeNodes) {
         (state as any).collapseTreeNodes([containerId]);
       } else {
-        console.warn(`[AsyncCoordinator] collapseTreeNodes method not available on state`);
+        console.warn(
+          `[AsyncCoordinator] collapseTreeNodes method not available on state`,
+        );
       }
     } else {
       // Handle container collapse
       if ((state as any).collapseContainer) {
         (state as any).collapseContainer(containerId);
       } else {
-        console.warn(`[AsyncCoordinator] collapseContainer method not available on state`);
+        console.warn(
+          `[AsyncCoordinator] collapseContainer method not available on state`,
+        );
       }
     }
 
@@ -967,12 +979,14 @@ export class AsyncCoordinator {
    */
   async expandAllContainers(
     state: any, // VisualizationState
-    containerIdsOrOptions?: string[] | {
-      triggerLayout?: boolean;
-      layoutConfig?: any; // LayoutConfig
-      timeout?: number;
-      maxRetries?: number;
-    },
+    containerIdsOrOptions?:
+      | string[]
+      | {
+          triggerLayout?: boolean;
+          layoutConfig?: any; // LayoutConfig
+          timeout?: number;
+          maxRetries?: number;
+        },
     options: {
       triggerLayout?: boolean;
       layoutConfig?: any; // LayoutConfig
@@ -983,7 +997,7 @@ export class AsyncCoordinator {
     // Handle backward compatibility - if second parameter is options object, use it
     let containerIds: string[] | undefined;
     let actualOptions = options;
-    
+
     if (containerIdsOrOptions) {
       if (Array.isArray(containerIdsOrOptions)) {
         // New signature: containerIds provided
@@ -999,7 +1013,8 @@ export class AsyncCoordinator {
     if (containerIds) {
       // Expand only specified containers that are currently collapsed
       containersToExpand = state.visibleContainers.filter(
-        (container: any) => containerIds.includes(container.id) && container.collapsed,
+        (container: any) =>
+          containerIds.includes(container.id) && container.collapsed,
       );
     } else {
       // Expand all collapsed containers (existing behavior)
@@ -1009,7 +1024,7 @@ export class AsyncCoordinator {
     }
 
     console.log(
-      `[AsyncCoordinator] 🔄 Expanding ${containersToExpand.length} containers${containerIds ? ' (specified list)' : ' (all collapsed)'}`,
+      `[AsyncCoordinator] 🔄 Expanding ${containersToExpand.length} containers${containerIds ? " (specified list)" : " (all collapsed)"}`,
     );
 
     // Expand each container sequentially
@@ -1030,13 +1045,15 @@ export class AsyncCoordinator {
    */
   async collapseAllContainers(
     state: any, // VisualizationState
-    containerIdsOrOptions?: string[] | {
-      triggerLayout?: boolean;
-      layoutConfig?: any; // LayoutConfig
-      timeout?: number;
-      maxRetries?: number;
-      triggerValidation?: boolean; // New option to trigger ReactFlow validation
-    },
+    containerIdsOrOptions?:
+      | string[]
+      | {
+          triggerLayout?: boolean;
+          layoutConfig?: any; // LayoutConfig
+          timeout?: number;
+          maxRetries?: number;
+          triggerValidation?: boolean; // New option to trigger ReactFlow validation
+        },
     options: {
       triggerLayout?: boolean;
       layoutConfig?: any; // LayoutConfig
@@ -1048,7 +1065,7 @@ export class AsyncCoordinator {
     // Handle backward compatibility - if second parameter is options object, use it
     let containerIds: string[] | undefined;
     let actualOptions = options;
-    
+
     if (containerIdsOrOptions) {
       if (Array.isArray(containerIdsOrOptions)) {
         // New signature: containerIds provided
@@ -1064,7 +1081,8 @@ export class AsyncCoordinator {
     if (containerIds) {
       // Collapse only specified containers that are currently expanded
       containersToCollapse = state.visibleContainers.filter(
-        (container: any) => containerIds.includes(container.id) && !container.collapsed,
+        (container: any) =>
+          containerIds.includes(container.id) && !container.collapsed,
       );
     } else {
       // Collapse all expanded containers (existing behavior)
@@ -1074,7 +1092,7 @@ export class AsyncCoordinator {
     }
 
     console.log(
-      `[AsyncCoordinator] 🔄 Collapsing ${containersToCollapse.length} containers${containerIds ? ' (specified list)' : ' (all expanded)'}`,
+      `[AsyncCoordinator] 🔄 Collapsing ${containersToCollapse.length} containers${containerIds ? " (specified list)" : " (all expanded)"}`,
     );
 
     // Collapse each container sequentially
@@ -1236,53 +1254,79 @@ export class AsyncCoordinator {
     elementId: string,
     visualizationState: any, // VisualizationState
   ): Promise<void> {
-    console.log(`[AsyncCoordinator] 🔍 Checking visibility of element ${elementId}`);
-    
+    console.log(
+      `[AsyncCoordinator] 🔍 Checking visibility of element ${elementId}`,
+    );
+
     // Check if element exists as a node
     const node = visualizationState.getGraphNode(elementId);
     if (node) {
       // Element is a node - check if it's in collapsed containers
-      const containersToExpand = this._getCollapsedContainersForNode(elementId, visualizationState);
-      
+      const containersToExpand = this._getCollapsedContainersForNode(
+        elementId,
+        visualizationState,
+      );
+
       if (containersToExpand.length > 0) {
-        console.log(`[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} containers to make node ${elementId} visible`);
-        
+        console.log(
+          `[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} containers to make node ${elementId} visible`,
+        );
+
         // Expand containers from outermost to innermost
         for (const containerId of containersToExpand.reverse()) {
-          console.log(`[AsyncCoordinator] 📂 Expanding container ${containerId} for node visibility`);
+          console.log(
+            `[AsyncCoordinator] 📂 Expanding container ${containerId} for node visibility`,
+          );
           visualizationState.expandContainer(containerId);
         }
-        
-        console.log(`[AsyncCoordinator] ✅ All containers expanded for node ${elementId}`);
+
+        console.log(
+          `[AsyncCoordinator] ✅ All containers expanded for node ${elementId}`,
+        );
       } else {
-        console.log(`[AsyncCoordinator] ✅ Node ${elementId} is already visible`);
+        console.log(
+          `[AsyncCoordinator] ✅ Node ${elementId} is already visible`,
+        );
       }
       return;
     }
-    
+
     // Check if element exists as a container
     const container = visualizationState.getContainer(elementId);
     if (container) {
       // Element is a container - check if it's in collapsed parent containers
-      const containersToExpand = this._getCollapsedAncestorContainers(elementId, visualizationState);
-      
+      const containersToExpand = this._getCollapsedAncestorContainers(
+        elementId,
+        visualizationState,
+      );
+
       if (containersToExpand.length > 0) {
-        console.log(`[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} ancestor containers to make container ${elementId} visible`);
-        
+        console.log(
+          `[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} ancestor containers to make container ${elementId} visible`,
+        );
+
         // Expand containers from outermost to innermost
         for (const containerId of containersToExpand.reverse()) {
-          console.log(`[AsyncCoordinator] 📂 Expanding ancestor container ${containerId} for container visibility`);
+          console.log(
+            `[AsyncCoordinator] 📂 Expanding ancestor container ${containerId} for container visibility`,
+          );
           visualizationState.expandContainer(containerId);
         }
-        
-        console.log(`[AsyncCoordinator] ✅ All ancestor containers expanded for container ${elementId}`);
+
+        console.log(
+          `[AsyncCoordinator] ✅ All ancestor containers expanded for container ${elementId}`,
+        );
       } else {
-        console.log(`[AsyncCoordinator] ✅ Container ${elementId} is already visible`);
+        console.log(
+          `[AsyncCoordinator] ✅ Container ${elementId} is already visible`,
+        );
       }
       return;
     }
-    
-    console.warn(`[AsyncCoordinator] ⚠️ Element ${elementId} not found as node or container`);
+
+    console.warn(
+      `[AsyncCoordinator] ⚠️ Element ${elementId} not found as node or container`,
+    );
   }
 
   /**
@@ -1294,21 +1338,22 @@ export class AsyncCoordinator {
     visualizationState: any, // VisualizationState
   ): string[] {
     const collapsedContainers: string[] = [];
-    
+
     // Start with the immediate container of the node
     let currentContainerId = visualizationState.getNodeContainer(nodeId);
-    
+
     while (currentContainerId) {
       const container = visualizationState.getContainer(currentContainerId);
-      
+
       if (container && container.collapsed) {
         collapsedContainers.push(currentContainerId);
       }
-      
+
       // Move to parent container
-      currentContainerId = visualizationState.getContainerParent(currentContainerId);
+      currentContainerId =
+        visualizationState.getContainerParent(currentContainerId);
     }
-    
+
     return collapsedContainers;
   }
 
@@ -1321,21 +1366,22 @@ export class AsyncCoordinator {
     visualizationState: any, // VisualizationState
   ): string[] {
     const collapsedContainers: string[] = [];
-    
+
     // Start with the parent container
     let currentContainerId = visualizationState.getContainerParent(containerId);
-    
+
     while (currentContainerId) {
       const container = visualizationState.getContainer(currentContainerId);
-      
+
       if (container && container.collapsed) {
         collapsedContainers.push(currentContainerId);
       }
-      
+
       // Move to parent container
-      currentContainerId = visualizationState.getContainerParent(currentContainerId);
+      currentContainerId =
+        visualizationState.getContainerParent(currentContainerId);
     }
-    
+
     return collapsedContainers;
   }
 
@@ -1440,12 +1486,15 @@ export class AsyncCoordinator {
     options: QueueOptions = {},
   ): Promise<void> {
     // Get nodes to expand - either specified list or all collapsed nodes
-    const nodesToExpand = nodeIds || 
-      state.visibleContainers?.filter((container: any) => container.collapsed)?.map((container: any) => container.id) || 
+    const nodesToExpand =
+      nodeIds ||
+      state.visibleContainers
+        ?.filter((container: any) => container.collapsed)
+        ?.map((container: any) => container.id) ||
       [];
 
     console.log(
-      `[AsyncCoordinator] 🔄 Expanding ${nodesToExpand.length} tree nodes${nodeIds ? ' (specified list)' : ' (all collapsed)'}`,
+      `[AsyncCoordinator] 🔄 Expanding ${nodesToExpand.length} tree nodes${nodeIds ? " (specified list)" : " (all collapsed)"}`,
     );
 
     // Expand each node sequentially
@@ -1466,12 +1515,15 @@ export class AsyncCoordinator {
     options: QueueOptions = {},
   ): Promise<void> {
     // Get nodes to collapse - either specified list or all expanded nodes
-    const nodesToCollapse = nodeIds || 
-      state.visibleContainers?.filter((container: any) => !container.collapsed)?.map((container: any) => container.id) || 
+    const nodesToCollapse =
+      nodeIds ||
+      state.visibleContainers
+        ?.filter((container: any) => !container.collapsed)
+        ?.map((container: any) => container.id) ||
       [];
 
     console.log(
-      `[AsyncCoordinator] 🔄 Collapsing ${nodesToCollapse.length} tree nodes${nodeIds ? ' (specified list)' : ' (all expanded)'}`,
+      `[AsyncCoordinator] 🔄 Collapsing ${nodesToCollapse.length} tree nodes${nodeIds ? " (specified list)" : " (all expanded)"}`,
     );
 
     // Collapse each node sequentially
@@ -1511,7 +1563,9 @@ export class AsyncCoordinator {
     elementId: string,
     reactFlowInstance: any, // ReactFlowInstance
   ): Promise<void> {
-    console.log(`[AsyncCoordinator] 🎯 Focusing viewport on element ${elementId}`);
+    console.log(
+      `[AsyncCoordinator] 🎯 Focusing viewport on element ${elementId}`,
+    );
 
     if (!reactFlowInstance) {
       throw new Error("ReactFlow instance is required for viewport focus");
@@ -1524,13 +1578,18 @@ export class AsyncCoordinator {
         // Pan to the node with smooth animation
         const x = node.position.x + (node.width || 100) / 2;
         const y = node.position.y + (node.height || 50) / 2;
-        
+
         reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
       } else {
-        console.warn(`[AsyncCoordinator] Element ${elementId} not found in ReactFlow`);
+        console.warn(
+          `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
+        );
       }
     } catch (error) {
-      console.error(`[AsyncCoordinator] Failed to focus viewport on ${elementId}:`, error);
+      console.error(
+        `[AsyncCoordinator] Failed to focus viewport on ${elementId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -1551,8 +1610,10 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(`[AsyncCoordinator] Expanding container ${containerId} with error handling`);
-      
+      console.log(
+        `[AsyncCoordinator] Expanding container ${containerId} with error handling`,
+      );
+
       // Execute synchronously (respecting core architecture)
       this.expandContainer(containerId, state, options);
 
@@ -1562,17 +1623,23 @@ export class AsyncCoordinator {
         userFeedbackShown: false,
       };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Container expansion failed for ${containerId}:`, error);
-      
+      console.error(
+        `[AsyncCoordinator] Container expansion failed for ${containerId}:`,
+        error,
+      );
+
       // Handle the error through the error handler (this can be async at the boundary)
-      searchNavigationErrorHandler.handleContainerExpansionFailure(
-        [containerId],
-        state,
-        error as Error,
-        { operation: 'single_expand', containerId }
-      ).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
+      searchNavigationErrorHandler
+        .handleContainerExpansionFailure([containerId], state, error as Error, {
+          operation: "single_expand",
+          containerId,
+        })
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
 
       return {
         success: false,
@@ -1587,12 +1654,14 @@ export class AsyncCoordinator {
    */
   expandAllContainersWithErrorHandling(
     state: any, // VisualizationState
-    containerIdsOrOptions?: string[] | {
-      triggerLayout?: boolean;
-      layoutConfig?: any;
-      timeout?: number;
-      maxRetries?: number;
-    },
+    containerIdsOrOptions?:
+      | string[]
+      | {
+          triggerLayout?: boolean;
+          layoutConfig?: any;
+          timeout?: number;
+          maxRetries?: number;
+        },
     options: {
       triggerLayout?: boolean;
       layoutConfig?: any;
@@ -1601,8 +1670,10 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(`[AsyncCoordinator] Expanding containers with error handling`);
-      
+      console.log(
+        `[AsyncCoordinator] Expanding containers with error handling`,
+      );
+
       // Execute synchronously (respecting core architecture)
       this.expandAllContainers(state, containerIdsOrOptions, options);
 
@@ -1612,8 +1683,11 @@ export class AsyncCoordinator {
         userFeedbackShown: false,
       };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Batch container expansion failed:`, error);
-      
+      console.error(
+        `[AsyncCoordinator] Batch container expansion failed:`,
+        error,
+      );
+
       // Determine which containers were being expanded
       let containerIds: string[];
       if (Array.isArray(containerIdsOrOptions)) {
@@ -1624,16 +1698,19 @@ export class AsyncCoordinator {
           .filter((container: any) => container.collapsed)
           .map((container: any) => container.id);
       }
-      
+
       // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler.handleContainerExpansionFailure(
-        containerIds,
-        state,
-        error as Error,
-        { operation: 'batch_expand', containerCount: containerIds.length }
-      ).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
+      searchNavigationErrorHandler
+        .handleContainerExpansionFailure(containerIds, state, error as Error, {
+          operation: "batch_expand",
+          containerCount: containerIds.length,
+        })
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
 
       return {
         success: false,
@@ -1655,13 +1732,15 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(`[AsyncCoordinator] Expanding tree node ${nodeId} with error handling`);
-      
+      console.log(
+        `[AsyncCoordinator] Expanding tree node ${nodeId} with error handling`,
+      );
+
       // Execute synchronously (respecting core architecture)
       if (state.expandTreeNodes) {
         state.expandTreeNodes([nodeId]);
       } else {
-        throw new Error('expandTreeNodes method not available');
+        throw new Error("expandTreeNodes method not available");
       }
 
       return {
@@ -1670,17 +1749,23 @@ export class AsyncCoordinator {
         userFeedbackShown: false,
       };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Tree node expansion failed for ${nodeId}:`, error);
-      
+      console.error(
+        `[AsyncCoordinator] Tree node expansion failed for ${nodeId}:`,
+        error,
+      );
+
       // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler.handleContainerExpansionFailure(
-        [nodeId],
-        state,
-        error as Error,
-        { operation: 'tree_expand', nodeId }
-      ).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
+      searchNavigationErrorHandler
+        .handleContainerExpansionFailure([nodeId], state, error as Error, {
+          operation: "tree_expand",
+          nodeId,
+        })
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
 
       return {
         success: false,
@@ -1703,13 +1788,15 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(`[AsyncCoordinator] Navigating to element ${elementId} with error handling`);
-      
+      console.log(
+        `[AsyncCoordinator] Navigating to element ${elementId} with error handling`,
+      );
+
       // Execute synchronously (respecting core architecture)
       if (visualizationState.navigateToElement) {
         visualizationState.navigateToElement(elementId);
       } else {
-        throw new Error('navigateToElement method not available');
+        throw new Error("navigateToElement method not available");
       }
 
       return {
@@ -1718,17 +1805,25 @@ export class AsyncCoordinator {
         userFeedbackShown: false,
       };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Navigation failed for element ${elementId}:`, error);
-      
+      console.error(
+        `[AsyncCoordinator] Navigation failed for element ${elementId}:`,
+        error,
+      );
+
       // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler.handleNavigationFailure(
-        elementId,
-        visualizationState,
-        error as Error,
-        { operation: 'navigation', elementId }
-      ).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
+      searchNavigationErrorHandler
+        .handleNavigationFailure(
+          elementId,
+          visualizationState,
+          error as Error,
+          { operation: "navigation", elementId },
+        )
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
 
       return {
         success: false,
@@ -1750,11 +1845,15 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(`[AsyncCoordinator] Focusing viewport on element ${elementId} with error handling`);
-      
+      console.log(
+        `[AsyncCoordinator] Focusing viewport on element ${elementId} with error handling`,
+      );
+
       // Execute synchronously (respecting core architecture)
       // Note: Viewport operations are handled at component level, not core
-      console.log(`[AsyncCoordinator] Viewport focus queued for element ${elementId}`);
+      console.log(
+        `[AsyncCoordinator] Viewport focus queued for element ${elementId}`,
+      );
 
       return {
         success: true,
@@ -1762,17 +1861,25 @@ export class AsyncCoordinator {
         userFeedbackShown: false,
       };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Viewport focus failed for element ${elementId}:`, error);
-      
+      console.error(
+        `[AsyncCoordinator] Viewport focus failed for element ${elementId}:`,
+        error,
+      );
+
       // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler.handleNavigationFailure(
-        elementId,
-        {} as any, // No state needed for viewport focus
-        error as Error,
-        { operation: 'viewport_focus', elementId }
-      ).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
+      searchNavigationErrorHandler
+        .handleNavigationFailure(
+          elementId,
+          {} as any, // No state needed for viewport focus
+          error as Error,
+          { operation: "viewport_focus", elementId },
+        )
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
 
       return {
         success: false,
@@ -1795,19 +1902,29 @@ export class AsyncCoordinator {
     } = {},
   ): { results: any[]; recovery?: ErrorRecoveryResult } {
     try {
-      console.log(`[AsyncCoordinator] Performing search "${query}" with error handling`);
-      
+      console.log(
+        `[AsyncCoordinator] Performing search "${query}" with error handling`,
+      );
+
       // Perform the search operation synchronously (respecting core architecture)
-      const searchResults = state.performSearch ? state.performSearch(query) : [];
-      
+      const searchResults = state.performSearch
+        ? state.performSearch(query)
+        : [];
+
       // Optionally expand containers containing results
       if (options.expandContainers && searchResults.length > 0) {
-        const containerIds = this._getContainersForSearchResults(searchResults, state);
+        const containerIds = this._getContainersForSearchResults(
+          searchResults,
+          state,
+        );
         if (containerIds.length > 0) {
           try {
             this.expandAllContainers(state, containerIds);
           } catch (expansionError) {
-            console.warn(`[AsyncCoordinator] Container expansion failed during search:`, expansionError);
+            console.warn(
+              `[AsyncCoordinator] Container expansion failed during search:`,
+              expansionError,
+            );
             // Continue with search results even if expansion fails
           }
         }
@@ -1815,27 +1932,38 @@ export class AsyncCoordinator {
 
       return { results: searchResults };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Search failed for query "${query}":`, error);
-      
-      // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler.handleSearchFailure(
-        query,
-        state,
-        error as Error,
-        { operation: 'search', query, expandContainers: options.expandContainers }
-      ).then(recovery => {
-        console.log(`[AsyncCoordinator] Search error recovery completed:`, recovery);
-      }).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
+      console.error(
+        `[AsyncCoordinator] Search failed for query "${query}":`,
+        error,
+      );
 
-      return { 
-        results: [], 
+      // Handle the error through the error handler (async at boundary)
+      searchNavigationErrorHandler
+        .handleSearchFailure(query, state, error as Error, {
+          operation: "search",
+          query,
+          expandContainers: options.expandContainers,
+        })
+        .then((recovery) => {
+          console.log(
+            `[AsyncCoordinator] Search error recovery completed:`,
+            recovery,
+          );
+        })
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
+
+      return {
+        results: [],
         recovery: {
           success: false,
           fallbackApplied: false,
           userFeedbackShown: false,
-        }
+        },
       };
     }
   }
@@ -1843,23 +1971,32 @@ export class AsyncCoordinator {
   /**
    * Get containers that need to be expanded for search results
    */
-  private _getContainersForSearchResults(searchResults: any[], state: any): string[] {
+  private _getContainersForSearchResults(
+    searchResults: any[],
+    state: any,
+  ): string[] {
     const containerIds = new Set<string>();
-    
+
     for (const result of searchResults) {
-      if (result.type === 'node') {
+      if (result.type === "node") {
         // Find containers that contain this node
-        let currentContainer = state.getNodeContainer ? state.getNodeContainer(result.id) : null;
+        let currentContainer = state.getNodeContainer
+          ? state.getNodeContainer(result.id)
+          : null;
         while (currentContainer) {
-          const container = state.getContainer ? state.getContainer(currentContainer) : null;
+          const container = state.getContainer
+            ? state.getContainer(currentContainer)
+            : null;
           if (container && container.collapsed) {
             containerIds.add(currentContainer);
           }
-          currentContainer = state.getContainerParent ? state.getContainerParent(currentContainer) : null;
+          currentContainer = state.getContainerParent
+            ? state.getContainerParent(currentContainer)
+            : null;
         }
       }
     }
-    
+
     return Array.from(containerIds);
   }
 
@@ -1869,31 +2006,40 @@ export class AsyncCoordinator {
   executeWithErrorRecovery<T>(
     operation: () => T,
     operationType: string,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): { result?: T; recovery?: ErrorRecoveryResult } {
     try {
       const result = operation();
       return { result };
     } catch (error) {
-      console.error(`[AsyncCoordinator] Operation "${operationType}" failed:`, error);
-      
+      console.error(
+        `[AsyncCoordinator] Operation "${operationType}" failed:`,
+        error,
+      );
+
       // Handle error through error handler (async at boundary)
-      searchNavigationErrorHandler.handleTimeout(
-        operationType,
-        0, // No timeout for synchronous operations
-        context
-      ).then(recovery => {
-        console.log(`[AsyncCoordinator] Error recovery completed:`, recovery);
-      }).catch(handlerError => {
-        console.error(`[AsyncCoordinator] Error handler failed:`, handlerError);
-      });
-      
-      return { 
+      searchNavigationErrorHandler
+        .handleTimeout(
+          operationType,
+          0, // No timeout for synchronous operations
+          context,
+        )
+        .then((recovery) => {
+          console.log(`[AsyncCoordinator] Error recovery completed:`, recovery);
+        })
+        .catch((handlerError) => {
+          console.error(
+            `[AsyncCoordinator] Error handler failed:`,
+            handlerError,
+          );
+        });
+
+      return {
         recovery: {
           success: false,
           fallbackApplied: false,
           userFeedbackShown: false,
-        }
+        },
       };
     }
   }

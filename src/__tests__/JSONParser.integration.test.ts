@@ -53,8 +53,12 @@ describe("JSONParser Integration Tests", () => {
       expect(containerWarnings).toHaveLength(0);
 
       // Verify location hierarchy is flat (no parent-child relationships between containers)
-      expect(result.visualizationState.getContainerParent("loc_0")).toBeUndefined();
-      expect(result.visualizationState.getContainerParent("loc_1")).toBeUndefined();
+      expect(
+        result.visualizationState.getContainerParent("loc_0"),
+      ).toBeUndefined();
+      expect(
+        result.visualizationState.getContainerParent("loc_1"),
+      ).toBeUndefined();
     });
   });
 

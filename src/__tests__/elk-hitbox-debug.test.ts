@@ -1,7 +1,7 @@
 /**
  * ELK Hitbox Debug Test
- * 
- * This test investigates the "Invalid hitboxes for scanline constraint calculation" 
+ *
+ * This test investigates the "Invalid hitboxes for scanline constraint calculation"
  * error that occurs after fixing the invariant violations in paxos-flipped.json.
  */
 
@@ -23,7 +23,11 @@ describe("ELK Hitbox Debug", () => {
 
   beforeEach(async () => {
     // Load the actual paxos-flipped.json file
-    const paxosFlippedPath = path.join(process.cwd(), "test-data", "paxos-flipped.json");
+    const paxosFlippedPath = path.join(
+      process.cwd(),
+      "test-data",
+      "paxos-flipped.json",
+    );
     const paxosFlippedContent = fs.readFileSync(paxosFlippedPath, "utf-8");
     paxosFlippedData = JSON.parse(paxosFlippedContent) as HydroscopeData;
 
@@ -47,8 +51,8 @@ describe("ELK Hitbox Debug", () => {
       console.log(`  Root ID: ${elkGraph.id}`);
       console.log(`  Root children: ${elkGraph.children?.length || 0}`);
       console.log(`  Root edges: ${elkGraph.edges?.length || 0}`);
-      console.log(`  Root width: ${elkGraph.width || 'undefined'}`);
-      console.log(`  Root height: ${elkGraph.height || 'undefined'}`);
+      console.log(`  Root width: ${elkGraph.width || "undefined"}`);
+      console.log(`  Root height: ${elkGraph.height || "undefined"}`);
 
       // Analyze children for potential issues
       if (elkGraph.children) {
@@ -93,9 +97,15 @@ describe("ELK Hitbox Debug", () => {
         console.log("🚨 Potential Issues:");
         console.log(`  Nodes without dimensions: ${nodesWithoutDimensions}`);
         console.log(`  Nodes with zero dimensions: ${nodesWithZeroDimensions}`);
-        console.log(`  Nodes with negative dimensions: ${nodesWithNegativeDimensions}`);
-        console.log(`  Containers without children: ${containersWithoutChildren}`);
-        console.log(`  Deeply nested containers (>5 levels): ${deeplyNestedContainers}`);
+        console.log(
+          `  Nodes with negative dimensions: ${nodesWithNegativeDimensions}`,
+        );
+        console.log(
+          `  Containers without children: ${containersWithoutChildren}`,
+        );
+        console.log(
+          `  Deeply nested containers (>5 levels): ${deeplyNestedContainers}`,
+        );
 
         // These could cause hitbox calculation issues
         expect(nodesWithNegativeDimensions).toBe(0);
@@ -128,12 +138,12 @@ describe("ELK Hitbox Debug", () => {
         }
 
         if (node.width === 0 || node.height === 0) {
-          problematicNodes.push({ 
-            node, 
-            path: currentPath, 
+          problematicNodes.push({
+            node,
+            path: currentPath,
             issue: "zero dimensions",
             width: node.width,
-            height: node.height
+            height: node.height,
           });
         }
 
@@ -141,19 +151,21 @@ describe("ELK Hitbox Debug", () => {
           suspiciousNodes.push({
             node,
             path: currentPath,
-            issue: "missing layout options"
+            issue: "missing layout options",
           });
         }
 
         // Check for containers with only other containers as children
         if (node.children) {
-          const allChildrenAreContainers = node.children.every((child: any) => child.children);
+          const allChildrenAreContainers = node.children.every(
+            (child: any) => child.children,
+          );
           if (allChildrenAreContainers && node.children.length > 0) {
             suspiciousNodes.push({
               node,
               path: currentPath,
               issue: "container with only container children",
-              childCount: node.children.length
+              childCount: node.children.length,
             });
           }
 
@@ -177,14 +189,16 @@ describe("ELK Hitbox Debug", () => {
 
       if (problematicNodes.length > 0) {
         console.log("❌ Problematic nodes details:");
-        problematicNodes.slice(0, 5).forEach(item => {
-          console.log(`    ${item.path}: ${item.issue} (${item.width}x${item.height})`);
+        problematicNodes.slice(0, 5).forEach((item) => {
+          console.log(
+            `    ${item.path}: ${item.issue} (${item.width}x${item.height})`,
+          );
         });
       }
 
       if (suspiciousNodes.length > 0) {
         console.log("⚠️  Suspicious nodes details:");
-        suspiciousNodes.slice(0, 5).forEach(item => {
+        suspiciousNodes.slice(0, 5).forEach((item) => {
           console.log(`    ${item.path}: ${item.issue}`);
         });
       }
@@ -195,11 +209,11 @@ describe("ELK Hitbox Debug", () => {
           totalNodes: elkGraph.children?.length || 0,
           emptyContainers: emptyContainers.length,
           problematicNodes: problematicNodes.length,
-          suspiciousNodes: suspiciousNodes.length
+          suspiciousNodes: suspiciousNodes.length,
         },
         problematicNodes: problematicNodes.slice(0, 10),
         suspiciousNodes: suspiciousNodes.slice(0, 10),
-        emptyContainers: emptyContainers.slice(0, 10)
+        emptyContainers: emptyContainers.slice(0, 10),
       };
 
       fs.writeFileSync("elk-analysis.json", JSON.stringify(analysis, null, 2));
@@ -220,57 +234,63 @@ describe("ELK Hitbox Debug", () => {
       const configurations = [
         {
           name: "Default",
-          config: {}
+          config: {},
         },
         {
           name: "Force Layered",
           config: {
             algorithm: "layered" as const,
-            hierarchicalLayout: false
-          }
+            hierarchicalLayout: false,
+          },
         },
         {
           name: "Stress Algorithm",
           config: {
             algorithm: "stress" as const,
-            hierarchicalLayout: false
-          }
+            hierarchicalLayout: false,
+          },
         },
         {
           name: "Compact Layout",
           config: {
             algorithm: "layered" as const,
             compactLayout: true,
-            hierarchicalLayout: false
-          }
+            hierarchicalLayout: false,
+          },
         },
         {
           name: "Disable Hierarchy",
           config: {
             hierarchicalLayout: false,
-            separateConnectedComponents: false
-          }
-        }
+            separateConnectedComponents: false,
+          },
+        },
       ];
 
       const results: any[] = [];
       let successfulConfig: any = null;
 
       for (const { name, config } of configurations) {
-        const result = { name, config, success: false, error: "", nodesPositioned: 0 };
-        
+        const result = {
+          name,
+          config,
+          success: false,
+          error: "",
+          nodesPositioned: 0,
+        };
+
         try {
           // Create a fresh copy of the state for each test
           const testState = new VisualizationState();
-          
+
           // Copy all data
           for (const node of visualizationState.visibleNodes) {
             testState.addNode({ ...node });
           }
           for (const container of visualizationState.visibleContainers) {
-            testState.addContainer({ 
+            testState.addContainer({
               ...container,
-              children: new Set(container.children)
+              children: new Set(container.children),
             });
           }
           for (const edge of visualizationState.visibleEdges) {
@@ -279,39 +299,51 @@ describe("ELK Hitbox Debug", () => {
 
           const testElkBridge = new ELKBridge(config);
           await testElkBridge.layout(testState);
-          
+
           // If successful, check the results
-          const nodesWithPositions = testState.visibleNodes.filter(n => n.position);
+          const nodesWithPositions = testState.visibleNodes.filter(
+            (n) => n.position,
+          );
           result.success = true;
           result.nodesPositioned = nodesWithPositions.length;
-          
+
           if (!successfulConfig) {
             successfulConfig = { name, config };
           }
-          
         } catch (error) {
           result.error = (error as Error).message.substring(0, 200);
         }
-        
+
         results.push(result);
       }
 
       // Write results to file for analysis
-      fs.writeFileSync("elk-config-test-results.json", JSON.stringify({
-        summary: {
-          totalConfigs: configurations.length,
-          successfulConfigs: results.filter(r => r.success).length,
-          firstSuccessful: successfulConfig
-        },
-        results
-      }, null, 2));
+      fs.writeFileSync(
+        "elk-config-test-results.json",
+        JSON.stringify(
+          {
+            summary: {
+              totalConfigs: configurations.length,
+              successfulConfigs: results.filter((r) => r.success).length,
+              firstSuccessful: successfulConfig,
+            },
+            results,
+          },
+          null,
+          2,
+        ),
+      );
 
-      console.log("📄 ELK configuration test results written to elk-config-test-results.json");
+      console.log(
+        "📄 ELK configuration test results written to elk-config-test-results.json",
+      );
 
       // If any configuration worked, the test passes
-      const successfulResults = results.filter(r => r.success);
+      const successfulResults = results.filter((r) => r.success);
       if (successfulResults.length > 0) {
-        console.log(`✅ Found ${successfulResults.length} working configurations!`);
+        console.log(
+          `✅ Found ${successfulResults.length} working configurations!`,
+        );
         expect(successfulResults.length).toBeGreaterThan(0);
       } else {
         console.log("❌ All ELK configurations failed");
@@ -336,19 +368,21 @@ describe("ELK Hitbox Debug", () => {
         console.log("✅ Collapsed layout succeeded!");
         return;
       } catch (error) {
-        console.log(`❌ Collapsed layout failed: ${(error as Error).message.substring(0, 100)}...`);
+        console.log(
+          `❌ Collapsed layout failed: ${(error as Error).message.substring(0, 100)}...`,
+        );
       }
 
       // Test 2: Remove all containers, keep only nodes
       console.log("🧪 Test 2: Remove all containers");
       try {
         const simpleState = new VisualizationState();
-        
+
         // Add only nodes, no containers
         for (const node of visualizationState.visibleNodes) {
           simpleState.addNode({ ...node });
         }
-        
+
         // Add only edges between nodes (no container edges)
         for (const edge of visualizationState.visibleEdges) {
           const sourceExists = simpleState.getGraphNode(edge.source);
@@ -357,18 +391,23 @@ describe("ELK Hitbox Debug", () => {
             simpleState.addEdge({ ...edge });
           }
         }
-        
+
         await elkBridge.layout(simpleState);
         console.log("✅ Nodes-only layout succeeded!");
-        
-        const nodesWithPositions = simpleState.visibleNodes.filter(n => n.position);
-        console.log(`   Positioned nodes: ${nodesWithPositions.length}/${simpleState.visibleNodes.length}`);
-        
+
+        const nodesWithPositions = simpleState.visibleNodes.filter(
+          (n) => n.position,
+        );
+        console.log(
+          `   Positioned nodes: ${nodesWithPositions.length}/${simpleState.visibleNodes.length}`,
+        );
+
         expect(nodesWithPositions.length).toBeGreaterThan(0);
         return;
-        
       } catch (error) {
-        console.log(`❌ Nodes-only layout failed: ${(error as Error).message.substring(0, 100)}...`);
+        console.log(
+          `❌ Nodes-only layout failed: ${(error as Error).message.substring(0, 100)}...`,
+        );
       }
 
       // If we get here, even the simplified version failed

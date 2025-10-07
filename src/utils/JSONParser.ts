@@ -78,7 +78,7 @@ export class JSONParser {
     try {
       // Step 1: Parse hierarchy choices
       const hierarchyChoices = this.parseHierarchyChoices(
-        data.hierarchyChoices
+        data.hierarchyChoices,
       );
       this.debugLog("Parsed hierarchy choices", {
         count: hierarchyChoices.length,
@@ -87,7 +87,7 @@ export class JSONParser {
       // Step 2: Determine which hierarchy to use for grouping
       const selectedHierarchy = this.selectDefaultHierarchy(
         hierarchyChoices,
-        data.nodeAssignments
+        data.nodeAssignments,
       );
       this.debugLog("Selected hierarchy", { hierarchy: selectedHierarchy });
 
@@ -97,7 +97,7 @@ export class JSONParser {
         containerCount = await this.createContainersFromHierarchy(
           visualizationState,
           hierarchyChoices.find((h) => h.id === selectedHierarchy),
-          warnings
+          warnings,
         );
       }
 
@@ -105,7 +105,7 @@ export class JSONParser {
       const nodeCount = await this.parseNodes(
         visualizationState,
         data.nodes,
-        warnings
+        warnings,
       );
       this.debugLog("Parsed nodes", { count: nodeCount });
 
@@ -114,7 +114,7 @@ export class JSONParser {
         await this.assignNodesToContainers(
           visualizationState,
           data.nodeAssignments[selectedHierarchy],
-          warnings
+          warnings,
         );
       }
 
@@ -122,7 +122,7 @@ export class JSONParser {
       const edgeCount = await this.parseEdges(
         visualizationState,
         data.edges,
-        warnings
+        warnings,
       );
       this.debugLog("Parsed edges", { count: edgeCount });
 
@@ -178,7 +178,7 @@ export class JSONParser {
     return rawChoices.map((choice, index) => {
       if (!choice.id || !choice.name) {
         throw new Error(
-          `Invalid hierarchy choice at index ${index}: missing id or name`
+          `Invalid hierarchy choice at index ${index}: missing id or name`,
         );
       }
 
@@ -204,7 +204,7 @@ export class JSONParser {
     return rawChildren.map((child, index) => {
       if (!child.id || !child.name) {
         throw new Error(
-          `Invalid hierarchy child at index ${index}: missing id or name`
+          `Invalid hierarchy child at index ${index}: missing id or name`,
         );
       }
 
@@ -222,13 +222,13 @@ export class JSONParser {
    */
   private selectDefaultHierarchy(
     hierarchyChoices: HierarchyChoice[],
-    nodeAssignments: Record<string, Record<string, string>>
+    nodeAssignments: Record<string, Record<string, string>>,
   ): string | null {
     // Use the first hierarchy choice as default (per JSON format spec)
     if (hierarchyChoices.length > 0) {
       const firstChoice = hierarchyChoices[0];
       this.debugLog(
-        `using first hierarchy choice as default: ${firstChoice.id}`
+        `using first hierarchy choice as default: ${firstChoice.id}`,
       );
       if (nodeAssignments[firstChoice.id]) {
         return firstChoice.id;
@@ -252,7 +252,7 @@ export class JSONParser {
   private async createContainersFromHierarchy(
     state: VisualizationState,
     hierarchy: HierarchyChoice | undefined,
-    warnings: ValidationResult[]
+    warnings: ValidationResult[],
   ): Promise<number> {
     if (!hierarchy) {
       return 0;
@@ -265,7 +265,7 @@ export class JSONParser {
 
     const collectContainersRecursively = (
       hierarchyNode: any,
-      parentId?: string
+      parentId?: string,
     ) => {
       allContainers.push({ node: hierarchyNode, parentId });
 
@@ -337,7 +337,7 @@ export class JSONParser {
   private async parseNodes(
     state: VisualizationState,
     rawNodes: any[],
-    warnings: ValidationResult[]
+    warnings: ValidationResult[],
   ): Promise<number> {
     let nodeCount = 0;
 
@@ -398,7 +398,7 @@ export class JSONParser {
   private async assignNodesToContainers(
     state: VisualizationState,
     assignments: Record<string, string>,
-    warnings: ValidationResult[]
+    warnings: ValidationResult[],
   ): Promise<void> {
     let assignmentCount = 0;
 
@@ -454,7 +454,7 @@ export class JSONParser {
   private async parseEdges(
     state: VisualizationState,
     rawEdges: any[],
-    warnings: ValidationResult[]
+    warnings: ValidationResult[],
   ): Promise<number> {
     let edgeCount = 0;
 
@@ -481,14 +481,14 @@ export class JSONParser {
         // Validate required fields
         if (!edge.source || !edge.target) {
           throw new Error(
-            `Edge missing source or target: source=${edge.source}, target=${edge.target}`
+            `Edge missing source or target: source=${edge.source}, target=${edge.target}`,
           );
         }
 
         // Debug: Log first few edges to verify source/target values
         if (edgeCount < 5) {
           console.log(
-            `[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`
+            `[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`,
           );
         }
 
@@ -515,7 +515,7 @@ export class JSONParser {
    * Create a parser with paxos.json specific configuration
    */
   static createPaxosParser(
-    options: Partial<JSONParserOptions> = {}
+    options: Partial<JSONParserOptions> = {},
   ): JSONParser {
     return new JSONParser({
       debug: false,

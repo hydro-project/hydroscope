@@ -58,15 +58,18 @@ describe("SearchControls Enhanced Features", () => {
       const input = screen.getByRole("combobox");
       fireEvent.change(input, { target: { value: "test" } });
 
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalledWith(
-          "test",
-          expect.arrayContaining([
-            expect.objectContaining({ id: "node1" }),
-            expect.objectContaining({ id: "container1" }),
-          ])
-        );
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalledWith(
+            "test",
+            expect.arrayContaining([
+              expect.objectContaining({ id: "node1" }),
+              expect.objectContaining({ id: "container1" }),
+            ]),
+          );
+        },
+        { timeout: 1000 },
+      );
 
       // Navigate to next result
       const nextButton = screen.getByLabelText("Next search result");
@@ -76,7 +79,7 @@ describe("SearchControls Enhanced Features", () => {
         expect.objectContaining({
           id: "node1",
           hierarchyPath: ["root", "parent", "Test Node 1"],
-        })
+        }),
       );
     });
 
@@ -87,10 +90,13 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete and show results list
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByText("📋");
       fireEvent.click(toggleButton);
 
@@ -110,14 +116,19 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete and show results list
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByTitle("Show search results list");
       fireEvent.click(toggleButton);
 
-      expect(screen.getByText("root > parent > Test Node 1")).toBeInTheDocument();
+      expect(
+        screen.getByText("root > parent > Test Node 1"),
+      ).toBeInTheDocument();
       expect(screen.getByText("root > Test Container")).toBeInTheDocument();
     });
 
@@ -128,10 +139,13 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete and show results list
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByTitle("Show search results list");
       fireEvent.click(toggleButton);
 
@@ -146,14 +160,19 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete and show results list
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByTitle("Show search results list");
       fireEvent.click(toggleButton);
 
-      expect(screen.queryByText("root > parent > Test Node 1")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("root > parent > Test Node 1"),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -166,11 +185,17 @@ describe("SearchControls Enhanced Features", () => {
 
       // Navigate forward with Enter
       fireEvent.keyDown(input, { key: "Enter" });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("next", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "next",
+        expect.any(Object),
+      );
 
       // Navigate backward with Shift+Enter
       fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("prev", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "prev",
+        expect.any(Object),
+      );
     });
 
     it("should navigate with Ctrl+Arrow keys", async () => {
@@ -181,11 +206,17 @@ describe("SearchControls Enhanced Features", () => {
 
       // Navigate with Ctrl+ArrowDown
       fireEvent.keyDown(input, { key: "ArrowDown", ctrlKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("next", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "next",
+        expect.any(Object),
+      );
 
       // Navigate with Ctrl+ArrowUp
       fireEvent.keyDown(input, { key: "ArrowUp", ctrlKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("prev", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "prev",
+        expect.any(Object),
+      );
     });
 
     it("should navigate with F3 keys", async () => {
@@ -196,11 +227,17 @@ describe("SearchControls Enhanced Features", () => {
 
       // Navigate with F3
       fireEvent.keyDown(input, { key: "F3" });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("next", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "next",
+        expect.any(Object),
+      );
 
       // Navigate with Shift+F3
       fireEvent.keyDown(input, { key: "F3", shiftKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("prev", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "prev",
+        expect.any(Object),
+      );
     });
 
     it("should clear search with Escape key", async () => {
@@ -235,14 +272,18 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Check for aria-live region
-      const ariaLiveRegion = screen.getByLabelText("Search controls").querySelector('[aria-live="polite"]');
+      const ariaLiveRegion = screen
+        .getByLabelText("Search controls")
+        .querySelector('[aria-live="polite"]');
       expect(ariaLiveRegion).toBeInTheDocument();
     });
 
     it("should have accessible button labels", () => {
       render(<SearchControls {...defaultProps} />);
 
-      expect(screen.getByLabelText("Previous search result")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Previous search result"),
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Next search result")).toBeInTheDocument();
     });
 
@@ -253,10 +294,13 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete and show results list
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByTitle("Show search results list");
       fireEvent.click(toggleButton);
 
@@ -279,11 +323,14 @@ describe("SearchControls Enhanced Features", () => {
       const input = screen.getByRole("combobox");
       fireEvent.change(input, { target: { value: "test" } });
 
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-        // Look for the button with the 📋 icon instead of the title
-        expect(screen.getByText("📋")).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+          // Look for the button with the 📋 icon instead of the title
+          expect(screen.getByText("📋")).toBeInTheDocument();
+        },
+        { timeout: 1000 },
+      );
     });
 
     it("should toggle results list visibility", async () => {
@@ -293,12 +340,15 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByTitle("Show search results list");
-      
+
       // Show results list
       fireEvent.click(toggleButton);
       expect(screen.getByRole("listbox")).toBeInTheDocument();
@@ -317,10 +367,13 @@ describe("SearchControls Enhanced Features", () => {
       fireEvent.change(input, { target: { value: "test" } });
 
       // Wait for search to complete and show results list
-      await waitFor(() => {
-        expect(defaultProps.onSearch).toHaveBeenCalled();
-      }, { timeout: 1000 });
-      
+      await waitFor(
+        () => {
+          expect(defaultProps.onSearch).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
+
       const toggleButton = screen.getByTitle("Show search results list");
       fireEvent.click(toggleButton);
 
@@ -334,19 +387,25 @@ describe("SearchControls Enhanced Features", () => {
     it("should show keyboard shortcuts in tooltips", () => {
       render(<SearchControls {...defaultProps} />);
 
-      expect(screen.getByTitle("Previous match (Shift+Enter, Ctrl+↑, Shift+F3)")).toBeInTheDocument();
-      expect(screen.getByTitle("Next match (Enter, Ctrl+↓, F3)")).toBeInTheDocument();
+      expect(
+        screen.getByTitle("Previous match (Shift+Enter, Ctrl+↑, Shift+F3)"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTitle("Next match (Enter, Ctrl+↓, F3)"),
+      ).toBeInTheDocument();
       expect(screen.getByTitle("Clear search (Escape)")).toBeInTheDocument();
     });
   });
 
   describe("External Control Integration", () => {
     it("should sync with external currentSearchIndex", () => {
-      const { rerender } = render(<SearchControls {...defaultProps} currentSearchIndex={0} />);
-      
+      const { rerender } = render(
+        <SearchControls {...defaultProps} currentSearchIndex={0} />,
+      );
+
       // Change external index
       rerender(<SearchControls {...defaultProps} currentSearchIndex={1} />);
-      
+
       // The component should sync with the external index
       // This is tested through the useEffect that syncs currentSearchIndex
     });

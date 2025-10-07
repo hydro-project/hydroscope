@@ -1,6 +1,6 @@
 /**
  * ELK Fallback Verification Test
- * 
+ *
  * This test verifies whether the ELK stress algorithm fallback is actually
  * being triggered, or if the original invariant violations fix was sufficient.
  */
@@ -18,7 +18,11 @@ describe("ELK Fallback Verification", () => {
   let paxosFlippedData: HydroscopeData;
 
   beforeEach(async () => {
-    const paxosFlippedPath = path.join(process.cwd(), "test-data", "paxos-flipped.json");
+    const paxosFlippedPath = path.join(
+      process.cwd(),
+      "test-data",
+      "paxos-flipped.json",
+    );
     const paxosFlippedContent = fs.readFileSync(paxosFlippedPath, "utf-8");
     paxosFlippedData = JSON.parse(paxosFlippedContent) as HydroscopeData;
   });
@@ -33,7 +37,7 @@ describe("ELK Fallback Verification", () => {
       // Test with original ELK configuration (no fallback mechanism)
       const originalElkBridge = new ELKBridge({
         algorithm: "layered", // Default algorithm
-        hierarchicalLayout: true // Default hierarchical layout
+        hierarchicalLayout: true, // Default hierarchical layout
       });
 
       let layoutError: Error | null = null;
@@ -42,13 +46,18 @@ describe("ELK Fallback Verification", () => {
       try {
         await originalElkBridge.layout(visualizationState);
         layoutSucceeded = true;
-        
-        const nodesWithPositions = visualizationState.visibleNodes.filter(n => n.position);
-        console.log(`✅ Original ELK config succeeded: ${nodesWithPositions.length} nodes positioned`);
-        
+
+        const nodesWithPositions = visualizationState.visibleNodes.filter(
+          (n) => n.position,
+        );
+        console.log(
+          `✅ Original ELK config succeeded: ${nodesWithPositions.length} nodes positioned`,
+        );
       } catch (error) {
         layoutError = error as Error;
-        console.log(`❌ Original ELK config failed: ${error.message.substring(0, 100)}...`);
+        console.log(
+          `❌ Original ELK config failed: ${error.message.substring(0, 100)}...`,
+        );
       }
 
       // Document the result
@@ -69,8 +78,18 @@ describe("ELK Fallback Verification", () => {
       const parseResult = await parser.parseData(paxosFlippedData);
 
       const results = {
-        defaultConfig: { success: false, error: "", nodesPositioned: 0, duration: 0 },
-        stressConfig: { success: false, error: "", nodesPositioned: 0, duration: 0 }
+        defaultConfig: {
+          success: false,
+          error: "",
+          nodesPositioned: 0,
+          duration: 0,
+        },
+        stressConfig: {
+          success: false,
+          error: "",
+          nodesPositioned: 0,
+          duration: 0,
+        },
       };
 
       // Test 1: Default configuration
@@ -81,10 +100,11 @@ describe("ELK Fallback Verification", () => {
         for (const node of parseResult.visualizationState.visibleNodes) {
           defaultState.addNode({ ...node });
         }
-        for (const container of parseResult.visualizationState.visibleContainers) {
-          defaultState.addContainer({ 
+        for (const container of parseResult.visualizationState
+          .visibleContainers) {
+          defaultState.addContainer({
             ...container,
-            children: new Set(container.children)
+            children: new Set(container.children),
           });
         }
         for (const edge of parseResult.visualizationState.visibleEdges) {
@@ -93,7 +113,7 @@ describe("ELK Fallback Verification", () => {
 
         const defaultElkBridge = new ELKBridge({
           algorithm: "layered",
-          hierarchicalLayout: true
+          hierarchicalLayout: true,
         });
 
         const startTime = Date.now();
@@ -102,10 +122,13 @@ describe("ELK Fallback Verification", () => {
 
         results.defaultConfig.success = true;
         results.defaultConfig.duration = endTime - startTime;
-        results.defaultConfig.nodesPositioned = defaultState.visibleNodes.filter(n => n.position).length;
-
+        results.defaultConfig.nodesPositioned =
+          defaultState.visibleNodes.filter((n) => n.position).length;
       } catch (error) {
-        results.defaultConfig.error = (error as Error).message.substring(0, 200);
+        results.defaultConfig.error = (error as Error).message.substring(
+          0,
+          200,
+        );
       }
 
       // Test 2: Stress configuration
@@ -116,10 +139,11 @@ describe("ELK Fallback Verification", () => {
         for (const node of parseResult.visualizationState.visibleNodes) {
           stressState.addNode({ ...node });
         }
-        for (const container of parseResult.visualizationState.visibleContainers) {
-          stressState.addContainer({ 
+        for (const container of parseResult.visualizationState
+          .visibleContainers) {
+          stressState.addContainer({
             ...container,
-            children: new Set(container.children)
+            children: new Set(container.children),
           });
         }
         for (const edge of parseResult.visualizationState.visibleEdges) {
@@ -128,7 +152,7 @@ describe("ELK Fallback Verification", () => {
 
         const stressElkBridge = new ELKBridge({
           algorithm: "stress",
-          hierarchicalLayout: false
+          hierarchicalLayout: false,
         });
 
         const startTime = Date.now();
@@ -137,23 +161,33 @@ describe("ELK Fallback Verification", () => {
 
         results.stressConfig.success = true;
         results.stressConfig.duration = endTime - startTime;
-        results.stressConfig.nodesPositioned = stressState.visibleNodes.filter(n => n.position).length;
-
+        results.stressConfig.nodesPositioned = stressState.visibleNodes.filter(
+          (n) => n.position,
+        ).length;
       } catch (error) {
         results.stressConfig.error = (error as Error).message.substring(0, 200);
       }
 
       // Report results
       console.log("\n📊 ELK Configuration Comparison:");
-      console.log(`Default (layered):  ${results.defaultConfig.success ? '✅' : '❌'} ${results.defaultConfig.success ? `${results.defaultConfig.nodesPositioned} nodes, ${results.defaultConfig.duration}ms` : results.defaultConfig.error}`);
-      console.log(`Stress algorithm:   ${results.stressConfig.success ? '✅' : '❌'} ${results.stressConfig.success ? `${results.stressConfig.nodesPositioned} nodes, ${results.stressConfig.duration}ms` : results.stressConfig.error}`);
+      console.log(
+        `Default (layered):  ${results.defaultConfig.success ? "✅" : "❌"} ${results.defaultConfig.success ? `${results.defaultConfig.nodesPositioned} nodes, ${results.defaultConfig.duration}ms` : results.defaultConfig.error}`,
+      );
+      console.log(
+        `Stress algorithm:   ${results.stressConfig.success ? "✅" : "❌"} ${results.stressConfig.success ? `${results.stressConfig.nodesPositioned} nodes, ${results.stressConfig.duration}ms` : results.stressConfig.error}`,
+      );
 
       // Write detailed results
-      fs.writeFileSync("elk-comparison-results.json", JSON.stringify(results, null, 2));
+      fs.writeFileSync(
+        "elk-comparison-results.json",
+        JSON.stringify(results, null, 2),
+      );
       console.log("📄 Detailed results written to elk-comparison-results.json");
 
       // At least one should work
-      expect(results.defaultConfig.success || results.stressConfig.success).toBe(true);
+      expect(
+        results.defaultConfig.success || results.stressConfig.success,
+      ).toBe(true);
     });
   });
 
@@ -167,9 +201,9 @@ describe("ELK Fallback Verification", () => {
       // Capture console logs to see if fallback is triggered
       const originalConsoleLog = console.log;
       const logMessages: string[] = [];
-      
+
       console.log = (...args: any[]) => {
-        const message = args.join(' ');
+        const message = args.join(" ");
         logMessages.push(message);
         originalConsoleLog(...args);
       };
@@ -180,30 +214,39 @@ describe("ELK Fallback Verification", () => {
         await elkBridge.layout(visualizationState);
 
         // Check if fallback was triggered
-        const fallbackTriggered = logMessages.some(msg => 
-          msg.includes("fallback") || 
-          msg.includes("stress algorithm") ||
-          msg.includes("hitbox error")
+        const fallbackTriggered = logMessages.some(
+          (msg) =>
+            msg.includes("fallback") ||
+            msg.includes("stress algorithm") ||
+            msg.includes("hitbox error"),
         );
 
         console.log(`\n🔍 Fallback mechanism analysis:`);
-        console.log(`   Fallback triggered: ${fallbackTriggered ? 'YES' : 'NO'}`);
-        
+        console.log(
+          `   Fallback triggered: ${fallbackTriggered ? "YES" : "NO"}`,
+        );
+
         if (fallbackTriggered) {
           console.log(`   Fallback messages:`);
-          logMessages.filter(msg => 
-            msg.includes("fallback") || 
-            msg.includes("stress") ||
-            msg.includes("hitbox")
-          ).forEach(msg => console.log(`     - ${msg}`));
+          logMessages
+            .filter(
+              (msg) =>
+                msg.includes("fallback") ||
+                msg.includes("stress") ||
+                msg.includes("hitbox"),
+            )
+            .forEach((msg) => console.log(`     - ${msg}`));
         } else {
-          console.log(`   The default ELK configuration worked without fallback`);
+          console.log(
+            `   The default ELK configuration worked without fallback`,
+          );
         }
 
         // Verify layout succeeded
-        const nodesWithPositions = visualizationState.visibleNodes.filter(n => n.position);
+        const nodesWithPositions = visualizationState.visibleNodes.filter(
+          (n) => n.position,
+        );
         expect(nodesWithPositions.length).toBeGreaterThan(0);
-
       } finally {
         // Restore console.log
         console.log = originalConsoleLog;

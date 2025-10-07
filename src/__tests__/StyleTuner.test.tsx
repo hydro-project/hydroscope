@@ -145,7 +145,6 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText("Layout Algorithm")).toBeInTheDocument();
       expect(screen.getByText("Edge Style")).toBeInTheDocument();
       expect(screen.getByText("Color Palette")).toBeInTheDocument();
-
     });
   });
 
@@ -251,7 +250,6 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText(/edge style/i)).toBeInTheDocument();
       expect(screen.getByText(/layout algorithm/i)).toBeInTheDocument();
       expect(screen.getByText(/color palette/i)).toBeInTheDocument();
-
     });
 
     it("should show current edge style values", () => {
@@ -273,8 +271,6 @@ describe("StyleTuner Component", () => {
       });
     });
   });
-
-
 
   describe("Reset to Defaults", () => {
     it("should call onResetToDefaults when reset button is clicked", () => {
@@ -352,7 +348,7 @@ describe("StyleTuner Component", () => {
 
       // And should call onChange immediately
       expect(mockCallbacks.onChange).toHaveBeenCalledWith(
-        expect.objectContaining({ edgeStyle: "straight" })
+        expect.objectContaining({ edgeStyle: "straight" }),
       );
     });
   });
@@ -366,7 +362,7 @@ describe("StyleTuner Component", () => {
 
       // Should work with VisualizationState integration
       expect(mockCallbacks.onChange).toHaveBeenCalledWith(
-        expect.objectContaining({ edgeStyle: "straight" })
+        expect.objectContaining({ edgeStyle: "straight" }),
       );
     });
 
@@ -398,7 +394,7 @@ describe("StyleTuner Component", () => {
 
       // Should work without v6 components
       expect(mockCallbacks.onChange).toHaveBeenCalledWith(
-        expect.objectContaining({ edgeStyle: "straight" })
+        expect.objectContaining({ edgeStyle: "straight" }),
       );
     });
   });

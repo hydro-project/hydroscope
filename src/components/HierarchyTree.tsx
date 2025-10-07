@@ -17,11 +17,11 @@ import React, { useMemo, useEffect, useState, useRef } from "react";
 import { Tree } from "antd";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
-import { 
-  TYPOGRAPHY, 
-  COMPONENT_COLORS, 
-  SEARCH_HIGHLIGHT_COLORS, 
-  SEARCH_CURRENT_COLORS 
+import {
+  TYPOGRAPHY,
+  COMPONENT_COLORS,
+  SEARCH_HIGHLIGHT_COLORS,
+  SEARCH_CURRENT_COLORS,
 } from "../shared/config";
 import type { VisualizationState } from "../core/VisualizationState";
 // import type { AsyncCoordinator } from "../core/AsyncCoordinator";
@@ -123,10 +123,11 @@ function hasMatchingDescendants(
       // Check if this node is contained within the container
       const nodeContainer = visualizationState.getNodeContainer(result.id);
       if (nodeContainer === containerId) return true;
-      
+
       // Check if the node's container is a descendant of this container
       if (nodeContainer) {
-        const ancestors = visualizationState.getContainerAncestors(nodeContainer);
+        const ancestors =
+          visualizationState.getContainerAncestors(nodeContainer);
         return ancestors.includes(containerId);
       }
     } else if (result.type === "container") {
@@ -157,7 +158,7 @@ function createContainerDisplayTitle(
 
   // Determine highlight style based on match type
   let highlightStyle: React.CSSProperties = {};
-  
+
   if (match) {
     // Direct match - use full highlight
     highlightStyle = {
@@ -184,7 +185,17 @@ function createContainerDisplayTitle(
 
   return (
     <div style={highlightStyle}>
-      <span style={{ fontWeight: match ? (isCurrent ? 600 : 500) : hasCollapsedMatchingDescendants ? 500 : 400 }}>
+      <span
+        style={{
+          fontWeight: match
+            ? isCurrent
+              ? 600
+              : 500
+            : hasCollapsedMatchingDescendants
+              ? 500
+              : 400,
+        }}
+      >
         {truncatedLabel}
         {countText && (
           <span style={{ fontSize: "10px", opacity: 0.75, fontWeight: 400 }}>
@@ -251,9 +262,10 @@ function getTreeDataStructure(
         if (!isCollapsed && hasLeafChildren) {
           // Add actual leaf nodes when expanded
           const leafTreeNodes = leafNodes.map((leafNode: GraphNode) => {
-            const match = searchResults?.some(
-              (result) => result.id === leafNode.id && result.type === "node",
-            ) ?? false;
+            const match =
+              searchResults?.some(
+                (result) => result.id === leafNode.id && result.type === "node",
+              ) ?? false;
             const isCurrent = !!(
               currentSearchResult && currentSearchResult.id === leafNode.id
             );
@@ -298,9 +310,10 @@ function getTreeDataStructure(
         } else {
           // Expanded - show actual leaf nodes
           children = leafNodes.map((leafNode: GraphNode) => {
-            const match = searchResults?.some(
-              (result) => result.id === leafNode.id && result.type === "node",
-            ) ?? false;
+            const match =
+              searchResults?.some(
+                (result) => result.id === leafNode.id && result.type === "node",
+              ) ?? false;
             const isCurrent = !!(
               currentSearchResult && currentSearchResult.id === leafNode.id
             );
@@ -332,14 +345,17 @@ function getTreeDataStructure(
       }
 
       // Check for search matches
-      const match = searchResults?.some((result) => result.id === node.id) ?? false;
+      const match =
+        searchResults?.some((result) => result.id === node.id) ?? false;
       const isCurrent = !!(
         currentSearchResult && currentSearchResult.id === node.id
       );
 
       // Check if this collapsed container has matching descendants
-      const hasCollapsedMatchingDescendants = isCollapsed && searchResults ? 
-        hasMatchingDescendants(node.id, searchResults, visualizationState) : false;
+      const hasCollapsedMatchingDescendants =
+        isCollapsed && searchResults
+          ? hasMatchingDescendants(node.id, searchResults, visualizationState)
+          : false;
 
       const displayTitle = createContainerDisplayTitle(
         truncatedLabel,
@@ -359,7 +375,9 @@ function getTreeDataStructure(
         children: children,
         isLeaf: !hasChildren && !hasLeafChildren, // Only true leaf nodes (no children at all)
         // Add custom className for collapsed containers with matching descendants
-        className: hasCollapsedMatchingDescendants ? 'search-match-ancestor' : undefined,
+        className: hasCollapsedMatchingDescendants
+          ? "search-match-ancestor"
+          : undefined,
         // Add custom properties for styling
         data: {
           originalLabel: labelToUse,
@@ -409,7 +427,8 @@ export function HierarchyTree({
     searchResults.forEach((result) => {
       if (result.type === "container") {
         // Expand ancestors of matched containers
-        const ancestors = visualizationState.getContainerAncestors(result.id) || [];
+        const ancestors =
+          visualizationState.getContainerAncestors(result.id) || [];
         ancestors.forEach((ancestorId) => expansionKeys.add(ancestorId));
       } else if (result.type === "node") {
         // For node matches, expand the container hierarchy to make the node visible
@@ -418,7 +437,8 @@ export function HierarchyTree({
           // Expand the direct container
           expansionKeys.add(nodeContainer);
           // Expand all ancestors of the container
-          const ancestors = visualizationState.getContainerAncestors(nodeContainer) || [];
+          const ancestors =
+            visualizationState.getContainerAncestors(nodeContainer) || [];
           ancestors.forEach((ancestorId) => expansionKeys.add(ancestorId));
         }
       }
@@ -710,10 +730,10 @@ export function HierarchyTree({
   ) => {
     if (info.node) {
       const nodeKey = info.node.key as string;
-      
+
       // Check if this is a graph node (leaf) or container
       const isGraphNode = (info.node as any).data?.isGraphNode;
-      
+
       if (isGraphNode) {
         // This is a leaf node - trigger navigation if callback is provided
         if (onElementNavigation) {

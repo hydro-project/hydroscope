@@ -273,7 +273,16 @@ export interface ELKValidationResult {
 // AsyncCoordinator types
 export interface QueuedOperation<T = any> {
   id: string;
-  type: "elk_layout" | "reactflow_render" | "application_event" | "expand-tree-node" | "collapse-tree-node" | "expand-all-tree-nodes" | "collapse-all-tree-nodes" | "navigate-to-element" | "focus-viewport";
+  type:
+    | "elk_layout"
+    | "reactflow_render"
+    | "application_event"
+    | "expand-tree-node"
+    | "collapse-tree-node"
+    | "expand-all-tree-nodes"
+    | "collapse-all-tree-nodes"
+    | "navigate-to-element"
+    | "focus-viewport";
   operation: () => Promise<T>;
   timeout?: number;
   retryCount: number;
@@ -401,4 +410,65 @@ export interface ValidationResult {
   message: string;
   severity: "error" | "warning" | "info";
   context?: Record<string, unknown>;
+}
+
+export interface EdgeValidationResult {
+  isValid: boolean;
+  isFloating: boolean;
+  reason: string;
+  sourceExists: boolean;
+  targetExists: boolean;
+  sourceInAllNodes: boolean;
+  targetInAllNodes: boolean;
+  sourceType:
+    | "node"
+    | "container"
+    | "hidden-node"
+    | "hidden-container"
+    | "unknown"
+    | "missing";
+  targetType:
+    | "node"
+    | "container"
+    | "hidden-node"
+    | "hidden-container"
+    | "unknown"
+    | "missing";
+  suggestedFix?: string;
+  hierarchyLevel?: number;
+}
+
+export interface ContainerExpansionValidationResult {
+  canExpand: boolean;
+  issues: string[];
+  affectedEdges: string[];
+  edgeValidationResults: EdgeValidationResult[];
+}
+
+export interface EdgeRestorationResult {
+  validEdges: string[];
+  invalidEdges: Array<{ id: string; reason: string }>;
+  fixedEdges: string[];
+}
+
+export interface ContainerExpansionState {
+  containerId: string;
+  preExpansionState: {
+    collapsed: boolean;
+    hidden: boolean;
+    childrenVisible: string[];
+    timestamp: number;
+  };
+  postExpansionState?: {
+    collapsed: boolean;
+    hidden: boolean;
+    childrenVisible: string[];
+    restoredEdges: string[];
+    invalidEdges: string[];
+    timestamp: number;
+  };
+  validationResults: {
+    preExpansion: ContainerExpansionValidationResult;
+    postExpansion?: EdgeRestorationResult;
+  };
 }

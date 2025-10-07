@@ -13,11 +13,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
-import {
-  ReactFlowProvider,
-  Controls,
-  useReactFlow,
-} from "@xyflow/react";
+import { ReactFlowProvider, Controls, useReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import {
@@ -65,7 +61,6 @@ export interface RenderConfig {
   colorPalette?: string;
   /** Whether to automatically fit view after layout changes */
   fitView?: boolean;
-
 }
 
 /**
@@ -349,53 +344,97 @@ const CustomControls = memo<CustomControlsProps>(
               width: "26px", // Exact same width as ReactFlow controls
             }}
           >
-              {/* Auto Fit Toggle Button - always show when callback provided */}
-              {onAutoFitToggle && (
-                <button
-                  onClick={() => {
-                    console.log(
-                      "[Hydroscope] AutoFit button clicked, current state:",
-                      autoFitEnabled,
-                    );
-                    onAutoFitToggle();
-                  }}
-                  title={`Toggle Auto-Fit (currently ${autoFitEnabled ? "ON" : "OFF"})`}
-                  className="react-flow__controls-button"
-                  style={{
-                    alignItems: "center",
-                    background: autoFitEnabled ? "rgba(59, 130, 246, 0.2)" : "#fefefe",
-                    border: "none",
-                    borderBottom: "1px solid #b1b1b7",
-                    color: "#555",
-                    cursor: "pointer",
-                    display: "flex",
-                    height: "26px",
-                    justifyContent: "center",
-                    padding: "4px",
-                    userSelect: "none",
-                    width: "26px",
-                    fontSize: "12px",
-                    margin: "0",
-                    borderRadius: "0",
-                  }}
-                >
-                  <AutoFitIcon enabled={autoFitEnabled} />
-                </button>
-              )}
+            {/* Auto Fit Toggle Button - always show when callback provided */}
+            {onAutoFitToggle && (
+              <button
+                onClick={() => {
+                  console.log(
+                    "[Hydroscope] AutoFit button clicked, current state:",
+                    autoFitEnabled,
+                  );
+                  onAutoFitToggle();
+                }}
+                title={`Toggle Auto-Fit (currently ${autoFitEnabled ? "ON" : "OFF"})`}
+                className="react-flow__controls-button"
+                style={{
+                  alignItems: "center",
+                  background: autoFitEnabled
+                    ? "rgba(59, 130, 246, 0.2)"
+                    : "#fefefe",
+                  border: "none",
+                  borderBottom: "1px solid #b1b1b7",
+                  color: "#555",
+                  cursor: "pointer",
+                  display: "flex",
+                  height: "26px",
+                  justifyContent: "center",
+                  padding: "4px",
+                  userSelect: "none",
+                  width: "26px",
+                  fontSize: "12px",
+                  margin: "0",
+                  borderRadius: "0",
+                }}
+              >
+                <AutoFitIcon enabled={autoFitEnabled} />
+              </button>
+            )}
 
-              {/* Load File Button - at the top when enabled */}
-              {showLoadFile && onLoadFile && (
-                <button 
-                  onClick={onLoadFile} 
-                  title="Load another file"
+            {/* Load File Button - at the top when enabled */}
+            {showLoadFile && onLoadFile && (
+              <button
+                onClick={onLoadFile}
+                title="Load another file"
+                className="react-flow__controls-button"
+                style={{
+                  alignItems: "center",
+                  background: "#fefefe",
+                  border: "none",
+                  borderBottom: "1px solid #b1b1b7",
+                  color: "#555",
+                  cursor: "pointer",
+                  display: "flex",
+                  height: "26px",
+                  justifyContent: "center",
+                  padding: "4px",
+                  userSelect: "none",
+                  width: "26px",
+                  fontSize: "12px",
+                  margin: "0",
+                  borderRadius: "0",
+                }}
+              >
+                <LoadFileIcon />
+              </button>
+            )}
+            {/* Pack/Unpack buttons - always show when pack/unpack is enabled */}
+            {hasContainers && (
+              <>
+                {/* Pack All (Collapse All) Button */}
+                <button
+                  onClick={onCollapseAll}
+                  disabled={!hasContainers || !hasExpandedContainers}
+                  title={
+                    !hasContainers
+                      ? "No containers available"
+                      : !hasExpandedContainers
+                        ? "No containers to collapse"
+                        : "Collapse All Containers"
+                  }
                   className="react-flow__controls-button"
                   style={{
                     alignItems: "center",
                     background: "#fefefe",
                     border: "none",
                     borderBottom: "1px solid #b1b1b7",
-                    color: "#555",
-                    cursor: "pointer",
+                    color:
+                      !hasContainers || !hasExpandedContainers
+                        ? "#ccc"
+                        : "#555",
+                    cursor:
+                      !hasContainers || !hasExpandedContainers
+                        ? "not-allowed"
+                        : "pointer",
                     display: "flex",
                     height: "26px",
                     justifyContent: "center",
@@ -405,86 +444,58 @@ const CustomControls = memo<CustomControlsProps>(
                     fontSize: "12px",
                     margin: "0",
                     borderRadius: "0",
+                    opacity: !hasContainers || !hasExpandedContainers ? 0.5 : 1,
                   }}
                 >
-                  <LoadFileIcon />
+                  <PackIcon />
                 </button>
-              )}
-              {/* Pack/Unpack buttons - always show when pack/unpack is enabled */}
-              {hasContainers && (
-                <>
-                  {/* Pack All (Collapse All) Button */}
-                  <button
-                    onClick={onCollapseAll}
-                    disabled={!hasContainers || !hasExpandedContainers}
-                    title={
-                      !hasContainers
-                        ? "No containers available"
-                        : !hasExpandedContainers
-                          ? "No containers to collapse"
-                          : "Collapse All Containers"
-                    }
-                    className="react-flow__controls-button"
-                    style={{
-                      alignItems: "center",
-                      background: "#fefefe",
-                      border: "none",
-                      borderBottom: "1px solid #b1b1b7",
-                      color: (!hasContainers || !hasExpandedContainers) ? "#ccc" : "#555",
-                      cursor: (!hasContainers || !hasExpandedContainers) ? "not-allowed" : "pointer",
-                      display: "flex",
-                      height: "26px",
-                      justifyContent: "center",
-                      padding: "4px",
-                      userSelect: "none",
-                      width: "26px",
-                      fontSize: "12px",
-                      margin: "0",
-                      borderRadius: "0",
-                      opacity: (!hasContainers || !hasExpandedContainers) ? 0.5 : 1,
-                    }}
-                  >
-                    <PackIcon />
-                  </button>
-                  {/* Unpack All (Expand All) Button */}
-                  <button
-                    onClick={onExpandAll}
-                    disabled={!hasContainers || !hasCollapsedContainers}
-                    title={
-                      !hasContainers
-                        ? "No containers available"
-                        : !hasCollapsedContainers
-                          ? "No containers to expand"
-                          : "Expand All Containers"
-                    }
-                    className="react-flow__controls-button"
-                    style={{
-                      alignItems: "center",
-                      background: "#fefefe",
-                      border: "none",
-                      borderBottom: (!hasContainers || !hasCollapsedContainers) ? "1px solid #b1b1b7" : "none", // Last button has no bottom border
-                      color: (!hasContainers || !hasCollapsedContainers) ? "#ccc" : "#555",
-                      cursor: (!hasContainers || !hasCollapsedContainers) ? "not-allowed" : "pointer",
-                      display: "flex",
-                      height: "26px",
-                      justifyContent: "center",
-                      padding: "4px",
-                      userSelect: "none",
-                      width: "26px",
-                      fontSize: "12px",
-                      margin: "0",
-                      borderRadius: "0",
-                      opacity: (!hasContainers || !hasCollapsedContainers) ? 0.5 : 1,
-                    }}
-                  >
-                    <UnpackIcon />
-                  </button>
-                </>
-              )}
+                {/* Unpack All (Expand All) Button */}
+                <button
+                  onClick={onExpandAll}
+                  disabled={!hasContainers || !hasCollapsedContainers}
+                  title={
+                    !hasContainers
+                      ? "No containers available"
+                      : !hasCollapsedContainers
+                        ? "No containers to expand"
+                        : "Expand All Containers"
+                  }
+                  className="react-flow__controls-button"
+                  style={{
+                    alignItems: "center",
+                    background: "#fefefe",
+                    border: "none",
+                    borderBottom:
+                      !hasContainers || !hasCollapsedContainers
+                        ? "1px solid #b1b1b7"
+                        : "none", // Last button has no bottom border
+                    color:
+                      !hasContainers || !hasCollapsedContainers
+                        ? "#ccc"
+                        : "#555",
+                    cursor:
+                      !hasContainers || !hasCollapsedContainers
+                        ? "not-allowed"
+                        : "pointer",
+                    display: "flex",
+                    height: "26px",
+                    justifyContent: "center",
+                    padding: "4px",
+                    userSelect: "none",
+                    width: "26px",
+                    fontSize: "12px",
+                    margin: "0",
+                    borderRadius: "0",
+                    opacity:
+                      !hasContainers || !hasCollapsedContainers ? 0.5 : 1,
+                  }}
+                >
+                  <UnpackIcon />
+                </button>
+              </>
+            )}
           </div>
         )}
-
-
       </>
     );
   },
@@ -696,8 +707,6 @@ export const Hydroscope = memo<HydroscopeProps>(
       fileInputRef.current?.click();
     }, []);
 
-
-
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
       (query: string, matches: SearchMatch[], current?: SearchMatch) => {
@@ -721,7 +730,7 @@ export const Hydroscope = memo<HydroscopeProps>(
         try {
           // Use HydroscopeCore's navigateToElement method which handles:
           // 1. Automatic container expansion if element is not visible
-          // 2. Navigation state update in VisualizationState  
+          // 2. Navigation state update in VisualizationState
           // 3. Viewport focusing in ReactFlow graph
           await hydroscopeCoreRef.current?.navigateToElement(elementId);
 
@@ -892,7 +901,10 @@ export const Hydroscope = memo<HydroscopeProps>(
                     hierarchyChoices={state.data?.hierarchyChoices || []}
                     currentGrouping={currentGrouping}
                     onGroupingChange={(groupingId) => {
-                      console.log("⚠️ Grouping change requested but ignored - grouping is now determined by JSON format (first hierarchy choice):", groupingId);
+                      console.log(
+                        "⚠️ Grouping change requested but ignored - grouping is now determined by JSON format (first hierarchy choice):",
+                        groupingId,
+                      );
                     }}
                     collapsedContainers={new Set()}
                     onToggleContainer={(containerId) => {

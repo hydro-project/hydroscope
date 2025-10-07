@@ -81,7 +81,7 @@ export class VisualizationState {
   private _searchCacheMaxSize = 50;
   private _searchCacheMaxAge = 5 * 60 * 1000; // 5 minutes
   private _searchCacheTimestamps = new Map<string, number>();
-  
+
   // State persistence
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
@@ -274,8 +274,10 @@ export class VisualizationState {
       collapsed: container.collapsed ?? false,
       hidden: container.hidden ?? false,
     };
-    
-    console.log(`[VisualizationState] 📦 STORING container ${container.id}: hidden=${finalContainer.hidden}, collapsed=${finalContainer.collapsed}`);
+
+    console.log(
+      `[VisualizationState] 📦 STORING container ${container.id}: hidden=${finalContainer.hidden}, collapsed=${finalContainer.collapsed}`,
+    );
     this._containers.set(container.id, finalContainer);
 
     // Update mappings for all children
@@ -365,7 +367,9 @@ export class VisualizationState {
         childNode.hidden = false;
       }
       if (childContainer) {
-        console.log(`[VisualizationState] 👁️ SHOWING container ${childContainer.id} (was hidden: ${childContainer.hidden})`);
+        console.log(
+          `[VisualizationState] 👁️ SHOWING container ${childContainer.id} (was hidden: ${childContainer.hidden})`,
+        );
         childContainer.hidden = false;
         // Don't automatically expand child containers - they keep their collapsed state
         // Only show their contents if they are not collapsed
@@ -407,7 +411,9 @@ export class VisualizationState {
       if (childContainer) {
         // When a parent container collapses, ALL child containers must be hidden AND collapsed
         // This prevents the illegal "Expanded/Hidden" state (collapsed: false, hidden: true)
-        console.log(`[VisualizationState] 🙈 HIDING and COLLAPSING container ${childContainer.id} (parent ${containerId} collapsed)`);
+        console.log(
+          `[VisualizationState] 🙈 HIDING and COLLAPSING container ${childContainer.id} (parent ${containerId} collapsed)`,
+        );
         childContainer.hidden = true;
         childContainer.collapsed = true; // CRITICAL FIX: Also collapse child containers to avoid invariant violations
         // Recursively hide descendants of child containers
@@ -417,8 +423,8 @@ export class VisualizationState {
   }
 
   expandAllContainers(containerIds?: string[]): void {
-    const containersToExpand = containerIds 
-      ? containerIds.map(id => this._containers.get(id)).filter(Boolean)
+    const containersToExpand = containerIds
+      ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
 
     for (const container of containersToExpand) {
@@ -431,10 +437,12 @@ export class VisualizationState {
   }
 
   collapseAllContainers(containerIds?: string[]): void {
-    console.log(`[VisualizationState] 🔄 Collapsing ${containerIds ? 'specified' : 'all'} containers`);
-    
-    const containersToCollapse = containerIds 
-      ? containerIds.map(id => this._containers.get(id)).filter(Boolean)
+    console.log(
+      `[VisualizationState] 🔄 Collapsing ${containerIds ? "specified" : "all"} containers`,
+    );
+
+    const containersToCollapse = containerIds
+      ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
 
     for (const container of containersToCollapse) {
@@ -551,22 +559,54 @@ export class VisualizationState {
         // TODO: do these 2 blocks need to be made recursive?
         // CRITICAL FIX: Ensure both endpoints are visible containers or nodes
         // For any node that's not visible, find the lowest visible ancestor in the hierarchy
-        
+
         // CRITICAL FIX: Ensure both endpoints are visible containers or nodes
         // If source is a hidden node, find its visible container
         if (!this._containers.has(aggregatedSource)) {
           const sourceNode = this._nodes.get(aggregatedSource);
           if (!sourceNode) {
-            throw new Error(`Edge ${edge.id} references non-existent source node: ${aggregatedSource}`);
+            throw new Error(
+              `Edge ${edge.id} references non-existent source node: ${aggregatedSource}`,
+            );
           }
           if (sourceNode.hidden) {
             // Use proper hierarchy traversal to find visible ancestor
-            const visibleAncestor = this.getLowestVisibleAncestorInGraph(aggregatedSource);
+            const visibleAncestor =
+              this._findLowestVisibleAncestorForAggregation(aggregatedSource);
             if (visibleAncestor) {
               aggregatedSource = visibleAncestor;
-              console.log(`[EdgeDebug] Found visible ancestor for hidden source ${edge.source}: ${visibleAncestor}`);
+              console.log(
+                `[EdgeDebug] Found visible ancestor for hidden source ${edge.source}: ${visibleAncestor}`,
+              );
             } else {
-              console.warn(`[EdgeDebug] No visible ancestor found for hidden source ${edge.source}, skipping edge ${edge.id}`);
+              console.warn(
+                `[EdgeDebug] No visible ancestor found for hidden source ${edge.source}, skipping edge ${edge.id}`,
+              );
+              edge.hidden = true;
+              continue;
+            }
+          }
+        } else {
+          // CRITICAL FIX: If source is a hidden container, find its visible ancestor
+          const sourceContainer = this._containers.get(aggregatedSource);
+          console.log(
+            `[EdgeDebug] Checking source container ${aggregatedSource}: exists=${!!sourceContainer}, hidden=${sourceContainer?.hidden}`,
+          );
+          if (sourceContainer && sourceContainer.hidden) {
+            const visibleAncestor =
+              this._findLowestVisibleAncestorForAggregation(aggregatedSource);
+            console.log(
+              `[EdgeDebug] Looking for visible ancestor for hidden source container ${aggregatedSource}: found=${visibleAncestor}`,
+            );
+            if (visibleAncestor) {
+              aggregatedSource = visibleAncestor;
+              console.log(
+                `[EdgeDebug] Found visible ancestor for hidden source container ${edge.source}: ${visibleAncestor}`,
+              );
+            } else {
+              console.warn(
+                `[EdgeDebug] No visible ancestor found for hidden source container ${edge.source}, skipping edge ${edge.id}`,
+              );
               edge.hidden = true;
               continue;
             }
@@ -577,16 +617,42 @@ export class VisualizationState {
         if (!this._containers.has(aggregatedTarget)) {
           const targetNode = this._nodes.get(aggregatedTarget);
           if (!targetNode) {
-            throw new Error(`Edge ${edge.id} references non-existent target node: ${aggregatedTarget}`);
+            throw new Error(
+              `Edge ${edge.id} references non-existent target node: ${aggregatedTarget}`,
+            );
           }
           if (targetNode.hidden) {
             // Use proper hierarchy traversal to find visible ancestor
-            const visibleAncestor = this.getLowestVisibleAncestorInGraph(aggregatedTarget);
+            const visibleAncestor =
+              this._findLowestVisibleAncestorForAggregation(aggregatedTarget);
             if (visibleAncestor) {
               aggregatedTarget = visibleAncestor;
-              console.log(`[EdgeDebug] Found visible ancestor for hidden target ${edge.target}: ${visibleAncestor}`);
+              console.log(
+                `[EdgeDebug] Found visible ancestor for hidden target ${edge.target}: ${visibleAncestor}`,
+              );
             } else {
-              console.warn(`[EdgeDebug] No visible ancestor found for hidden target ${edge.target}, skipping edge ${edge.id}`);
+              console.warn(
+                `[EdgeDebug] No visible ancestor found for hidden target ${edge.target}, skipping edge ${edge.id}`,
+              );
+              edge.hidden = true;
+              continue;
+            }
+          }
+        } else {
+          // CRITICAL FIX: If target is a hidden container, find its visible ancestor
+          const targetContainer = this._containers.get(aggregatedTarget);
+          if (targetContainer && targetContainer.hidden) {
+            const visibleAncestor =
+              this._findLowestVisibleAncestorForAggregation(aggregatedTarget);
+            if (visibleAncestor) {
+              aggregatedTarget = visibleAncestor;
+              console.log(
+                `[EdgeDebug] Found visible ancestor for hidden target container ${edge.target}: ${visibleAncestor}`,
+              );
+            } else {
+              console.warn(
+                `[EdgeDebug] No visible ancestor found for hidden target container ${edge.target}, skipping edge ${edge.id}`,
+              );
               edge.hidden = true;
               continue;
             }
@@ -672,6 +738,38 @@ export class VisualizationState {
       console.log(
         `[EdgeDebug]   Original edges: ${edges.map((e) => e.id).join(", ")}`,
       );
+
+      // CRITICAL DEBUG: Log when we create problematic edges
+      if (source === "bt_136" || target === "bt_136") {
+        console.error(
+          `[EdgeDebug] 🚨 CREATING PROBLEMATIC EDGE: ${aggregatedEdgeId}`,
+        );
+        console.error(
+          `[EdgeDebug] 🚨   Container ${containerId} is aggregating edges`,
+        );
+        console.error(
+          `[EdgeDebug] 🚨   bt_136 container exists: ${this._containers.has("bt_136")}`,
+        );
+        console.error(
+          `[EdgeDebug] 🚨   bt_136 container hidden: ${this._containers.get("bt_136")?.hidden}`,
+        );
+        console.error(
+          `[EdgeDebug] 🚨   Original edges: ${edges.map((e) => e.id).join(", ")}`,
+        );
+
+        // Check the hierarchy
+        const bt136Container = this._containers.get("bt_136");
+        if (bt136Container) {
+          const parent = this._containerParentMap.get("bt_136");
+          console.error(`[EdgeDebug] 🚨   bt_136 parent: ${parent}`);
+          if (parent) {
+            const parentContainer = this._containers.get(parent);
+            console.error(
+              `[EdgeDebug] 🚨   Parent ${parent} hidden: ${parentContainer?.hidden}, collapsed: ${parentContainer?.collapsed}`,
+            );
+          }
+        }
+      }
 
       console.log(
         `[VisualizationState] 🔍 Creating/updating aggregated edge: ${aggregatedEdgeId} (${source} -> ${target}) from ${edges.length} original edges`,
@@ -785,9 +883,11 @@ export class VisualizationState {
     // TODO: could be made more efficient with an index from container to aggregated edges
     for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
       // Check if this aggregated edge involves the container or any of its descendants
-      const sourceInvolved = aggEdge.source === containerId || allDescendants.has(aggEdge.source);
-      const targetInvolved = aggEdge.target === containerId || allDescendants.has(aggEdge.target);
-      
+      const sourceInvolved =
+        aggEdge.source === containerId || allDescendants.has(aggEdge.source);
+      const targetInvolved =
+        aggEdge.target === containerId || allDescendants.has(aggEdge.target);
+
       if (sourceInvolved || targetInvolved) {
         // This aggregated edge involves the container being expanded
         console.log(`[EdgeDebug] Removing aggregated edge: ${aggEdgeId}`);
@@ -800,7 +900,7 @@ export class VisualizationState {
         console.log(
           `[VisualizationState] 🔍 Found aggregated edge to remove: ${aggEdgeId} (${aggEdge.source} -> ${aggEdge.target}) with ${aggEdge.originalEdgeIds.length} original edges`,
         );
-        
+
         // Collect original edges for potential re-aggregation
         for (const originalEdgeId of aggEdge.originalEdgeIds) {
           const originalEdge = this._edges.get(originalEdgeId);
@@ -808,7 +908,7 @@ export class VisualizationState {
             edgesToReaggregate.push(originalEdge);
           }
         }
-        
+
         edgesToRestore.push(...aggEdge.originalEdgeIds);
         aggregatedEdgesToRemove.push(aggEdgeId);
       }
@@ -891,73 +991,90 @@ export class VisualizationState {
       console.log(
         `[VisualizationState] 🔄 Re-aggregating ${edgesToReaggregate.length} edges after container expansion`,
       );
-      
+
       // Group edges that still need aggregation by their effective source/target
-      const edgesBySourceTarget = new Map<string, { source: string; target: string; edges: GraphEdge[] }>();
-      
+      const edgesBySourceTarget = new Map<
+        string,
+        { source: string; target: string; edges: GraphEdge[] }
+      >();
+
       for (const edge of edgesToReaggregate) {
         // Skip if edge is now visible (both endpoints visible)
         if (!edge.hidden) continue;
-        
+
         // Determine the effective source and target (container if collapsed, node if visible)
         let effectiveSource = edge.source;
         let effectiveTarget = edge.target;
-        
+
         // Check if source is in a collapsed container
         const sourceContainer = this._getContainerForNode(edge.source);
-        if (sourceContainer && sourceContainer.collapsed && sourceContainer.id !== containerId) {
+        if (
+          sourceContainer &&
+          sourceContainer.collapsed &&
+          sourceContainer.id !== containerId
+        ) {
           effectiveSource = sourceContainer.id;
         }
-        
-        // Check if target is in a collapsed container  
+
+        // Check if target is in a collapsed container
         const targetContainer = this._getContainerForNode(edge.target);
-        if (targetContainer && targetContainer.collapsed && targetContainer.id !== containerId) {
+        if (
+          targetContainer &&
+          targetContainer.collapsed &&
+          targetContainer.id !== containerId
+        ) {
           effectiveTarget = targetContainer.id;
         }
-        
+
         // Only aggregate if at least one endpoint is still a collapsed container
-        if (effectiveSource !== edge.source || effectiveTarget !== edge.target) {
+        if (
+          effectiveSource !== edge.source ||
+          effectiveTarget !== edge.target
+        ) {
           const key = `${effectiveSource}-${effectiveTarget}`;
           if (!edgesBySourceTarget.has(key)) {
             edgesBySourceTarget.set(key, {
               source: effectiveSource,
               target: effectiveTarget,
-              edges: []
+              edges: [],
             });
           }
           edgesBySourceTarget.get(key)!.edges.push(edge);
         }
       }
-      
+
       // Create new aggregated edges
       for (const [_key, edgeGroup] of edgesBySourceTarget) {
         const { source, target, edges } = edgeGroup;
         const aggregatedEdgeId = `agg-${source}-${target}`;
-        
+
         console.log(
           `[VisualizationState] 🔍 Creating re-aggregated edge: ${aggregatedEdgeId} (${source} -> ${target}) from ${edges.length} original edges`,
         );
-        
+
         const aggregatedEdge: AggregatedEdge = {
           id: aggregatedEdgeId,
           source,
           target,
           type: "aggregated",
           semanticTags: [],
-          originalEdgeIds: edges.map(e => e.id),
+          originalEdgeIds: edges.map((e) => e.id),
           aggregated: true,
           hidden: false,
           aggregationSource: "re-aggregation",
         };
-        
+
         this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
-        
+
         // Update tracking structures
-        this._aggregatedToOriginalMap.set(aggregatedEdge.id, aggregatedEdge.originalEdgeIds);
+        this._aggregatedToOriginalMap.set(
+          aggregatedEdge.id,
+          aggregatedEdge.originalEdgeIds,
+        );
         for (const originalId of aggregatedEdge.originalEdgeIds) {
           this._originalToAggregatedMap.set(originalId, aggregatedEdge.id);
         }
-        
+
         // Update container aggregation maps
         if (this._containers.has(source)) {
           if (!this._containerAggregationMap.has(source)) {
@@ -986,7 +1103,7 @@ export class VisualizationState {
   }
 
   // Helper methods for canonical aggregated edge management
-  
+
   private _getContainerForNode(nodeId: string): Container | undefined {
     const containerId = this._nodeContainerMap.get(nodeId);
     return containerId ? this._containers.get(containerId) : undefined;
@@ -1056,6 +1173,32 @@ export class VisualizationState {
       console.log(
         `[VisualizationState] 🔄 Aggregating edges for container: ${container.id}`,
       );
+
+      // CRITICAL DEBUG: Check if this is related to bt_136
+      if (
+        container.id.includes("bt_") ||
+        container.id === "bt_126" ||
+        container.id === "bt_217"
+      ) {
+        console.error(
+          `[SmartCollapse] 🚨 AGGREGATING FOR CONTAINER: ${container.id}`,
+        );
+        console.error(
+          `[SmartCollapse] 🚨   Container collapsed: ${container.collapsed}, hidden: ${container.hidden}`,
+        );
+
+        // Check if bt_136 is a descendant
+        const descendants = this._getAllDescendantIds(container.id);
+        if (descendants.has("bt_136")) {
+          console.error(
+            `[SmartCollapse] 🚨   bt_136 IS A DESCENDANT of ${container.id}`,
+          );
+          console.error(
+            `[SmartCollapse] 🚨   All descendants: ${Array.from(descendants).join(", ")}`,
+          );
+        }
+      }
+
       this.aggregateEdgesForContainer(container.id);
     }
   }
@@ -1417,18 +1560,23 @@ export class VisualizationState {
 
     // Find root containers (containers that are not children of other collapsible containers)
     // This prevents collapsing child containers when their parent will also be collapsed
-    const rootContainers = collapsibleContainers.filter(container => {
+    const rootContainers = collapsibleContainers.filter((container) => {
       // Check if this container is a child of any other collapsible container
       for (const otherContainer of collapsibleContainers) {
-        if (otherContainer.id !== container.id && otherContainer.children.has(container.id)) {
+        if (
+          otherContainer.id !== container.id &&
+          otherContainer.children.has(container.id)
+        ) {
           return false; // This container is a child of another collapsible container
         }
       }
       return true; // This is a root container
     });
-    
-    console.log(`[VisualizationState] 🌳 Root containers to collapse: ${rootContainers.map(c => c.id).join(", ")}`);
-    
+
+    console.log(
+      `[VisualizationState] 🌳 Root containers to collapse: ${rootContainers.map((c) => c.id).join(", ")}`,
+    );
+
     // Collapse only root containers using system operations (doesn't disable future smart collapse)
     let collapsedCount = 0;
     for (const container of rootContainers) {
@@ -1442,11 +1590,15 @@ export class VisualizationState {
     console.log(
       `[VisualizationState] ✅ Smart collapse completed: ${collapsedCount} containers collapsed`,
     );
-    
+
     // Debug: Log final container states
-    console.log(`[VisualizationState] 📊 Final container states after smart collapse:`);
+    console.log(
+      `[VisualizationState] 📊 Final container states after smart collapse:`,
+    );
     for (const container of this._containers.values()) {
-      console.log(`  - ${container.id}: hidden=${container.hidden}, collapsed=${container.collapsed}`);
+      console.log(
+        `  - ${container.id}: hidden=${container.hidden}, collapsed=${container.collapsed}`,
+      );
     }
   }
 
@@ -1484,7 +1636,9 @@ export class VisualizationState {
 
   // System vs User operation tracking
   collapseContainerSystemOperation(id: string): void {
-    console.log(`[VisualizationState] 🔧 collapseContainerSystemOperation called for ${id}`);
+    console.log(
+      `[VisualizationState] 🔧 collapseContainerSystemOperation called for ${id}`,
+    );
     this._collapseContainerInternal(id);
     // Note: System operations don't disable smart collapse
   }
@@ -1539,7 +1693,9 @@ export class VisualizationState {
     );
 
     container.collapsed = false;
-    console.log(`[VisualizationState] 👁️ SHOWING container ${container.id} (was hidden: ${container.hidden})`);
+    console.log(
+      `[VisualizationState] 👁️ SHOWING container ${container.id} (was hidden: ${container.hidden})`,
+    );
     container.hidden = false;
 
     // Track expanded graph containers
@@ -1570,13 +1726,17 @@ export class VisualizationState {
       );
       return;
     }
-    console.log(`[VisualizationState] 🔄 COLLAPSING container ${id}: was collapsed=${container.collapsed}, was hidden=${container.hidden}`);
+    console.log(
+      `[VisualizationState] 🔄 COLLAPSING container ${id}: was collapsed=${container.collapsed}, was hidden=${container.hidden}`,
+    );
     container.collapsed = true;
-    
+
     // Remove from expanded graph containers
     this._searchNavigationState.expandedGraphContainers.delete(id);
-    
-    console.log(`[VisualizationState] 🔄 Container ${id} is now collapsed=${container.collapsed}, hidden=${container.hidden} - hiding descendants`);
+
+    console.log(
+      `[VisualizationState] 🔄 Container ${id} is now collapsed=${container.collapsed}, hidden=${container.hidden} - hiding descendants`,
+    );
     this._hideAllDescendants(id);
     this.aggregateEdgesForContainer(id);
     this.validateInvariants();
@@ -1874,7 +2034,11 @@ export class VisualizationState {
           type: "node",
           matchIndices: matchResult.indices,
           hierarchyPath: this._getHierarchyPath(node.id),
-          confidence: this._calculateSearchConfidence(node.label, queryLower, matchResult.isExact),
+          confidence: this._calculateSearchConfidence(
+            node.label,
+            queryLower,
+            matchResult.isExact,
+          ),
         };
         this._searchResults.push(result);
       }
@@ -1890,7 +2054,11 @@ export class VisualizationState {
           type: "container",
           matchIndices: matchResult.indices,
           hierarchyPath: this._getHierarchyPath(container.id),
-          confidence: this._calculateSearchConfidence(container.label, queryLower, matchResult.isExact),
+          confidence: this._calculateSearchConfidence(
+            container.label,
+            queryLower,
+            matchResult.isExact,
+          ),
         };
         this._searchResults.push(result);
       }
@@ -1908,7 +2076,7 @@ export class VisualizationState {
     });
 
     this._searchState.resultCount = this._searchResults.length;
-    
+
     // Update new search navigation state
     this._searchNavigationState.searchResults = [...this._searchResults];
     this.updateTreeSearchHighlights(this._searchResults);
@@ -1978,7 +2146,7 @@ export class VisualizationState {
     this._searchNavigationState.searchResults = [];
     this._searchNavigationState.treeSearchHighlights.clear();
     this._searchNavigationState.graphSearchHighlights.clear();
-    
+
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
   }
@@ -2120,9 +2288,9 @@ export class VisualizationState {
    * Perform search with debouncing and caching
    */
   performSearchDebounced(
-    query: string, 
+    query: string,
     callback?: (results: SearchResult[]) => void,
-    debounceMs: number = 300
+    debounceMs: number = 300,
   ): void {
     // Clear existing debounce timer
     if (this._searchDebounceTimer !== null) {
@@ -2164,25 +2332,28 @@ export class VisualizationState {
    */
   private _cacheSearchResults(query: string, results: SearchResult[]): void {
     const trimmedQuery = query.trim().toLowerCase();
-    
+
     // Skip caching empty queries (but cache queries with no results)
     if (!trimmedQuery) {
       return;
     }
-    
+
     // Implement LRU cache eviction if we're at max size and adding a new entry
-    if (this._searchCache.size >= this._searchCacheMaxSize && !this._searchCache.has(trimmedQuery)) {
+    if (
+      this._searchCache.size >= this._searchCacheMaxSize &&
+      !this._searchCache.has(trimmedQuery)
+    ) {
       // Find oldest entry to evict
       let oldestKey: string | null = null;
       let oldestTime = Date.now();
-      
+
       for (const [key, timestamp] of this._searchCacheTimestamps) {
         if (timestamp < oldestTime) {
           oldestTime = timestamp;
           oldestKey = key;
         }
       }
-      
+
       if (oldestKey) {
         this._searchCache.delete(oldestKey);
         this._searchCacheTimestamps.delete(oldestKey);
@@ -2207,7 +2378,7 @@ export class VisualizationState {
   performSearch(query: string): SearchResult[] {
     const trimmedQuery = query.trim();
     this._searchNavigationState.searchQuery = trimmedQuery;
-    
+
     // Update backward compatibility state
     this._searchQuery = trimmedQuery;
     this._searchState.query = trimmedQuery;
@@ -2246,7 +2417,11 @@ export class VisualizationState {
           type: "node",
           matchIndices: matchResult.indices,
           hierarchyPath: this._getHierarchyPath(node.id),
-          confidence: this._calculateSearchConfidence(node.label, queryLower, matchResult.isExact),
+          confidence: this._calculateSearchConfidence(
+            node.label,
+            queryLower,
+            matchResult.isExact,
+          ),
         });
       }
     }
@@ -2261,7 +2436,11 @@ export class VisualizationState {
           type: "container",
           matchIndices: matchResult.indices,
           hierarchyPath: this._getHierarchyPath(container.id),
-          confidence: this._calculateSearchConfidence(container.label, queryLower, matchResult.isExact),
+          confidence: this._calculateSearchConfidence(
+            container.label,
+            queryLower,
+            matchResult.isExact,
+          ),
         });
       }
     }
@@ -2278,11 +2457,11 @@ export class VisualizationState {
     });
 
     this._searchNavigationState.searchResults = results;
-    
+
     // Update backward compatibility state
     this._searchResults = [...results];
     this._searchState.resultCount = results.length;
-    
+
     // Add to search history if not empty
     if (trimmedQuery && results.length > 0) {
       // Remove existing entry if present
@@ -2297,10 +2476,10 @@ export class VisualizationState {
         this._searchHistory = this._searchHistory.slice(0, 10);
       }
     }
-    
+
     // Automatically expand tree hierarchy to show search matches
     this.expandTreeToShowMatches(results);
-    
+
     this.updateTreeSearchHighlights(results);
     this.updateGraphSearchHighlights(results);
 
@@ -2325,14 +2504,14 @@ export class VisualizationState {
     this._searchNavigationState.searchResults = [];
     this._searchNavigationState.treeSearchHighlights.clear();
     this._searchNavigationState.graphSearchHighlights.clear();
-    
+
     // Clear backward compatibility search state as well
     this._searchQuery = "";
     this._searchResults = [];
     this._searchState.isActive = false;
     this._searchState.query = "";
     this._searchState.resultCount = 0;
-    
+
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
     // Note: Search cache is NOT cleared to maintain performance across searches
@@ -2343,11 +2522,11 @@ export class VisualizationState {
    */
   updateTreeSearchHighlights(results: SearchResult[]): void {
     this._searchNavigationState.treeSearchHighlights.clear();
-    
+
     for (const result of results) {
       this._searchNavigationState.treeSearchHighlights.add(result.id);
     }
-    
+
     // Update collapsed ancestors containing matches
     this.updateCollapsedAncestorsInTree();
   }
@@ -2357,11 +2536,15 @@ export class VisualizationState {
    */
   updateGraphSearchHighlights(results: SearchResult[]): void {
     this._searchNavigationState.graphSearchHighlights.clear();
-    
+
     for (const result of results) {
-      const lowestVisibleAncestor = this.getLowestVisibleAncestorInGraph(result.id);
+      const lowestVisibleAncestor = this.getLowestVisibleAncestorInGraph(
+        result.id,
+      );
       if (lowestVisibleAncestor) {
-        this._searchNavigationState.graphSearchHighlights.add(lowestVisibleAncestor);
+        this._searchNavigationState.graphSearchHighlights.add(
+          lowestVisibleAncestor,
+        );
       } else if (this._isElementVisibleInGraph(result.id)) {
         // Element is directly visible
         this._searchNavigationState.graphSearchHighlights.add(result.id);
@@ -2376,17 +2559,20 @@ export class VisualizationState {
     this._searchNavigationState.navigationSelection = elementId;
     this._searchNavigationState.lastNavigationTarget = elementId;
     this._searchNavigationState.shouldFocusViewport = true;
-    
+
     // Update navigation highlights
     this._searchNavigationState.treeNavigationHighlights.clear();
     this._searchNavigationState.graphNavigationHighlights.clear();
-    
+
     this._searchNavigationState.treeNavigationHighlights.add(elementId);
-    
+
     // For graph navigation, use lowest visible ancestor logic
-    const lowestVisibleAncestor = this.getLowestVisibleAncestorInGraph(elementId);
+    const lowestVisibleAncestor =
+      this.getLowestVisibleAncestorInGraph(elementId);
     if (lowestVisibleAncestor) {
-      this._searchNavigationState.graphNavigationHighlights.add(lowestVisibleAncestor);
+      this._searchNavigationState.graphNavigationHighlights.add(
+        lowestVisibleAncestor,
+      );
     } else if (this._isElementVisibleInGraph(elementId)) {
       this._searchNavigationState.graphNavigationHighlights.add(elementId);
     }
@@ -2405,10 +2591,14 @@ export class VisualizationState {
   /**
    * Get highlight type for tree elements
    */
-  getTreeElementHighlightType(elementId: string): "search" | "navigation" | "both" | null {
-    const hasSearch = this._searchNavigationState.treeSearchHighlights.has(elementId);
-    const hasNavigation = this._searchNavigationState.treeNavigationHighlights.has(elementId);
-    
+  getTreeElementHighlightType(
+    elementId: string,
+  ): "search" | "navigation" | "both" | null {
+    const hasSearch =
+      this._searchNavigationState.treeSearchHighlights.has(elementId);
+    const hasNavigation =
+      this._searchNavigationState.treeNavigationHighlights.has(elementId);
+
     if (hasSearch && hasNavigation) return "both";
     if (hasSearch) return "search";
     if (hasNavigation) return "navigation";
@@ -2418,10 +2608,14 @@ export class VisualizationState {
   /**
    * Get highlight type for graph elements
    */
-  getGraphElementHighlightType(elementId: string): "search" | "navigation" | "both" | null {
-    const hasSearch = this._searchNavigationState.graphSearchHighlights.has(elementId);
-    const hasNavigation = this._searchNavigationState.graphNavigationHighlights.has(elementId);
-    
+  getGraphElementHighlightType(
+    elementId: string,
+  ): "search" | "navigation" | "both" | null {
+    const hasSearch =
+      this._searchNavigationState.graphSearchHighlights.has(elementId);
+    const hasNavigation =
+      this._searchNavigationState.graphNavigationHighlights.has(elementId);
+
     if (hasSearch && hasNavigation) return "both";
     if (hasSearch) return "search";
     if (hasNavigation) return "navigation";
@@ -2439,7 +2633,7 @@ export class VisualizationState {
 
     // Walk up the hierarchy to find the lowest visible ancestor
     const hierarchyPath = this._getHierarchyPath(elementId);
-    
+
     // Start from the immediate parent and work up
     for (let i = hierarchyPath.length - 1; i >= 0; i--) {
       const ancestorId = hierarchyPath[i];
@@ -2462,7 +2656,7 @@ export class VisualizationState {
 
     // Walk up the hierarchy to find the lowest visible ancestor
     const hierarchyPath = this._getHierarchyPath(elementId);
-    
+
     // Start from the immediate parent and work up
     for (let i = hierarchyPath.length - 1; i >= 0; i--) {
       const ancestorId = hierarchyPath[i];
@@ -2501,9 +2695,12 @@ export class VisualizationState {
    */
   getTreeExpansionPath(elementId: string): string[] {
     const hierarchyPath = this._getHierarchyPath(elementId);
-    return hierarchyPath.filter(ancestorId => {
+    return hierarchyPath.filter((ancestorId) => {
       const container = this._containers.get(ancestorId);
-      return container && !this._searchNavigationState.expandedTreeNodes.has(ancestorId);
+      return (
+        container &&
+        !this._searchNavigationState.expandedTreeNodes.has(ancestorId)
+      );
     });
   }
 
@@ -2512,7 +2709,7 @@ export class VisualizationState {
    */
   getGraphExpansionPath(elementId: string): string[] {
     const hierarchyPath = this._getHierarchyPath(elementId);
-    return hierarchyPath.filter(ancestorId => {
+    return hierarchyPath.filter((ancestorId) => {
       const container = this._containers.get(ancestorId);
       return container && container.collapsed;
     });
@@ -2524,7 +2721,7 @@ export class VisualizationState {
    */
   expandTreeToShowMatches(searchResults: SearchResult[]): void {
     const containersToExpand = new Set<string>();
-    
+
     for (const result of searchResults) {
       // Get the path of containers that need to be expanded to show this match
       const expansionPath = this.getTreeExpansionPath(result.id);
@@ -2532,7 +2729,7 @@ export class VisualizationState {
         containersToExpand.add(containerId);
       }
     }
-    
+
     // Expand all necessary containers
     if (containersToExpand.size > 0) {
       this.expandTreeNodes(Array.from(containersToExpand));
@@ -2546,10 +2743,10 @@ export class VisualizationState {
   updateCollapsedAncestorsInTree(): void {
     // Get all current search results
     const searchResults = this._searchNavigationState.searchResults;
-    
+
     for (const result of searchResults) {
       const hierarchyPath = result.hierarchyPath || [];
-      
+
       for (const ancestorId of hierarchyPath) {
         // Check if this ancestor is collapsed in the tree
         if (!this._searchNavigationState.expandedTreeNodes.has(ancestorId)) {
@@ -2688,35 +2885,39 @@ export class VisualizationState {
    */
   private _getHierarchyPath(elementId: string): string[] {
     const path: string[] = [];
-    
+
     // Check if it's a node
     let currentContainer = this._nodeContainerMap.get(elementId);
-    
+
     // If not a node, check if it's a container
     if (!currentContainer && this._containers.has(elementId)) {
       currentContainer = this._containerParentMap.get(elementId);
     }
-    
+
     // Walk up the hierarchy
     while (currentContainer) {
       path.unshift(currentContainer);
       currentContainer = this._containerParentMap.get(currentContainer);
     }
-    
+
     return path;
   }
 
   /**
    * Calculate search confidence score
    */
-  private _calculateSearchConfidence(label: string, query: string, isExact: boolean): number {
+  private _calculateSearchConfidence(
+    label: string,
+    query: string,
+    isExact: boolean,
+  ): number {
     if (isExact) {
       // Exact matches get higher scores
       if (label.toLowerCase() === query) return 1.0; // Perfect match
       if (label.toLowerCase().startsWith(query)) return 0.9; // Starts with query
       return 0.8; // Contains query
     }
-    
+
     // Fuzzy matches get lower scores
     return 0.5;
   }
@@ -2729,12 +2930,12 @@ export class VisualizationState {
     if (node) {
       return !node.hidden;
     }
-    
+
     const container = this._containers.get(elementId);
     if (container) {
       return !container.hidden;
     }
-    
+
     return false;
   }
 
@@ -2745,13 +2946,13 @@ export class VisualizationState {
     // In tree hierarchy, visibility is determined by expansion state
     // An element is visible if all its ancestors are expanded
     const hierarchyPath = this._getHierarchyPath(elementId);
-    
+
     for (const ancestorId of hierarchyPath) {
       if (!this._searchNavigationState.expandedTreeNodes.has(ancestorId)) {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -2766,16 +2967,16 @@ export class VisualizationState {
     if (this._searchNavigationState.expandedTreeNodes.has(containerId)) {
       return false;
     }
-    
+
     // Check if any search results are descendants of this container
     const descendants = this._getAllDescendantIds(containerId);
-    
+
     for (const result of this._searchNavigationState.searchResults) {
       if (descendants.has(result.id)) {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -2785,13 +2986,13 @@ export class VisualizationState {
    */
   getCollapsedTreeContainersWithMatches(): string[] {
     const collapsedWithMatches: string[] = [];
-    
+
     for (const [containerId] of this._containers) {
       if (this.isCollapsedTreeContainerWithMatches(containerId)) {
         collapsedWithMatches.push(containerId);
       }
     }
-    
+
     return collapsedWithMatches;
   }
 
@@ -3115,13 +3316,25 @@ export class VisualizationState {
       searchNavigationState: {
         searchQuery: this._searchNavigationState.searchQuery,
         searchResults: this._searchNavigationState.searchResults,
-        treeSearchHighlights: Array.from(this._searchNavigationState.treeSearchHighlights),
-        graphSearchHighlights: Array.from(this._searchNavigationState.graphSearchHighlights),
+        treeSearchHighlights: Array.from(
+          this._searchNavigationState.treeSearchHighlights,
+        ),
+        graphSearchHighlights: Array.from(
+          this._searchNavigationState.graphSearchHighlights,
+        ),
         navigationSelection: this._searchNavigationState.navigationSelection,
-        treeNavigationHighlights: Array.from(this._searchNavigationState.treeNavigationHighlights),
-        graphNavigationHighlights: Array.from(this._searchNavigationState.graphNavigationHighlights),
-        expandedTreeNodes: Array.from(this._searchNavigationState.expandedTreeNodes),
-        expandedGraphContainers: Array.from(this._searchNavigationState.expandedGraphContainers),
+        treeNavigationHighlights: Array.from(
+          this._searchNavigationState.treeNavigationHighlights,
+        ),
+        graphNavigationHighlights: Array.from(
+          this._searchNavigationState.graphNavigationHighlights,
+        ),
+        expandedTreeNodes: Array.from(
+          this._searchNavigationState.expandedTreeNodes,
+        ),
+        expandedGraphContainers: Array.from(
+          this._searchNavigationState.expandedGraphContainers,
+        ),
         lastNavigationTarget: this._searchNavigationState.lastNavigationTarget,
         shouldFocusViewport: this._searchNavigationState.shouldFocusViewport,
       },
@@ -3148,10 +3361,12 @@ export class VisualizationState {
   restoreStateSnapshot(snapshotJson: string): boolean {
     try {
       const snapshot = JSON.parse(snapshotJson);
-      
+
       // Version compatibility check
       if (snapshot.version !== this._stateVersion) {
-        console.warn(`[VisualizationState] State snapshot version mismatch: expected ${this._stateVersion}, got ${snapshot.version}`);
+        console.warn(
+          `[VisualizationState] State snapshot version mismatch: expected ${this._stateVersion}, got ${snapshot.version}`,
+        );
         return false;
       }
 
@@ -3160,15 +3375,30 @@ export class VisualizationState {
         const sns = snapshot.searchNavigationState;
         this._searchNavigationState.searchQuery = sns.searchQuery || "";
         this._searchNavigationState.searchResults = sns.searchResults || [];
-        this._searchNavigationState.treeSearchHighlights = new Set(sns.treeSearchHighlights || []);
-        this._searchNavigationState.graphSearchHighlights = new Set(sns.graphSearchHighlights || []);
-        this._searchNavigationState.navigationSelection = sns.navigationSelection || null;
-        this._searchNavigationState.treeNavigationHighlights = new Set(sns.treeNavigationHighlights || []);
-        this._searchNavigationState.graphNavigationHighlights = new Set(sns.graphNavigationHighlights || []);
-        this._searchNavigationState.expandedTreeNodes = new Set(sns.expandedTreeNodes || []);
-        this._searchNavigationState.expandedGraphContainers = new Set(sns.expandedGraphContainers || []);
-        this._searchNavigationState.lastNavigationTarget = sns.lastNavigationTarget || null;
-        this._searchNavigationState.shouldFocusViewport = sns.shouldFocusViewport || false;
+        this._searchNavigationState.treeSearchHighlights = new Set(
+          sns.treeSearchHighlights || [],
+        );
+        this._searchNavigationState.graphSearchHighlights = new Set(
+          sns.graphSearchHighlights || [],
+        );
+        this._searchNavigationState.navigationSelection =
+          sns.navigationSelection || null;
+        this._searchNavigationState.treeNavigationHighlights = new Set(
+          sns.treeNavigationHighlights || [],
+        );
+        this._searchNavigationState.graphNavigationHighlights = new Set(
+          sns.graphNavigationHighlights || [],
+        );
+        this._searchNavigationState.expandedTreeNodes = new Set(
+          sns.expandedTreeNodes || [],
+        );
+        this._searchNavigationState.expandedGraphContainers = new Set(
+          sns.expandedGraphContainers || [],
+        );
+        this._searchNavigationState.lastNavigationTarget =
+          sns.lastNavigationTarget || null;
+        this._searchNavigationState.shouldFocusViewport =
+          sns.shouldFocusViewport || false;
       }
 
       // Restore backward compatibility state
@@ -3178,7 +3408,9 @@ export class VisualizationState {
         this._searchState.query = ss.query || "";
         this._searchState.resultCount = ss.resultCount || 0;
         this._searchState.lastSearchTime = ss.lastSearchTime || 0;
-        this._searchState.expandedContainers = new Set(ss.expandedContainers || []);
+        this._searchState.expandedContainers = new Set(
+          ss.expandedContainers || [],
+        );
       }
 
       this._searchQuery = snapshot.searchQuery || "";
@@ -3188,7 +3420,10 @@ export class VisualizationState {
       this._lastStateSnapshot = snapshotJson;
       return true;
     } catch (error) {
-      console.error("[VisualizationState] Failed to restore state snapshot:", error);
+      console.error(
+        "[VisualizationState] Failed to restore state snapshot:",
+        error,
+      );
       return false;
     }
   }
@@ -3207,14 +3442,27 @@ export class VisualizationState {
         searchNavigationState: {
           searchQuery: this._searchNavigationState.searchQuery,
           searchResults: this._searchNavigationState.searchResults,
-          treeSearchHighlights: Array.from(this._searchNavigationState.treeSearchHighlights),
-          graphSearchHighlights: Array.from(this._searchNavigationState.graphSearchHighlights),
+          treeSearchHighlights: Array.from(
+            this._searchNavigationState.treeSearchHighlights,
+          ),
+          graphSearchHighlights: Array.from(
+            this._searchNavigationState.graphSearchHighlights,
+          ),
           navigationSelection: this._searchNavigationState.navigationSelection,
-          treeNavigationHighlights: Array.from(this._searchNavigationState.treeNavigationHighlights),
-          graphNavigationHighlights: Array.from(this._searchNavigationState.graphNavigationHighlights),
-          expandedTreeNodes: Array.from(this._searchNavigationState.expandedTreeNodes),
-          expandedGraphContainers: Array.from(this._searchNavigationState.expandedGraphContainers),
-          lastNavigationTarget: this._searchNavigationState.lastNavigationTarget,
+          treeNavigationHighlights: Array.from(
+            this._searchNavigationState.treeNavigationHighlights,
+          ),
+          graphNavigationHighlights: Array.from(
+            this._searchNavigationState.graphNavigationHighlights,
+          ),
+          expandedTreeNodes: Array.from(
+            this._searchNavigationState.expandedTreeNodes,
+          ),
+          expandedGraphContainers: Array.from(
+            this._searchNavigationState.expandedGraphContainers,
+          ),
+          lastNavigationTarget:
+            this._searchNavigationState.lastNavigationTarget,
           shouldFocusViewport: this._searchNavigationState.shouldFocusViewport,
         },
         searchState: {
@@ -3229,20 +3477,26 @@ export class VisualizationState {
       };
 
       // Compare state objects (excluding timestamps)
-      return JSON.stringify(currentState) !== JSON.stringify({
-        searchNavigationState: lastSnapshot.searchNavigationState,
-        searchState: {
-          isActive: lastSnapshot.searchState?.isActive,
-          query: lastSnapshot.searchState?.query,
-          resultCount: lastSnapshot.searchState?.resultCount,
-          expandedContainers: lastSnapshot.searchState?.expandedContainers,
-        },
-        searchQuery: lastSnapshot.searchQuery,
-        searchResults: lastSnapshot.searchResults,
-        searchHistory: lastSnapshot.searchHistory,
-      });
+      return (
+        JSON.stringify(currentState) !==
+        JSON.stringify({
+          searchNavigationState: lastSnapshot.searchNavigationState,
+          searchState: {
+            isActive: lastSnapshot.searchState?.isActive,
+            query: lastSnapshot.searchState?.query,
+            resultCount: lastSnapshot.searchState?.resultCount,
+            expandedContainers: lastSnapshot.searchState?.expandedContainers,
+          },
+          searchQuery: lastSnapshot.searchQuery,
+          searchResults: lastSnapshot.searchResults,
+          searchHistory: lastSnapshot.searchHistory,
+        })
+      );
     } catch (error) {
-      console.warn("[VisualizationState] Error comparing state snapshots:", error);
+      console.warn(
+        "[VisualizationState] Error comparing state snapshots:",
+        error,
+      );
       return true; // Assume changed if comparison fails
     }
   }
@@ -3271,5 +3525,159 @@ export class VisualizationState {
     return this._searchNavigationState;
   }
 
+  // ENHANCEMENT: Missing methods for integration
 
+  /**
+   * Get a graph edge by ID
+   */
+  getEdge(id: string): GraphEdge | undefined {
+    return this._edges.get(id);
+  }
+
+  /**
+   * Rollback edge restoration operation - placeholder for now
+   */
+  rollbackEdgeRestoration(operationId: string): boolean {
+    console.warn(
+      `[VisualizationState] rollbackEdgeRestoration not implemented: ${operationId}`,
+    );
+    return false;
+  }
+
+  /**
+   * Get all containers (including hidden ones)
+   */
+  getAllContainers(): Container[] {
+    return Array.from(this._containers.values());
+  }
+
+  /**
+   * Find the lowest visible ancestor for edge aggregation
+   * This is specifically for edge aggregation - it returns the entity itself if visible,
+   * or the lowest visible ancestor if the entity is hidden
+   */
+  private _findLowestVisibleAncestorForAggregation(
+    entityId: string,
+  ): string | null {
+    console.log(`[EdgeDebug] 🔍 Finding visible ancestor for ${entityId}`);
+
+    // First check if the entity itself is visible
+    const node = this._nodes.get(entityId);
+    const container = this._containers.get(entityId);
+
+    console.log(
+      `[EdgeDebug] 🔍   Entity ${entityId}: node=${!!node}, container=${!!container}`,
+    );
+    if (node) {
+      console.log(`[EdgeDebug] 🔍   Node ${entityId} hidden: ${node.hidden}`);
+    }
+    if (container) {
+      console.log(
+        `[EdgeDebug] 🔍   Container ${entityId} hidden: ${container.hidden}`,
+      );
+    }
+
+    if (node && !node.hidden) {
+      console.log(
+        `[EdgeDebug] 🔍   Entity ${entityId} is visible node, returning itself`,
+      );
+      return entityId;
+    }
+    if (container && !container.hidden) {
+      console.log(
+        `[EdgeDebug] 🔍   Entity ${entityId} is visible container, returning itself`,
+      );
+      return entityId;
+    }
+
+    // Entity is hidden, find the lowest visible ancestor
+    // Start by finding what container contains this entity
+    let currentContainerId =
+      this._nodeContainerMap.get(entityId) ||
+      this._containerParentMap.get(entityId);
+    console.log(
+      `[EdgeDebug] 🔍   Starting hierarchy traversal from parent: ${currentContainerId}`,
+    );
+
+    // Traverse up the hierarchy to find a visible container
+    while (currentContainerId) {
+      const currentContainer = this._containers.get(currentContainerId);
+      console.log(
+        `[EdgeDebug] 🔍   Checking container ${currentContainerId}: exists=${!!currentContainer}, hidden=${currentContainer?.hidden}`,
+      );
+
+      if (currentContainer && !currentContainer.hidden) {
+        console.log(
+          `[EdgeDebug] ✅ Found visible ancestor ${currentContainerId} for hidden entity ${entityId}`,
+        );
+        return currentContainerId;
+      }
+      console.log(
+        `[EdgeDebug] 🔍   Container ${currentContainerId} is also hidden, checking parent`,
+      );
+      // Move up to the parent container
+      const nextParent = this._containerParentMap.get(currentContainerId);
+      console.log(`[EdgeDebug] 🔍   Next parent: ${nextParent}`);
+      currentContainerId = nextParent;
+    }
+
+    console.log(
+      `[EdgeDebug] ❌ No visible ancestor found for entity ${entityId}`,
+    );
+    // No visible ancestor found
+    return null;
+  }
+
+  /**
+   * ENHANCEMENT: Validate container expansion preconditions - basic implementation
+   */
+  private _validateContainerExpansionPreconditions(containerId: string): {
+    canExpand: boolean;
+    issues: string[];
+    affectedEdges: string[];
+  } {
+    const container = this._containers.get(containerId);
+    if (!container) {
+      return {
+        canExpand: false,
+        issues: [`Container ${containerId} not found`],
+        affectedEdges: [],
+      };
+    }
+
+    return {
+      canExpand: true,
+      issues: [],
+      affectedEdges: [],
+    };
+  }
+
+  /**
+   * ENHANCEMENT: Post-expansion edge validation - basic implementation
+   */
+  private _postExpansionEdgeValidation(containerId: string): {
+    validEdges: string[];
+    invalidEdges: Array<{ id: string; reason: string }>;
+    fixedEdges: string[];
+  } {
+    const container = this._containers.get(containerId);
+    if (!container) {
+      return {
+        validEdges: [],
+        invalidEdges: [],
+        fixedEdges: [],
+      };
+    }
+
+    // Basic validation - just return all visible edges as valid
+    const validEdges = Array.from(this._edges.values())
+      .filter((edge) => !edge.hidden)
+      .map((edge) => edge.id);
+
+    return {
+      validEdges,
+      invalidEdges: [],
+      fixedEdges: [],
+    };
+  }
 }

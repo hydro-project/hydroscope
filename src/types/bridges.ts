@@ -33,7 +33,7 @@ export interface IReactFlowBridge extends StatelessBridge {
    * Convert VisualizationState to ReactFlow data format
    * MUST be a pure function - same input always produces same output
    * MUST NOT rely on internal state or caching
-   * 
+   *
    * @param state - Current visualization state (single source of truth)
    * @param interactionHandler - Optional interaction handler for events
    * @returns Immutable ReactFlow data structure
@@ -46,7 +46,7 @@ export interface IReactFlowBridge extends StatelessBridge {
   /**
    * Apply styling to nodes - pure function
    * MUST NOT cache results internally
-   * 
+   *
    * @param nodes - Array of ReactFlow nodes to style
    * @returns New array with styled nodes (immutable)
    */
@@ -55,7 +55,7 @@ export interface IReactFlowBridge extends StatelessBridge {
   /**
    * Apply styling to edges - pure function
    * MUST NOT cache results internally
-   * 
+   *
    * @param edges - Array of ReactFlow edges to style
    * @param state - Current visualization state for context
    * @returns New array with styled edges (immutable)
@@ -72,7 +72,7 @@ export interface IELKBridge extends StatelessBridge {
    * Convert VisualizationState to ELK graph format
    * MUST be a pure function - same input always produces same output
    * MUST NOT rely on internal state or caching
-   * 
+   *
    * @param state - Current visualization state (single source of truth)
    * @returns ELK graph structure for layout calculation
    */
@@ -81,7 +81,7 @@ export interface IELKBridge extends StatelessBridge {
   /**
    * Apply ELK layout results to VisualizationState
    * MUST only update the passed state, no internal state changes
-   * 
+   *
    * @param state - Visualization state to update with layout results
    * @param elkResult - ELK layout calculation results
    */
@@ -90,7 +90,7 @@ export interface IELKBridge extends StatelessBridge {
   /**
    * Perform complete layout calculation and application
    * Combines toELKGraph, ELK calculation, and applyLayout
-   * 
+   *
    * @param state - Visualization state to layout
    */
   layout(state: VisualizationState): Promise<void>;
@@ -98,7 +98,7 @@ export interface IELKBridge extends StatelessBridge {
   /**
    * Update bridge configuration
    * MUST NOT affect internal state, only configuration
-   * 
+   *
    * @param config - New layout configuration
    */
   updateConfiguration(config: Partial<LayoutConfig>): void;
@@ -118,7 +118,7 @@ export interface IBridgeFactory {
   /**
    * Get or create ReactFlow bridge instance
    * MUST return stateless bridge
-   * 
+   *
    * @param styleConfig - Style configuration for the bridge (optional, defaults to empty config)
    */
   getReactFlowBridge(styleConfig?: StyleConfig): IReactFlowBridge;
@@ -126,7 +126,7 @@ export interface IBridgeFactory {
   /**
    * Get or create ELK bridge instance
    * MUST return stateless bridge
-   * 
+   *
    * @param layoutConfig - Layout configuration for the bridge (optional, defaults to empty config)
    */
   getELKBridge(layoutConfig?: LayoutConfig): IELKBridge;
@@ -144,7 +144,12 @@ export interface IBridgeFactory {
  */
 export type BridgeStatelessConstraint<T> = T extends {
   // Detect common cache property patterns
-  [K in keyof T]: K extends `${string}Cache` | `cache${string}` | `lastState${string}` | `lastResult${string}` | `lastHash${string}`
+  [K in keyof T]: K extends
+    | `${string}Cache`
+    | `cache${string}`
+    | `lastState${string}`
+    | `lastResult${string}`
+    | `lastHash${string}`
     ? never
     : T[K];
 }
@@ -155,16 +160,22 @@ export type BridgeStatelessConstraint<T> = T extends {
  * Utility type to validate bridge implementations at compile time
  * Usage: type ValidBridge = ValidateStatelessBridge<MyBridgeClass>;
  */
-export type ValidateStatelessBridge<T> = BridgeStatelessConstraint<T> extends never
-  ? {
-      error: "Bridge contains prohibited state properties. Bridges must be stateless.";
-      violatingProperties: {
-        [K in keyof T]: K extends `${string}Cache` | `cache${string}` | `lastState${string}` | `lastResult${string}` | `lastHash${string}`
-          ? K
-          : never;
-      }[keyof T];
-    }
-  : T;
+export type ValidateStatelessBridge<T> =
+  BridgeStatelessConstraint<T> extends never
+    ? {
+        error: "Bridge contains prohibited state properties. Bridges must be stateless.";
+        violatingProperties: {
+          [K in keyof T]: K extends
+            | `${string}Cache`
+            | `cache${string}`
+            | `lastState${string}`
+            | `lastResult${string}`
+            | `lastHash${string}`
+            ? K
+            : never;
+        }[keyof T];
+      }
+    : T;
 
 /**
  * Runtime validation function to check bridge instances
@@ -213,8 +224,8 @@ export function validateStatelessBridge(bridge: any, bridgeName: string): void {
   if (violations.length > 0) {
     throw new Error(
       `Bridge ${bridgeName} violates stateless architecture. ` +
-      `Found prohibited state properties: ${violations.join(", ")}. ` +
-      `Bridges must be stateless - use VisualizationState for data storage.`
+        `Found prohibited state properties: ${violations.join(", ")}. ` +
+        `Bridges must be stateless - use VisualizationState for data storage.`,
     );
   }
 }

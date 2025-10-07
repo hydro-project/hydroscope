@@ -22,7 +22,11 @@ describe("Search and Navigation Infrastructure", () => {
     hidden: false,
   });
 
-  const createTestContainer = (id: string, label: string, children: string[]): Container => ({
+  const createTestContainer = (
+    id: string,
+    label: string,
+    children: string[],
+  ): Container => ({
     id,
     label,
     children: new Set(children),
@@ -34,8 +38,10 @@ describe("Search and Navigation Infrastructure", () => {
     it("should perform search with hierarchy paths", () => {
       // Create test data with hierarchy
       const node1 = createTestNode("node1", "Test Node");
-      const container1 = createTestContainer("container1", "Test Container", ["node1"]);
-      
+      const container1 = createTestContainer("container1", "Test Container", [
+        "node1",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container1);
 
@@ -72,18 +78,18 @@ describe("Search and Navigation Infrastructure", () => {
 
       // Expand some tree nodes
       state.expandTreeNodes(["container1"]);
-      
+
       // Perform search
       state.performSearch("Test");
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
 
       // Clear search
       state.clearSearchEnhanced();
-      
+
       // Search highlights should be cleared
       expect(state.getTreeSearchHighlights().size).toBe(0);
       expect(state.getGraphSearchHighlights().size).toBe(0);
-      
+
       // But expansion state should be preserved
       expect(state.getExpandedTreeNodes().has("container1")).toBe(true);
     });
@@ -177,9 +183,13 @@ describe("Search and Navigation Infrastructure", () => {
     it("should get tree expansion path", () => {
       // Create nested hierarchy
       const node1 = createTestNode("node1", "Test Node");
-      const container2 = createTestContainer("container2", "Inner Container", ["node1"]);
-      const container1 = createTestContainer("container1", "Outer Container", ["container2"]);
-      
+      const container2 = createTestContainer("container2", "Inner Container", [
+        "node1",
+      ]);
+      const container1 = createTestContainer("container1", "Outer Container", [
+        "container2",
+      ]);
+
       state.addNode(node1);
       state.addContainer(container2);
       state.addContainer(container1);
@@ -194,16 +204,16 @@ describe("Search and Navigation Infrastructure", () => {
     it("should expand specific containers", () => {
       const container1 = createTestContainer("container1", "Container 1", []);
       const container2 = createTestContainer("container2", "Container 2", []);
-      
+
       state.addContainer(container1);
       state.addContainer(container2);
-      
+
       // Collapse both
       state.collapseAllContainers();
-      
+
       // Expand only container1
       state.expandAllContainers(["container1"]);
-      
+
       expect(state.getContainer("container1")?.collapsed).toBe(false);
       expect(state.getContainer("container2")?.collapsed).toBe(true);
     });
@@ -211,13 +221,13 @@ describe("Search and Navigation Infrastructure", () => {
     it("should collapse specific containers", () => {
       const container1 = createTestContainer("container1", "Container 1", []);
       const container2 = createTestContainer("container2", "Container 2", []);
-      
+
       state.addContainer(container1);
       state.addContainer(container2);
-      
+
       // Collapse only container1
       state.collapseAllContainers(["container1"]);
-      
+
       expect(state.getContainer("container1")?.collapsed).toBe(true);
       expect(state.getContainer("container2")?.collapsed).toBe(false);
     });
@@ -226,20 +236,20 @@ describe("Search and Navigation Infrastructure", () => {
   describe("Viewport Management", () => {
     it("should track viewport focus state", () => {
       expect(state.getShouldFocusViewport()).toBe(false);
-      
+
       state.navigateToElement("node1");
       expect(state.getShouldFocusViewport()).toBe(true);
-      
+
       state.resetViewportFocus();
       expect(state.getShouldFocusViewport()).toBe(false);
     });
 
     it("should track last navigation target", () => {
       expect(state.getLastNavigationTarget()).toBe(null);
-      
+
       state.navigateToElement("node1");
       expect(state.getLastNavigationTarget()).toBe("node1");
-      
+
       state.navigateToElement("node2");
       expect(state.getLastNavigationTarget()).toBe("node2");
     });

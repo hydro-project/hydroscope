@@ -85,7 +85,7 @@ export interface InfoPanelProps extends BaseComponentProps {
   // Navigation integration
   onElementNavigation?: (
     elementId: string,
-    elementType: "node" | "container"
+    elementType: "node" | "container",
   ) => void;
 
   // Panel Control
@@ -119,7 +119,7 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   // Navigation integration
   onElementNavigation?: (
     elementId: string,
-    elementType: "node" | "container"
+    elementType: "node" | "container",
   ) => void;
 
   // Search integration

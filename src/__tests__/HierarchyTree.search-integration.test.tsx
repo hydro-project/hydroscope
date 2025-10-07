@@ -1,6 +1,6 @@
 /**
  * @fileoverview HierarchyTree Search Integration Tests
- * 
+ *
  * Tests for the enhanced HierarchyTree component with search integration functionality.
  */
 
@@ -33,7 +33,7 @@ describe("HierarchyTree Search Integration", () => {
     });
 
     visualizationState.addContainer({
-      id: "container2", 
+      id: "container2",
       label: "Container 2",
       children: new Set<string>(),
       collapsed: true,
@@ -69,7 +69,7 @@ describe("HierarchyTree Search Integration", () => {
         collapsedContainers={new Set()}
         onToggleContainer={mockOnToggleContainer}
         onElementNavigation={mockOnElementNavigation}
-      />
+      />,
     );
 
     expect(screen.getByText("Container 1")).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe("HierarchyTree Search Integration", () => {
       },
       {
         id: "container2",
-        label: "Container 2", 
+        label: "Container 2",
         type: "container",
         matchIndices: [[0, 9]], // "Container"
       },
@@ -100,7 +100,7 @@ describe("HierarchyTree Search Integration", () => {
         onElementNavigation={mockOnElementNavigation}
         searchQuery="test"
         searchResults={searchResults}
-      />
+      />,
     );
 
     // Container 2 should be highlighted as a direct match
@@ -115,7 +115,7 @@ describe("HierarchyTree Search Integration", () => {
       {
         id: "node1",
         label: "Test Node",
-        type: "node", 
+        type: "node",
         matchIndices: [[0, 4]],
       },
     ];
@@ -131,7 +131,7 @@ describe("HierarchyTree Search Integration", () => {
         searchQuery="test"
         searchResults={searchResults}
         currentSearchResult={currentSearchResult}
-      />
+      />,
     );
 
     // Should render without errors and show current result highlighting
@@ -145,14 +145,17 @@ describe("HierarchyTree Search Integration", () => {
         collapsedContainers={new Set()}
         onToggleContainer={mockOnToggleContainer}
         onElementNavigation={mockOnElementNavigation}
-      />
+      />,
     );
 
     // Click on Container 1 to test container navigation
     const container1Element = screen.getByText("Container 1");
     fireEvent.click(container1Element);
 
-    expect(mockOnElementNavigation).toHaveBeenCalledWith("container1", "container");
+    expect(mockOnElementNavigation).toHaveBeenCalledWith(
+      "container1",
+      "container",
+    );
   });
 
   it("should handle navigation clicks for containers", () => {
@@ -162,14 +165,17 @@ describe("HierarchyTree Search Integration", () => {
         collapsedContainers={new Set()}
         onToggleContainer={mockOnToggleContainer}
         onElementNavigation={mockOnElementNavigation}
-      />
+      />,
     );
 
     // Click on a container
     const containerElement = screen.getByText("Container 1");
     fireEvent.click(containerElement);
 
-    expect(mockOnElementNavigation).toHaveBeenCalledWith("container1", "container");
+    expect(mockOnElementNavigation).toHaveBeenCalledWith(
+      "container1",
+      "container",
+    );
   });
 
   it("should show collapsed ancestor highlighting", () => {
@@ -190,7 +196,7 @@ describe("HierarchyTree Search Integration", () => {
         onElementNavigation={mockOnElementNavigation}
         searchQuery="search"
         searchResults={searchResults}
-      />
+      />,
     );
 
     // Container 2 should show subtle highlighting since it contains a collapsed match
@@ -209,7 +215,7 @@ describe("HierarchyTree Search Integration", () => {
         onElementNavigation={mockOnElementNavigation}
         searchQuery="nonexistent"
         searchResults={[]}
-      />
+      />,
     );
 
     // Should render normally without highlighting

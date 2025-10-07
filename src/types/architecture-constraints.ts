@@ -8,7 +8,15 @@
  * Causes compilation errors if cache properties are detected
  */
 export type NoCacheProperties<T> = {
-  [K in keyof T]: K extends `${string}Cache` | `cache${string}` | `lastState${string}` | `lastResult${string}` | `lastHash${string}` | `stateHash${string}` | `cached${string}` | `memoized${string}`
+  [K in keyof T]: K extends
+    | `${string}Cache`
+    | `cache${string}`
+    | `lastState${string}`
+    | `lastResult${string}`
+    | `lastHash${string}`
+    | `stateHash${string}`
+    | `cached${string}`
+    | `memoized${string}`
     ? never
     : T[K];
 };
@@ -18,8 +26,13 @@ export type NoCacheProperties<T> = {
  * Causes compilation errors if state properties are detected
  */
 export type NoStateProperties<T> = {
-  [K in keyof T]: K extends `${string}State` | `state${string}` | `stored${string}` | `internal${string}` | `_${string}`
-    ? K extends 'performanceHints' | 'elk' | 'styleConfig' | 'layoutConfig' // Allow specific configuration properties
+  [K in keyof T]: K extends
+    | `${string}State`
+    | `state${string}`
+    | `stored${string}`
+    | `internal${string}`
+    | `_${string}`
+    ? K extends "performanceHints" | "elk" | "styleConfig" | "layoutConfig" // Allow specific configuration properties
       ? T[K]
       : never
     : T[K];
@@ -35,16 +48,15 @@ export type StatelessConstraint<T> = NoCacheProperties<NoStateProperties<T>>;
  * Usage: type ValidBridge = EnforceStateless<MyBridgeClass>;
  * Will cause compilation error if bridge has prohibited properties
  */
-export type EnforceStateless<T> = StatelessConstraint<T> extends T
-  ? T
-  : {
-      __ERROR__: "Bridge contains prohibited state or cache properties";
-      __VIOLATING_PROPERTIES__: {
-        [K in keyof T]: K extends keyof StatelessConstraint<T>
-          ? never
-          : K;
-      }[keyof T];
-    };
+export type EnforceStateless<T> =
+  StatelessConstraint<T> extends T
+    ? T
+    : {
+        __ERROR__: "Bridge contains prohibited state or cache properties";
+        __VIOLATING_PROPERTIES__: {
+          [K in keyof T]: K extends keyof StatelessConstraint<T> ? never : K;
+        }[keyof T];
+      };
 
 /**
  * Interface constraint for bridge constructors
@@ -77,9 +89,14 @@ export interface PureBridgeMethods {
 export type OnlyPureMethods<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any
     ? T[K]
-    : K extends 'constructor' | 'styleConfig' | 'layoutConfig' | 'performanceHints' | 'elk'
-    ? T[K] // Allow constructor and configuration properties
-    : never;
+    : K extends
+          | "constructor"
+          | "styleConfig"
+          | "layoutConfig"
+          | "performanceHints"
+          | "elk"
+      ? T[K] // Allow constructor and configuration properties
+      : never;
 };
 
 /**
@@ -91,19 +108,20 @@ export type StatelessBridge<T> = EnforceStateless<OnlyPureMethods<T>>;
 /**
  * Utility type to extract configuration type from bridge constructor
  */
-export type BridgeConfig<T> = T extends StatelessBridgeConstructor<infer C> ? C : never;
+export type BridgeConfig<T> =
+  T extends StatelessBridgeConstructor<infer C> ? C : never;
 
 /**
  * Runtime validation decorator for bridge classes
  * Can be used to validate bridge instances at runtime
  */
 export function StatelessBridgeDecorator<T extends new (...args: any[]) => any>(
-  constructor: T
+  constructor: T,
 ): T {
   return class extends constructor {
     constructor(...args: any[]) {
       super(...args);
-      
+
       // Validate that instance doesn't have prohibited properties
       validateBridgeInstance(this, constructor.name);
     }
@@ -126,11 +144,11 @@ function validateBridgeInstance(instance: any, className: string): void {
   ];
 
   const allowedProperties = new Set([
-    'styleConfig',
-    'layoutConfig', 
-    'performanceHints',
-    'elk',
-    'constructor',
+    "styleConfig",
+    "layoutConfig",
+    "performanceHints",
+    "elk",
+    "constructor",
   ]);
 
   const violations: string[] = [];
@@ -152,8 +170,8 @@ function validateBridgeInstance(instance: any, className: string): void {
   if (violations.length > 0) {
     throw new Error(
       `Bridge ${className} violates stateless architecture. ` +
-      `Found prohibited properties: ${violations.join(", ")}. ` +
-      `Bridges must be stateless - use VisualizationState for data storage.`
+        `Found prohibited properties: ${violations.join(", ")}. ` +
+        `Bridges must be stateless - use VisualizationState for data storage.`,
     );
   }
 }
@@ -172,37 +190,38 @@ export namespace ArchitectureTests {
    * Test that a bridge constructor is valid
    * Usage: type Test = ArchitectureTests.HasValidConstructor<typeof MyBridge>;
    */
-  export type HasValidConstructor<T> = T extends StatelessBridgeConstructor<any> ? true : false;
+  export type HasValidConstructor<T> =
+    T extends StatelessBridgeConstructor<any> ? true : false;
 
   /**
    * Extract violations from a bridge type
    * Usage: type Violations = ArchitectureTests.GetViolations<MyBridge>;
    */
-  export type GetViolations<T> = EnforceStateless<T> extends T
-    ? never
-    : EnforceStateless<T> extends { __VIOLATING_PROPERTIES__: infer V }
-    ? V
-    : never;
+  export type GetViolations<T> =
+    EnforceStateless<T> extends T
+      ? never
+      : EnforceStateless<T> extends { __VIOLATING_PROPERTIES__: infer V }
+        ? V
+        : never;
 }
 
 /**
  * Compile-time assertion utility
  * Usage: const _test: AssertStateless<MyBridge> = true;
  */
-export type AssertStateless<T> = StatelessBridge<T> extends T
-  ? true
-  : {
-      __COMPILATION_ERROR__: "Bridge is not stateless";
-      __VIOLATIONS__: ArchitectureTests.GetViolations<T>;
-    };
+export type AssertStateless<T> =
+  StatelessBridge<T> extends T
+    ? true
+    : {
+        __COMPILATION_ERROR__: "Bridge is not stateless";
+        __VIOLATIONS__: ArchitectureTests.GetViolations<T>;
+      };
 
 /**
  * Helper type for bridge method signatures
  * Ensures methods don't return mutable references to internal state
  */
-export type ImmutableReturn<T> = T extends object
-  ? Readonly<T>
-  : T;
+export type ImmutableReturn<T> = T extends object ? Readonly<T> : T;
 
 /**
  * Constraint for bridge method return types

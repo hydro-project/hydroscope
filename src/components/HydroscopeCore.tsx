@@ -715,12 +715,7 @@ const HydroscopeCoreInternal = forwardRef<
       };
 
       parseAndRender();
-    }, [
-      data,
-      state.visualizationState,
-      state.asyncCoordinator,
-      readOnly,
-    ]);
+    }, [data, state.visualizationState, state.asyncCoordinator, readOnly]);
 
     // Handle fit view when shouldFitView changes
     useEffect(() => {
@@ -1279,18 +1274,19 @@ const HydroscopeCoreInternal = forwardRef<
           // 1. Automatic container expansion if element is not visible
           // 2. Navigation state update in VisualizationState
           // 3. Error handling and recovery
-          const result = state.asyncCoordinator.navigateToElementWithErrorHandling(
-            elementId,
-            state.visualizationState,
-            reactFlowInstance,
-            {
-              timeout: 10000, // 10 second timeout
-              maxRetries: 1,
-            }
-          );
+          const result =
+            state.asyncCoordinator.navigateToElementWithErrorHandling(
+              elementId,
+              state.visualizationState,
+              reactFlowInstance,
+              {
+                timeout: 10000, // 10 second timeout
+                maxRetries: 1,
+              },
+            );
 
           if (!result.success) {
-            throw new Error('Navigation failed with error handling');
+            throw new Error("Navigation failed with error handling");
           }
 
           console.log(

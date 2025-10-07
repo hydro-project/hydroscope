@@ -73,7 +73,7 @@ describe("SearchControls Enhanced Features - Core", () => {
 
     it("should show toggle button when searchResults are provided", () => {
       render(<SearchControls {...defaultProps} />);
-      
+
       // The toggle button should be visible when searchResults are provided
       expect(screen.getByText("📋")).toBeInTheDocument();
     });
@@ -95,7 +95,9 @@ describe("SearchControls Enhanced Features - Core", () => {
     it("should have accessible button labels", () => {
       render(<SearchControls {...defaultProps} />);
 
-      expect(screen.getByLabelText("Previous search result")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Previous search result"),
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Next search result")).toBeInTheDocument();
     });
 
@@ -103,7 +105,9 @@ describe("SearchControls Enhanced Features - Core", () => {
       render(<SearchControls {...defaultProps} />);
 
       const searchContainer = screen.getByRole("search");
-      const ariaLiveRegion = searchContainer.querySelector('[aria-live="polite"]');
+      const ariaLiveRegion = searchContainer.querySelector(
+        '[aria-live="polite"]',
+      );
       expect(ariaLiveRegion).toBeInTheDocument();
     });
   });
@@ -120,7 +124,10 @@ describe("SearchControls Enhanced Features - Core", () => {
       });
 
       fireEvent.keyDown(input, { key: "Enter" });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("next", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "next",
+        expect.any(Object),
+      );
     });
 
     it("should navigate with Shift+Enter", async () => {
@@ -134,7 +141,10 @@ describe("SearchControls Enhanced Features - Core", () => {
       });
 
       fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith("prev", expect.any(Object));
+      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+        "prev",
+        expect.any(Object),
+      );
     });
 
     it("should clear search with Escape key", () => {
@@ -159,11 +169,13 @@ describe("SearchControls Enhanced Features - Core", () => {
     });
 
     it("should sync with external currentSearchIndex", () => {
-      const { rerender } = render(<SearchControls {...defaultProps} currentSearchIndex={0} />);
-      
+      const { rerender } = render(
+        <SearchControls {...defaultProps} currentSearchIndex={0} />,
+      );
+
       // Change external index
       rerender(<SearchControls {...defaultProps} currentSearchIndex={1} />);
-      
+
       // Component should handle the prop change without errors
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
@@ -184,7 +196,7 @@ describe("SearchControls Enhanced Features - Core", () => {
       render(<SearchControls {...defaultProps} />);
 
       const toggleButton = screen.getByText("📋");
-      
+
       // Show results list
       fireEvent.click(toggleButton);
       expect(screen.getByRole("listbox")).toBeInTheDocument();
@@ -200,7 +212,9 @@ describe("SearchControls Enhanced Features - Core", () => {
       const toggleButton = screen.getByText("📋");
       fireEvent.click(toggleButton);
 
-      expect(screen.getByText("root > parent > Test Node 1")).toBeInTheDocument();
+      expect(
+        screen.getByText("root > parent > Test Node 1"),
+      ).toBeInTheDocument();
       expect(screen.getByText("root > Test Container")).toBeInTheDocument();
     });
 

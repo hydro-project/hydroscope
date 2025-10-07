@@ -86,6 +86,8 @@ export const LAYOUT_CONSTANTS = {
     return this.MIN_CONTAINER_HEIGHT + this.CONTAINER_LABEL_HEIGHT; // 182 (min height + label)
   },
   LARGE_CONTAINER_CHILD_COUNT_THRESHOLD: 7,
+
+  SMART_COLLAPSE_BUDGET: 1000,
 } as const;
 
 // UI Animation and Interaction Constants
