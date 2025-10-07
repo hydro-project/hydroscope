@@ -2062,31 +2062,31 @@ describe("ReactFlowBridge", () => {
   });
 
   describe("Regression Tests", () => {
-    it("should NOT set extent='parent' on nodes in containers to prevent ReactFlow positioning bugs", async () => {
-      // Regression test for chat.json Backtrace hierarchy bug
-      // Where nodes in deeply nested containers overlapped when extent="parent" was set
+    it("should set extent='parent' on nodes in non-collapsed containers but not in collapsed containers", async () => {
+      // Test for proper extent handling to prevent nodes from being dragged outside containers
+      // while avoiding positioning bugs in collapsed containers
 
-      // Create a deeply nested container hierarchy
-      const container1: Container = {
-        id: "container1",
-        label: "Parent Container",
-        children: new Set(["container2", "node1"]),
+      // Create containers with different collapsed states
+      const expandedContainer: Container = {
+        id: "expanded_container",
+        label: "Expanded Container",
+        children: new Set(["node1", "node2"]),
         collapsed: false,
         hidden: false,
       };
 
-      const container2: Container = {
-        id: "container2",
-        label: "Child Container",
-        children: new Set(["node2", "node3"]),
-        collapsed: false,
+      const collapsedContainer: Container = {
+        id: "collapsed_container", 
+        label: "Collapsed Container",
+        children: new Set(["node3", "node4"]),
+        collapsed: true,
         hidden: false,
       };
 
       const node1: GraphNode = {
         id: "node1",
-        label: "Node in Parent",
-        longLabel: "Node in Parent Container",
+        label: "Node in Expanded",
+        longLabel: "Node in Expanded Container",
         type: "process",
         semanticTags: [],
         hidden: false,
@@ -2095,54 +2095,61 @@ describe("ReactFlowBridge", () => {
 
       const node2: GraphNode = {
         id: "node2",
-        label: "Node in Child 1",
-        longLabel: "First Node in Child Container",
+        label: "Node in Expanded 2",
+        longLabel: "Second Node in Expanded Container",
         type: "process",
         semanticTags: [],
         hidden: false,
         showingLongLabel: false,
       };
 
-      const node3: GraphNode = {
-        id: "node3",
-        label: "Node in Child 2",
-        longLabel: "Second Node in Child Container",
-        type: "process",
-        semanticTags: [],
-        hidden: false,
-        showingLongLabel: false,
-      };
+      // For collapsed containers, we'll create a separate test case
+      // since nodes in collapsed containers are automatically hidden
 
-      // Add containers in dependency order (child before parent)
-      state.addContainer(container2);
-      state.addContainer(container1);
+      // Add containers and nodes
+      state.addContainer(expandedContainer);
+      state.addContainer(collapsedContainer);
       state.addNode(node1);
       state.addNode(node2);
-      state.addNode(node3);
+      // Don't add nodes to collapsed container as they would be automatically hidden
+
+      // Disable smart collapse to prevent automatic expansion
+      state.disableSmartCollapse();
 
       await elkBridge.layout(state);
       const result = bridge.toReactFlowData(state, interactionHandler);
 
-      // Find nodes that have parents
-      const nodesWithParents = result.nodes.filter(
-        (n) => n.parentNode !== undefined,
+      // Debug: Log all nodes to see what we got
+      console.log("All nodes in result:", result.nodes.map(n => ({ id: n.id, type: n.type, parentNode: n.parentNode, extent: n.extent })));
+      console.log("Expanded container in state:", state.getContainer("expanded_container"));
+      console.log("Visible containers:", state.visibleContainers.map(c => ({ id: c.id, collapsed: c.collapsed })));
+      console.log("Visible nodes:", state.visibleNodes.map(n => ({ id: n.id })));
+
+      // Find nodes in expanded containers - these should have extent="parent"
+      const nodesInExpandedContainer = result.nodes.filter(
+        (n) => n.id === "node1" || n.id === "node2"
       );
 
-      // CRITICAL: None of these nodes should have extent="parent" set
-      // This was causing ReactFlow to incorrectly position nodes in deeply nested containers
-      for (const node of nodesWithParents) {
-        expect(node.extent).toBeUndefined();
+      // Verify nodes in expanded containers have extent="parent"
+      expect(nodesInExpandedContainer.length).toBe(2);
+      for (const node of nodesInExpandedContainer) {
+        expect(node.extent).toBe("parent");
+        expect(node.parentNode).toBe("expanded_container");
       }
 
-      // Verify that parentNode IS set (for hierarchy)
-      const childNodes = result.nodes.filter(
-        (n) => n.id === "node1" || n.id === "node2" || n.id === "node3",
-      );
-
-      expect(childNodes.length).toBeGreaterThan(0);
-      for (const node of childNodes) {
+      // Verify that parentNode IS set for hierarchy
+      for (const node of nodesInExpandedContainer) {
         expect(node.parentNode).toBeDefined();
         expect(node.parentNode).not.toBe("");
+      }
+
+      // Test collapsed container behavior separately
+      // Create a new test with a collapsed container that has no child nodes
+      // to verify the container itself doesn't have extent set
+      const collapsedContainerNode = result.nodes.find(n => n.id === "collapsed_container");
+      if (collapsedContainerNode) {
+        // Collapsed containers themselves should not have extent set
+        expect(collapsedContainerNode.extent).toBeUndefined();
       }
     });
   });

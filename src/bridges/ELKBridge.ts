@@ -982,7 +982,6 @@ export class ELKBridge implements IELKBridge {
       "force",
       "stress",
       "mrtree",
-      "radial",
       "disco",
     ];
     const validDirections = ["UP", "DOWN", "LEFT", "RIGHT"];

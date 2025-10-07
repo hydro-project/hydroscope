@@ -40,7 +40,6 @@ const layoutOptions = {
   mrtree: "MR Tree",
   force: "Force-Directed",
   stress: "Stress Minimization",
-  radial: "Radial",
 };
 
 // Color palette options

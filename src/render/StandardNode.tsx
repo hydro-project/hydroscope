@@ -140,6 +140,7 @@ export function StandardNode({ id, data }: NodeProps) {
       "default",
   );
   const colorPalette = String(data.colorPalette || "Set3");
+  console.log(`[StandardNode] ${id} received color palette: ${colorPalette}`);
 
   // Use different color generation for collapsed containers
   const rawColors = isCollapsedContainer

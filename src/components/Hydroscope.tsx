@@ -639,6 +639,12 @@ export const Hydroscope = memo<HydroscopeProps>(
       console.log(`[Hydroscope] 🎨 Edge style change requested: ${edgeStyle}`);
       
       try {
+        // Update local state first to keep UI in sync
+        setState((prev) => ({ 
+          ...prev, 
+          renderConfig: { ...prev.renderConfig, edgeStyle }
+        }));
+        
         // Update render config through HydroscopeCore's AsyncCoordinator
         await hydroscopeCoreRef.current?.updateRenderConfig({ edgeStyle });
         
@@ -674,6 +680,9 @@ export const Hydroscope = memo<HydroscopeProps>(
         console.log(`[Hydroscope] 🎨 Color palette change requested: ${palette}`);
         
         try {
+          // Update local state first to keep UI in sync
+          setState((prev) => ({ ...prev, colorPalette: palette }));
+          
           // Update color palette through HydroscopeCore's AsyncCoordinator
           await hydroscopeCoreRef.current?.updateRenderConfig({ colorPalette: palette });
           
@@ -691,6 +700,9 @@ export const Hydroscope = memo<HydroscopeProps>(
       console.log(`[Hydroscope] 🎯 Layout algorithm change requested: ${state.layoutAlgorithm} -> ${layout}`);
       
       try {
+        // Update local state first to keep UI in sync
+        setState((prev) => ({ ...prev, layoutAlgorithm: layout }));
+        
         // Update layout algorithm through HydroscopeCore's AsyncCoordinator
         await hydroscopeCoreRef.current?.updateRenderConfig({ layoutAlgorithm: layout });
         

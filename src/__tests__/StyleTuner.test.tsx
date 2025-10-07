@@ -2,7 +2,7 @@
  * StyleTuner Component Unit Tests
  *
  * Tests all StyleTuner functionality including:
- * - Layout algorithm selection (layered, mrtree, force, stress, radial)
+ * - Layout algorithm selection (layered, mrtree, force, stress)
  * - Color palette selection (Set2, Set3, Pastel1, Dark2)
  * - Edge style configuration (bezier, straight, smoothstep)
  * - Style configuration controls for edges, nodes, containers
@@ -160,7 +160,6 @@ describe("StyleTuner Component", () => {
       expect(screen.getByText("MR Tree")).toBeInTheDocument();
       expect(screen.getByText("Force-Directed")).toBeInTheDocument();
       expect(screen.getByText("Stress Minimization")).toBeInTheDocument();
-      expect(screen.getByText("Radial")).toBeInTheDocument();
     });
 
     it("should call onLayoutChange when algorithm is selected", () => {

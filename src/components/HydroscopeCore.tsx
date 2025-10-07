@@ -1401,12 +1401,19 @@ const HydroscopeCoreInternal = forwardRef<
             console.log(`[HydroscopeCore] 🎯 Layout algorithm changed to: ${updates.layoutAlgorithm}`);
             // Update ELK bridge configuration and trigger layout
             if (elkBridgeRef.current) {
+              console.log(`[HydroscopeCore] 🎯 Updating ELK bridge configuration`);
               elkBridgeRef.current.updateConfiguration({ algorithm: updates.layoutAlgorithm });
+              
+              console.log(`[HydroscopeCore] 🎯 Queuing ELK layout operation`);
               await state.asyncCoordinator.queueELKLayout(state.visualizationState, elkBridgeRef.current);
+              console.log(`[HydroscopeCore] 🎯 ELK layout operation completed`);
+            } else {
+              console.error(`[HydroscopeCore] ❌ ELK bridge not available for layout algorithm change`);
             }
           } else {
-            // For non-layout changes (like edge style), just update ReactFlow data
-            await updateReactFlowDataWithState(state.visualizationState);
+            // For non-layout changes (like edge style, color palette), use AsyncCoordinator
+            console.log(`[HydroscopeCore] 🎨 Non-layout change, queuing render config update through AsyncCoordinator`);
+            await state.asyncCoordinator.queueRenderConfigUpdate(state.visualizationState, updates);
           }
           
           // Notify parent component of the change

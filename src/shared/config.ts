@@ -556,7 +556,6 @@ export const ELK_ALGORITHMS = {
   MRTREE: "mrtree",
   FORCE: "force",
   STRESS: "stress",
-  RADIAL: "radial",
 } as const;
 
 // Default algorithm - single source of truth
@@ -607,7 +606,6 @@ export function getELKLayoutOptions(algorithm: string = DEFAULT_ELK_ALGORITHM) {
     [ELK_ALGORITHMS.MRTREE]: ELK_ALGORITHMS.MRTREE,
     [ELK_ALGORITHMS.FORCE]: ELK_ALGORITHMS.FORCE,
     [ELK_ALGORITHMS.STRESS]: ELK_ALGORITHMS.STRESS,
-    [ELK_ALGORITHMS.RADIAL]: ELK_ALGORITHMS.RADIAL,
   } as const;
   const normalized = allowed[algorithm] ?? DEFAULT_ELK_ALGORITHM;
   return {
