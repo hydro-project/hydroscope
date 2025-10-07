@@ -49,16 +49,16 @@ describe("Debug bt_136 Aggregation", () => {
     // Check what edges exist initially
     const initialAggregatedEdges = Array.from(
       (visualizationState as any)._aggregatedEdges.values(),
-    );
+    ) as any[];
     const initialBt136AggEdges = initialAggregatedEdges.filter(
-      (edge) => edge.source === "bt_136" || edge.target === "bt_136",
+      (edge: any) => edge.source === "bt_136" || edge.target === "bt_136",
     );
 
     const initialRegularEdges = Array.from(
       (visualizationState as any)._edges.values(),
-    );
+    ) as any[];
     const initialBt136RegularEdges = initialRegularEdges.filter(
-      (edge) => edge.source === "bt_136" || edge.target === "bt_136",
+      (edge: any) => edge.source === "bt_136" || edge.target === "bt_136",
     );
 
     console.log(`📊 INITIAL EDGES:`);
@@ -71,7 +71,7 @@ describe("Debug bt_136 Aggregation", () => {
 
     if (initialBt136AggEdges.length > 0) {
       console.log(`🚨 INITIAL bt_136 aggregated edges:`);
-      initialBt136AggEdges.forEach((edge) => {
+      initialBt136AggEdges.forEach((edge: any) => {
         console.log(`    ${edge.id}: ${edge.source} -> ${edge.target}`);
       });
     }
@@ -92,16 +92,16 @@ describe("Debug bt_136 Aggregation", () => {
       // Check edges after expansion
       const finalAggregatedEdges = Array.from(
         (visualizationState as any)._aggregatedEdges.values(),
-      );
+      ) as any[];
       const finalBt136AggEdges = finalAggregatedEdges.filter(
-        (edge) => edge.source === "bt_136" || edge.target === "bt_136",
+        (edge: any) => edge.source === "bt_136" || edge.target === "bt_136",
       );
 
       const finalRegularEdges = Array.from(
         (visualizationState as any)._edges.values(),
-      );
+      ) as any[];
       const finalBt136RegularEdges = finalRegularEdges.filter(
-        (edge) => edge.source === "bt_136" || edge.target === "bt_136",
+        (edge: any) => edge.source === "bt_136" || edge.target === "bt_136",
       );
 
       console.log(`📊 FINAL EDGES:`);
@@ -114,7 +114,7 @@ describe("Debug bt_136 Aggregation", () => {
 
       if (finalBt136AggEdges.length > 0) {
         console.log(`🚨 FINAL bt_136 aggregated edges:`);
-        finalBt136AggEdges.forEach((edge) => {
+        finalBt136AggEdges.forEach((edge: any) => {
           console.log(`    ${edge.id}: ${edge.source} -> ${edge.target}`);
         });
       }
