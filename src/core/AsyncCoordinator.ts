@@ -1008,32 +1008,21 @@ export class AsyncCoordinator {
         containerIds = undefined;
       }
     }
-    // Get containers to expand - either specified list or all collapsed containers
-    let containersToExpand;
-    if (containerIds) {
-      // Expand only specified containers that are currently collapsed
-      containersToExpand = state.visibleContainers.filter(
-        (container: any) =>
-          containerIds.includes(container.id) && container.collapsed,
-      );
-    } else {
-      // Expand all collapsed containers (existing behavior)
-      containersToExpand = state.visibleContainers.filter(
-        (container: any) => container.collapsed,
-      );
-    }
-
     console.log(
-      `[AsyncCoordinator] 🔄 Expanding ${containersToExpand.length} containers${containerIds ? " (specified list)" : " (all collapsed)"}`,
+      `[AsyncCoordinator] 🔄 Starting expandAllContainers operation${containerIds ? " (specified list)" : " (all containers)"}`,
     );
 
-    // Expand each container sequentially
-    for (const container of containersToExpand) {
-      await this.expandContainer(container.id, state, {
-        ...actualOptions,
-        triggerLayout: false, // Don't trigger layout for each individual container
-      });
+    // CRITICAL FIX: Use VisualizationState's expandAllContainers method directly
+    // This ensures the iterative expansion logic is used for nested containers
+    if (containerIds) {
+      // For specified containers, use the VisualizationState method
+      state.expandAllContainers(containerIds);
+    } else {
+      // For all containers, use the VisualizationState method
+      state.expandAllContainers();
     }
+
+    console.log(`[AsyncCoordinator] ✅ expandAllContainers operation completed`);
 
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations

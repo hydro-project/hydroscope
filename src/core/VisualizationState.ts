@@ -435,15 +435,65 @@ export class VisualizationState {
   }
 
   expandAllContainers(containerIds?: string[]): void {
+    console.log(`[VisualizationState] 🔄 Starting expandAllContainers operation`);
+    
     const containersToExpand = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
 
-    for (const container of containersToExpand) {
-      if (container && container.collapsed) {
-        this._expandContainerInternal(container.id);
+    console.log(`[VisualizationState] 🔍 Initial containers to expand: ${containersToExpand.length}`);
+
+    // CRITICAL FIX: Expand containers in hierarchical order (parents before children)
+    // This prevents invariant violations where children are expanded before their parents
+    let expandedInThisIteration = 0;
+    let totalExpanded = 0;
+    let iteration = 0;
+    const maxIterations = 10; // Safety limit to prevent infinite loops
+
+    do {
+      expandedInThisIteration = 0;
+      iteration++;
+      
+      console.log(`[VisualizationState] 🔄 Expansion iteration ${iteration}`);
+      
+      // Get all containers and sort them by hierarchy depth (shallowest first)
+      const allContainers = containerIds
+        ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
+        : Array.from(this._containers.values());
+
+      // Sort containers by hierarchy depth to expand parents before children
+      const sortedContainers = allContainers
+        .filter((container): container is Container => container !== undefined && container.collapsed)
+        .sort((a, b) => {
+          const depthA = this._getContainerDepth(a.id);
+          const depthB = this._getContainerDepth(b.id);
+          return depthA - depthB; // Shallowest first
+        });
+
+      console.log(`[VisualizationState] 🔍 Iteration ${iteration}: found ${sortedContainers.length} collapsed containers to expand`);
+
+      for (const container of sortedContainers) {
+        // Double-check that the container can be expanded (parent is expanded)
+        if (this._canExpandContainer(container.id)) {
+          console.log(`[VisualizationState] 🔄 Expanding container ${container.id} (depth ${this._getContainerDepth(container.id)}) in iteration ${iteration}`);
+          this._expandContainerInternal(container.id);
+          expandedInThisIteration++;
+          totalExpanded++;
+        } else {
+          console.log(`[VisualizationState] ⏸️ Skipping container ${container.id} - parent not expanded yet`);
+        }
       }
-    }
+      
+      console.log(`[VisualizationState] 🔍 Iteration ${iteration}: expanded ${expandedInThisIteration} containers`);
+      
+      if (iteration >= maxIterations) {
+        console.warn(`[VisualizationState] ⚠️ Reached maximum iterations (${maxIterations}) in expandAllContainers`);
+        break;
+      }
+    } while (expandedInThisIteration > 0);
+
+    console.log(`[VisualizationState] ✅ expandAllContainers completed: ${totalExpanded} containers expanded in ${iteration} iterations`);
+    
     // Bulk user operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
   }
@@ -909,6 +959,52 @@ export class VisualizationState {
     }
 
     return descendants;
+  }
+
+  private _getContainerDepth(containerId: string): number {
+    let depth = 0;
+    let currentId = containerId;
+    
+    // Walk up the parent chain to calculate depth
+    while (currentId) {
+      const parentId = this._containerParentMap.get(currentId);
+      if (parentId) {
+        depth++;
+        currentId = parentId;
+      } else {
+        break;
+      }
+    }
+    
+    return depth;
+  }
+
+  private _canExpandContainer(containerId: string): boolean {
+    const container = this._containers.get(containerId);
+    if (!container) return false;
+    
+    // If container is not collapsed, it doesn't need expansion
+    if (!container.collapsed) return false;
+    
+    // Check if ALL ancestors are expanded (not just immediate parent)
+    let currentId = containerId;
+    while (currentId) {
+      const parentId = this._containerParentMap.get(currentId);
+      if (parentId) {
+        const parentContainer = this._containers.get(parentId);
+        if (!parentContainer || parentContainer.collapsed) {
+          // If any ancestor is collapsed, this container cannot be expanded
+          return false;
+        }
+        currentId = parentId;
+      } else {
+        // Reached the top level
+        break;
+      }
+    }
+    
+    // All ancestors are expanded (or this is a top-level container)
+    return true;
   }
 
   restoreEdgesForContainer(containerId: string): void {

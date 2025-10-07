@@ -726,9 +726,17 @@ const HydroscopeCoreInternal = forwardRef<
             "[HydroscopeCore] 🔄 Triggering auto-fit (AutoFit enabled)",
           );
 
-          // Use requestAnimationFrame to ensure ReactFlow has rendered
+          // Use double requestAnimationFrame to ensure ReactFlow has fully rendered
+          // This gives ReactFlow more time to process the new data before fitting
           requestAnimationFrame(() => {
-            reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
+            requestAnimationFrame(() => {
+              console.log("[HydroscopeCore] 🔄 Executing fitView with padding 0.15");
+              reactFlowInstance.fitView({ 
+                padding: 0.15, 
+                duration: 300,
+                includeHiddenNodes: false // Only fit to visible nodes
+              });
+            });
           });
         } else {
           console.log(
@@ -900,6 +908,9 @@ const HydroscopeCoreInternal = forwardRef<
 
         console.log("[HydroscopeCore] CollapseAll atomic pipeline complete");
 
+        // Notify parent component of visualization state change
+        onVisualizationStateChange?.(state.visualizationState);
+
         // Call success callback
         onCollapseAll?.(state.visualizationState);
       } catch (error) {
@@ -967,9 +978,6 @@ const HydroscopeCoreInternal = forwardRef<
           "[HydroscopeCore] Starting expandAll operation through AsyncCoordinator",
         );
 
-        // Trigger fit view for layout operations
-        setState((prev) => ({ ...prev, shouldFitView: true }));
-
         // Step 1: Atomic bulk state changes through AsyncCoordinator
         await state.asyncCoordinator.expandAllContainers(
           state.visualizationState,
@@ -994,6 +1002,13 @@ const HydroscopeCoreInternal = forwardRef<
         await updateReactFlowDataWithState(state.visualizationState);
 
         console.log("[HydroscopeCore] ExpandAll atomic pipeline complete");
+
+        // Trigger fit view AFTER the expansion operation completes successfully
+        console.log("[HydroscopeCore] Setting shouldFitView=true after successful expandAll");
+        setState((prev) => ({ ...prev, shouldFitView: true }));
+
+        // Notify parent component of visualization state change
+        onVisualizationStateChange?.(state.visualizationState);
 
         // Call success callback
         onExpandAll?.(state.visualizationState);

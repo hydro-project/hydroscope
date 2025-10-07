@@ -323,6 +323,18 @@ const CustomControls = memo<CustomControlsProps>(
         (container) => !container.collapsed,
       ) ?? false;
 
+    // Debug logging for button states
+    console.log("[CustomControls] Button state calculation:", {
+      hasContainers,
+      hasCollapsedContainers,
+      hasExpandedContainers,
+      visibleContainersCount: visualizationState?.visibleContainers?.length ?? 0,
+      containerStates: visualizationState?.visibleContainers?.map(c => ({
+        id: c.id,
+        collapsed: c.collapsed
+      })) ?? []
+    });
+
     // Calculate if we have any custom controls to show
     const hasCustomControls = hasContainers || onAutoFitToggle || showLoadFile;
 
@@ -424,7 +436,9 @@ const CustomControls = memo<CustomControlsProps>(
                   className="react-flow__controls-button"
                   style={{
                     alignItems: "center",
-                    background: "#fefefe",
+                    background: hasContainers && hasExpandedContainers 
+                      ? "#fefefe" 
+                      : "#f5f5f5", // Grayed out background when disabled
                     border: "none",
                     borderBottom: "1px solid #b1b1b7",
                     color:
@@ -444,7 +458,7 @@ const CustomControls = memo<CustomControlsProps>(
                     fontSize: "12px",
                     margin: "0",
                     borderRadius: "0",
-                    opacity: !hasContainers || !hasExpandedContainers ? 0.5 : 1,
+                    opacity: !hasContainers || !hasExpandedContainers ? 0.4 : 1, // More obvious opacity change
                   }}
                 >
                   <PackIcon />
@@ -463,7 +477,9 @@ const CustomControls = memo<CustomControlsProps>(
                   className="react-flow__controls-button"
                   style={{
                     alignItems: "center",
-                    background: "#fefefe",
+                    background: hasContainers && hasCollapsedContainers 
+                      ? "#fefefe" 
+                      : "#f5f5f5", // Grayed out background when disabled
                     border: "none",
                     borderBottom:
                       !hasContainers || !hasCollapsedContainers
@@ -487,7 +503,7 @@ const CustomControls = memo<CustomControlsProps>(
                     margin: "0",
                     borderRadius: "0",
                     opacity:
-                      !hasContainers || !hasCollapsedContainers ? 0.5 : 1,
+                      !hasContainers || !hasCollapsedContainers ? 0.4 : 1, // More obvious opacity change
                   }}
                 >
                   <UnpackIcon />
@@ -674,7 +690,12 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle bulk operations
     const handleCollapseAll = useCallback(async () => {
       try {
+        console.log("[Hydroscope] CollapseAll operation starting");
         await hydroscopeCoreRef.current?.collapseAll();
+        console.log("[Hydroscope] CollapseAll operation completed");
+        
+        // Force a re-render to update button states
+        setState((prev) => ({ ...prev }));
       } catch (error) {
         console.error("Failed to collapse all containers:", error);
         onError?.(error as Error);
@@ -683,7 +704,12 @@ export const Hydroscope = memo<HydroscopeProps>(
 
     const handleExpandAll = useCallback(async () => {
       try {
+        console.log("[Hydroscope] ExpandAll operation starting");
         await hydroscopeCoreRef.current?.expandAll();
+        console.log("[Hydroscope] ExpandAll operation completed");
+        
+        // Force a re-render to update button states
+        setState((prev) => ({ ...prev }));
       } catch (error) {
         console.error("Failed to expand all containers:", error);
         onError?.(error as Error);
