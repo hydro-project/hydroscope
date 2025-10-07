@@ -561,10 +561,13 @@ export const Hydroscope = memo<HydroscopeProps>(
       isLoading: false,
     });
 
-    // Track current grouping (read-only, determined by JSON format - first hierarchy choice)
+    // Track current grouping (can be changed by user)
+    const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
+    
     const currentGrouping = useMemo(() => {
-      return data?.hierarchyChoices?.[0]?.id;
-    }, [data]);
+      // Use selected grouping if available, otherwise default to first hierarchy choice
+      return selectedGrouping || data?.hierarchyChoices?.[0]?.id;
+    }, [selectedGrouping, data]);
 
     // Refs for component instances
     const hydroscopeCoreRef = useRef<HydroscopeCoreHandle>(null);
@@ -901,10 +904,34 @@ export const Hydroscope = memo<HydroscopeProps>(
                     hierarchyChoices={state.data?.hierarchyChoices || []}
                     currentGrouping={currentGrouping}
                     onGroupingChange={(groupingId) => {
-                      console.log(
-                        "⚠️ Grouping change requested but ignored - grouping is now determined by JSON format (first hierarchy choice):",
-                        groupingId,
-                      );
+                      console.log("🔄 Hierarchy change requested:", groupingId);
+                      setSelectedGrouping(groupingId);
+                      
+                      // Trigger re-parsing with the new hierarchy
+                      if (data && groupingId) {
+                        setState((prev) => ({
+                          ...prev,
+                          isLoading: true,
+                          error: null,
+                        }));
+                        
+                        // Re-parse the data with the new grouping
+                        const updatedData = { ...data };
+                        // Move the selected hierarchy to the front so it becomes the active one
+                        if (updatedData.hierarchyChoices) {
+                          const selectedChoice = updatedData.hierarchyChoices.find(choice => choice.id === groupingId);
+                          const otherChoices = updatedData.hierarchyChoices.filter(choice => choice.id !== groupingId);
+                          if (selectedChoice) {
+                            updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
+                          }
+                        }
+                        
+                        setState((prev) => ({
+                          ...prev,
+                          data: updatedData,
+                          isLoading: false,
+                        }));
+                      }
                     }}
                     collapsedContainers={new Set()}
                     onToggleContainer={(containerId) => {
