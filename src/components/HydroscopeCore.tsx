@@ -1008,6 +1008,12 @@ const HydroscopeCoreInternal = forwardRef<
         setState((prev) => ({ ...prev, shouldFitView: true }));
 
         // Notify parent component of visualization state change
+        console.log("KIRO_DEBUG_EXPAND_ALL: Calling onVisualizationStateChange callback");
+        console.log("[HydroscopeCore] 🔍 VisualizationState containers after expandAll:", {
+          visibleContainers: state.visualizationState.visibleContainers.length,
+          collapsedContainers: state.visualizationState.visibleContainers.filter(c => c.collapsed).length,
+          expandedContainers: state.visualizationState.visibleContainers.filter(c => !c.collapsed).length
+        });
         onVisualizationStateChange?.(state.visualizationState);
 
         // Call success callback

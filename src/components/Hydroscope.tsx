@@ -301,8 +301,7 @@ interface CustomControlsProps {
   autoFitEnabled?: boolean;
 }
 
-const CustomControls = memo<CustomControlsProps>(
-  ({
+const CustomControls = ({
     visualizationState,
     onCollapseAll,
     onExpandAll,
@@ -310,7 +309,9 @@ const CustomControls = memo<CustomControlsProps>(
     onLoadFile,
     showLoadFile = false,
     autoFitEnabled = true, // Default to true to match the component's default behavior
-  }) => {
+  }: CustomControlsProps) => {
+    console.log("KIRO_DEBUG_BUTTON_STATES: CustomControls rendering");
+    
     // Check if there are any containers that can be collapsed/expanded
     const hasContainers =
       (visualizationState?.visibleContainers?.length ?? 0) > 0;
@@ -331,8 +332,15 @@ const CustomControls = memo<CustomControlsProps>(
       visibleContainersCount: visualizationState?.visibleContainers?.length ?? 0,
       containerStates: visualizationState?.visibleContainers?.map(c => ({
         id: c.id,
-        collapsed: c.collapsed
+        collapsed: c.collapsed,
+        hidden: c.hidden
       })) ?? []
+    });
+    
+    // Additional debugging for button states
+    console.log("[CustomControls] Button states:", {
+      expandAllDisabled: !hasContainers || !hasCollapsedContainers,
+      collapseAllDisabled: !hasContainers || !hasExpandedContainers
     });
 
     // Calculate if we have any custom controls to show
@@ -514,8 +522,7 @@ const CustomControls = memo<CustomControlsProps>(
         )}
       </>
     );
-  },
-);
+  };
 
 CustomControls.displayName = "CustomControls";
 
@@ -779,6 +786,12 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
+        console.log("KIRO_DEBUG_STATE_CHANGE: handleVisualizationStateChange called");
+        console.log("[Hydroscope] 🔍 Updated visualization state containers:", {
+          visibleContainers: visualizationState.visibleContainers.length,
+          collapsedContainers: visualizationState.visibleContainers.filter(c => c.collapsed).length,
+          expandedContainers: visualizationState.visibleContainers.filter(c => !c.collapsed).length
+        });
         setState((prev) => ({
           ...prev,
           currentVisualizationState: visualizationState,
