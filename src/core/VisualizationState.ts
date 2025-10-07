@@ -401,23 +401,35 @@ export class VisualizationState {
     const container = this._containers.get(containerId);
     if (!container) return;
 
+    // CRITICAL FIX: Process bottom-up to ensure proper edge aggregation
+    // First, recursively process all nested containers (deepest first)
     for (const childId of container.children) {
-      const childNode = this._nodes.get(childId);
       const childContainer = this._containers.get(childId);
-
-      if (childNode) {
-        childNode.hidden = true;
-      }
       if (childContainer) {
-        // When a parent container collapses, ALL child containers must be hidden AND collapsed
-        // This prevents the illegal "Expanded/Hidden" state (collapsed: false, hidden: true)
-        console.log(
-          `[VisualizationState] 🙈 HIDING and COLLAPSING container ${childContainer.id} (parent ${containerId} collapsed)`
-        );
+        // Recursively process descendants first (bottom-up)
+        this._hideAllDescendants(childId);
+        
+        // Then collapse and aggregate edges for this child container
+
+        
         childContainer.hidden = true;
         childContainer.collapsed = true; // CRITICAL FIX: Also collapse child containers to avoid invariant violations
-        // Recursively hide descendants of child containers
-        this._hideAllDescendants(childId);
+        
+        // CRITICAL FIX: Clean up any existing aggregated edges that reference this now-hidden container
+        // This prevents ELK from trying to reference non-existent shapes
+        this._cleanupAggregatedEdgesForHiddenContainer(childId);
+        
+        // CRITICAL FIX: Aggregate edges for this nested container AFTER its descendants are processed
+        // This ensures that edges referencing deeply nested containers are properly handled
+        this.aggregateEdgesForContainer(childId);
+      }
+    }
+
+    // Finally, hide all direct child nodes
+    for (const childId of container.children) {
+      const childNode = this._nodes.get(childId);
+      if (childNode) {
+        childNode.hidden = true;
       }
     }
   }
@@ -494,20 +506,14 @@ export class VisualizationState {
   aggregateEdgesForContainer(containerId: string): void {
     const container = this._containers.get(containerId);
     if (!container) {
-      console.log(`[VisualizationState] ❌ Container ${containerId} not found`);
       return;
     }
 
     // Get all descendants of this container (including nested containers)
     const allDescendants = this._getAllDescendantIds(containerId);
-    console.log(
-      `[VisualizationState] 🔄 Aggregating edges for container ${containerId}`
-    );
-    console.log(
-      `[VisualizationState] 📊 Container ${containerId} has ${allDescendants.size} descendants: ${Array.from(allDescendants).join(", ")}`
-    );
-
+    
     const edgesToAggregate = new Map<string, GraphEdge[]>(); // key: source-target, value: edges
+    const aggregatedEdgesToDelete: string[] = []; // Track aggregated edges to delete
 
     // Find all edges that need to be aggregated
     const edgesBySourceTarget = new Map<
@@ -532,27 +538,30 @@ export class VisualizationState {
         let aggregatedSource = edge.source;
         let aggregatedTarget = edge.target;
 
-        console.log(
-          `[EdgeDebug] Processing edge ${edge.id}: ${edge.source} -> ${edge.target}`
-        );
-        console.log(
-          `[EdgeDebug]   sourceInContainer: ${sourceInContainer}, targetInContainer: ${targetInContainer}`
-        );
-
         // If source is in container, aggregate to container
         if (sourceInContainer) {
-          aggregatedSource = containerId;
-          console.log(
-            `[EdgeDebug]   Aggregating source to container: ${aggregatedSource}`
-          );
+          // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
+          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          if (visibleAncestor) {
+            aggregatedSource = visibleAncestor;
+          } else {
+            // No visible ancestor, skip this edge
+            edge.hidden = true;
+            continue;
+          }
         }
 
         // If target is in container, aggregate to container
         if (targetInContainer) {
-          aggregatedTarget = containerId;
-          console.log(
-            `[EdgeDebug]   Aggregating target to container: ${aggregatedTarget}`
-          );
+          // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
+          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          if (visibleAncestor) {
+            aggregatedTarget = visibleAncestor;
+          } else {
+            // No visible ancestor, skip this edge
+            edge.hidden = true;
+            continue;
+          }
         }
 
         // TODO: DRY up the next two blocks into one block.
@@ -694,10 +703,26 @@ export class VisualizationState {
         let newTarget = aggEdge.target;
 
         if (sourceInContainer) {
-          newSource = containerId;
+          // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
+          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          if (visibleAncestor) {
+            newSource = visibleAncestor;
+          } else {
+            // No visible ancestor, hide the edge
+            aggEdge.hidden = true;
+            continue;
+          }
         }
         if (targetInContainer) {
-          newTarget = containerId;
+          // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
+          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          if (visibleAncestor) {
+            newTarget = visibleAncestor;
+          } else {
+            // No visible ancestor, hide the edge
+            aggEdge.hidden = true;
+            continue;
+          }
         }
 
         // Skip self-loops
@@ -711,33 +736,55 @@ export class VisualizationState {
           edgesToAggregate.set(key, []);
         }
 
-        // Hide the old aggregated edge and add its original edges to be re-aggregated
-        aggEdge.hidden = true;
+        // CRITICAL FIX: Delete the old aggregated edge instead of just hiding it
+        // This prevents ELK from seeing references to hidden containers
+        
+
+        
+        // Add its original edges to be re-aggregated with new endpoints
         for (const originalEdgeId of aggEdge.originalEdgeIds) {
           const originalEdge = this._edges.get(originalEdgeId);
           if (originalEdge) {
             edgesToAggregate.get(key)!.push(originalEdge);
           }
         }
+        
+        // Mark for deletion (we'll delete after iteration to avoid modifying map during iteration)
+        aggregatedEdgesToDelete.push(aggEdge.id);
       }
+    }
+
+    // CRITICAL FIX: Delete old aggregated edges that reference hidden containers
+    for (const aggEdgeId of aggregatedEdgesToDelete) {
+      this._aggregatedEdges.delete(aggEdgeId);
     }
 
     // Create new aggregated edges
     for (const [_key, edgeGroup] of edgesBySourceTarget) {
       const { source, target, edges } = edgeGroup;
+      
+      // Validate that both endpoints exist
+      const sourceContainer = this._containers.get(source);
+      const sourceNode = this._nodes.get(source);
+      const targetContainer = this._containers.get(target);
+      const targetNode = this._nodes.get(target);
+      
+      const sourceExists = sourceContainer || sourceNode;
+      const targetExists = targetContainer || targetNode;
+      
+      if (!sourceExists) {
+        throw new Error(`Aggregated edge source ${source} does not exist as container or node`);
+      }
+      if (!targetExists) {
+        throw new Error(`Aggregated edge target ${target} does not exist as container or node`);
+      }
+      
       // SIMPLIFIED FIX: Use source-target pair for consistent IDs while preserving directionality
       const aggregatedEdgeId = `agg-${source}-${target}`;
+      
 
-      console.log(`[EdgeDebug] Creating aggregated edge: ${aggregatedEdgeId}`);
-      console.log(
-        `[EdgeDebug]   Source: ${source} (exists: ${this._containers.has(source) || this._nodes.has(source)})`
-      );
-      console.log(
-        `[EdgeDebug]   Target: ${target} (exists: ${this._containers.has(target) || this._nodes.has(target)})`
-      );
-      console.log(
-        `[EdgeDebug]   Original edges: ${edges.map((e) => e.id).join(", ")}`
-      );
+
+
 
       // CRITICAL DEBUG: Log when we create problematic edges
       if (source === "bt_136" || target === "bt_136") {
@@ -1013,7 +1060,15 @@ export class VisualizationState {
           sourceContainer.collapsed &&
           sourceContainer.id !== containerId
         ) {
-          effectiveSource = sourceContainer.id;
+          // CRITICAL FIX: If the collapsed container is hidden, find its visible ancestor
+          if (sourceContainer.hidden) {
+            const visibleAncestor = this._findLowestVisibleAncestorForAggregation(sourceContainer.id);
+            if (visibleAncestor) {
+              effectiveSource = visibleAncestor;
+            }
+          } else {
+            effectiveSource = sourceContainer.id;
+          }
         }
 
         // Check if target is in a collapsed container
@@ -1023,7 +1078,15 @@ export class VisualizationState {
           targetContainer.collapsed &&
           targetContainer.id !== containerId
         ) {
-          effectiveTarget = targetContainer.id;
+          // CRITICAL FIX: If the collapsed container is hidden, find its visible ancestor
+          if (targetContainer.hidden) {
+            const visibleAncestor = this._findLowestVisibleAncestorForAggregation(targetContainer.id);
+            if (visibleAncestor) {
+              effectiveTarget = visibleAncestor;
+            }
+          } else {
+            effectiveTarget = targetContainer.id;
+          }
         }
 
         // Only aggregate if at least one endpoint is still a collapsed container
@@ -1281,6 +1344,11 @@ export class VisualizationState {
     while (currentContainer) {
       const container = this._containers.get(currentContainer);
       if (container && container.collapsed) {
+        // CRITICAL FIX: If this collapsed container is hidden, find its visible ancestor
+        if (container.hidden) {
+          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(currentContainer);
+          return visibleAncestor || undefined;
+        }
         return currentContainer;
       }
       currentContainer = this._containerParentMap.get(currentContainer);
@@ -1661,29 +1729,6 @@ export class VisualizationState {
   }
 
   /**
-   * Determine if a container should be collapsed during smart collapse
-   * Current algorithm: collapse containers with more than 3 children
-   */
-  private _shouldCollapseContainer(container: Container): boolean {
-    // Smart collapse criteria:
-    // 1. Container has more than 3 children (reduces visual complexity)
-    // 2. Container is not already collapsed
-    // 3. Container is not hidden
-
-    const childCount = container.children.size;
-    const shouldCollapse =
-      childCount > LAYOUT_CONSTANTS.LARGE_CONTAINER_CHILD_COUNT_THRESHOLD;
-
-    if (shouldCollapse) {
-      console.log(
-        `[VisualizationState] 🎯 Container ${container.id} meets smart collapse criteria (${childCount} children > 3)`
-      );
-    }
-
-    return shouldCollapse;
-  }
-
-  /**
    * Calculate the expansion cost for a container using the holistic cost formula
    * Cost = (containerCount × COLLAPSED_CONTAINER_AREA) + (nodeCount × NODE_AREA)
    */
@@ -1863,6 +1908,153 @@ export class VisualizationState {
     this._hideAllDescendants(id);
     this.aggregateEdgesForContainer(id);
     this.validateInvariants();
+  }
+
+  /**
+   * Clean up aggregated edges that reference a hidden container
+   * This prevents ELK from trying to reference non-existent shapes
+   */
+  private _cleanupAggregatedEdgesForHiddenContainer(containerId: string): void {
+
+    
+    const edgesToRemove: string[] = [];
+    const edgesToReaggregate: GraphEdge[] = [];
+    
+    for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
+      if (aggEdge.source === containerId || aggEdge.target === containerId) {
+
+        
+        edgesToRemove.push(aggEdgeId);
+        
+        // Collect the original edges for re-aggregation
+        for (const originalEdgeId of aggEdge.originalEdgeIds) {
+          const originalEdge = this._edges.get(originalEdgeId);
+          if (originalEdge) {
+            edgesToReaggregate.push(originalEdge);
+          }
+        }
+      }
+    }
+    
+    // Remove the problematic aggregated edges
+    for (const aggEdgeId of edgesToRemove) {
+      this._aggregatedEdges.delete(aggEdgeId);
+      
+
+    }
+    
+    // Re-aggregate the original edges with proper endpoint resolution
+    for (const edge of edgesToReaggregate) {
+      this._reaggregateEdgeWithVisibleEndpoints(edge, containerId);
+    }
+  }
+
+  /**
+   * Re-aggregate a single edge, ensuring both endpoints reference visible containers/nodes
+   */
+  private _reaggregateEdgeWithVisibleEndpoints(edge: GraphEdge, hiddenContainerId: string): void {
+    let newSource = edge.source;
+    let newTarget = edge.target;
+    
+    // If source was the hidden container, find its visible parent
+    if (edge.source === hiddenContainerId) {
+      const visibleAncestor = this._findLowestVisibleAncestorForAggregation(hiddenContainerId);
+      if (visibleAncestor) {
+        newSource = visibleAncestor;
+      } else {
+        // No visible ancestor, hide the edge
+        edge.hidden = true;
+        return;
+      }
+    }
+    
+    // If target was the hidden container, find its visible parent
+    if (edge.target === hiddenContainerId) {
+      const visibleAncestor = this._findLowestVisibleAncestorForAggregation(hiddenContainerId);
+      if (visibleAncestor) {
+        newTarget = visibleAncestor;
+      } else {
+        // No visible ancestor, hide the edge
+        edge.hidden = true;
+        return;
+      }
+    }
+    
+    // Skip self-loops
+    if (newSource === newTarget) {
+      edge.hidden = true;
+      return;
+    }
+    
+    // Create or update aggregated edge with new endpoints
+    const aggregatedEdgeId = `agg-${newSource}-${newTarget}`;
+    const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
+    
+    if (existingAggEdge) {
+      // Add to existing aggregated edge
+      if (!existingAggEdge.originalEdgeIds.includes(edge.id)) {
+        existingAggEdge.originalEdgeIds.push(edge.id);
+      }
+    } else {
+      // Create new aggregated edge
+      const aggregatedEdge: AggregatedEdge = {
+        id: aggregatedEdgeId,
+        source: newSource,
+        target: newTarget,
+        type: "aggregated",
+        semanticTags: [],
+        hidden: false,
+        aggregated: true,
+        originalEdgeIds: [edge.id],
+        aggregationSource: hiddenContainerId,
+      };
+      this._aggregatedEdges.set(aggregatedEdgeId, aggregatedEdge);
+    }
+    
+    // Hide the original edge
+    edge.hidden = true;
+  }
+
+  /**
+   * CRITICAL FIX: Clean up all aggregated edges that reference hidden containers
+   * This should be called after all container collapse operations are complete
+   */
+  private _cleanupAllAggregatedEdgesWithHiddenEndpoints(): void {
+    const edgesToDelete: string[] = [];
+    
+    for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
+      const sourceContainer = this._containers.get(aggEdge.source);
+      const sourceNode = this._nodes.get(aggEdge.source);
+      const targetContainer = this._containers.get(aggEdge.target);
+      const targetNode = this._nodes.get(aggEdge.target);
+      
+      const sourceExists = sourceContainer || sourceNode;
+      const targetExists = targetContainer || targetNode;
+      const sourceVisible = (sourceContainer && !sourceContainer.hidden) || (sourceNode && !sourceNode.hidden);
+      const targetVisible = (targetContainer && !targetContainer.hidden) || (targetNode && !targetNode.hidden);
+      
+      if (!sourceExists || !targetExists || !sourceVisible || !targetVisible) {
+        console.log(
+          `[VisualizationState] 🧹 FINAL CLEANUP: Removing aggregated edge ${aggEdgeId} with invalid endpoints: source ${aggEdge.source} (exists=${!!sourceExists}, visible=${sourceVisible}), target ${aggEdge.target} (exists=${!!targetExists}, visible=${targetVisible})`
+        );
+        edgesToDelete.push(aggEdgeId);
+        
+        // Restore original edges to hidden state
+        for (const originalEdgeId of aggEdge.originalEdgeIds) {
+          const originalEdge = this._edges.get(originalEdgeId);
+          if (originalEdge) {
+            originalEdge.hidden = true;
+          }
+        }
+      }
+    }
+    
+    // Delete the problematic aggregated edges
+    for (const aggEdgeId of edgesToDelete) {
+      this._aggregatedEdges.delete(aggEdgeId);
+    }
+    
+    console.log(`[VisualizationState] ✅ Final cleanup removed ${edgesToDelete.length} problematic aggregated edges`);
   }
 
   // Edge Aggregation Tracking and Lookup Methods
