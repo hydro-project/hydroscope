@@ -3,8 +3,33 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
+  getStraightPath,
+  getSmoothStepPath,
   type EdgeProps,
 } from "@xyflow/react";
+
+// Helper function to get the appropriate path based on edge style type
+const getEdgePath = (
+  edgeStyleType: string,
+  pathParams: {
+    sourceX: number;
+    sourceY: number;
+    sourcePosition: any;
+    targetX: number;
+    targetY: number;
+    targetPosition: any;
+  }
+) => {
+  switch (edgeStyleType) {
+    case "straight":
+      return getStraightPath(pathParams);
+    case "smoothstep":
+      return getSmoothStepPath(pathParams);
+    case "bezier":
+    default:
+      return getBezierPath(pathParams);
+  }
+};
 
 // Aggregated Edge Component
 // This edge type is used when multiple edges are collapsed into a single aggregated edge
@@ -20,14 +45,20 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
   data,
   markerEnd,
 }) => {
-  const [edgePath, labelX, labelY] = getBezierPath({
+  // Get edge style type from data, default to bezier
+  const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
+  console.log(`[AggregatedEdge] ${_id} using edge style type: ${edgeStyleType}`);
+  
+  const pathParams = {
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-  });
+  };
+  
+  const [edgePath, labelX, labelY] = getEdgePath(edgeStyleType, pathParams);
 
   // Use provided style from semantic processing, with subtle aggregation indicator
   const aggregatedStyle = {
@@ -93,17 +124,23 @@ export const DefaultEdge: React.FC<EdgeProps> = ({
   sourcePosition,
   targetPosition,
   style = {},
-  data: _data,
+  data,
   markerEnd,
 }) => {
-  const [edgePath] = getBezierPath({
+  // Get edge style type from data, default to bezier
+  const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
+  console.log(`[DefaultEdge] ${_id} using edge style type: ${edgeStyleType}`);
+  
+  const pathParams = {
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-  });
+  };
+  
+  const [edgePath] = getEdgePath(edgeStyleType, pathParams);
 
   // Default to triangle arrowhead if no markerEnd is specified
   const effectiveMarkerEnd = markerEnd || { type: "arrowclosed" };

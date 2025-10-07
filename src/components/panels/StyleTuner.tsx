@@ -59,6 +59,7 @@ export interface StyleTunerPanelProps {
   onPaletteChange?: (palette: string) => void;
   currentLayout?: string;
   onLayoutChange?: (layout: string) => void;
+  onEdgeStyleChange?: (edgeStyle: "bezier" | "straight" | "smoothstep") => void;
   onResetToDefaults?: () => void;
   defaultCollapsed?: boolean;
   open?: boolean;
@@ -76,6 +77,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   onPaletteChange,
   currentLayout = "layered",
   onLayoutChange,
+  onEdgeStyleChange,
   onResetToDefaults,
   defaultCollapsed: _defaultCollapsed = false,
   open = true,
@@ -195,10 +197,12 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             onChange={(e) => {
               // Update immediately for responsive UI and execute synchronously
               const newLayout = e.target.value;
+              console.log(`[StyleTuner] Layout algorithm dropdown changed: ${currentLayout} -> ${newLayout}`);
               try {
                 onLayoutChange?.(newLayout);
+                console.log(`[StyleTuner] Layout change callback executed successfully for: ${newLayout}`);
               } catch (error) {
-                console.error("Layout change failed:", error);
+                console.error(`[StyleTuner] Layout change failed for ${newLayout}:`, error);
               }
             }}
           >
@@ -217,10 +221,24 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             onChange={(e) => {
               // Update local state immediately for responsive UI
               const newEdgeStyle = e.target.value as EdgeStyleKind;
+              console.log(`[StyleTuner] Edge style dropdown changed: ${local.edgeStyle || "bezier"} -> ${newEdgeStyle}`);
+              
               const next = { ...local, edgeStyle: newEdgeStyle };
               setLocal(next);
-              // Execute synchronously to prevent race conditions
-              onChange(next);
+              
+              try {
+                // Use the new AsyncCoordinator-based handler if available, otherwise fall back to the old one
+                if (onEdgeStyleChange) {
+                  onEdgeStyleChange(newEdgeStyle);
+                  console.log(`[StyleTuner] Edge style change callback executed successfully for: ${newEdgeStyle}`);
+                } else {
+                  // Fallback to the old onChange handler
+                  onChange(next);
+                  console.log(`[StyleTuner] Edge style change fallback executed for: ${newEdgeStyle}`);
+                }
+              } catch (error) {
+                console.error(`[StyleTuner] Edge style change failed for ${newEdgeStyle}:`, error);
+              }
             }}
           >
             <option value="bezier">Bezier</option>

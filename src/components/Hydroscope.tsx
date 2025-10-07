@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
-import { ReactFlowProvider, Controls, useReactFlow } from "@xyflow/react";
+import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import {
@@ -301,7 +301,7 @@ interface CustomControlsProps {
   autoFitEnabled?: boolean;
 }
 
-const CustomControls = ({
+const CustomControls = memo(({
     visualizationState,
     onCollapseAll,
     onExpandAll,
@@ -310,8 +310,6 @@ const CustomControls = ({
     showLoadFile = false,
     autoFitEnabled = true, // Default to true to match the component's default behavior
   }: CustomControlsProps) => {
-    console.log("KIRO_DEBUG_BUTTON_STATES: CustomControls rendering");
-    
     // Check if there are any containers that can be collapsed/expanded
     const hasContainers =
       (visualizationState?.visibleContainers?.length ?? 0) > 0;
@@ -323,25 +321,6 @@ const CustomControls = ({
       visualizationState?.visibleContainers?.some(
         (container) => !container.collapsed,
       ) ?? false;
-
-    // Debug logging for button states
-    console.log("[CustomControls] Button state calculation:", {
-      hasContainers,
-      hasCollapsedContainers,
-      hasExpandedContainers,
-      visibleContainersCount: visualizationState?.visibleContainers?.length ?? 0,
-      containerStates: visualizationState?.visibleContainers?.map(c => ({
-        id: c.id,
-        collapsed: c.collapsed,
-        hidden: c.hidden
-      })) ?? []
-    });
-    
-    // Additional debugging for button states
-    console.log("[CustomControls] Button states:", {
-      expandAllDisabled: !hasContainers || !hasCollapsedContainers,
-      collapseAllDisabled: !hasContainers || !hasExpandedContainers
-    });
 
     // Calculate if we have any custom controls to show
     const hasCustomControls = hasContainers || onAutoFitToggle || showLoadFile;
@@ -522,7 +501,7 @@ const CustomControls = ({
         )}
       </>
     );
-  };
+  });
 
 CustomControls.displayName = "CustomControls";
 
@@ -655,7 +634,22 @@ export const Hydroscope = memo<HydroscopeProps>(
       [onConfigChange],
     );
 
-    // Handle style tuner changes
+    // Handle edge style changes - use HydroscopeCore's updateRenderConfig method
+    const handleEdgeStyleChange = useCallback(async (edgeStyle: "bezier" | "straight" | "smoothstep") => {
+      console.log(`[Hydroscope] 🎨 Edge style change requested: ${edgeStyle}`);
+      
+      try {
+        // Update render config through HydroscopeCore's AsyncCoordinator
+        await hydroscopeCoreRef.current?.updateRenderConfig({ edgeStyle });
+        
+        console.log(`[Hydroscope] ✅ Edge style change completed: ${edgeStyle}`);
+      } catch (error) {
+        console.error("[Hydroscope] ❌ Error handling edge style change:", error);
+        onError?.(error as Error);
+      }
+    }, [onError]);
+
+    // Handle style tuner changes (for non-edge style changes)
     const handleStyleChange = useCallback(
       (styleConfig: StyleTunerConfig) => {
         const renderConfig: RenderConfig = {
@@ -674,25 +668,38 @@ export const Hydroscope = memo<HydroscopeProps>(
       [state.colorPalette, state.autoFitEnabled, handleConfigChange],
     );
 
-    // Handle palette changes
+    // Handle palette changes - use HydroscopeCore's updateRenderConfig method
     const handlePaletteChange = useCallback(
-      (palette: string) => {
-        setState((prev) => ({ ...prev, colorPalette: palette }));
-
-        const renderConfig: RenderConfig = {
-          ...state.renderConfig,
-          colorPalette: palette,
-        };
-
-        handleConfigChange(renderConfig);
+      async (palette: string) => {
+        console.log(`[Hydroscope] 🎨 Color palette change requested: ${palette}`);
+        
+        try {
+          // Update color palette through HydroscopeCore's AsyncCoordinator
+          await hydroscopeCoreRef.current?.updateRenderConfig({ colorPalette: palette });
+          
+          console.log(`[Hydroscope] ✅ Color palette change completed: ${palette}`);
+        } catch (error) {
+          console.error("[Hydroscope] ❌ Error handling color palette change:", error);
+          onError?.(error as Error);
+        }
       },
-      [state.renderConfig, handleConfigChange],
+      [onError],
     );
 
-    // Handle layout changes
-    const handleLayoutChange = useCallback((layout: string) => {
-      setState((prev) => ({ ...prev, layoutAlgorithm: layout }));
-    }, []);
+    // Handle layout changes - use HydroscopeCore's updateRenderConfig method
+    const handleLayoutChange = useCallback(async (layout: string) => {
+      console.log(`[Hydroscope] 🎯 Layout algorithm change requested: ${state.layoutAlgorithm} -> ${layout}`);
+      
+      try {
+        // Update layout algorithm through HydroscopeCore's AsyncCoordinator
+        await hydroscopeCoreRef.current?.updateRenderConfig({ layoutAlgorithm: layout });
+        
+        console.log(`[Hydroscope] ✅ Layout algorithm change completed: ${layout}`);
+      } catch (error) {
+        console.error("[Hydroscope] ❌ Error handling layout change:", error);
+        onError?.(error as Error);
+      }
+    }, [state.layoutAlgorithm, onError]);
 
     // Handle bulk operations
     const handleCollapseAll = useCallback(async () => {
@@ -786,12 +793,6 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
-        console.log("KIRO_DEBUG_STATE_CHANGE: handleVisualizationStateChange called");
-        console.log("[Hydroscope] 🔍 Updated visualization state containers:", {
-          visibleContainers: visualizationState.visibleContainers.length,
-          collapsedContainers: visualizationState.visibleContainers.filter(c => c.collapsed).length,
-          expandedContainers: visualizationState.visibleContainers.filter(c => !c.collapsed).length
-        });
         setState((prev) => ({
           ...prev,
           currentVisualizationState: visualizationState,
@@ -1001,6 +1002,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     onPaletteChange={handlePaletteChange}
                     currentLayout={state.layoutAlgorithm}
                     onLayoutChange={handleLayoutChange}
+                    onEdgeStyleChange={handleEdgeStyleChange}
                     onResetToDefaults={() => {
                       setState((prev) => ({
                         ...prev,

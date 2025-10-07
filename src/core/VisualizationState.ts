@@ -4,6 +4,7 @@
  */
 
 import { LAYOUT_CONSTANTS, SIZES } from "@/shared/config.js";
+import type { RenderConfig } from "@/components/Hydroscope.js";
 import type {
   GraphNode,
   GraphEdge,
@@ -28,6 +29,21 @@ export class VisualizationState {
     phase: "initial",
     layoutCount: 0,
     lastUpdate: Date.now(),
+  };
+  
+  // Render configuration - single source of truth for styling
+  private _renderConfig: Required<RenderConfig> & {
+    layoutAlgorithm: string; // Additional property not in RenderConfig interface
+  } = {
+    edgeStyle: "bezier",
+    edgeWidth: 2,
+    edgeDashed: false,
+    nodePadding: 8,
+    nodeFontSize: 12,
+    containerBorderWidth: 2,
+    colorPalette: "Set2",
+    layoutAlgorithm: "layered",
+    fitView: true,
   };
   private _searchResults: SearchResult[] = [];
   private _searchQuery: string = "";
@@ -1633,6 +1649,28 @@ export class VisualizationState {
     this._layoutState.error = error;
     this._layoutState.phase = "error";
     this._layoutState.lastUpdate = Date.now();
+  }
+
+  // Render Configuration - Single Source of Truth
+  getRenderConfig(): Required<RenderConfig> & { layoutAlgorithm: string } {
+    return { ...this._renderConfig };
+  }
+
+  updateRenderConfig(updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>): void {
+    this._renderConfig = { ...this._renderConfig, ...updates };
+    console.log(`[VisualizationState] 🎨 Render config updated:`, updates);
+  }
+
+  getEdgeStyle(): "bezier" | "straight" | "smoothstep" {
+    return this._renderConfig.edgeStyle;
+  }
+
+  getColorPalette(): string {
+    return this._renderConfig.colorPalette;
+  }
+
+  getLayoutAlgorithm(): string {
+    return this._renderConfig.layoutAlgorithm;
   }
 
   clearLayoutError(): void {

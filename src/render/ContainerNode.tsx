@@ -22,12 +22,6 @@ export function ContainerNode({ id, data }: NodeProps) {
     Number(data.height) ||
     (data.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
 
-  // DEBUG: Log container dimensions to verify they're correct
-  console.log(
-    `[ContainerNode] ${id}: width=${width}, height=${height}, collapsed=${data.collapsed}`,
-  );
-
-  // DEBUG: Log all ContainerNode renders with search highlight status
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
   const colorPalette = String(data.colorPalette || "Set3");

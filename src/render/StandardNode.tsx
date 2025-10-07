@@ -107,14 +107,6 @@ export function StandardNode({ id, data }: NodeProps) {
 
   // Handle click animation
   const handleClick = useCallback(() => {
-    console.log("[StandardNode] Click detected on node:", id);
-    console.log("[StandardNode] Node data:", {
-      collapsed: data.collapsed,
-      nodeType: data.nodeType,
-      hasOnClick: !!data.onClick,
-      onClickType: typeof data.onClick,
-    });
-
     // Trigger the visual pop-out effect
     setIsClicked(true);
 
@@ -129,12 +121,7 @@ export function StandardNode({ id, data }: NodeProps) {
       data.onClick &&
       typeof data.onClick === "function"
     ) {
-      console.log("[StandardNode] Calling container onClick handler for:", id);
       data.onClick(id, "container");
-    } else {
-      console.log(
-        "[StandardNode] Not a collapsed container or no onClick handler",
-      );
     }
 
     // Don't prevent the event from bubbling up to ReactFlow
@@ -200,11 +187,6 @@ export function StandardNode({ id, data }: NodeProps) {
       : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
-
-  // DEBUG: Log dimensions to verify they match ELK calculations
-  console.log(
-    `[StandardNode] ${id}: data.width=${data.width}, data.height=${data.height}, using width=${width}, height=${height}`,
-  );
 
   // Dev-only: log computed color mapping to verify at runtime
   if (process.env.NODE_ENV !== "production") {

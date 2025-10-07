@@ -56,6 +56,7 @@ import { ELKBridge } from "../bridges/ELKBridge.js";
 import { InteractionHandler } from "../core/InteractionHandler.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
+import type { RenderConfig } from "./Hydroscope.js";
 
 import type {
   HydroscopeData,
@@ -93,6 +94,9 @@ export interface HydroscopeCoreHandle {
 
   /** Navigate to element with automatic container expansion and viewport focus */
   navigateToElement: (elementId: string) => Promise<void>;
+
+  /** Update render configuration through AsyncCoordinator */
+  updateRenderConfig: (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => Promise<void>;
 }
 
 /**
@@ -132,6 +136,8 @@ export interface HydroscopeCoreProps {
   /** Initial color palette */
   initialColorPalette?: string;
 
+
+
   /** Whether auto-fit is enabled (controlled by parent component) */
   autoFitEnabled?: boolean;
 
@@ -162,6 +168,9 @@ export interface HydroscopeCoreProps {
 
   /** Callback when visualization state changes (for InfoPanel integration) */
   onVisualizationStateChange?: (visualizationState: VisualizationState) => void;
+
+  /** Callback when render config changes (for AsyncCoordinator processing) */
+  onRenderConfigChange?: (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => void;
 
   /** Callback when error occurs */
   onError?: (error: Error) => void;
@@ -237,6 +246,7 @@ const HydroscopeCoreInternal = forwardRef<
       onCollapseAll,
       onExpandAll,
       onVisualizationStateChange,
+      onRenderConfigChange,
       onError,
       className,
       style,
@@ -311,6 +321,20 @@ const HydroscopeCoreInternal = forwardRef<
 
         // Create VisualizationState
         const visualizationState = new VisualizationState();
+        
+        // Initialize render config from props
+        const initialRenderConfig = {
+          edgeStyle: "bezier" as const,
+          edgeWidth: 2,
+          edgeDashed: false,
+          nodePadding: 8,
+          nodeFontSize: 12,
+          containerBorderWidth: 2,
+          colorPalette: initialColorPalette || "Set2",
+          layoutAlgorithm: initialLayoutAlgorithm || "layered",
+          fitView: true,
+        };
+        visualizationState.updateRenderConfig(initialRenderConfig);
 
         // Create AsyncCoordinator
         const asyncCoordinator = new AsyncCoordinator();
@@ -356,7 +380,9 @@ const HydroscopeCoreInternal = forwardRef<
           isLoading: false,
         }));
       }
-    }, [initialLayoutAlgorithm]);
+    }, []); // Remove initialLayoutAlgorithm dependency to prevent re-initialization
+
+
 
     // Validate JSON data structure
     const validateData = useCallback((data: HydroscopeData): void => {
@@ -811,7 +837,11 @@ const HydroscopeCoreInternal = forwardRef<
             "[HydroscopeCore] 🔄 Bridge returned data with",
             newData.nodes.length,
             "nodes",
+            newData.edges.length,
+            "edges",
           );
+          
+
 
           // Log the generated ReactFlow nodes to see their types and states
           console.log(
@@ -857,6 +887,82 @@ const HydroscopeCoreInternal = forwardRef<
       },
       [state.autoFitEnabled],
     );
+
+    // Track previous layout algorithm to avoid unnecessary re-layouts during initialization
+    const prevLayoutAlgorithmRef = useRef<string>(initialLayoutAlgorithm);
+
+    // Handle layout algorithm changes - must go through AsyncCoordinator
+    useEffect(() => {
+      const prevAlgorithm = prevLayoutAlgorithmRef.current;
+      
+      // Only trigger if the algorithm actually changed (not just a re-render)
+      if (prevAlgorithm === initialLayoutAlgorithm) {
+        return;
+      }
+      
+      console.log(`[HydroscopeCore] 🎯 Layout algorithm changed: ${prevAlgorithm} -> ${initialLayoutAlgorithm}`);
+      
+      // Update the previous algorithm reference immediately to prevent re-triggers
+      prevLayoutAlgorithmRef.current = initialLayoutAlgorithm;
+      
+      // Only proceed if we have all dependencies AND data has been loaded
+      if (elkBridgeRef.current && state.visualizationState && state.asyncCoordinator && !state.isLoading) {
+        // Verify that the VisualizationState has data before proceeding
+        const hasData = state.visualizationState.visibleContainers.length > 0 || 
+                       state.visualizationState.visibleNodes.length > 0;
+        
+        if (!hasData) {
+          console.log(`[HydroscopeCore] ⏳ Skipping layout algorithm change - no data loaded yet`);
+          return;
+        }
+        
+        try {
+          // Update ELKBridge configuration
+          elkBridgeRef.current.updateConfiguration({
+            algorithm: initialLayoutAlgorithm,
+          });
+          
+          console.log(`[HydroscopeCore] ✅ ELKBridge configuration updated to algorithm: ${initialLayoutAlgorithm}`);
+          
+          // Trigger a new layout with the updated algorithm through AsyncCoordinator
+          const triggerLayoutWithNewAlgorithm = async () => {
+            try {
+              console.log(`[HydroscopeCore] 🚀 Triggering layout recalculation with new algorithm: ${initialLayoutAlgorithm}`);
+              
+              await state.asyncCoordinator!.queueELKLayout(
+                state.visualizationState!,
+                elkBridgeRef.current!,
+              );
+              
+              // Update ReactFlow data after layout
+              await updateReactFlowDataWithState(state.visualizationState!);
+              
+              // Trigger auto-fit after layout change
+              setState((prev) => ({ ...prev, shouldFitView: true }));
+              
+              console.log(`[HydroscopeCore] ✅ Layout recalculation completed with algorithm: ${initialLayoutAlgorithm}`);
+            } catch (error) {
+              console.error(`[HydroscopeCore] ❌ Error during layout recalculation:`, error);
+              handleError(error as Error, "layout algorithm change");
+            }
+          };
+          
+          triggerLayoutWithNewAlgorithm();
+        } catch (error) {
+          console.error(`[HydroscopeCore] ❌ Error updating layout algorithm:`, error);
+          handleError(error as Error, "layout algorithm update");
+        }
+      } else {
+        console.log(`[HydroscopeCore] ⏳ Skipping layout algorithm change - dependencies not ready yet`, {
+          hasELKBridge: !!elkBridgeRef.current,
+          hasVisualizationState: !!state.visualizationState,
+          hasAsyncCoordinator: !!state.asyncCoordinator,
+          isLoading: state.isLoading,
+        });
+      }
+    }, [initialLayoutAlgorithm, state.visualizationState, state.asyncCoordinator, state.isLoading]);
+
+
 
     // Bulk operations with atomic state management and error handling
     const handleCollapseAll = useCallback(async () => {
@@ -1276,6 +1382,54 @@ const HydroscopeCoreInternal = forwardRef<
       [state.visualizationState, handleExpand, handleCollapse],
     );
 
+    // Handle render config updates through AsyncCoordinator
+    const handleRenderConfigUpdate = useCallback(
+      async (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => {
+        if (!state.visualizationState || !state.asyncCoordinator) {
+          console.warn("[HydroscopeCore] Cannot update render config: missing state or coordinator");
+          return;
+        }
+
+        try {
+          console.log(`[HydroscopeCore] 🎨 Processing render config update:`, updates);
+          
+          // Update render config in VisualizationState
+          state.visualizationState.updateRenderConfig(updates);
+          
+          // If layout algorithm changed, trigger ELK layout, otherwise just update ReactFlow data
+          if (updates.layoutAlgorithm) {
+            console.log(`[HydroscopeCore] 🎯 Layout algorithm changed to: ${updates.layoutAlgorithm}`);
+            // Update ELK bridge configuration and trigger layout
+            if (elkBridgeRef.current) {
+              elkBridgeRef.current.updateConfiguration({ algorithm: updates.layoutAlgorithm });
+              await state.asyncCoordinator.queueELKLayout(state.visualizationState, elkBridgeRef.current);
+            }
+          } else {
+            // For non-layout changes (like edge style), just update ReactFlow data
+            await updateReactFlowDataWithState(state.visualizationState);
+          }
+          
+          // Notify parent component of the change
+          onRenderConfigChange?.(updates);
+          
+          // Force ReactFlow reset to ensure edge style changes are applied
+          setReactFlowResetKey((prev) => {
+            const newKey = prev + 1;
+            console.log(
+              `[HydroscopeCore] 🔄 ReactFlow reset key changed from ${prev} to ${newKey} after render config update`,
+            );
+            return newKey;
+          });
+          
+          console.log(`[HydroscopeCore] ✅ Render config update completed`);
+        } catch (error) {
+          console.error("[HydroscopeCore] ❌ Error updating render config:", error);
+          handleError(error as Error, "render config update");
+        }
+      },
+      [state.visualizationState, state.asyncCoordinator, onRenderConfigChange, handleError, setReactFlowResetKey, updateReactFlowDataWithState, elkBridgeRef]
+    );
+
     // Navigation handler for tree-to-graph navigation
     const handleNavigateToElement = useCallback(
       async (elementId: string) => {
@@ -1375,6 +1529,7 @@ const HydroscopeCoreInternal = forwardRef<
                 "[HydroscopeCore] navigateToElement disabled in readOnly mode",
               )
           : handleNavigateToElement,
+        updateRenderConfig: handleRenderConfigUpdate,
       }),
       [
         readOnly,
@@ -1384,6 +1539,7 @@ const HydroscopeCoreInternal = forwardRef<
         handleExpand,
         handleToggle,
         handleNavigateToElement,
+        handleRenderConfigUpdate,
         reactFlowInstance,
       ],
     );

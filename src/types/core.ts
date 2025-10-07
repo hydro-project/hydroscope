@@ -277,6 +277,7 @@ export interface QueuedOperation<T = any> {
     | "elk_layout"
     | "reactflow_render"
     | "application_event"
+    | "render_config_update"
     | "expand-tree-node"
     | "collapse-tree-node"
     | "expand-all-tree-nodes"

@@ -21,7 +21,6 @@ import {
   SEARCH_HIGHLIGHT_COLORS,
   SEARCH_CURRENT_COLORS,
   NAVIGATION_HIGHLIGHT_COLORS,
-  COMBINED_HIGHLIGHT_COLORS,
 } from "../shared/config.js";
 import { searchNavigationErrorHandler } from "../core/ErrorHandler.js";
 
@@ -197,50 +196,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
     interactionHandler?: any,
   ): ReactFlowData {
-    // Debug: Log collapsed containers and aggregated edges
-    console.log(`[ReactFlowBridge] 🔍 Converting to ReactFlow data:`);
-    console.log(`  - Visible nodes: ${state.visibleNodes.length}`);
-    console.log(`  - Visible containers: ${state.visibleContainers.length}`);
-    console.log(`  - Visible edges: ${state.visibleEdges.length}`);
-
-    // CRITICAL DEBUG: Log container states
-    if (state.visibleContainers.length === 0) {
-      console.error(
-        `[ReactFlowBridge] ❌ NO VISIBLE CONTAINERS! This is the bug!`,
-      );
-      console.error(
-        `[ReactFlowBridge] 🔍 This means visibleContainers getter is returning empty array`,
-      );
-      console.error(
-        `[ReactFlowBridge] 🔍 But smart collapse was creating aggregated edges, so containers should exist`,
-      );
-    }
-
-    // Debug collapsed containers
-    const collapsedContainers = state.visibleContainers.filter(
-      (c) => c.collapsed,
-    );
-    console.log(`  - Collapsed containers: ${collapsedContainers.length}`);
-    if (collapsedContainers.length > 0 && collapsedContainers.length < 10) {
-      console.log(
-        `  - Collapsed container IDs: ${collapsedContainers.map((c) => c.id).join(", ")}`,
-      );
-    }
-
-    // Debug aggregated edges
-    const aggregatedEdges = state.visibleEdges.filter(
-      (e) => "aggregated" in e && (e as any).aggregated,
-    );
-    console.log(`  - Aggregated edges: ${aggregatedEdges.length}`);
-    if (aggregatedEdges.length > 0 && aggregatedEdges.length < 20) {
-      console.log(`  - Aggregated edge details:`);
-      aggregatedEdges.forEach((e) => {
-        console.log(
-          `    - ${e.id}: ${e.source} -> ${e.target} (aggregated: ${(e as any).aggregated})`,
-        );
-      });
-    }
-
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
 
@@ -268,63 +223,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
       nodes: styledNodes,
       edges: styledEdges,
     };
-
-    // HIERARCHY LOGGING: Log final ReactFlow hierarchy
-    console.log(`[ReactFlowBridge] 🏗️ FINAL REACTFLOW HIERARCHY:`);
-    console.log(`[ReactFlowBridge] 🏗️ Total nodes: ${result.nodes.length}`);
-    console.log(`[ReactFlowBridge] 🏗️ Total edges: ${result.edges.length}`);
-
-    // DEBUG: Log actual ReactFlow node structure
-    console.log(`[ReactFlowBridge] 🔍 REACTFLOW NODE STRUCTURE:`);
-    result.nodes.forEach((node) => {
-      if (node.type === "container") {
-        console.log(
-          `[ReactFlowBridge] 🔍 Container ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y})`,
-        );
-      } else {
-        console.log(
-          `[ReactFlowBridge] 🔍 Node ${node.id}: parentNode=${node.parentNode}, position=(${node.position.x}, ${node.position.y}), extent=${node.extent}`,
-        );
-      }
-    });
-
-    const rootNodes = result.nodes.filter((n) => !n.parentId);
-    const childNodes = result.nodes.filter((n) => n.parentId);
-
-    console.log(`[ReactFlowBridge] 🏗️ Root-level nodes: ${rootNodes.length}`);
-    rootNodes.forEach((node) => {
-      const children = result.nodes.filter((n) => n.parentId === node.id);
-      if (children.length > 0) {
-        console.log(
-          `[ReactFlowBridge] 🏗️ Container ${node.id}: type=${node.type}, collapsed=${node.data?.collapsed}, children=${children.length}, position=(${node.position.x}, ${node.position.y})`,
-        );
-        children.forEach((child) => {
-          console.log(
-            `[ReactFlowBridge] 🏗️   └─ Child ${child.id}: type=${child.type}, position=(${child.position.x}, ${child.position.y})`,
-          );
-        });
-      } else {
-        console.log(
-          `[ReactFlowBridge] 🏗️ Node ${node.id}: type=${node.type}, position=(${node.position.x}, ${node.position.y})`,
-        );
-      }
-    });
-
-    if (childNodes.length > 0) {
-      // Check for truly orphaned nodes (parent doesn't exist in the node list at all)
-      const orphanedNodes = childNodes.filter(
-        (n) => !result.nodes.find((r) => r.id === n.parentId),
-      );
-      console.log(
-        `[ReactFlowBridge] 🏗️ Orphaned child nodes (should be 0): ${orphanedNodes.length}`,
-      );
-      if (orphanedNodes.length > 0) {
-        console.log(
-          `[ReactFlowBridge] ⚠️ Truly orphaned nodes:`,
-          orphanedNodes.map((n) => `${n.id} (parent: ${n.parentId})`),
-        );
-      }
-    }
 
     // Deep freeze the result for immutability while maintaining TypeScript compatibility
     this.deepFreezeReactFlowData(result);
@@ -433,10 +331,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
     const edges: ReactFlowEdge[] = [];
     const visibleEdges = state.visibleEdges;
 
-    console.log(
-      `[ReactFlowBridge] 🚀 Using optimized edge conversion for ${visibleEdges.length} edges`,
-    );
-
     // Create validation context once for all edges
     const visibleNodeIds = new Set(state.visibleNodes.map((node) => node.id));
     const visibleContainerIds = new Set(
@@ -490,12 +384,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
       }
     }
 
-    console.log(`[ReactFlowBridge] 📊 Optimized edge conversion summary:`);
-    console.log(
-      `  - Valid edges: ${validEdges}, Invalid edges: ${invalidEdges}, Skipped: ${skippedEdges}`,
-    );
-    console.log(`  - Final edge count: ${edges.length}`);
-
     return edges;
   }
 
@@ -513,9 +401,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
     for (const container of state.visibleContainers) {
       for (const childId of container.children) {
         nodeParentMap.set(childId, container.id);
-        console.log(
-          `[ReactFlowBridge] Node ${childId} assigned to container ${container.id}`,
-        );
       }
     }
 
@@ -524,9 +409,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
       const parentContainerId = state.getContainerParent(container.id);
       if (parentContainerId) {
         containerParentMap.set(container.id, parentContainerId);
-        console.log(
-          `[ReactFlowBridge] Container ${container.id} assigned to parent container ${parentContainerId}`,
-        );
       }
     }
 
@@ -546,32 +428,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
       const position = container.position || { x: 0, y: 0 };
       const width = container.dimensions?.width || container.width || 200;
       const height = container.dimensions?.height || container.height || 150;
-
-      // AGGRESSIVE DEBUG: Log container info with all dimension sources
-      console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id}: collapsed=${container.collapsed}, children=${container.children.size}`,
-      );
-      console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} POSITION: ELK=(${position.x}, ${position.y})`,
-      );
-      console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} DIMENSIONS: width=${width} (from: dimensions=${container.dimensions?.width}, width=${container.width}, fallback=200), height=${height} (from: dimensions=${container.dimensions?.height}, height=${container.height}, fallback=150)`,
-      );
-      console.log(
-        `[ReactFlowBridge] 🔍 CONTAINER ${container.id} RAW DIMENSIONS:`,
-        {
-          dimensions: container.dimensions,
-          width: container.width,
-          height: container.height,
-        },
-      );
-      if (container.children.size > 0) {
-        const childIds = Array.from(container.children).slice(0, 5); // First 5 children
-        console.log(
-          `[ReactFlowBridge] Container ${container.id} children (first 5):`,
-          childIds,
-        );
-      }
 
       const nodeCount = container.collapsed
         ? this.countContainerNodes(container, state)
@@ -965,209 +821,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     return edges;
   }
 
-  private validateEdge(
-    edge: any,
-    allVisibleIds: Set<string>,
-    visibleNodeIds: Set<string>,
-    visibleContainerIds: Set<string>,
-    state: VisualizationState,
-  ): EdgeValidationResult {
-    // FAIL EARLY: Validate edge object structure
-    if (!edge) {
-      const errorMessage = "Edge validation failed: edge is null or undefined";
-      console.error(`[ReactFlowBridge] ❌ ${errorMessage}`);
-      throw new Error(`Edge validation error: ${errorMessage}`);
-    }
 
-    if (!edge.id) {
-      const errorMessage = `Edge validation failed: edge missing id. Edge: ${JSON.stringify(edge)}`;
-      console.error(`[ReactFlowBridge] ❌ ${errorMessage}`);
-      throw new Error(`Edge validation error: ${errorMessage}`);
-    }
-
-    // Check for null/undefined/empty source or target
-    if (!edge.source || !edge.target) {
-      const errorMessage = `Edge ${edge.id} has missing source or target: source="${edge.source}", target="${edge.target}"`;
-      console.error(`[ReactFlowBridge] ❌ ${errorMessage}`);
-
-      // FAIL EARLY: Missing source/target is a critical bug, not a rendering issue
-      throw new Error(
-        `Critical edge validation error: ${errorMessage}. This indicates a bug in edge creation or data parsing.`,
-      );
-    }
-
-    // Check if source and target are strings
-    if (typeof edge.source !== "string" || typeof edge.target !== "string") {
-      return {
-        isValid: false,
-        isFloating: true,
-        reason: `Source or target is not a string: source type=${typeof edge.source}, target type=${typeof edge.target}`,
-        sourceExists: false,
-        targetExists: false,
-        sourceType: "missing",
-        targetType: "missing",
-        sourceInAllNodes: false,
-        targetInAllNodes: false,
-        suggestedFix: "Convert source and target to string identifiers",
-      };
-    }
-
-    // Check if source and target exist in visible elements
-    const sourceExists = allVisibleIds.has(edge.source);
-    const targetExists = allVisibleIds.has(edge.target);
-
-    // ENHANCED: Also check if they exist in ALL nodes/containers (including hidden ones)
-    const sourceInAllNodes =
-      state.getGraphNode(edge.source) !== undefined ||
-      state.getContainer(edge.source) !== undefined;
-    const targetInAllNodes =
-      state.getGraphNode(edge.target) !== undefined ||
-      state.getContainer(edge.target) !== undefined;
-
-    // Get container hierarchy information for both endpoints
-    const sourceContainerPath = this.getContainerHierarchyPath(
-      edge.source,
-      state,
-    );
-    const targetContainerPath = this.getContainerHierarchyPath(
-      edge.target,
-      state,
-    );
-    const commonAncestor = this.findCommonAncestorContainer(
-      sourceContainerPath,
-      targetContainerPath,
-    );
-    const crossHierarchy =
-      sourceContainerPath.length !== targetContainerPath.length ||
-      !sourceContainerPath.every(
-        (id, index) => id === targetContainerPath[index],
-      );
-
-    // Determine element types with enhanced container awareness
-    let sourceType: EdgeValidationResult["sourceType"] = "missing";
-    let targetType: EdgeValidationResult["targetType"] = "missing";
-
-    if (visibleNodeIds.has(edge.source)) {
-      sourceType = "node";
-    } else if (visibleContainerIds.has(edge.source)) {
-      sourceType = "container";
-    } else if (sourceInAllNodes) {
-      // Check if it's a hidden node or container
-      if (state.getGraphNode(edge.source)) {
-        sourceType = "hidden-node";
-      } else if (state.getContainer(edge.source)) {
-        sourceType = "hidden-container";
-      }
-    }
-
-    if (visibleNodeIds.has(edge.target)) {
-      targetType = "node";
-    } else if (visibleContainerIds.has(edge.target)) {
-      targetType = "container";
-    } else if (targetInAllNodes) {
-      // Check if it's a hidden node or container
-      if (state.getGraphNode(edge.target)) {
-        targetType = "hidden-node";
-      } else if (state.getContainer(edge.target)) {
-        targetType = "hidden-container";
-      }
-    }
-
-    // An edge is floating if either endpoint doesn't exist at all (not even hidden)
-    const isFloating = !sourceInAllNodes || !targetInAllNodes;
-
-    // An edge is invalid if either endpoint is not visible OR doesn't exist at all
-    const isValid = sourceExists && targetExists;
-
-    // Generate detailed reason and suggested fix
-    let reason = "Valid edge";
-    let suggestedFix: string | undefined;
-
-    if (isFloating) {
-      if (!sourceInAllNodes && !targetInAllNodes) {
-        reason = `Floating edge: both source "${edge.source}" and target "${edge.target}" do not exist in the graph`;
-        suggestedFix =
-          "Check if the edge references valid node/container IDs that exist in the data";
-      } else if (!sourceInAllNodes) {
-        reason = `Floating edge: source "${edge.source}" does not exist in the graph (target exists as ${targetType})`;
-        suggestedFix = `Verify source ID "${edge.source}" exists in the graph data`;
-      } else {
-        reason = `Floating edge: target "${edge.target}" does not exist in the graph (source exists as ${sourceType})`;
-        suggestedFix = `Verify target ID "${edge.target}" exists in the graph data`;
-      }
-    } else if (!isValid) {
-      if (!sourceExists && !targetExists) {
-        reason = `Edge endpoints not visible: both source "${edge.source}" (${sourceType}) and target "${edge.target}" (${targetType}) are hidden`;
-        if (sourceType.includes("hidden") && targetType.includes("hidden")) {
-          suggestedFix =
-            "Expand the containers containing both endpoints to make them visible";
-        } else {
-          suggestedFix = "Check container visibility states for both endpoints";
-        }
-      } else if (!sourceExists) {
-        reason = `Edge source not visible: source "${edge.source}" (${sourceType}) is hidden, target "${edge.target}" (${targetType}) is visible`;
-        if (sourceType.includes("hidden")) {
-          const sourceContainer = this.findContainingContainer(
-            edge.source,
-            state,
-          );
-          suggestedFix = sourceContainer
-            ? `Expand container "${sourceContainer}" to make source visible`
-            : "Check source element visibility state";
-        }
-      } else {
-        reason = `Edge target not visible: target "${edge.target}" (${targetType}) is hidden, source "${edge.source}" (${sourceType}) is visible`;
-        if (targetType.includes("hidden")) {
-          const targetContainer = this.findContainingContainer(
-            edge.target,
-            state,
-          );
-          suggestedFix = targetContainer
-            ? `Expand container "${targetContainer}" to make target visible`
-            : "Check target element visibility state";
-        }
-      }
-
-      // Add cross-hierarchy information to reason
-      if (crossHierarchy) {
-        reason += ` (cross-hierarchy edge: source depth=${sourceContainerPath.length}, target depth=${targetContainerPath.length})`;
-      }
-    }
-
-    // Check for self-loops (optional validation)
-    if (edge.source === edge.target) {
-      console.warn(
-        `[ReactFlowBridge] ⚠️ Self-loop detected: ${edge.id} (${edge.source} -> ${edge.target})`,
-      );
-      // Self-loops are valid but worth noting
-    }
-
-    // Calculate hierarchy level (depth of the deepest endpoint)
-    const hierarchyLevel = Math.max(
-      sourceContainerPath.length,
-      targetContainerPath.length,
-    );
-
-    return {
-      isValid,
-      isFloating,
-      reason,
-      sourceExists,
-      targetExists,
-      sourceType,
-      targetType,
-      sourceInAllNodes,
-      targetInAllNodes,
-      suggestedFix,
-      hierarchyLevel,
-      crossHierarchy,
-      containerAwareness: {
-        sourceContainerPath,
-        targetContainerPath,
-        commonAncestor,
-      },
-    };
-  }
 
   // Styling with immutability - pure function without caching
   applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[] {
@@ -1336,6 +990,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
         ...edge.style,
       };
 
+      const renderConfig = state?.getRenderConfig();
+      const edgeStyleType = renderConfig?.edgeStyle || "bezier";
+      console.log(`[ReactFlowBridge] 🎨 Setting edge ${edge.id} style type to: ${edgeStyleType}`);
+      
       const styleData = {
         style: combinedStyle,
         animated: animated || edge.animated,
@@ -1343,6 +1001,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         markerEnd: markerEnd,
         appliedTags: appliedTags,
         lineStyle: lineStyle,
+        edgeStyleType: edgeStyleType, // Add edge style type for edge components
       };
 
       return this.createImmutableEdge(edge, styleData);
@@ -1363,6 +1022,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         ...edge.data,
         appliedSemanticTags: [...styleData.appliedTags],
         lineStyle: styleData.lineStyle,
+        edgeStyleType: styleData.edgeStyleType,
       },
     };
 
@@ -2258,12 +1918,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
         }
       }
     }
-
-    // Summary
-    console.log(`[ReactFlowBridge] 📊 Final validation summary:`);
-    console.log(`  - 🔴 Potential floating edges: ${potentialFloatingEdges}`);
-    console.log(`  - 🎯 Missing handle edges: ${missingHandleEdges}`);
-    console.log(`  - 📍 Invalid position edges: ${invalidPositionEdges}`);
 
     if (potentialFloatingEdges > 0) {
       console.error(

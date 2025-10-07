@@ -66,7 +66,7 @@ export const LAYOUT_CONSTANTS = {
   NODE_GRID_COLUMNS: 2, // Keep 2 columns
 
   // Container positioning within parent containers (fallback values)
-  CONTAINER_GRID_PADDING: 10, // Compact padding between containers (was 15)
+  CONTAINER_GRID_PADDING: 15, // Compact padding between containers (was 15)
   CONTAINER_TITLE_HEIGHT: 30, // Match node title height (was 35)
   CONTAINER_GRID_COLUMNS: 2, // Keep 2 columns
 
@@ -87,7 +87,7 @@ export const LAYOUT_CONSTANTS = {
   },
   LARGE_CONTAINER_CHILD_COUNT_THRESHOLD: 7,
 
-  SMART_COLLAPSE_BUDGET: 25000,
+  SMART_COLLAPSE_BUDGET: 100000,
 } as const;
 
 // UI Animation and Interaction Constants

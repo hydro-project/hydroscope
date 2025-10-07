@@ -499,6 +499,48 @@ export class AsyncCoordinator {
   // Application Event System
 
   /**
+   * Queue render config update with ReactFlow re-render
+   * This ensures render config changes are applied atomically
+   */
+  async queueRenderConfigUpdate(
+    state: any, // VisualizationState - using any to avoid circular dependency
+    updates: any, // RenderConfig updates
+    options: QueueOptions = {},
+  ): Promise<void> {
+    console.log(`[AsyncCoordinator] 🎨 Queuing render config update:`, updates);
+
+    const operation = async () => {
+      console.log(`[AsyncCoordinator] 🎨 Executing render config update`);
+      
+      // Update the render config in VisualizationState
+      state.updateRenderConfig(updates);
+      
+      // Import ReactFlowBridge dynamically to avoid circular dependency
+      const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
+      const reactFlowBridge = bridgeFactory.getReactFlowBridge();
+      
+      // Generate new ReactFlow data with updated config
+      const reactFlowData = reactFlowBridge.toReactFlowData(state);
+      
+      console.log(`[AsyncCoordinator] ✅ Render config update completed - ReactFlow data regenerated`);
+      return reactFlowData;
+    };
+
+    // Queue the operation and wait for it to complete
+    const operationId = this.queueOperation("render_config_update", operation, {
+      timeout: options.timeout || 3000, // 3 second default timeout
+      maxRetries: options.maxRetries || 1,
+    });
+
+    // Process the queue if not already processing
+    if (!this.processing) {
+      await this.processQueue();
+    }
+
+    console.log(`[AsyncCoordinator] ✅ Render config update operation ${operationId} completed`);
+  }
+
+  /**
    * Queue application event with proper prioritization
    */
   queueApplicationEvent(
