@@ -1429,14 +1429,20 @@ const HydroscopeCoreInternal = forwardRef<
           // Notify parent component of the change
           onRenderConfigChange?.(updates);
           
-          // Force ReactFlow reset to ensure edge style changes are applied
-          setReactFlowResetKey((prev) => {
-            const newKey = prev + 1;
-            console.log(
-              `[HydroscopeCore] 🔄 ReactFlow reset key changed from ${prev} to ${newKey} after render config update`,
-            );
-            return newKey;
-          });
+          // Only force ReactFlow reset for edge style changes that require re-initialization
+          // Color palette and other visual changes don't need a full reset
+          if (updates.edgeStyle) {
+            console.log(`[HydroscopeCore] 🔄 Edge style changed, forcing ReactFlow reset`);
+            setReactFlowResetKey((prev) => {
+              const newKey = prev + 1;
+              console.log(
+                `[HydroscopeCore] 🔄 ReactFlow reset key changed from ${prev} to ${newKey} for edge style change`,
+              );
+              return newKey;
+            });
+          } else {
+            console.log(`[HydroscopeCore] 🎨 Non-edge-style change, no ReactFlow reset needed`);
+          }
           
           console.log(`[HydroscopeCore] ✅ Render config update completed`);
         } catch (error) {
