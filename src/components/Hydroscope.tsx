@@ -117,8 +117,6 @@ interface HydroscopeState {
   /** Current visualization state from HydroscopeCore */
   currentVisualizationState: VisualizationState | null;
 
-
-
   /** File upload state */
   uploadedData: HydroscopeData | null;
   uploadedFilename: string | null;
@@ -126,6 +124,9 @@ interface HydroscopeState {
   /** Error and loading state */
   error: Error | null;
   isLoading: boolean;
+
+  /** Status message for e2e testing */
+  statusMessage: string;
 }
 
 /**
@@ -304,7 +305,8 @@ interface CustomControlsProps {
   autoFitEnabled?: boolean;
 }
 
-const CustomControls = memo(({
+const CustomControls = memo(
+  ({
     visualizationState,
     onCollapseAll,
     onExpandAll,
@@ -416,6 +418,7 @@ const CustomControls = memo(({
                 <button
                   onClick={onCollapseAll}
                   disabled={!hasContainers || !hasExpandedContainers}
+                  data-testid="collapse-all-button"
                   title={
                     !hasContainers
                       ? "No containers available"
@@ -426,9 +429,10 @@ const CustomControls = memo(({
                   className="react-flow__controls-button"
                   style={{
                     alignItems: "center",
-                    background: hasContainers && hasExpandedContainers 
-                      ? "#fefefe" 
-                      : "#f5f5f5", // Grayed out background when disabled
+                    background:
+                      hasContainers && hasExpandedContainers
+                        ? "#fefefe"
+                        : "#f5f5f5", // Grayed out background when disabled
                     border: "none",
                     borderBottom: "1px solid #b1b1b7",
                     color:
@@ -457,6 +461,7 @@ const CustomControls = memo(({
                 <button
                   onClick={onExpandAll}
                   disabled={!hasContainers || !hasCollapsedContainers}
+                  data-testid="expand-all-button"
                   title={
                     !hasContainers
                       ? "No containers available"
@@ -467,9 +472,10 @@ const CustomControls = memo(({
                   className="react-flow__controls-button"
                   style={{
                     alignItems: "center",
-                    background: hasContainers && hasCollapsedContainers 
-                      ? "#fefefe" 
-                      : "#f5f5f5", // Grayed out background when disabled
+                    background:
+                      hasContainers && hasCollapsedContainers
+                        ? "#fefefe"
+                        : "#f5f5f5", // Grayed out background when disabled
                     border: "none",
                     borderBottom:
                       !hasContainers || !hasCollapsedContainers
@@ -504,7 +510,8 @@ const CustomControls = memo(({
         )}
       </>
     );
-  });
+  },
+);
 
 CustomControls.displayName = "CustomControls";
 
@@ -564,11 +571,14 @@ export const Hydroscope = memo<HydroscopeProps>(
       uploadedFilename: null,
       error: null,
       isLoading: false,
+      statusMessage: "",
     });
 
     // Track current grouping (can be changed by user)
-    const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
-    
+    const [selectedGrouping, setSelectedGrouping] = useState<string | null>(
+      null,
+    );
+
     const currentGrouping = useMemo(() => {
       // Use selected grouping if available, otherwise default to first hierarchy choice
       return selectedGrouping || data?.hierarchyChoices?.[0]?.id;
@@ -635,25 +645,35 @@ export const Hydroscope = memo<HydroscopeProps>(
     );
 
     // Handle edge style changes - use HydroscopeCore's updateRenderConfig method
-    const handleEdgeStyleChange = useCallback(async (edgeStyle: "bezier" | "straight" | "smoothstep") => {
-      console.log(`[Hydroscope] 🎨 Edge style change requested: ${edgeStyle}`);
-      
-      try {
-        // Update local state first to keep UI in sync
-        setState((prev) => ({ 
-          ...prev, 
-          renderConfig: { ...prev.renderConfig, edgeStyle }
-        }));
-        
-        // Update render config through HydroscopeCore's AsyncCoordinator
-        await hydroscopeCoreRef.current?.updateRenderConfig({ edgeStyle });
-        
-        console.log(`[Hydroscope] ✅ Edge style change completed: ${edgeStyle}`);
-      } catch (error) {
-        console.error("[Hydroscope] ❌ Error handling edge style change:", error);
-        onError?.(error as Error);
-      }
-    }, [onError]);
+    const handleEdgeStyleChange = useCallback(
+      async (edgeStyle: "bezier" | "straight" | "smoothstep") => {
+        console.log(
+          `[Hydroscope] 🎨 Edge style change requested: ${edgeStyle}`,
+        );
+
+        try {
+          // Update local state first to keep UI in sync
+          setState((prev) => ({
+            ...prev,
+            renderConfig: { ...prev.renderConfig, edgeStyle },
+          }));
+
+          // Update render config through HydroscopeCore's AsyncCoordinator
+          await hydroscopeCoreRef.current?.updateRenderConfig({ edgeStyle });
+
+          console.log(
+            `[Hydroscope] ✅ Edge style change completed: ${edgeStyle}`,
+          );
+        } catch (error) {
+          console.error(
+            "[Hydroscope] ❌ Error handling edge style change:",
+            error,
+          );
+          onError?.(error as Error);
+        }
+      },
+      [onError],
+    );
 
     // Handle style tuner changes (for non-edge style changes)
     const handleStyleChange = useCallback(
@@ -677,18 +697,27 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle palette changes - use HydroscopeCore's updateRenderConfig method
     const handlePaletteChange = useCallback(
       async (palette: string) => {
-        console.log(`[Hydroscope] 🎨 Color palette change requested: ${palette}`);
-        
+        console.log(
+          `[Hydroscope] 🎨 Color palette change requested: ${palette}`,
+        );
+
         try {
           // Update local state first to keep UI in sync
           setState((prev) => ({ ...prev, colorPalette: palette }));
-          
+
           // Update color palette through HydroscopeCore's AsyncCoordinator
-          await hydroscopeCoreRef.current?.updateRenderConfig({ colorPalette: palette });
-          
-          console.log(`[Hydroscope] ✅ Color palette change completed: ${palette}`);
+          await hydroscopeCoreRef.current?.updateRenderConfig({
+            colorPalette: palette,
+          });
+
+          console.log(
+            `[Hydroscope] ✅ Color palette change completed: ${palette}`,
+          );
         } catch (error) {
-          console.error("[Hydroscope] ❌ Error handling color palette change:", error);
+          console.error(
+            "[Hydroscope] ❌ Error handling color palette change:",
+            error,
+          );
           onError?.(error as Error);
         }
       },
@@ -696,22 +725,31 @@ export const Hydroscope = memo<HydroscopeProps>(
     );
 
     // Handle layout changes - use HydroscopeCore's updateRenderConfig method
-    const handleLayoutChange = useCallback(async (layout: string) => {
-      console.log(`[Hydroscope] 🎯 Layout algorithm change requested: ${state.layoutAlgorithm} -> ${layout}`);
-      
-      try {
-        // Update local state first to keep UI in sync
-        setState((prev) => ({ ...prev, layoutAlgorithm: layout }));
-        
-        // Update layout algorithm through HydroscopeCore's AsyncCoordinator
-        await hydroscopeCoreRef.current?.updateRenderConfig({ layoutAlgorithm: layout });
-        
-        console.log(`[Hydroscope] ✅ Layout algorithm change completed: ${layout}`);
-      } catch (error) {
-        console.error("[Hydroscope] ❌ Error handling layout change:", error);
-        onError?.(error as Error);
-      }
-    }, [state.layoutAlgorithm, onError]);
+    const handleLayoutChange = useCallback(
+      async (layout: string) => {
+        console.log(
+          `[Hydroscope] 🎯 Layout algorithm change requested: ${state.layoutAlgorithm} -> ${layout}`,
+        );
+
+        try {
+          // Update local state first to keep UI in sync
+          setState((prev) => ({ ...prev, layoutAlgorithm: layout }));
+
+          // Update layout algorithm through HydroscopeCore's AsyncCoordinator
+          await hydroscopeCoreRef.current?.updateRenderConfig({
+            layoutAlgorithm: layout,
+          });
+
+          console.log(
+            `[Hydroscope] ✅ Layout algorithm change completed: ${layout}`,
+          );
+        } catch (error) {
+          console.error("[Hydroscope] ❌ Error handling layout change:", error);
+          onError?.(error as Error);
+        }
+      },
+      [state.layoutAlgorithm, onError],
+    );
 
     // Handle bulk operations
     const handleCollapseAll = useCallback(async () => {
@@ -719,11 +757,23 @@ export const Hydroscope = memo<HydroscopeProps>(
         console.log("[Hydroscope] CollapseAll operation starting");
         await hydroscopeCoreRef.current?.collapseAll();
         console.log("[Hydroscope] CollapseAll operation completed");
-        
-        // Force a re-render to update button states
-        setState((prev) => ({ ...prev }));
+
+        // Update status message for e2e testing
+        setState((prev) => ({
+          ...prev,
+          statusMessage: "All containers collapsed",
+        }));
+
+        // Clear status message after a delay
+        setTimeout(() => {
+          setState((prev) => ({ ...prev, statusMessage: "" }));
+        }, 2000);
       } catch (error) {
         console.error("Failed to collapse all containers:", error);
+        setState((prev) => ({
+          ...prev,
+          statusMessage: "Failed to collapse containers",
+        }));
         onError?.(error as Error);
       }
     }, [onError]);
@@ -733,11 +783,23 @@ export const Hydroscope = memo<HydroscopeProps>(
         console.log("[Hydroscope] ExpandAll operation starting");
         await hydroscopeCoreRef.current?.expandAll();
         console.log("[Hydroscope] ExpandAll operation completed");
-        
-        // Force a re-render to update button states
-        setState((prev) => ({ ...prev }));
+
+        // Update status message for e2e testing
+        setState((prev) => ({
+          ...prev,
+          statusMessage: "All containers expanded",
+        }));
+
+        // Clear status message after a delay
+        setTimeout(() => {
+          setState((prev) => ({ ...prev, statusMessage: "" }));
+        }, 2000);
       } catch (error) {
         console.error("Failed to expand all containers:", error);
+        setState((prev) => ({
+          ...prev,
+          statusMessage: "Failed to expand containers",
+        }));
         onError?.(error as Error);
       }
     }, [onError]);
@@ -764,15 +826,70 @@ export const Hydroscope = memo<HydroscopeProps>(
 
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
-      (query: string, matches: SearchMatch[], current?: SearchMatch) => {
+      async (query: string, matches: SearchMatch[], current?: SearchMatch) => {
         setState((prev) => ({
           ...prev,
           searchQuery: query,
           searchMatches: matches,
           currentSearchMatch: current,
         }));
+
+        // CRITICAL FIX: Perform search in VisualizationState to expand containers and set highlights
+        if (hydroscopeCoreRef.current) {
+          try {
+            const asyncCoordinator = hydroscopeCoreRef.current.getAsyncCoordinator();
+            const currentVisualizationState = hydroscopeCoreRef.current.getVisualizationState();
+            
+            if (asyncCoordinator && currentVisualizationState) {
+              // Don't perform search again if it was already done in SearchControls
+              // This prevents double search execution which can clear highlights
+              const existingHighlights = currentVisualizationState.getGraphSearchHighlights();
+              
+              let searchResults;
+              if (query && existingHighlights.size === 0) {
+                // Search not yet performed or highlights cleared, perform search
+                searchResults = currentVisualizationState.performSearch(query);
+              } else if (query) {
+                // Search already performed, get existing results
+                searchResults = currentVisualizationState.getSearchResults();
+              } else {
+                // Clear search
+                searchResults = currentVisualizationState.performSearch("");
+              }
+              
+              // Container expansion requires ELK layout, not just ReactFlow render
+              // When containers are expanded, visible nodes change and positions need recalculation
+              const hydroscopeCore = hydroscopeCoreRef.current;
+              if (hydroscopeCore) {
+                if (searchResults.length > 0) {
+                  // Search with results - use expandAll (needed for highlighting to work)
+                  try {
+                    await hydroscopeCore.expandAll();
+                  } catch (error) {
+                    // Fallback to ReactFlow render
+                    if (asyncCoordinator.queueReactFlowRender) {
+                      asyncCoordinator.queueReactFlowRender(currentVisualizationState);
+                    }
+                  }
+                } else {
+                  // Search cleared - use ReactFlow render only
+                  if (asyncCoordinator.queueReactFlowRender) {
+                    asyncCoordinator.queueReactFlowRender(currentVisualizationState);
+                  }
+                }
+              } else {
+                // No HydroscopeCore, just queue ReactFlow render
+                if (asyncCoordinator.queueReactFlowRender) {
+                  asyncCoordinator.queueReactFlowRender(currentVisualizationState);
+                }
+              }
+            }
+          } catch (error) {
+            // Handle search errors silently
+          }
+        }
       },
-      [],
+      [], // Remove stale dependency
     );
 
     // Handle navigation from tree hierarchy to graph
@@ -943,6 +1060,28 @@ export const Hydroscope = memo<HydroscopeProps>(
                   autoFitEnabled={state.autoFitEnabled}
                 />
 
+                {/* Status display for e2e testing */}
+                {state.statusMessage && (
+                  <div
+                    data-testid="status"
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      background: "rgba(0, 0, 0, 0.8)",
+                      color: "white",
+                      padding: "8px 16px",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      zIndex: 1000,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {state.statusMessage}
+                  </div>
+                )}
+
                 {/* InfoPanel */}
                 {showInfoPanel && (
                   <InfoPanel
@@ -958,7 +1097,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     onGroupingChange={(groupingId) => {
                       console.log("🔄 Hierarchy change requested:", groupingId);
                       setSelectedGrouping(groupingId);
-                      
+
                       // Use AsyncCoordinator to queue hierarchy change
                       if (data && groupingId && hydroscopeCoreRef.current) {
                         setState((prev) => ({
@@ -967,35 +1106,52 @@ export const Hydroscope = memo<HydroscopeProps>(
                           error: null,
                         }));
 
-                        const asyncCoordinator = hydroscopeCoreRef.current.getAsyncCoordinator();
+                        const asyncCoordinator =
+                          hydroscopeCoreRef.current.getAsyncCoordinator();
                         if (asyncCoordinator) {
-                          asyncCoordinator.queueHierarchyChange(
-                            groupingId,
-                            data,
-                            (updatedData) => {
+                          asyncCoordinator
+                            .queueHierarchyChange(
+                              groupingId,
+                              data,
+                              (updatedData) => {
+                                setState((prev) => ({
+                                  ...prev,
+                                  data: updatedData,
+                                  isLoading: false,
+                                }));
+                              },
+                            )
+                            .catch((error) => {
+                              console.error("Hierarchy change failed:", error);
                               setState((prev) => ({
                                 ...prev,
-                                data: updatedData,
                                 isLoading: false,
+                                error:
+                                  error instanceof Error
+                                    ? error
+                                    : new Error("Hierarchy change failed"),
                               }));
-                            }
-                          ).catch((error) => {
-                            console.error("Hierarchy change failed:", error);
-                            setState((prev) => ({
-                              ...prev,
-                              isLoading: false,
-                              error: error instanceof Error ? error : new Error("Hierarchy change failed"),
-                            }));
-                          });
+                            });
                         } else {
-                          console.warn("AsyncCoordinator not available for hierarchy change");
+                          console.warn(
+                            "AsyncCoordinator not available for hierarchy change",
+                          );
                           // Fallback to direct state update
                           const updatedData = { ...data };
                           if (updatedData.hierarchyChoices) {
-                            const selectedChoice = updatedData.hierarchyChoices.find(choice => choice.id === groupingId);
-                            const otherChoices = updatedData.hierarchyChoices.filter(choice => choice.id !== groupingId);
+                            const selectedChoice =
+                              updatedData.hierarchyChoices.find(
+                                (choice) => choice.id === groupingId,
+                              );
+                            const otherChoices =
+                              updatedData.hierarchyChoices.filter(
+                                (choice) => choice.id !== groupingId,
+                              );
                             if (selectedChoice) {
-                              updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
+                              updatedData.hierarchyChoices = [
+                                selectedChoice,
+                                ...otherChoices,
+                              ];
                             }
                           }
                           setState((prev) => ({
@@ -1016,9 +1172,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                     legendData={
                       state.data?.legend
                         ? {
-                            title: state.data.legend.title || "Legend",
-                            items: state.data.legend.items,
-                          }
+                          title: state.data.legend.title || "Legend",
+                          items: state.data.legend.items,
+                        }
                         : undefined
                     }
                     edgeStyleConfig={state.data?.edgeStyleConfig}
@@ -1039,7 +1195,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     onResetToDefaults={async () => {
                       try {
                         console.log("[Hydroscope] 🔄 Resetting to defaults");
-                        
+
                         // Update local state
                         setState((prev) => ({
                           ...prev,
@@ -1050,17 +1206,28 @@ export const Hydroscope = memo<HydroscopeProps>(
 
                         // Apply the defaults to the visualization through the same handlers
                         // Reset color palette
-                        await handlePaletteChange(DEFAULT_SETTINGS.colorPalette);
-                        
+                        await handlePaletteChange(
+                          DEFAULT_SETTINGS.colorPalette,
+                        );
+
                         // Reset layout algorithm
-                        await handleLayoutChange(DEFAULT_SETTINGS.layoutAlgorithm);
-                        
+                        await handleLayoutChange(
+                          DEFAULT_SETTINGS.layoutAlgorithm,
+                        );
+
                         // Reset edge style (part of render config)
-                        await handleEdgeStyleChange(DEFAULT_RENDER_CONFIG.edgeStyle);
-                        
-                        console.log("[Hydroscope] ✅ Reset to defaults completed");
+                        await handleEdgeStyleChange(
+                          DEFAULT_RENDER_CONFIG.edgeStyle,
+                        );
+
+                        console.log(
+                          "[Hydroscope] ✅ Reset to defaults completed",
+                        );
                       } catch (error) {
-                        console.error("[Hydroscope] ❌ Error resetting to defaults:", error);
+                        console.error(
+                          "[Hydroscope] ❌ Error resetting to defaults:",
+                          error,
+                        );
                         onError?.(error as Error);
                       }
                     }}

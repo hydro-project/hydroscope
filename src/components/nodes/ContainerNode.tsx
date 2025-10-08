@@ -11,9 +11,10 @@ export interface ContainerNodeProps {
     onClick?: (elementId: string, elementType: "node" | "container") => void;
   };
   id: string;
+  style?: React.CSSProperties; // Add style prop to receive ReactFlow styles
 }
 
-export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id }) => {
+export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id, style }) => {
   const handleClick = () => {
     if (data.onClick) {
       data.onClick(id, "container");
@@ -21,21 +22,27 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id }) => {
   };
 
   if (data.collapsed) {
+    // Default styles for collapsed container
+    const defaultCollapsedStyle: React.CSSProperties = {
+      padding: "12px 16px",
+      border: "2px solid #666",
+      borderRadius: "8px",
+      backgroundColor: "#f5f5f5",
+      cursor: "pointer",
+      minWidth: "120px",
+      textAlign: "center",
+      fontSize: "14px",
+      fontWeight: "bold",
+    };
+
+    // Merge default styles with ReactFlow styles (ReactFlow styles take precedence)
+    const mergedCollapsedStyle = { ...defaultCollapsedStyle, ...style };
+
     // Collapsed container - render as a compact node
     return (
       <div
         onClick={handleClick}
-        style={{
-          padding: "12px 16px",
-          border: "2px solid #666",
-          borderRadius: "8px",
-          backgroundColor: "#f5f5f5",
-          cursor: "pointer",
-          minWidth: "120px",
-          textAlign: "center",
-          fontSize: "14px",
-          fontWeight: "bold",
-        }}
+        style={mergedCollapsedStyle}
       >
         <HandlesRenderer />
 
@@ -50,21 +57,27 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id }) => {
       </div>
     );
   } else {
+    // Default styles for expanded container
+    const defaultExpandedStyle: React.CSSProperties = {
+      width: "100%",
+      height: "100%",
+      border: "2px dashed #999",
+      borderRadius: "12px",
+      backgroundColor: "rgba(245, 245, 245, 0.1)",
+      cursor: "pointer",
+      position: "relative",
+      minWidth: "200px",
+      minHeight: "150px",
+    };
+
+    // Merge default styles with ReactFlow styles (ReactFlow styles take precedence)
+    const mergedExpandedStyle = { ...defaultExpandedStyle, ...style };
+
     // Expanded container - render as a background rectangle
     return (
       <div
         onClick={handleClick}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "2px dashed #999",
-          borderRadius: "12px",
-          backgroundColor: "rgba(245, 245, 245, 0.1)",
-          cursor: "pointer",
-          position: "relative",
-          minWidth: "200px",
-          minHeight: "150px",
-        }}
+        style={mergedExpandedStyle}
       >
         {/* Container label in top-left corner */}
         <div

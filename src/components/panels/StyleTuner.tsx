@@ -18,7 +18,11 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import { LAYOUT_CONSTANTS, PANEL_CONSTANTS, DEFAULT_COLOR_PALETTE } from "../../shared/config";
+import {
+  LAYOUT_CONSTANTS,
+  PANEL_CONSTANTS,
+  DEFAULT_COLOR_PALETTE,
+} from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
 
@@ -196,12 +200,19 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             onChange={(e) => {
               // Update immediately for responsive UI and execute synchronously
               const newLayout = e.target.value;
-              console.log(`[StyleTuner] Layout algorithm dropdown changed: ${currentLayout} -> ${newLayout}`);
+              console.log(
+                `[StyleTuner] Layout algorithm dropdown changed: ${currentLayout} -> ${newLayout}`,
+              );
               try {
                 onLayoutChange?.(newLayout);
-                console.log(`[StyleTuner] Layout change callback executed successfully for: ${newLayout}`);
+                console.log(
+                  `[StyleTuner] Layout change callback executed successfully for: ${newLayout}`,
+                );
               } catch (error) {
-                console.error(`[StyleTuner] Layout change failed for ${newLayout}:`, error);
+                console.error(
+                  `[StyleTuner] Layout change failed for ${newLayout}:`,
+                  error,
+                );
               }
             }}
           >
@@ -220,23 +231,32 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             onChange={(e) => {
               // Update local state immediately for responsive UI
               const newEdgeStyle = e.target.value as EdgeStyleKind;
-              console.log(`[StyleTuner] Edge style dropdown changed: ${local.edgeStyle || "bezier"} -> ${newEdgeStyle}`);
-              
+              console.log(
+                `[StyleTuner] Edge style dropdown changed: ${local.edgeStyle || "bezier"} -> ${newEdgeStyle}`,
+              );
+
               const next = { ...local, edgeStyle: newEdgeStyle };
               setLocal(next);
-              
+
               try {
                 // Use the new AsyncCoordinator-based handler if available, otherwise fall back to the old one
                 if (onEdgeStyleChange) {
                   onEdgeStyleChange(newEdgeStyle);
-                  console.log(`[StyleTuner] Edge style change callback executed successfully for: ${newEdgeStyle}`);
+                  console.log(
+                    `[StyleTuner] Edge style change callback executed successfully for: ${newEdgeStyle}`,
+                  );
                 } else {
                   // Fallback to the old onChange handler
                   onChange(next);
-                  console.log(`[StyleTuner] Edge style change fallback executed for: ${newEdgeStyle}`);
+                  console.log(
+                    `[StyleTuner] Edge style change fallback executed for: ${newEdgeStyle}`,
+                  );
                 }
               } catch (error) {
-                console.error(`[StyleTuner] Edge style change failed for ${newEdgeStyle}:`, error);
+                console.error(
+                  `[StyleTuner] Edge style change failed for ${newEdgeStyle}:`,
+                  error,
+                );
               }
             }}
           >

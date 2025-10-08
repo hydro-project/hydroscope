@@ -349,6 +349,7 @@ const InfoPanelInternal = forwardRef<
                     onNavigate={handleSearchNavigate}
                     placeholder="Search nodes and containers..."
                     compact
+                    visualizationState={visualizationState}
                   />
                   <HierarchyTree
                     collapsedContainers={collapsedContainers}

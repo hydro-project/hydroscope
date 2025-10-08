@@ -51,6 +51,9 @@ type Props = {
   onNavigate: (dir: "prev" | "next", current: SearchMatch) => void;
   placeholder?: string;
   compact?: boolean;
+  
+  // Add VisualizationState for delegated search
+  visualizationState?: any;
 
   // Enhanced navigation and accessibility props
   onResultNavigation?: (result: SearchResult) => void;
@@ -88,6 +91,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       onClear,
       onNavigate,
       placeholder = "Search (wildcards: * ?)",
+      visualizationState,
       compact = false,
       onResultNavigation,
       onViewportFocus,
@@ -111,6 +115,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     const inputRef = useRef<any>(null);
     const resultsListRef = useRef<HTMLDivElement>(null);
     const ariaLiveRef = useRef<HTMLDivElement>(null);
+    const lastProcessedQuery = useRef<string>("");
 
     // Error feedback integration
     const { feedback, showFeedback, dismissFeedback } = useErrorFeedback();
@@ -262,23 +267,66 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     useEffect(() => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
       timerRef.current = window.setTimeout(() => {
+        // Prevent processing the same query multiple times
+        if (lastProcessedQuery.current === query) {
+          return;
+        }
+        lastProcessedQuery.current = query;
         try {
           const rx = toRegex(query);
           if (!rx) {
             setMatches([]);
             setCurrentIndex(0);
+            
+            // Clear search in VisualizationState if available
+            if (visualizationState && visualizationState.clearSearchEnhanced) {
+              try {
+                visualizationState.clearSearchEnhanced();
+                // ReactFlow regeneration will be handled by Hydroscope component
+              } catch (error) {
+                // Silently handle clear errors
+              }
+            }
+            
             // Apply clear operation synchronously to prevent race conditions
             onSearch("", []);
             return;
           }
 
-          // Perform search synchronously (respecting core architecture)
-          const next = searchableItems
-            .filter((i) => rx.test(i.label))
-            .map((i) => ({
-              ...i,
-              matchIndices: [], // TODO: Implement proper match indices calculation
-            }));
+          // Delegate search to VisualizationState if available
+          let next: SearchMatch[] = [];
+          
+          if (visualizationState && visualizationState.performSearch) {
+            try {
+              // Use VisualizationState's search which handles graph highlighting
+              const searchResults = visualizationState.performSearch(query);
+              next = searchResults.map((result: any) => ({
+                id: result.id,
+                label: result.label,
+                type: result.type,
+                matchIndices: result.matchIndices || [],
+              }));
+              
+              // ReactFlow regeneration will be handled by Hydroscope component
+              // after onSearch callback is executed
+            } catch (error) {
+              // Fallback to local search
+              next = searchableItems
+                .filter((i) => rx.test(i.label))
+                .map((i) => ({
+                  ...i,
+                  matchIndices: [], // TODO: Implement proper match indices calculation
+                }));
+            }
+          } else {
+            // Fallback to local search when VisualizationState is not available
+            next = searchableItems
+              .filter((i) => rx.test(i.label))
+              .map((i) => ({
+                ...i,
+                matchIndices: [], // TODO: Implement proper match indices calculation
+              }));
+          }
 
           setMatches(next);
           setCurrentIndex(0);
@@ -526,6 +574,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             <Input
               ref={inputRef}
               allowClear
+              data-testid="search-input"
               aria-label="Search input"
               aria-describedby="search-results-count"
               aria-expanded={showResultsList}
@@ -582,6 +631,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           </AutoComplete>
           <span
             id="search-results-count"
+            data-testid="search-results"
             style={{
               minWidth: PANEL_CONSTANTS.SEARCH_MIN_WIDTH,
               textAlign: "center",
@@ -598,6 +648,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               size={compact ? "small" : "middle"}
               onClick={() => navigate("prev")}
               disabled={!matches.length}
+              data-testid="search-prev-button"
               aria-label="Previous search result"
             >
               ↑
@@ -608,6 +659,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               size={compact ? "small" : "middle"}
               onClick={() => navigate("next")}
               disabled={!matches.length}
+              data-testid="search-next-button"
               aria-label="Next search result"
             >
               ↓
@@ -618,6 +670,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               size={compact ? "small" : "middle"}
               onClick={clearAll}
               disabled={!query}
+              data-testid="search-clear-button"
             >
               ✕
             </Button>

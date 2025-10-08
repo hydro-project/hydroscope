@@ -90,17 +90,17 @@ function createSearchHighlightDiv(
       style={
         match
           ? {
-              backgroundColor: isCurrent
-                ? SEARCH_CURRENT_COLORS.backgroundColor
-                : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
-              borderRadius: 4,
-              padding: "2px 4px",
-              margin: "-1px -2px",
-              fontWeight: isCurrent ? "600" : "500",
-              border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
-              color: isCurrent ? "#ffffff" : "#000000",
-              ...baseStyle,
-            }
+            backgroundColor: isCurrent
+              ? SEARCH_CURRENT_COLORS.backgroundColor
+              : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
+            borderRadius: 4,
+            padding: "2px 4px",
+            margin: "-1px -2px",
+            fontWeight: isCurrent ? "600" : "500",
+            border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
+            color: isCurrent ? "#ffffff" : "#000000",
+            ...baseStyle,
+          }
           : baseStyle
       }
     >
@@ -275,10 +275,10 @@ function getTreeDataStructure(
               title: createSearchHighlightDiv(
                 truncateLabels
                   ? truncateHierarchyLabel(
-                      leafNode.label,
-                      maxLabelLength - 2,
-                      true,
-                    )
+                    leafNode.label,
+                    maxLabelLength - 2,
+                    true,
+                  )
                   : leafNode.label,
                 match,
                 isCurrent,
@@ -323,10 +323,10 @@ function getTreeDataStructure(
               title: createSearchHighlightDiv(
                 truncateLabels
                   ? truncateHierarchyLabel(
-                      leafNode.label,
-                      maxLabelLength - 2,
-                      true,
-                    )
+                    leafNode.label,
+                    maxLabelLength - 2,
+                    true,
+                  )
                   : leafNode.label,
                 match,
                 isCurrent,
@@ -416,8 +416,18 @@ export function HierarchyTree({
 }: HierarchyTreeProps) {
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
-    if (!visualizationState || !searchResults || searchResults.length === 0) {
+    if (!visualizationState) {
       return [];
+    }
+    
+    // When search is cleared, preserve current expansion state instead of collapsing
+    if (!searchResults || searchResults.length === 0) {
+      // Return current expanded containers from VisualizationState
+      const currentlyExpanded = visualizationState.visibleContainers
+        .filter(container => !container.collapsed)
+        .map(container => container.id);
+      console.log('[HierarchyTree] 🔍 Search cleared, preserving expansion state:', currentlyExpanded);
+      return currentlyExpanded;
     }
 
     // Enhanced search expansion logic for v6
@@ -480,7 +490,7 @@ export function HierarchyTree({
 
       // Skip if a search expansion is already in progress
       if (searchExpansionInProgressRef.current) {
-        console.error(
+        console.log(
           `[HierarchyTree] 🚫 Skipping search expansion - already in progress`,
         );
         return;
@@ -499,12 +509,12 @@ export function HierarchyTree({
       // Collect all containers that need to be toggled
       const containersToToggle: string[] = [];
 
-      console.error(
+      console.log(
         `[HierarchyTree] 🔍 Search expansion: shouldBeExpanded (${shouldBeExpanded.size}):`,
         Array.from(shouldBeExpanded).slice(0, 10).join(", "),
         shouldBeExpanded.size > 10 ? "..." : "",
       );
-      console.error(
+      console.log(
         `[HierarchyTree] 🔍 Search expansion: currentlyCollapsed (${currentlyCollapsed.size}):`,
         Array.from(currentlyCollapsed).join(", "),
       );
@@ -532,7 +542,7 @@ export function HierarchyTree({
             const container = visualizationState?.getContainer(containerId);
             if (container && container.collapsed) {
               containersToToggle.push(containerId);
-              console.error(
+              console.log(
                 `[HierarchyTree] 🔧 Adding missing collapsed container: ${containerId}`,
               );
             }
@@ -565,14 +575,14 @@ export function HierarchyTree({
         return getHierarchyDepth(a) - getHierarchyDepth(b);
       });
 
-      console.error(
+      console.log(
         `[HierarchyTree] 🔄 Search expansion: containersToToggle (${containersToToggle.length}) [SORTED BY DEPTH]:`,
         containersToToggle.join(", "),
       );
 
       // Use LayoutOrchestrator for coordinated search expansion
       if (containersToToggle.length > 0) {
-        console.error(
+        console.log(
           `[HierarchyTree] 🚀 Executing search expansion for ${containersToToggle.length} containers`,
         );
 

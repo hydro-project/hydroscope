@@ -2076,7 +2076,7 @@ describe("ReactFlowBridge", () => {
       };
 
       const collapsedContainer: Container = {
-        id: "collapsed_container", 
+        id: "collapsed_container",
         label: "Collapsed Container",
         children: new Set(["node3", "node4"]),
         collapsed: true,
@@ -2120,14 +2120,34 @@ describe("ReactFlowBridge", () => {
       const result = bridge.toReactFlowData(state, interactionHandler);
 
       // Debug: Log all nodes to see what we got
-      console.log("All nodes in result:", result.nodes.map(n => ({ id: n.id, type: n.type, parentNode: n.parentNode, extent: n.extent })));
-      console.log("Expanded container in state:", state.getContainer("expanded_container"));
-      console.log("Visible containers:", state.visibleContainers.map(c => ({ id: c.id, collapsed: c.collapsed })));
-      console.log("Visible nodes:", state.visibleNodes.map(n => ({ id: n.id })));
+      console.log(
+        "All nodes in result:",
+        result.nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          parentNode: n.parentNode,
+          extent: n.extent,
+        })),
+      );
+      console.log(
+        "Expanded container in state:",
+        state.getContainer("expanded_container"),
+      );
+      console.log(
+        "Visible containers:",
+        state.visibleContainers.map((c) => ({
+          id: c.id,
+          collapsed: c.collapsed,
+        })),
+      );
+      console.log(
+        "Visible nodes:",
+        state.visibleNodes.map((n) => ({ id: n.id })),
+      );
 
       // Find nodes in expanded containers - these should have extent="parent"
       const nodesInExpandedContainer = result.nodes.filter(
-        (n) => n.id === "node1" || n.id === "node2"
+        (n) => n.id === "node1" || n.id === "node2",
       );
 
       // Verify nodes in expanded containers have extent="parent"
@@ -2146,7 +2166,9 @@ describe("ReactFlowBridge", () => {
       // Test collapsed container behavior separately
       // Create a new test with a collapsed container that has no child nodes
       // to verify the container itself doesn't have extent set
-      const collapsedContainerNode = result.nodes.find(n => n.id === "collapsed_container");
+      const collapsedContainerNode = result.nodes.find(
+        (n) => n.id === "collapsed_container",
+      );
       if (collapsedContainerNode) {
         // Collapsed containers themselves should not have extent set
         expect(collapsedContainerNode.extent).toBeUndefined();

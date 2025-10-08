@@ -325,11 +325,13 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       const cost = state.calculateExpansionCost("container1");
 
-      // Expected cost: 0 containers × containerArea + 3 nodes × nodeArea
-      // containerArea = 200 × 150 = 30,000
-      // nodeArea = 180 × 60 = 10,800
-      // cost = 0 × 30,000 + 3 × 10,800 = 32,400
-      expect(cost).toBe(32400);
+      // Expected cost: Net growth in footprint
+      // Collapsed area: 200 × 150 = 30,000
+      // Children area: 3 nodes × (180 × 60) = 32,400
+      // Border padding: 40
+      // Expanded area: 32,400 + 40 = 32,440
+      // Net cost: 32,440 - 30,000 = 2,440
+      expect(cost).toBe(2440);
     });
 
     it("should calculate expansion cost correctly for containers with mixed children", () => {
@@ -353,11 +355,13 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       const cost = state.calculateExpansionCost("parent");
 
-      // Expected cost: 1 container × containerArea + 2 nodes × nodeArea
-      // containerArea = 200 × 150 = 30,000
-      // nodeArea = 180 × 60 = 10,800
-      // cost = 1 × 30,000 + 2 × 10,800 = 51,600
-      expect(cost).toBe(51600);
+      // Expected cost: Net growth in footprint
+      // Collapsed area: 200 × 150 = 30,000
+      // Children area: 1 container (30,000) + 2 nodes (2 × 10,800 = 21,600) = 51,600
+      // Border padding: 40
+      // Expanded area: 51,600 + 40 = 51,640
+      // Net cost: 51,640 - 30,000 = 21,640
+      expect(cost).toBe(21640);
     });
 
     it("should return 0 for non-existent containers", () => {
@@ -397,14 +401,14 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       const parentCost = state.calculateExpansionCost("parent");
       const grandparentCost = state.calculateExpansionCost("grandparent");
 
-      // Child: 2 nodes × 10,800 = 21,600
-      expect(childCost).toBe(21600);
+      // Child: 2 nodes = 21,600 + 40 padding = 21,640 expanded - 30,000 collapsed = 0 (max with 0)
+      expect(childCost).toBe(0);
 
-      // Parent: 1 node × 10,800 + 1 container × 30,000 = 40,800
-      expect(parentCost).toBe(40800);
+      // Parent: 1 node + 1 container = 40,800 + 40 padding = 40,840 expanded - 30,000 collapsed = 10,840
+      expect(parentCost).toBe(10840);
 
-      // Grandparent: 1 node × 10,800 + 1 container × 30,000 = 40,800
-      expect(grandparentCost).toBe(40800);
+      // Grandparent: 1 node + 1 container = 40,800 + 40 padding = 40,840 expanded - 30,000 collapsed = 10,840
+      expect(grandparentCost).toBe(10840);
     });
 
     it("should calculate cost for containers with many nodes", () => {
@@ -419,8 +423,8 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       const cost = state.calculateExpansionCost("large");
 
-      // Expected cost: 10 nodes × 10,800 = 108,000
-      expect(cost).toBe(108000);
+      // Expected cost: 10 nodes = 108,000 + 40 padding = 108,040 expanded - 30,000 collapsed = 78,040
+      expect(cost).toBe(78040);
     });
   });
 

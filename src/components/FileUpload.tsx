@@ -557,6 +557,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           type="file"
           accept={acceptedTypes.join(",")}
           onChange={handleInputChange}
+          data-testid="file-input"
           style={{ display: "none" }}
           disabled={state.isProcessing}
         />
@@ -592,14 +593,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Status messages */}
       {state.lastError && (
-        <div className="status-message error">
+        <div className="status-message error" data-testid="status">
           <span className="status-icon">❌</span>
           <span className="status-text">{state.lastError}</span>
         </div>
       )}
 
       {state.lastSuccess && (
-        <div className="status-message success">
+        <div className="status-message success" data-testid="status">
           <span className="status-icon">✅</span>
           <span className="status-text">{state.lastSuccess}</span>
         </div>

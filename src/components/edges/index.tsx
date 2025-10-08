@@ -18,7 +18,7 @@ const getEdgePath = (
     targetX: number;
     targetY: number;
     targetPosition: any;
-  }
+  },
 ) => {
   switch (edgeStyleType) {
     case "straight":
@@ -47,8 +47,10 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
 }) => {
   // Get edge style type from data, default to bezier
   const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
-  console.log(`[AggregatedEdge] ${_id} using edge style type: ${edgeStyleType}`);
-  
+  console.log(
+    `[AggregatedEdge] ${_id} using edge style type: ${edgeStyleType}`,
+  );
+
   const pathParams = {
     sourceX,
     sourceY,
@@ -57,7 +59,7 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
     targetY,
     targetPosition,
   };
-  
+
   const [edgePath, labelX, labelY] = getEdgePath(edgeStyleType, pathParams);
 
   // Use provided style from semantic processing, with subtle aggregation indicator
@@ -130,7 +132,7 @@ export const DefaultEdge: React.FC<EdgeProps> = ({
   // Get edge style type from data, default to bezier
   const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
   console.log(`[DefaultEdge] ${_id} using edge style type: ${edgeStyleType}`);
-  
+
   const pathParams = {
     sourceX,
     sourceY,
@@ -139,7 +141,7 @@ export const DefaultEdge: React.FC<EdgeProps> = ({
     targetY,
     targetPosition,
   };
-  
+
   const [edgePath] = getEdgePath(edgeStyleType, pathParams);
 
   // Default to triangle arrowhead if no markerEnd is specified

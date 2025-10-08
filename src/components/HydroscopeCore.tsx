@@ -97,10 +97,15 @@ export interface HydroscopeCoreHandle {
   navigateToElement: (elementId: string) => Promise<void>;
 
   /** Update render configuration through AsyncCoordinator */
-  updateRenderConfig: (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => Promise<void>;
+  updateRenderConfig: (
+    updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>,
+  ) => Promise<void>;
 
   /** Get the AsyncCoordinator instance for external operations */
   getAsyncCoordinator: () => AsyncCoordinator | null;
+
+  /** Get the current VisualizationState instance */
+  getVisualizationState: () => VisualizationState | null;
 }
 
 /**
@@ -140,8 +145,6 @@ export interface HydroscopeCoreProps {
   /** Initial color palette */
   initialColorPalette?: string;
 
-
-
   /** Whether auto-fit is enabled (controlled by parent component) */
   autoFitEnabled?: boolean;
 
@@ -174,7 +177,9 @@ export interface HydroscopeCoreProps {
   onVisualizationStateChange?: (visualizationState: VisualizationState) => void;
 
   /** Callback when render config changes (for AsyncCoordinator processing) */
-  onRenderConfigChange?: (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => void;
+  onRenderConfigChange?: (
+    updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>,
+  ) => void;
 
   /** Callback when error occurs */
   onError?: (error: Error) => void;
@@ -325,7 +330,7 @@ const HydroscopeCoreInternal = forwardRef<
 
         // Create VisualizationState
         const visualizationState = new VisualizationState();
-        
+
         // Initialize render config from props
         const initialRenderConfig = {
           edgeStyle: "bezier" as const,
@@ -342,6 +347,36 @@ const HydroscopeCoreInternal = forwardRef<
 
         // Create AsyncCoordinator
         const asyncCoordinator = new AsyncCoordinator();
+        
+        // CRITICAL FIX: Set up callback to update React state when AsyncCoordinator generates new ReactFlow data
+        let updateTimeout: number | null = null;
+        asyncCoordinator.onReactFlowDataUpdate = (reactFlowData: any) => {
+          console.log(`[HydroscopeCore] 🔄 Received ReactFlow data update from AsyncCoordinator`);
+          
+          // Throttle updates to prevent ResizeObserver loops
+          if (updateTimeout) {
+            clearTimeout(updateTimeout);
+          }
+          
+          updateTimeout = window.setTimeout(() => {
+            const networkNodes = reactFlowData.nodes.filter((n: any) => n.id === '0' || n.id === '8');
+            if (networkNodes.length > 0) {
+              console.log(`[HydroscopeCore] 🔍 ASYNC COORDINATOR DATA UPDATE:`, networkNodes.map((n: any) => ({
+                id: n.id,
+                isHighlighted: n.data?.isHighlighted,
+                highlightType: n.data?.highlightType,
+                timestamp: n.data?.highlightTimestamp,
+                clearingId: n.data?.clearingId
+              })));
+            }
+            
+            setState((prev) => ({
+              ...prev,
+              reactFlowData: reactFlowData,
+            }));
+            updateTimeout = null;
+          }, 50); // 50ms throttle to prevent ResizeObserver loops
+        };
 
         // Create bridges
         reactFlowBridgeRef.current = new ReactFlowBridge({
@@ -385,8 +420,6 @@ const HydroscopeCoreInternal = forwardRef<
         }));
       }
     }, []); // Remove initialLayoutAlgorithm dependency to prevent re-initialization
-
-
 
     // Validate JSON data structure
     const validateData = useCallback((data: HydroscopeData): void => {
@@ -467,8 +500,10 @@ const HydroscopeCoreInternal = forwardRef<
       // Prevent re-processing the same data
       // Use JSON comparison for hierarchy changes to detect reordered hierarchyChoices
       const dataString = JSON.stringify(data);
-      const lastDataString = processedDataRef.current ? JSON.stringify(processedDataRef.current) : null;
-      
+      const lastDataString = processedDataRef.current
+        ? JSON.stringify(processedDataRef.current)
+        : null;
+
       console.log("[HydroscopeCore] Data parsing check:", {
         hasData: !!data,
         sameData: processedDataRef.current === data,
@@ -765,11 +800,13 @@ const HydroscopeCoreInternal = forwardRef<
           // This gives ReactFlow more time to process the new data before fitting
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              console.log("[HydroscopeCore] 🔄 Executing fitView with padding 0.15");
-              reactFlowInstance.fitView({ 
-                padding: 0.15, 
+              console.log(
+                "[HydroscopeCore] 🔄 Executing fitView with padding 0.15",
+              );
+              reactFlowInstance.fitView({
+                padding: 0.15,
                 duration: 300,
-                includeHiddenNodes: false // Only fit to visible nodes
+                includeHiddenNodes: false, // Only fit to visible nodes
               });
             });
           });
@@ -849,8 +886,6 @@ const HydroscopeCoreInternal = forwardRef<
             newData.edges.length,
             "edges",
           );
-          
-
 
           // Log the generated ReactFlow nodes to see their types and states
           console.log(
@@ -861,8 +896,34 @@ const HydroscopeCoreInternal = forwardRef<
               nodeType: n.data?.nodeType,
               collapsed: n.data?.collapsed,
               hasOnClick: !!n.data?.onClick,
+              isHighlighted: n.data?.isHighlighted,
+              highlightType: n.data?.highlightType,
+              hasCustomStyle: !!n.style,
+              backgroundColor: n.style?.backgroundColor,
+              border: n.style?.border,
+              boxShadow: n.style?.boxShadow,
             })),
           );
+          
+          // CRITICAL DEBUG: Log container states in the final ReactFlow data
+          const containerNodes = newData.nodes.filter(n => n.type === 'container');
+          console.log("[HydroscopeCore] 🔍 FINAL CONTAINER STATES IN REACTFLOW DATA:");
+          for (const container of containerNodes) {
+            console.log(`  - Container ${container.id}: collapsed=${container.data?.collapsed}, type=${container.type}`);
+          }
+          console.log(`[HydroscopeCore] 🔍 Total nodes in ReactFlow data: ${newData.nodes.length}, Total edges: ${newData.edges.length}`);
+
+          // Debug: Log what data is being set in state
+          const networkNodes = newData.nodes.filter((n: any) => n.id === '0' || n.id === '8');
+          if (networkNodes.length > 0) {
+            console.log(`[HydroscopeCore] 🔍 SETTING STATE WITH NODES:`, networkNodes.map((n: any) => ({
+              id: n.id,
+              isHighlighted: n.data?.isHighlighted,
+              highlightType: n.data?.highlightType,
+              timestamp: n.data?.highlightTimestamp,
+              clearingId: n.data?.clearingId
+            })));
+          }
 
           setState((prev) => ({
             ...prev,
@@ -903,75 +964,103 @@ const HydroscopeCoreInternal = forwardRef<
     // Handle layout algorithm changes - must go through AsyncCoordinator
     useEffect(() => {
       const prevAlgorithm = prevLayoutAlgorithmRef.current;
-      
+
       // Only trigger if the algorithm actually changed (not just a re-render)
       if (prevAlgorithm === initialLayoutAlgorithm) {
         return;
       }
-      
-      console.log(`[HydroscopeCore] 🎯 Layout algorithm changed: ${prevAlgorithm} -> ${initialLayoutAlgorithm}`);
-      
+
+      console.log(
+        `[HydroscopeCore] 🎯 Layout algorithm changed: ${prevAlgorithm} -> ${initialLayoutAlgorithm}`,
+      );
+
       // Update the previous algorithm reference immediately to prevent re-triggers
       prevLayoutAlgorithmRef.current = initialLayoutAlgorithm;
-      
+
       // Only proceed if we have all dependencies AND data has been loaded
-      if (elkBridgeRef.current && state.visualizationState && state.asyncCoordinator && !state.isLoading) {
+      if (
+        elkBridgeRef.current &&
+        state.visualizationState &&
+        state.asyncCoordinator &&
+        !state.isLoading
+      ) {
         // Verify that the VisualizationState has data before proceeding
-        const hasData = state.visualizationState.visibleContainers.length > 0 || 
-                       state.visualizationState.visibleNodes.length > 0;
-        
+        const hasData =
+          state.visualizationState.visibleContainers.length > 0 ||
+          state.visualizationState.visibleNodes.length > 0;
+
         if (!hasData) {
-          console.log(`[HydroscopeCore] ⏳ Skipping layout algorithm change - no data loaded yet`);
+          console.log(
+            `[HydroscopeCore] ⏳ Skipping layout algorithm change - no data loaded yet`,
+          );
           return;
         }
-        
+
         try {
           // Update ELKBridge configuration
           elkBridgeRef.current.updateConfiguration({
             algorithm: initialLayoutAlgorithm,
           });
-          
-          console.log(`[HydroscopeCore] ✅ ELKBridge configuration updated to algorithm: ${initialLayoutAlgorithm}`);
-          
+
+          console.log(
+            `[HydroscopeCore] ✅ ELKBridge configuration updated to algorithm: ${initialLayoutAlgorithm}`,
+          );
+
           // Trigger a new layout with the updated algorithm through AsyncCoordinator
           const triggerLayoutWithNewAlgorithm = async () => {
             try {
-              console.log(`[HydroscopeCore] 🚀 Triggering layout recalculation with new algorithm: ${initialLayoutAlgorithm}`);
-              
+              console.log(
+                `[HydroscopeCore] 🚀 Triggering layout recalculation with new algorithm: ${initialLayoutAlgorithm}`,
+              );
+
               await state.asyncCoordinator!.queueELKLayout(
                 state.visualizationState!,
                 elkBridgeRef.current!,
               );
-              
+
               // Update ReactFlow data after layout
               await updateReactFlowDataWithState(state.visualizationState!);
-              
+
               // Trigger auto-fit after layout change
               setState((prev) => ({ ...prev, shouldFitView: true }));
-              
-              console.log(`[HydroscopeCore] ✅ Layout recalculation completed with algorithm: ${initialLayoutAlgorithm}`);
+
+              console.log(
+                `[HydroscopeCore] ✅ Layout recalculation completed with algorithm: ${initialLayoutAlgorithm}`,
+              );
             } catch (error) {
-              console.error(`[HydroscopeCore] ❌ Error during layout recalculation:`, error);
+              console.error(
+                `[HydroscopeCore] ❌ Error during layout recalculation:`,
+                error,
+              );
               handleError(error as Error, "layout algorithm change");
             }
           };
-          
+
           triggerLayoutWithNewAlgorithm();
         } catch (error) {
-          console.error(`[HydroscopeCore] ❌ Error updating layout algorithm:`, error);
+          console.error(
+            `[HydroscopeCore] ❌ Error updating layout algorithm:`,
+            error,
+          );
           handleError(error as Error, "layout algorithm update");
         }
       } else {
-        console.log(`[HydroscopeCore] ⏳ Skipping layout algorithm change - dependencies not ready yet`, {
-          hasELKBridge: !!elkBridgeRef.current,
-          hasVisualizationState: !!state.visualizationState,
-          hasAsyncCoordinator: !!state.asyncCoordinator,
-          isLoading: state.isLoading,
-        });
+        console.log(
+          `[HydroscopeCore] ⏳ Skipping layout algorithm change - dependencies not ready yet`,
+          {
+            hasELKBridge: !!elkBridgeRef.current,
+            hasVisualizationState: !!state.visualizationState,
+            hasAsyncCoordinator: !!state.asyncCoordinator,
+            isLoading: state.isLoading,
+          },
+        );
       }
-    }, [initialLayoutAlgorithm, state.visualizationState, state.asyncCoordinator, state.isLoading]);
-
-
+    }, [
+      initialLayoutAlgorithm,
+      state.visualizationState,
+      state.asyncCoordinator,
+      state.isLoading,
+    ]);
 
     // Bulk operations with atomic state management and error handling
     const handleCollapseAll = useCallback(async () => {
@@ -1119,16 +1208,30 @@ const HydroscopeCoreInternal = forwardRef<
         console.log("[HydroscopeCore] ExpandAll atomic pipeline complete");
 
         // Trigger fit view AFTER the expansion operation completes successfully
-        console.log("[HydroscopeCore] Setting shouldFitView=true after successful expandAll");
+        console.log(
+          "[HydroscopeCore] Setting shouldFitView=true after successful expandAll",
+        );
         setState((prev) => ({ ...prev, shouldFitView: true }));
 
         // Notify parent component of visualization state change
-        console.log("KIRO_DEBUG_EXPAND_ALL: Calling onVisualizationStateChange callback");
-        console.log("[HydroscopeCore] 🔍 VisualizationState containers after expandAll:", {
-          visibleContainers: state.visualizationState.visibleContainers.length,
-          collapsedContainers: state.visualizationState.visibleContainers.filter(c => c.collapsed).length,
-          expandedContainers: state.visualizationState.visibleContainers.filter(c => !c.collapsed).length
-        });
+        console.log(
+          "KIRO_DEBUG_EXPAND_ALL: Calling onVisualizationStateChange callback",
+        );
+        console.log(
+          "[HydroscopeCore] 🔍 VisualizationState containers after expandAll:",
+          {
+            visibleContainers:
+              state.visualizationState.visibleContainers.length,
+            collapsedContainers:
+              state.visualizationState.visibleContainers.filter(
+                (c) => c.collapsed,
+              ).length,
+            expandedContainers:
+              state.visualizationState.visibleContainers.filter(
+                (c) => !c.collapsed,
+              ).length,
+          },
+        );
         onVisualizationStateChange?.(state.visualizationState);
 
         // Call success callback
@@ -1393,54 +1496,82 @@ const HydroscopeCoreInternal = forwardRef<
 
     // Handle render config updates through AsyncCoordinator
     const handleRenderConfigUpdate = useCallback(
-      async (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => {
+      async (
+        updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>,
+      ) => {
         if (!state.visualizationState || !state.asyncCoordinator) {
-          console.warn("[HydroscopeCore] Cannot update render config: missing state or coordinator");
+          console.warn(
+            "[HydroscopeCore] Cannot update render config: missing state or coordinator",
+          );
           return;
         }
 
         try {
-          console.log(`[HydroscopeCore] 🎨 Processing render config update:`, updates);
-          
+          console.log(
+            `[HydroscopeCore] 🎨 Processing render config update:`,
+            updates,
+          );
+
           // Update render config in VisualizationState
           state.visualizationState.updateRenderConfig(updates);
-          
+
           // If layout algorithm changed, trigger ELK layout, otherwise just update ReactFlow data
           if (updates.layoutAlgorithm) {
-            console.log(`[HydroscopeCore] 🎯 Layout algorithm changed to: ${updates.layoutAlgorithm}`);
+            console.log(
+              `[HydroscopeCore] 🎯 Layout algorithm changed to: ${updates.layoutAlgorithm}`,
+            );
             // Update ELK bridge configuration and trigger layout
             if (elkBridgeRef.current) {
-              console.log(`[HydroscopeCore] 🎯 Updating ELK bridge configuration`);
-              elkBridgeRef.current.updateConfiguration({ algorithm: updates.layoutAlgorithm });
-              
+              console.log(
+                `[HydroscopeCore] 🎯 Updating ELK bridge configuration`,
+              );
+              elkBridgeRef.current.updateConfiguration({
+                algorithm: updates.layoutAlgorithm,
+              });
+
               console.log(`[HydroscopeCore] 🎯 Queuing ELK layout operation`);
-              await state.asyncCoordinator.queueELKLayout(state.visualizationState, elkBridgeRef.current);
+              await state.asyncCoordinator.queueELKLayout(
+                state.visualizationState,
+                elkBridgeRef.current,
+              );
               console.log(`[HydroscopeCore] 🎯 ELK layout operation completed`);
             } else {
-              console.error(`[HydroscopeCore] ❌ ELK bridge not available for layout algorithm change`);
+              console.error(
+                `[HydroscopeCore] ❌ ELK bridge not available for layout algorithm change`,
+              );
             }
           } else {
             // For non-layout changes (like edge style, color palette), use AsyncCoordinator
-            console.log(`[HydroscopeCore] 🎨 Non-layout change, queuing render config update through AsyncCoordinator`);
-            const newReactFlowData = await state.asyncCoordinator.queueRenderConfigUpdate(state.visualizationState, updates);
-            
+            console.log(
+              `[HydroscopeCore] 🎨 Non-layout change, queuing render config update through AsyncCoordinator`,
+            );
+            const newReactFlowData =
+              await state.asyncCoordinator.queueRenderConfigUpdate(
+                state.visualizationState,
+                updates,
+              );
+
             // Update ReactFlow component with new data
             if (newReactFlowData) {
-              console.log(`[HydroscopeCore] 🎨 Updating ReactFlow with new render config data`);
+              console.log(
+                `[HydroscopeCore] 🎨 Updating ReactFlow with new render config data`,
+              );
               setState((prev) => ({
                 ...prev,
                 reactFlowData: newReactFlowData,
               }));
             }
           }
-          
+
           // Notify parent component of the change
           onRenderConfigChange?.(updates);
-          
+
           // Only force ReactFlow reset for edge style changes that require re-initialization
           // Color palette and other visual changes don't need a full reset
           if (updates.edgeStyle) {
-            console.log(`[HydroscopeCore] 🔄 Edge style changed, forcing ReactFlow reset`);
+            console.log(
+              `[HydroscopeCore] 🔄 Edge style changed, forcing ReactFlow reset`,
+            );
             setReactFlowResetKey((prev) => {
               const newKey = prev + 1;
               console.log(
@@ -1449,16 +1580,29 @@ const HydroscopeCoreInternal = forwardRef<
               return newKey;
             });
           } else {
-            console.log(`[HydroscopeCore] 🎨 Non-edge-style change, no ReactFlow reset needed`);
+            console.log(
+              `[HydroscopeCore] 🎨 Non-edge-style change, no ReactFlow reset needed`,
+            );
           }
-          
+
           console.log(`[HydroscopeCore] ✅ Render config update completed`);
         } catch (error) {
-          console.error("[HydroscopeCore] ❌ Error updating render config:", error);
+          console.error(
+            "[HydroscopeCore] ❌ Error updating render config:",
+            error,
+          );
           handleError(error as Error, "render config update");
         }
       },
-      [state.visualizationState, state.asyncCoordinator, onRenderConfigChange, handleError, setReactFlowResetKey, updateReactFlowDataWithState, elkBridgeRef]
+      [
+        state.visualizationState,
+        state.asyncCoordinator,
+        onRenderConfigChange,
+        handleError,
+        setReactFlowResetKey,
+        updateReactFlowDataWithState,
+        elkBridgeRef,
+      ],
     );
 
     // Navigation handler for tree-to-graph navigation
@@ -1562,6 +1706,7 @@ const HydroscopeCoreInternal = forwardRef<
           : handleNavigateToElement,
         updateRenderConfig: handleRenderConfigUpdate,
         getAsyncCoordinator: () => state.asyncCoordinator,
+        getVisualizationState: () => state.visualizationState,
       }),
       [
         readOnly,
@@ -1574,6 +1719,7 @@ const HydroscopeCoreInternal = forwardRef<
         handleRenderConfigUpdate,
         reactFlowInstance,
         state.asyncCoordinator,
+        state.visualizationState,
       ],
     );
 
@@ -1922,6 +2068,7 @@ const HydroscopeCoreInternal = forwardRef<
     return (
       <div
         className={className}
+        data-testid="graph-container"
         style={{
           ...containerStyle,
           position: "relative",
@@ -1931,7 +2078,20 @@ const HydroscopeCoreInternal = forwardRef<
       >
         <ReactFlow
           key={reactFlowResetKey} // EXPERIMENT: Force ReactFlow reset on container operations
-          nodes={state.reactFlowData.nodes as Node[]}
+          nodes={(() => {
+            // Debug: Log what nodes ReactFlow is receiving
+            const networkNodes = (state.reactFlowData.nodes as Node[]).filter(n => n.id === '0' || n.id === '8');
+            if (networkNodes.length > 0) {
+              console.log(`[HydroscopeCore] 🔍 REACTFLOW RECEIVING NODES:`, networkNodes.map(n => ({
+                id: n.id,
+                isHighlighted: (n.data as any)?.isHighlighted,
+                highlightType: (n.data as any)?.highlightType,
+                timestamp: (n.data as any)?.highlightTimestamp,
+                dataRef: n.data
+              })));
+            }
+            return state.reactFlowData.nodes as Node[];
+          })()}
           edges={state.reactFlowData.edges as any[]}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
@@ -1971,6 +2131,25 @@ const HydroscopeCoreInternal = forwardRef<
           )}
           {showMiniMap && <MiniMap />}
         </ReactFlow>
+
+        {/* Node count display for e2e testing */}
+        <div
+          data-testid="node-count"
+          style={{
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            background: "rgba(255, 255, 255, 0.9)",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            color: "#666",
+            pointerEvents: "none",
+            zIndex: 1000,
+          }}
+        >
+          {state.reactFlowData.nodes.length}
+        </div>
 
         {/* CSS for loading spinner animation */}
         <style>{`

@@ -105,8 +105,6 @@ export function GroupingControls({
         popupMatchSelectWidth={true}
         getPopupContainer={(triggerNode) => triggerNode.parentNode}
       />
-      
-
     </div>
   );
 }

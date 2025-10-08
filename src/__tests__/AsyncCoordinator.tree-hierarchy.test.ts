@@ -156,17 +156,23 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       // Mock ReactFlow instance
       const mockReactFlowInstance = {
         getNodes: () => [{ id: "node1", position: { x: 100, y: 100 } }],
+        getNode: (id: string) => ({
+          id,
+          position: { x: 100, y: 100 },
+          width: 100,
+          height: 50,
+        }),
+        setCenter: vi.fn(),
         fitView: vi.fn(),
       };
 
       // Focus viewport through coordinator
       await coordinator.focusViewportOnElement("node1", mockReactFlowInstance);
 
-      // fitView should have been called
-      expect(mockReactFlowInstance.fitView).toHaveBeenCalledWith({
-        nodes: [{ id: "node1", position: { x: 100, y: 100 } }],
-        padding: 0.2,
-        duration: 300,
+      // setCenter should have been called
+      expect(mockReactFlowInstance.setCenter).toHaveBeenCalledWith(150, 125, {
+        zoom: 1.2,
+        duration: 800,
       });
     });
 
@@ -178,6 +184,13 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       // Mock ReactFlow instance
       const mockReactFlowInstance = {
         getNodes: () => [{ id: "node1", position: { x: 100, y: 100 } }],
+        getNode: (id: string) => ({
+          id,
+          position: { x: 100, y: 100 },
+          width: 100,
+          height: 50,
+        }),
+        setCenter: vi.fn(),
         fitView: vi.fn(),
       };
 
@@ -190,7 +203,7 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
 
       // Both navigation and viewport focus should work
       expect(state.getNavigationSelection()).toBe("node1");
-      expect(mockReactFlowInstance.fitView).toHaveBeenCalled();
+      expect(mockReactFlowInstance.setCenter).toHaveBeenCalled();
     });
   });
 

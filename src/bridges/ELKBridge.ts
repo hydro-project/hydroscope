@@ -256,8 +256,6 @@ export class ELKBridge implements IELKBridge {
           // Move up to parent
           currentId = state.getContainerParent(currentId) || null;
         }
-
-
       }
     }
 
@@ -910,10 +908,13 @@ export class ELKBridge implements IELKBridge {
     // Container-specific layout options
     // Use configured container padding to create proper visual separation between nested levels
     const padding = config.containerPadding ?? 20; // Use nullish coalescing to respect 0 values
-    
+
     // Add extra bottom padding to accommodate container labels
-    const bottomPadding = padding + LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT + LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING;
-    
+    const bottomPadding =
+      padding +
+      LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT +
+      LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING;
+
     options["elk.padding"] =
       `[top=${padding},left=${padding},bottom=${bottomPadding},right=${padding}]`;
 
@@ -980,13 +981,7 @@ export class ELKBridge implements IELKBridge {
   }
 
   private validateConfiguration(config: LayoutConfig): void {
-    const validAlgorithms = [
-      "layered",
-      "force",
-      "stress",
-      "mrtree",
-      "disco",
-    ];
+    const validAlgorithms = ["layered", "force", "stress", "mrtree", "disco"];
     const validDirections = ["UP", "DOWN", "LEFT", "RIGHT"];
 
     if (config.algorithm && !validAlgorithms.includes(config.algorithm)) {
