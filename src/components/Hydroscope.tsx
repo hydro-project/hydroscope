@@ -145,7 +145,7 @@ interface HydroscopeSettings {
 const STORAGE_KEY = "hydroscope-settings";
 const SETTINGS_VERSION = 1;
 
-const DEFAULT_RENDER_CONFIG: RenderConfig = {
+const DEFAULT_RENDER_CONFIG: Required<RenderConfig> = {
   edgeStyle: "bezier",
   edgeWidth: 2,
   edgeDashed: false,
@@ -1016,13 +1016,33 @@ export const Hydroscope = memo<HydroscopeProps>(
                     currentLayout={state.layoutAlgorithm}
                     onLayoutChange={handleLayoutChange}
                     onEdgeStyleChange={handleEdgeStyleChange}
-                    onResetToDefaults={() => {
-                      setState((prev) => ({
-                        ...prev,
-                        renderConfig: DEFAULT_RENDER_CONFIG,
-                        colorPalette: DEFAULT_SETTINGS.colorPalette,
-                        layoutAlgorithm: DEFAULT_SETTINGS.layoutAlgorithm,
-                      }));
+                    onResetToDefaults={async () => {
+                      try {
+                        console.log("[Hydroscope] 🔄 Resetting to defaults");
+                        
+                        // Update local state
+                        setState((prev) => ({
+                          ...prev,
+                          renderConfig: DEFAULT_RENDER_CONFIG,
+                          colorPalette: DEFAULT_SETTINGS.colorPalette,
+                          layoutAlgorithm: DEFAULT_SETTINGS.layoutAlgorithm,
+                        }));
+
+                        // Apply the defaults to the visualization through the same handlers
+                        // Reset color palette
+                        await handlePaletteChange(DEFAULT_SETTINGS.colorPalette);
+                        
+                        // Reset layout algorithm
+                        await handleLayoutChange(DEFAULT_SETTINGS.layoutAlgorithm);
+                        
+                        // Reset edge style (part of render config)
+                        await handleEdgeStyleChange(DEFAULT_RENDER_CONFIG.edgeStyle);
+                        
+                        console.log("[Hydroscope] ✅ Reset to defaults completed");
+                      } catch (error) {
+                        console.error("[Hydroscope] ❌ Error resetting to defaults:", error);
+                        onError?.(error as Error);
+                      }
                     }}
                     open={state.stylePanelOpen}
                     onOpenChange={(open) =>
