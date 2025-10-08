@@ -14,7 +14,7 @@ import type {
   PerformanceHints,
 } from "../types/core.js";
 import type { IELKBridge } from "../types/bridges.js";
-import { SIZES } from "../shared/config.js";
+import { SIZES, LAYOUT_CONSTANTS } from "../shared/config.js";
 
 export class ELKBridge implements IELKBridge {
   private performanceHints?: PerformanceHints;
@@ -872,7 +872,7 @@ export class ELKBridge implements IELKBridge {
       };
     } else {
       // Expanded container size based on children and padding
-      const padding = config.containerPadding || 20;
+      const padding = config.containerPadding ?? 20;
       const baseWidth = 200 + childCount * 30;
       const baseHeight = 150 + childCount * 20;
 
@@ -908,11 +908,14 @@ export class ELKBridge implements IELKBridge {
     const options: Record<string, any> = {};
 
     // Container-specific layout options
-    // CRITICAL FIX: Increase padding for deeply nested containers to make nesting visible
-    // Use larger padding (40px instead of 20px) to create visual separation between nested levels
-    const padding = config.containerPadding || 40; // Increased from 20 to 40
+    // Use configured container padding to create proper visual separation between nested levels
+    const padding = config.containerPadding ?? 20; // Use nullish coalescing to respect 0 values
+    
+    // Add extra bottom padding to accommodate container labels
+    const bottomPadding = padding + LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT + LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING;
+    
     options["elk.padding"] =
-      `[top=${padding},left=${padding},bottom=${padding},right=${padding}]`;
+      `[top=${padding},left=${padding},bottom=${bottomPadding},right=${padding}]`;
 
     if (config.hierarchicalLayout) {
       options["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
