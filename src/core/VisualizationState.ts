@@ -3,7 +3,11 @@
  * Architectural constraints: React-free, single source of truth, synchronous core
  */
 
-import { LAYOUT_CONSTANTS, SIZES, DEFAULT_COLOR_PALETTE } from "@/shared/config.js";
+import {
+  LAYOUT_CONSTANTS,
+  SIZES,
+  DEFAULT_COLOR_PALETTE,
+} from "@/shared/config.js";
 import type { RenderConfig } from "@/components/Hydroscope.js";
 import type {
   GraphNode,
@@ -30,7 +34,7 @@ export class VisualizationState {
     layoutCount: 0,
     lastUpdate: Date.now(),
   };
-  
+
   // Render configuration - single source of truth for styling
   private _renderConfig: Required<RenderConfig> & {
     layoutAlgorithm: string; // Additional property not in RenderConfig interface
@@ -424,17 +428,16 @@ export class VisualizationState {
       if (childContainer) {
         // Recursively process descendants first (bottom-up)
         this._hideAllDescendants(childId);
-        
+
         // Then collapse and aggregate edges for this child container
 
-        
         childContainer.hidden = true;
         childContainer.collapsed = true; // CRITICAL FIX: Also collapse child containers to avoid invariant violations
-        
+
         // CRITICAL FIX: Clean up any existing aggregated edges that reference this now-hidden container
         // This prevents ELK from trying to reference non-existent shapes
         this._cleanupAggregatedEdgesForHiddenContainer(childId);
-        
+
         // CRITICAL FIX: Aggregate edges for this nested container AFTER its descendants are processed
         // This ensures that edges referencing deeply nested containers are properly handled
         this.aggregateEdgesForContainer(childId);
@@ -451,13 +454,17 @@ export class VisualizationState {
   }
 
   expandAllContainers(containerIds?: string[]): void {
-    console.log(`[VisualizationState] 🔄 Starting expandAllContainers operation`);
-    
+    console.log(
+      `[VisualizationState] 🔄 Starting expandAllContainers operation`
+    );
+
     const containersToExpand = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
 
-    console.log(`[VisualizationState] 🔍 Initial containers to expand: ${containersToExpand.length}`);
+    console.log(
+      `[VisualizationState] 🔍 Initial containers to expand: ${containersToExpand.length}`
+    );
 
     // CRITICAL FIX: Expand containers in hierarchical order (parents before children)
     // This prevents invariant violations where children are expanded before their parents
@@ -469,9 +476,9 @@ export class VisualizationState {
     do {
       expandedInThisIteration = 0;
       iteration++;
-      
+
       console.log(`[VisualizationState] 🔄 Expansion iteration ${iteration}`);
-      
+
       // Get all containers and sort them by hierarchy depth (shallowest first)
       const allContainers = containerIds
         ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
@@ -479,37 +486,52 @@ export class VisualizationState {
 
       // Sort containers by hierarchy depth to expand parents before children
       const sortedContainers = allContainers
-        .filter((container): container is Container => container !== undefined && container.collapsed)
+        .filter(
+          (container): container is Container =>
+            container !== undefined && container.collapsed
+        )
         .sort((a, b) => {
           const depthA = this._getContainerDepth(a.id);
           const depthB = this._getContainerDepth(b.id);
           return depthA - depthB; // Shallowest first
         });
 
-      console.log(`[VisualizationState] 🔍 Iteration ${iteration}: found ${sortedContainers.length} collapsed containers to expand`);
+      console.log(
+        `[VisualizationState] 🔍 Iteration ${iteration}: found ${sortedContainers.length} collapsed containers to expand`
+      );
 
       for (const container of sortedContainers) {
         // Double-check that the container can be expanded (parent is expanded)
         if (this._canExpandContainer(container.id)) {
-          console.log(`[VisualizationState] 🔄 Expanding container ${container.id} (depth ${this._getContainerDepth(container.id)}) in iteration ${iteration}`);
+          console.log(
+            `[VisualizationState] 🔄 Expanding container ${container.id} (depth ${this._getContainerDepth(container.id)}) in iteration ${iteration}`
+          );
           this._expandContainerInternal(container.id);
           expandedInThisIteration++;
           totalExpanded++;
         } else {
-          console.log(`[VisualizationState] ⏸️ Skipping container ${container.id} - parent not expanded yet`);
+          console.log(
+            `[VisualizationState] ⏸️ Skipping container ${container.id} - parent not expanded yet`
+          );
         }
       }
-      
-      console.log(`[VisualizationState] 🔍 Iteration ${iteration}: expanded ${expandedInThisIteration} containers`);
-      
+
+      console.log(
+        `[VisualizationState] 🔍 Iteration ${iteration}: expanded ${expandedInThisIteration} containers`
+      );
+
       if (iteration >= maxIterations) {
-        console.warn(`[VisualizationState] ⚠️ Reached maximum iterations (${maxIterations}) in expandAllContainers`);
+        console.warn(
+          `[VisualizationState] ⚠️ Reached maximum iterations (${maxIterations}) in expandAllContainers`
+        );
         break;
       }
     } while (expandedInThisIteration > 0);
 
-    console.log(`[VisualizationState] ✅ expandAllContainers completed: ${totalExpanded} containers expanded in ${iteration} iterations`);
-    
+    console.log(
+      `[VisualizationState] ✅ expandAllContainers completed: ${totalExpanded} containers expanded in ${iteration} iterations`
+    );
+
     // Bulk user operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
   }
@@ -577,7 +599,7 @@ export class VisualizationState {
 
     // Get all descendants of this container (including nested containers)
     const allDescendants = this._getAllDescendantIds(containerId);
-    
+
     const edgesToAggregate = new Map<string, GraphEdge[]>(); // key: source-target, value: edges
     const aggregatedEdgesToDelete: string[] = []; // Track aggregated edges to delete
 
@@ -607,7 +629,8 @@ export class VisualizationState {
         // If source is in container, aggregate to container
         if (sourceInContainer) {
           // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
-          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          const visibleAncestor =
+            this._findLowestVisibleAncestorForAggregation(containerId);
           if (visibleAncestor) {
             aggregatedSource = visibleAncestor;
           } else {
@@ -620,7 +643,8 @@ export class VisualizationState {
         // If target is in container, aggregate to container
         if (targetInContainer) {
           // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
-          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          const visibleAncestor =
+            this._findLowestVisibleAncestorForAggregation(containerId);
           if (visibleAncestor) {
             aggregatedTarget = visibleAncestor;
           } else {
@@ -770,7 +794,8 @@ export class VisualizationState {
 
         if (sourceInContainer) {
           // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
-          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          const visibleAncestor =
+            this._findLowestVisibleAncestorForAggregation(containerId);
           if (visibleAncestor) {
             newSource = visibleAncestor;
           } else {
@@ -781,7 +806,8 @@ export class VisualizationState {
         }
         if (targetInContainer) {
           // CRITICAL FIX: Find lowest visible ancestor instead of direct assignment
-          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(containerId);
+          const visibleAncestor =
+            this._findLowestVisibleAncestorForAggregation(containerId);
           if (visibleAncestor) {
             newTarget = visibleAncestor;
           } else {
@@ -804,9 +830,7 @@ export class VisualizationState {
 
         // CRITICAL FIX: Delete the old aggregated edge instead of just hiding it
         // This prevents ELK from seeing references to hidden containers
-        
 
-        
         // Add its original edges to be re-aggregated with new endpoints
         for (const originalEdgeId of aggEdge.originalEdgeIds) {
           const originalEdge = this._edges.get(originalEdgeId);
@@ -814,7 +838,7 @@ export class VisualizationState {
             edgesToAggregate.get(key)!.push(originalEdge);
           }
         }
-        
+
         // Mark for deletion (we'll delete after iteration to avoid modifying map during iteration)
         aggregatedEdgesToDelete.push(aggEdge.id);
       }
@@ -828,29 +852,29 @@ export class VisualizationState {
     // Create new aggregated edges
     for (const [_key, edgeGroup] of edgesBySourceTarget) {
       const { source, target, edges } = edgeGroup;
-      
+
       // Validate that both endpoints exist
       const sourceContainer = this._containers.get(source);
       const sourceNode = this._nodes.get(source);
       const targetContainer = this._containers.get(target);
       const targetNode = this._nodes.get(target);
-      
+
       const sourceExists = sourceContainer || sourceNode;
       const targetExists = targetContainer || targetNode;
-      
+
       if (!sourceExists) {
-        throw new Error(`Aggregated edge source ${source} does not exist as container or node`);
+        throw new Error(
+          `Aggregated edge source ${source} does not exist as container or node`
+        );
       }
       if (!targetExists) {
-        throw new Error(`Aggregated edge target ${target} does not exist as container or node`);
+        throw new Error(
+          `Aggregated edge target ${target} does not exist as container or node`
+        );
       }
-      
+
       // SIMPLIFIED FIX: Use source-target pair for consistent IDs while preserving directionality
       const aggregatedEdgeId = `agg-${source}-${target}`;
-      
-
-
-
 
       // CRITICAL DEBUG: Log when we create problematic edges
       if (source === "bt_136" || target === "bt_136") {
@@ -980,7 +1004,7 @@ export class VisualizationState {
   private _getContainerDepth(containerId: string): number {
     let depth = 0;
     let currentId = containerId;
-    
+
     // Walk up the parent chain to calculate depth
     while (currentId) {
       const parentId = this._containerParentMap.get(currentId);
@@ -991,17 +1015,17 @@ export class VisualizationState {
         break;
       }
     }
-    
+
     return depth;
   }
 
   private _canExpandContainer(containerId: string): boolean {
     const container = this._containers.get(containerId);
     if (!container) return false;
-    
+
     // If container is not collapsed, it doesn't need expansion
     if (!container.collapsed) return false;
-    
+
     // Check if ALL ancestors are expanded (not just immediate parent)
     let currentId = containerId;
     while (currentId) {
@@ -1018,7 +1042,7 @@ export class VisualizationState {
         break;
       }
     }
-    
+
     // All ancestors are expanded (or this is a top-level container)
     return true;
   }
@@ -1174,7 +1198,8 @@ export class VisualizationState {
         ) {
           // CRITICAL FIX: If the collapsed container is hidden, find its visible ancestor
           if (sourceContainer.hidden) {
-            const visibleAncestor = this._findLowestVisibleAncestorForAggregation(sourceContainer.id);
+            const visibleAncestor =
+              this._findLowestVisibleAncestorForAggregation(sourceContainer.id);
             if (visibleAncestor) {
               effectiveSource = visibleAncestor;
             }
@@ -1192,7 +1217,8 @@ export class VisualizationState {
         ) {
           // CRITICAL FIX: If the collapsed container is hidden, find its visible ancestor
           if (targetContainer.hidden) {
-            const visibleAncestor = this._findLowestVisibleAncestorForAggregation(targetContainer.id);
+            const visibleAncestor =
+              this._findLowestVisibleAncestorForAggregation(targetContainer.id);
             if (visibleAncestor) {
               effectiveTarget = visibleAncestor;
             }
@@ -1458,7 +1484,8 @@ export class VisualizationState {
       if (container && container.collapsed) {
         // CRITICAL FIX: If this collapsed container is hidden, find its visible ancestor
         if (container.hidden) {
-          const visibleAncestor = this._findLowestVisibleAncestorForAggregation(currentContainer);
+          const visibleAncestor =
+            this._findLowestVisibleAncestorForAggregation(currentContainer);
           return visibleAncestor || undefined;
         }
         return currentContainer;
@@ -1656,7 +1683,9 @@ export class VisualizationState {
     return { ...this._renderConfig };
   }
 
-  updateRenderConfig(updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>): void {
+  updateRenderConfig(
+    updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>
+  ): void {
     this._renderConfig = { ...this._renderConfig, ...updates };
     console.log(`[VisualizationState] 🎨 Render config updated:`, updates);
   }
@@ -1863,8 +1892,12 @@ export class VisualizationState {
   }
 
   /**
-   * Calculate the expansion cost for a container using the holistic cost formula
-   * Cost = (containerCount × COLLAPSED_CONTAINER_AREA) + (nodeCount × NODE_AREA)
+   * Calculate the expansion cost for a container as the net growth in screen area.
+   *
+   * Key insight: When we expand a container, we're replacing its collapsed footprint
+   * with an expanded footprint that contains its children plus border space.
+   *
+   * Cost = (expanded container size) - (original collapsed container size)
    */
   calculateExpansionCost(containerId: string): number {
     const container = this._containers.get(containerId);
@@ -1872,29 +1905,34 @@ export class VisualizationState {
       return 0;
     }
 
-    let containerCount = 0;
-    let nodeCount = 0;
+    // Original footprint: collapsed container size
+    const collapsedArea =
+      SIZES.COLLAPSED_CONTAINER_WIDTH * SIZES.COLLAPSED_CONTAINER_HEIGHT;
 
-    // Count direct children of this container
+    // Calculate the area needed to contain all direct children
+    let childrenArea = 0;
     for (const childId of container.children) {
-      if (this._containers.has(childId)) {
-        containerCount++;
+      const childContainer = this._containers.get(childId);
+      if (childContainer) {
+        // Child containers appear as collapsed units when parent expands
+        childrenArea +=
+          SIZES.COLLAPSED_CONTAINER_WIDTH * SIZES.COLLAPSED_CONTAINER_HEIGHT;
       } else if (this._nodes.has(childId)) {
-        nodeCount++;
+        // Direct node children
+        childrenArea +=
+          LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH *
+          LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
       }
     }
 
-    // Calculate areas using constants from config
-    const containerArea =
-      SIZES.COLLAPSED_CONTAINER_WIDTH * SIZES.COLLAPSED_CONTAINER_HEIGHT;
-    const nodeArea =
-      LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH *
-      LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
+    // Expanded container needs to contain children plus border/padding
+    const borderPadding = 40; // Rough estimate for container borders and internal padding
+    const expandedArea = childrenArea + borderPadding;
 
-    // Apply the holistic cost formula
-    const cost = containerCount * containerArea + nodeCount * nodeArea;
+    // Net cost is the growth in footprint
+    const netCost = Math.max(0, expandedArea - collapsedArea);
 
-    return cost;
+    return netCost;
   }
 
   /**
@@ -2049,17 +2087,13 @@ export class VisualizationState {
    * This prevents ELK from trying to reference non-existent shapes
    */
   private _cleanupAggregatedEdgesForHiddenContainer(containerId: string): void {
-
-    
     const edgesToRemove: string[] = [];
     const edgesToReaggregate: GraphEdge[] = [];
-    
+
     for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
       if (aggEdge.source === containerId || aggEdge.target === containerId) {
-
-        
         edgesToRemove.push(aggEdgeId);
-        
+
         // Collect the original edges for re-aggregation
         for (const originalEdgeId of aggEdge.originalEdgeIds) {
           const originalEdge = this._edges.get(originalEdgeId);
@@ -2069,14 +2103,12 @@ export class VisualizationState {
         }
       }
     }
-    
+
     // Remove the problematic aggregated edges
     for (const aggEdgeId of edgesToRemove) {
       this._aggregatedEdges.delete(aggEdgeId);
-      
-
     }
-    
+
     // Re-aggregate the original edges with proper endpoint resolution
     for (const edge of edgesToReaggregate) {
       this._reaggregateEdgeWithVisibleEndpoints(edge, containerId);
@@ -2086,13 +2118,17 @@ export class VisualizationState {
   /**
    * Re-aggregate a single edge, ensuring both endpoints reference visible containers/nodes
    */
-  private _reaggregateEdgeWithVisibleEndpoints(edge: GraphEdge, hiddenContainerId: string): void {
+  private _reaggregateEdgeWithVisibleEndpoints(
+    edge: GraphEdge,
+    hiddenContainerId: string
+  ): void {
     let newSource = edge.source;
     let newTarget = edge.target;
-    
+
     // If source was the hidden container, find its visible parent
     if (edge.source === hiddenContainerId) {
-      const visibleAncestor = this._findLowestVisibleAncestorForAggregation(hiddenContainerId);
+      const visibleAncestor =
+        this._findLowestVisibleAncestorForAggregation(hiddenContainerId);
       if (visibleAncestor) {
         newSource = visibleAncestor;
       } else {
@@ -2101,10 +2137,11 @@ export class VisualizationState {
         return;
       }
     }
-    
+
     // If target was the hidden container, find its visible parent
     if (edge.target === hiddenContainerId) {
-      const visibleAncestor = this._findLowestVisibleAncestorForAggregation(hiddenContainerId);
+      const visibleAncestor =
+        this._findLowestVisibleAncestorForAggregation(hiddenContainerId);
       if (visibleAncestor) {
         newTarget = visibleAncestor;
       } else {
@@ -2113,17 +2150,17 @@ export class VisualizationState {
         return;
       }
     }
-    
+
     // Skip self-loops
     if (newSource === newTarget) {
       edge.hidden = true;
       return;
     }
-    
+
     // Create or update aggregated edge with new endpoints
     const aggregatedEdgeId = `agg-${newSource}-${newTarget}`;
     const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
-    
+
     if (existingAggEdge) {
       // Add to existing aggregated edge
       if (!existingAggEdge.originalEdgeIds.includes(edge.id)) {
@@ -2144,7 +2181,7 @@ export class VisualizationState {
       };
       this._aggregatedEdges.set(aggregatedEdgeId, aggregatedEdge);
     }
-    
+
     // Hide the original edge
     edge.hidden = true;
   }
@@ -2155,24 +2192,28 @@ export class VisualizationState {
    */
   private _cleanupAllAggregatedEdgesWithHiddenEndpoints(): void {
     const edgesToDelete: string[] = [];
-    
+
     for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
       const sourceContainer = this._containers.get(aggEdge.source);
       const sourceNode = this._nodes.get(aggEdge.source);
       const targetContainer = this._containers.get(aggEdge.target);
       const targetNode = this._nodes.get(aggEdge.target);
-      
+
       const sourceExists = sourceContainer || sourceNode;
       const targetExists = targetContainer || targetNode;
-      const sourceVisible = (sourceContainer && !sourceContainer.hidden) || (sourceNode && !sourceNode.hidden);
-      const targetVisible = (targetContainer && !targetContainer.hidden) || (targetNode && !targetNode.hidden);
-      
+      const sourceVisible =
+        (sourceContainer && !sourceContainer.hidden) ||
+        (sourceNode && !sourceNode.hidden);
+      const targetVisible =
+        (targetContainer && !targetContainer.hidden) ||
+        (targetNode && !targetNode.hidden);
+
       if (!sourceExists || !targetExists || !sourceVisible || !targetVisible) {
         console.log(
           `[VisualizationState] 🧹 FINAL CLEANUP: Removing aggregated edge ${aggEdgeId} with invalid endpoints: source ${aggEdge.source} (exists=${!!sourceExists}, visible=${sourceVisible}), target ${aggEdge.target} (exists=${!!targetExists}, visible=${targetVisible})`
         );
         edgesToDelete.push(aggEdgeId);
-        
+
         // Restore original edges to hidden state
         for (const originalEdgeId of aggEdge.originalEdgeIds) {
           const originalEdge = this._edges.get(originalEdgeId);
@@ -2182,13 +2223,15 @@ export class VisualizationState {
         }
       }
     }
-    
+
     // Delete the problematic aggregated edges
     for (const aggEdgeId of edgesToDelete) {
       this._aggregatedEdges.delete(aggEdgeId);
     }
-    
-    console.log(`[VisualizationState] ✅ Final cleanup removed ${edgesToDelete.length} problematic aggregated edges`);
+
+    console.log(
+      `[VisualizationState] ✅ Final cleanup removed ${edgesToDelete.length} problematic aggregated edges`
+    );
   }
 
   // Edge Aggregation Tracking and Lookup Methods
