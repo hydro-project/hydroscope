@@ -2093,4 +2093,84 @@ export class AsyncCoordinator {
   clearErrorHistory(): void {
     searchNavigationErrorHandler.clearErrorHistory();
   }
+
+  /**
+   * Queue hierarchy change operation with proper sequencing
+   * This ensures hierarchy changes trigger proper re-parsing and layout updates
+   */
+  async queueHierarchyChange(
+    groupingId: string,
+    data: any, // HydroscopeData
+    onDataUpdate: (updatedData: any) => void,
+    options: QueueOptions = {}
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const operation = async () => {
+        try {
+          console.log(`[AsyncCoordinator] 🔄 Processing hierarchy change to: ${groupingId}`);
+
+          // Re-parse the data with the new grouping
+          // Create a deep copy to ensure reference change detection works
+          const updatedData = JSON.parse(JSON.stringify(data));
+          
+          // Move the selected hierarchy to the front so it becomes the active one
+          if (updatedData.hierarchyChoices) {
+            const selectedChoice = updatedData.hierarchyChoices.find((choice: any) => choice.id === groupingId);
+            const otherChoices = updatedData.hierarchyChoices.filter((choice: any) => choice.id !== groupingId);
+            if (selectedChoice) {
+              updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
+            }
+          }
+
+          // Update the data through the callback
+          onDataUpdate(updatedData);
+
+          console.log(`[AsyncCoordinator] ✅ Hierarchy change to ${groupingId} completed`);
+          resolve();
+          return "hierarchy_change_complete";
+        } catch (error) {
+          console.error(`[AsyncCoordinator] ❌ Hierarchy change to ${groupingId} failed:`, error);
+          reject(error);
+          throw error;
+        }
+      };
+
+      // Queue the operation
+      this.queueOperation("hierarchy_change", operation, {
+        timeout: options.timeout || 5000, // 5 second default timeout
+        maxRetries: options.maxRetries || 1,
+      });
+
+      // Process the queue if not already processing
+      if (!this.processing) {
+        this.processQueue().catch(reject);
+      }
+    });
+  }
+
+  /**
+   * Get status of hierarchy change operations
+   */
+  getHierarchyChangeStatus(): {
+    queued: number;
+    processing: boolean;
+    lastCompleted?: QueuedOperation;
+    lastFailed?: QueuedOperation;
+  } {
+    const hierarchyOps = this.queue.filter((op) => op.type === "hierarchy_change");
+    const currentHierarchy = this.currentOperation?.type === "hierarchy_change";
+    const lastCompleted = [...this.completedOperations]
+      .reverse()
+      .find((op) => op.type === "hierarchy_change");
+    const lastFailed = [...this.failedOperations]
+      .reverse()
+      .find((op) => op.type === "hierarchy_change");
+
+    return {
+      queued: hierarchyOps.length,
+      processing: currentHierarchy,
+      lastCompleted,
+      lastFailed,
+    };
+  }
 }

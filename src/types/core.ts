@@ -278,6 +278,7 @@ export interface QueuedOperation<T = any> {
     | "reactflow_render"
     | "application_event"
     | "render_config_update"
+    | "hierarchy_change"
     | "expand-tree-node"
     | "collapse-tree-node"
     | "expand-all-tree-nodes"

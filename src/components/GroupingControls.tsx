@@ -91,8 +91,12 @@ export function GroupingControls({
       {!compact && <label style={labelStyle}>Grouping:</label>}
 
       <Select
-        value={currentGrouping || undefined}
-        onChange={handleChange}
+        value={currentGrouping}
+        onChange={(value) => {
+          console.log("[GroupingControls] Direct onChange called with:", value);
+          // Always call handleChange, even if the value seems the same
+          handleChange(value);
+        }}
         disabled={disabled}
         placeholder="Select grouping..."
         options={selectOptions}
@@ -101,6 +105,8 @@ export function GroupingControls({
         popupMatchSelectWidth={true}
         getPopupContainer={(triggerNode) => triggerNode.parentNode}
       />
+      
+
     </div>
   );
 }

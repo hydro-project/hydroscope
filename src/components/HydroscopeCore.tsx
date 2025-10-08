@@ -98,6 +98,9 @@ export interface HydroscopeCoreHandle {
 
   /** Update render configuration through AsyncCoordinator */
   updateRenderConfig: (updates: Partial<Required<RenderConfig> & { layoutAlgorithm: string }>) => Promise<void>;
+
+  /** Get the AsyncCoordinator instance for external operations */
+  getAsyncCoordinator: () => AsyncCoordinator | null;
 }
 
 /**
@@ -462,12 +465,17 @@ const HydroscopeCoreInternal = forwardRef<
       }
 
       // Prevent re-processing the same data
+      // Use JSON comparison for hierarchy changes to detect reordered hierarchyChoices
+      const dataString = JSON.stringify(data);
+      const lastDataString = processedDataRef.current ? JSON.stringify(processedDataRef.current) : null;
+      
       console.log("[HydroscopeCore] Data parsing check:", {
         hasData: !!data,
         sameData: processedDataRef.current === data,
+        sameDataString: dataString === lastDataString,
       });
 
-      if (processedDataRef.current === data) {
+      if (processedDataRef.current === data && dataString === lastDataString) {
         console.log("[HydroscopeCore] Skipping re-parse: same data");
         return;
       }
@@ -1553,6 +1561,7 @@ const HydroscopeCoreInternal = forwardRef<
               )
           : handleNavigateToElement,
         updateRenderConfig: handleRenderConfigUpdate,
+        getAsyncCoordinator: () => state.asyncCoordinator,
       }),
       [
         readOnly,
@@ -1564,6 +1573,7 @@ const HydroscopeCoreInternal = forwardRef<
         handleNavigateToElement,
         handleRenderConfigUpdate,
         reactFlowInstance,
+        state.asyncCoordinator,
       ],
     );
 

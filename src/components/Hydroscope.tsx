@@ -117,6 +117,8 @@ interface HydroscopeState {
   /** Current visualization state from HydroscopeCore */
   currentVisualizationState: VisualizationState | null;
 
+
+
   /** File upload state */
   uploadedData: HydroscopeData | null;
   uploadedFilename: string | null;
@@ -578,11 +580,8 @@ export const Hydroscope = memo<HydroscopeProps>(
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Update data when prop changes
-    useEffect(() => {
-      if (data !== state.data) {
-        setState((prev) => ({ ...prev, data: data || null }));
-      }
-    }, [data, state.data]);
+    // Removed: This useEffect was causing double parsing during hierarchy changes
+    // by reverting state.data back to the original prop after AsyncCoordinator updates it
 
     // Save settings when they change
     useEffect(() => {
@@ -960,30 +959,51 @@ export const Hydroscope = memo<HydroscopeProps>(
                       console.log("🔄 Hierarchy change requested:", groupingId);
                       setSelectedGrouping(groupingId);
                       
-                      // Trigger re-parsing with the new hierarchy
-                      if (data && groupingId) {
+                      // Use AsyncCoordinator to queue hierarchy change
+                      if (data && groupingId && hydroscopeCoreRef.current) {
                         setState((prev) => ({
                           ...prev,
                           isLoading: true,
                           error: null,
                         }));
-                        
-                        // Re-parse the data with the new grouping
-                        const updatedData = { ...data };
-                        // Move the selected hierarchy to the front so it becomes the active one
-                        if (updatedData.hierarchyChoices) {
-                          const selectedChoice = updatedData.hierarchyChoices.find(choice => choice.id === groupingId);
-                          const otherChoices = updatedData.hierarchyChoices.filter(choice => choice.id !== groupingId);
-                          if (selectedChoice) {
-                            updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
+
+                        const asyncCoordinator = hydroscopeCoreRef.current.getAsyncCoordinator();
+                        if (asyncCoordinator) {
+                          asyncCoordinator.queueHierarchyChange(
+                            groupingId,
+                            data,
+                            (updatedData) => {
+                              setState((prev) => ({
+                                ...prev,
+                                data: updatedData,
+                                isLoading: false,
+                              }));
+                            }
+                          ).catch((error) => {
+                            console.error("Hierarchy change failed:", error);
+                            setState((prev) => ({
+                              ...prev,
+                              isLoading: false,
+                              error: error instanceof Error ? error : new Error("Hierarchy change failed"),
+                            }));
+                          });
+                        } else {
+                          console.warn("AsyncCoordinator not available for hierarchy change");
+                          // Fallback to direct state update
+                          const updatedData = { ...data };
+                          if (updatedData.hierarchyChoices) {
+                            const selectedChoice = updatedData.hierarchyChoices.find(choice => choice.id === groupingId);
+                            const otherChoices = updatedData.hierarchyChoices.filter(choice => choice.id !== groupingId);
+                            if (selectedChoice) {
+                              updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
+                            }
                           }
+                          setState((prev) => ({
+                            ...prev,
+                            data: updatedData,
+                            isLoading: false,
+                          }));
                         }
-                        
-                        setState((prev) => ({
-                          ...prev,
-                          data: updatedData,
-                          isLoading: false,
-                        }));
                       }
                     }}
                     collapsedContainers={new Set()}
