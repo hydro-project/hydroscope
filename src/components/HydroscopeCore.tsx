@@ -57,6 +57,7 @@ import { InteractionHandler } from "../core/InteractionHandler.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
 import type { RenderConfig } from "./Hydroscope.js";
+import { DEFAULT_COLOR_PALETTE } from "../shared/config.js";
 
 import type {
   HydroscopeData,
@@ -330,7 +331,7 @@ const HydroscopeCoreInternal = forwardRef<
           nodePadding: 8,
           nodeFontSize: 12,
           containerBorderWidth: 2,
-          colorPalette: initialColorPalette || "Set2",
+          colorPalette: initialColorPalette || DEFAULT_COLOR_PALETTE,
           layoutAlgorithm: initialLayoutAlgorithm || "layered",
           fitView: true,
         };
@@ -1413,7 +1414,16 @@ const HydroscopeCoreInternal = forwardRef<
           } else {
             // For non-layout changes (like edge style, color palette), use AsyncCoordinator
             console.log(`[HydroscopeCore] 🎨 Non-layout change, queuing render config update through AsyncCoordinator`);
-            await state.asyncCoordinator.queueRenderConfigUpdate(state.visualizationState, updates);
+            const newReactFlowData = await state.asyncCoordinator.queueRenderConfigUpdate(state.visualizationState, updates);
+            
+            // Update ReactFlow component with new data
+            if (newReactFlowData) {
+              console.log(`[HydroscopeCore] 🎨 Updating ReactFlow with new render config data`);
+              setState((prev) => ({
+                ...prev,
+                reactFlowData: newReactFlowData,
+              }));
+            }
           }
           
           // Notify parent component of the change

@@ -36,6 +36,7 @@ import { ErrorBoundary } from "./ErrorBoundary.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { HydroscopeData } from "../types/core.js";
+import { DEFAULT_COLOR_PALETTE } from "../shared/config.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -151,7 +152,7 @@ const DEFAULT_RENDER_CONFIG: RenderConfig = {
   nodePadding: 8,
   nodeFontSize: 12,
   containerBorderWidth: 2,
-  colorPalette: "Set2",
+  colorPalette: DEFAULT_COLOR_PALETTE,
   fitView: true,
 };
 
@@ -159,7 +160,7 @@ const DEFAULT_SETTINGS: HydroscopeSettings = {
   infoPanelOpen: true,
   stylePanelOpen: false,
   autoFitEnabled: true,
-  colorPalette: "Set2",
+  colorPalette: DEFAULT_COLOR_PALETTE,
   layoutAlgorithm: "layered",
   renderConfig: DEFAULT_RENDER_CONFIG,
 };
@@ -528,7 +529,7 @@ export const Hydroscope = memo<HydroscopeProps>(
     showStylePanel = true,
     enableCollapse = true,
     initialLayoutAlgorithm = "layered",
-    initialColorPalette = "Set2",
+    initialColorPalette = DEFAULT_COLOR_PALETTE,
     responsive: _responsive = false,
     onFileUpload,
     onNodeClick,

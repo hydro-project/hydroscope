@@ -3,7 +3,7 @@
  * Architectural constraints: React-free, single source of truth, synchronous core
  */
 
-import { LAYOUT_CONSTANTS, SIZES } from "@/shared/config.js";
+import { LAYOUT_CONSTANTS, SIZES, DEFAULT_COLOR_PALETTE } from "@/shared/config.js";
 import type { RenderConfig } from "@/components/Hydroscope.js";
 import type {
   GraphNode,
@@ -41,7 +41,7 @@ export class VisualizationState {
     nodePadding: 8,
     nodeFontSize: 12,
     containerBorderWidth: 2,
-    colorPalette: "Set2",
+    colorPalette: DEFAULT_COLOR_PALETTE,
     layoutAlgorithm: "layered",
     fitView: true,
   };

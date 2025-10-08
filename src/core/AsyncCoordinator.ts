@@ -483,7 +483,7 @@ export class AsyncCoordinator {
     state: any, // VisualizationState - using any to avoid circular dependency
     updates: any, // RenderConfig updates
     options: QueueOptions = {}
-  ): Promise<void> {
+  ): Promise<any> {
     console.log(`[AsyncCoordinator] 🎨 Queuing render config update:`, updates);
 
     return new Promise((resolve, reject) => {
@@ -504,7 +504,7 @@ export class AsyncCoordinator {
           console.log(
             `[AsyncCoordinator] ✅ Render config update completed - ReactFlow data regenerated`
           );
-          resolve();
+          resolve(reactFlowData);
           return reactFlowData;
         } catch (error) {
           console.error(

@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import { LAYOUT_CONSTANTS, PANEL_CONSTANTS } from "../../shared/config";
+import { LAYOUT_CONSTANTS, PANEL_CONSTANTS, DEFAULT_COLOR_PALETTE } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
 
@@ -72,7 +72,7 @@ export interface StyleTunerPanelProps {
 const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   value,
   onChange,
-  colorPalette = "Set2",
+  colorPalette = DEFAULT_COLOR_PALETTE,
   onPaletteChange,
   currentLayout = "layered",
   onLayoutChange,

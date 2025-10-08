@@ -412,6 +412,9 @@ export const COMPONENT_COLORS = {
   BUTTON_HOVER_BACKGROUND: "#f3f4f6",
 };
 
+// Default color palette - single source of truth
+export const DEFAULT_COLOR_PALETTE = "Set3";
+
 export const COLOR_PALETTES = {
   Set2: [
     { primary: "#66c2a5", secondary: "#e0f2ef", name: "Teal Green" },

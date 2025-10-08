@@ -452,11 +452,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           nodeCount,
           width,
           height,
-          colorPalette: (() => {
-            const palette = state.getColorPalette();
-            console.log(`[ReactFlowBridge] 🎨 Container ${container.id} using color palette: ${palette}`);
-            return palette;
-          })(),
+          colorPalette: state.getColorPalette(),
           style: "default",
           onClick: interactionHandler
             ? (elementId: string, elementType: "node" | "container") => {
@@ -589,11 +585,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           showingLongLabel: node.showingLongLabel,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
-          colorPalette: (() => {
-            const palette = state.getColorPalette();
-            console.log(`[ReactFlowBridge] 🎨 Node ${node.id} using color palette: ${palette}`);
-            return palette;
-          })(),
+          colorPalette: state.getColorPalette(),
           style: node.type || "default",
           width, // Pass ELK-calculated width to match layout
           height, // Pass ELK-calculated height to match layout

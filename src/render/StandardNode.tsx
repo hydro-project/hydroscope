@@ -14,7 +14,7 @@ import { truncateLabel } from "../shared/textUtils";
 import { useStyleConfig } from "./StyleConfigContext";
 import { HandlesRenderer } from "./handles";
 import { PANEL_CONSTANTS } from "../shared/config";
-import { UI_CONSTANTS, COLOR_CONSTANTS } from "../shared/config";
+import { UI_CONSTANTS, COLOR_CONSTANTS, DEFAULT_COLOR_PALETTE } from "../shared/config";
 
 // Container color generation (copied from ContainerNode for consistency)
 function generateContainerColors(containerId: string, palette: string) {
@@ -139,8 +139,7 @@ export function StandardNode({ id, data }: NodeProps) {
       data.style ||
       "default",
   );
-  const colorPalette = String(data.colorPalette || "Set3");
-  console.log(`[StandardNode] ${id} received color palette: ${colorPalette}`);
+  const colorPalette = String(data.colorPalette || DEFAULT_COLOR_PALETTE);
 
   // Use different color generation for collapsed containers
   const rawColors = isCollapsedContainer

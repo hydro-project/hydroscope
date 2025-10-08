@@ -5,6 +5,7 @@
 import React from "react";
 import { type NodeProps } from "@xyflow/react";
 import { truncateLabel } from "../shared/textUtils";
+import { DEFAULT_COLOR_PALETTE } from "../shared/config";
 import { useStyleConfig } from "./StyleConfigContext";
 import { HandlesRenderer } from "./handles";
 import {
@@ -24,8 +25,7 @@ export function ContainerNode({ id, data }: NodeProps) {
 
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
-  const colorPalette = String(data.colorPalette || "Set3");
-  console.log(`[ContainerNode] ${id} received color palette: ${colorPalette}`);
+  const colorPalette = String(data.colorPalette || DEFAULT_COLOR_PALETTE);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
 
