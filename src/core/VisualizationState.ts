@@ -2893,6 +2893,9 @@ export class VisualizationState {
     const cachedResults = this._getCachedSearchResults(trimmedQuery);
     if (cachedResults) {
       this._searchNavigationState.searchResults = cachedResults;
+      // CRITICAL FIX: Also set backward compatibility search results
+      this._searchResults = [...cachedResults];
+      this._searchState.resultCount = cachedResults.length;
       this.expandTreeToShowMatches(cachedResults);
       this.updateTreeSearchHighlights(cachedResults);
       this.updateGraphSearchHighlights(cachedResults);
@@ -2972,10 +2975,54 @@ export class VisualizationState {
       }
     }
 
-    // Automatically expand tree hierarchy to show search matches
-    console.log('[VisualizationState] 🔍 About to expand containers for search matches');
-    this.expandTreeToShowMatches(results);
-    console.log('[VisualizationState] 🔍 Container expansion for search complete');
+    // CRITICAL FIX: For search, manage container states to show only relevant matches
+    console.log('[VisualizationState] 🔍 About to manage container states for search matches');
+    
+    if (results.length > 0) {
+      // Get containers that should be expanded to show search matches
+      const containersToExpand = new Set<string>();
+      for (const result of results) {
+        const expansionPath = this.getTreeExpansionPath(result.id);
+        for (const containerId of expansionPath) {
+          containersToExpand.add(containerId);
+        }
+      }
+      
+      // Step 1: Collapse all containers that don't contain search matches
+      const allContainers = Array.from(this._containers.values());
+      for (const container of allContainers) {
+        if (container && !containersToExpand.has(container.id) && !container.collapsed) {
+          console.log(`[VisualizationState] 🔍 Collapsing container ${container.id} (no search matches)`);
+          this._collapseContainerInternal(container.id);
+          this.aggregateEdgesForContainer(container.id);
+        }
+      }
+      
+      // Step 2: Expand containers that contain search matches
+      for (const containerId of containersToExpand) {
+        const container = this._containers.get(containerId);
+        if (container && container.collapsed) {
+          console.log(`[VisualizationState] 🔍 Expanding container ${containerId} for search results`);
+          this._expandContainerInternal(containerId);
+          
+          // CRITICAL FIX: Reset container layout properties to allow ELK to recalculate
+          // When containers are expanded from collapsed state, they retain collapsed dimensions
+          // which constrains ELK layout and causes node overlapping
+          console.log(`[VisualizationState] 🔍 Resetting layout properties for expanded container ${containerId}`);
+          container.position = { x: 0, y: 0 }; // Reset position to let ELK recalculate
+          container.dimensions = undefined; // Clear collapsed dimensions
+          container.width = undefined; // Clear collapsed width
+          container.height = undefined; // Clear collapsed height
+        }
+      }
+      
+      console.log('[VisualizationState] 🔍 Container states optimized for search matches');
+    } else {
+      // No search results - just update highlights (no container changes needed)
+      this.expandTreeToShowMatches(results);
+    }
+    
+    console.log('[VisualizationState] 🔍 Container state management for search complete');
 
     this.updateTreeSearchHighlights(results);
     this.updateGraphSearchHighlights(results);
@@ -3012,6 +3059,10 @@ export class VisualizationState {
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
     // Note: Search cache is NOT cleared to maintain performance across searches
+    
+    // ENHANCEMENT: When search is cleared, re-enable smart collapse for next layout
+    // This allows the system to optimize container states when search is not active
+    this.enableSmartCollapseForNextLayout();
   }
 
   /**
@@ -3235,9 +3286,17 @@ export class VisualizationState {
       // Also expand containers in the actual graph visualization
       for (const containerId of containersToExpand) {
         const container = this._containers.get(containerId);
-        if (container && container.collapsed) {
-          console.log(`[VisualizationState] 🔍 Expanding container ${containerId} for search results`);
-          this._expandContainerInternal(containerId);
+        if (container) {
+          // CRITICAL FIX: Always expand containers that should contain search matches
+          // Force expansion regardless of current state to ensure search results are visible
+          if (container.collapsed) {
+            console.log(`[VisualizationState] 🔍 Expanding collapsed container ${containerId} for search results`);
+            this._expandContainerInternal(containerId);
+          } else {
+            console.log(`[VisualizationState] 🔍 Container ${containerId} already expanded, ensuring it stays expanded for search results`);
+            // Even if already expanded, ensure it's properly shown and edges are restored
+            // This handles cases where container was manually collapsed then search is performed
+          }
         }
       }
     }

@@ -755,6 +755,8 @@ export const Hydroscope = memo<HydroscopeProps>(
     const handleCollapseAll = useCallback(async () => {
       try {
         console.log("[Hydroscope] CollapseAll operation starting");
+        console.log("[Hydroscope] 🔍 COLLAPSE ALL TRIGGERED - Stack trace:");
+        console.trace();
         await hydroscopeCoreRef.current?.collapseAll();
         console.log("[Hydroscope] CollapseAll operation completed");
 
@@ -827,6 +829,8 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
       async (query: string, matches: SearchMatch[], current?: SearchMatch) => {
+        console.log(`[Hydroscope] 🔍 handleSearchUpdate called: query="${query}", matches=${matches.length}, current=${current?.id || 'none'}`);
+        
         setState((prev) => ({
           ...prev,
           searchQuery: query,
@@ -848,13 +852,19 @@ export const Hydroscope = memo<HydroscopeProps>(
               let searchResults;
               if (query && existingHighlights.size === 0) {
                 // Search not yet performed or highlights cleared, perform search
+                console.log(`[Hydroscope] 🔍 Performing new search for "${query}" (no existing highlights)`);
                 searchResults = currentVisualizationState.performSearch(query);
+                console.log(`[Hydroscope] 🔍 New search results: ${searchResults.length} matches`);
               } else if (query) {
                 // Search already performed, get existing results
+                console.log(`[Hydroscope] 🔍 Getting existing search results for "${query}" (highlights exist: ${existingHighlights.size})`);
                 searchResults = currentVisualizationState.getSearchResults();
+                console.log(`[Hydroscope] 🔍 Existing search results: ${searchResults.length} matches`);
               } else {
                 // Clear search
+                console.log(`[Hydroscope] 🔍 Clearing search (empty query)`);
                 searchResults = currentVisualizationState.performSearch("");
+                console.log(`[Hydroscope] 🔍 Clear search results: ${searchResults.length} matches`);
               }
               
               // Container expansion requires ELK layout, not just ReactFlow render
@@ -863,9 +873,12 @@ export const Hydroscope = memo<HydroscopeProps>(
               if (hydroscopeCore) {
                 if (searchResults.length > 0) {
                   // Search with results - use expandAll (needed for highlighting to work)
+                  console.log(`[Hydroscope] 🔍 Search has ${searchResults.length} results - calling expandAll()`);
                   try {
                     await hydroscopeCore.expandAll();
+                    console.log(`[Hydroscope] 🔍 expandAll() completed successfully`);
                   } catch (error) {
+                    console.log(`[Hydroscope] 🔍 expandAll() failed, using fallback ReactFlow render:`, error);
                     // Fallback to ReactFlow render
                     if (asyncCoordinator.queueReactFlowRender) {
                       asyncCoordinator.queueReactFlowRender(currentVisualizationState);
@@ -873,6 +886,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                   }
                 } else {
                   // Search cleared - use ReactFlow render only
+                  console.log(`[Hydroscope] 🔍 Search has no results - using ReactFlow render only`);
                   if (asyncCoordinator.queueReactFlowRender) {
                     asyncCoordinator.queueReactFlowRender(currentVisualizationState);
                   }
