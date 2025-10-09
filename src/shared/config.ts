@@ -87,7 +87,7 @@ export const LAYOUT_CONSTANTS = {
   },
   LARGE_CONTAINER_CHILD_COUNT_THRESHOLD: 7,
 
-  SMART_COLLAPSE_BUDGET: 100000,
+  SMART_COLLAPSE_BUDGET: 25000,
 } as const;
 
 // UI Animation and Interaction Constants

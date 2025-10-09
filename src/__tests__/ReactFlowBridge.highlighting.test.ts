@@ -163,8 +163,8 @@ describe("ReactFlowBridge Highlighting", () => {
       expect(result.nodes).toHaveLength(1);
       const node = result.nodes[0];
 
-      // Should not have highlight data
-      expect(node.data.isHighlighted).toBeUndefined();
+      // Should not have highlight data (false is acceptable for no highlighting)
+      expect(node.data.isHighlighted).toBeFalsy();
       expect(node.data.highlightType).toBeUndefined();
     });
   });

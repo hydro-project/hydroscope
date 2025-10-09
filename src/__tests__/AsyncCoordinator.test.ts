@@ -428,9 +428,17 @@ describe("AsyncCoordinator", () => {
       expect(status.lastCompleted).toBeUndefined();
 
       // Execute first operation
-      await coordinator.queueELKLayout(state, elkBridge);
+      try {
+        await coordinator.queueELKLayout(state, elkBridge);
+        console.log("ELK operation completed successfully");
+      } catch (error) {
+        console.error("ELK operation failed:", error);
+        throw error;
+      }
 
       status = coordinator.getELKOperationStatus();
+      console.log("ELK Status after first operation:", status);
+      console.log("Queue status:", coordinator.getQueueStatus());
       expect(status.queued).toBe(0);
       expect(status.lastCompleted).toBeDefined();
       expect(status.lastCompleted?.type).toBe("elk_layout");
@@ -595,10 +603,33 @@ describe("AsyncCoordinator", () => {
       expect(status.lastCompleted).toBeUndefined();
 
       // Execute operation
-      await coordinator.queueReactFlowRender(state);
+      console.log("About to queue ReactFlow render operation");
+      try {
+        await coordinator.queueReactFlowRender(state);
+        console.log("ReactFlow render operation completed successfully");
+      } catch (error) {
+        console.error("ReactFlow render operation threw error:", error);
+        throw error;
+      }
 
       status = coordinator.getReactFlowOperationStatus();
       expect(status.queued).toBe(0);
+      
+      // Debug: Check what happened to the operation
+      console.log("ReactFlow operation status:", {
+        queued: status.queued,
+        processing: status.processing,
+        lastCompleted: status.lastCompleted?.id,
+        lastFailed: status.lastFailed?.id,
+        lastFailedError: status.lastFailed?.error?.message
+      });
+      
+      // If operation failed, let's see why
+      if (status.lastFailed) {
+        console.error("ReactFlow operation failed:", status.lastFailed.error);
+        throw new Error(`ReactFlow operation failed: ${status.lastFailed.error?.message}`);
+      }
+      
       expect(status.lastCompleted).toBeDefined();
       expect(status.lastCompleted?.type).toBe("reactflow_render");
     });
@@ -651,6 +682,10 @@ describe("AsyncCoordinator", () => {
 
     beforeEach(() => {
       mockState = {
+        // New internal methods for AsyncCoordinator
+        _expandContainerForCoordinator: vi.fn(),
+        _collapseContainerForCoordinator: vi.fn(),
+        // Keep old methods for backward compatibility tests
         expandContainer: vi.fn(),
         collapseContainer: vi.fn(),
         search: vi.fn(() => []),
@@ -688,7 +723,7 @@ describe("AsyncCoordinator", () => {
       await coordinator.processQueue();
 
       // High priority should have been processed first
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
+      expect(mockState._expandContainerForCoordinator).toHaveBeenCalledWith("container1");
 
       const status = coordinator.getApplicationEventStatus();
       expect(status.queued).toBe(0);
@@ -708,7 +743,7 @@ describe("AsyncCoordinator", () => {
 
       await coordinator.processApplicationEventAndWait(event);
 
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
+      expect(mockState._expandContainerForCoordinator).toHaveBeenCalledWith("container1");
 
       const status = coordinator.getApplicationEventStatus();
       expect(status.lastCompleted).toBeDefined();
@@ -728,7 +763,7 @@ describe("AsyncCoordinator", () => {
 
       await coordinator.processApplicationEventAndWait(event);
 
-      expect(mockState.collapseContainer).toHaveBeenCalledWith("container1");
+      expect(mockState._collapseContainerForCoordinator).toHaveBeenCalledWith("container1");
 
       const status = coordinator.getApplicationEventStatus();
       expect(status.lastCompleted).toBeDefined();
@@ -793,7 +828,7 @@ describe("AsyncCoordinator", () => {
 
       expect(mockState.search).toHaveBeenCalledWith("test");
       expect(mockState.getContainersForNode).toHaveBeenCalledWith("node1");
-      expect(mockState.expandContainer).toHaveBeenCalledWith("container1");
+      expect(mockState._expandContainerForCoordinator).toHaveBeenCalledWith("container1");
     });
 
     it("should handle layout config change events", async () => {
@@ -927,7 +962,7 @@ describe("AsyncCoordinator", () => {
       let attemptCount = 0;
       const flakyState = {
         ...mockState,
-        expandContainer: vi.fn((_containerId) => {
+        _expandContainerForCoordinator: vi.fn((_containerId) => {
           attemptCount++;
           if (attemptCount < 2) {
             throw new Error("Temporary failure");
@@ -954,7 +989,7 @@ describe("AsyncCoordinator", () => {
       await processPromise;
 
       expect(attemptCount).toBe(2);
-      expect(flakyState.expandContainer).toHaveBeenCalledWith("container1");
+      expect(flakyState._expandContainerForCoordinator).toHaveBeenCalledWith("container1");
 
       const status = coordinator.getApplicationEventStatus();
       expect(status.lastCompleted).toBeDefined();
@@ -1120,10 +1155,10 @@ describe("AsyncCoordinator", () => {
 
     it("should retry failed container operations", async () => {
       let attemptCount = 0;
-      const originalExpandContainer = state.expandContainer.bind(state);
+      const originalExpandContainer = state._expandContainerForCoordinator.bind(state);
 
-      // Mock the expandContainer method to fail on first attempt
-      state.expandContainer = vi.fn((containerId: string) => {
+      // Mock the _expandContainerForCoordinator method to fail on first attempt
+      state._expandContainerForCoordinator = vi.fn((containerId: string) => {
         attemptCount++;
         if (attemptCount < 2) {
           throw new Error("Temporary container failure");
@@ -1146,7 +1181,7 @@ describe("AsyncCoordinator", () => {
       await processPromise;
 
       expect(attemptCount).toBe(2);
-      expect(state.expandContainer).toHaveBeenCalledWith("container1");
+      expect(state._expandContainerForCoordinator).toHaveBeenCalledWith("container1");
 
       const status = coordinator.getContainerOperationStatus();
       expect(status.expandOperations.completed).toBeGreaterThan(0);
@@ -1216,15 +1251,15 @@ describe("AsyncCoordinator", () => {
       const operationOrder: string[] = [];
 
       // Mock the container operations to track order
-      const originalExpandContainer = state.expandContainer.bind(state);
-      const originalCollapseContainer = state.collapseContainer.bind(state);
+      const originalExpandContainer = state._expandContainerForCoordinator.bind(state);
+      const originalCollapseContainer = state._collapseContainerForCoordinator.bind(state);
 
-      state.expandContainer = vi.fn((containerId: string) => {
+      state._expandContainerForCoordinator = vi.fn((containerId: string) => {
         operationOrder.push(`expand-${containerId}`);
         return originalExpandContainer(containerId);
       });
 
-      state.collapseContainer = vi.fn((containerId: string) => {
+      state._collapseContainerForCoordinator = vi.fn((containerId: string) => {
         operationOrder.push(`collapse-${containerId}`);
         return originalCollapseContainer(containerId);
       });

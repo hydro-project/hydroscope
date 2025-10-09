@@ -106,9 +106,6 @@ export class VisualizationState {
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
 
-  // Restoration operations tracking (for tests)
-  private _restorationOperations = new Map<string, any>();
-
   // Data Management
   addNode(node: GraphNode): void {
     this._validateNodeData(node);
@@ -371,8 +368,17 @@ export class VisualizationState {
     }
   }
 
-  // Container Operations
+  // Container Operations - DEPRECATED: Use AsyncCoordinator.expandContainer() instead
+  // @deprecated Use AsyncCoordinator.expandContainer() for proper layout coordination
   expandContainer(id: string): void {
+    console.warn(
+      `[VisualizationState] ⚠️ DEPRECATED: expandContainer() called directly. Use AsyncCoordinator.expandContainer() for proper layout coordination.`
+    );
+    this._expandContainerForCoordinator(id);
+  }
+
+  // Internal method for AsyncCoordinator use only
+  _expandContainerForCoordinator(id: string): void {
     this._expandContainerInternal(id);
     // User operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
@@ -394,19 +400,22 @@ export class VisualizationState {
           `[VisualizationState] 👁️ SHOWING container ${childContainer.id} (was hidden: ${childContainer.hidden})`
         );
         childContainer.hidden = false;
-        // Don't automatically expand child containers - they keep their collapsed state
-        // Only show their contents if they are not collapsed
-        if (!childContainer.collapsed) {
-          console.warn(
-            "_showImmediateChildren: nested call suggests nested expended containers"
-          );
-          this._showImmediateChildren(childId);
-        }
+        // Don't automatically show contents of child containers - they keep their collapsed state
+        // Child containers will only show their contents when explicitly expanded
       }
     }
   }
 
+  // @deprecated Use AsyncCoordinator.collapseContainer() for proper layout coordination
   collapseContainer(id: string): void {
+    console.warn(
+      `[VisualizationState] ⚠️ DEPRECATED: collapseContainer() called directly. Use AsyncCoordinator.collapseContainer() for proper layout coordination.`
+    );
+    this._collapseContainerForCoordinator(id);
+  }
+
+  // Internal method for AsyncCoordinator use only
+  _collapseContainerForCoordinator(id: string): void {
     console.log(`[VisualizationState] 🔄 Collapsing container ${id}`);
     this._collapseContainerInternal(id);
 
@@ -456,7 +465,16 @@ export class VisualizationState {
     }
   }
 
+  // @deprecated Use AsyncCoordinator.expandAllContainers() for proper layout coordination
   expandAllContainers(containerIds?: string[]): void {
+    console.warn(
+      `[VisualizationState] ⚠️ DEPRECATED: expandAllContainers() called directly. Use AsyncCoordinator.expandAllContainers() for proper layout coordination.`
+    );
+    this._expandAllContainersForCoordinator(containerIds);
+  }
+
+  // Internal method for AsyncCoordinator use only
+  _expandAllContainersForCoordinator(containerIds?: string[]): void {
     console.log(
       `[VisualizationState] 🔄 Starting expandAllContainers operation`
     );
@@ -539,7 +557,16 @@ export class VisualizationState {
     this.disableSmartCollapseForUserOperations();
   }
 
+  // @deprecated Use AsyncCoordinator.collapseAllContainers() for proper layout coordination
   collapseAllContainers(containerIds?: string[]): void {
+    console.warn(
+      `[VisualizationState] ⚠️ DEPRECATED: collapseAllContainers() called directly. Use AsyncCoordinator.collapseAllContainers() for proper layout coordination.`
+    );
+    this._collapseAllContainersForCoordinator(containerIds);
+  }
+
+  // Internal method for AsyncCoordinator use only
+  _collapseAllContainersForCoordinator(containerIds?: string[]): void {
     console.log(
       `[VisualizationState] 🔄 Collapsing ${containerIds ? "specified" : "all"} containers`
     );
@@ -1764,8 +1791,10 @@ export class VisualizationState {
   /**
    * Perform smart collapse operation - automatically collapse containers
    * that meet certain criteria to improve initial layout readability
+   *
+   * @param budgetOverride - Optional budget override for testing purposes
    */
-  performSmartCollapse(): void {
+  performSmartCollapse(budgetOverride?: number): void {
     console.log(
       `[VisualizationState] 🧠 Starting holistic smart collapse operation`
     );
@@ -1829,7 +1858,7 @@ export class VisualizationState {
     );
 
     // Step 3: Expand containers until budget is reached
-    const budget = LAYOUT_CONSTANTS.SMART_COLLAPSE_BUDGET;
+    const budget = budgetOverride ?? LAYOUT_CONSTANTS.SMART_COLLAPSE_BUDGET;
     let currentCost = 0;
     let expandedCount = 0;
 
@@ -1987,7 +2016,16 @@ export class VisualizationState {
   }
 
   // Toggle container (user operation)
+  // @deprecated Use AsyncCoordinator.expandContainer() or AsyncCoordinator.collapseContainer() for proper layout coordination
   toggleContainer(id: string): void {
+    console.warn(
+      `[VisualizationState] ⚠️ DEPRECATED: toggleContainer() called directly. Use AsyncCoordinator.expandContainer() or AsyncCoordinator.collapseContainer() for proper layout coordination.`
+    );
+    this._toggleContainerForCoordinator(id);
+  }
+
+  // Internal method for AsyncCoordinator use only
+  _toggleContainerForCoordinator(id: string): void {
     console.log("[VisualizationState] toggleContainer called for:", id);
     const container = this._containers.get(id);
     if (!container) {
@@ -2003,10 +2041,10 @@ export class VisualizationState {
 
     if (container.collapsed) {
       console.log("[VisualizationState] Expanding container:", id);
-      this.expandContainer(id);
+      this._expandContainerForCoordinator(id);
     } else {
       console.log("[VisualizationState] Collapsing container:", id);
-      this.collapseContainer(id);
+      this._collapseContainerForCoordinator(id);
     }
 
     const containerAfter = this._containers.get(id);
@@ -2956,7 +2994,10 @@ export class VisualizationState {
    * Finalize search results with common post-processing logic
    * Used by both cached and non-cached search paths to avoid duplication
    */
-  private _finalizeSearchResults(trimmedQuery: string, results: SearchResult[]): SearchResult[] {
+  private _finalizeSearchResults(
+    trimmedQuery: string,
+    results: SearchResult[]
+  ): SearchResult[] {
     // Update both new and backward compatibility search states
     this._searchNavigationState.searchResults = results;
     this._searchResults = [...results];
@@ -2978,8 +3019,10 @@ export class VisualizationState {
     }
 
     // CRITICAL FIX: For search, manage container states to show only relevant matches
-    console.log('[VisualizationState] 🔍 About to manage container states for search matches');
-    
+    console.log(
+      "[VisualizationState] 🔍 About to manage container states for search matches"
+    );
+
     if (results.length > 0) {
       // Get containers that should be expanded to show search matches
       const containersToExpand = new Set<string>();
@@ -2989,42 +3032,56 @@ export class VisualizationState {
           containersToExpand.add(containerId);
         }
       }
-      
+
       // Step 1: Collapse all containers that don't contain search matches
       const allContainers = Array.from(this._containers.values());
       for (const container of allContainers) {
-        if (container && !containersToExpand.has(container.id) && !container.collapsed) {
-          console.log(`[VisualizationState] 🔍 Collapsing container ${container.id} (no search matches)`);
+        if (
+          container &&
+          !containersToExpand.has(container.id) &&
+          !container.collapsed
+        ) {
+          console.log(
+            `[VisualizationState] 🔍 Collapsing container ${container.id} (no search matches)`
+          );
           this._collapseContainerInternal(container.id);
           this.aggregateEdgesForContainer(container.id);
         }
       }
-      
+
       // Step 2: Expand containers that contain search matches
       for (const containerId of containersToExpand) {
         const container = this._containers.get(containerId);
         if (container && container.collapsed) {
-          console.log(`[VisualizationState] 🔍 Expanding container ${containerId} for search results`);
+          console.log(
+            `[VisualizationState] 🔍 Expanding container ${containerId} for search results`
+          );
           this._expandContainerInternal(containerId);
-          
+
           // CRITICAL FIX: Reset container layout properties to allow ELK to recalculate
           // When containers are expanded from collapsed state, they retain collapsed dimensions
           // which constrains ELK layout and causes node overlapping
-          console.log(`[VisualizationState] 🔍 Resetting layout properties for expanded container ${containerId}`);
+          console.log(
+            `[VisualizationState] 🔍 Resetting layout properties for expanded container ${containerId}`
+          );
           container.position = { x: 0, y: 0 }; // Reset position to let ELK recalculate
           container.dimensions = undefined; // Clear collapsed dimensions
           container.width = undefined; // Clear collapsed width
           container.height = undefined; // Clear collapsed height
         }
       }
-      
-      console.log('[VisualizationState] 🔍 Container states optimized for search matches');
+
+      console.log(
+        "[VisualizationState] 🔍 Container states optimized for search matches"
+      );
     } else {
       // No search results - just update highlights (no container changes needed)
       this.expandTreeToShowMatches(results);
     }
-    
-    console.log('[VisualizationState] 🔍 Container state management for search complete');
+
+    console.log(
+      "[VisualizationState] 🔍 Container state management for search complete"
+    );
 
     // Update highlights and cache results
     this.updateTreeSearchHighlights(results);
@@ -3060,7 +3117,7 @@ export class VisualizationState {
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
     // Note: Search cache is NOT cleared to maintain performance across searches
-    
+
     // ENHANCEMENT: When search is cleared, re-enable smart collapse for next layout
     // This allows the system to optimize container states when search is not active
     this.enableSmartCollapseForNextLayout();
@@ -3283,7 +3340,7 @@ export class VisualizationState {
     if (containersToExpand.size > 0) {
       // CRITICAL FIX: Expand containers in both tree state AND graph state
       this.expandTreeNodes(Array.from(containersToExpand)); // For HierarchyTree
-      
+
       // Also expand containers in the actual graph visualization
       for (const containerId of containersToExpand) {
         const container = this._containers.get(containerId);
@@ -3291,10 +3348,14 @@ export class VisualizationState {
           // CRITICAL FIX: Always expand containers that should contain search matches
           // Force expansion regardless of current state to ensure search results are visible
           if (container.collapsed) {
-            console.log(`[VisualizationState] 🔍 Expanding collapsed container ${containerId} for search results`);
+            console.log(
+              `[VisualizationState] 🔍 Expanding collapsed container ${containerId} for search results`
+            );
             this._expandContainerInternal(containerId);
           } else {
-            console.log(`[VisualizationState] 🔍 Container ${containerId} already expanded, ensuring it stays expanded for search results`);
+            console.log(
+              `[VisualizationState] 🔍 Container ${containerId} already expanded, ensuring it stays expanded for search results`
+            );
             // Even if already expanded, ensure it's properly shown and edges are restored
             // This handles cases where container was manually collapsed then search is performed
           }
@@ -4102,16 +4163,6 @@ export class VisualizationState {
   }
 
   /**
-   * Rollback edge restoration operation - placeholder for now
-   */
-  rollbackEdgeRestoration(operationId: string): boolean {
-    console.warn(
-      `[VisualizationState] rollbackEdgeRestoration not implemented: ${operationId}`
-    );
-    return false;
-  }
-
-  /**
    * Get all containers (including hidden ones)
    */
   getAllContainers(): Container[] {
@@ -4265,17 +4316,5 @@ export class VisualizationState {
       invalidEdges: [],
       fixedEdges: [],
     };
-  }
-
-  // Edge Restoration Rollback Methods
-  getAvailableRestorationRollbacks(): Array<{
-    containerId: string;
-    operationId: string;
-    timestamp: number;
-  }> {
-    // For now, return empty array since we don't have a restoration operations tracking system
-    // This method exists to satisfy tests but the actual rollback functionality would need
-    // a more sophisticated operation history tracking system
-    return [];
   }
 }

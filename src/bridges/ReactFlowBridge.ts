@@ -22,7 +22,6 @@ import {
   SEARCH_CURRENT_COLORS,
   NAVIGATION_HIGHLIGHT_COLORS,
 } from "../shared/config.js";
-import { searchNavigationErrorHandler } from "../core/ErrorHandler.js";
 
 // Performance optimization constants
 const LARGE_GRAPH_NODE_THRESHOLD = 1000;
@@ -2073,16 +2072,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       console.log(`[ReactFlowBridge] applySearchHighlights completed - highlighted ${highlightedCount} nodes`);
       return result;
     } catch (error) {
-      console.error(`[ReactFlowBridge] Search highlighting failed:`, error);
-
-      // Handle error through error handler
-      searchNavigationErrorHandler.handleHighlightingFailure(
-        nodes.map((n) => n.id),
-        "search",
-        state,
-        error as Error,
-        { operation: "search_highlighting", nodeCount: nodes.length },
-      );
+      // Log highlighting error
+      console.error(`[ReactFlowBridge] Search highlighting failed for elements: ${nodes.map((n) => n.id).join(", ")}`, error);
 
       // Return original nodes as fallback
       return nodes;
@@ -2127,16 +2118,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
         }
       });
     } catch (error) {
-      console.error(`[ReactFlowBridge] Navigation highlighting failed:`, error);
-
-      // Handle error through error handler
-      searchNavigationErrorHandler.handleHighlightingFailure(
-        nodes.map((n) => n.id),
-        "navigation",
-        state,
-        error as Error,
-        { operation: "navigation_highlighting", nodeCount: nodes.length },
-      );
+      // Log highlighting error
+      console.error(`[ReactFlowBridge] Navigation highlighting failed for elements: ${nodes.map((n) => n.id).join(", ")}`, error);
 
       // Return original nodes as fallback
       return nodes;
@@ -2177,19 +2160,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
         }
       });
     } catch (error) {
-      console.error(
-        `[ReactFlowBridge] Edge search highlighting failed:`,
-        error,
-      );
-
-      // Handle error through error handler
-      searchNavigationErrorHandler.handleHighlightingFailure(
-        edges.map((e) => e.id),
-        "search",
-        state,
-        error as Error,
-        { operation: "edge_search_highlighting", edgeCount: edges.length },
-      );
+      // Log highlighting error
+      console.error(`[ReactFlowBridge] Edge search highlighting failed for elements: ${edges.map((e) => e.id).join(", ")}`, error);
 
       // Return original edges as fallback
       return edges;
@@ -2234,19 +2206,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
         }
       });
     } catch (error) {
-      console.error(
-        `[ReactFlowBridge] Edge navigation highlighting failed:`,
-        error,
-      );
-
-      // Handle error through error handler
-      searchNavigationErrorHandler.handleHighlightingFailure(
-        edges.map((e) => e.id),
-        "navigation",
-        state,
-        error as Error,
-        { operation: "edge_navigation_highlighting", edgeCount: edges.length },
-      );
+      // Log highlighting error
+      console.error(`[ReactFlowBridge] Edge navigation highlighting failed for elements: ${edges.map((e) => e.id).join(", ")}`, error);
 
       // Return original edges as fallback
       return edges;

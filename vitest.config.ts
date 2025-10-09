@@ -21,7 +21,9 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       exclude: ['**/dist/**', '**/*.config.*']
     },
-    watch: false
+    watch: false,
+    // Allow running individual tests with better output
+    reporter: process.env.CI ? 'default' : 'verbose'
   },
   resolve: {
     alias: {

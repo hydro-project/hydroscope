@@ -175,26 +175,7 @@ describe("VisualizationState Edge Validation", () => {
       }).not.toThrow();
     });
 
-    it("should track restoration operations for rollback", () => {
-      // Setup: Simple container with edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
-      const node1 = createTestNode("node1");
-      const node2 = createTestNode("node2");
-      const edge = createTestEdge("edge1", "node1", "node2");
 
-      state.addNode(node1);
-      state.addNode(node2);
-      state.addContainer(container);
-      state.addEdge(edge);
-
-      // Collapse first, then expand to trigger restoration
-      state.collapseContainerSystemOperation("container1");
-      state.expandContainer("container1");
-
-      // Test: Restoration operation should be tracked
-      const restorationOps = (state as any)._restorationOperations;
-      expect(restorationOps.size).toBeGreaterThan(0);
-    });
   });
 
   describe("_postExpansionEdgeValidation", () => {

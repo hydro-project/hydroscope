@@ -22,8 +22,6 @@ import {
 import { Input, Button, Tooltip, AutoComplete, List, Typography } from "antd";
 import { PANEL_CONSTANTS } from "../shared/config";
 import type { SearchResult } from "../types/core.js";
-import { searchNavigationErrorHandler } from "../core/ErrorHandler.js";
-import { useErrorFeedback, ErrorFeedback } from "./ErrorFeedback.js";
 
 export type SearchableItem = {
   id: string;
@@ -51,7 +49,7 @@ type Props = {
   onNavigate: (dir: "prev" | "next", current: SearchMatch) => void;
   placeholder?: string;
   compact?: boolean;
-  
+
   // Add VisualizationState for delegated search
   visualizationState?: any;
 
@@ -117,21 +115,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     const ariaLiveRef = useRef<HTMLDivElement>(null);
     const lastProcessedQuery = useRef<string>("");
 
-    // Error feedback integration
-    const { feedback, showFeedback, dismissFeedback } = useErrorFeedback();
-
-    // Register error feedback callback with error handler
-    useEffect(() => {
-      const handleErrorFeedback = (feedbackOptions: any) => {
-        showFeedback(feedbackOptions);
-      };
-
-      searchNavigationErrorHandler.onUserFeedback(handleErrorFeedback);
-
-      return () => {
-        searchNavigationErrorHandler.offUserFeedback(handleErrorFeedback);
-      };
-    }, [showFeedback]);
+    // Error handling is done through console logging
 
     // Load search history from localStorage on mount
     useEffect(() => {
@@ -215,26 +199,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             error,
           );
 
-          // Handle navigation error (async boundary)
+          // Log navigation error
           const result = matches[index];
           if (result) {
-            searchNavigationErrorHandler
-              .handleNavigationFailure(
-                result.id,
-                {} as any, // No state available in SearchControls
-                error as Error,
-                {
-                  operation: "search_controls_navigation",
-                  resultIndex: index,
-                  resultId: result.id,
-                },
-              )
-              .catch((handlerError) => {
-                console.error(
-                  `[SearchControls] Error handler failed:`,
-                  handlerError,
-                );
-              });
+            console.error(`[SearchControls] Navigation failed for element: ${result.id}`, error);
           }
 
           // Announce error for accessibility
@@ -277,7 +245,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           if (!rx) {
             setMatches([]);
             setCurrentIndex(0);
-            
+
             // Clear search in VisualizationState if available
             if (visualizationState && visualizationState.clearSearchEnhanced) {
               try {
@@ -287,7 +255,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 // Silently handle clear errors
               }
             }
-            
+
             // Apply clear operation synchronously to prevent race conditions
             onSearch("", []);
             return;
@@ -295,7 +263,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
 
           // Delegate search to VisualizationState if available
           let next: SearchMatch[] = [];
-          
+
           if (visualizationState && visualizationState.performSearch) {
             try {
               // Use VisualizationState's search which handles graph highlighting
@@ -306,7 +274,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 type: result.type,
                 matchIndices: result.matchIndices || [],
               }));
-              
+
               // ReactFlow regeneration will be handled by Hydroscope component
               // after onSearch callback is executed
             } catch (error) {
@@ -354,24 +322,8 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             error,
           );
 
-          // Handle search error through error handler (async boundary)
-          searchNavigationErrorHandler
-            .handleSearchFailure(
-              query,
-              {} as any, // No state available in SearchControls
-              error as Error,
-              {
-                operation: "search_controls",
-                query,
-                itemCount: searchableItems.length,
-              },
-            )
-            .catch((handlerError) => {
-              console.error(
-                `[SearchControls] Error handler failed:`,
-                handlerError,
-              );
-            });
+          // Log search error
+          console.error(`[SearchControls] Search failed for query: "${query}"`, error);
 
           // Clear results on error
           setMatches([]);
@@ -742,19 +694,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             </div>
           )}
 
-        {/* Error feedback display */}
-        <ErrorFeedback
-          feedback={feedback}
-          onDismiss={dismissFeedback}
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            zIndex: 1001, // Above results list
-            marginTop: "8px",
-          }}
-        />
+
       </div>
     );
   },

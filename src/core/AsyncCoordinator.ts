@@ -4,10 +4,12 @@
  */
 
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
-import {
-  searchNavigationErrorHandler,
-  type ErrorRecoveryResult,
-} from "./ErrorHandler.js";
+
+interface ErrorRecoveryResult {
+  success: boolean;
+  fallbackApplied: boolean;
+  userFeedbackShown: boolean;
+}
 
 export interface QueueOptions {
   timeout?: number;
@@ -84,10 +86,11 @@ export class AsyncCoordinator {
 
     while (operation.retryCount <= operation.maxRetries) {
       try {
-        const _result = await this.executeWithTimeout(operation);
+        const result = await this.executeWithTimeout(operation);
 
         // Operation succeeded
         operation.completedAt = Date.now();
+        operation.result = result;
         this.completedOperations.push(operation);
         this.recordProcessingTime(operation);
         console.log(
@@ -271,7 +274,6 @@ export class AsyncCoordinator {
           console.log(
             `[AsyncCoordinator] ✅ ELK layout operation completed - VisualizationState updated`,
           );
-          resolve();
           return "layout_complete";
         } catch (error) {
           console.error(
@@ -279,20 +281,40 @@ export class AsyncCoordinator {
             error,
           );
           state.setLayoutPhase("error");
-          reject(error);
           throw error;
         }
       };
 
       // Queue the operation
-      this.queueOperation("elk_layout", operation, {
+      const operationId = this.queueOperation("elk_layout", operation, {
         timeout: options.timeout || 10000, // 10 second default timeout
         maxRetries: options.maxRetries || 1,
       });
 
+      // Set up a way to resolve/reject the Promise when the operation completes
+      const checkCompletion = () => {
+        const completed = this.completedOperations.find(op => op.id === operationId);
+        const failed = this.failedOperations.find(op => op.id === operationId);
+        
+        if (completed) {
+          resolve();
+        } else if (failed) {
+          reject(failed.error || new Error("Operation failed"));
+        } else {
+          // Check again after a short delay
+          setTimeout(checkCompletion, 10);
+        }
+      };
+
       // Process the queue if not already processing
       if (!this.processing) {
-        this.processQueue().catch(reject);
+        this.processQueue().then(() => {
+          // Start checking for completion after processing starts
+          checkCompletion();
+        }).catch(reject);
+      } else {
+        // If already processing, just start checking for completion
+        checkCompletion();
       }
     });
   }
@@ -382,7 +404,6 @@ export class AsyncCoordinator {
             this.onReactFlowDataUpdate(reactFlowData);
           }
           
-          resolve(reactFlowData);
           return reactFlowData;
         } catch (error) {
           console.error(
@@ -396,14 +417,35 @@ export class AsyncCoordinator {
       };
 
       // Queue the operation
-      this.queueOperation("reactflow_render", operation, {
+      const operationId = this.queueOperation("reactflow_render", operation, {
         timeout: options.timeout || 5000, // 5 second default timeout
         maxRetries: options.maxRetries || 1,
       });
 
+      // Set up proper completion tracking
+      const checkCompletion = () => {
+        const completed = this.completedOperations.find(op => op.id === operationId);
+        const failed = this.failedOperations.find(op => op.id === operationId);
+        
+        if (completed) {
+          resolve(completed.result);
+        } else if (failed) {
+          reject(failed.error || new Error("Operation failed"));
+        } else {
+          // Check again after a short delay
+          setTimeout(checkCompletion, 10);
+        }
+      };
+
       // Process the queue if not already processing
       if (!this.processing) {
-        this.processQueue().catch(reject);
+        this.processQueue().then(() => {
+          // Start checking for completion after processing starts
+          checkCompletion();
+        }).catch(reject);
+      } else {
+        // If already processing, just start checking for completion
+        checkCompletion();
       }
     });
   }
@@ -610,6 +652,9 @@ export class AsyncCoordinator {
       case "container_expand":
         await this.handleContainerExpandEvent(event);
         break;
+      case "container_expand_all":
+        await this.handleContainerExpandAllEvent(event);
+        break;
       case "container_collapse":
         await this.handleContainerCollapseEvent(event);
         break;
@@ -647,11 +692,11 @@ export class AsyncCoordinator {
       }
     } else {
       // Handle container expansion
-      if ((state as any).expandContainer) {
-        (state as any).expandContainer(containerId);
+      if ((state as any)._expandContainerForCoordinator) {
+        (state as any)._expandContainerForCoordinator(containerId);
       } else {
         console.warn(
-          `[AsyncCoordinator] expandContainer method not available on state`,
+          `[AsyncCoordinator] _expandContainerForCoordinator method not available on state`,
         );
       }
     }
@@ -688,11 +733,11 @@ export class AsyncCoordinator {
       }
     } else {
       // Handle container collapse
-      if ((state as any).collapseContainer) {
-        (state as any).collapseContainer(containerId);
+      if ((state as any)._collapseContainerForCoordinator) {
+        (state as any)._collapseContainerForCoordinator(containerId);
       } else {
         console.warn(
-          `[AsyncCoordinator] collapseContainer method not available on state`,
+          `[AsyncCoordinator] _collapseContainerForCoordinator method not available on state`,
         );
       }
     }
@@ -722,6 +767,40 @@ export class AsyncCoordinator {
   }
 
   /**
+   * Handle container expand all event
+   */
+  private async handleContainerExpandAllEvent(
+    event: ApplicationEvent,
+  ): Promise<void> {
+    const { containerIds, state } = event.payload;
+
+    if (!state) {
+      throw new Error("Container expand all event missing required payload");
+    }
+
+    console.log(
+      `[AsyncCoordinator] 🔄 Processing expand all containers event${containerIds ? " (specified list)" : " (all containers)"}`,
+    );
+
+    // Use VisualizationState's expandAllContainers method directly
+    // This ensures the iterative expansion logic is used for nested containers
+    if (containerIds) {
+      // For specified containers, use the VisualizationState method
+      state.expandAllContainers(containerIds);
+    } else {
+      // For all containers, use the VisualizationState method
+      state.expandAllContainers();
+    }
+
+    console.log(
+      `[AsyncCoordinator] ✅ Expand all containers event completed`,
+    );
+
+    // Note: Layout triggering should be handled separately to avoid circular dependencies
+    // The caller should trigger layout operations as needed after bulk operations
+  }
+
+  /**
    * Handle search event
    */
   private async handleSearchEvent(event: ApplicationEvent): Promise<void> {
@@ -744,7 +823,7 @@ export class AsyncCoordinator {
             : [];
           for (const container of containers) {
             if (container.collapsed) {
-              (state as any).expandContainer(container.id);
+              (state as any)._expandContainerForCoordinator(container.id);
             }
           }
         }
@@ -1051,26 +1130,42 @@ export class AsyncCoordinator {
         containerIds = undefined;
       }
     }
-    console.log(
-      `[AsyncCoordinator] 🔄 Starting expandAllContainers operation${containerIds ? " (specified list)" : " (all containers)"}`,
-    );
 
-    // CRITICAL FIX: Use VisualizationState's expandAllContainers method directly
-    // This ensures the iterative expansion logic is used for nested containers
-    if (containerIds) {
-      // For specified containers, use the VisualizationState method
-      state.expandAllContainers(containerIds);
-    } else {
-      // For all containers, use the VisualizationState method
-      state.expandAllContainers();
+    const event: ApplicationEvent = {
+      type: "container_expand_all",
+      payload: {
+        containerIds,
+        state,
+        triggerLayout: actualOptions.triggerLayout !== false,
+        layoutConfig: actualOptions.layoutConfig || {},
+      },
+      timestamp: Date.now(),
+    };
+
+    // Queue the expand all containers event
+    const operationId = this.queueApplicationEvent(event, {
+      timeout: actualOptions.timeout,
+      maxRetries: actualOptions.maxRetries,
+    });
+
+    // Process the queue if not already processing
+    if (!this.processing) {
+      await this.processQueue();
     }
 
-    console.log(
-      `[AsyncCoordinator] ✅ expandAllContainers operation completed`,
+    // Check if our operation completed successfully
+    const completedOp = this.completedOperations.find(
+      (op) => op.id === operationId,
     );
+    const failedOp = this.failedOperations.find((op) => op.id === operationId);
 
-    // Note: Layout triggering should be handled separately to avoid circular dependencies
-    // The caller should trigger layout operations as needed after bulk operations
+    if (failedOp) {
+      throw failedOp.error || new Error("Expand all containers operation failed");
+    }
+
+    if (!completedOp) {
+      throw new Error("Expand all containers operation did not complete");
+    }
   }
 
   /**
@@ -1311,7 +1406,7 @@ export class AsyncCoordinator {
           console.log(
             `[AsyncCoordinator] 📂 Expanding container ${containerId} for node visibility`,
           );
-          visualizationState.expandContainer(containerId);
+          visualizationState._expandContainerForCoordinator(containerId);
         }
 
         console.log(
@@ -1344,7 +1439,7 @@ export class AsyncCoordinator {
           console.log(
             `[AsyncCoordinator] 📂 Expanding ancestor container ${containerId} for container visibility`,
           );
-          visualizationState.expandContainer(containerId);
+          visualizationState._expandContainerForCoordinator(containerId);
         }
 
         console.log(
@@ -1662,18 +1757,8 @@ export class AsyncCoordinator {
         error,
       );
 
-      // Handle the error through the error handler (this can be async at the boundary)
-      searchNavigationErrorHandler
-        .handleContainerExpansionFailure([containerId], state, error as Error, {
-          operation: "single_expand",
-          containerId,
-        })
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log container expansion error
+      console.error(`[AsyncCoordinator] Container expansion failed for: ${containerId}`, error);
 
       return {
         success: false,
@@ -1733,18 +1818,8 @@ export class AsyncCoordinator {
           .map((container: any) => container.id);
       }
 
-      // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler
-        .handleContainerExpansionFailure(containerIds, state, error as Error, {
-          operation: "batch_expand",
-          containerCount: containerIds.length,
-        })
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log container expansion error
+      console.error(`[AsyncCoordinator] Container expansion failed for: ${containerIds.join(", ")}`, error);
 
       return {
         success: false,
@@ -1788,18 +1863,8 @@ export class AsyncCoordinator {
         error,
       );
 
-      // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler
-        .handleContainerExpansionFailure([nodeId], state, error as Error, {
-          operation: "tree_expand",
-          nodeId,
-        })
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log tree expansion error
+      console.error(`[AsyncCoordinator] Tree expansion failed for node: ${nodeId}`, error);
 
       return {
         success: false,
@@ -1844,20 +1909,8 @@ export class AsyncCoordinator {
         error,
       );
 
-      // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler
-        .handleNavigationFailure(
-          elementId,
-          visualizationState,
-          error as Error,
-          { operation: "navigation", elementId },
-        )
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log navigation error
+      console.error(`[AsyncCoordinator] Navigation failed for element: ${elementId}`, error);
 
       return {
         success: false,
@@ -1900,20 +1953,8 @@ export class AsyncCoordinator {
         error,
       );
 
-      // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler
-        .handleNavigationFailure(
-          elementId,
-          {} as any, // No state needed for viewport focus
-          error as Error,
-          { operation: "viewport_focus", elementId },
-        )
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log viewport focus error
+      console.error(`[AsyncCoordinator] Viewport focus failed for element: ${elementId}`, error);
 
       return {
         success: false,
@@ -1971,25 +2012,8 @@ export class AsyncCoordinator {
         error,
       );
 
-      // Handle the error through the error handler (async at boundary)
-      searchNavigationErrorHandler
-        .handleSearchFailure(query, state, error as Error, {
-          operation: "search",
-          query,
-          expandContainers: options.expandContainers,
-        })
-        .then((recovery) => {
-          console.log(
-            `[AsyncCoordinator] Search error recovery completed:`,
-            recovery,
-          );
-        })
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log search error
+      console.error(`[AsyncCoordinator] Search failed for query: "${query}"`, error);
 
       return {
         results: [],
@@ -2051,22 +2075,8 @@ export class AsyncCoordinator {
         error,
       );
 
-      // Handle error through error handler (async at boundary)
-      searchNavigationErrorHandler
-        .handleTimeout(
-          operationType,
-          0, // No timeout for synchronous operations
-          context,
-        )
-        .then((recovery) => {
-          console.log(`[AsyncCoordinator] Error recovery completed:`, recovery);
-        })
-        .catch((handlerError) => {
-          console.error(
-            `[AsyncCoordinator] Error handler failed:`,
-            handlerError,
-          );
-        });
+      // Log operation timeout
+      console.error(`[AsyncCoordinator] Operation "${operationType}" timed out`, { context });
 
       return {
         recovery: {
@@ -2079,31 +2089,31 @@ export class AsyncCoordinator {
   }
 
   /**
-   * Get error handler statistics
+   * Get error handler statistics (stub implementation)
    */
   getErrorStatistics() {
-    return searchNavigationErrorHandler.getErrorStatistics();
+    return { totalErrors: 0, errorsByType: {}, recentErrors: [] };
   }
 
   /**
-   * Check if system is experiencing high error rate
+   * Check if system is experiencing high error rate (stub implementation)
    */
   isHighErrorRate(): boolean {
-    return searchNavigationErrorHandler.isHighErrorRate();
+    return false;
   }
 
   /**
-   * Get recovery suggestions based on error patterns
+   * Get recovery suggestions based on error patterns (stub implementation)
    */
   getRecoverySuggestions(): string[] {
-    return searchNavigationErrorHandler.getRecoverySuggestions();
+    return [];
   }
 
   /**
-   * Clear error history
+   * Clear error history (stub implementation)
    */
   clearErrorHistory(): void {
-    searchNavigationErrorHandler.clearErrorHistory();
+    // No-op since we don't track errors anymore
   }
 
   /**

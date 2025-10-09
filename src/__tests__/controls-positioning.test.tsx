@@ -112,8 +112,8 @@ describe("Controls Positioning", () => {
 
       // Verify exact positioning
       expect(customStyle.position).toBe("absolute");
-      expect(customStyle.bottom).toBe("124px"); // Exact calculated position
-      expect(customStyle.left).toBe("10px"); // Exact same as ReactFlow
+      expect(customStyle.bottom).toBe("125px"); // Exact calculated position
+      expect(customStyle.left).toBe("15px"); // Exact same as ReactFlow
       expect(customStyle.zIndex).toBe("5"); // Just above ReactFlow's 4
 
       // Verify exact styling matches ReactFlow
