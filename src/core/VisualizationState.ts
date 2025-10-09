@@ -2892,14 +2892,8 @@ export class VisualizationState {
     // Check cache first
     const cachedResults = this._getCachedSearchResults(trimmedQuery);
     if (cachedResults) {
-      this._searchNavigationState.searchResults = cachedResults;
-      // CRITICAL FIX: Also set backward compatibility search results
-      this._searchResults = [...cachedResults];
-      this._searchState.resultCount = cachedResults.length;
-      this.expandTreeToShowMatches(cachedResults);
-      this.updateTreeSearchHighlights(cachedResults);
-      this.updateGraphSearchHighlights(cachedResults);
-      return [...cachedResults];
+      // Use cached results and apply common post-processing
+      return this._finalizeSearchResults(trimmedQuery, cachedResults);
     }
 
     const queryLower = trimmedQuery.toLowerCase();
@@ -2954,9 +2948,17 @@ export class VisualizationState {
       return aFirstMatch - bFirstMatch;
     });
 
-    this._searchNavigationState.searchResults = results;
+    // Apply common post-processing to new results
+    return this._finalizeSearchResults(trimmedQuery, results);
+  }
 
-    // Update backward compatibility state
+  /**
+   * Finalize search results with common post-processing logic
+   * Used by both cached and non-cached search paths to avoid duplication
+   */
+  private _finalizeSearchResults(trimmedQuery: string, results: SearchResult[]): SearchResult[] {
+    // Update both new and backward compatibility search states
+    this._searchNavigationState.searchResults = results;
     this._searchResults = [...results];
     this._searchState.resultCount = results.length;
 
@@ -3024,10 +3026,9 @@ export class VisualizationState {
     
     console.log('[VisualizationState] 🔍 Container state management for search complete');
 
+    // Update highlights and cache results
     this.updateTreeSearchHighlights(results);
     this.updateGraphSearchHighlights(results);
-
-    // Cache the results for future use
     this._cacheSearchResults(trimmedQuery, results);
 
     return [...results];
