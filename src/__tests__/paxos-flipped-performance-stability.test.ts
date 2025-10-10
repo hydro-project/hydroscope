@@ -83,14 +83,14 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
 
       // Ensure container is collapsed
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(containerId);
+        visualizationState._collapseContainerForCoordinator(containerId);
       }
 
       // Measure expansion time
       const expansionStartTime = performance.now();
 
       try {
-        visualizationState.expandContainer(containerId);
+        visualizationState._expandContainerForCoordinator(containerId);
         const expansionTime = performance.now() - expansionStartTime;
 
         console.log(`📊 Container Expansion Performance:`);
@@ -259,10 +259,10 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       for (let i = 0; i < totalOperations; i++) {
         try {
           // Collapse
-          visualizationState.collapseContainer(containerId);
+          visualizationState._collapseContainerForCoordinator(containerId);
 
           // Expand
-          visualizationState.expandContainer(containerId);
+          visualizationState._expandContainerForCoordinator(containerId);
 
           successfulOperations++;
         } catch (error) {
@@ -339,7 +339,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
 
       try {
         // Collapse
-        visualizationState.collapseContainer(containerId);
+        visualizationState._collapseContainerForCoordinator(containerId);
         stateSnapshots.push({
           operation: "collapse",
           nodeCount: visualizationState.visibleNodes.length,
@@ -348,7 +348,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         });
 
         // Expand
-        visualizationState.expandContainer(containerId);
+        visualizationState._expandContainerForCoordinator(containerId);
         stateSnapshots.push({
           operation: "expand",
           nodeCount: visualizationState.visibleNodes.length,
@@ -357,7 +357,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         });
 
         // Collapse again
-        visualizationState.collapseContainer(containerId);
+        visualizationState._collapseContainerForCoordinator(containerId);
         stateSnapshots.push({
           operation: "collapse_again",
           nodeCount: visualizationState.visibleNodes.length,
@@ -449,11 +449,11 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       try {
         // Ensure container is collapsed
         if (!runtimeParkContainer!.collapsed) {
-          visualizationState.collapseContainer(containerId);
+          visualizationState._collapseContainerForCoordinator(containerId);
         }
 
         // Expand the container
-        visualizationState.expandContainer(containerId);
+        visualizationState._expandContainerForCoordinator(containerId);
 
         // Try ReactFlow conversion to trigger edge validation
         const reactFlowBridge = new ReactFlowBridge({});

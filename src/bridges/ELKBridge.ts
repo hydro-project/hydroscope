@@ -14,7 +14,12 @@ import type {
   PerformanceHints,
 } from "../types/core.js";
 import type { IELKBridge } from "../types/bridges.js";
-import { SIZES, LAYOUT_CONSTANTS } from "../shared/config.js";
+import {
+  SIZES,
+  LAYOUT_CONSTANTS,
+  DEFAULT_ELK_ALGORITHM,
+  DEFAULT_LAYOUT_CONFIG,
+} from "../shared/config.js";
 
 export class ELKBridge implements IELKBridge {
   private performanceHints?: PerformanceHints;
@@ -26,7 +31,7 @@ export class ELKBridge implements IELKBridge {
 
     // Set defaults for missing config with performance-aware defaults
     const fullConfig: LayoutConfig = {
-      algorithm: layoutConfig.algorithm || "layered",
+      algorithm: layoutConfig.algorithm || DEFAULT_ELK_ALGORITHM,
       direction: layoutConfig.direction || "DOWN",
       spacing: layoutConfig.spacing,
       nodeSpacing: layoutConfig.nodeSpacing ?? 20,
@@ -631,8 +636,8 @@ export class ELKBridge implements IELKBridge {
 
   resetConfiguration(): void {
     this.layoutConfig = {
-      algorithm: "layered",
-      direction: "DOWN",
+      algorithm: DEFAULT_LAYOUT_CONFIG.algorithm,
+      direction: DEFAULT_LAYOUT_CONFIG.direction,
       nodeSpacing: 50,
       layerSpacing: 25,
       edgeSpacing: 10,
@@ -791,8 +796,8 @@ export class ELKBridge implements IELKBridge {
 
   private buildLayoutOptions(config: LayoutConfig): Record<string, any> {
     const options: Record<string, any> = {
-      "elk.algorithm": config.algorithm || "layered",
-      "elk.direction": config.direction || "DOWN",
+      "elk.algorithm": config.algorithm || DEFAULT_LAYOUT_CONFIG.algorithm,
+      "elk.direction": config.direction || DEFAULT_LAYOUT_CONFIG.direction,
       "elk.spacing.nodeNode": (config.spacing !== undefined
         ? config.spacing
         : config.nodeSpacing !== undefined

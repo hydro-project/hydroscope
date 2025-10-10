@@ -65,7 +65,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User expands container
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // This should disable smart collapse for future layouts
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -86,7 +86,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User collapses container
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       // This should disable smart collapse for future layouts
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -107,7 +107,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User performs bulk operation
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
 
       // This should disable smart collapse
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -116,7 +116,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       state.resetSmartCollapseState(); // Reset for test
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
   });
@@ -733,7 +733,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User toggles container (this should be a user operation)
-      state.toggleContainer("container1");
+      state._toggleContainerForCoordinator("container1");
 
       // Smart collapse should be disabled
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -753,7 +753,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User operation should disable smart collapse
-      state.collapseContainer("container1"); // This is a user operation
+      state._collapseContainerForCoordinator("container1"); // This is a user operation
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
   });

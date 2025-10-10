@@ -208,7 +208,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] 🚀 Starting precise bug reproduction");
 
     // Step 1: Get initial state with all containers collapsed
-    state.collapseAllContainers();
+    state._collapseAllContainersForCoordinator();
     const initialData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -237,7 +237,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     // Step 2: Expand the Acceptor container (this is where the bug occurs)
     console.log(`[FloatingBug] 📦 Expanding Acceptor container: loc_1`);
 
-    state.expandContainer("loc_1");
+    state._expandContainerForCoordinator("loc_1");
     const expandedData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -253,7 +253,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     // Step 3: Collapse the Acceptor container back
     console.log(`[FloatingBug] 📦 Collapsing Acceptor container: loc_1`);
 
-    state.collapseContainer("loc_1");
+    state._collapseContainerForCoordinator("loc_1");
     const reCollapsedData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -312,7 +312,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] 🚀 Starting multiple cycle reproduction");
 
     // Start with all collapsed
-    state.collapseAllContainers();
+    state._collapseAllContainersForCoordinator();
     const initialData = reactFlowBridge.toReactFlowData(state);
 
     const collapsedContainers = state.visibleContainers.filter(
@@ -327,12 +327,12 @@ describe("Floating HyperEdge Bug Reproduction", () => {
       console.log(
         `[FloatingBug] 🔄 Cycle ${cycle}: Expanding ${targetContainer.id}`,
       );
-      state.expandContainer(targetContainer.id);
+      state._expandContainerForCoordinator(targetContainer.id);
 
       console.log(
         `[FloatingBug] 🔄 Cycle ${cycle}: Collapsing ${targetContainer.id}`,
       );
-      state.collapseContainer(targetContainer.id);
+      state._collapseContainerForCoordinator(targetContainer.id);
 
       // Check for floating edges after each cycle
       const cycleData = reactFlowBridge.toReactFlowData(state);

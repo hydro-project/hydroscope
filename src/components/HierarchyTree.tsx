@@ -90,17 +90,17 @@ function createSearchHighlightDiv(
       style={
         match
           ? {
-            backgroundColor: isCurrent
-              ? SEARCH_CURRENT_COLORS.backgroundColor
-              : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
-            borderRadius: 4,
-            padding: "2px 4px",
-            margin: "-1px -2px",
-            fontWeight: isCurrent ? "600" : "500",
-            border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
-            color: isCurrent ? "#ffffff" : "#000000",
-            ...baseStyle,
-          }
+              backgroundColor: isCurrent
+                ? SEARCH_CURRENT_COLORS.backgroundColor
+                : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
+              borderRadius: 4,
+              padding: "2px 4px",
+              margin: "-1px -2px",
+              fontWeight: isCurrent ? "600" : "500",
+              border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
+              color: isCurrent ? "#ffffff" : "#000000",
+              ...baseStyle,
+            }
           : baseStyle
       }
     >
@@ -275,10 +275,10 @@ function getTreeDataStructure(
               title: createSearchHighlightDiv(
                 truncateLabels
                   ? truncateHierarchyLabel(
-                    leafNode.label,
-                    maxLabelLength - 2,
-                    true,
-                  )
+                      leafNode.label,
+                      maxLabelLength - 2,
+                      true,
+                    )
                   : leafNode.label,
                 match,
                 isCurrent,
@@ -323,10 +323,10 @@ function getTreeDataStructure(
               title: createSearchHighlightDiv(
                 truncateLabels
                   ? truncateHierarchyLabel(
-                    leafNode.label,
-                    maxLabelLength - 2,
-                    true,
-                  )
+                      leafNode.label,
+                      maxLabelLength - 2,
+                      true,
+                    )
                   : leafNode.label,
                 match,
                 isCurrent,
@@ -412,21 +412,24 @@ export function HierarchyTree({
   searchQuery,
   searchResults,
   currentSearchResult,
-  onTreeExpansion,
+  onTreeExpansion: _onTreeExpansion,
 }: HierarchyTreeProps) {
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
     if (!visualizationState) {
       return [];
     }
-    
+
     // When search is cleared, preserve current expansion state instead of collapsing
     if (!searchResults || searchResults.length === 0) {
       // Return current expanded containers from VisualizationState
       const currentlyExpanded = visualizationState.visibleContainers
-        .filter(container => !container.collapsed)
-        .map(container => container.id);
-      console.log('[HierarchyTree] 🔍 Search cleared, preserving expansion state:', currentlyExpanded);
+        .filter((container) => !container.collapsed)
+        .map((container) => container.id);
+      console.log(
+        "[HierarchyTree] 🔍 Search cleared, preserving expansion state:",
+        currentlyExpanded,
+      );
       return currentlyExpanded;
     }
 
@@ -455,7 +458,7 @@ export function HierarchyTree({
     });
 
     return Array.from(expansionKeys);
-  }, [visualizationState, searchResults, collapsedContainers]);
+  }, [visualizationState, searchResults]);
 
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);

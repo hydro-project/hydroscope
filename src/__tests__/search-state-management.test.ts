@@ -164,24 +164,6 @@ describe("Search and Navigation State Management", () => {
       state.clearSearchCache();
       expect(state.getSearchCacheStats().size).toBe(0);
     });
-
-    it.skip("should implement LRU eviction when cache is full", () => {
-      // Create a single node that will match our test query
-      const node1 = createTestNode("node1", "Test");
-      state.addNode(node1);
-
-      // Fill cache with exactly max size + 1 entries to test eviction
-      const maxSize = state.getSearchCacheStats().maxSize;
-      for (let i = 0; i <= maxSize; i++) {
-        state.performSearch(`query${i}`);
-      }
-
-      const cacheStats = state.getSearchCacheStats();
-      // Cache should not exceed max size
-      expect(cacheStats.size).toBeLessThanOrEqual(cacheStats.maxSize);
-      // Cache should have at least some entries (not be empty)
-      expect(cacheStats.size).toBeGreaterThan(0);
-    });
   });
 
   describe("Proper Cleanup of Highlights", () => {

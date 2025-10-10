@@ -37,7 +37,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(false);
 
       // Collapse container
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Children should be hidden, container should be collapsed
       expect(state.getGraphNode("n1")?.hidden).toBe(true);
@@ -72,7 +72,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(true);
 
       // Expand container
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
 
       // Children should be visible, container should be expanded
       expect(state.getGraphNode("n1")?.hidden).toBe(false);
@@ -111,7 +111,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       state.addContainer(parentContainer);
 
       // Collapse parent - should hide child container and its contents
-      state.collapseContainer("parent");
+      state._collapseContainerForCoordinator("parent");
 
       expect(state.getContainer("parent")?.collapsed).toBe(true);
       expect(state.getContainer("child")?.hidden).toBe(true);
@@ -171,7 +171,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(0);
 
       // Collapse container - edges should be aggregated
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Original edges should be hidden
       expect(state.getGraphEdge("e1")?.hidden).toBe(true);
@@ -234,7 +234,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(1);
 
       // Expand container - should restore original edges
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
 
       // Original edges should be visible again
       expect(state.getGraphEdge("e1")?.hidden).toBe(false);
@@ -298,8 +298,8 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       edges.forEach((edge) => state.addEdge(edge));
 
       // Collapse both containers
-      state.collapseContainer("c1");
-      state.collapseContainer("c2");
+      state._collapseContainerForCoordinator("c1");
+      state._collapseContainerForCoordinator("c2");
 
       // Should have aggregated edge from c1 to c2
       const aggregatedEdges = state.getAggregatedEdges();
@@ -346,7 +346,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c2")?.collapsed).toBe(true);
 
       // Expand all containers
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
 
       // All containers should be expanded
       expect(state.getContainer("c1")?.collapsed).toBe(false);
@@ -393,7 +393,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c2")?.collapsed).toBe(false);
 
       // Collapse all containers
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
 
       // All containers should be collapsed
       expect(state.getContainer("c1")?.collapsed).toBe(true);
@@ -476,7 +476,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       edges.forEach((edge) => state.addEdge(edge));
 
       // Collapse c1 only
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       const aggregatedEdges = state.getAggregatedEdges();
 
@@ -548,7 +548,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       state.addEdge(edge);
 
       // Collapse parent container
-      state.collapseContainer("parent");
+      state._collapseContainerForCoordinator("parent");
 
       // Should aggregate edge from n3 to parent container
       const aggregatedEdges = state.getAggregatedEdges();

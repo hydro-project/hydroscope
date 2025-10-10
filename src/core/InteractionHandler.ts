@@ -141,7 +141,7 @@ export class InteractionHandler {
       exists: !!containerBefore,
     });
 
-    this._visualizationState.toggleContainer(event.elementId);
+    this._visualizationState._toggleContainerForCoordinator(event.elementId);
 
     const containerAfter = this._visualizationState.getContainer(
       event.elementId,
@@ -195,9 +195,11 @@ export class InteractionHandler {
       const container = this._visualizationState.getContainer(containerId);
       if (container && container.collapsed !== collapsed) {
         if (collapsed) {
-          this._visualizationState.collapseContainer(containerId);
+          this._visualizationState._collapseContainerForCoordinator(
+            containerId,
+          );
         } else {
-          this._visualizationState.expandContainer(containerId);
+          this._visualizationState._expandContainerForCoordinator(containerId);
         }
       }
     }

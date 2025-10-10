@@ -103,9 +103,16 @@ function generateContainerColors(containerId: string, palette: string) {
   };
 }
 
-export function StandardNode({ id, data, style }: NodeProps & { style?: React.CSSProperties }) {
+export function StandardNode({
+  id,
+  data,
+  style,
+}: NodeProps & { style?: React.CSSProperties }) {
+  // Test if React is detecting changes by logging render count
+  const renderCount = React.useRef(0);
+
   // Debug logging for search highlights - expanded to network nodes
-  if (id === '0' || id === '8' || id === '2' || id === '7') {
+  if (id === "0" || id === "8" || id === "2" || id === "7") {
     console.log(`[StandardNode] 🔍 NODE ${id} RENDER - received data:`, {
       isHighlighted: (data as any)?.isHighlighted,
       highlightType: (data as any)?.highlightType,
@@ -113,14 +120,14 @@ export function StandardNode({ id, data, style }: NodeProps & { style?: React.CS
       searchHighlightStrong: (data as any)?.searchHighlightStrong,
       highlightTimestamp: (data as any)?.highlightTimestamp,
       dataObjectRef: data,
-      renderTime: Date.now()
+      renderTime: Date.now(),
     });
     console.log(`[StandardNode] 🔍 NODE ${id} RENDER - received style:`, style);
-    
-    // Test if React is detecting changes by logging render count
-    const renderCount = React.useRef(0);
+
     renderCount.current++;
-    console.log(`[StandardNode] 🔍 NODE ${id} RENDER COUNT: ${renderCount.current}`);
+    console.log(
+      `[StandardNode] 🔍 NODE ${id} RENDER COUNT: ${renderCount.current}`,
+    );
   }
 
   // Click animation state
@@ -394,11 +401,14 @@ export function StandardNode({ id, data, style }: NodeProps & { style?: React.CS
             ? "scale(1.05) translateY(-2px)"
             : "scale(1) translateY(0px)",
           // Apply search highlights based on data properties
-          ...(((data as any)?.isHighlighted && (data as any)?.highlightType === 'search') ? {
-            backgroundColor: "#fbbf24", // Amber-400
-            border: "2px solid #f59e0b", // Amber-500
-            boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
-          } : {}),
+          ...((data as any)?.isHighlighted &&
+          (data as any)?.highlightType === "search"
+            ? {
+                backgroundColor: "#fbbf24", // Amber-400
+                border: "2px solid #f59e0b", // Amber-500
+                boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
+              }
+            : {}),
           // Merge ReactFlow styles (for search highlights) - these take precedence
           ...style,
           boxShadow: (() => {

@@ -274,7 +274,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle container expand/collapse through complete pipeline", async () => {
       // Initial state - both containers expanded
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
 
       // Run through pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -302,7 +302,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       expect(originalEdges.length).toBe(2);
 
       // Collapse all containers
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
 
       // Run through pipeline again
       elkGraph = elkBridge.toELKGraph(state);
@@ -333,10 +333,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle individual container toggle through pipeline", async () => {
       // Start with all expanded
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
 
       // Toggle one container
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Run through pipeline
       const elkGraph = elkBridge.toELKGraph(state);
@@ -380,7 +380,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       });
 
       // Start with expanded containers
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
 
       // Run initial pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -471,7 +471,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle search operations affecting rendering", async () => {
       // Start with container collapsed
-      state.collapseContainer("search_container");
+      state._collapseContainerForCoordinator("search_container");
 
       // Run initial pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -748,7 +748,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       const startTime = Date.now();
 
       // Expand all
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
       let elkGraph = elkBridge.toELKGraph(state);
       let elkResult = createMockELKResult(elkGraph);
       elkBridge.applyLayout(state, elkResult);
@@ -762,7 +762,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       );
 
       // Collapse all
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
       elkGraph = elkBridge.toELKGraph(state);
       elkResult = createMockELKResult(elkGraph);
       elkBridge.applyLayout(state, elkResult);

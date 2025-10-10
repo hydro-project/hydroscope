@@ -133,7 +133,7 @@ describe("SearchIntegration Component", () => {
 
     it("should not expand containers that are already expanded", async () => {
       // Make container already expanded
-      visualizationState.expandContainer("container1");
+      visualizationState._expandContainerForCoordinator("container1");
 
       const onContainerExpansion = vi.fn();
       render(

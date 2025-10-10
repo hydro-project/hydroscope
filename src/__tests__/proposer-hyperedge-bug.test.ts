@@ -52,7 +52,7 @@ describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
 
     // Step 2: Ensure Proposer is initially collapsed
     if (!proposerContainer!.collapsed) {
-      state.collapseContainer(proposerContainer!.id);
+      state._collapseContainerForCoordinator(proposerContainer!.id);
     }
 
     // Get initial state with Proposer collapsed
@@ -80,7 +80,7 @@ describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
     console.log(
       `[ProposerBug] 📦 Expanding Proposer container: ${proposerContainer!.id}`,
     );
-    state.expandContainer(proposerContainer!.id);
+    state._expandContainerForCoordinator(proposerContainer!.id);
 
     const expandedData = reactFlowBridge.toReactFlowData(state);
     console.log(
@@ -91,7 +91,7 @@ describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
     console.log(
       `[ProposerBug] 📦 Collapsing Proposer container: ${proposerContainer!.id}`,
     );
-    state.collapseContainer(proposerContainer!.id);
+    state._collapseContainerForCoordinator(proposerContainer!.id);
 
     const reCollapsedData = reactFlowBridge.toReactFlowData(state);
     console.log(
@@ -179,7 +179,7 @@ describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
 
     // Ensure initial collapsed state
     if (!proposerContainer!.collapsed) {
-      state.collapseContainer(proposerContainer!.id);
+      state._collapseContainerForCoordinator(proposerContainer!.id);
     }
 
     const initialData = reactFlowBridge.toReactFlowData(state);
@@ -192,10 +192,10 @@ describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
     // Perform multiple expand/collapse cycles
     for (let cycle = 1; cycle <= 3; cycle++) {
       console.log(`[ProposerBug] 🔄 Cycle ${cycle}: Expanding Proposer`);
-      state.expandContainer(proposerContainer!.id);
+      state._expandContainerForCoordinator(proposerContainer!.id);
 
       console.log(`[ProposerBug] 🔄 Cycle ${cycle}: Collapsing Proposer`);
-      state.collapseContainer(proposerContainer!.id);
+      state._collapseContainerForCoordinator(proposerContainer!.id);
 
       // Check consistency after each cycle
       const cycleData = reactFlowBridge.toReactFlowData(state);

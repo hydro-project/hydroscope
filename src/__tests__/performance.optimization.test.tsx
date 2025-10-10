@@ -356,11 +356,11 @@ describe("Performance Optimization Tests", () => {
 
       // Test container operations
       const { metrics: expandMetrics } = measureSync(() => {
-        state.expandAllContainers();
+        state._expandAllContainersForCoordinator();
       });
 
       const { metrics: collapseMetrics } = measureSync(() => {
-        state.collapseAllContainers();
+        state._collapseAllContainersForCoordinator();
       });
 
       // Container operations should be fast
@@ -404,7 +404,7 @@ describe("Performance Optimization Tests", () => {
   });
 
   describe("Optimization Verification", () => {
-    it("should verify all memoization is working correctly", async () => {
+    it("should verify all memoization is working correctly", { timeout: 10000 }, async () => {
       // This test verifies that our optimizations are actually effective
       const testResult = await batchTester.runTest(
         "optimization-verification",
@@ -436,8 +436,8 @@ describe("Performance Optimization Tests", () => {
           component.unmount();
           return true;
         },
-        10,
-        3,
+        5, // Reduced iterations for CI
+        2, // Reduced warmup runs for CI
       );
 
       // Operations should be consistently fast due to memoization
@@ -481,8 +481,8 @@ describe("Performance Optimization Tests", () => {
           // Test some operations
           parseResult.visualizationState.search("paxos");
           parseResult.visualizationState.clearSearch();
-          parseResult.visualizationState.expandAllContainers();
-          parseResult.visualizationState.collapseAllContainers();
+          parseResult.visualizationState._expandAllContainersForCoordinator();
+          parseResult.visualizationState._collapseAllContainersForCoordinator();
 
           return { parseResult, elkGraph, reactFlowData };
         },

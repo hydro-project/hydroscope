@@ -63,8 +63,8 @@ describe("ReactFlowBridge", () => {
         nodes: [],
         edges: [],
       });
-      expect(result).toHaveProperty('_timestamp');
-      expect(result).toHaveProperty('_changeId');
+      expect(result).toHaveProperty("_timestamp");
+      expect(result).toHaveProperty("_changeId");
     });
 
     it("should convert single node to ReactFlow format", async () => {
@@ -437,7 +437,7 @@ describe("ReactFlowBridge", () => {
       state.addEdge(edge);
 
       // Collapse container to trigger edge aggregation
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       // Calculate layout so nodes have positions
 
@@ -526,7 +526,7 @@ describe("ReactFlowBridge", () => {
       state.addEdge(edge2);
 
       // Initial collapse
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
       await elkBridge.layout(state);
 
       const initialResult = bridge.toReactFlowData(state);
@@ -542,7 +542,7 @@ describe("ReactFlowBridge", () => {
       ]);
 
       // Expand
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
       await elkBridge.layout(state);
 
       const expandedResult = bridge.toReactFlowData(state);
@@ -552,7 +552,7 @@ describe("ReactFlowBridge", () => {
       expect(expandedAggregatedEdges).toHaveLength(0);
 
       // Collapse again
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
       await elkBridge.layout(state);
 
       const secondResult = bridge.toReactFlowData(state);
@@ -1504,7 +1504,7 @@ describe("ReactFlowBridge", () => {
       // Test collapsed containers
       const firstContainer = paxosData.containers[0];
       if (firstContainer) {
-        state.collapseContainer(firstContainer.id);
+        state._collapseContainerForCoordinator(firstContainer.id);
 
         // Calculate layout so nodes have positions
 
@@ -1517,7 +1517,7 @@ describe("ReactFlowBridge", () => {
         expect(containerNode?.data.collapsed).toBe(true);
 
         // Test expanded containers
-        state.expandContainer(firstContainer.id);
+        state._expandContainerForCoordinator(firstContainer.id);
         // Calculate layout so nodes have positions
 
         await elkBridge.layout(state);
@@ -1662,7 +1662,7 @@ describe("ReactFlowBridge", () => {
       expect(result1.edges.length).toEqual(result2.edges.length);
       expect(result1.nodes[0].id).toEqual(result2.nodes[0].id);
       expect(result1.nodes[0].data.label).toEqual(result2.nodes[0].data.label);
-      
+
       // But should be different objects with different timestamps
       expect(result1).not.toBe(result2);
       expect(result1.nodes).not.toBe(result2.nodes);

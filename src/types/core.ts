@@ -293,6 +293,7 @@ export interface QueuedOperation<T = any> {
   startedAt?: number;
   completedAt?: number;
   error?: Error;
+  result?: T;
 }
 
 export interface QueueStatus {
@@ -310,6 +311,7 @@ export interface ApplicationEvent {
   type:
     | "container_expand"
     | "container_collapse"
+    | "container_expand_all"
     | "search"
     | "layout_config_change";
   payload: ApplicationEventPayload;
@@ -326,6 +328,7 @@ export interface ApplicationEventPayload {
 
   // Container operation fields
   containerId?: string;
+  containerIds?: string[];
 
   // Search fields
   query?: string;

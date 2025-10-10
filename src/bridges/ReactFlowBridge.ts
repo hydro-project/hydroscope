@@ -224,16 +224,21 @@ export class ReactFlowBridge implements IReactFlowBridge {
     };
 
     // Debug: Log the final data being returned to ReactFlow
-    const networkNodes = result.nodes.filter(n => n.id === '0' || n.id === '8');
+    const networkNodes = result.nodes.filter(
+      (n) => n.id === "0" || n.id === "8",
+    );
     if (networkNodes.length > 0) {
-      console.log(`[ReactFlowBridge] 🔍 FINAL DATA TO REACTFLOW:`, networkNodes.map(n => ({
-        id: n.id,
-        dataRef: n.data,
-        isHighlighted: n.data.isHighlighted,
-        highlightType: n.data.highlightType,
-        timestamp: n.data.highlightTimestamp,
-        objectRef: `${n.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      })));
+      console.log(
+        `[ReactFlowBridge] 🔍 FINAL DATA TO REACTFLOW:`,
+        networkNodes.map((n) => ({
+          id: n.id,
+          dataRef: n.data,
+          isHighlighted: n.data.isHighlighted,
+          highlightType: n.data.highlightType,
+          timestamp: n.data.highlightTimestamp,
+          objectRef: `${n.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        })),
+      );
     }
 
     // Deep freeze the result for immutability while maintaining TypeScript compatibility
@@ -241,20 +246,26 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     // Return deep clone to ensure immutability
     const clonedResult = this.deepCloneReactFlowData(result);
-    
+
     // Debug: Verify the cloned data
-    const clonedNetworkNodes = clonedResult.nodes.filter(n => n.id === '0' || n.id === '8');
+    const clonedNetworkNodes = clonedResult.nodes.filter(
+      (n) => n.id === "0" || n.id === "8",
+    );
     if (clonedNetworkNodes.length > 0) {
-      console.log(`[ReactFlowBridge] 🔍 CLONED DATA TO REACTFLOW:`, clonedNetworkNodes.map(n => ({
-        id: n.id,
-        dataRef: n.data,
-        isHighlighted: n.data.isHighlighted,
-        highlightType: n.data.highlightType,
-        timestamp: n.data.highlightTimestamp,
-        sameAsOriginal: n.data === networkNodes.find(orig => orig.id === n.id)?.data
-      })));
+      console.log(
+        `[ReactFlowBridge] 🔍 CLONED DATA TO REACTFLOW:`,
+        clonedNetworkNodes.map((n) => ({
+          id: n.id,
+          dataRef: n.data,
+          isHighlighted: n.data.isHighlighted,
+          highlightType: n.data.highlightType,
+          timestamp: n.data.highlightTimestamp,
+          sameAsOriginal:
+            n.data === networkNodes.find((orig) => orig.id === n.id)?.data,
+        })),
+      );
     }
-    
+
     // CRITICAL FIX: Force React to recognize nodes array as completely new
     // by adding a unique timestamp to the array itself
     const finalResult = {
@@ -263,9 +274,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
       edges: [...clonedResult.edges], // Create new array reference
       // Add metadata to force React state change detection
       _timestamp: Date.now(),
-      _changeId: Math.random().toString(36).substr(2, 9)
+      _changeId: Math.random().toString(36).substr(2, 9),
     };
-    
+
     return finalResult;
   }
 
@@ -385,9 +396,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
       state,
     );
 
-    let validEdges = 0;
-    let invalidEdges = 0;
-    let skippedEdges = 0;
+    let _validEdges = 0;
+    let _invalidEdges = 0;
+    let _skippedEdges = 0;
 
     // Batch process edges for better performance
     for (let i = 0; i < visibleEdges.length; i++) {
@@ -400,7 +411,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
       );
 
       if (!edgeValidation.isValid) {
-        invalidEdges++;
+        _invalidEdges++;
         // Skip invalid edges in optimized mode
         continue;
       }
@@ -414,10 +425,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
       // Only add valid edges
       if (renderedEdge) {
-        validEdges++;
+        _validEdges++;
         edges.push(renderedEdge);
       } else {
-        skippedEdges++;
+        _skippedEdges++;
         console.warn(
           `[ReactFlowBridge] ⚠️ Optimized conversion: Edge ${edge.id} passed validation but failed to render`,
         );
@@ -1819,8 +1830,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
     );
 
     let potentialFloatingEdges = 0;
-    let missingHandleEdges = 0;
-    let invalidPositionEdges = 0;
+    let _missingHandleEdges = 0;
+    let _invalidPositionEdges = 0;
 
     for (const edge of edges) {
       let hasIssues = false;
@@ -1859,7 +1870,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           `source ${edge.source} has invalid position: ${JSON.stringify(sourceElement.position)}`,
         );
         hasIssues = true;
-        invalidPositionEdges++;
+        _invalidPositionEdges++;
       }
 
       if (
@@ -1874,7 +1885,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           `target ${edge.target} has invalid position: ${JSON.stringify(targetElement.position)}`,
         );
         hasIssues = true;
-        invalidPositionEdges++;
+        _invalidPositionEdges++;
       }
 
       // Check for missing handles when using discrete handle strategy
@@ -1882,13 +1893,13 @@ export class ReactFlowBridge implements IReactFlowBridge {
         if (!edge.sourceHandle) {
           issues.push(`missing sourceHandle for discrete strategy`);
           hasIssues = true;
-          missingHandleEdges++;
+          _missingHandleEdges++;
         }
 
         if (!edge.targetHandle) {
           issues.push(`missing targetHandle for discrete strategy`);
           hasIssues = true;
-          missingHandleEdges++;
+          _missingHandleEdges++;
         }
       }
 
@@ -1952,16 +1963,16 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
   ): ReactFlowNode[] {
     try {
-      console.log(`[ReactFlowBridge] applySearchHighlights called with ${nodes.length} nodes`);
+      console.log(
+        `[ReactFlowBridge] applySearchHighlights called with ${nodes.length} nodes`,
+      );
       let highlightedCount = 0;
-      
+
       const result = nodes.map((node) => {
         try {
           const highlightType = state.getGraphElementHighlightType
             ? state.getGraphElementHighlightType(node.id)
             : null;
-
-
 
           if (highlightType === "search" || highlightType === "both") {
             highlightedCount++;
@@ -1973,52 +1984,60 @@ export class ReactFlowBridge implements IReactFlowBridge {
           // Ensure non-highlighted nodes also get updated data to force React re-render
           // and clear any previous highlight styling
           const clearedStyle = { ...node.style };
-          
-          // Debug: Check if this node needs clearing
-          const hasHighlightStyles = clearedStyle.boxShadow || 
-            (clearedStyle.backgroundColor && (
-              clearedStyle.backgroundColor === '#fbbf24' || 
-              clearedStyle.backgroundColor === '#f97316' || 
-              clearedStyle.backgroundColor === '#3b82f6'
-            )) ||
-            (clearedStyle.border && typeof clearedStyle.border === 'string' && 
-              clearedStyle.border.includes('2px solid'));
-              
-          if (hasHighlightStyles) {
-            console.log(`[ReactFlowBridge] Clearing highlight styles from node ${node.id}:`, {
-              originalStyle: node.style,
-              hasBoxShadow: !!clearedStyle.boxShadow,
-              backgroundColor: clearedStyle.backgroundColor,
-              border: clearedStyle.border
-            });
-          }
-          
 
-          
+          // Debug: Check if this node needs clearing
+          const hasHighlightStyles =
+            clearedStyle.boxShadow ||
+            (clearedStyle.backgroundColor &&
+              (clearedStyle.backgroundColor === "#fbbf24" ||
+                clearedStyle.backgroundColor === "#f97316" ||
+                clearedStyle.backgroundColor === "#3b82f6")) ||
+            (clearedStyle.border &&
+              typeof clearedStyle.border === "string" &&
+              clearedStyle.border.includes("2px solid"));
+
+          if (hasHighlightStyles) {
+            console.log(
+              `[ReactFlowBridge] Clearing highlight styles from node ${node.id}:`,
+              {
+                originalStyle: node.style,
+                hasBoxShadow: !!clearedStyle.boxShadow,
+                backgroundColor: clearedStyle.backgroundColor,
+                border: clearedStyle.border,
+              },
+            );
+          }
+
           // Remove search highlight styles completely
           delete clearedStyle.boxShadow;
-          
+
           // More aggressive clearing - remove any border that looks like a highlight
-          if (clearedStyle.border && typeof clearedStyle.border === 'string' &&
-              (clearedStyle.border.includes('2px solid') || 
-               clearedStyle.border.includes('#f59e0b') || // SEARCH_HIGHLIGHT_COLORS.border
-               clearedStyle.border.includes('#ea580c') || // SEARCH_CURRENT_COLORS.border
-               clearedStyle.border.includes('#2563eb'))) { // NAVIGATION_HIGHLIGHT_COLORS.border
+          if (
+            clearedStyle.border &&
+            typeof clearedStyle.border === "string" &&
+            (clearedStyle.border.includes("2px solid") ||
+              clearedStyle.border.includes("#f59e0b") || // SEARCH_HIGHLIGHT_COLORS.border
+              clearedStyle.border.includes("#ea580c") || // SEARCH_CURRENT_COLORS.border
+              clearedStyle.border.includes("#2563eb"))
+          ) {
+            // NAVIGATION_HIGHLIGHT_COLORS.border
             delete clearedStyle.border;
           }
-          
+
           // More aggressive clearing - remove any background that looks like a highlight
-          if (clearedStyle.backgroundColor && 
-              (clearedStyle.backgroundColor === '#fbbf24' || // SEARCH_HIGHLIGHT_COLORS.backgroundColor
-               clearedStyle.backgroundColor === '#f97316' || // SEARCH_CURRENT_COLORS.backgroundColor
-               clearedStyle.backgroundColor === '#3b82f6' || // NAVIGATION_HIGHLIGHT_COLORS.backgroundColor
-               (typeof clearedStyle.backgroundColor === 'string' && (
-                 clearedStyle.backgroundColor.includes('#fbbf24') ||
-                 clearedStyle.backgroundColor.includes('#f97316') ||
-                 clearedStyle.backgroundColor.includes('#3b82f6'))))) {
+          if (
+            clearedStyle.backgroundColor &&
+            (clearedStyle.backgroundColor === "#fbbf24" || // SEARCH_HIGHLIGHT_COLORS.backgroundColor
+              clearedStyle.backgroundColor === "#f97316" || // SEARCH_CURRENT_COLORS.backgroundColor
+              clearedStyle.backgroundColor === "#3b82f6" || // NAVIGATION_HIGHLIGHT_COLORS.backgroundColor
+              (typeof clearedStyle.backgroundColor === "string" &&
+                (clearedStyle.backgroundColor.includes("#fbbf24") ||
+                  clearedStyle.backgroundColor.includes("#f97316") ||
+                  clearedStyle.backgroundColor.includes("#3b82f6"))))
+          ) {
             delete clearedStyle.backgroundColor;
           }
-          
+
           const timestamp = Date.now();
           const result = {
             ...node,
@@ -2037,26 +2056,32 @@ export class ReactFlowBridge implements IReactFlowBridge {
               clearingId: `clear_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
             },
           };
-          
+
           if (hasHighlightStyles) {
             console.log(`[ReactFlowBridge] Node ${node.id} after clearing:`, {
               newStyle: result.style,
-              dataChanged: result.data.highlightTimestamp !== node.data.highlightTimestamp,
-              newData: result.data
+              dataChanged:
+                result.data.highlightTimestamp !== node.data.highlightTimestamp,
+              newData: result.data,
             });
           }
-          
+
           // Debug: Log all nodes that are being processed for clearing
           if (node.id === "0" || node.id === "8") {
-            console.log(`[ReactFlowBridge] Processing network node ${node.id} for clearing:`, {
-              originalData: node.data,
-              newData: result.data,
-              originalStyle: node.style,
-              newStyle: result.style,
-              timestampChanged: result.data.highlightTimestamp !== node.data.highlightTimestamp
-            });
+            console.log(
+              `[ReactFlowBridge] Processing network node ${node.id} for clearing:`,
+              {
+                originalData: node.data,
+                newData: result.data,
+                originalStyle: node.style,
+                newStyle: result.style,
+                timestampChanged:
+                  result.data.highlightTimestamp !==
+                  node.data.highlightTimestamp,
+              },
+            );
           }
-          
+
           return result;
         } catch (error) {
           console.warn(
@@ -2067,13 +2092,17 @@ export class ReactFlowBridge implements IReactFlowBridge {
           return node;
         }
       });
-      
 
-      console.log(`[ReactFlowBridge] applySearchHighlights completed - highlighted ${highlightedCount} nodes`);
+      console.log(
+        `[ReactFlowBridge] applySearchHighlights completed - highlighted ${highlightedCount} nodes`,
+      );
       return result;
     } catch (error) {
       // Log highlighting error
-      console.error(`[ReactFlowBridge] Search highlighting failed for elements: ${nodes.map((n) => n.id).join(", ")}`, error);
+      console.error(
+        `[ReactFlowBridge] Search highlighting failed for elements: ${nodes.map((n) => n.id).join(", ")}`,
+        error,
+      );
 
       // Return original nodes as fallback
       return nodes;
@@ -2119,7 +2148,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
       });
     } catch (error) {
       // Log highlighting error
-      console.error(`[ReactFlowBridge] Navigation highlighting failed for elements: ${nodes.map((n) => n.id).join(", ")}`, error);
+      console.error(
+        `[ReactFlowBridge] Navigation highlighting failed for elements: ${nodes.map((n) => n.id).join(", ")}`,
+        error,
+      );
 
       // Return original nodes as fallback
       return nodes;
@@ -2161,7 +2193,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
       });
     } catch (error) {
       // Log highlighting error
-      console.error(`[ReactFlowBridge] Edge search highlighting failed for elements: ${edges.map((e) => e.id).join(", ")}`, error);
+      console.error(
+        `[ReactFlowBridge] Edge search highlighting failed for elements: ${edges.map((e) => e.id).join(", ")}`,
+        error,
+      );
 
       // Return original edges as fallback
       return edges;
@@ -2207,7 +2242,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
       });
     } catch (error) {
       // Log highlighting error
-      console.error(`[ReactFlowBridge] Edge navigation highlighting failed for elements: ${edges.map((e) => e.id).join(", ")}`, error);
+      console.error(
+        `[ReactFlowBridge] Edge navigation highlighting failed for elements: ${edges.map((e) => e.id).join(", ")}`,
+        error,
+      );
 
       // Return original edges as fallback
       return edges;
@@ -2238,8 +2276,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
    * Get navigation highlight style for a node
    */
   private getNavigationHighlightStyle(
-    node: ReactFlowNode,
-    state: VisualizationState,
+    _node: ReactFlowNode,
+    _state: VisualizationState,
   ): React.CSSProperties {
     return {
       backgroundColor: NAVIGATION_HIGHLIGHT_COLORS.backgroundColor,
@@ -2252,8 +2290,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
    * Get search highlight style for an edge
    */
   private getSearchHighlightStyleForEdge(
-    edge: ReactFlowEdge,
-    state: VisualizationState,
+    _edge: ReactFlowEdge,
+    _state: VisualizationState,
   ): React.CSSProperties {
     return {
       stroke: SEARCH_HIGHLIGHT_COLORS.border,
@@ -2265,8 +2303,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
    * Get navigation highlight style for an edge
    */
   private getNavigationHighlightStyleForEdge(
-    edge: ReactFlowEdge,
-    state: VisualizationState,
+    _edge: ReactFlowEdge,
+    _state: VisualizationState,
   ): React.CSSProperties {
     return {
       stroke: NAVIGATION_HIGHLIGHT_COLORS.border,

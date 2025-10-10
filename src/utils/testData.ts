@@ -20,7 +20,7 @@ export function loadPaxosTestData(): TestGraphData {
   return getMinimalTestData();
 }
 
-function convertHierarchyToContainers(
+function _convertHierarchyToContainers(
   hierarchy: any,
   containers: Container[],
 ): void {
@@ -43,7 +43,7 @@ function convertHierarchyToContainers(
     // Recursively process nested hierarchies
     for (const child of hierarchy.children) {
       if (child.children && child.children.length > 0) {
-        convertHierarchyToContainers(child, containers);
+        _convertHierarchyToContainers(child, containers);
       }
     }
   }

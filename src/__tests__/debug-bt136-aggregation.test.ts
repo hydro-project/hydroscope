@@ -87,7 +87,9 @@ describe("Debug bt_136 Aggregation", () => {
 
     if (runtimeParkContainer) {
       console.log(`🔄 EXPANDING: ${runtimeParkContainer.id}`);
-      visualizationState.expandContainer(runtimeParkContainer.id);
+      visualizationState._expandContainerForCoordinator(
+        runtimeParkContainer.id,
+      );
 
       // Check edges after expansion
       const finalAggregatedEdges = Array.from(
@@ -207,7 +209,9 @@ describe("Debug bt_136 Aggregation", () => {
 
     if (runtimeParkContainer) {
       // Expand runtime/park.rs
-      visualizationState.expandContainer(runtimeParkContainer.id);
+      visualizationState._expandContainerForCoordinator(
+        runtimeParkContainer.id,
+      );
 
       // Check state after expansion
       const bt136After = visualizationState.getContainer("bt_136");

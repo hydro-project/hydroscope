@@ -60,7 +60,7 @@ describe("Search Navigation Final Integration", () => {
     };
 
     // Initially collapse all containers to test expansion
-    state.collapseAllContainers();
+    state._collapseAllContainersForCoordinator();
   });
 
   afterEach(() => {

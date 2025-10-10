@@ -329,13 +329,13 @@ describe("Application Integration: Complete Application with paxos.json", () => 
           expect(state.visibleContainers.length).toBeGreaterThan(0);
 
           // Test expand/collapse
-          state.expandAllContainers();
+          state._expandAllContainersForCoordinator();
           const expandedContainers = state.visibleContainers.filter(
             (c) => !c.collapsed,
           );
           expect(expandedContainers.length).toBeGreaterThan(0);
 
-          state.collapseAllContainers();
+          state._collapseAllContainersForCoordinator();
           const collapsedContainers = state.visibleContainers.filter(
             (c) => c.collapsed,
           );

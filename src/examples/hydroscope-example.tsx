@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { Hydroscope } from "../components/Hydroscope";
 import type { HydroscopeData, RenderConfig } from "../components/Hydroscope";
+import { DEFAULT_ELK_ALGORITHM } from "@/shared/config";
 
 // Sample data for demonstration
 const sampleData: HydroscopeData = {
@@ -85,8 +86,8 @@ export default function HydroscopeExample() {
           showInfoPanel={true}
           showStylePanel={true}
           enableCollapse={true}
-          initialLayoutAlgorithm="layered"
-          initialColorPalette="Set2"
+          initialLayoutAlgorithm={DEFAULT_ELK_ALGORITHM}
+          initialColorPalette="Set3"
           onFileUpload={(uploadedData, filename) => {
             console.log(`File uploaded: ${filename}`);
             setData(uploadedData);

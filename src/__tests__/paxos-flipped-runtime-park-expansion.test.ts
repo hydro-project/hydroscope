@@ -26,7 +26,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
     const paxosFlippedPath = path.join(
       process.cwd(),
       "test-data",
-      "paxos-flipped.json"
+      "paxos-flipped.json",
     );
     const paxosFlippedContent = fs.readFileSync(paxosFlippedPath, "utf-8");
     paxosFlippedData = JSON.parse(paxosFlippedContent) as HydroscopeData;
@@ -50,7 +50,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       if (!runtimeParkContainer) {
@@ -58,14 +58,14 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         console.log("🔍 Available containers:");
         containers.forEach((container, index) => {
           console.log(
-            `  ${index + 1}. ID: ${container.id}, Label: ${container.label}`
+            `  ${index + 1}. ID: ${container.id}, Label: ${container.label}`,
           );
         });
       }
 
       expect(runtimeParkContainer).toBeDefined();
       console.log(
-        `✅ Found runtime/park.rs container: ${runtimeParkContainer!.id}`
+        `✅ Found runtime/park.rs container: ${runtimeParkContainer!.id}`,
       );
     });
 
@@ -79,26 +79,30 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
       console.log(
-        `📦 Container before expansion: collapsed=${runtimeParkContainer!.collapsed}, hidden=${runtimeParkContainer!.hidden}`
+        `📦 Container before expansion: collapsed=${runtimeParkContainer!.collapsed}, hidden=${runtimeParkContainer!.hidden}`,
       );
 
       // Ensure container is initially collapsed
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(runtimeParkContainer!.id);
+        visualizationState._collapseContainerForCoordinator(
+          runtimeParkContainer!.id,
+        );
       }
 
       // Expand the container - this should not throw any errors
       expect(() => {
-        visualizationState.expandContainer(runtimeParkContainer!.id);
+        visualizationState._expandContainerForCoordinator(
+          runtimeParkContainer!.id,
+        );
       }).not.toThrow();
 
       console.log(
-        `📦 Container after expansion: collapsed=${runtimeParkContainer!.collapsed}, hidden=${runtimeParkContainer!.hidden}`
+        `📦 Container after expansion: collapsed=${runtimeParkContainer!.collapsed}, hidden=${runtimeParkContainer!.hidden}`,
       );
 
       // Verify the container is now expanded
@@ -106,7 +110,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       expect(runtimeParkContainer!.hidden).toBe(false);
 
       console.log(
-        "✅ runtime/park.rs container expanded successfully without errors"
+        "✅ runtime/park.rs container expanded successfully without errors",
       );
     });
 
@@ -120,18 +124,22 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
 
       // Ensure container is initially collapsed
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(runtimeParkContainer!.id);
+        visualizationState._collapseContainerForCoordinator(
+          runtimeParkContainer!.id,
+        );
       }
 
       // Expand the container
-      visualizationState.expandContainer(runtimeParkContainer!.id);
+      visualizationState._expandContainerForCoordinator(
+        runtimeParkContainer!.id,
+      );
 
       // Convert to ReactFlow data - this should not throw any invalid edge errors
       const reactFlowBridge = new ReactFlowBridge({});
@@ -147,7 +155,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       expect(renderData!.nodes.length).toBeGreaterThan(0);
 
       console.log(
-        `✅ ReactFlow rendering successful: ${renderData!.nodes.length} nodes, ${renderData!.edges.length} edges`
+        `✅ ReactFlow rendering successful: ${renderData!.nodes.length} nodes, ${renderData!.edges.length} edges`,
       );
     });
 
@@ -161,7 +169,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
@@ -173,7 +181,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
         // Collapse
         expect(() => {
-          visualizationState.collapseContainer(containerId);
+          visualizationState._collapseContainerForCoordinator(containerId);
         }).not.toThrow();
 
         expect(runtimeParkContainer!.collapsed).toBe(true);
@@ -182,7 +190,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
         // Expand
         expect(() => {
-          visualizationState.expandContainer(containerId);
+          visualizationState._expandContainerForCoordinator(containerId);
         }).not.toThrow();
 
         expect(runtimeParkContainer!.collapsed).toBe(false);
@@ -209,7 +217,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
@@ -217,7 +225,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Ensure container is collapsed
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(containerId);
+        visualizationState._collapseContainerForCoordinator(containerId);
       }
 
       // Capture initial state (after ensuring collapsed)
@@ -226,7 +234,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       const initialContainerCount = visualizationState.visibleContainers.length;
 
       console.log(
-        `📊 Initial state: ${initialNodeCount} nodes, ${initialEdgeCount} edges, ${initialContainerCount} containers`
+        `📊 Initial state: ${initialNodeCount} nodes, ${initialEdgeCount} edges, ${initialContainerCount} containers`,
       );
 
       // Expand the container using AsyncCoordinator
@@ -240,20 +248,20 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         visualizationState.visibleContainers.length;
 
       console.log(
-        `📊 After expansion: ${expandedNodeCount} nodes, ${expandedEdgeCount} edges, ${expandedContainerCount} containers`
+        `📊 After expansion: ${expandedNodeCount} nodes, ${expandedEdgeCount} edges, ${expandedContainerCount} containers`,
       );
 
       // After expansion, we might have different visible counts due to smart collapse
       // and edge aggregation logic. The key is that the operation completes without errors.
       console.log(
-        `📊 Node count change: ${initialNodeCount} -> ${expandedNodeCount} (${expandedNodeCount - initialNodeCount})`
+        `📊 Node count change: ${initialNodeCount} -> ${expandedNodeCount} (${expandedNodeCount - initialNodeCount})`,
       );
       console.log(
-        `📊 Container count change: ${initialContainerCount} -> ${expandedContainerCount} (${expandedContainerCount - initialContainerCount})`
+        `📊 Container count change: ${initialContainerCount} -> ${expandedContainerCount} (${expandedContainerCount - initialContainerCount})`,
       );
 
       // Collapse back and verify we return to similar state
-      visualizationState.collapseContainer(containerId);
+      visualizationState._collapseContainerForCoordinator(containerId);
 
       const collapsedNodeCount = visualizationState.visibleNodes.length;
       const collapsedEdgeCount = visualizationState.visibleEdges.length;
@@ -261,21 +269,21 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         visualizationState.visibleContainers.length;
 
       console.log(
-        `📊 After collapse: ${collapsedNodeCount} nodes, ${collapsedEdgeCount} edges, ${collapsedContainerCount} containers`
+        `📊 After collapse: ${collapsedNodeCount} nodes, ${collapsedEdgeCount} edges, ${collapsedContainerCount} containers`,
       );
 
       // After collapsing, we should have similar counts to initial state
       // (allowing for some variation due to edge aggregation)
       // BUG: Collapse operation is not properly restoring state - 42 node difference
       expect(
-        Math.abs(collapsedNodeCount - initialNodeCount)
+        Math.abs(collapsedNodeCount - initialNodeCount),
       ).toBeLessThanOrEqual(5);
       expect(
-        Math.abs(collapsedContainerCount - initialContainerCount)
+        Math.abs(collapsedContainerCount - initialContainerCount),
       ).toBeLessThanOrEqual(5);
 
       console.log(
-        "✅ Data integrity maintained throughout expansion operations"
+        "✅ Data integrity maintained throughout expansion operations",
       );
     });
 
@@ -289,18 +297,22 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
 
       // Ensure container is initially collapsed
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(runtimeParkContainer!.id);
+        visualizationState._collapseContainerForCoordinator(
+          runtimeParkContainer!.id,
+        );
       }
 
       // Expand the container
-      visualizationState.expandContainer(runtimeParkContainer!.id);
+      visualizationState._expandContainerForCoordinator(
+        runtimeParkContainer!.id,
+      );
 
       // Convert to ReactFlow data
       const reactFlowBridge = new ReactFlowBridge({});
@@ -315,7 +327,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Verify layout was applied
       const nodesWithPositions = visualizationState.visibleNodes.filter(
-        (n) => n.position
+        (n) => n.position,
       );
       const containersWithPositions =
         visualizationState.visibleContainers.filter((c) => c.position);
@@ -332,7 +344,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       }
 
       console.log(
-        `✅ Complete pipeline successful: ${nodesWithPositions.length} nodes positioned, ${containersWithPositions.length} containers positioned`
+        `✅ Complete pipeline successful: ${nodesWithPositions.length} nodes positioned, ${containersWithPositions.length} containers positioned`,
       );
     });
   });
@@ -348,7 +360,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
@@ -367,7 +379,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           const container = visualizationState.getContainer(currentId);
           if (container) {
             hierarchy.push(
-              `${currentId} (collapsed: ${container.collapsed}, hidden: ${container.hidden})`
+              `${currentId} (collapsed: ${container.collapsed}, hidden: ${container.hidden})`,
             );
 
             // Find parent container
@@ -393,7 +405,11 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Ensure container is collapsed
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(containerId);
+        const asyncCoordinator = new AsyncCoordinator();
+        await asyncCoordinator.collapseContainer(
+          containerId,
+          visualizationState,
+        );
       }
 
       // Capture console errors to detect invalid edge errors
@@ -423,7 +439,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
             msg.includes("invalid edge") ||
             msg.includes("floating edge") ||
             msg.includes("edge validation failed") ||
-            msg.includes("EdgeValidationError")
+            msg.includes("EdgeValidationError"),
         );
 
         if (invalidEdgeErrors.length > 0) {
@@ -450,7 +466,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           container.id.includes("runtime/park.rs") ||
           container.label.includes("runtime/park.rs") ||
           container.id.includes("park.rs") ||
-          container.label.includes("park.rs")
+          container.label.includes("park.rs"),
       );
 
       expect(runtimeParkContainer).toBeDefined();
@@ -458,17 +474,17 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Start with container collapsed to test aggregation
       if (!runtimeParkContainer!.collapsed) {
-        visualizationState.collapseContainer(containerId);
+        visualizationState._collapseContainerForCoordinator(containerId);
       }
 
       // Get initial edge counts
       const initialVisibleEdges = visualizationState.visibleEdges.length;
       console.log(
-        `📊 Initial visible edges (collapsed): ${initialVisibleEdges}`
+        `📊 Initial visible edges (collapsed): ${initialVisibleEdges}`,
       );
 
       // Expand the container
-      visualizationState.expandContainer(containerId);
+      visualizationState._expandContainerForCoordinator(containerId);
 
       // Get edge counts after expansion
       const expandedVisibleEdges = visualizationState.visibleEdges.length;
@@ -478,18 +494,18 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       expect(expandedVisibleEdges).toBeGreaterThanOrEqual(initialVisibleEdges);
 
       // Collapse again to test re-aggregation
-      visualizationState.collapseContainer(containerId);
+      visualizationState._collapseContainerForCoordinator(containerId);
 
       // Get edge counts after re-collapse
       const reCollapsedVisibleEdges = visualizationState.visibleEdges.length;
       console.log(
-        `📊 Visible edges after re-collapse: ${reCollapsedVisibleEdges}`
+        `📊 Visible edges after re-collapse: ${reCollapsedVisibleEdges}`,
       );
 
       // After re-collapse, edge count should be similar to initial
       // (allowing for some variation due to aggregation logic)
       expect(
-        Math.abs(reCollapsedVisibleEdges - initialVisibleEdges)
+        Math.abs(reCollapsedVisibleEdges - initialVisibleEdges),
       ).toBeLessThanOrEqual(10);
 
       console.log("✅ Edge aggregation and restoration working correctly");

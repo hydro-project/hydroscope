@@ -147,7 +147,7 @@ describe("VisualizationState Edge Validation", () => {
       expect(originalEdge?.hidden).toBe(true);
 
       // Then expand and restore
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Test: Edge should be restored (not hidden)
       const restoredEdges = state.getOriginalEdges();
@@ -174,8 +174,6 @@ describe("VisualizationState Edge Validation", () => {
         state.restoreEdgesForContainer("container1");
       }).not.toThrow();
     });
-
-
   });
 
   describe("_postExpansionEdgeValidation", () => {
@@ -193,7 +191,7 @@ describe("VisualizationState Edge Validation", () => {
 
       // Collapse first, then expand
       state.collapseContainerSystemOperation("container1");
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Test: Post-expansion validation
       const result = (state as any)._postExpansionEdgeValidation("container1");
@@ -250,7 +248,7 @@ describe("VisualizationState Edge Validation", () => {
 
       // Collapse first, then expand
       state.collapseContainerSystemOperation("container1");
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Test: Should attempt fixes
       const result = (state as any)._postExpansionEdgeValidation("container1");
@@ -287,7 +285,7 @@ describe("VisualizationState Edge Validation", () => {
 
       // Test: Expand container - should use all validation methods
       expect(() => {
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
       }).not.toThrow();
 
       // Verify container is expanded

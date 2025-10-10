@@ -40,7 +40,7 @@ describe("VisualizationState Container Operations Integration", () => {
         expect(state.getContainer("container1")?.collapsed).toBe(true);
 
         // Expand
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
         expect(state.getContainer("container1")?.collapsed).toBe(false);
 
         // Collapse again
@@ -48,7 +48,7 @@ describe("VisualizationState Container Operations Integration", () => {
         expect(state.getContainer("container1")?.collapsed).toBe(true);
 
         // Expand again
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
         expect(state.getContainer("container1")?.collapsed).toBe(false);
       }).not.toThrow();
     });
@@ -78,12 +78,12 @@ describe("VisualizationState Container Operations Integration", () => {
         expect(state.getContainer("container2")?.collapsed).toBe(true);
 
         // Expand first container
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
         expect(state.getContainer("container1")?.collapsed).toBe(false);
         expect(state.getContainer("container2")?.collapsed).toBe(true);
 
         // Expand second container
-        state.expandContainer("container2");
+        state._expandContainerForCoordinator("container2");
         expect(state.getContainer("container1")?.collapsed).toBe(false);
         expect(state.getContainer("container2")?.collapsed).toBe(false);
 
@@ -139,7 +139,7 @@ describe("VisualizationState Container Operations Integration", () => {
       expect(aggregatedEdges.length).toBeGreaterThan(0);
 
       // Expand container
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
       const expandedEdges = state.getOriginalEdges();
 
       // Both edges should be visible again
@@ -172,7 +172,7 @@ describe("VisualizationState Container Operations Integration", () => {
         expect(state.getContainer("parent")?.collapsed).toBe(true);
 
         // Expand parent
-        state.expandContainer("parent");
+        state._expandContainerForCoordinator("parent");
         expect(state.getContainer("parent")?.collapsed).toBe(false);
 
         // Now collapse child
@@ -181,7 +181,7 @@ describe("VisualizationState Container Operations Integration", () => {
         expect(state.getContainer("parent")?.collapsed).toBe(false);
 
         // Expand child
-        state.expandContainer("child");
+        state._expandContainerForCoordinator("child");
         expect(state.getContainer("child")?.collapsed).toBe(false);
       }).not.toThrow();
     });
@@ -218,13 +218,13 @@ describe("VisualizationState Container Operations Integration", () => {
         state.collapseContainerSystemOperation("container1");
         operationsCompleted++;
 
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
         operationsCompleted++;
 
         state.collapseContainerSystemOperation("container2");
         operationsCompleted++;
 
-        state.expandContainer("container2");
+        state._expandContainerForCoordinator("container2");
         operationsCompleted++;
       } catch (error) {
         // Document that operations may fail due to existing bugs
@@ -276,10 +276,10 @@ describe("VisualizationState Container Operations Integration", () => {
       // Perform multiple operations
       state.collapseContainerSystemOperation("c1");
       state.collapseContainerSystemOperation("c2");
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       state.collapseContainerSystemOperation("c3");
-      state.expandContainer("c2");
-      state.expandContainer("c3");
+      state._expandContainerForCoordinator("c2");
+      state._expandContainerForCoordinator("c3");
 
       // Verify data integrity
       expect(state.getOriginalEdges().length).toBe(initialEdgeCount);
@@ -370,7 +370,7 @@ describe("VisualizationState Container Operations Integration", () => {
       );
 
       // Test: Restoration during expansion
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Verify edges are restored
       const restoredEdges = state.getOriginalEdges();
@@ -421,8 +421,8 @@ describe("VisualizationState Container Operations Integration", () => {
         expect(aggregated.length).toBeGreaterThan(0);
 
         // Expand both
-        state.expandContainer("c1");
-        state.expandContainer("c2");
+        state._expandContainerForCoordinator("c1");
+        state._expandContainerForCoordinator("c2");
 
         // Verify restoration
         const restored = state.getOriginalEdges();
@@ -457,7 +457,7 @@ describe("VisualizationState Container Operations Integration", () => {
         true,
       );
 
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
       const expandedMetadata = state.getAggregationMetadata();
 
       // After expansion, aggregated edges should be cleaned up
@@ -471,7 +471,7 @@ describe("VisualizationState Container Operations Integration", () => {
     it("should handle operations on non-existent containers gracefully", () => {
       // Test: Operations on non-existent containers
       expect(() => {
-        state.expandContainer("nonexistent");
+        state._expandContainerForCoordinator("nonexistent");
       }).not.toThrow();
 
       expect(() => {
@@ -496,9 +496,9 @@ describe("VisualizationState Container Operations Integration", () => {
 
       // Try operations that might fail
       try {
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
         state.collapseContainerSystemOperation("container1");
-        state.expandContainer("container1");
+        state._expandContainerForCoordinator("container1");
       } catch (error) {
         // Even if operations fail, state should be consistent
       }

@@ -233,8 +233,8 @@ describe("ContainerControls Component", () => {
   describe("Collapse All Functionality", () => {
     it("should call collapseAllContainers when collapse all is clicked", async () => {
       // Ensure we have expanded containers to collapse
-      visualizationState.expandContainer("container1");
-      visualizationState.expandContainer("container3");
+      visualizationState._expandContainerForCoordinator("container1");
+      visualizationState._expandContainerForCoordinator("container3");
 
       let operationCompleted = false;
       const onOperationComplete = (operation: "expand" | "collapse") => {
@@ -662,8 +662,8 @@ describe("useContainerControls Hook", () => {
 
   it("should provide collapse all functionality", async () => {
     // Ensure we have expanded containers to collapse
-    visualizationState.expandContainer("container1");
-    visualizationState.expandContainer("container3");
+    visualizationState._expandContainerForCoordinator("container1");
+    visualizationState._expandContainerForCoordinator("container3");
 
     render(<TestComponent />);
 

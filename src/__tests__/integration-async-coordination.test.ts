@@ -61,7 +61,7 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_expand", async () => {
-              state.expandContainer(container.id);
+              state._expandContainerForCoordinator(container.id);
               return "expanded";
             });
             await coordinator.processQueue();
@@ -73,7 +73,7 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_collapse", async () => {
-              state.collapseContainer(container.id);
+              state._collapseContainerForCoordinator(container.id);
               return "collapsed";
             });
             await coordinator.processQueue();
@@ -198,7 +198,7 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_expand", () => {
-              state.expandContainer(container.id);
+              state._expandContainerForCoordinator(container.id);
               return Promise.resolve("expanded");
             });
             await coordinator.processQueue();
@@ -208,7 +208,7 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_collapse", () => {
-              state.collapseContainer(container.id);
+              state._collapseContainerForCoordinator(container.id);
               return Promise.resolve("collapsed");
             });
             await coordinator.processQueue();
@@ -293,7 +293,7 @@ describe("Async Boundary Integration Tests", () => {
       const collapseOperations = containers.map((container) =>
         (async () => {
           coordinator.queueOperation("container_collapse", () => {
-            state.collapseContainer(container.id);
+            state._collapseContainerForCoordinator(container.id);
             return Promise.resolve("collapsed");
           });
           await coordinator.processQueue();
@@ -315,7 +315,7 @@ describe("Async Boundary Integration Tests", () => {
       const expandOperations = containers.map((container) =>
         (async () => {
           coordinator.queueOperation("container_expand", () => {
-            state.expandContainer(container.id);
+            state._expandContainerForCoordinator(container.id);
             return Promise.resolve("expanded");
           });
           await coordinator.processQueue();
@@ -341,7 +341,7 @@ describe("Async Boundary Integration Tests", () => {
       // Collapse some containers first
       const containers = state.visibleContainers.slice(0, 5);
       for (const container of containers) {
-        state.collapseContainer(container.id);
+        state._collapseContainerForCoordinator(container.id);
       }
 
       // Get some node names from paxos data for searching
@@ -475,7 +475,7 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_expand", () => {
-              state.expandContainer(container.id);
+              state._expandContainerForCoordinator(container.id);
               return Promise.resolve("expanded");
             });
             await coordinator.processQueue();
@@ -663,7 +663,7 @@ describe("Async Boundary Integration Tests", () => {
             timestamp: Date.now(),
           });
           coordinator.queueOperation("container_expand", () => {
-            state.expandContainer(containerId);
+            state._expandContainerForCoordinator(containerId);
             return Promise.resolve("expanded");
           });
           await coordinator.processQueue();

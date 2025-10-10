@@ -10,10 +10,7 @@ import type {
   LayoutConfig,
   StyleConfig,
 } from "./core.js";
-import type {
-  ImmutableReturn,
-  ImmutableBridgeMethod,
-} from "./architecture-constraints.js";
+import type { ImmutableBridgeMethod } from "./architecture-constraints.js";
 
 /**
  * Base interface for all stateless bridges
@@ -197,7 +194,7 @@ export function validateStatelessBridge(bridge: any, bridgeName: string): void {
 
   // Check all enumerable properties
   for (const prop in bridge) {
-    if (bridge.hasOwnProperty(prop)) {
+    if (Object.prototype.hasOwnProperty.call(bridge, prop)) {
       for (const pattern of prohibitedPatterns) {
         if (pattern.test(prop)) {
           violations.push(prop);

@@ -18,8 +18,6 @@ import {
   render,
   screen,
   fireEvent,
-  waitFor,
-  act,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
@@ -63,7 +61,6 @@ describe("StyleTuner Component", () => {
 
   const defaultStyleConfig: StyleConfig = {
     edgeStyle: "bezier",
-    reactFlowControlsScale: 1.3,
   };
 
   beforeEach(() => {
@@ -95,7 +92,7 @@ describe("StyleTuner Component", () => {
     mockProps = {
       value: defaultStyleConfig,
       colorPalette: "Set2",
-      currentLayout: "layered",
+      currentLayout: "mrtree",
       visualizationState,
       asyncCoordinator,
       open: true,
@@ -152,11 +149,12 @@ describe("StyleTuner Component", () => {
     it("should display available layout algorithms", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const layoutSelect = screen.getByDisplayValue("Layered (Default)");
-      expect(layoutSelect).toBeInTheDocument();
+      // Find the layout select by its role and value
+      const layoutSelect = screen.getAllByRole("combobox")[0]; // First select is layout
+      expect(layoutSelect).toHaveValue("mrtree");
 
       // Check options exist
-      expect(screen.getByText("Layered (Default)")).toBeInTheDocument();
+      expect(screen.getByText("Layered")).toBeInTheDocument();
       expect(screen.getByText("MR Tree")).toBeInTheDocument();
       expect(screen.getByText("Force-Directed")).toBeInTheDocument();
       expect(screen.getByText("Stress Minimization")).toBeInTheDocument();
@@ -165,7 +163,7 @@ describe("StyleTuner Component", () => {
     it("should call onLayoutChange when algorithm is selected", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const layoutSelect = screen.getByDisplayValue("Layered (Default)");
+      const layoutSelect = screen.getAllByRole("combobox")[0]; // First select is layout
       fireEvent.change(layoutSelect, { target: { value: "force" } });
 
       expect(mockCallbacks.onLayoutChange).toHaveBeenCalledWith("force");
@@ -182,7 +180,7 @@ describe("StyleTuner Component", () => {
 
       render(<StyleTuner {...mockProps} />);
 
-      const layoutSelect = screen.getByDisplayValue("Layered (Default)");
+      const layoutSelect = screen.getAllByRole("combobox")[0]; // First select is layout
 
       // Should not crash when error occurs
       expect(() => {
@@ -199,8 +197,8 @@ describe("StyleTuner Component", () => {
     it("should display available color palettes", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const paletteSelect = screen.getByDisplayValue("Set2");
-      expect(paletteSelect).toBeInTheDocument();
+      const paletteSelect = screen.getAllByRole("combobox")[2]; // Third select is color palette
+      expect(paletteSelect).toHaveValue("Set2");
 
       // Check options exist
       expect(screen.getByText("Set2")).toBeInTheDocument();
@@ -212,7 +210,7 @@ describe("StyleTuner Component", () => {
     it("should call onPaletteChange when palette is selected", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const paletteSelect = screen.getByDisplayValue("Set2");
+      const paletteSelect = screen.getAllByRole("combobox")[2]; // Third select is color palette
       fireEvent.change(paletteSelect, { target: { value: "Set3" } });
 
       expect(mockCallbacks.onPaletteChange).toHaveBeenCalledWith("Set3");
@@ -229,7 +227,7 @@ describe("StyleTuner Component", () => {
 
       render(<StyleTuner {...mockProps} />);
 
-      const paletteSelect = screen.getByDisplayValue("Set2");
+      const paletteSelect = screen.getAllByRole("combobox")[2]; // Third select is color palette
 
       // Should not crash when error occurs
       expect(() => {
@@ -254,14 +252,14 @@ describe("StyleTuner Component", () => {
     it("should show current edge style values", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const edgeStyleSelect = screen.getByDisplayValue("Bezier");
-      expect(edgeStyleSelect).toBeInTheDocument();
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
+      expect(edgeStyleSelect).toHaveValue("bezier");
     });
 
     it("should call onChange when edge style is modified", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const edgeStyleSelect = screen.getByDisplayValue("Bezier");
+      const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
       fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
 
       expect(mockCallbacks.onChange).toHaveBeenCalledWith({

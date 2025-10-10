@@ -14,12 +14,22 @@ import {
 } from "../shared/colorUtils";
 import { SIZES } from "../shared/config";
 
-export function ContainerNode({ id, data, style }: NodeProps & { style?: React.CSSProperties }) {
+export function ContainerNode({
+  id,
+  data,
+  style,
+}: NodeProps & { style?: React.CSSProperties }) {
   // Debug logging for search highlights (only for containers, nodes 2 and 7 are handled in StandardNode)
-  if (id === 'loc_1' || id === 'loc_0') {
+  if (id === "loc_1" || id === "loc_0") {
     console.log(`[ContainerNode] 🔍 CONTAINER ${id} received style:`, style);
-    console.log(`[ContainerNode] 🔍 CONTAINER ${id} data.isHighlighted:`, (data as any)?.isHighlighted);
-    console.log(`[ContainerNode] 🔍 CONTAINER ${id} data.highlightType:`, (data as any)?.highlightType);
+    console.log(
+      `[ContainerNode] 🔍 CONTAINER ${id} data.isHighlighted:`,
+      (data as any)?.isHighlighted,
+    );
+    console.log(
+      `[ContainerNode] 🔍 CONTAINER ${id} data.highlightType:`,
+      (data as any)?.highlightType,
+    );
   }
 
   const styleCfg = useStyleConfig();
@@ -221,11 +231,14 @@ export function ContainerNode({ id, data, style }: NodeProps & { style?: React.C
                 : "searchPulse 2s ease-in-out infinite"
               : undefined,
             // Apply search highlights based on data properties
-            ...(((data as any)?.isHighlighted && (data as any)?.highlightType === 'search') ? {
-              backgroundColor: "#fbbf24", // Amber-400
-              border: "2px solid #f59e0b", // Amber-500
-              boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
-            } : {}),
+            ...((data as any)?.isHighlighted &&
+            (data as any)?.highlightType === "search"
+              ? {
+                  backgroundColor: "#fbbf24", // Amber-400
+                  border: "2px solid #f59e0b", // Amber-500
+                  boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
+                }
+              : {}),
             // Merge ReactFlow styles (for search highlights) - these take precedence
             ...style,
           }}
@@ -337,11 +350,14 @@ export function ContainerNode({ id, data, style }: NodeProps & { style?: React.C
               : "searchPulse 2s ease-in-out infinite"
             : undefined,
           // Apply search highlights based on data properties
-          ...(((data as any)?.isHighlighted && (data as any)?.highlightType === 'search') ? {
-            backgroundColor: "#fbbf24", // Amber-400
-            border: "2px solid #f59e0b", // Amber-500
-            boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
-          } : {}),
+          ...((data as any)?.isHighlighted &&
+          (data as any)?.highlightType === "search"
+            ? {
+                backgroundColor: "#fbbf24", // Amber-400
+                border: "2px solid #f59e0b", // Amber-500
+                boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
+              }
+            : {}),
           // Merge ReactFlow styles (for search highlights) - these take precedence
           ...style,
         }}

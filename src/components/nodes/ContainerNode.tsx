@@ -14,7 +14,11 @@ export interface ContainerNodeProps {
   style?: React.CSSProperties; // Add style prop to receive ReactFlow styles
 }
 
-export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id, style }) => {
+export const ContainerNode: React.FC<ContainerNodeProps> = ({
+  data,
+  id,
+  style,
+}) => {
   const handleClick = () => {
     if (data.onClick) {
       data.onClick(id, "container");
@@ -40,10 +44,7 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id, style })
 
     // Collapsed container - render as a compact node
     return (
-      <div
-        onClick={handleClick}
-        style={mergedCollapsedStyle}
-      >
+      <div onClick={handleClick} style={mergedCollapsedStyle}>
         <HandlesRenderer />
 
         <div>
@@ -75,10 +76,7 @@ export const ContainerNode: React.FC<ContainerNodeProps> = ({ data, id, style })
 
     // Expanded container - render as a background rectangle
     return (
-      <div
-        onClick={handleClick}
-        style={mergedExpandedStyle}
-      >
+      <div onClick={handleClick} style={mergedExpandedStyle}>
         {/* Container label in top-left corner */}
         <div
           style={{

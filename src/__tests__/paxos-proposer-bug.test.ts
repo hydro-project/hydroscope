@@ -99,7 +99,7 @@ describe("Paxos Proposer Container Bug", () => {
 
     // Step 1: Expand the Proposer container
     console.log("\n=== EXPANDING PROPOSER CONTAINER ===");
-    state.expandContainer(proposerContainer!.id);
+    state._expandContainerForCoordinator(proposerContainer!.id);
     await elkBridge.layout(state);
 
     // Verify container is expanded and aggregated edges are removed
@@ -135,7 +135,7 @@ describe("Paxos Proposer Container Bug", () => {
         console.log(`  - ${c.id} (${c.label}): collapsed=${c.collapsed}`);
       });
 
-    state.collapseContainer(proposerContainer!.id);
+    state._collapseContainerForCoordinator(proposerContainer!.id);
     await elkBridge.layout(state);
 
     // Verify container is collapsed again
@@ -296,11 +296,11 @@ describe("Paxos Proposer Container Bug", () => {
       console.log(`\n=== CYCLE ${cycle} ===`);
 
       // Expand
-      state.expandContainer(proposerContainer!.id);
+      state._expandContainerForCoordinator(proposerContainer!.id);
       await elkBridge.layout(state);
 
       // Collapse
-      state.collapseContainer(proposerContainer!.id);
+      state._collapseContainerForCoordinator(proposerContainer!.id);
       await elkBridge.layout(state);
 
       // Verify edges are still valid

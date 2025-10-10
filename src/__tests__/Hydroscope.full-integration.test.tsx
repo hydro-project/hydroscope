@@ -230,7 +230,7 @@ describe("Full Hydroscope Component Integration Tests", () => {
           onNodeClick={onNodeClick}
           onContainerCollapse={onContainerCollapse}
           onContainerExpand={onContainerExpand}
-          initialLayoutAlgorithm="layered"
+          initialLayoutAlgorithm="mrtree"
           initialColorPalette="Set1"
         />,
       );

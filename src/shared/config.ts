@@ -87,7 +87,7 @@ export const LAYOUT_CONSTANTS = {
   },
   LARGE_CONTAINER_CHILD_COUNT_THRESHOLD: 7,
 
-  SMART_COLLAPSE_BUDGET: 25000,
+  SMART_COLLAPSE_BUDGET: 50000,
 } as const;
 
 // UI Animation and Interaction Constants
@@ -416,15 +416,6 @@ export const COMPONENT_COLORS = {
 export const DEFAULT_COLOR_PALETTE = "Set3";
 
 export const COLOR_PALETTES = {
-  Set2: [
-    { primary: "#66c2a5", secondary: "#e0f2ef", name: "Teal Green" },
-    { primary: "#fc8d62", secondary: "#ffe1d6", name: "Soft Orange" },
-    { primary: "#8da0cb", secondary: "#e6e9f5", name: "Dusty Blue" },
-    { primary: "#e78ac3", secondary: "#fbe1f2", name: "Pink Purple" },
-    { primary: "#a6d854", secondary: "#eef8d9", name: "Lime Green" },
-    { primary: "#ffd92f", secondary: "#fff6bf", name: "Soft Yellow" },
-    { primary: "#e5c494", secondary: "#f6ebd9", name: "Tan" },
-  ],
   Set3: [
     { primary: "#8dd3c7", secondary: "#ffffb3", name: "Light Teal" },
     { primary: "#bebada", secondary: "#fb8072", name: "Light Purple" },
@@ -434,6 +425,15 @@ export const COLOR_PALETTES = {
     { primary: "#bc80bd", secondary: "#ccebc5", name: "Medium Purple" },
     { primary: "#ccebc5", secondary: "#ffed6f", name: "Light Green" },
     { primary: "#ffed6f", secondary: "#8dd3c7", name: "Light Yellow" },
+  ],
+  Set2: [
+    { primary: "#66c2a5", secondary: "#e0f2ef", name: "Teal Green" },
+    { primary: "#fc8d62", secondary: "#ffe1d6", name: "Soft Orange" },
+    { primary: "#8da0cb", secondary: "#e6e9f5", name: "Dusty Blue" },
+    { primary: "#e78ac3", secondary: "#fbe1f2", name: "Pink Purple" },
+    { primary: "#a6d854", secondary: "#eef8d9", name: "Lime Green" },
+    { primary: "#ffd92f", secondary: "#fff6bf", name: "Soft Yellow" },
+    { primary: "#e5c494", secondary: "#f6ebd9", name: "Tan" },
   ],
   Pastel1: [
     { primary: "#fbb4ae", secondary: "#b3cde3", name: "Soft Red" },
@@ -555,14 +555,14 @@ export const WAVY_EDGE_CONFIG = {
 
 // ELK Layout exports expected by ELKStateManager
 export const ELK_ALGORITHMS = {
-  LAYERED: "layered",
   MRTREE: "mrtree",
+  LAYERED: "layered",
   FORCE: "force",
   STRESS: "stress",
 } as const;
 
 // Default algorithm - single source of truth
-export const DEFAULT_ELK_ALGORITHM = ELK_ALGORITHMS.LAYERED;
+export const DEFAULT_ELK_ALGORITHM = ELK_ALGORITHMS.MRTREE;
 
 // Default layout configuration - single source of truth for all layout settings
 export const DEFAULT_LAYOUT_CONFIG = {
@@ -605,8 +605,8 @@ export type ELKAlgorithm = (typeof ELK_ALGORITHMS)[keyof typeof ELK_ALGORITHMS];
 // Accept broader algorithm strings and coerce to a valid ELK algorithm with a safe default
 export function getELKLayoutOptions(algorithm: string = DEFAULT_ELK_ALGORITHM) {
   const allowed: Record<string, ELKAlgorithm> = {
-    [ELK_ALGORITHMS.LAYERED]: ELK_ALGORITHMS.LAYERED,
     [ELK_ALGORITHMS.MRTREE]: ELK_ALGORITHMS.MRTREE,
+    [ELK_ALGORITHMS.LAYERED]: ELK_ALGORITHMS.LAYERED,
     [ELK_ALGORITHMS.FORCE]: ELK_ALGORITHMS.FORCE,
     [ELK_ALGORITHMS.STRESS]: ELK_ALGORITHMS.STRESS,
   } as const;

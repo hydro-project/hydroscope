@@ -202,7 +202,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           // Log navigation error
           const result = matches[index];
           if (result) {
-            console.error(`[SearchControls] Navigation failed for element: ${result.id}`, error);
+            console.error(
+              `[SearchControls] Navigation failed for element: ${result.id}`,
+              error,
+            );
           }
 
           // Announce error for accessibility
@@ -323,7 +326,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           );
 
           // Log search error
-          console.error(`[SearchControls] Search failed for query: "${query}"`, error);
+          console.error(
+            `[SearchControls] Search failed for query: "${query}"`,
+            error,
+          );
 
           // Clear results on error
           setMatches([]);
@@ -693,8 +699,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               />
             </div>
           )}
-
-
       </div>
     );
   },

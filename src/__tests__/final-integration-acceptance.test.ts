@@ -113,11 +113,11 @@ describe("Final Integration and Acceptance Testing", () => {
 
       // Test container operations
       expect(() => {
-        visualizationState.collapseContainer("test-container");
+        visualizationState._collapseContainerForCoordinator("test-container");
       }).not.toThrow();
 
       expect(() => {
-        visualizationState.expandContainer("test-container");
+        visualizationState._expandContainerForCoordinator("test-container");
       }).not.toThrow();
 
       // Test search functionality
@@ -305,10 +305,10 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(visualizationState.visibleContainers).toHaveLength(1);
 
       // Container collapse/expand maintains consistency
-      visualizationState.collapseContainer("req2-container");
+      visualizationState._collapseContainerForCoordinator("req2-container");
       visualizationState.validateInvariants();
 
-      visualizationState.expandContainer("req2-container");
+      visualizationState._expandContainerForCoordinator("req2-container");
       visualizationState.validateInvariants();
 
       // Layout state tracking
@@ -380,7 +380,7 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(reactFlowData.edges).toBeDefined();
 
       // Test collapsed container rendering
-      visualizationState.collapseContainer("rf-container");
+      visualizationState._collapseContainerForCoordinator("rf-container");
       // Calculate layout so nodes have positions
       await elkBridge.layout(visualizationState);
 
@@ -496,13 +496,13 @@ describe("Final Integration and Acceptance Testing", () => {
       });
 
       // User collapses container
-      testState.collapseContainer("services");
+      testState._collapseContainerForCoordinator("services");
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
       ).toBe(true);
 
       // User expands container
-      testState.expandContainer("services");
+      testState._expandContainerForCoordinator("services");
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
       ).toBe(false);
@@ -571,7 +571,7 @@ describe("Final Integration and Acceptance Testing", () => {
 
       // Test container operations
       const containerOpStartTime = Date.now();
-      visualizationState.collapseAllContainers();
+      visualizationState._collapseAllContainersForCoordinator();
       const containerOpTime = Date.now() - containerOpStartTime;
 
       expect(containerOpTime).toBeLessThan(2000); // 2 seconds max

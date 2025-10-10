@@ -55,7 +55,9 @@ describe("SearchControls Enhanced Features", () => {
       render(<SearchControls {...defaultProps} />);
 
       expect(screen.getByRole("combobox")).toBeInTheDocument();
-      expect(screen.getByLabelText("Previous search result")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Previous search result"),
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Next search result")).toBeInTheDocument();
       expect(screen.getByTestId("search-clear-button")).toBeInTheDocument();
     });
@@ -194,7 +196,9 @@ describe("SearchControls Enhanced Features", () => {
     it("should have accessible button labels", () => {
       render(<SearchControls {...defaultProps} />);
 
-      expect(screen.getByLabelText("Previous search result")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Previous search result"),
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Next search result")).toBeInTheDocument();
     });
 

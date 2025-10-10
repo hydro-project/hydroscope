@@ -209,10 +209,10 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse both
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
 
       // Expand only container1
-      state.expandAllContainers(["container1"]);
+      state._expandAllContainersForCoordinator(["container1"]);
 
       expect(state.getContainer("container1")?.collapsed).toBe(false);
       expect(state.getContainer("container2")?.collapsed).toBe(true);
@@ -226,7 +226,7 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse only container1
-      state.collapseAllContainers(["container1"]);
+      state._collapseAllContainersForCoordinator(["container1"]);
 
       expect(state.getContainer("container1")?.collapsed).toBe(true);
       expect(state.getContainer("container2")?.collapsed).toBe(false);

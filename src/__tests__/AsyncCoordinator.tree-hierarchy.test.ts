@@ -225,7 +225,7 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       state.addContainer(container2);
 
       // Collapse both containers first
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
 
       // Expand only container1 using new signature
       await coordinator.expandAllContainers(state, ["container1"]);

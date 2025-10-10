@@ -179,6 +179,7 @@ function validateBridgeInstance(instance: any, className: string): void {
 /**
  * Type-level test utilities for validating bridge implementations
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ArchitectureTests {
   /**
    * Test that a bridge type is stateless

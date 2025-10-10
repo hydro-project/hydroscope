@@ -108,7 +108,7 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
 
           // Test expansion - this should not throw invalid edge errors after fix
           expect(() => {
-            state.expandContainer(runtimeParkContainer.id);
+            state._expandContainerForCoordinator(runtimeParkContainer.id);
           }).not.toThrow();
 
           // Verify container is expanded
@@ -180,7 +180,7 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
                 state.collapseContainerSystemOperation(runtimeParkContainer.id);
 
                 // Expand
-                state.expandContainer(runtimeParkContainer.id);
+                state._expandContainerForCoordinator(runtimeParkContainer.id);
 
                 cyclesCompleted++;
               } catch (cycleError) {

@@ -360,8 +360,8 @@ describe("Error Boundary Validation", () => {
       expect(() => {
         // Perform many expand/collapse operations
         for (let i = 0; i < 100; i++) {
-          visualizationState.collapseContainer(`container${i}`);
-          visualizationState.expandContainer(`container${i}`);
+          visualizationState._collapseContainerForCoordinator(`container${i}`);
+          visualizationState._expandContainerForCoordinator(`container${i}`);
         }
       }).not.toThrow();
 

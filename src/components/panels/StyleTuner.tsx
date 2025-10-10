@@ -15,13 +15,13 @@
  * because those callbacks trigger refreshLayout() which needs to acquire the same lock.
  */
 
-import React, { useState, useEffect, useCallback, useRef, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
-  LAYOUT_CONSTANTS,
   PANEL_CONSTANTS,
   DEFAULT_COLOR_PALETTE,
+  DEFAULT_ELK_ALGORITHM,
 } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
@@ -40,16 +40,16 @@ export interface StyleConfig {
 
 // Layout algorithm options (matching ELK's available algorithms)
 const layoutOptions = {
-  layered: "Layered (Default)",
   mrtree: "MR Tree",
+  layered: "Layered",
   force: "Force-Directed",
   stress: "Stress Minimization",
 };
 
 // Color palette options
 const paletteOptions = {
-  Set2: "Set2",
   Set3: "Set3",
+  Set2: "Set2",
   Pastel1: "Pastel1",
   Dark2: "Dark2",
 };
@@ -78,7 +78,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   onChange,
   colorPalette = DEFAULT_COLOR_PALETTE,
   onPaletteChange,
-  currentLayout = "layered",
+  currentLayout = DEFAULT_ELK_ALGORITHM,
   onLayoutChange,
   onEdgeStyleChange,
   onResetToDefaults,

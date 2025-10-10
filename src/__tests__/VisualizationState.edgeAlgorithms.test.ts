@@ -231,7 +231,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(state.getAggregatedEdges().length).toBe(1);
       expect(state.getGraphEdge("edge1")?.hidden).toBe(true);
 
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Edge should be restored
       expect(state.getAggregatedEdges().length).toBe(0);
@@ -253,7 +253,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       state.collapseContainerSystemOperation("container1");
       expect(state.getGraphEdge("internal")?.hidden).toBe(true);
 
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Internal edge should be restored
       expect(state.getGraphEdge("internal")?.hidden).toBe(false);
@@ -275,7 +275,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
       // Collapse parent, then expand parent but child remains collapsed
       state.collapseContainerSystemOperation("parent");
-      state.expandContainer("parent");
+      state._expandContainerForCoordinator("parent");
 
       // Edge should now be aggregated to child container instead of parent
       const aggregatedEdges = state.getAggregatedEdges();
@@ -507,7 +507,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       ]);
 
       // Expand the container
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
       expect(state.getAggregatedEdges().length).toBe(0);
       expect(state.getGraphEdge("edge1")?.hidden).toBe(false);
       expect(state.getGraphEdge("edge2")?.hidden).toBe(false);

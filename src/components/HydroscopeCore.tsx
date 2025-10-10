@@ -38,7 +38,6 @@ import {
   MiniMap,
   ReactFlowProvider,
   useReactFlow,
-  useNodesInitialized,
   applyNodeChanges,
   applyEdgeChanges,
   type Node,
@@ -57,7 +56,10 @@ import { InteractionHandler } from "../core/InteractionHandler.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
 import type { RenderConfig } from "./Hydroscope.js";
-import { DEFAULT_COLOR_PALETTE } from "../shared/config.js";
+import {
+  DEFAULT_COLOR_PALETTE,
+  DEFAULT_ELK_ALGORITHM,
+} from "../shared/config.js";
 
 import type {
   HydroscopeData,
@@ -246,7 +248,7 @@ const HydroscopeCoreInternal = forwardRef<
       showBackground = true,
       enableCollapse = true, // eslint-disable-line @typescript-eslint/no-unused-vars -- kept for future extensibility
       readOnly = false,
-      initialLayoutAlgorithm = "layered",
+      initialLayoutAlgorithm = DEFAULT_ELK_ALGORITHM,
       initialColorPalette,
       autoFitEnabled = true,
       onNodeClick,
@@ -340,36 +342,43 @@ const HydroscopeCoreInternal = forwardRef<
           nodeFontSize: 12,
           containerBorderWidth: 2,
           colorPalette: initialColorPalette || DEFAULT_COLOR_PALETTE,
-          layoutAlgorithm: initialLayoutAlgorithm || "layered",
+          layoutAlgorithm: initialLayoutAlgorithm || DEFAULT_ELK_ALGORITHM,
           fitView: true,
         };
         visualizationState.updateRenderConfig(initialRenderConfig);
 
         // Create AsyncCoordinator
         const asyncCoordinator = new AsyncCoordinator();
-        
+
         // CRITICAL FIX: Set up callback to update React state when AsyncCoordinator generates new ReactFlow data
         let updateTimeout: number | null = null;
         asyncCoordinator.onReactFlowDataUpdate = (reactFlowData: any) => {
-          console.log(`[HydroscopeCore] 🔄 Received ReactFlow data update from AsyncCoordinator`);
-          
+          console.log(
+            `[HydroscopeCore] 🔄 Received ReactFlow data update from AsyncCoordinator`,
+          );
+
           // Throttle updates to prevent ResizeObserver loops
           if (updateTimeout) {
             clearTimeout(updateTimeout);
           }
-          
+
           updateTimeout = window.setTimeout(() => {
-            const networkNodes = reactFlowData.nodes.filter((n: any) => n.id === '0' || n.id === '8');
+            const networkNodes = reactFlowData.nodes.filter(
+              (n: any) => n.id === "0" || n.id === "8",
+            );
             if (networkNodes.length > 0) {
-              console.log(`[HydroscopeCore] 🔍 ASYNC COORDINATOR DATA UPDATE:`, networkNodes.map((n: any) => ({
-                id: n.id,
-                isHighlighted: n.data?.isHighlighted,
-                highlightType: n.data?.highlightType,
-                timestamp: n.data?.highlightTimestamp,
-                clearingId: n.data?.clearingId
-              })));
+              console.log(
+                `[HydroscopeCore] 🔍 ASYNC COORDINATOR DATA UPDATE:`,
+                networkNodes.map((n: any) => ({
+                  id: n.id,
+                  isHighlighted: n.data?.isHighlighted,
+                  highlightType: n.data?.highlightType,
+                  timestamp: n.data?.highlightTimestamp,
+                  clearingId: n.data?.clearingId,
+                })),
+              );
             }
-            
+
             setState((prev) => ({
               ...prev,
               reactFlowData: reactFlowData,
@@ -419,6 +428,7 @@ const HydroscopeCoreInternal = forwardRef<
           isLoading: false,
         }));
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Remove initialLayoutAlgorithm dependency to prevent re-initialization
 
     // Validate JSON data structure
@@ -785,6 +795,7 @@ const HydroscopeCoreInternal = forwardRef<
       };
 
       parseAndRender();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, state.visualizationState, state.asyncCoordinator, readOnly]);
 
     // Handle fit view when shouldFitView changes
@@ -904,25 +915,38 @@ const HydroscopeCoreInternal = forwardRef<
               boxShadow: n.style?.boxShadow,
             })),
           );
-          
+
           // CRITICAL DEBUG: Log container states in the final ReactFlow data
-          const containerNodes = newData.nodes.filter(n => n.type === 'container');
-          console.log("[HydroscopeCore] 🔍 FINAL CONTAINER STATES IN REACTFLOW DATA:");
+          const containerNodes = newData.nodes.filter(
+            (n) => n.type === "container",
+          );
+          console.log(
+            "[HydroscopeCore] 🔍 FINAL CONTAINER STATES IN REACTFLOW DATA:",
+          );
           for (const container of containerNodes) {
-            console.log(`  - Container ${container.id}: collapsed=${container.data?.collapsed}, type=${container.type}`);
+            console.log(
+              `  - Container ${container.id}: collapsed=${container.data?.collapsed}, type=${container.type}`,
+            );
           }
-          console.log(`[HydroscopeCore] 🔍 Total nodes in ReactFlow data: ${newData.nodes.length}, Total edges: ${newData.edges.length}`);
+          console.log(
+            `[HydroscopeCore] 🔍 Total nodes in ReactFlow data: ${newData.nodes.length}, Total edges: ${newData.edges.length}`,
+          );
 
           // Debug: Log what data is being set in state
-          const networkNodes = newData.nodes.filter((n: any) => n.id === '0' || n.id === '8');
+          const networkNodes = newData.nodes.filter(
+            (n: any) => n.id === "0" || n.id === "8",
+          );
           if (networkNodes.length > 0) {
-            console.log(`[HydroscopeCore] 🔍 SETTING STATE WITH NODES:`, networkNodes.map((n: any) => ({
-              id: n.id,
-              isHighlighted: n.data?.isHighlighted,
-              highlightType: n.data?.highlightType,
-              timestamp: n.data?.highlightTimestamp,
-              clearingId: n.data?.clearingId
-            })));
+            console.log(
+              `[HydroscopeCore] 🔍 SETTING STATE WITH NODES:`,
+              networkNodes.map((n: any) => ({
+                id: n.id,
+                isHighlighted: n.data?.isHighlighted,
+                highlightType: n.data?.highlightType,
+                timestamp: n.data?.highlightTimestamp,
+                clearingId: n.data?.clearingId,
+              })),
+            );
           }
 
           setState((prev) => ({
@@ -955,7 +979,7 @@ const HydroscopeCoreInternal = forwardRef<
           }));
         }
       },
-      [state.autoFitEnabled],
+      [],
     );
 
     // Track previous layout algorithm to avoid unnecessary re-layouts during initialization
@@ -1055,6 +1079,7 @@ const HydroscopeCoreInternal = forwardRef<
           },
         );
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       initialLayoutAlgorithm,
       state.visualizationState,
@@ -1131,9 +1156,17 @@ const HydroscopeCoreInternal = forwardRef<
               state.visualizationState.getContainer(containerId);
             if (container && container.collapsed !== wasCollapsed) {
               if (wasCollapsed) {
-                state.visualizationState.collapseContainer(containerId);
+                await state.asyncCoordinator!.collapseContainer(
+                  containerId,
+                  state.visualizationState,
+                  { triggerLayout: false },
+                );
               } else {
-                state.visualizationState.expandContainer(containerId);
+                await state.asyncCoordinator!.expandContainer(
+                  containerId,
+                  state.visualizationState,
+                  { triggerLayout: false },
+                );
               }
             }
           }
@@ -1155,6 +1188,7 @@ const HydroscopeCoreInternal = forwardRef<
           handleError(compoundError, "bulk collapse operation");
         }
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       state.visualizationState,
       state.asyncCoordinator,
@@ -1250,9 +1284,17 @@ const HydroscopeCoreInternal = forwardRef<
               state.visualizationState.getContainer(containerId);
             if (container && container.collapsed !== wasCollapsed) {
               if (wasCollapsed) {
-                state.visualizationState.collapseContainer(containerId);
+                await state.asyncCoordinator!.collapseContainer(
+                  containerId,
+                  state.visualizationState,
+                  { triggerLayout: false },
+                );
               } else {
-                state.visualizationState.expandContainer(containerId);
+                await state.asyncCoordinator!.expandContainer(
+                  containerId,
+                  state.visualizationState,
+                  { triggerLayout: false },
+                );
               }
             }
           }
@@ -1274,6 +1316,7 @@ const HydroscopeCoreInternal = forwardRef<
           handleError(compoundError, "bulk expand operation");
         }
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       state.visualizationState,
       state.asyncCoordinator,
@@ -1312,17 +1355,11 @@ const HydroscopeCoreInternal = forwardRef<
             `[HydroscopeCore] Starting collapse operation for container ${containerId}`,
           );
 
-          // Step 1: Update container state
-          state.visualizationState.collapseContainer(containerId);
-
-          // Step 2: Queue layout update through AsyncCoordinator
-          await state.asyncCoordinator.queueELKLayout(
+          // Use AsyncCoordinator's atomic collapse operation
+          await state.asyncCoordinator.collapseContainer(
+            containerId,
             state.visualizationState,
-            elkBridgeRef.current!,
           );
-
-          // Step 3: Update ReactFlow data
-          await updateReactFlowDataWithState(state.visualizationState);
 
           // EXPERIMENT: Force ReactFlow reset to work around floating edge bug
           setReactFlowResetKey((prev) => {
@@ -1351,8 +1388,11 @@ const HydroscopeCoreInternal = forwardRef<
           // Attempt rollback
           try {
             if (container.collapsed !== initialCollapsed) {
-              state.visualizationState.expandContainer(containerId);
-              await updateReactFlowDataWithState(state.visualizationState);
+              await state.asyncCoordinator.expandContainer(
+                containerId,
+                state.visualizationState,
+                { triggerLayout: false },
+              );
             }
           } catch (rollbackError) {
             console.error(
@@ -1367,7 +1407,6 @@ const HydroscopeCoreInternal = forwardRef<
       [
         state.visualizationState,
         state.asyncCoordinator,
-        updateReactFlowDataWithState,
         handleError,
         onContainerCollapse,
       ],
@@ -1403,17 +1442,11 @@ const HydroscopeCoreInternal = forwardRef<
             `[HydroscopeCore] Starting expand operation for container ${containerId}`,
           );
 
-          // Step 1: Update container state
-          state.visualizationState.expandContainer(containerId);
-
-          // Step 2: Queue layout update through AsyncCoordinator
-          await state.asyncCoordinator.queueELKLayout(
+          // Use AsyncCoordinator's atomic expand operation
+          await state.asyncCoordinator.expandContainer(
+            containerId,
             state.visualizationState,
-            elkBridgeRef.current!,
           );
-
-          // Step 3: Update ReactFlow data
-          await updateReactFlowDataWithState(state.visualizationState);
 
           // EXPERIMENT: Force ReactFlow reset to work around floating edge bug
           setReactFlowResetKey((prev) => {
@@ -1442,8 +1475,11 @@ const HydroscopeCoreInternal = forwardRef<
           // Attempt rollback
           try {
             if (container.collapsed !== initialCollapsed) {
-              state.visualizationState.collapseContainer(containerId);
-              await updateReactFlowDataWithState(state.visualizationState);
+              await state.asyncCoordinator.collapseContainer(
+                containerId,
+                state.visualizationState,
+                { triggerLayout: false },
+              );
             }
           } catch (rollbackError) {
             console.error(
@@ -1458,7 +1494,6 @@ const HydroscopeCoreInternal = forwardRef<
       [
         state.visualizationState,
         state.asyncCoordinator,
-        updateReactFlowDataWithState,
         handleError,
         onContainerExpand,
       ],
@@ -1600,7 +1635,6 @@ const HydroscopeCoreInternal = forwardRef<
         onRenderConfigChange,
         handleError,
         setReactFlowResetKey,
-        updateReactFlowDataWithState,
         elkBridgeRef,
       ],
     );
@@ -1777,12 +1811,7 @@ const HydroscopeCoreInternal = forwardRef<
           }));
         }
       },
-      [
-        onNodeClick,
-        onContainerCollapse,
-        onContainerExpand,
-        state.visualizationState,
-      ],
+      [onNodeClick, state.visualizationState],
     );
 
     // Handle node changes (including drag operations)
@@ -1942,6 +1971,7 @@ const HydroscopeCoreInternal = forwardRef<
           handleError(error as Error, "drag stop");
         }
       },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [
         readOnly,
         state.visualizationState,
@@ -2080,15 +2110,20 @@ const HydroscopeCoreInternal = forwardRef<
           key={reactFlowResetKey} // EXPERIMENT: Force ReactFlow reset on container operations
           nodes={(() => {
             // Debug: Log what nodes ReactFlow is receiving
-            const networkNodes = (state.reactFlowData.nodes as Node[]).filter(n => n.id === '0' || n.id === '8');
+            const networkNodes = (state.reactFlowData.nodes as Node[]).filter(
+              (n) => n.id === "0" || n.id === "8",
+            );
             if (networkNodes.length > 0) {
-              console.log(`[HydroscopeCore] 🔍 REACTFLOW RECEIVING NODES:`, networkNodes.map(n => ({
-                id: n.id,
-                isHighlighted: (n.data as any)?.isHighlighted,
-                highlightType: (n.data as any)?.highlightType,
-                timestamp: (n.data as any)?.highlightTimestamp,
-                dataRef: n.data
-              })));
+              console.log(
+                `[HydroscopeCore] 🔍 REACTFLOW RECEIVING NODES:`,
+                networkNodes.map((n) => ({
+                  id: n.id,
+                  isHighlighted: (n.data as any)?.isHighlighted,
+                  highlightType: (n.data as any)?.highlightType,
+                  timestamp: (n.data as any)?.highlightTimestamp,
+                  dataRef: n.data,
+                })),
+              );
             }
             return state.reactFlowData.nodes as Node[];
           })()}
@@ -2162,6 +2197,8 @@ const HydroscopeCoreInternal = forwardRef<
     );
   },
 );
+
+HydroscopeCoreInternal.displayName = "HydroscopeCoreInternal";
 
 // ============================================================================
 // Main HydroscopeCore Component

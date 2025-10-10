@@ -254,7 +254,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
 
     it("should render collapsed containers correctly", async () => {
       // Collapse the container
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Calculate layout so nodes have positions
 
@@ -289,7 +289,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
 
     it("should render expanded containers correctly", async () => {
       // Ensure container is expanded
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
 
       // Calculate layout so nodes have positions
 
@@ -323,14 +323,14 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
 
     it("should handle container toggle operations", async () => {
       // Start expanded
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       await elkBridge.layout(state);
       let reactFlowData = bridge.toReactFlowData(state);
       let containerNode = reactFlowData.nodes.find((node) => node.id === "c1");
       expect(containerNode!.data.collapsed).toBe(false);
 
       // Toggle to collapsed
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
       await elkBridge.layout(state);
       reactFlowData = bridge.toReactFlowData(state);
 
@@ -339,7 +339,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       expect(containerNode!.data.collapsed).toBe(true);
 
       // Toggle back to expanded
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       await elkBridge.layout(state);
       reactFlowData = bridge.toReactFlowData(state);
       containerNode = reactFlowData.nodes.find((node) => node.id === "c1");
@@ -353,7 +353,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.assignNodeToContainer("n3", "c2");
 
       // Expand all
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
       await elkBridge.layout(state);
       let reactFlowData = bridge.toReactFlowData(state);
 
@@ -363,7 +363,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       expect(expandedContainers.length).toBe(2);
 
       // Collapse all
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
       await elkBridge.layout(state);
       reactFlowData = bridge.toReactFlowData(state);
 
@@ -472,7 +472,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addEdge(edge);
 
       // Collapse container to trigger edge aggregation
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Calculate layout so nodes have positions
 
@@ -635,7 +635,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       freshState.assignNodeToContainer("n1", "c1");
 
       // Start with expanded container
-      freshState.expandContainer("c1");
+      freshState._expandContainerForCoordinator("c1");
 
       // Calculate layout so nodes have positions
       await elkBridge.layout(freshState);
@@ -835,7 +835,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Calculate layout so nodes have positions
 
@@ -878,7 +878,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.addEdge(edge2);
 
       // Start collapsed
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
       await elkBridge.layout(state);
       let reactFlowData = bridge.toReactFlowData(state);
 
@@ -889,7 +889,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       expect(aggregatedEdges.length).toBeGreaterThan(0);
 
       // Expand container
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       await elkBridge.layout(state);
       reactFlowData = bridge.toReactFlowData(state);
 

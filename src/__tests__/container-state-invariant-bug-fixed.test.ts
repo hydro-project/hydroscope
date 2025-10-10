@@ -165,7 +165,7 @@ describe("Container State Invariant Bug - FIXED", () => {
       });
 
       // Collapse the parent - this should cascade properly
-      state.collapseContainer("parent");
+      state._collapseContainerForCoordinator("parent");
 
       // Verify the fix: child and grandchild should be both hidden AND collapsed
       const child = state.getContainer("child");

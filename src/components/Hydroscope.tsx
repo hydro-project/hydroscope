@@ -36,7 +36,11 @@ import { ErrorBoundary } from "./ErrorBoundary.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { HydroscopeData } from "../types/core.js";
-import { DEFAULT_COLOR_PALETTE } from "../shared/config.js";
+import {
+  DEFAULT_COLOR_PALETTE,
+  DEFAULT_LAYOUT_CONFIG,
+  DEFAULT_ELK_ALGORITHM,
+} from "../shared/config.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -164,7 +168,7 @@ const DEFAULT_SETTINGS: HydroscopeSettings = {
   stylePanelOpen: false,
   autoFitEnabled: true,
   colorPalette: DEFAULT_COLOR_PALETTE,
-  layoutAlgorithm: "layered",
+  layoutAlgorithm: DEFAULT_ELK_ALGORITHM,
   renderConfig: DEFAULT_RENDER_CONFIG,
 };
 
@@ -530,14 +534,14 @@ export const Hydroscope = memo<HydroscopeProps>(
     data,
     height = "100%",
     width = "100%",
-    showControls = true,
+    showControls: _showControls = true,
     showMiniMap = true,
     showBackground = true,
     showFileUpload = true,
     showInfoPanel = true,
     showStylePanel = true,
     enableCollapse = true,
-    initialLayoutAlgorithm = "layered",
+    initialLayoutAlgorithm = DEFAULT_ELK_ALGORITHM,
     initialColorPalette = DEFAULT_COLOR_PALETTE,
     responsive: _responsive = false,
     onFileUpload,
@@ -829,8 +833,10 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
       async (query: string, matches: SearchMatch[], current?: SearchMatch) => {
-        console.log(`[Hydroscope] 🔍 handleSearchUpdate called: query="${query}", matches=${matches.length}, current=${current?.id || 'none'}`);
-        
+        console.log(
+          `[Hydroscope] 🔍 handleSearchUpdate called: query="${query}", matches=${matches.length}, current=${current?.id || "none"}`,
+        );
+
         setState((prev) => ({
           ...prev,
           searchQuery: query,
@@ -841,60 +847,88 @@ export const Hydroscope = memo<HydroscopeProps>(
         // CRITICAL FIX: Perform search in VisualizationState to expand containers and set highlights
         if (hydroscopeCoreRef.current) {
           try {
-            const asyncCoordinator = hydroscopeCoreRef.current.getAsyncCoordinator();
-            const currentVisualizationState = hydroscopeCoreRef.current.getVisualizationState();
-            
+            const asyncCoordinator =
+              hydroscopeCoreRef.current.getAsyncCoordinator();
+            const currentVisualizationState =
+              hydroscopeCoreRef.current.getVisualizationState();
+
             if (asyncCoordinator && currentVisualizationState) {
               // Don't perform search again if it was already done in SearchControls
               // This prevents double search execution which can clear highlights
-              const existingHighlights = currentVisualizationState.getGraphSearchHighlights();
-              
+              const existingHighlights =
+                currentVisualizationState.getGraphSearchHighlights();
+
               let searchResults;
               if (query && existingHighlights.size === 0) {
                 // Search not yet performed or highlights cleared, perform search
-                console.log(`[Hydroscope] 🔍 Performing new search for "${query}" (no existing highlights)`);
+                console.log(
+                  `[Hydroscope] 🔍 Performing new search for "${query}" (no existing highlights)`,
+                );
                 searchResults = currentVisualizationState.performSearch(query);
-                console.log(`[Hydroscope] 🔍 New search results: ${searchResults.length} matches`);
+                console.log(
+                  `[Hydroscope] 🔍 New search results: ${searchResults.length} matches`,
+                );
               } else if (query) {
                 // Search already performed, get existing results
-                console.log(`[Hydroscope] 🔍 Getting existing search results for "${query}" (highlights exist: ${existingHighlights.size})`);
+                console.log(
+                  `[Hydroscope] 🔍 Getting existing search results for "${query}" (highlights exist: ${existingHighlights.size})`,
+                );
                 searchResults = currentVisualizationState.getSearchResults();
-                console.log(`[Hydroscope] 🔍 Existing search results: ${searchResults.length} matches`);
+                console.log(
+                  `[Hydroscope] 🔍 Existing search results: ${searchResults.length} matches`,
+                );
               } else {
                 // Clear search
                 console.log(`[Hydroscope] 🔍 Clearing search (empty query)`);
                 searchResults = currentVisualizationState.performSearch("");
-                console.log(`[Hydroscope] 🔍 Clear search results: ${searchResults.length} matches`);
+                console.log(
+                  `[Hydroscope] 🔍 Clear search results: ${searchResults.length} matches`,
+                );
               }
-              
+
               // Container expansion requires ELK layout, not just ReactFlow render
               // When containers are expanded, visible nodes change and positions need recalculation
               const hydroscopeCore = hydroscopeCoreRef.current;
               if (hydroscopeCore) {
                 if (searchResults.length > 0) {
                   // Search with results - use expandAll (needed for highlighting to work)
-                  console.log(`[Hydroscope] 🔍 Search has ${searchResults.length} results - calling expandAll()`);
+                  console.log(
+                    `[Hydroscope] 🔍 Search has ${searchResults.length} results - calling expandAll()`,
+                  );
                   try {
                     await hydroscopeCore.expandAll();
-                    console.log(`[Hydroscope] 🔍 expandAll() completed successfully`);
+                    console.log(
+                      `[Hydroscope] 🔍 expandAll() completed successfully`,
+                    );
                   } catch (error) {
-                    console.log(`[Hydroscope] 🔍 expandAll() failed, using fallback ReactFlow render:`, error);
+                    console.log(
+                      `[Hydroscope] 🔍 expandAll() failed, using fallback ReactFlow render:`,
+                      error,
+                    );
                     // Fallback to ReactFlow render
                     if (asyncCoordinator.queueReactFlowRender) {
-                      asyncCoordinator.queueReactFlowRender(currentVisualizationState);
+                      asyncCoordinator.queueReactFlowRender(
+                        currentVisualizationState,
+                      );
                     }
                   }
                 } else {
                   // Search cleared - use ReactFlow render only
-                  console.log(`[Hydroscope] 🔍 Search has no results - using ReactFlow render only`);
+                  console.log(
+                    `[Hydroscope] 🔍 Search has no results - using ReactFlow render only`,
+                  );
                   if (asyncCoordinator.queueReactFlowRender) {
-                    asyncCoordinator.queueReactFlowRender(currentVisualizationState);
+                    asyncCoordinator.queueReactFlowRender(
+                      currentVisualizationState,
+                    );
                   }
                 }
               } else {
                 // No HydroscopeCore, just queue ReactFlow render
                 if (asyncCoordinator.queueReactFlowRender) {
-                  asyncCoordinator.queueReactFlowRender(currentVisualizationState);
+                  asyncCoordinator.queueReactFlowRender(
+                    currentVisualizationState,
+                  );
                 }
               }
             }
@@ -1186,9 +1220,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                     legendData={
                       state.data?.legend
                         ? {
-                          title: state.data.legend.title || "Legend",
-                          items: state.data.legend.items,
-                        }
+                            title: state.data.legend.title || "Legend",
+                            items: state.data.legend.items,
+                          }
                         : undefined
                     }
                     edgeStyleConfig={state.data?.edgeStyleConfig}

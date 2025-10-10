@@ -42,7 +42,7 @@ describe("Validation Invariants", () => {
       });
 
       // Collapse parent
-      state.collapseContainer("parent");
+      state._collapseContainerForCoordinator("parent");
 
       // Child should be collapsed and hidden
       const child = state.getContainer("child");
@@ -131,7 +131,7 @@ describe("Validation Invariants", () => {
       state.addNode({ id: "n1", label: "Node", type: "node", hidden: false });
 
       // Collapse container
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       // Node should be hidden
       const node = state.getGraphNode("n1");

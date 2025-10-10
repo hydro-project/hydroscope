@@ -24,7 +24,7 @@ export class AsyncCoordinator {
   private processingTimes: number[] = [];
   private currentOperation?: QueuedOperation;
   private operationIdCounter = 0;
-  
+
   // Callback to update HydroscopeCore's React state when ReactFlow data changes
   public onReactFlowDataUpdate?: (reactFlowData: any) => void;
 
@@ -293,9 +293,13 @@ export class AsyncCoordinator {
 
       // Set up a way to resolve/reject the Promise when the operation completes
       const checkCompletion = () => {
-        const completed = this.completedOperations.find(op => op.id === operationId);
-        const failed = this.failedOperations.find(op => op.id === operationId);
-        
+        const completed = this.completedOperations.find(
+          (op) => op.id === operationId,
+        );
+        const failed = this.failedOperations.find(
+          (op) => op.id === operationId,
+        );
+
         if (completed) {
           resolve();
         } else if (failed) {
@@ -308,10 +312,12 @@ export class AsyncCoordinator {
 
       // Process the queue if not already processing
       if (!this.processing) {
-        this.processQueue().then(() => {
-          // Start checking for completion after processing starts
-          checkCompletion();
-        }).catch(reject);
+        this.processQueue()
+          .then(() => {
+            // Start checking for completion after processing starts
+            checkCompletion();
+          })
+          .catch(reject);
       } else {
         // If already processing, just start checking for completion
         checkCompletion();
@@ -395,15 +401,17 @@ export class AsyncCoordinator {
           console.log(
             `[AsyncCoordinator] ✅ ReactFlow render operation completed`,
           );
-          
+
           // CRITICAL FIX: Trigger HydroscopeCore state update
           // The AsyncCoordinator generates ReactFlow data but doesn't update HydroscopeCore's React state
           // We need to ensure the HydroscopeCore gets the updated data
           if (this.onReactFlowDataUpdate) {
-            console.log(`[AsyncCoordinator] 🔄 Triggering HydroscopeCore state update`);
+            console.log(
+              `[AsyncCoordinator] 🔄 Triggering HydroscopeCore state update`,
+            );
             this.onReactFlowDataUpdate(reactFlowData);
           }
-          
+
           return reactFlowData;
         } catch (error) {
           console.error(
@@ -424,9 +432,13 @@ export class AsyncCoordinator {
 
       // Set up proper completion tracking
       const checkCompletion = () => {
-        const completed = this.completedOperations.find(op => op.id === operationId);
-        const failed = this.failedOperations.find(op => op.id === operationId);
-        
+        const completed = this.completedOperations.find(
+          (op) => op.id === operationId,
+        );
+        const failed = this.failedOperations.find(
+          (op) => op.id === operationId,
+        );
+
         if (completed) {
           resolve(completed.result);
         } else if (failed) {
@@ -439,10 +451,12 @@ export class AsyncCoordinator {
 
       // Process the queue if not already processing
       if (!this.processing) {
-        this.processQueue().then(() => {
-          // Start checking for completion after processing starts
-          checkCompletion();
-        }).catch(reject);
+        this.processQueue()
+          .then(() => {
+            // Start checking for completion after processing starts
+            checkCompletion();
+          })
+          .catch(reject);
       } else {
         // If already processing, just start checking for completion
         checkCompletion();
@@ -785,16 +799,14 @@ export class AsyncCoordinator {
     // Use VisualizationState's expandAllContainers method directly
     // This ensures the iterative expansion logic is used for nested containers
     if (containerIds) {
-      // For specified containers, use the VisualizationState method
-      state.expandAllContainers(containerIds);
+      // For specified containers, use the internal coordinator method
+      (state as any)._expandAllContainersForCoordinator(containerIds);
     } else {
-      // For all containers, use the VisualizationState method
-      state.expandAllContainers();
+      // For all containers, use the internal coordinator method
+      (state as any)._expandAllContainersForCoordinator();
     }
 
-    console.log(
-      `[AsyncCoordinator] ✅ Expand all containers event completed`,
-    );
+    console.log(`[AsyncCoordinator] ✅ Expand all containers event completed`);
 
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations
@@ -1160,7 +1172,9 @@ export class AsyncCoordinator {
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
 
     if (failedOp) {
-      throw failedOp.error || new Error("Expand all containers operation failed");
+      throw (
+        failedOp.error || new Error("Expand all containers operation failed")
+      );
     }
 
     if (!completedOp) {
@@ -1758,7 +1772,10 @@ export class AsyncCoordinator {
       );
 
       // Log container expansion error
-      console.error(`[AsyncCoordinator] Container expansion failed for: ${containerId}`, error);
+      console.error(
+        `[AsyncCoordinator] Container expansion failed for: ${containerId}`,
+        error,
+      );
 
       return {
         success: false,
@@ -1819,7 +1836,10 @@ export class AsyncCoordinator {
       }
 
       // Log container expansion error
-      console.error(`[AsyncCoordinator] Container expansion failed for: ${containerIds.join(", ")}`, error);
+      console.error(
+        `[AsyncCoordinator] Container expansion failed for: ${containerIds.join(", ")}`,
+        error,
+      );
 
       return {
         success: false,
@@ -1835,7 +1855,7 @@ export class AsyncCoordinator {
   expandTreeNodeWithErrorHandling(
     nodeId: string,
     state: any, // VisualizationState
-    options: {
+    _options: {
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -1864,7 +1884,10 @@ export class AsyncCoordinator {
       );
 
       // Log tree expansion error
-      console.error(`[AsyncCoordinator] Tree expansion failed for node: ${nodeId}`, error);
+      console.error(
+        `[AsyncCoordinator] Tree expansion failed for node: ${nodeId}`,
+        error,
+      );
 
       return {
         success: false,
@@ -1881,7 +1904,7 @@ export class AsyncCoordinator {
     elementId: string,
     visualizationState: any, // VisualizationState
     reactFlowInstance?: any, // ReactFlowInstance
-    options: {
+    _options: {
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -1910,7 +1933,10 @@ export class AsyncCoordinator {
       );
 
       // Log navigation error
-      console.error(`[AsyncCoordinator] Navigation failed for element: ${elementId}`, error);
+      console.error(
+        `[AsyncCoordinator] Navigation failed for element: ${elementId}`,
+        error,
+      );
 
       return {
         success: false,
@@ -1926,7 +1952,7 @@ export class AsyncCoordinator {
   focusViewportOnElementWithErrorHandling(
     elementId: string,
     reactFlowInstance: any, // ReactFlowInstance
-    options: {
+    _options: {
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -1954,7 +1980,10 @@ export class AsyncCoordinator {
       );
 
       // Log viewport focus error
-      console.error(`[AsyncCoordinator] Viewport focus failed for element: ${elementId}`, error);
+      console.error(
+        `[AsyncCoordinator] Viewport focus failed for element: ${elementId}`,
+        error,
+      );
 
       return {
         success: false,
@@ -2013,7 +2042,10 @@ export class AsyncCoordinator {
       );
 
       // Log search error
-      console.error(`[AsyncCoordinator] Search failed for query: "${query}"`, error);
+      console.error(
+        `[AsyncCoordinator] Search failed for query: "${query}"`,
+        error,
+      );
 
       return {
         results: [],
@@ -2076,7 +2108,10 @@ export class AsyncCoordinator {
       );
 
       // Log operation timeout
-      console.error(`[AsyncCoordinator] Operation "${operationType}" timed out`, { context });
+      console.error(
+        `[AsyncCoordinator] Operation "${operationType}" timed out`,
+        { context },
+      );
 
       return {
         recovery: {

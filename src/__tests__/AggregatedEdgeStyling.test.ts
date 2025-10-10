@@ -105,7 +105,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge);
 
       // Collapse container to trigger aggregation
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       // Check state has aggregated edges
       const stateAggregatedEdges = state.getAggregatedEdges();
@@ -200,7 +200,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       // Calculate layout
       await elkBridge.layout(state);
@@ -352,7 +352,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       // Calculate layout
       await elkBridge.layout(state);
@@ -446,7 +446,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       // Calculate layout
       await elkBridge.layout(state);

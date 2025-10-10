@@ -28,7 +28,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
   beforeEach(() => {
     state = new VisualizationState();
     defaultConfig = {
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
       spacing: 50,
       nodeSpacing: 20,
@@ -77,7 +77,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(elkGraph.children!.length).toBeGreaterThan(0);
 
       // Verify layout options are applied
-      expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("layered");
+      expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("mrtree");
       expect(elkGraph.layoutOptions!["elk.direction"]).toBe("DOWN");
 
       // Simulate ELK layout results
@@ -188,7 +188,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
 
     it("should generate different ELK graphs for expanded vs collapsed containers", () => {
       // Test expanded container
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       const expandedElkGraph = bridge.toELKGraph(state);
 
       // Should show container with nested children
@@ -203,7 +203,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(expandedElkGraph.edges!.length).toBe(2);
 
       // Test collapsed container
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
       const collapsedElkGraph = bridge.toELKGraph(state);
 
       // Should show container as single node
@@ -223,7 +223,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
 
     it("should handle container toggle operations correctly", () => {
       // Start with expanded container
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       let elkGraph = bridge.toELKGraph(state);
       let elkResult = createContainerMockELKResult(elkGraph);
       bridge.applyLayout(state, elkResult);
@@ -234,7 +234,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(expandedContainer?.position).toBeDefined();
 
       // Toggle to collapsed
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
       elkGraph = bridge.toELKGraph(state);
       elkResult = createContainerMockELKResult(elkGraph);
       bridge.applyLayout(state, elkResult);
@@ -245,7 +245,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(collapsedContainer?.position).toBeDefined();
 
       // Toggle back to expanded
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       elkGraph = bridge.toELKGraph(state);
       elkResult = createContainerMockELKResult(elkGraph);
       bridge.applyLayout(state, elkResult);
@@ -263,7 +263,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       state.assignNodeToContainer("n3", "c2");
 
       // Test expand all
-      state.expandAllContainers();
+      state._expandAllContainersForCoordinator();
       let elkGraph = bridge.toELKGraph(state);
 
       // All containers should be expanded
@@ -276,7 +276,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       }
 
       // Test collapse all
-      state.collapseAllContainers();
+      state._collapseAllContainersForCoordinator();
       elkGraph = bridge.toELKGraph(state);
 
       // All containers should be collapsed
@@ -438,7 +438,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       bridge.resetConfiguration();
       const elkGraph = bridge.toELKGraph(state);
 
-      expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("layered");
+      expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("mrtree");
       expect(elkGraph.layoutOptions!["elk.direction"]).toBe("DOWN");
       expect(elkGraph.layoutOptions!["elk.spacing.nodeNode"]).toBe("50");
     });

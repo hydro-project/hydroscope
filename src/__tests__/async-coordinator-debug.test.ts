@@ -108,7 +108,7 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] 🚀 Starting container collapse test");
 
       // First expand the container
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
       expect(
         state.visibleContainers.find((c) => c.id === "c1")?.collapsed,
       ).toBe(false);

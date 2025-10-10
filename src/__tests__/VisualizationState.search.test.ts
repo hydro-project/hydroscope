@@ -100,7 +100,7 @@ describe("VisualizationState Search Functionality", () => {
 
       state.addContainer(container);
       state.addNode(node);
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       state.expandContainerForSearch("container1");
 

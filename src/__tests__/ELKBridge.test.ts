@@ -88,7 +88,7 @@ describe("ELKBridge", () => {
       state.addNode(node1);
       state.addNode(node2);
       state.addContainer(container);
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       const elkGraph = bridge.toELKGraph(state);
 
@@ -147,7 +147,7 @@ describe("ELKBridge", () => {
       state.addContainer(container);
       state.addEdge(edge1);
       state.addEdge(edge2);
-      state.collapseContainer("c1");
+      state._collapseContainerForCoordinator("c1");
 
       const elkGraph = bridge.toELKGraph(state);
 
@@ -508,7 +508,7 @@ describe("ELKBridge", () => {
       bridge.resetConfiguration();
       const config = bridge.getConfiguration();
 
-      expect(config.algorithm).toBe("layered");
+      expect(config.algorithm).toBe("mrtree");
       expect(config.direction).toBe("DOWN");
       expect(config.nodeSpacing).toBe(50);
       expect(config.compactLayout).toBe(false);
@@ -700,8 +700,8 @@ describe("ELKBridge", () => {
       state.addContainer(largeContainer);
 
       // Test collapsed containers
-      state.collapseContainer("c1");
-      state.collapseContainer("c2");
+      state._collapseContainerForCoordinator("c1");
+      state._collapseContainerForCoordinator("c2");
 
       const elkGraph = bridge.toELKGraph(state);
 

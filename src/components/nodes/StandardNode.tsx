@@ -15,7 +15,11 @@ export interface StandardNodeProps {
   style?: React.CSSProperties; // Add style prop to receive ReactFlow styles
 }
 
-export const StandardNode: React.FC<StandardNodeProps> = ({ data, id, style }) => {
+export const StandardNode: React.FC<StandardNodeProps> = ({
+  data,
+  id,
+  style,
+}) => {
   const handleClick = () => {
     if (data.onClick) {
       data.onClick(id, "node");
@@ -38,10 +42,7 @@ export const StandardNode: React.FC<StandardNodeProps> = ({ data, id, style }) =
   const mergedStyle = { ...defaultStyle, ...style };
 
   return (
-    <div
-      onClick={handleClick}
-      style={mergedStyle}
-    >
+    <div onClick={handleClick} style={mergedStyle}>
       <HandlesRenderer />
       <div>{data.showingLongLabel ? data.longLabel : data.label}</div>
     </div>

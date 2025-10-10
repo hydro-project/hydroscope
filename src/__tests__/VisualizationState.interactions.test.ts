@@ -114,7 +114,7 @@ describe("VisualizationState Interaction State Management", () => {
       expect(state.getContainer("container1")?.collapsed).toBe(true);
 
       // Toggle should expand
-      state.toggleContainer("container1");
+      state._toggleContainerForCoordinator("container1");
       expect(state.getContainer("container1")?.collapsed).toBe(false);
     });
 
@@ -129,12 +129,14 @@ describe("VisualizationState Interaction State Management", () => {
       expect(state.getContainer("container1")?.collapsed).toBe(false);
 
       // Toggle should collapse
-      state.toggleContainer("container1");
+      state._toggleContainerForCoordinator("container1");
       expect(state.getContainer("container1")?.collapsed).toBe(true);
     });
 
     it("should handle toggle on non-existent container gracefully", () => {
-      expect(() => state.toggleContainer("non-existent")).not.toThrow();
+      expect(() =>
+        state._toggleContainerForCoordinator("non-existent"),
+      ).not.toThrow();
     });
 
     it("should disable smart collapse when user toggles container", () => {
@@ -146,7 +148,7 @@ describe("VisualizationState Interaction State Management", () => {
 
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
-      state.toggleContainer("container1");
+      state._toggleContainerForCoordinator("container1");
 
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
@@ -166,8 +168,8 @@ describe("VisualizationState Interaction State Management", () => {
       expect(state.getGraphNode("node1")?.showingLongLabel).toBe(true);
 
       // Collapse and expand container
-      state.collapseContainer("container1");
-      state.expandContainer("container1");
+      state._collapseContainerForCoordinator("container1");
+      state._expandContainerForCoordinator("container1");
 
       // Node label state should persist
       expect(state.getGraphNode("node1")?.showingLongLabel).toBe(true);
@@ -238,7 +240,7 @@ describe("VisualizationState Interaction State Management", () => {
       state.addNode(node);
 
       state.toggleNodeLabel("node1");
-      state.collapseContainer("container1");
+      state._collapseContainerForCoordinator("container1");
 
       const summary = state.getInteractionStateSummary();
       expect(summary.nodesWithLongLabels).toBe(1);
@@ -295,7 +297,7 @@ describe("VisualizationState Interaction State Management", () => {
       state.addNode(node);
 
       state.toggleNodeLabel("node1");
-      state.toggleContainer("container1");
+      state._toggleContainerForCoordinator("container1");
 
       const validation = state.validateInteractionState();
       expect(validation.isValid).toBe(true);
@@ -332,9 +334,9 @@ describe("VisualizationState Interaction State Management", () => {
       state.toggleNodeLabel("node1");
 
       // Complex container operations
-      state.collapseContainer("parent");
-      state.expandContainer("parent");
-      state.toggleContainer("child");
+      state._collapseContainerForCoordinator("parent");
+      state._expandContainerForCoordinator("parent");
+      state._toggleContainerForCoordinator("child");
 
       // Interaction state should be preserved
       expect(state.getGraphNode("node1")?.showingLongLabel).toBe(true);

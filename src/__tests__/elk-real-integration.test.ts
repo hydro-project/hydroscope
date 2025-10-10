@@ -122,7 +122,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       state.addNode(node2);
 
       // Expand container to show children
-      state.expandContainer("c1");
+      state._expandContainerForCoordinator("c1");
 
       // Call real ELK layout
       await asyncCoordinator.queueELKLayout(state, elkBridge);

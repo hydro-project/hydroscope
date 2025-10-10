@@ -199,7 +199,7 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
       state.addEdge(edge);
 
       state.collapseContainerSystemOperation("container1");
-      state.expandContainer("container1");
+      state._expandContainerForCoordinator("container1");
 
       const history = state.getAggregationHistory();
       expect(history.length).toBe(2);

@@ -88,9 +88,13 @@ describe("Architecture Compliance Enforcement", () => {
     it("should detect prohibited cache properties", () => {
       // Create a mock bridge with prohibited properties
       class BadBridge {
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private styleCache = new Map(); // Prohibited
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private lastStateHash = ""; // Prohibited
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private cachedResults = {}; // Prohibited
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private memoizedData = null; // Prohibited
 
         constructor(private config: any) {} // Allowed
@@ -267,7 +271,9 @@ describe("Architecture Compliance Enforcement", () => {
   describe("Error Handling", () => {
     it("should provide clear error messages for architecture violations", () => {
       class ViolatingBridge {
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private styleCache = new Map(); // Violation
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private lastResult = null; // Violation
 
         constructor() {}
@@ -282,8 +288,11 @@ describe("Architecture Compliance Enforcement", () => {
 
     it("should identify specific violating properties", () => {
       class MultiViolationBridge {
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private cache = {}; // Violation
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private lastStateHash = ""; // Violation
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
         private memoizedResults = []; // Violation
 
         constructor() {}
