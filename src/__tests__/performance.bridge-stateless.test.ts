@@ -9,17 +9,13 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import {
   BatchPerformanceTester,
-  measureSync,
-  measureAsync,
   createPerformanceReport,
-  PerformanceAnalyzer,
 } from "../utils/PerformanceUtils.js";
 import {
   DEFAULT_PERFORMANCE_THRESHOLDS,
@@ -64,14 +60,14 @@ describe("Stateless Bridge Performance Regression Tests", () => {
   });
 
   describe("ReactFlowBridge Performance (Stateless)", () => {
-  let coordinator: AsyncCoordinator;
+    let coordinator: AsyncCoordinator;
 
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
 
     it("should maintain ReactFlowBridge.toReactFlowData performance with paxos.json", async () => {
-    const coordinator = new AsyncCoordinator();
+      const coordinator = new AsyncCoordinator();
       const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
@@ -261,11 +257,15 @@ describe("Stateless Bridge Performance Regression Tests", () => {
           const state = parseResult.visualizationState;
 
           // Test conversion with different container states
-          await coordinator.expandAllContainers(state, { triggerLayout: false });
+          await coordinator.expandAllContainers(state, {
+            triggerLayout: false,
+          });
           await elkBridge.layout(state);
           const expandedResult = reactFlowBridge.toReactFlowData(state);
 
-          await coordinator.collapseAllContainers(state, { triggerLayout: false });
+          await coordinator.collapseAllContainers(state, {
+            triggerLayout: false,
+          });
           await elkBridge.layout(state);
           const collapsedResult = reactFlowBridge.toReactFlowData(state);
 
@@ -291,10 +291,10 @@ describe("Stateless Bridge Performance Regression Tests", () => {
   });
 
   describe("ELKBridge Performance (Stateless)", () => {
-  let coordinator: AsyncCoordinato
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
 
     it("should maintain ELKBridge.toELKGraph performance with paxos.json", async () => {
       const parser = JSONParser.createPaxosParser({ debug: false });
@@ -431,7 +431,9 @@ describe("Stateless Bridge Performance Regression Tests", () => {
       const elkBridge = new ELKBridge();
 
       // Create complex hierarchy by expanding all containers
-      await coordinator.expandAllContainers(parseResult.visualizationState, { triggerLayout: false });
+      await coordinator.expandAllContainers(parseResult.visualizationState, {
+        triggerLayout: false,
+      });
 
       const testResult = await batchTester.runTest(
         "elk-bridge-hierarchical",
@@ -460,10 +462,10 @@ describe("Stateless Bridge Performance Regression Tests", () => {
   });
 
   describe("Combined Bridge Performance", () => {
-  let coordinator: AsyncCoordinato
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
 
     it(
       "should handle full pipeline without performance regression",
@@ -536,10 +538,14 @@ describe("Stateless Bridge Performance Regression Tests", () => {
 
             // Stress test: rapid state changes with conversions (reduced iterations)
             for (let i = 0; i < 3; i++) {
-              await coordinator.expandAllContainers(state, { triggerLayout: false });
+              await coordinator.expandAllContainers(state, {
+                triggerLayout: false,
+              });
               elkBridge.toELKGraph(state);
 
-              await coordinator.collapseAllContainers(state, { triggerLayout: false });
+              await coordinator.collapseAllContainers(state, {
+                triggerLayout: false,
+              });
               elkBridge.toELKGraph(state);
 
               await elkBridge.layout(state);

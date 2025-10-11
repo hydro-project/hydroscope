@@ -171,14 +171,18 @@ describe("Performance Optimization Tests", () => {
     it("should profile component operations", async () => {
       // Note: globalProfiler methods may not exist - this test is skipped
       // If profiling is needed, implement proper profiling interface first
-      
+
       const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
 
       // Basic performance measurement without profiler
       const startTime = performance.now();
-      await coordinator.expandAllContainers(parseResult.visualizationState, { triggerLayout: false });
-      await coordinator.collapseAllContainers(parseResult.visualizationState, { triggerLayout: false });
+      await coordinator.expandAllContainers(parseResult.visualizationState, {
+        triggerLayout: false,
+      });
+      await coordinator.collapseAllContainers(parseResult.visualizationState, {
+        triggerLayout: false,
+      });
       const endTime = performance.now();
 
       const duration = endTime - startTime;

@@ -1,5 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
+import { describe, it, expect } from "vitest";
 
 describe("Validation Invariants", () => {
   describe("Container State Invariants", () => {

@@ -132,7 +132,7 @@ describe("Enhanced Edge Restoration", () => {
       await expect(
         coordinator.expandContainer("container1", visualizationState, {
           triggerLayout: false,
-        })
+        }),
       ).resolves.not.toThrow();
 
       // Verify container was expanded

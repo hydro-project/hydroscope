@@ -37,13 +37,13 @@ describe("Stateless Bridge Performance Benchmarks", () => {
 
     console.log(`\n📊 PERFORMANCE BENCHMARK DATA:`);
     console.log(
-      `  Paxos: ${paxosData.nodes.length} nodes, ${paxosData.edges.length} edges`
+      `  Paxos: ${paxosData.nodes.length} nodes, ${paxosData.edges.length} edges`,
     );
     console.log(
-      `  Medium: ${mediumGraphData.nodes.length} nodes, ${mediumGraphData.edges.length} edges`
+      `  Medium: ${mediumGraphData.nodes.length} nodes, ${mediumGraphData.edges.length} edges`,
     );
     console.log(
-      `  Large: ${largeGraphData.nodes.length} nodes, ${largeGraphData.edges.length} edges`
+      `  Large: ${largeGraphData.nodes.length} nodes, ${largeGraphData.edges.length} edges`,
     );
   });
 
@@ -83,7 +83,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
           for (let i = 0; i < 2; i++) {
             const { result: reactFlowData, metrics } = measureSync(() => {
               return reactFlowBridge.toReactFlowData(
-                parseResult.visualizationState
+                parseResult.visualizationState,
               );
             });
             runs.push(metrics);
@@ -107,15 +107,15 @@ describe("Stateless Bridge Performance Benchmarks", () => {
 
           console.log(`\n📈 ${testCase.name} Graph:`);
           console.log(
-            `  Nodes: ${nodeCount}, Edges: ${edgeCount}, Containers: ${containerCount}`
+            `  Nodes: ${nodeCount}, Edges: ${edgeCount}, Containers: ${containerCount}`,
           );
           console.log(
-            `  Duration: ${avgDuration.toFixed(2)}ms (min: ${minDuration.toFixed(2)}, max: ${maxDuration.toFixed(2)})`
+            `  Duration: ${avgDuration.toFixed(2)}ms (min: ${minDuration.toFixed(2)}, max: ${maxDuration.toFixed(2)})`,
           );
           console.log(`  Memory Growth: ${avgMemoryGrowth.toFixed(2)}MB`);
           console.log(`  Throughput: ${throughput.toFixed(2)} nodes/sec`);
           console.log(
-            `  Performance: ${avgDuration > 0 ? ((nodeCount / avgDuration) * 1000).toFixed(0) : "N/A"} nodes/sec`
+            `  Performance: ${avgDuration > 0 ? ((nodeCount / avgDuration) * 1000).toFixed(0) : "N/A"} nodes/sec`,
           );
 
           // Basic sanity checks
@@ -124,7 +124,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
             expect(throughput).toBeGreaterThan(1); // At least 1 node/sec (more realistic)
           }
         }
-      }
+      },
     );
 
     it("should benchmark ReactFlowBridge consistency (stateless verification)", async () => {
@@ -148,7 +148,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
       for (let i = 0; i < 10; i++) {
         const { result: reactFlowData, metrics } = measureSync(() => {
           return reactFlowBridge.toReactFlowData(
-            parseResult.visualizationState
+            parseResult.visualizationState,
           );
         });
         runs.push({ result: reactFlowData, metrics });
@@ -172,7 +172,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
 
       console.log(`  Average Duration: ${avgDuration.toFixed(2)}ms`);
       console.log(
-        `  Duration Range: ${minDuration.toFixed(2)}ms - ${maxDuration.toFixed(2)}ms`
+        `  Duration Range: ${minDuration.toFixed(2)}ms - ${maxDuration.toFixed(2)}ms`,
       );
       console.log(`  Variance: ${variance.toFixed(2)}%`);
       console.log(`  Stateless Verification: ✅ All results identical`);
@@ -223,7 +223,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
             async () => {
               await elkBridge.layout(parseResult.visualizationState);
               return parseResult.visualizationState;
-            }
+            },
           );
           layoutRuns.push(metrics);
 
@@ -245,13 +245,13 @@ describe("Stateless Bridge Performance Benchmarks", () => {
 
         console.log(`\n📈 ${testCase.name} Graph:`);
         console.log(
-          `  Nodes: ${nodeCount}, Edges: ${edgeCount}, Containers: ${containerCount}`
+          `  Nodes: ${nodeCount}, Edges: ${edgeCount}, Containers: ${containerCount}`,
         );
         console.log(
-          `  ELK Conversion: ${avgConversionDuration.toFixed(2)}ms (${conversionThroughput.toFixed(2)} nodes/sec)`
+          `  ELK Conversion: ${avgConversionDuration.toFixed(2)}ms (${conversionThroughput.toFixed(2)} nodes/sec)`,
         );
         console.log(
-          `  ELK Layout: ${avgLayoutDuration.toFixed(2)}ms (${layoutThroughput.toFixed(2)} nodes/sec)`
+          `  ELK Layout: ${avgLayoutDuration.toFixed(2)}ms (${layoutThroughput.toFixed(2)} nodes/sec)`,
         );
 
         // Basic sanity checks
@@ -280,7 +280,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
           async () => {
             await elkBridge.layout(parseResult.visualizationState);
             return parseResult.visualizationState;
-          }
+          },
         );
 
         // Verify layout was applied
@@ -290,7 +290,7 @@ describe("Stateless Bridge Performance Benchmarks", () => {
 
         console.log(`  Layout Duration: ${metrics.duration.toFixed(2)}ms`);
         console.log(
-          `  Memory Usage: ${metrics.memoryUsage.peak.toFixed(2)}MB peak, ${metrics.memoryUsage.growth.toFixed(2)}MB growth`
+          `  Memory Usage: ${metrics.memoryUsage.peak.toFixed(2)}MB peak, ${metrics.memoryUsage.growth.toFixed(2)}MB growth`,
         );
         console.log(`  Throughput: ${throughput.toFixed(2)} nodes/sec`);
 
@@ -299,11 +299,11 @@ describe("Stateless Bridge Performance Benchmarks", () => {
           (node) =>
             node.position &&
             typeof node.position.x === "number" &&
-            typeof node.position.y === "number"
+            typeof node.position.y === "number",
         );
         expect(hasPositions).toBe(true);
         expect(throughput).toBeGreaterThan(5); // At least 5 nodes/sec for layout
-      }
+      },
     );
   });
 
@@ -335,20 +335,20 @@ describe("Stateless Bridge Performance Benchmarks", () => {
 
           // Step 3: ReactFlow Conversion
           const reactFlowData = reactFlowBridge.toReactFlowData(
-            parseResult.visualizationState
+            parseResult.visualizationState,
           );
 
           return { elkGraph, reactFlowData };
-        }
+        },
       );
 
       const throughput = nodeCount / (metrics.duration / 1000);
 
       console.log(
-        `  Total Pipeline Duration: ${metrics.duration.toFixed(2)}ms`
+        `  Total Pipeline Duration: ${metrics.duration.toFixed(2)}ms`,
       );
       console.log(
-        `  Memory Usage: ${metrics.memoryUsage.peak.toFixed(2)}MB peak, ${metrics.memoryUsage.growth.toFixed(2)}MB growth`
+        `  Memory Usage: ${metrics.memoryUsage.peak.toFixed(2)}MB peak, ${metrics.memoryUsage.growth.toFixed(2)}MB growth`,
       );
       console.log(`  Overall Throughput: ${throughput.toFixed(2)} nodes/sec`);
 

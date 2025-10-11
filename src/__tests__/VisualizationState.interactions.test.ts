@@ -106,28 +106,40 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Container Click Handling", () => {
-  let coordinator: AsyncCoordinato
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
     it("should toggle container from collapsed to expanded", async () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
       state.addNode(node);
 
       // Start collapsed
-      await coordinator.collapseContainer("container1", state, { triggerLayout: false });
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
 
       // Toggle should expand
-      await coordinator.expandContainer("container1", state, { triggerLayout: false });
+      await coordinator.expandContainer("container1", state, {
+        triggerLayout: false,
+      });
       expect(state.getContainer("container1")?.collapsed).toBe(false);
     });
 
     it("should toggle container from expanded to collapsed", async () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
@@ -137,7 +149,9 @@ describe("VisualizationState Interaction State Management", () => {
       expect(state.getContainer("container1")?.collapsed).toBe(false);
 
       // Toggle should collapse
-      await coordinator.collapseContainer("container1", state, { triggerLayout: false });
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
     });
 
@@ -148,7 +162,11 @@ describe("VisualizationState Interaction State Management", () => {
     });
 
     it("should disable smart collapse when user toggles container", async () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
@@ -157,7 +175,9 @@ describe("VisualizationState Interaction State Management", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User interaction should disable smart collapse
-      await coordinator.collapseContainer("container1", state, { triggerLayout: false });
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
@@ -170,7 +190,11 @@ describe("VisualizationState Interaction State Management", () => {
       coordinator = new AsyncCoordinator();
     });
     it("should persist node label states across container operations", async () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "Short");
       node.longLabel = "Long Label";
 
@@ -182,15 +206,31 @@ describe("VisualizationState Interaction State Management", () => {
       expect(state.getGraphNode("node1")?.showingLongLabel).toBe(true);
 
       // Collapse and expand container
-      await coordinator.collapseContainer("container1", state, { triggerLayout: false }, coordinator, { triggerLayout: false });
-      await coordinator.expandContainer("container1", state, { triggerLayout: false }, coordinator, { triggerLayout: false });
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
+      await coordinator.expandContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Node label state should persist
       expect(state.getGraphNode("node1")?.showingLongLabel).toBe(true);
     });
 
     it("should maintain interaction state during edge aggregation", () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "Short");
       node.longLabel = "Long Label";
       const externalNode = createTestNode("external");
@@ -224,10 +264,10 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Interaction State Queries", () => {
-  let coordinator: AsyncCoordinato
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
     it("should get all nodes showing long labels", () => {
       const node1 = createTestNode("node1", "Short1");
       node1.longLabel = "Long1";
@@ -250,7 +290,11 @@ describe("VisualizationState Interaction State Management", () => {
     });
 
     it("should get interaction state summary", async () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "Short");
       node.longLabel = "Long";
 
@@ -258,7 +302,13 @@ describe("VisualizationState Interaction State Management", () => {
       state.addNode(node);
 
       state.toggleNodeLabel("node1");
-      await coordinator.collapseContainer("container1", state, { triggerLayout: false }, coordinator, { triggerLayout: false });
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       const summary = state.getInteractionStateSummary();
       expect(summary.nodesWithLongLabels).toBe(1);
@@ -306,13 +356,17 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Interaction State Validation", () => {
-  let coordinator: AsyncCoordinato
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
 
     it("should validate interaction state consistency", () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "Short");
       node.longLabel = "Long";
 
@@ -321,8 +375,8 @@ describe("VisualizationState Interaction State Management", () => {
 
       state.toggleNodeLabel("node1");
       // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
-    // // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
-    // state.toggleContainer("container1");
+      // // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
+      // state.toggleContainer("container1");
 
       const validation = state.validateInteractionState();
       expect(validation.isValid).toBe(true);
@@ -344,14 +398,22 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Integration with Container Operations", () => {
-  let coordinator: AsyncCoordinato
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
 
     it("should maintain interaction state during complex container operations", async () => {
-      const parentContainer = createTestContainer("parent", ["child"], "Container parent");
-      const childContainer = createTestContainer("child", ["node1"], "Container child");
+      const parentContainer = createTestContainer(
+        "parent",
+        ["child"],
+        "Container parent",
+      );
+      const childContainer = createTestContainer(
+        "child",
+        ["node1"],
+        "Container child",
+      );
       const node = createTestNode("node1", "Short");
       node.longLabel = "Long Label";
 
@@ -364,18 +426,34 @@ describe("VisualizationState Interaction State Management", () => {
       state.toggleNodeLabel("node1");
 
       // Complex container operations
-      await coordinator.collapseContainer("parent", state, { triggerLayout: false }, coordinator, { triggerLayout: false });
-      await coordinator.expandContainer("parent", state, { triggerLayout: false }, coordinator, { triggerLayout: false });
+      await coordinator.collapseContainer(
+        "parent",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
+      await coordinator.expandContainer(
+        "parent",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
-    // // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
-    // state.toggleContainer("child");
+      // // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
+      // state.toggleContainer("child");
 
       // Interaction state should be preserved
       expect(state.getGraphNode("node1")?.showingLongLabel).toBe(true);
     });
 
     it("should handle interaction state during search operations", () => {
-      const container = createTestContainer("container1", ["node1"], "Container container1");
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "searchable");
       node.longLabel = "Long searchable label";
 

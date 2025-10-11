@@ -4,7 +4,7 @@
  * Tests the complete search and navigation workflow using the main Hydroscope component
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Hydroscope } from "../components/Hydroscope.js";
 import type { HydroscopeData } from "../types/core.js";

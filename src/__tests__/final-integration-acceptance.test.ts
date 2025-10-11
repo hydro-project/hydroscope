@@ -127,11 +127,9 @@ describe("Final Integration and Acceptance Testing", () => {
       );
 
       await expect(
-        coordinator.expandContainer(
-          "test-container",
-          visualizationState,
-          { triggerLayout: false },
-        )
+        coordinator.expandContainer("test-container", visualizationState, {
+          triggerLayout: false,
+        }),
       ).resolves.not.toThrow();
 
       // Test search functionality

@@ -7,7 +7,6 @@ import { render, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Hydroscope } from "../components/Hydroscope";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import { VisualizationState } from "../core/VisualizationState.js";
 
 // Mock Hydroscope modules
 vi.mock("../core/VisualizationState", () => ({

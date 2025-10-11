@@ -351,7 +351,9 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // Toggle one container
-      await coordinator.collapseContainer("c1", state, { triggerLayout: false });
+      await coordinator.collapseContainer("c1", state, {
+        triggerLayout: false,
+      });
 
       // Run through pipeline
       const elkGraph = elkBridge.toELKGraph(state);
@@ -489,7 +491,9 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle search operations affecting rendering", async () => {
       // Start with container collapsed
-      await coordinator.collapseContainer("search_container", state, { triggerLayout: false });
+      await coordinator.collapseContainer("search_container", state, {
+        triggerLayout: false,
+      });
 
       // Run initial pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -521,7 +525,9 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       expect(searchResults.length).toBeGreaterThan(0);
 
       // Manually expand container to show search results (simulating search expansion)
-      await coordinator.expandContainer("search_container", state, { triggerLayout: false });
+      await coordinator.expandContainer("search_container", state, {
+        triggerLayout: false,
+      });
       const expandedContainer = state.getContainer("search_container");
       expect(expandedContainer?.collapsed).toBe(false);
 

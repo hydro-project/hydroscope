@@ -24,7 +24,6 @@ import {
 import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
-import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Performance Regression Tests", () => {
   let coordinator: AsyncCoordinator;

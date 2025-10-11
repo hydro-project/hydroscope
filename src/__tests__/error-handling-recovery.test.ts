@@ -1,7 +1,7 @@
 /**
  * Comprehensive tests for error handling and recovery functionality
  * Tests requirements 5.1, 5.5, and 6.6
- * 
+ *
  * TODO: Implement ErrorHandler class before enabling these tests
  */
 
@@ -9,10 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 // import { SearchNavigationErrorHandler } from "../core/ErrorHandler.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
-import type {
-  UserFeedbackOptions,
-  ErrorRecoveryResult,
-} from "../core/ErrorHandler.js";
+import type { UserFeedbackOptions } from "../core/ErrorHandler.js";
 
 describe.skip("Error Handling and Recovery", () => {
   // let errorHandler: SearchNavigationErrorHandler;

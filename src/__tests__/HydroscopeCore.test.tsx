@@ -12,7 +12,6 @@ import {
 } from "../components/HydroscopeCore.js";
 import type { HydroscopeData } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import { VisualizationState } from "../core/VisualizationState.js";
 
 // Test data
 const validTestData: HydroscopeData = {

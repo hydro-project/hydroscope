@@ -105,7 +105,7 @@ export class VisualizationState {
   private _searchCacheMaxSize = 50;
   private _searchCacheMaxAge = 5 * 60 * 1000; // 5 minutes
   private _searchCacheTimestamps = new Map<string, number>();
-  
+
   // Search indexing for performance
   private _searchIndex = new Map<string, Set<string>>(); // word -> entity IDs
   private _searchIndexVersion = 0;
@@ -165,13 +165,16 @@ export class VisualizationState {
   private _handleEdgeAggregationOnAdd(edgeId: string): void {
     const edge = this._edges.get(edgeId);
     if (!edge) return;
-    
+
     // OPTIMIZED: Check if parent containers are collapsed instead of iterating all containers
     const sourceAffectedContainers = this._getCollapsedAncestors(edge.source);
     const targetAffectedContainers = this._getCollapsedAncestors(edge.target);
-    
+
     // Aggregate for all affected containers
-    const affectedContainers = new Set([...sourceAffectedContainers, ...targetAffectedContainers]);
+    const affectedContainers = new Set([
+      ...sourceAffectedContainers,
+      ...targetAffectedContainers,
+    ]);
     for (const containerId of affectedContainers) {
       this.aggregateEdgesForContainer(containerId);
     }
@@ -182,8 +185,10 @@ export class VisualizationState {
    */
   private _getCollapsedAncestors(entityId: string): string[] {
     const collapsedAncestors: string[] = [];
-    let currentContainerId = this._nodeContainerMap.get(entityId) || this._containerParentMap.get(entityId);
-    
+    let currentContainerId =
+      this._nodeContainerMap.get(entityId) ||
+      this._containerParentMap.get(entityId);
+
     while (currentContainerId) {
       const container = this._containers.get(currentContainerId);
       if (container && container.collapsed) {
@@ -191,7 +196,7 @@ export class VisualizationState {
       }
       currentContainerId = this._containerParentMap.get(currentContainerId);
     }
-    
+
     return collapsedAncestors;
   }
   removeEdge(id: string): void {
@@ -871,7 +876,7 @@ export class VisualizationState {
         }
       }
     }
-    
+
     // Cache the result
     this._descendantCache.set(containerId, descendants);
     return descendants;
@@ -1330,7 +1335,7 @@ export class VisualizationState {
       ancestors.push(current);
       current = this.getContainerParent(current);
     }
-    
+
     // Cache the result
     this._ancestorCache.set(containerId, ancestors);
     return ancestors;
@@ -1626,7 +1631,7 @@ export class VisualizationState {
         rootContainers.push(container);
       }
     }
-    
+
     this._rootContainersCache = rootContainers;
     return rootContainers;
   }
@@ -2393,14 +2398,14 @@ export class VisualizationState {
     }
     const queryLower = trimmedQuery.toLowerCase();
     const results: SearchResult[] = [];
-    
+
     // OPTIMIZED: Use search index for better performance
     this._buildSearchIndex();
-    
+
     // Get candidate entity IDs from search index
     const candidateIds = new Set<string>();
     const queryWords = this._extractSearchWords(queryLower);
-    
+
     if (queryWords.length > 0) {
       // For each query word, find matching entities
       for (const queryWord of queryWords) {
@@ -2410,10 +2415,13 @@ export class VisualizationState {
             candidateIds.add(entityId);
           }
         }
-        
+
         // Prefix matches for partial words
         for (const [indexWord, entityIds] of this._searchIndex) {
-          if (indexWord.startsWith(queryWord) || queryWord.startsWith(indexWord)) {
+          if (
+            indexWord.startsWith(queryWord) ||
+            queryWord.startsWith(indexWord)
+          ) {
             for (const entityId of entityIds) {
               candidateIds.add(entityId);
             }
@@ -2429,12 +2437,12 @@ export class VisualizationState {
         candidateIds.add(containerId);
       }
     }
-    
+
     // Process candidates with detailed matching
     for (const entityId of candidateIds) {
       const node = this._nodes.get(entityId);
       const container = this._containers.get(entityId);
-      
+
       if (node) {
         const matchResult = this._findMatches(node.label, queryLower);
         if (matchResult.matches) {
@@ -3038,12 +3046,15 @@ export class VisualizationState {
    * Build search index for faster text searching
    */
   private _buildSearchIndex(): void {
-    if (this._searchIndex.size > 0 && this._searchIndexVersion === this._cacheVersion) {
+    if (
+      this._searchIndex.size > 0 &&
+      this._searchIndexVersion === this._cacheVersion
+    ) {
       return; // Index is up to date
     }
 
     this._searchIndex.clear();
-    
+
     // Index nodes
     for (const [nodeId, node] of this._nodes) {
       const words = this._extractSearchWords(node.label);
@@ -3054,7 +3065,7 @@ export class VisualizationState {
         this._searchIndex.get(word)!.add(nodeId);
       }
     }
-    
+
     // Index containers
     for (const [containerId, container] of this._containers) {
       const words = this._extractSearchWords(container.label);
@@ -3065,7 +3076,7 @@ export class VisualizationState {
         this._searchIndex.get(word)!.add(containerId);
       }
     }
-    
+
     this._searchIndexVersion = this._cacheVersion;
   }
 
@@ -3075,8 +3086,8 @@ export class VisualizationState {
   private _extractSearchWords(label: string): string[] {
     return label
       .toLowerCase()
-      .split(/[\s\-_\.]+/)
-      .filter(word => word.length > 0);
+      .split(/[\s\-_.]+/)
+      .filter((word) => word.length > 0);
   }
 
   // Performance Monitoring

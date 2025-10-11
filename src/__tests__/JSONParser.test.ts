@@ -7,7 +7,6 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import { VisualizationState } from "../core/VisualizationState.js";
 
 // Test data
 const simpleTestData: HydroscopeData = {

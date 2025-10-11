@@ -10,7 +10,6 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";

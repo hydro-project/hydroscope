@@ -12,7 +12,6 @@ import { render, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Hydroscope } from "../components/Hydroscope.js";
 import type { HydroscopeData } from "../types/core.js";
-import { VisualizationState } from "../core/VisualizationState.js";
 
 // Mock ReactFlow components
 vi.mock("@xyflow/react", () => ({

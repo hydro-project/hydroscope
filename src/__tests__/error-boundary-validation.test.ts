@@ -364,7 +364,8 @@ describe("Error Boundary Validation", () => {
       // Perform many expand/collapse operations
       // Note: This test should use AsyncCoordinator methods, but since we don't have
       // a HydroscopeHandle here, we'll simulate the operations differently
-      for (let i = 0; i < 10; i++) { // Reduced iterations to avoid timeout
+      for (let i = 0; i < 10; i++) {
+        // Reduced iterations to avoid timeout
         const containerId = `container${i % 10}`;
         // Simulate container state changes without calling non-existent methods
         const container = visualizationState.getContainer(containerId);
