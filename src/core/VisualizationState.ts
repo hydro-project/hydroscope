@@ -71,6 +71,16 @@ export class VisualizationState {
     operationTimes: new Map<string, number[]>(),
     lastOptimization: Date.now(),
   };
+
+  // Performance optimization caches
+  private _rootContainersCache: Container[] | null = null;
+  private _descendantCache = new Map<string, Set<string>>();
+  private _ancestorCache = new Map<string, string[]>();
+  private _collapsedContainersCache: Container[] | null = null;
+  private _visibleNodesCache: GraphNode[] | null = null;
+  private _visibleContainersCache: Container[] | null = null;
+  private _visibleEdgesCache: (GraphEdge | AggregatedEdge)[] | null = null;
+  private _cacheVersion = 0;
   // Search and Navigation State
   private _searchNavigationState: SearchNavigationState = {
     // Search state
@@ -95,6 +105,19 @@ export class VisualizationState {
   private _searchCacheMaxSize = 50;
   private _searchCacheMaxAge = 5 * 60 * 1000; // 5 minutes
   private _searchCacheTimestamps = new Map<string, number>();
+  
+  // Search indexing for performance
+  private _searchIndex = new Map<string, Set<string>>(); // word -> entity IDs
+  private _searchIndexVersion = 0;
+
+  // Performance optimization caches
+  private _hierarchyPathCache = new Map<string, string[]>();
+  private _hierarchyPathCacheTimestamp = 0;
+  private _visibilityCache = new Map<string, boolean>();
+  private _visibilityCacheTimestamp = 0;
+  private _aggregationCache = new Map<string, Map<string, any>>();
+  private _aggregationCacheTimestamp = 0;
+  private _cacheInvalidationThreshold = 100; // Invalidate caches after 100ms
   // State persistence
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
@@ -102,11 +125,13 @@ export class VisualizationState {
   addNode(node: GraphNode): void {
     this._validateNodeData(node);
     this._nodes.set(node.id, { ...node });
+    this._invalidateAllCaches();
     this.validateInvariants();
   }
   removeNode(id: string): void {
     this._nodes.delete(id);
     this._nodeContainerMap.delete(id);
+    this._invalidateAllCaches();
     this.validateInvariants();
   }
   updateNode(id: string, node: GraphNode): void {
@@ -134,27 +159,44 @@ export class VisualizationState {
     this._edges.set(edge.id, { ...edge });
     // Check if this edge needs to be aggregated due to collapsed containers
     this._handleEdgeAggregationOnAdd(edge.id);
+    this._invalidateVisibilityCache();
     this.validateInvariants();
   }
   private _handleEdgeAggregationOnAdd(edgeId: string): void {
     const edge = this._edges.get(edgeId);
     if (!edge) return;
-    // Find collapsed containers that contain the source or target
-    // TODO: more efficient to simply check if parent of either source
-    // or target is collapsed!
-    for (const [containerId, container] of this._containers) {
-      if (container.collapsed) {
-        const descendants = this._getAllDescendantIds(containerId);
-        if (descendants.has(edge.source) || descendants.has(edge.target)) {
-          // This edge needs to be aggregated
-          this.aggregateEdgesForContainer(containerId);
-          break; // Only need to aggregate once
-        }
-      }
+    
+    // OPTIMIZED: Check if parent containers are collapsed instead of iterating all containers
+    const sourceAffectedContainers = this._getCollapsedAncestors(edge.source);
+    const targetAffectedContainers = this._getCollapsedAncestors(edge.target);
+    
+    // Aggregate for all affected containers
+    const affectedContainers = new Set([...sourceAffectedContainers, ...targetAffectedContainers]);
+    for (const containerId of affectedContainers) {
+      this.aggregateEdgesForContainer(containerId);
     }
+  }
+
+  /**
+   * OPTIMIZED: Get all collapsed ancestor containers for a given entity
+   */
+  private _getCollapsedAncestors(entityId: string): string[] {
+    const collapsedAncestors: string[] = [];
+    let currentContainerId = this._nodeContainerMap.get(entityId) || this._containerParentMap.get(entityId);
+    
+    while (currentContainerId) {
+      const container = this._containers.get(currentContainerId);
+      if (container && container.collapsed) {
+        collapsedAncestors.push(currentContainerId);
+      }
+      currentContainerId = this._containerParentMap.get(currentContainerId);
+    }
+    
+    return collapsedAncestors;
   }
   removeEdge(id: string): void {
     this._edges.delete(id);
+    this._invalidateVisibilityCache();
     this.validateInvariants();
   }
   updateEdge(id: string, edge: GraphEdge): void {
@@ -183,6 +225,7 @@ export class VisualizationState {
   addContainer(container: Container): void {
     this._validateContainerData(container);
     this._updateContainerWithMappings(container);
+    this._invalidateAllCaches();
     this.validateInvariants();
   }
   removeContainer(id: string): void {
@@ -202,6 +245,7 @@ export class VisualizationState {
         }
       }
     }
+    this._invalidateAllCaches();
     this.validateInvariants();
   }
   updateContainer(id: string, container: Container): void {
@@ -805,9 +849,18 @@ export class VisualizationState {
     }
   }
   private _getAllDescendantIds(containerId: string): Set<string> {
+    // Check cache first
+    if (this._descendantCache.has(containerId)) {
+      return this._descendantCache.get(containerId)!;
+    }
+
     const descendants = new Set<string>();
     const container = this._containers.get(containerId);
-    if (!container) return descendants;
+    if (!container) {
+      this._descendantCache.set(containerId, descendants);
+      return descendants;
+    }
+
     for (const childId of container.children) {
       descendants.add(childId);
       // If child is a container, recursively get its descendants
@@ -818,6 +871,9 @@ export class VisualizationState {
         }
       }
     }
+    
+    // Cache the result
+    this._descendantCache.set(containerId, descendants);
     return descendants;
   }
   private _getContainerDepth(containerId: string): number {
@@ -1263,12 +1319,20 @@ export class VisualizationState {
     return this._containerParentMap.get(containerId);
   }
   getContainerAncestors(containerId: string): string[] {
+    // Check cache first
+    if (this._ancestorCache.has(containerId)) {
+      return this._ancestorCache.get(containerId)!;
+    }
+
     const ancestors: string[] = [];
     let current = this.getContainerParent(containerId);
     while (current) {
       ancestors.push(current);
       current = this.getContainerParent(current);
     }
+    
+    // Cache the result
+    this._ancestorCache.set(containerId, ancestors);
     return ancestors;
   }
   getContainerDescendants(containerId: string): string[] {
@@ -1548,27 +1612,22 @@ export class VisualizationState {
   /**
    * Get root containers - containers that are not children of other containers
    * Used by the holistic smart collapse algorithm to identify top-level containers
+   * OPTIMIZED: Uses cache and parent map for O(n) performance
    */
   getRootContainers(): Container[] {
-    const allContainers = Array.from(this._containers.values());
+    if (this._rootContainersCache) {
+      return this._rootContainersCache;
+    }
+
     const rootContainers: Container[] = [];
-    for (const container of allContainers) {
-      // Check if this container is a child of any other container
-      let isChild = false;
-      for (const otherContainer of allContainers) {
-        if (
-          otherContainer.id !== container.id &&
-          otherContainer.children.has(container.id)
-        ) {
-          isChild = true;
-          break;
-        }
-      }
-      // If it's not a child of any container, it's a root container
-      if (!isChild) {
+    for (const container of this._containers.values()) {
+      // Use parent map for O(1) lookup instead of O(n) search
+      if (!this._containerParentMap.has(container.id)) {
         rootContainers.push(container);
       }
     }
+    
+    this._rootContainersCache = rootContainers;
     return rootContainers;
   }
   // Search-specific container expansion
@@ -2334,40 +2393,80 @@ export class VisualizationState {
     }
     const queryLower = trimmedQuery.toLowerCase();
     const results: SearchResult[] = [];
-    // Search nodes with hierarchy path calculation
-    for (const node of this._nodes.values()) {
-      const matchResult = this._findMatches(node.label, queryLower);
-      if (matchResult.matches) {
-        results.push({
-          id: node.id,
-          label: node.label,
-          type: "node",
-          matchIndices: matchResult.indices,
-          hierarchyPath: this._getHierarchyPath(node.id),
-          confidence: this._calculateSearchConfidence(
-            node.label,
-            queryLower,
-            matchResult.isExact,
-          ),
-        });
+    
+    // OPTIMIZED: Use search index for better performance
+    this._buildSearchIndex();
+    
+    // Get candidate entity IDs from search index
+    const candidateIds = new Set<string>();
+    const queryWords = this._extractSearchWords(queryLower);
+    
+    if (queryWords.length > 0) {
+      // For each query word, find matching entities
+      for (const queryWord of queryWords) {
+        // Exact word matches
+        if (this._searchIndex.has(queryWord)) {
+          for (const entityId of this._searchIndex.get(queryWord)!) {
+            candidateIds.add(entityId);
+          }
+        }
+        
+        // Prefix matches for partial words
+        for (const [indexWord, entityIds] of this._searchIndex) {
+          if (indexWord.startsWith(queryWord) || queryWord.startsWith(indexWord)) {
+            for (const entityId of entityIds) {
+              candidateIds.add(entityId);
+            }
+          }
+        }
+      }
+    } else {
+      // Fallback: search all entities for non-word queries
+      for (const nodeId of this._nodes.keys()) {
+        candidateIds.add(nodeId);
+      }
+      for (const containerId of this._containers.keys()) {
+        candidateIds.add(containerId);
       }
     }
-    // Search containers with hierarchy path calculation
-    for (const container of this._containers.values()) {
-      const matchResult = this._findMatches(container.label, queryLower);
-      if (matchResult.matches) {
-        results.push({
-          id: container.id,
-          label: container.label,
-          type: "container",
-          matchIndices: matchResult.indices,
-          hierarchyPath: this._getHierarchyPath(container.id),
-          confidence: this._calculateSearchConfidence(
-            container.label,
-            queryLower,
-            matchResult.isExact,
-          ),
-        });
+    
+    // Process candidates with detailed matching
+    for (const entityId of candidateIds) {
+      const node = this._nodes.get(entityId);
+      const container = this._containers.get(entityId);
+      
+      if (node) {
+        const matchResult = this._findMatches(node.label, queryLower);
+        if (matchResult.matches) {
+          results.push({
+            id: node.id,
+            label: node.label,
+            type: "node",
+            matchIndices: matchResult.indices,
+            hierarchyPath: this._getHierarchyPath(node.id),
+            confidence: this._calculateSearchConfidence(
+              node.label,
+              queryLower,
+              matchResult.isExact,
+            ),
+          });
+        }
+      } else if (container) {
+        const matchResult = this._findMatches(container.label, queryLower);
+        if (matchResult.matches) {
+          results.push({
+            id: container.id,
+            label: container.label,
+            type: "container",
+            matchIndices: matchResult.indices,
+            hierarchyPath: this._getHierarchyPath(container.id),
+            confidence: this._calculateSearchConfidence(
+              container.label,
+              queryLower,
+              matchResult.isExact,
+            ),
+          });
+        }
       }
     }
     // Sort results by confidence (exact matches first, then by match position)
@@ -2904,6 +3003,82 @@ export class VisualizationState {
     }
     return collapsedWithMatches;
   }
+  // Cache Management
+  private _invalidateAllCaches(): void {
+    this._cacheVersion++;
+    this._rootContainersCache = null;
+    this._descendantCache.clear();
+    this._ancestorCache.clear();
+    this._collapsedContainersCache = null;
+    this._visibleNodesCache = null;
+    this._visibleContainersCache = null;
+    this._visibleEdgesCache = null;
+    this._invalidateSearchIndex();
+  }
+
+  private _invalidateHierarchyCache(): void {
+    this._rootContainersCache = null;
+    this._descendantCache.clear();
+    this._ancestorCache.clear();
+    this._collapsedContainersCache = null;
+  }
+
+  private _invalidateVisibilityCache(): void {
+    this._visibleNodesCache = null;
+    this._visibleContainersCache = null;
+    this._visibleEdgesCache = null;
+  }
+
+  private _invalidateSearchIndex(): void {
+    this._searchIndex.clear();
+    this._searchIndexVersion++;
+  }
+
+  /**
+   * Build search index for faster text searching
+   */
+  private _buildSearchIndex(): void {
+    if (this._searchIndex.size > 0 && this._searchIndexVersion === this._cacheVersion) {
+      return; // Index is up to date
+    }
+
+    this._searchIndex.clear();
+    
+    // Index nodes
+    for (const [nodeId, node] of this._nodes) {
+      const words = this._extractSearchWords(node.label);
+      for (const word of words) {
+        if (!this._searchIndex.has(word)) {
+          this._searchIndex.set(word, new Set());
+        }
+        this._searchIndex.get(word)!.add(nodeId);
+      }
+    }
+    
+    // Index containers
+    for (const [containerId, container] of this._containers) {
+      const words = this._extractSearchWords(container.label);
+      for (const word of words) {
+        if (!this._searchIndex.has(word)) {
+          this._searchIndex.set(word, new Set());
+        }
+        this._searchIndex.get(word)!.add(containerId);
+      }
+    }
+    
+    this._searchIndexVersion = this._cacheVersion;
+  }
+
+  /**
+   * Extract searchable words from a label
+   */
+  private _extractSearchWords(label: string): string[] {
+    return label
+      .toLowerCase()
+      .split(/[\s\-_\.]+/)
+      .filter(word => word.length > 0);
+  }
+
   // Performance Monitoring
   private trackOperation(operationName: string, duration: number): void {
     // Track operation count

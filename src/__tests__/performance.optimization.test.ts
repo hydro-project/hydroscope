@@ -13,11 +13,11 @@ import {
   PerformanceMonitor,
 } from "../utils/PerformanceMonitor.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import { globalProfiler } from "../utils/PerformanceProfiler.js";
+// globalProfiler import removed - not used in active tests
 import { measureSync, measureAsync } from "../utils/PerformanceUtils.js";
 import fs from "fs";
 import path from "path";
-import { VisualizationState } from "../core/VisualizationState.js";
+// VisualizationState import removed - not directly used in tests
 
 describe("Performance Optimization Tests", () => {
   let coordinator: AsyncCoordinator;
@@ -86,14 +86,18 @@ describe("Performance Optimization Tests", () => {
       await elkBridge.layout(parseResult.visualizationState);
 
       // First conversion (cache miss)
-      const { result: _data1, metrics: metrics1 } = measureSync(() => {
+      const { result: data1, metrics: metrics1 } = measureSync(() => {
         return reactFlowBridge.toReactFlowData(parseResult.visualizationState);
       });
 
       // Second conversion with same state (cache hit)
-      const { result: _data2, metrics: metrics2 } = measureSync(() => {
+      const { result: data2, metrics: metrics2 } = measureSync(() => {
         return reactFlowBridge.toReactFlowData(parseResult.visualizationState);
       });
+
+      // Verify results are consistent
+      expect(data1.nodes.length).toBe(data2.nodes.length);
+      expect(data1.edges.length).toBe(data2.edges.length);
 
       // ReactFlowBridge is now stateless - no cache statistics available
       // Verify that both conversions complete successfully
@@ -165,35 +169,22 @@ describe("Performance Optimization Tests", () => {
 
   describe.skip("Profiling Integration", () => {
     it("should profile component operations", async () => {
-      globalProfiler.startSession("test-session");
-
+      // Note: globalProfiler methods may not exist - this test is skipped
+      // If profiling is needed, implement proper profiling interface first
+      
       const parser = JSONParser.createPaxosParser({ debug: false });
-
-      // Profile parsing operation
-      globalProfiler.startOperation("json-parse");
       const parseResult = await parser.parseData(paxosData);
-      globalProfiler.endOperation();
 
-      // Profile visualization state operations
-      globalProfiler.startOperation("container-operations");
-      await coordinator.expandAllContainers(visualizationState, { triggerLayout: false });
-      await coordinator.collapseAllContainers(visualizationState, { triggerLayout: false });
-      globalProfiler.endOperation();
+      // Basic performance measurement without profiler
+      const startTime = performance.now();
+      await coordinator.expandAllContainers(parseResult.visualizationState, { triggerLayout: false });
+      await coordinator.collapseAllContainers(parseResult.visualizationState, { triggerLayout: false });
+      const endTime = performance.now();
 
-      const session = globalProfiler.endSession("test-session");
-      expect(session).toBeDefined();
-      expect(session!.results.length).toBeGreaterThan(0);
-      expect(session!.summary).toBeDefined();
+      const duration = endTime - startTime;
+      expect(duration).toBeGreaterThan(0);
 
-      console.log("Profiling Results:");
-      session!.results.forEach((result) => {
-        console.log(`  ${result.operation}: ${result.duration.toFixed(2)}ms`);
-        if (result.recommendations && result.recommendations.length > 0) {
-          console.log(
-            `    Recommendations: ${result.recommendations.join(", ")}`,
-          );
-        }
-      });
+      console.log(`Container operations completed in ${duration.toFixed(2)}ms`);
     });
   });
 
@@ -212,12 +203,16 @@ describe("Performance Optimization Tests", () => {
       // Perform operations multiple times
       for (let i = 0; i < 5; i++) {
         const parseResult = await parser.parseData(paxosData);
-        const _elkGraph = elkBridge.toELKGraph(parseResult.visualizationState);
+        const elkGraph = elkBridge.toELKGraph(parseResult.visualizationState);
         // Calculate layout so nodes have positions
         await elkBridge.layout(parseResult.visualizationState);
-        const _reactFlowData = reactFlowBridge.toReactFlowData(
+        const reactFlowData = reactFlowBridge.toReactFlowData(
           parseResult.visualizationState,
         );
+
+        // Verify operations completed successfully
+        expect(elkGraph).toBeDefined();
+        expect(reactFlowData.nodes.length).toBeGreaterThan(0);
 
         // Both bridges are now stateless - no caches to clear
         // Memory management is handled by VisualizationState if needed
@@ -299,19 +294,23 @@ describe("Performance Optimization Tests", () => {
             return await parser.parseData(largeData);
           });
 
-        const { result: _elkGraph, metrics: elkMetrics } = measureSync(() => {
+        const { result: elkGraph, metrics: elkMetrics } = measureSync(() => {
           return elkBridge.toELKGraph(parseResult.visualizationState);
         });
 
         // Calculate layout so nodes have positions
         await elkBridge.layout(parseResult.visualizationState);
 
-        const { result: _reactFlowData, metrics: reactFlowMetrics } =
+        const { result: reactFlowData, metrics: reactFlowMetrics } =
           measureSync(() => {
             return reactFlowBridge.toReactFlowData(
               parseResult.visualizationState,
             );
           });
+
+        // Verify results are valid
+        expect(elkGraph).toBeDefined();
+        expect(reactFlowData.nodes.length).toBeGreaterThan(0);
 
         // Performance should still be reasonable with large graphs
         expect(parseMetrics.duration).toBeLessThan(2000); // 2 seconds
