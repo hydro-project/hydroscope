@@ -21,6 +21,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
   let coordinator: AsyncCoordinator;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
     elkBridge = new ELKBridge({});
@@ -100,6 +101,11 @@ describe("Container Collapse/Expand E2E Tests", () => {
   });
 
   describe("Single Container Collapse", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should collapse container and change visual representation", async () => {
       // Initial state - container should be expanded
       let reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -112,7 +118,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
       expect(container1Node?.data.collapsed).toBe(false);
 
       // Collapse the container
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // Verify logical state
       const container = state.getContainer("container1");
@@ -135,14 +143,18 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
     it("should expand collapsed container and restore children", async () => {
       // First collapse the container
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // Verify it's collapsed
       let container = state.getContainer("container1");
       expect(container?.collapsed).toBe(true);
 
       // Now expand it
-      await coordinator.expandContainer("container1", state);
+      await coordinator.expandContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // Verify logical state
       container = state.getContainer("container1");
@@ -167,13 +179,18 @@ describe("Container Collapse/Expand E2E Tests", () => {
   });
 
   describe("Bulk Container Operations", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should collapse all containers", async () => {
       // Initial state - all containers expanded
       expect(state.getContainer("container1")?.collapsed).toBe(false);
       expect(state.getContainer("container2")?.collapsed).toBe(false);
 
       // Collapse all containers
-      await coordinator.collapseAllContainers(state);
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Verify all containers are collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);
@@ -200,14 +217,14 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
     it("should expand all containers", async () => {
       // First collapse all containers
-      await coordinator.collapseAllContainers(state);
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Verify they're collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);
       expect(state.getContainer("container2")?.collapsed).toBe(true);
 
       // Now expand all
-      await coordinator.expandAllContainers(state);
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // Verify all containers are expanded
       expect(state.getContainer("container1")?.collapsed).toBe(false);
@@ -234,9 +251,16 @@ describe("Container Collapse/Expand E2E Tests", () => {
   });
 
   describe("Layout Integration", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle collapsed containers in layout", async () => {
       // Collapse container
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // Get ReactFlow data - should work without layout
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -277,7 +301,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
       state.addEdge(edgeToContainer);
 
       // Collapse container1
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // Get ReactFlow data
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -358,7 +384,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
       expect(edgeBetween?.target).toBe("node3");
 
       // Collapse container1
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // After collapse - edges should be redirected to container1
       reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -393,11 +421,18 @@ describe("Container Collapse/Expand E2E Tests", () => {
   });
 
   describe("Error Handling", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle collapse of non-existent container gracefully", async () => {
       // The coordinator may handle non-existent containers gracefully
       // Let's just verify it doesn't crash the system
       try {
-        await coordinator.collapseContainer("non-existent", state);
+        await coordinator.collapseContainer("non-existent", state, {
+          triggerLayout: false,
+        });
       } catch (error) {
         // Expected - non-existent container should cause an error
         expect(error).toBeDefined();
@@ -408,7 +443,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // The coordinator may handle non-existent containers gracefully
       // Let's just verify it doesn't crash the system
       try {
-        await coordinator.expandContainer("non-existent", state);
+        await coordinator.expandContainer("non-existent", state, {
+          triggerLayout: false,
+        });
       } catch (error) {
         // Expected - non-existent container should cause an error
         expect(error).toBeDefined();
@@ -417,11 +454,15 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
     it("should handle double collapse gracefully", async () => {
       // Collapse once
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
 
       // Collapse again - should not error
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
     });
 
@@ -430,12 +471,19 @@ describe("Container Collapse/Expand E2E Tests", () => {
       expect(state.getContainer("container1")?.collapsed).toBe(false);
 
       // Expand again - should not error
-      await coordinator.expandContainer("container1", state);
+      await coordinator.expandContainer("container1", state, {
+        triggerLayout: false,
+      });
       expect(state.getContainer("container1")?.collapsed).toBe(false);
     });
   });
 
   describe("Visual Consistency", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should maintain consistent node types for containers", async () => {
       // Test expanded state
       let reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -449,7 +497,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       });
 
       // Test collapsed state
-      await coordinator.collapseAllContainers(state);
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
       reactFlowData = reactFlowBridge.toReactFlowData(state);
       containerNodes = reactFlowData.nodes.filter(
         (n) => n.data.nodeType === "container",
@@ -475,7 +523,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
       });
 
       // After collapse
-      await coordinator.collapseContainer("container1", state);
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
       const collapsedData = reactFlowBridge.toReactFlowData(state);
       const collapsedContainer = collapsedData.nodes.find(
         (n) => n.id === "container1",

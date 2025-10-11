@@ -9,7 +9,6 @@
  * - Search highlighting animations use box-shadow instead of transform
  * - All operations coordinate with the ConsolidatedOperationManager system
  */
-
 import {
   useState,
   useEffect,
@@ -22,7 +21,6 @@ import {
 import { Input, Button, Tooltip, AutoComplete, List, Typography } from "antd";
 import { PANEL_CONSTANTS } from "../shared/config";
 import type { SearchResult } from "../types/core.js";
-
 export type SearchableItem = {
   id: string;
   label: string;
@@ -34,14 +32,12 @@ export type SearchMatch = {
   type: "container" | "node";
   matchIndices: number[][];
 };
-
 export interface SearchControlsRef {
   focus: () => void;
   clear: () => void;
   navigateToResult: (index: number) => void;
   announceResults: (count: number, current?: number) => void;
 }
-
 type Props = {
   searchableItems: SearchableItem[];
   onSearch: (query: string, matches: SearchMatch[]) => void;
@@ -49,10 +45,8 @@ type Props = {
   onNavigate: (dir: "prev" | "next", current: SearchMatch) => void;
   placeholder?: string;
   compact?: boolean;
-
   // Add VisualizationState for delegated search
   visualizationState?: any;
-
   // Enhanced navigation and accessibility props
   onResultNavigation?: (result: SearchResult) => void;
   onViewportFocus?: (elementId: string) => void;
@@ -60,12 +54,10 @@ type Props = {
   showElementType?: boolean;
   searchResults?: SearchResult[]; // Enhanced search results with hierarchy info
   currentSearchIndex?: number;
-
   // Accessibility props
   ariaLabel?: string;
   announceResults?: boolean;
 };
-
 // Convert wildcard pattern (* ?) to case-insensitive regex (substring match)
 function toRegex(pattern: string): RegExp | null {
   const raw = pattern.trim();
@@ -80,7 +72,6 @@ function toRegex(pattern: string): RegExp | null {
     return null;
   }
 }
-
 export const SearchControls = forwardRef<SearchControlsRef, Props>(
   (
     {
@@ -114,9 +105,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     const resultsListRef = useRef<HTMLDivElement>(null);
     const ariaLiveRef = useRef<HTMLDivElement>(null);
     const lastProcessedQuery = useRef<string>("");
-
     // Error handling is done through console logging
-
     // Load search history from localStorage on mount
     useEffect(() => {
       try {
@@ -131,17 +120,14 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         console.warn("Failed to load search history:", e);
       }
     }, []);
-
     // Add to search history when query is executed
     const addToHistory = (searchQuery: string) => {
       if (!searchQuery.trim()) return;
-
       setSearchHistory((currentHistory) => {
         const newHistory = [
           searchQuery,
           ...currentHistory.filter((h) => h !== searchQuery),
         ].slice(0, 10); // Keep only last 10 unique searches
-
         // Save to localStorage
         try {
           localStorage.setItem(
@@ -151,11 +137,9 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         } catch (e) {
           console.warn("Failed to save search history:", e);
         }
-
         return newHistory;
       });
     };
-
     // Accessibility announcement function
     const announceToScreenReader = useCallback(
       (message: string) => {
@@ -171,7 +155,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       },
       [announceResults],
     );
-
     // Navigate to specific result index with error handling (keeping synchronous core operations)
     const navigateToResultIndex = useCallback(
       (index: number, direction: "prev" | "next" = "next") => {
@@ -179,15 +162,12 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           if (index >= 0 && index < matches.length) {
             setCurrentIndex(index);
             const result = matches[index];
-
             // Execute navigation synchronously (respecting core architecture)
             onNavigate(direction, result);
-
             // Enhanced navigation with SearchResult if available
             if (onResultNavigation && searchResults && searchResults[index]) {
               onResultNavigation(searchResults[index]);
             }
-
             // Announce navigation
             announceToScreenReader(
               `Navigated to result ${index + 1} of ${matches.length}: ${result.label}`,
@@ -198,7 +178,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             `[SearchControls] Navigation failed for result ${index}:`,
             error,
           );
-
           // Log navigation error
           const result = matches[index];
           if (result) {
@@ -207,7 +186,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               error,
             );
           }
-
           // Announce error for accessibility
           announceToScreenReader("Navigation failed. Please try again.");
         }
@@ -220,7 +198,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         announceToScreenReader,
       ],
     );
-
     useImperativeHandle(ref, () => ({
       focus: () => inputRef.current?.focus(),
       clear: () => clearAll(),
@@ -233,7 +210,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         announceToScreenReader(message);
       },
     }));
-
     // Debounced search with error handling (keeping synchronous core operations)
     useEffect(() => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -248,7 +224,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           if (!rx) {
             setMatches([]);
             setCurrentIndex(0);
-
             // Clear search in VisualizationState if available
             if (visualizationState && visualizationState.clearSearchEnhanced) {
               try {
@@ -258,15 +233,12 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 // Silently handle clear errors
               }
             }
-
             // Apply clear operation synchronously to prevent race conditions
             onSearch("", []);
             return;
           }
-
           // Delegate search to VisualizationState if available
           let next: SearchMatch[] = [];
-
           if (visualizationState && visualizationState.performSearch) {
             try {
               // Use VisualizationState's search which handles graph highlighting
@@ -277,7 +249,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 type: result.type,
                 matchIndices: result.matchIndices || [],
               }));
-
               // ReactFlow regeneration will be handled by Hydroscope component
               // after onSearch callback is executed
             } catch (error) {
@@ -298,19 +269,15 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 matchIndices: [], // TODO: Implement proper match indices calculation
               }));
           }
-
           setMatches(next);
           setCurrentIndex(0);
-
           // Apply search results synchronously to prevent race conditions with layout operations
           // The async batching was causing visibility state inconsistency during search
           onSearch(query, next);
-
           // Add to history when we get results
           if (next.length > 0) {
             addToHistory(query);
           }
-
           // Announce search results for accessibility
           if (announceResults) {
             const message =
@@ -324,18 +291,15 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             `[SearchControls] Search failed for query "${query}":`,
             error,
           );
-
           // Log search error
           console.error(
             `[SearchControls] Search failed for query: "${query}"`,
             error,
           );
-
           // Clear results on error
           setMatches([]);
           setCurrentIndex(0);
           onSearch("", []);
-
           // Announce error for accessibility
           if (announceResults) {
             announceToScreenReader("Search failed. Please try again.");
@@ -354,14 +318,12 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       addToHistory,
       onSearch,
     ]);
-
     // Keep index in range and sync with external currentSearchIndex
     useEffect(() => {
       if (!matches.length && currentIndex !== 0) setCurrentIndex(0);
       if (currentIndex >= matches.length && matches.length) setCurrentIndex(0);
       // eslint-disable-next-line react-hooks/exhaustive-deps -- currentIndex dependency would create infinite loop since effect calls setCurrentIndex
     }, [matches]);
-
     // Sync with external currentSearchIndex prop
     useEffect(() => {
       if (
@@ -371,33 +333,27 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         setCurrentIndex(currentSearchIndex);
       }
     }, [currentSearchIndex, matches.length, currentIndex]);
-
     const navigate = (dir: "prev" | "next") => {
       if (!matches.length) return;
       const idx =
         dir === "next"
           ? (currentIndex + 1) % matches.length
           : (currentIndex - 1 + matches.length) % matches.length;
-
       navigateToResultIndex(idx, dir);
     };
-
     const clearAll = () => {
       // Clear any pending debounced search
       if (timerRef.current) {
         window.clearTimeout(timerRef.current);
         timerRef.current = null;
       }
-
       setQuery("");
       setMatches([]);
       setCurrentIndex(0);
-
       // Apply clear operations synchronously to prevent race conditions
       onClear();
       onSearch("", []);
     };
-
     // Cleanup effect to clear timers on unmount
     useEffect(() => {
       return () => {
@@ -406,18 +362,15 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         }
       };
     }, []);
-
     const countText = useMemo(() => {
       if (!query.trim()) return "";
       if (!matches.length) return "0 / 0";
       return `${Math.min(currentIndex + 1, matches.length)} / ${matches.length}`;
     }, [query, matches, currentIndex]);
-
     // Enhanced result display with hierarchical context
     const renderResultItem = (result: SearchResult, index: number) => {
       const isCurrentResult = index === currentIndex;
       const hierarchyPath = result.hierarchyPath?.join(" > ") || "";
-
       return (
         <List.Item
           key={result.id}
@@ -479,7 +432,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         </List.Item>
       );
     };
-
     return (
       <div
         style={{
@@ -703,5 +655,4 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     );
   },
 );
-
 SearchControls.displayName = "SearchControls";

@@ -1,16 +1,25 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, GraphEdge, Container } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Container Visibility and Edge Aggregation", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
   describe("Container Collapse/Expand Operations", () => {
-    it("should collapse container and hide children", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should collapse container and hide children", async () => {
       const nodes = ["n1", "n2"].map((id) => ({
         id,
         label: `Node ${id}`,
@@ -37,7 +46,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(false);
 
       // Collapse container
-      state._collapseContainerForCoordinator("c1");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Children should be hidden, container should be collapsed
       expect(state.getGraphNode("n1")?.hidden).toBe(true);
@@ -45,7 +60,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(true);
     });
 
-    it("should expand container and show children", () => {
+    it("should expand container and show children", async () => {
       const nodes = ["n1", "n2"].map((id) => ({
         id,
         label: `Node ${id}`,
@@ -72,7 +87,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(true);
 
       // Expand container
-      state._expandContainerForCoordinator("c1");
+      await coordinator.expandContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Children should be visible, container should be expanded
       expect(state.getGraphNode("n1")?.hidden).toBe(false);
@@ -80,7 +101,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(false);
     });
 
-    it("should handle nested container collapse/expand", () => {
+    it("should handle nested container collapse/expand", async () => {
       const node: GraphNode = {
         id: "n1",
         label: "Node 1",
@@ -111,7 +132,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       state.addContainer(parentContainer);
 
       // Collapse parent - should hide child container and its contents
-      state._collapseContainerForCoordinator("parent");
+      await coordinator.collapseContainer(
+        "parent",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       expect(state.getContainer("parent")?.collapsed).toBe(true);
       expect(state.getContainer("child")?.hidden).toBe(true);
@@ -121,7 +148,12 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
   });
 
   describe("Edge Aggregation During Container Operations", () => {
-    it("should aggregate edges when container is collapsed", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should aggregate edges when container is collapsed", async () => {
       // Create nodes
       const nodes = ["n1", "n2", "n3"].map((id) => ({
         id,
@@ -171,7 +203,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(0);
 
       // Collapse container - edges should be aggregated
-      state._collapseContainerForCoordinator("c1");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Original edges should be hidden
       expect(state.getGraphEdge("e1")?.hidden).toBe(true);
@@ -186,7 +224,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(aggregatedEdges[0].aggregationSource).toBe("c1");
     });
 
-    it("should restore edges when container is expanded", () => {
+    it("should restore edges when container is expanded", async () => {
       // Create nodes
       const nodes = ["n1", "n2", "n3"].map((id) => ({
         id,
@@ -234,7 +272,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(1);
 
       // Expand container - should restore original edges
-      state._expandContainerForCoordinator("c1");
+      await coordinator.expandContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Original edges should be visible again
       expect(state.getGraphEdge("e1")?.hidden).toBe(false);
@@ -244,7 +288,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(0);
     });
 
-    it("should handle edges between containers", () => {
+    it("should handle edges between containers", async () => {
       // Create nodes
       const nodes = ["n1", "n2", "n3", "n4"].map((id) => ({
         id,
@@ -298,8 +342,20 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       edges.forEach((edge) => state.addEdge(edge));
 
       // Collapse both containers
-      state._collapseContainerForCoordinator("c1");
-      state._collapseContainerForCoordinator("c2");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
+      await coordinator.collapseContainer(
+        "c2",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Should have aggregated edge from c1 to c2
       const aggregatedEdges = state.getAggregatedEdges();
@@ -311,7 +367,12 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
   });
 
   describe("Bulk Operations", () => {
-    it("should expand all containers atomically", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should expand all containers atomically", async () => {
       const nodes = ["n1", "n2", "n3", "n4"].map((id) => ({
         id,
         label: `Node ${id}`,
@@ -346,7 +407,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c2")?.collapsed).toBe(true);
 
       // Expand all containers
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // All containers should be expanded
       expect(state.getContainer("c1")?.collapsed).toBe(false);
@@ -358,7 +419,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       });
     });
 
-    it("should collapse all containers atomically", () => {
+    it("should collapse all containers atomically", async () => {
       const nodes = ["n1", "n2", "n3", "n4"].map((id) => ({
         id,
         label: `Node ${id}`,
@@ -393,7 +454,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c2")?.collapsed).toBe(false);
 
       // Collapse all containers
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // All containers should be collapsed
       expect(state.getContainer("c1")?.collapsed).toBe(true);
@@ -407,7 +468,12 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
   });
 
   describe("Complex Edge Aggregation Scenarios", () => {
-    it("should handle multi-container edge aggregation", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should handle multi-container edge aggregation", async () => {
       // Create a complex scenario with multiple containers and cross-container edges
       const nodes = ["n1", "n2", "n3", "n4", "n5"].map((id) => ({
         id,
@@ -476,7 +542,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       edges.forEach((edge) => state.addEdge(edge));
 
       // Collapse c1 only
-      state._collapseContainerForCoordinator("c1");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       const aggregatedEdges = state.getAggregatedEdges();
 
@@ -506,7 +578,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(c1ToN3?.originalEdgeIds).toEqual(["e4"]);
     });
 
-    it("should handle nested container edge aggregation", () => {
+    it("should handle nested container edge aggregation", async () => {
       const nodes = ["n1", "n2", "n3"].map((id) => ({
         id,
         label: `Node ${id}`,
@@ -548,7 +620,13 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       state.addEdge(edge);
 
       // Collapse parent container
-      state._collapseContainerForCoordinator("parent");
+      await coordinator.collapseContainer(
+        "parent",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Should aggregate edge from n3 to parent container
       const aggregatedEdges = state.getAggregatedEdges();

@@ -11,6 +11,8 @@ import {
   type HydroscopeCoreHandle,
 } from "../components/HydroscopeCore.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 // Test data
 const validTestData: HydroscopeData = {
@@ -34,12 +36,15 @@ const invalidTestData = {
 } as any;
 
 describe("HydroscopeCore Component", () => {
+  let coordinator: AsyncCoordinator;
+
   let mockOnError: ReturnType<typeof vi.fn>;
   let mockOnNodeClick: ReturnType<typeof vi.fn>;
   let mockOnContainerCollapse: ReturnType<typeof vi.fn>;
   let mockOnContainerExpand: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     mockOnError = vi.fn();
     mockOnNodeClick = vi.fn();
     mockOnContainerCollapse = vi.fn();

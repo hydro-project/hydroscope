@@ -4,10 +4,8 @@
  * Maps semantic tags to visual channels like line-pattern, line-width, animation, etc.
  * Based on the semantic mappings configuration from the JSON data.
  */
-
 import type { CSSProperties } from "react";
 import type { StyleConfig } from "../types/core.js";
-
 // Visual channels supported by the style processor
 export const VISUAL_CHANNELS = {
   "line-pattern": ["solid", "dashed", "dotted", "dash-dot"],
@@ -24,21 +22,18 @@ export const VISUAL_CHANNELS = {
   ],
   waviness: ["none", "wavy"],
 } as const;
-
 // Default style values
 export const DEFAULT_STYLE = {
   STROKE_COLOR: "#666666",
   STROKE_WIDTH: 2,
   DEFAULT_STROKE_COLOR: "#999999", // For elements with no semantic tags
 } as const;
-
 // Halo color mappings
 export const HALO_COLOR_MAPPINGS = {
   "light-blue": "#4a90e2",
   "light-red": "#e74c3c",
   "light-green": "#27ae60",
 } as const;
-
 export interface ProcessedStyle {
   style: CSSProperties & Record<string, unknown>;
   animated: boolean;
@@ -47,7 +42,6 @@ export interface ProcessedStyle {
   markerEnd?: string | object;
   lineStyle?: "single" | "double";
 }
-
 /**
  * Process semantic tags and return visual style
  */
@@ -60,7 +54,6 @@ export function processSemanticTags(
   if (!semanticTags || semanticTags.length === 0) {
     return getDefaultStyle(elementType);
   }
-
   // If we have semantic mappings, use them
   if (styleConfig?.semanticMappings) {
     return processWithSemanticMappings(
@@ -70,7 +63,6 @@ export function processSemanticTags(
       elementType,
     );
   }
-
   // If we have property mappings, use them (legacy support)
   if (styleConfig?.propertyMappings) {
     return processWithPropertyMappings(
@@ -80,11 +72,9 @@ export function processSemanticTags(
       elementType,
     );
   }
-
   // No mappings available, return default style
   return getDefaultStyle(elementType);
 }
-
 /**
  * Process semantic tags for aggregated edges with conflict resolution
  */
@@ -96,7 +86,6 @@ export function processAggregatedSemanticTags(
   if (!originalEdges || originalEdges.length === 0) {
     return getDefaultStyle("edge");
   }
-
   if (!styleConfig?.semanticMappings) {
     // Fallback to merging all semantic tags if no mappings
     const allTags = [
@@ -108,18 +97,14 @@ export function processAggregatedSemanticTags(
       originalLabel,
       "edge",
     );
-
     // Ensure we always have some default styling for aggregated edges
     if (!result.style || Object.keys(result.style).length === 0) {
       return getDefaultStyle("edge");
     }
-
     return result;
   }
-
   // Process each original edge to get its style settings
   const edgeStyleSettings: Record<string, string | number>[] = [];
-
   for (const edge of originalEdges) {
     const edgeTags = edge.semanticTags || [];
     if (edgeTags.length > 0) {
@@ -129,11 +114,9 @@ export function processAggregatedSemanticTags(
       }
     }
   }
-
   // Merge style settings with conflict resolution
   const mergedSettings =
     mergeStyleSettingsWithConflictResolution(edgeStyleSettings);
-
   // Convert merged settings to visual format
   if (Object.keys(mergedSettings).length > 0) {
     const appliedTags = [
@@ -146,10 +129,8 @@ export function processAggregatedSemanticTags(
       "edge",
     );
   }
-
   return getDefaultStyle("edge");
 }
-
 /**
  * Extract style settings from semantic tags using semantic mappings
  */
@@ -158,11 +139,9 @@ function extractStyleSettingsFromTags(
   styleConfig: StyleConfig,
 ): Record<string, string | number> {
   const styleSettings: Record<string, string | number> = {};
-
   if (!styleConfig.semanticMappings) {
     return styleSettings;
   }
-
   // Process each group in the semantic mappings
   for (const [, group] of Object.entries(styleConfig.semanticMappings)) {
     // Find which option in this group matches our semantic tags (if any)
@@ -174,10 +153,8 @@ function extractStyleSettingsFromTags(
       }
     }
   }
-
   return styleSettings;
 }
-
 /**
  * Merge style settings from multiple edges with conflict resolution
  */
@@ -187,14 +164,11 @@ function mergeStyleSettingsWithConflictResolution(
   if (edgeStyleSettings.length === 0) {
     return {};
   }
-
   if (edgeStyleSettings.length === 1) {
     return { ...edgeStyleSettings[0] };
   }
-
   // Collect all style properties and their values across edges
   const propertyValues: Record<string, Set<string | number>> = {};
-
   for (const settings of edgeStyleSettings) {
     for (const [property, value] of Object.entries(settings)) {
       if (!propertyValues[property]) {
@@ -203,10 +177,8 @@ function mergeStyleSettingsWithConflictResolution(
       propertyValues[property].add(value);
     }
   }
-
   // Resolve conflicts
   const mergedSettings: Record<string, string | number> = {};
-
   for (const [property, values] of Object.entries(propertyValues)) {
     if (values.size === 1) {
       // No conflict - use the single value
@@ -220,10 +192,8 @@ function mergeStyleSettingsWithConflictResolution(
       // If no neutral default exists, omit the property (let CSS defaults apply)
     }
   }
-
   return mergedSettings;
 }
-
 /**
  * Get neutral default values for conflicting style properties
  */
@@ -239,10 +209,8 @@ function getNeutralDefaultForProperty(
     arrowhead: "triangle-open", // Neutral arrow for aggregated edges
     waviness: "none",
   };
-
   return neutralDefaults[property];
 }
-
 /**
  * Process semantic tags using semantic mappings configuration
  */
@@ -255,11 +223,9 @@ function processWithSemanticMappings(
   if (!styleConfig.semanticMappings) {
     return getDefaultStyle(elementType);
   }
-
   // Collect all style settings from matching semantic tags
   const styleSettings: Record<string, string | number> = {};
   const appliedTags: string[] = [];
-
   // Process each group in the semantic mappings
   for (const [, group] of Object.entries(styleConfig.semanticMappings)) {
     // Find which option in this group matches our semantic tags (if any)
@@ -272,7 +238,6 @@ function processWithSemanticMappings(
       }
     }
   }
-
   // Convert style settings to visual format
   if (Object.keys(styleSettings).length > 0) {
     return convertStyleSettingsToVisual(
@@ -282,10 +247,8 @@ function processWithSemanticMappings(
       elementType,
     );
   }
-
   return getDefaultStyle(elementType);
 }
-
 /**
  * Process semantic tags using property mappings (legacy support)
  */
@@ -298,12 +261,10 @@ function processWithPropertyMappings(
   if (!styleConfig.propertyMappings) {
     return getDefaultStyle(elementType);
   }
-
   let style: CSSProperties & Record<string, unknown> = {};
   let animated = false;
   const appliedTags: string[] = [];
   const labels: string[] = [];
-
   // Apply each matching property mapping
   for (const tag of semanticTags) {
     const mapping = styleConfig.propertyMappings[tag];
@@ -326,7 +287,6 @@ function processWithPropertyMappings(
       appliedTags.push(tag);
     }
   }
-
   return {
     style: {
       stroke: DEFAULT_STYLE.STROKE_COLOR,
@@ -341,7 +301,6 @@ function processWithPropertyMappings(
     appliedTags,
   };
 }
-
 /**
  * Convert style settings to visual format
  */
@@ -355,7 +314,6 @@ function convertStyleSettingsToVisual(
   let animated = false;
   let markerEnd: string | object | undefined = undefined;
   let lineStyle: "single" | "double" = "single";
-
   // Apply line-pattern
   const linePattern = styleSettings["line-pattern"] as string;
   if (linePattern) {
@@ -374,19 +332,16 @@ function convertStyleSettingsToVisual(
         break;
     }
   }
-
   // Apply line-width
   const lineWidth = styleSettings["line-width"] as number;
   if (lineWidth) {
     style.strokeWidth = lineWidth;
   }
-
   // Apply animation
   const animation = styleSettings["animation"] as string;
   if (animation === "animated") {
     animated = true;
   }
-
   // Apply line-style
   const lineStyleSetting = styleSettings["line-style"] as string;
   if (lineStyleSetting === "double") {
@@ -394,13 +349,11 @@ function convertStyleSettingsToVisual(
     // For double lines, use a dash pattern that looks like double lines
     style.strokeDasharray = "10,2,2,2";
   }
-
   // Apply waviness
   const waviness = styleSettings["waviness"] as string;
   if (waviness === "wavy") {
     style.waviness = "wavy";
   }
-
   // Apply halo
   const halo = styleSettings["halo"] as string;
   if (halo && halo !== "none") {
@@ -410,7 +363,6 @@ function convertStyleSettingsToVisual(
       style.haloColor = haloColor;
     }
   }
-
   // Apply arrowhead
   const arrowhead = styleSettings["arrowhead"] as string;
   if (arrowhead && arrowhead !== "none") {
@@ -432,17 +384,14 @@ function convertStyleSettingsToVisual(
     // Default arrowhead for edges when none is specified
     markerEnd = { type: "arrowclosed" };
   }
-
   // Only set base style properties if we don't have any style settings
   const hasStyleSettings = Object.keys(style).length > 0;
   let baseStyle: CSSProperties & Record<string, unknown> = { ...style };
-
   // For edges, only set defaults if no style settings were applied
   if (elementType === "edge" && !hasStyleSettings) {
     baseStyle.stroke = DEFAULT_STYLE.STROKE_COLOR;
     baseStyle.strokeWidth = DEFAULT_STYLE.STROKE_WIDTH;
   }
-
   // For nodes, apply different base styles only if no style settings were applied
   if (elementType === "node") {
     if (!hasStyleSettings) {
@@ -455,7 +404,6 @@ function convertStyleSettingsToVisual(
       delete baseStyle.strokeDasharray;
     }
   }
-
   return {
     style: baseStyle,
     animated,
@@ -465,7 +413,6 @@ function convertStyleSettingsToVisual(
     lineStyle,
   };
 }
-
 /**
  * Get default style for elements with no semantic tags
  */
@@ -482,7 +429,6 @@ function getDefaultStyle(
       appliedTags: [],
     };
   }
-
   return {
     style: {
       stroke: DEFAULT_STYLE.DEFAULT_STROKE_COLOR,
@@ -493,7 +439,6 @@ function getDefaultStyle(
     markerEnd: { type: "arrowclosed" },
   };
 }
-
 /**
  * Create a label from semantic tags
  */
@@ -504,19 +449,15 @@ function createTagLabel(
   if (!appliedTags || appliedTags.length === 0) {
     return originalLabel;
   }
-
   // Use first character of each tag as abbreviation
   const tagLabels = appliedTags
     .map((tag) => tag.charAt(0).toUpperCase())
     .join("");
-
   if (originalLabel) {
     return `${originalLabel} [${tagLabels}]`;
   }
-
   return tagLabels.length > 0 ? tagLabels : undefined;
 }
-
 /**
  * Validate semantic mappings configuration
  */
@@ -528,18 +469,15 @@ export function validateSemanticMappings(
 ): string[] {
   const errors: string[] = [];
   const stylePropertyToGroups: Record<string, string[]> = {};
-
   // Track which groups use each style property
   for (const [groupName, group] of Object.entries(semanticMappings)) {
     const groupStyleProperties = new Set<string>();
-
     // Collect all style properties used in this group
     for (const [, styleMapping] of Object.entries(group)) {
       for (const styleProperty of Object.keys(styleMapping)) {
         groupStyleProperties.add(styleProperty);
       }
     }
-
     // Track group usage for each style property
     for (const styleProperty of groupStyleProperties) {
       if (!stylePropertyToGroups[styleProperty]) {
@@ -548,7 +486,6 @@ export function validateSemanticMappings(
       stylePropertyToGroups[styleProperty].push(groupName);
     }
   }
-
   // Check for conflicts (same style property used in multiple groups)
   for (const [styleProperty, groups] of Object.entries(stylePropertyToGroups)) {
     if (groups.length > 1) {
@@ -557,6 +494,5 @@ export function validateSemanticMappings(
       );
     }
   }
-
   return errors;
 }

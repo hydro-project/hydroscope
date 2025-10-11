@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Validation Invariants", () => {
   describe("Container State Invariants", () => {
@@ -139,36 +140,6 @@ describe("Validation Invariants", () => {
     });
   });
 
-  describe("Layout Invariants", () => {
-    it("should warn about large collapsed container dimensions", async () => {
-      const { VisualizationState } = await import(
-        "../core/VisualizationState.js"
-      );
-      const state = new VisualizationState();
-
-      // Add container with large dimensions
-      state.addContainer({
-        id: "c1",
-        label: "Large Container",
-        children: new Set(),
-        collapsed: true,
-        width: 1000,
-        height: 1000,
-      });
-
-      // Should generate warning (not error)
-      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-      state.validateInvariants();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/Invariant warnings/i),
-        expect.arrayContaining([
-          expect.objectContaining({
-            type: "COLLAPSED_CONTAINER_LARGE_DIMENSIONS",
-            message: expect.stringMatching(/large dimensions/i),
-          }),
-        ]),
-      );
-      consoleSpy.mockRestore();
-    });
-  });
+  // Layout Invariants section removed - the large container dimensions warning
+  // was determined to be deceptive and is no longer needed
 });

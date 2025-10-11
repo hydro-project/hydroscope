@@ -40,6 +40,12 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
   });
 
   describe("Tree Node Operations", () => {
+    let coordinator: AsyncCoordinator;
+
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should expand tree node through async coordination", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node");
@@ -137,6 +143,12 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
   });
 
   describe("Navigation Operations", () => {
+    let coordinator: AsyncCoordinator;
+
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should navigate to element through async coordination", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node");
@@ -208,6 +220,12 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
   });
 
   describe("Enhanced Container Operations", () => {
+    let coordinator: AsyncCoordinator;
+
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should support container ID list in expandAllContainers", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
@@ -225,10 +243,12 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       state.addContainer(container2);
 
       // Collapse both containers first
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Expand only container1 using new signature
-      await coordinator.expandAllContainers(state, ["container1"]);
+      await coordinator.expandAllContainers(state, ["container1"], {
+        triggerLayout: false,
+      });
 
       // Only container1 should be expanded
       expect(state.getContainer("container1")?.collapsed).toBe(false);
@@ -256,7 +276,9 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       expect(state.getContainer("container2")?.collapsed).toBe(false);
 
       // Collapse only container1 using new signature
-      await coordinator.collapseAllContainers(state, ["container1"]);
+      await coordinator.collapseAllContainers(state, ["container1"], {
+        triggerLayout: false,
+      });
 
       // Only container1 should be collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);

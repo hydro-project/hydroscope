@@ -4,19 +4,23 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
   let paxosData: any;
 
   beforeEach(async () => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
 

@@ -10,19 +10,26 @@ import {
   createTestNode,
   createTestEdge,
 } from "../utils/testData.js";
-import type { AggregatedEdge } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Edge Aggregation Data Structures", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
   describe("AggregatedEdge Data Structure", () => {
     it("should create aggregated edges with correct structure", () => {
       // Set up test data: container with internal nodes and edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3"); // External node
@@ -53,7 +60,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
 
     it("should maintain bidirectional mapping between original and aggregated edges", () => {
       // Set up test scenario
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -80,7 +91,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should track aggregation metadata correctly", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -101,7 +116,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
 
   describe("Efficient Lookup Structures", () => {
     it("should provide O(1) lookup for aggregated edges by container", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -120,7 +139,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should provide O(1) lookup for original edges by aggregated edge", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -142,7 +165,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should efficiently find all aggregated edges affecting a node", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3");
@@ -164,8 +191,17 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
   });
 
   describe("Edge Aggregation Tracking", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should track aggregation history", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -187,8 +223,12 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
       expect(historyAfter[0].edgeCount).toBeGreaterThan(0);
     });
 
-    it("should track restoration history", () => {
-      const container = createTestContainer("container1", ["node1"]);
+    it("should track restoration history", async () => {
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -199,7 +239,9 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
       state.addEdge(edge);
 
       state.collapseContainerSystemOperation("container1");
-      state._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       const history = state.getAggregationHistory();
       expect(history.length).toBe(2);
@@ -208,8 +250,16 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should provide aggregation statistics", () => {
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3");
@@ -237,8 +287,16 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
 
   describe("Multi-Container Edge Scenarios", () => {
     it("should handle edges between multiple collapsed containers", () => {
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -264,8 +322,16 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should handle nested container aggregation", () => {
-      const parentContainer = createTestContainer("parent", ["child"]);
-      const childContainer = createTestContainer("child", ["node1"]);
+      const parentContainer = createTestContainer(
+        "parent",
+        ["child"],
+        "Container parent",
+      );
+      const childContainer = createTestContainer(
+        "child",
+        ["node1"],
+        "Container child",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -293,7 +359,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
 
   describe("Performance Optimizations", () => {
     it("should handle large edge sets efficiently", () => {
-      const container = createTestContainer("container1", []);
+      const container = createTestContainer(
+        "container1",
+        [],
+        "Container container1",
+      );
       const nodes = [];
       const edges = [];
 
@@ -329,7 +399,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should optimize memory usage for aggregated edges", () => {
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3");
@@ -365,7 +439,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
 
   describe("Edge Aggregation Validation", () => {
     it("should validate aggregated edge consistency", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -383,7 +461,11 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     });
 
     it("should detect aggregation inconsistencies", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");

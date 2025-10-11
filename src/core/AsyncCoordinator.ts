@@ -2,20 +2,16 @@
  * AsyncCoordinator - Sequential queue system for async operations
  * Manages async boundaries with FIFO queues and error handling
  */
-
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
-
 interface ErrorRecoveryResult {
   success: boolean;
   fallbackApplied: boolean;
   userFeedbackShown: boolean;
 }
-
 export interface QueueOptions {
   timeout?: number;
   maxRetries?: number;
 }
-
 export class AsyncCoordinator {
   private queue: QueuedOperation[] = [];
   private processing = false;
@@ -24,10 +20,8 @@ export class AsyncCoordinator {
   private processingTimes: number[] = [];
   private currentOperation?: QueuedOperation;
   private operationIdCounter = 0;
-
   // Callback to update HydroscopeCore's React state when ReactFlow data changes
   public onReactFlowDataUpdate?: (reactFlowData: any) => void;
-
   /**
    * Queue an operation for sequential processing
    */
@@ -37,7 +31,6 @@ export class AsyncCoordinator {
     options: QueueOptions = {},
   ): string {
     const id = `op_${++this.operationIdCounter}`;
-
     const queuedOp: QueuedOperation<T> = {
       id,
       type,
@@ -47,11 +40,9 @@ export class AsyncCoordinator {
       maxRetries: options.maxRetries || 0,
       createdAt: Date.now(),
     };
-
     this.queue.push(queuedOp);
     return id;
   }
-
   /**
    * Process all queued operations sequentially
    */
@@ -59,9 +50,7 @@ export class AsyncCoordinator {
     if (this.processing) {
       return;
     }
-
     this.processing = true;
-
     try {
       while (this.queue.length > 0) {
         const operation = this.queue.shift()!;
@@ -72,40 +61,28 @@ export class AsyncCoordinator {
       this.currentOperation = undefined;
     }
   }
-
   /**
    * Process a single operation with retry logic and timeout handling
    */
   private async processOperation(operation: QueuedOperation): Promise<void> {
     this.currentOperation = operation;
     operation.startedAt = Date.now();
-
-    console.log(
-      `[AsyncCoordinator] 🚀 Starting operation ${operation.id} (${operation.type})`,
-    );
-
     while (operation.retryCount <= operation.maxRetries) {
       try {
         const result = await this.executeWithTimeout(operation);
-
         // Operation succeeded
         operation.completedAt = Date.now();
         operation.result = result;
         this.completedOperations.push(operation);
         this.recordProcessingTime(operation);
-        console.log(
-          `[AsyncCoordinator] ✅ Operation ${operation.id} (${operation.type}) completed successfully`,
-        );
         return;
       } catch (error) {
         operation.error = error as Error;
         operation.retryCount++;
-
         console.error(
           `[AsyncCoordinator] ❌ Operation ${operation.id} (${operation.type}) failed (attempt ${operation.retryCount}/${operation.maxRetries + 1}):`,
           error,
         );
-
         // If we've exhausted retries, mark as failed
         if (operation.retryCount > operation.maxRetries) {
           operation.completedAt = Date.now();
@@ -116,18 +93,12 @@ export class AsyncCoordinator {
           );
           return;
         }
-
-        // Otherwise, retry after a brief delay
-        console.log(
-          `[AsyncCoordinator] 🔄 Retrying operation ${operation.id} (${operation.type}) in ${100 * operation.retryCount}ms`,
-        );
         await new Promise((resolve) =>
           setTimeout(resolve, 100 * operation.retryCount),
         );
       }
     }
   }
-
   /**
    * Execute operation with timeout if specified
    */
@@ -135,7 +106,6 @@ export class AsyncCoordinator {
     if (!operation.timeout) {
       return await operation.operation();
     }
-
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(
@@ -144,7 +114,6 @@ export class AsyncCoordinator {
           ),
         );
       }, operation.timeout);
-
       operation
         .operation()
         .then((result) => {
@@ -157,7 +126,6 @@ export class AsyncCoordinator {
         });
     });
   }
-
   /**
    * Record processing time for statistics
    */
@@ -165,14 +133,12 @@ export class AsyncCoordinator {
     if (operation.startedAt && operation.completedAt) {
       const processingTime = operation.completedAt - operation.startedAt;
       this.processingTimes.push(processingTime);
-
       // Keep only last 100 processing times for rolling average
       if (this.processingTimes.length > 100) {
         this.processingTimes.shift();
       }
     }
   }
-
   /**
    * Get current queue status and statistics
    */
@@ -184,7 +150,6 @@ export class AsyncCoordinator {
         ? this.processingTimes.reduce((sum, time) => sum + time, 0) /
           this.processingTimes.length
         : 0;
-
     return {
       pending: this.queue.length,
       processing: this.processing ? 1 : 0,
@@ -196,14 +161,12 @@ export class AsyncCoordinator {
       errors: this.failedOperations.map((op) => op.error!).filter(Boolean),
     };
   }
-
   /**
    * Clear all queued operations
    */
   clearQueue(): void {
     this.queue = [];
   }
-
   /**
    * Clear all statistics and completed operations
    */
@@ -212,37 +175,31 @@ export class AsyncCoordinator {
     this.failedOperations = [];
     this.processingTimes = [];
   }
-
   /**
    * Get all completed operations
    */
   getCompletedOperations(): ReadonlyArray<QueuedOperation> {
     return [...this.completedOperations];
   }
-
   /**
    * Get all failed operations
    */
   getFailedOperations(): ReadonlyArray<QueuedOperation> {
     return [...this.failedOperations];
   }
-
   /**
    * Check if queue is currently processing
    */
   isProcessing(): boolean {
     return this.processing;
   }
-
   /**
    * Get current queue length
    */
   getQueueLength(): number {
     return this.queue.length;
   }
-
   // ELK-specific async operations
-
   /**
    * Queue ELK layout operation with proper sequencing
    * This method ensures ELK layout results update VisualizationState before any ReactFlow render
@@ -255,25 +212,15 @@ export class AsyncCoordinator {
     return new Promise((resolve, reject) => {
       const operation = async () => {
         try {
-          console.log(`[AsyncCoordinator] 🚀 Starting ELK layout operation`);
-
           // Set layout phase to indicate processing
           state.setLayoutPhase("laying_out");
-
           // ELKBridge is now stateless - no caches to clear
-
           // Call real ELK layout calculation - this updates VisualizationState directly
           await elkBridge.layout(state);
-
           // Increment layout count for smart collapse logic
           state.incrementLayoutCount();
-
           // Set layout phase to ready after successful ELK layout
           state.setLayoutPhase("ready");
-
-          console.log(
-            `[AsyncCoordinator] ✅ ELK layout operation completed - VisualizationState updated`,
-          );
           return "layout_complete";
         } catch (error) {
           console.error(
@@ -284,13 +231,11 @@ export class AsyncCoordinator {
           throw error;
         }
       };
-
       // Queue the operation
       const operationId = this.queueOperation("elk_layout", operation, {
         timeout: options.timeout || 10000, // 10 second default timeout
         maxRetries: options.maxRetries || 1,
       });
-
       // Set up a way to resolve/reject the Promise when the operation completes
       const checkCompletion = () => {
         const completed = this.completedOperations.find(
@@ -299,7 +244,6 @@ export class AsyncCoordinator {
         const failed = this.failedOperations.find(
           (op) => op.id === operationId,
         );
-
         if (completed) {
           resolve();
         } else if (failed) {
@@ -309,7 +253,6 @@ export class AsyncCoordinator {
           setTimeout(checkCompletion, 10);
         }
       };
-
       // Process the queue if not already processing
       if (!this.processing) {
         this.processQueue()
@@ -324,7 +267,6 @@ export class AsyncCoordinator {
       }
     });
   }
-
   /**
    * Cancel ELK operation if it's still queued
    */
@@ -338,7 +280,6 @@ export class AsyncCoordinator {
     }
     return false;
   }
-
   /**
    * Get status of ELK operations
    */
@@ -356,7 +297,6 @@ export class AsyncCoordinator {
     const lastFailed = [...this.failedOperations]
       .reverse()
       .find((op) => op.type === "elk_layout");
-
     return {
       queued: elkOps.length,
       processing: currentELK,
@@ -364,9 +304,7 @@ export class AsyncCoordinator {
       lastFailed,
     };
   }
-
   // ReactFlow-specific async operations
-
   /**
    * Queue ReactFlow render operation with proper sequencing
    * This method ensures ReactFlow rendering uses current VisualizationState data
@@ -380,38 +318,21 @@ export class AsyncCoordinator {
       const operation = async () => {
         // Import BridgeFactory to get singleton bridge instance
         const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
-
         try {
-          console.log(
-            `[AsyncCoordinator] 🚀 Starting ReactFlow render operation`,
-          );
-
           // Get stateless ReactFlow bridge instance (singleton)
           const reactFlowBridge = bridgeFactory.getReactFlowBridge();
-
           // Set layout phase to indicate rendering
           state.setLayoutPhase("rendering");
-
           // Convert to ReactFlow format using current VisualizationState data
           const reactFlowData = reactFlowBridge.toReactFlowData(state);
-
           // Set layout phase to displayed
           state.setLayoutPhase("displayed");
-
-          console.log(
-            `[AsyncCoordinator] ✅ ReactFlow render operation completed`,
-          );
-
           // CRITICAL FIX: Trigger HydroscopeCore state update
           // The AsyncCoordinator generates ReactFlow data but doesn't update HydroscopeCore's React state
           // We need to ensure the HydroscopeCore gets the updated data
           if (this.onReactFlowDataUpdate) {
-            console.log(
-              `[AsyncCoordinator] 🔄 Triggering HydroscopeCore state update`,
-            );
             this.onReactFlowDataUpdate(reactFlowData);
           }
-
           return reactFlowData;
         } catch (error) {
           console.error(
@@ -423,13 +344,11 @@ export class AsyncCoordinator {
           throw error;
         }
       };
-
       // Queue the operation
       const operationId = this.queueOperation("reactflow_render", operation, {
         timeout: options.timeout || 5000, // 5 second default timeout
         maxRetries: options.maxRetries || 1,
       });
-
       // Set up proper completion tracking
       const checkCompletion = () => {
         const completed = this.completedOperations.find(
@@ -438,7 +357,6 @@ export class AsyncCoordinator {
         const failed = this.failedOperations.find(
           (op) => op.id === operationId,
         );
-
         if (completed) {
           resolve(completed.result);
         } else if (failed) {
@@ -448,7 +366,6 @@ export class AsyncCoordinator {
           setTimeout(checkCompletion, 10);
         }
       };
-
       // Process the queue if not already processing
       if (!this.processing) {
         this.processQueue()
@@ -463,7 +380,6 @@ export class AsyncCoordinator {
       }
     });
   }
-
   /**
    * Queue complete layout and render pipeline with proper sequencing
    * Ensures: ELK Layout → State Update → ReactFlow Render
@@ -474,21 +390,9 @@ export class AsyncCoordinator {
     elkBridge: any, // ELKBridge instance
     options: QueueOptions = {},
   ): Promise<any> {
-    // ReactFlowData
-    console.log(`[AsyncCoordinator] 🚀 Starting layout and render pipeline`);
-
     try {
-      // Step 1: ELK Layout (updates VisualizationState)
-      console.log(`[AsyncCoordinator] 📐 Pipeline Step 1: ELK Layout`);
       await this.queueELKLayout(state, elkBridge, options);
-
-      // Step 2: ReactFlow Render (uses updated VisualizationState)
-      console.log(`[AsyncCoordinator] 🎨 Pipeline Step 2: ReactFlow Render`);
       const reactFlowData = await this.queueReactFlowRender(state, options);
-
-      console.log(
-        `[AsyncCoordinator] ✅ Layout and render pipeline completed successfully`,
-      );
       return reactFlowData;
     } catch (error) {
       console.error(
@@ -498,7 +402,6 @@ export class AsyncCoordinator {
       throw error;
     }
   }
-
   /**
    * Cancel ReactFlow operation if it's still queued
    */
@@ -512,7 +415,6 @@ export class AsyncCoordinator {
     }
     return false;
   }
-
   /**
    * Get status of ReactFlow operations
    */
@@ -532,7 +434,6 @@ export class AsyncCoordinator {
     const lastFailed = [...this.failedOperations]
       .reverse()
       .find((op) => op.type === "reactflow_render");
-
     return {
       queued: reactFlowOps.length,
       processing: currentReactFlow,
@@ -540,9 +441,7 @@ export class AsyncCoordinator {
       lastFailed,
     };
   }
-
   // Application Event System
-
   /**
    * Queue render config update with ReactFlow re-render
    * This ensures render config changes are applied atomically
@@ -552,26 +451,16 @@ export class AsyncCoordinator {
     updates: any, // RenderConfig updates
     options: QueueOptions = {},
   ): Promise<any> {
-    console.log(`[AsyncCoordinator] 🎨 Queuing render config update:`, updates);
-
     return new Promise((resolve, reject) => {
       const operation = async () => {
         try {
-          console.log(`[AsyncCoordinator] 🎨 Executing render config update`);
-
           // Update the render config in VisualizationState
           state.updateRenderConfig(updates);
-
           // Import ReactFlowBridge dynamically to avoid circular dependency
           const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
           const reactFlowBridge = bridgeFactory.getReactFlowBridge();
-
           // Generate new ReactFlow data with updated config
           const reactFlowData = reactFlowBridge.toReactFlowData(state);
-
-          console.log(
-            `[AsyncCoordinator] ✅ Render config update completed - ReactFlow data regenerated`,
-          );
           resolve(reactFlowData);
           return reactFlowData;
         } catch (error) {
@@ -583,20 +472,17 @@ export class AsyncCoordinator {
           throw error;
         }
       };
-
       // Queue the operation
       this.queueOperation("render_config_update", operation, {
         timeout: options.timeout || 3000, // 3 second default timeout
         maxRetries: options.maxRetries || 1,
       });
-
       // Process the queue if not already processing
       if (!this.processing) {
         this.processQueue().catch(reject);
       }
     });
   }
-
   /**
    * Queue application event with proper prioritization
    */
@@ -609,24 +495,19 @@ export class AsyncCoordinator {
       await this.processApplicationEvent(event);
       return "event_processed";
     };
-
     // Determine priority based on event type
     const priority = this.getEventPriority(event.type);
-
     // Queue the operation with priority handling
     const operationId = this.queueOperation("application_event", operation, {
       timeout: options.timeout || 5000, // 5 second default timeout
       maxRetries: options.maxRetries || 1,
     });
-
     // Insert operation at appropriate position based on priority
     if (priority === "high") {
       this.prioritizeOperation(operationId);
     }
-
     return operationId;
   }
-
   /**
    * Process application event and wait for completion
    */
@@ -635,27 +516,22 @@ export class AsyncCoordinator {
     options: QueueOptions = {},
   ): Promise<void> {
     const operationId = this.queueApplicationEvent(event, options);
-
     // Process the queue if not already processing
     if (!this.processing) {
       await this.processQueue();
     }
-
     // Check if our operation completed successfully
     const completedOp = this.completedOperations.find(
       (op) => op.id === operationId,
     );
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (failedOp) {
       throw failedOp.error || new Error("Application event processing failed");
     }
-
     if (!completedOp) {
       throw new Error("Application event operation not found");
     }
   }
-
   /**
    * Process individual application event
    */
@@ -682,7 +558,6 @@ export class AsyncCoordinator {
         throw new Error(`Unknown application event type: ${event.type}`);
     }
   }
-
   /**
    * Handle container expand event
    */
@@ -690,11 +565,9 @@ export class AsyncCoordinator {
     event: ApplicationEvent,
   ): Promise<void> {
     const { containerId, state, isTreeOperation } = event.payload;
-
     if (!containerId || !state) {
       throw new Error("Container expand event missing required payload");
     }
-
     if (isTreeOperation) {
       // Handle tree node expansion
       if ((state as any).expandTreeNodes) {
@@ -714,11 +587,9 @@ export class AsyncCoordinator {
         );
       }
     }
-
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
   }
-
   /**
    * Handle container collapse event
    */
@@ -727,15 +598,9 @@ export class AsyncCoordinator {
   ): Promise<void> {
     const { containerId, state, triggerValidation, isTreeOperation } =
       event.payload;
-
     if (!containerId || !state) {
       throw new Error("Container collapse event missing required payload");
     }
-
-    console.log(
-      `[AsyncCoordinator] 🔄 Processing ${isTreeOperation ? "tree node" : "container"} collapse event for ${containerId}`,
-    );
-
     if (isTreeOperation) {
       // Handle tree node collapse
       if ((state as any).collapseTreeNodes) {
@@ -755,18 +620,11 @@ export class AsyncCoordinator {
         );
       }
     }
-
     // Trigger ReactFlow validation if requested (only for container operations)
     if (triggerValidation && !isTreeOperation) {
-      console.log(
-        `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse event`,
-      );
       try {
         // Use proper sequencing through queueReactFlowRender instead of direct bridge access
         await this.queueReactFlowRender(state as any);
-        console.log(
-          `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse event`,
-        );
       } catch (error) {
         console.error(
           `[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse event:`,
@@ -775,11 +633,9 @@ export class AsyncCoordinator {
         // Don't throw - validation failure shouldn't break the collapse operation
       }
     }
-
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
   }
-
   /**
    * Handle container expand all event
    */
@@ -787,15 +643,9 @@ export class AsyncCoordinator {
     event: ApplicationEvent,
   ): Promise<void> {
     const { containerIds, state } = event.payload;
-
     if (!state) {
       throw new Error("Container expand all event missing required payload");
     }
-
-    console.log(
-      `[AsyncCoordinator] 🔄 Processing expand all containers event${containerIds ? " (specified list)" : " (all containers)"}`,
-    );
-
     // Use VisualizationState's expandAllContainers method directly
     // This ensures the iterative expansion logic is used for nested containers
     if (containerIds) {
@@ -805,26 +655,19 @@ export class AsyncCoordinator {
       // For all containers, use the internal coordinator method
       (state as any)._expandAllContainersForCoordinator();
     }
-
-    console.log(`[AsyncCoordinator] ✅ Expand all containers event completed`);
-
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations
   }
-
   /**
    * Handle search event
    */
   private async handleSearchEvent(event: ApplicationEvent): Promise<void> {
     const { query, state } = event.payload;
-
     if (!state) {
       throw new Error("Search event missing required payload");
     }
-
     // Perform search in the state
     const results = (state as any).search(query || "");
-
     // Expand containers containing search results if needed
     if (event.payload.expandContainers && results.length > 0) {
       for (const result of results) {
@@ -841,11 +684,9 @@ export class AsyncCoordinator {
         }
       }
     }
-
     // Note: Layout updates should be triggered separately to avoid nested async operations
     // The caller should handle layout updates after processing the event
   }
-
   /**
    * Handle layout config change event
    */
@@ -853,16 +694,13 @@ export class AsyncCoordinator {
     event: ApplicationEvent,
   ): Promise<void> {
     const { config, state } = event.payload;
-
     if (!config || !state) {
       throw new Error("Layout config change event missing required payload");
     }
-
     // Store the new configuration in the state (if supported)
     // The actual layout update should be triggered separately
     // Note: This is a simplified implementation - in practice, we'd store config in state
   }
-
   /**
    * Get event priority for queue ordering
    */
@@ -881,7 +719,6 @@ export class AsyncCoordinator {
         return "normal";
     }
   }
-
   /**
    * Move operation to front of queue for high priority
    */
@@ -892,7 +729,6 @@ export class AsyncCoordinator {
       this.queue.unshift(operation);
     }
   }
-
   /**
    * Cancel application event if it's still queued
    */
@@ -906,13 +742,11 @@ export class AsyncCoordinator {
     }
     return false;
   }
-
   /**
    * Cancel all application events of a specific type
    */
   cancelApplicationEventsByType(_eventType: ApplicationEvent["type"]): number {
     let cancelledCount = 0;
-
     // Filter out operations that match the event type
     this.queue = this.queue.filter((op) => {
       if (op.type === "application_event") {
@@ -923,10 +757,8 @@ export class AsyncCoordinator {
       }
       return true;
     });
-
     return cancelledCount;
   }
-
   /**
    * Get status of application event operations
    */
@@ -947,7 +779,6 @@ export class AsyncCoordinator {
     const lastFailed = [...this.failedOperations]
       .reverse()
       .find((op) => op.type === "application_event");
-
     // Count queued operations by type (simplified - would need event metadata in practice)
     const queuedByType: Record<string, number> = {
       container_expand: 0,
@@ -955,7 +786,6 @@ export class AsyncCoordinator {
       search: 0,
       layout_config_change: 0,
     };
-
     return {
       queued: appEventOps.length,
       processing: currentAppEvent,
@@ -964,7 +794,6 @@ export class AsyncCoordinator {
       queuedByType,
     };
   }
-
   /**
    * Clear all application events from queue
    */
@@ -973,9 +802,7 @@ export class AsyncCoordinator {
     this.queue = this.queue.filter((op) => op.type !== "application_event");
     return initialLength - this.queue.length;
   }
-
   // Container Operations Integration with Async Coordination
-
   /**
    * Expand container through async coordination with proper sequencing
    */
@@ -999,36 +826,29 @@ export class AsyncCoordinator {
       },
       timestamp: Date.now(),
     };
-
     // Queue the container expand event
     const operationId = this.queueApplicationEvent(event, {
       timeout: options.timeout,
       maxRetries: options.maxRetries,
     });
-
     // Process the queue if not already processing
     if (!this.processing) {
       await this.processQueue();
     }
-
     // Check if our operation completed successfully
     const completedOp = this.completedOperations.find(
       (op) => op.id === operationId,
     );
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (failedOp) {
       throw failedOp.error || new Error("Container expand operation failed");
     }
-
     if (!completedOp) {
       throw new Error("Container expand operation not found");
     }
-
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed
   }
-
   /**
    * Collapse container through async coordination with proper sequencing
    */
@@ -1054,46 +874,29 @@ export class AsyncCoordinator {
       },
       timestamp: Date.now(),
     };
-
     // Queue the container collapse event
     const operationId = this.queueApplicationEvent(event, {
       timeout: options.timeout,
       maxRetries: options.maxRetries,
     });
-
     // Process the queue if not already processing
     if (!this.processing) {
       await this.processQueue();
     }
-
     // Check if our operation completed successfully
     const completedOp = this.completedOperations.find(
       (op) => op.id === operationId,
     );
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (failedOp) {
       throw failedOp.error || new Error("Container collapse operation failed");
     }
-
     if (!completedOp) {
       throw new Error("Container collapse operation not found");
     }
-
     // Trigger ReactFlow validation after container collapse if requested
     if (options.triggerValidation) {
-      console.log(
-        `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container ${containerId} collapse`,
-      );
       try {
-        // Use proper sequencing: no direct bridge communication
-        // ReactFlow render will be handled separately by caller if needed
-        console.log(
-          `[AsyncCoordinator] ✅ Container ${containerId} collapse completed - ReactFlow render should be handled by caller`,
-        );
-        console.log(
-          `[AsyncCoordinator] ✅ ReactFlow validation completed after container ${containerId} collapse`,
-        );
       } catch (error) {
         console.error(
           `[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse:`,
@@ -1102,11 +905,9 @@ export class AsyncCoordinator {
         // Don't throw - validation failure shouldn't break the collapse operation
       }
     }
-
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed
   }
-
   /**
    * Expand all containers through async coordination with proper sequencing
    * Enhanced to support optional container ID list for batch operations
@@ -1131,7 +932,6 @@ export class AsyncCoordinator {
     // Handle backward compatibility - if second parameter is options object, use it
     let containerIds: string[] | undefined;
     let actualOptions = options;
-
     if (containerIdsOrOptions) {
       if (Array.isArray(containerIdsOrOptions)) {
         // New signature: containerIds provided
@@ -1142,7 +942,6 @@ export class AsyncCoordinator {
         containerIds = undefined;
       }
     }
-
     const event: ApplicationEvent = {
       type: "container_expand_all",
       payload: {
@@ -1153,35 +952,29 @@ export class AsyncCoordinator {
       },
       timestamp: Date.now(),
     };
-
     // Queue the expand all containers event
     const operationId = this.queueApplicationEvent(event, {
       timeout: actualOptions.timeout,
       maxRetries: actualOptions.maxRetries,
     });
-
     // Process the queue if not already processing
     if (!this.processing) {
       await this.processQueue();
     }
-
     // Check if our operation completed successfully
     const completedOp = this.completedOperations.find(
       (op) => op.id === operationId,
     );
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (failedOp) {
       throw (
         failedOp.error || new Error("Expand all containers operation failed")
       );
     }
-
     if (!completedOp) {
       throw new Error("Expand all containers operation did not complete");
     }
   }
-
   /**
    * Collapse all containers through async coordination with proper sequencing
    * Enhanced to support optional container ID list for batch operations
@@ -1208,7 +1001,6 @@ export class AsyncCoordinator {
     // Handle backward compatibility - if second parameter is options object, use it
     let containerIds: string[] | undefined;
     let actualOptions = options;
-
     if (containerIdsOrOptions) {
       if (Array.isArray(containerIdsOrOptions)) {
         // New signature: containerIds provided
@@ -1233,11 +1025,6 @@ export class AsyncCoordinator {
         (container: any) => !container.collapsed,
       );
     }
-
-    console.log(
-      `[AsyncCoordinator] 🔄 Collapsing ${containersToCollapse.length} containers${containerIds ? " (specified list)" : " (all expanded)"}`,
-    );
-
     // Collapse each container sequentially
     for (const container of containersToCollapse) {
       await this.collapseContainer(container.id, state, {
@@ -1245,20 +1032,13 @@ export class AsyncCoordinator {
         triggerLayout: false, // Don't trigger layout for each individual container
       });
     }
-
     // Trigger ReactFlow validation after all containers are collapsed
     if (actualOptions.triggerValidation !== false) {
-      console.log(
-        `[AsyncCoordinator] 🔍 Triggering ReactFlow validation after container collapse`,
-      );
       try {
         await this.queueReactFlowRender(state, {
           timeout: actualOptions.timeout,
           maxRetries: actualOptions.maxRetries,
         });
-        console.log(
-          `[AsyncCoordinator] ✅ ReactFlow validation completed after container collapse`,
-        );
       } catch (error) {
         console.error(
           `[AsyncCoordinator] ❌ ReactFlow validation failed after container collapse:`,
@@ -1267,61 +1047,50 @@ export class AsyncCoordinator {
         // Don't throw - validation failure shouldn't break the collapse operation
       }
     }
-
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations
   }
-
   // Tree hierarchy and navigation methods are implemented later in the file
   // to avoid duplication with error handling methods
-
   /**
    * Handle container operation error recovery
    */
   async recoverFromContainerOperationError(
     operationId: string,
-    state: any, // VisualizationState
+    _state: any, // VisualizationState
     recoveryAction: "retry" | "rollback" | "skip" = "retry",
   ): Promise<void> {
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (!failedOp) {
       throw new Error(`Failed operation ${operationId} not found`);
     }
-
     switch (recoveryAction) {
       case "retry":
         // Re-queue the failed operation with increased retry count
         const retryOperation = async () => {
           return await failedOp.operation();
         };
-
         this.queueOperation(failedOp.type, retryOperation, {
           timeout: failedOp.timeout,
           maxRetries: (failedOp.maxRetries || 0) + 1,
         });
-
         await this.processQueue();
         break;
-
       case "rollback":
         // Attempt to rollback the state change (implementation depends on the specific operation)
         // This is a simplified implementation - in practice, we'd need operation-specific rollback logic
         console.warn(`Rollback not implemented for operation ${operationId}`);
         break;
-
       case "skip":
         // Simply remove the failed operation from the failed list and continue
         this.failedOperations = this.failedOperations.filter(
           (op) => op.id !== operationId,
         );
         break;
-
       default:
         throw new Error(`Unknown recovery action: ${recoveryAction}`);
     }
   }
-
   /**
    * Get container operation status and statistics
    */
@@ -1346,21 +1115,10 @@ export class AsyncCoordinator {
     };
     lastError?: Error;
   } {
-    // Filter operations by container operation types
-    const expandOps = [
-      ...this.queue,
-      ...this.completedOperations,
-      ...this.failedOperations,
-    ].filter((op) => op.type === "application_event");
-
-    const _collapseOps = expandOps; // Simplified - in practice we'd need to check event payload
-    const _bulkOps = expandOps; // Simplified - in practice we'd need to check for bulk operations
-
     const lastError =
       this.failedOperations.length > 0
         ? this.failedOperations[this.failedOperations.length - 1].error
         : undefined;
-
     return {
       expandOperations: {
         queued: this.queue.filter((op) => op.type === "application_event")
@@ -1389,147 +1147,7 @@ export class AsyncCoordinator {
     };
   }
 
-  /**
-   * Ensure element is visible by expanding necessary containers
-   * Private helper method for navigation functionality
-   */
-  private async _ensureElementVisible(
-    elementId: string,
-    visualizationState: any, // VisualizationState
-  ): Promise<void> {
-    console.log(
-      `[AsyncCoordinator] 🔍 Checking visibility of element ${elementId}`,
-    );
-
-    // Check if element exists as a node
-    const node = visualizationState.getGraphNode(elementId);
-    if (node) {
-      // Element is a node - check if it's in collapsed containers
-      const containersToExpand = this._getCollapsedContainersForNode(
-        elementId,
-        visualizationState,
-      );
-
-      if (containersToExpand.length > 0) {
-        console.log(
-          `[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} containers to make node ${elementId} visible`,
-        );
-
-        // Expand containers from outermost to innermost
-        for (const containerId of containersToExpand.reverse()) {
-          console.log(
-            `[AsyncCoordinator] 📂 Expanding container ${containerId} for node visibility`,
-          );
-          visualizationState._expandContainerForCoordinator(containerId);
-        }
-
-        console.log(
-          `[AsyncCoordinator] ✅ All containers expanded for node ${elementId}`,
-        );
-      } else {
-        console.log(
-          `[AsyncCoordinator] ✅ Node ${elementId} is already visible`,
-        );
-      }
-      return;
-    }
-
-    // Check if element exists as a container
-    const container = visualizationState.getContainer(elementId);
-    if (container) {
-      // Element is a container - check if it's in collapsed parent containers
-      const containersToExpand = this._getCollapsedAncestorContainers(
-        elementId,
-        visualizationState,
-      );
-
-      if (containersToExpand.length > 0) {
-        console.log(
-          `[AsyncCoordinator] 📦 Expanding ${containersToExpand.length} ancestor containers to make container ${elementId} visible`,
-        );
-
-        // Expand containers from outermost to innermost
-        for (const containerId of containersToExpand.reverse()) {
-          console.log(
-            `[AsyncCoordinator] 📂 Expanding ancestor container ${containerId} for container visibility`,
-          );
-          visualizationState._expandContainerForCoordinator(containerId);
-        }
-
-        console.log(
-          `[AsyncCoordinator] ✅ All ancestor containers expanded for container ${elementId}`,
-        );
-      } else {
-        console.log(
-          `[AsyncCoordinator] ✅ Container ${elementId} is already visible`,
-        );
-      }
-      return;
-    }
-
-    console.warn(
-      `[AsyncCoordinator] ⚠️ Element ${elementId} not found as node or container`,
-    );
-  }
-
-  /**
-   * Get collapsed containers that contain a specific node
-   * Returns containers from innermost to outermost
-   */
-  private _getCollapsedContainersForNode(
-    nodeId: string,
-    visualizationState: any, // VisualizationState
-  ): string[] {
-    const collapsedContainers: string[] = [];
-
-    // Start with the immediate container of the node
-    let currentContainerId = visualizationState.getNodeContainer(nodeId);
-
-    while (currentContainerId) {
-      const container = visualizationState.getContainer(currentContainerId);
-
-      if (container && container.collapsed) {
-        collapsedContainers.push(currentContainerId);
-      }
-
-      // Move to parent container
-      currentContainerId =
-        visualizationState.getContainerParent(currentContainerId);
-    }
-
-    return collapsedContainers;
-  }
-
-  /**
-   * Get collapsed ancestor containers for a specific container
-   * Returns containers from innermost to outermost
-   */
-  private _getCollapsedAncestorContainers(
-    containerId: string,
-    visualizationState: any, // VisualizationState
-  ): string[] {
-    const collapsedContainers: string[] = [];
-
-    // Start with the parent container
-    let currentContainerId = visualizationState.getContainerParent(containerId);
-
-    while (currentContainerId) {
-      const container = visualizationState.getContainer(currentContainerId);
-
-      if (container && container.collapsed) {
-        collapsedContainers.push(currentContainerId);
-      }
-
-      // Move to parent container
-      currentContainerId =
-        visualizationState.getContainerParent(currentContainerId);
-    }
-
-    return collapsedContainers;
-  }
-
   // Tree Hierarchy Operations (symmetric with graph operations)
-
   /**
    * Expand tree node through async coordination
    */
@@ -1548,33 +1166,27 @@ export class AsyncCoordinator {
       },
       timestamp: Date.now(),
     };
-
     // Queue the tree expand event
     const operationId = this.queueApplicationEvent(event, {
       timeout: options.timeout || 3000, // Shorter timeout for tree operations
       maxRetries: options.maxRetries || 1,
     });
-
     // Process the queue if not already processing
     if (!this.processing) {
       await this.processQueue();
     }
-
     // Check if our operation completed successfully
     const completedOp = this.completedOperations.find(
       (op) => op.id === operationId,
     );
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (failedOp) {
       throw failedOp.error || new Error("Tree node expand operation failed");
     }
-
     if (!completedOp) {
       throw new Error("Tree node expand operation not found");
     }
   }
-
   /**
    * Collapse tree node through async coordination
    */
@@ -1593,33 +1205,27 @@ export class AsyncCoordinator {
       },
       timestamp: Date.now(),
     };
-
     // Queue the tree collapse event
     const operationId = this.queueApplicationEvent(event, {
       timeout: options.timeout || 3000, // Shorter timeout for tree operations
       maxRetries: options.maxRetries || 1,
     });
-
     // Process the queue if not already processing
     if (!this.processing) {
       await this.processQueue();
     }
-
     // Check if our operation completed successfully
     const completedOp = this.completedOperations.find(
       (op) => op.id === operationId,
     );
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
-
     if (failedOp) {
       throw failedOp.error || new Error("Tree node collapse operation failed");
     }
-
     if (!completedOp) {
       throw new Error("Tree node collapse operation not found");
     }
   }
-
   /**
    * Expand all tree nodes through async coordination
    */
@@ -1635,11 +1241,6 @@ export class AsyncCoordinator {
         ?.filter((container: any) => container.collapsed)
         ?.map((container: any) => container.id) ||
       [];
-
-    console.log(
-      `[AsyncCoordinator] 🔄 Expanding ${nodesToExpand.length} tree nodes${nodeIds ? " (specified list)" : " (all collapsed)"}`,
-    );
-
     // Expand each node sequentially
     for (const nodeId of nodesToExpand) {
       await this.expandTreeNode(nodeId, state, {
@@ -1648,7 +1249,6 @@ export class AsyncCoordinator {
       });
     }
   }
-
   /**
    * Collapse all tree nodes through async coordination
    */
@@ -1664,11 +1264,6 @@ export class AsyncCoordinator {
         ?.filter((container: any) => !container.collapsed)
         ?.map((container: any) => container.id) ||
       [];
-
-    console.log(
-      `[AsyncCoordinator] 🔄 Collapsing ${nodesToCollapse.length} tree nodes${nodeIds ? " (specified list)" : " (all expanded)"}`,
-    );
-
     // Collapse each node sequentially
     for (const nodeId of nodesToCollapse) {
       await this.collapseTreeNode(nodeId, state, {
@@ -1677,43 +1272,33 @@ export class AsyncCoordinator {
       });
     }
   }
-
   /**
    * Navigate to element through async coordination
    */
   async navigateToElement(
     elementId: string,
     visualizationState: any, // VisualizationState
-    reactFlowInstance?: any, // ReactFlowInstance
+    reactFlowInstance?: any,
   ): Promise<void> {
-    console.log(`[AsyncCoordinator] 🧭 Navigating to element ${elementId}`);
-
     // Set navigation selection in state
     if (visualizationState.navigateToElement) {
       visualizationState.navigateToElement(elementId);
     }
-
     // Focus viewport if ReactFlow instance is provided
     if (reactFlowInstance) {
       await this.focusViewportOnElement(elementId, reactFlowInstance);
     }
   }
-
   /**
    * Focus viewport on element
    */
   async focusViewportOnElement(
     elementId: string,
-    reactFlowInstance: any, // ReactFlowInstance
+    reactFlowInstance: any,
   ): Promise<void> {
-    console.log(
-      `[AsyncCoordinator] 🎯 Focusing viewport on element ${elementId}`,
-    );
-
     if (!reactFlowInstance) {
       throw new Error("ReactFlow instance is required for viewport focus");
     }
-
     try {
       // Get the node/container position
       const node = reactFlowInstance.getNode(elementId);
@@ -1721,7 +1306,6 @@ export class AsyncCoordinator {
         // Pan to the node with smooth animation
         const x = node.position.x + (node.width || 100) / 2;
         const y = node.position.y + (node.height || 50) / 2;
-
         reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
       } else {
         console.warn(
@@ -1736,9 +1320,7 @@ export class AsyncCoordinator {
       throw error;
     }
   }
-
   // Error Handling and Recovery Methods
-
   /**
    * Execute container expansion with comprehensive error handling
    */
@@ -1753,13 +1335,8 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(
-        `[AsyncCoordinator] Expanding container ${containerId} with error handling`,
-      );
-
       // Execute synchronously (respecting core architecture)
       this.expandContainer(containerId, state, options);
-
       return {
         success: true,
         fallbackApplied: false,
@@ -1770,13 +1347,11 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] Container expansion failed for ${containerId}:`,
         error,
       );
-
       // Log container expansion error
       console.error(
         `[AsyncCoordinator] Container expansion failed for: ${containerId}`,
         error,
       );
-
       return {
         success: false,
         fallbackApplied: false,
@@ -1784,7 +1359,6 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Execute batch container expansion with comprehensive error handling
    */
@@ -1806,13 +1380,8 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(
-        `[AsyncCoordinator] Expanding containers with error handling`,
-      );
-
       // Execute synchronously (respecting core architecture)
       this.expandAllContainers(state, containerIdsOrOptions, options);
-
       return {
         success: true,
         fallbackApplied: false,
@@ -1823,7 +1392,6 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] Batch container expansion failed:`,
         error,
       );
-
       // Determine which containers were being expanded
       let containerIds: string[];
       if (Array.isArray(containerIdsOrOptions)) {
@@ -1834,13 +1402,11 @@ export class AsyncCoordinator {
           .filter((container: any) => container.collapsed)
           .map((container: any) => container.id);
       }
-
       // Log container expansion error
       console.error(
         `[AsyncCoordinator] Container expansion failed for: ${containerIds.join(", ")}`,
         error,
       );
-
       return {
         success: false,
         fallbackApplied: false,
@@ -1848,7 +1414,6 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Execute tree node expansion with comprehensive error handling
    */
@@ -1861,17 +1426,12 @@ export class AsyncCoordinator {
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(
-        `[AsyncCoordinator] Expanding tree node ${nodeId} with error handling`,
-      );
-
       // Execute synchronously (respecting core architecture)
       if (state.expandTreeNodes) {
         state.expandTreeNodes([nodeId]);
       } else {
         throw new Error("expandTreeNodes method not available");
       }
-
       return {
         success: true,
         fallbackApplied: false,
@@ -1882,13 +1442,11 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] Tree node expansion failed for ${nodeId}:`,
         error,
       );
-
       // Log tree expansion error
       console.error(
         `[AsyncCoordinator] Tree expansion failed for node: ${nodeId}`,
         error,
       );
-
       return {
         success: false,
         fallbackApplied: false,
@@ -1896,31 +1454,25 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Execute navigation with comprehensive error handling
    */
   navigateToElementWithErrorHandling(
     elementId: string,
     visualizationState: any, // VisualizationState
-    reactFlowInstance?: any, // ReactFlowInstance
+    _reactFlowInstance?: any, // ReactFlowInstance
     _options: {
       timeout?: number;
       maxRetries?: number;
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(
-        `[AsyncCoordinator] Navigating to element ${elementId} with error handling`,
-      );
-
       // Execute synchronously (respecting core architecture)
       if (visualizationState.navigateToElement) {
         visualizationState.navigateToElement(elementId);
       } else {
         throw new Error("navigateToElement method not available");
       }
-
       return {
         success: true,
         fallbackApplied: false,
@@ -1931,13 +1483,11 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] Navigation failed for element ${elementId}:`,
         error,
       );
-
       // Log navigation error
       console.error(
         `[AsyncCoordinator] Navigation failed for element: ${elementId}`,
         error,
       );
-
       return {
         success: false,
         fallbackApplied: false,
@@ -1945,29 +1495,18 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Execute viewport focus with comprehensive error handling
    */
   focusViewportOnElementWithErrorHandling(
     elementId: string,
-    reactFlowInstance: any, // ReactFlowInstance
+    _reactFlowInstance: any, // ReactFlowInstance
     _options: {
       timeout?: number;
       maxRetries?: number;
     } = {},
   ): ErrorRecoveryResult {
     try {
-      console.log(
-        `[AsyncCoordinator] Focusing viewport on element ${elementId} with error handling`,
-      );
-
-      // Execute synchronously (respecting core architecture)
-      // Note: Viewport operations are handled at component level, not core
-      console.log(
-        `[AsyncCoordinator] Viewport focus queued for element ${elementId}`,
-      );
-
       return {
         success: true,
         fallbackApplied: false,
@@ -1978,13 +1517,6 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] Viewport focus failed for element ${elementId}:`,
         error,
       );
-
-      // Log viewport focus error
-      console.error(
-        `[AsyncCoordinator] Viewport focus failed for element: ${elementId}`,
-        error,
-      );
-
       return {
         success: false,
         fallbackApplied: false,
@@ -1992,7 +1524,6 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Execute search operation with comprehensive error handling
    */
@@ -2004,17 +1535,15 @@ export class AsyncCoordinator {
       maxRetries?: number;
       expandContainers?: boolean;
     } = {},
-  ): { results: any[]; recovery?: ErrorRecoveryResult } {
+  ): {
+    results: any[];
+    recovery?: ErrorRecoveryResult;
+  } {
     try {
-      console.log(
-        `[AsyncCoordinator] Performing search "${query}" with error handling`,
-      );
-
       // Perform the search operation synchronously (respecting core architecture)
       const searchResults = state.performSearch
         ? state.performSearch(query)
         : [];
-
       // Optionally expand containers containing results
       if (options.expandContainers && searchResults.length > 0) {
         const containerIds = this._getContainersForSearchResults(
@@ -2033,20 +1562,17 @@ export class AsyncCoordinator {
           }
         }
       }
-
       return { results: searchResults };
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Search failed for query "${query}":`,
         error,
       );
-
       // Log search error
       console.error(
         `[AsyncCoordinator] Search failed for query: "${query}"`,
         error,
       );
-
       return {
         results: [],
         recovery: {
@@ -2057,7 +1583,6 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Get containers that need to be expanded for search results
    */
@@ -2066,7 +1591,6 @@ export class AsyncCoordinator {
     state: any,
   ): string[] {
     const containerIds = new Set<string>();
-
     for (const result of searchResults) {
       if (result.type === "node") {
         // Find containers that contain this node
@@ -2086,10 +1610,8 @@ export class AsyncCoordinator {
         }
       }
     }
-
     return Array.from(containerIds);
   }
-
   /**
    * Execute operation with error recovery (synchronous core)
    */
@@ -2097,7 +1619,10 @@ export class AsyncCoordinator {
     operation: () => T,
     operationType: string,
     context?: Record<string, any>,
-  ): { result?: T; recovery?: ErrorRecoveryResult } {
+  ): {
+    result?: T;
+    recovery?: ErrorRecoveryResult;
+  } {
     try {
       const result = operation();
       return { result };
@@ -2106,13 +1631,11 @@ export class AsyncCoordinator {
         `[AsyncCoordinator] Operation "${operationType}" failed:`,
         error,
       );
-
       // Log operation timeout
       console.error(
         `[AsyncCoordinator] Operation "${operationType}" timed out`,
         { context },
       );
-
       return {
         recovery: {
           success: false,
@@ -2122,35 +1645,30 @@ export class AsyncCoordinator {
       };
     }
   }
-
   /**
    * Get error handler statistics (stub implementation)
    */
   getErrorStatistics() {
     return { totalErrors: 0, errorsByType: {}, recentErrors: [] };
   }
-
   /**
    * Check if system is experiencing high error rate (stub implementation)
    */
   isHighErrorRate(): boolean {
     return false;
   }
-
   /**
    * Get recovery suggestions based on error patterns (stub implementation)
    */
   getRecoverySuggestions(): string[] {
     return [];
   }
-
   /**
    * Clear error history (stub implementation)
    */
   clearErrorHistory(): void {
     // No-op since we don't track errors anymore
   }
-
   /**
    * Queue hierarchy change operation with proper sequencing
    * This ensures hierarchy changes trigger proper re-parsing and layout updates
@@ -2164,14 +1682,9 @@ export class AsyncCoordinator {
     return new Promise((resolve, reject) => {
       const operation = async () => {
         try {
-          console.log(
-            `[AsyncCoordinator] 🔄 Processing hierarchy change to: ${groupingId}`,
-          );
-
           // Re-parse the data with the new grouping
           // Create a deep copy to ensure reference change detection works
           const updatedData = JSON.parse(JSON.stringify(data));
-
           // Move the selected hierarchy to the front so it becomes the active one
           if (updatedData.hierarchyChoices) {
             const selectedChoice = updatedData.hierarchyChoices.find(
@@ -2184,13 +1697,8 @@ export class AsyncCoordinator {
               updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
             }
           }
-
           // Update the data through the callback
           onDataUpdate(updatedData);
-
-          console.log(
-            `[AsyncCoordinator] ✅ Hierarchy change to ${groupingId} completed`,
-          );
           resolve();
           return "hierarchy_change_complete";
         } catch (error) {
@@ -2202,20 +1710,17 @@ export class AsyncCoordinator {
           throw error;
         }
       };
-
       // Queue the operation
       this.queueOperation("hierarchy_change", operation, {
         timeout: options.timeout || 5000, // 5 second default timeout
         maxRetries: options.maxRetries || 1,
       });
-
       // Process the queue if not already processing
       if (!this.processing) {
         this.processQueue().catch(reject);
       }
     });
   }
-
   /**
    * Get status of hierarchy change operations
    */
@@ -2235,7 +1740,6 @@ export class AsyncCoordinator {
     const lastFailed = [...this.failedOperations]
       .reverse()
       .find((op) => op.type === "hierarchy_change");
-
     return {
       queued: hierarchyOps.length,
       processing: currentHierarchy,

@@ -10,8 +10,11 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { SearchControls } from "../components/SearchControls.js";
 import { HierarchyTree } from "../components/HierarchyTree.js";
 import type { SearchableItem } from "../components/SearchControls.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Search Navigation UI Components Integration", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let searchableItems: SearchableItem[];
   let mockOnSearch: ReturnType<typeof vi.fn>;
@@ -20,6 +23,7 @@ describe("Search Navigation UI Components Integration", () => {
   let mockOnElementNavigation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     // Add test data - nodes first, then containers
@@ -161,7 +165,7 @@ describe("Search Navigation UI Components Integration", () => {
       // 2. User clicks on a search result or tree item
       // 3. Navigation happens
 
-      const { rerender } = render(
+      const { _rerender } = render(
         <div>
           <SearchControls
             searchableItems={searchableItems}

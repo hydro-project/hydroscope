@@ -6,9 +6,13 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { BridgeFactory, bridgeFactory } from "../bridges/BridgeFactory.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("BridgeFactory", () => {
+  let coordinator: AsyncCoordinator;
+
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     // Reset factory state for each test
     bridgeFactory.reset();
   });

@@ -2,7 +2,6 @@
  * BridgeFactory - Singleton factory for stateless bridge instances
  * Ensures consistent bridge instances across the application
  */
-
 import { ReactFlowBridge } from "./ReactFlowBridge.js";
 import { ELKBridge } from "./ELKBridge.js";
 import type { LayoutConfig, StyleConfig } from "../types/core.js";
@@ -11,16 +10,13 @@ import type {
   IReactFlowBridge,
   IELKBridge,
 } from "../types/bridges.js";
-
 export class BridgeFactory implements IBridgeFactory {
   private static instance: BridgeFactory;
   private reactFlowBridge: ReactFlowBridge | null = null;
   private elkBridge: ELKBridge | null = null;
-
   private constructor() {
     // Private constructor for singleton pattern
   }
-
   /**
    * Get singleton instance of BridgeFactory
    */
@@ -30,7 +26,6 @@ export class BridgeFactory implements IBridgeFactory {
     }
     return BridgeFactory.instance;
   }
-
   /**
    * Get singleton ReactFlowBridge instance with default configuration
    */
@@ -40,7 +35,6 @@ export class BridgeFactory implements IBridgeFactory {
     }
     return this.reactFlowBridge;
   }
-
   /**
    * Get singleton ELKBridge instance with default configuration
    */
@@ -50,7 +44,6 @@ export class BridgeFactory implements IBridgeFactory {
     }
     return this.elkBridge;
   }
-
   /**
    * Reset bridge instances (useful for testing)
    */
@@ -58,7 +51,6 @@ export class BridgeFactory implements IBridgeFactory {
     this.reactFlowBridge = null;
     this.elkBridge = null;
   }
-
   /**
    * Update ReactFlowBridge configuration
    * Note: Since bridges are stateless, this creates a new instance
@@ -66,7 +58,6 @@ export class BridgeFactory implements IBridgeFactory {
   updateReactFlowBridgeConfig(styleConfig: StyleConfig): void {
     this.reactFlowBridge = new ReactFlowBridge(styleConfig);
   }
-
   /**
    * Update ELKBridge configuration
    * Note: Since bridges are stateless, this creates a new instance
@@ -75,6 +66,5 @@ export class BridgeFactory implements IBridgeFactory {
     this.elkBridge = new ELKBridge(layoutConfig);
   }
 }
-
 // Export singleton instance for convenience
 export const bridgeFactory = BridgeFactory.getInstance();

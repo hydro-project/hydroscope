@@ -17,6 +17,7 @@ import {
   waitFor,
   act,
 } from "@testing-library/react";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { FileUpload } from "../components/FileUpload.js";
@@ -34,7 +35,7 @@ class MockFileReader {
   onload: ((event: ProgressEvent<FileReader>) => void) | null = null;
   onerror: ((event: ProgressEvent<FileReader>) => void) | null = null;
 
-  readAsText(file: File) {
+  readAsText(_file: File) {
     setTimeout(() => {
       if (this.error) {
         this.onerror?.({ target: this });
@@ -83,9 +84,12 @@ const TestFileUpload: React.FC<{
 };
 
 describe("Application Integration: Complete Application with paxos.json", () => {
+  let coordinator: AsyncCoordinator;
+
   let originalFileReader: typeof FileReader;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     originalFileReader = global.FileReader;
     vi.clearAllMocks();
   });
@@ -259,6 +263,11 @@ describe("Application Integration: Complete Application with paxos.json", () => 
   });
 
   describe("Core Integration with VisualizationState", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should integrate paxos.json data with VisualizationState", async () => {
       const paxosData = loadPaxosTestData();
       const state = new VisualizationState();
@@ -329,13 +338,17 @@ describe("Application Integration: Complete Application with paxos.json", () => 
           expect(state.visibleContainers.length).toBeGreaterThan(0);
 
           // Test expand/collapse
-          state._expandAllContainersForCoordinator();
+          await coordinator.expandAllContainers(state, {
+            triggerLayout: false,
+          });
           const expandedContainers = state.visibleContainers.filter(
             (c) => !c.collapsed,
           );
           expect(expandedContainers.length).toBeGreaterThan(0);
 
-          state._collapseAllContainersForCoordinator();
+          await coordinator.collapseAllContainers(state, {
+            triggerLayout: false,
+          });
           const collapsedContainers = state.visibleContainers.filter(
             (c) => c.collapsed,
           );

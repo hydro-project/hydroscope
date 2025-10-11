@@ -4,7 +4,6 @@
  * Combined info panel that displays grouping controls, legend, and container hierarchy
  * with collapsible sections for organizing the interface.
  */
-
 import React, {
   useState,
   useMemo,
@@ -26,12 +25,10 @@ import {
 } from "../SearchControls";
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
-
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
 }
-
 const InfoPanelInternal = forwardRef<
   InfoPanelRef,
   InfoPanelProps & {
@@ -77,26 +74,21 @@ const InfoPanelInternal = forwardRef<
       SearchMatch | undefined
     >(undefined);
     const searchControlsRef = useRef<SearchControlsRef>(null);
-
     useImperativeHandle(ref, () => ({
       focusSearch: () => searchControlsRef.current?.focus(),
       clearSearch: () => searchControlsRef.current?.clear(),
     }));
-
     // Get default legend data if none provided
     const defaultLegendData: LegendData = {
       title: "Node Types",
       items: [],
     };
-
     // Generate legend data from actual node types in the visualization
     const generateLegendFromState = (): LegendData => {
       if (!visualizationState) {
         return defaultLegendData;
       }
-
       const nodeTypes = new Set<string>();
-
       // Collect all unique node types from visible nodes
       const visibleNodes = visualizationState.visibleNodes || [];
       visibleNodes.forEach((node) => {
@@ -107,10 +99,8 @@ const InfoPanelInternal = forwardRef<
           (node as any)?.data?.nodeType ||
           (node as any).style ||
           "default";
-
         nodeTypes.add(nodeType);
       });
-
       // If no visible nodes or no node types found, fall back to nodeTypeConfig
       if (
         nodeTypes.size === 0 &&
@@ -128,7 +118,6 @@ const InfoPanelInternal = forwardRef<
           },
         );
       }
-
       // Create legend items, using nodeTypeConfig if available
       const items = Array.from(nodeTypes).map((nodeType) => {
         // Look for this node type in nodeTypeConfig
@@ -143,7 +132,6 @@ const InfoPanelInternal = forwardRef<
                 }) => t.id === nodeType,
               )
             : undefined;
-
         return {
           type: nodeType,
           label:
@@ -156,29 +144,24 @@ const InfoPanelInternal = forwardRef<
               : undefined,
         };
       });
-
       return {
         title: "Node Types",
         items,
       };
     };
-
     // Ensure we always have valid legend data
     const effectiveLegendData =
       legendData && legendData.items && Array.isArray(legendData.items)
         ? legendData
         : generateLegendFromState();
-
     // Ensure hierarchyChoices is always an array
     const safeHierarchyChoices = Array.isArray(hierarchyChoices)
       ? hierarchyChoices
       : [];
-
     // Get the current grouping name for the section title
     const currentGroupingName =
       safeHierarchyChoices.find((choice) => choice.id === currentGrouping)
         ?.name || "Container";
-
     // Build searchable items from hierarchy (containers) and visible nodes
     const searchableItems = useMemo(() => {
       const items: Array<{
@@ -203,7 +186,6 @@ const InfoPanelInternal = forwardRef<
       }
       return items;
     }, [visualizationState]);
-
     // Handlers from SearchControls
     const handleSearch = (query: string, matches: SearchMatch[]) => {
       setSearchQuery(query);
@@ -224,7 +206,6 @@ const InfoPanelInternal = forwardRef<
       setCurrentSearchMatch(current);
       onSearchUpdate?.(searchQuery, searchMatches, current);
     };
-
     // Panel style
     const panelStyle: React.CSSProperties = {
       position: "absolute",
@@ -243,7 +224,6 @@ const InfoPanelInternal = forwardRef<
       opacity: open ? 1 : 0,
       pointerEvents: open ? "auto" : "none",
     };
-
     // Custom button style for open/close, matching CustomControls
     const controlButtonStyle: React.CSSProperties = {
       fontSize: PANEL_CONSTANTS.FONT_SIZE_LARGE,
@@ -258,7 +238,6 @@ const InfoPanelInternal = forwardRef<
       outline: "none",
       cursor: "pointer",
     };
-
     // Add hover/focus effect via inline event handlers
     const [btnHover, setBtnHover] = useState(false);
     const [btnFocus, setBtnFocus] = useState(false);
@@ -274,7 +253,6 @@ const InfoPanelInternal = forwardRef<
           : controlButtonStyle.boxShadow,
       borderColor: btnHover || btnFocus ? "#2563eb" : "#3b82f6",
     };
-
     return (
       <div style={panelStyle}>
         <div
@@ -405,22 +383,17 @@ const InfoPanelInternal = forwardRef<
     );
   },
 );
-
 InfoPanelInternal.displayName = "InfoPanelInternal";
-
 // Memoized component for performance optimization
 export const InfoPanel = memo(InfoPanelInternal);
-
 // Re-export sub-components for individual use
 export { Legend } from "../Legend";
 export { HierarchyTree } from "../HierarchyTree";
 export { GroupingControls } from "../GroupingControls";
 export { CollapsibleSection } from "../CollapsibleSection";
-
 // Export types for compatibility
 export type { InfoPanelProps, LegendData } from "../types";
 export type { SearchMatch } from "../SearchControls";
-
 // Additional type exports for compatibility
 export type LegendItem = {
   type: string;
@@ -436,4 +409,8 @@ export type EdgeStyleConfig = {
     type?: "bezier" | "straight" | "smoothstep";
   };
 };
-export type GroupingOption = { id: string; name: string; description?: string };
+export type GroupingOption = {
+  id: string;
+  name: string;
+  description?: string;
+};

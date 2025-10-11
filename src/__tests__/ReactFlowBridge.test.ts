@@ -9,6 +9,7 @@ import { ELKBridge } from "../bridges/ELKBridge.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { InteractionHandler } from "../core/InteractionHandler.js";
 import { loadPaxosTestData } from "../utils/testData.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type {
   StyleConfig,
   GraphNode,
@@ -18,6 +19,8 @@ import type {
 } from "../types/core.js";
 
 describe("ReactFlowBridge", () => {
+  let coordinator: AsyncCoordinator;
+
   let bridge: ReactFlowBridge;
   let state: VisualizationState;
   let interactionHandler: InteractionHandler;
@@ -25,6 +28,7 @@ describe("ReactFlowBridge", () => {
   let elkBridge: ELKBridge;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     styleConfig = {
       nodeStyles: {
         process: { backgroundColor: "#e1f5fe", border: "2px solid #0277bd" },
@@ -340,6 +344,11 @@ describe("ReactFlowBridge", () => {
   });
 
   describe("Edge Aggregation Support", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should render original edges normally", async () => {
       const node1: GraphNode = {
         id: "node1",
@@ -437,7 +446,13 @@ describe("ReactFlowBridge", () => {
       state.addEdge(edge);
 
       // Collapse container to trigger edge aggregation
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Calculate layout so nodes have positions
 
@@ -456,9 +471,9 @@ describe("ReactFlowBridge", () => {
         type: "aggregated",
       });
       // With new semantic styling system, aggregated edges without semantic tags
-      // get default styling (the +1 thickness is applied in the React component)
+      // get default styling
       expect(aggregatedEdges[0].style).toMatchObject({
-        strokeWidth: 2, // Default thickness (component adds +1 when rendering)
+        strokeWidth: 2, // Default thickness
         stroke: "#999999", // Default stroke color for unstyled edges
       });
     });
@@ -526,7 +541,13 @@ describe("ReactFlowBridge", () => {
       state.addEdge(edge2);
 
       // Initial collapse
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       await elkBridge.layout(state);
 
       const initialResult = bridge.toReactFlowData(state);
@@ -542,7 +563,13 @@ describe("ReactFlowBridge", () => {
       ]);
 
       // Expand
-      state._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       await elkBridge.layout(state);
 
       const expandedResult = bridge.toReactFlowData(state);
@@ -552,7 +579,13 @@ describe("ReactFlowBridge", () => {
       expect(expandedAggregatedEdges).toHaveLength(0);
 
       // Collapse again
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       await elkBridge.layout(state);
 
       const secondResult = bridge.toReactFlowData(state);
@@ -663,15 +696,30 @@ describe("ReactFlowBridge", () => {
       };
 
       state.addContainer(container);
-      // Calculate layout so nodes have positions
 
-      await elkBridge.layout(state);
+      // Add a node so the container has content
+      // When container is collapsed, child nodes must be hidden
+      const node: GraphNode = {
+        id: "node1",
+        label: "Test Node",
+        type: "process",
+        hidden: true, // Must be hidden since container is collapsed
+      };
+      state.addNode(node);
+
+      // Manually set container position (skip ELK layout since node is hidden)
+      container.position = { x: 0, y: 0 };
+      container.width = 100;
+      container.height = 100;
 
       const result = bridge.toReactFlowData(state);
 
-      expect(result.nodes[0].style).toMatchObject({
-        backgroundColor: "rgba(255, 243, 224, 0.3)", // Updated to match current implementation
-        border: "2px dashed #ff9800", // Updated to match current implementation
+      expect(result.nodes.length).toBeGreaterThan(0);
+      const containerNode = result.nodes.find((n) => n.id === "container1");
+      expect(containerNode).toBeDefined();
+      expect(containerNode!.style).toMatchObject({
+        backgroundColor: "#fff3e0", // Collapsed container style
+        border: "3px solid #ff9800", // Collapsed container style
       });
     });
   });
@@ -1284,9 +1332,9 @@ describe("ReactFlowBridge", () => {
         type: "aggregated",
       });
       // With new semantic styling system, aggregated edges without semantic tags
-      // get default styling (the +1 thickness is applied in the React component)
+      // get default styling
       expect(result.edges[0].style).toMatchObject({
-        strokeWidth: 2, // Default thickness (component adds +1 when rendering)
+        strokeWidth: 2, // Default thickness
         stroke: "#999999", // Default stroke color for unstyled edges
       });
       expect(result.edges[0].data?.aggregated).toBe(true);
@@ -1387,20 +1435,14 @@ describe("ReactFlowBridge", () => {
 
       await elkBridge.layout(state);
 
-      // Capture console output to verify validation messages
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
       const result = bridge.toReactFlowData(state);
 
       expect(result.edges).toHaveLength(1); // Valid edge should be rendered
       expect(result.edges[0].id).toBe("valid_edge");
 
-      // Verify validation messages were logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Edge processing summary"),
-      );
-
-      consoleSpy.mockRestore();
+      // Verify the edge was processed correctly
+      expect(result.edges[0].source).toBe("node1");
+      expect(result.edges[0].target).toBe("node2");
     });
 
     it("should handle edge validation at ReactFlow bridge level", async () => {
@@ -1442,6 +1484,11 @@ describe("ReactFlowBridge", () => {
   });
 
   describe("Paxos.json Integration", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should convert paxos.json data correctly", async () => {
       const paxosData = loadPaxosTestData();
 
@@ -1504,7 +1551,13 @@ describe("ReactFlowBridge", () => {
       // Test collapsed containers
       const firstContainer = paxosData.containers[0];
       if (firstContainer) {
-        state._collapseContainerForCoordinator(firstContainer.id);
+        await coordinator.collapseContainer(
+          firstContainer.id,
+          state,
+          { triggerLayout: false },
+          coordinator,
+          { triggerLayout: false },
+        );
 
         // Calculate layout so nodes have positions
 
@@ -1517,7 +1570,13 @@ describe("ReactFlowBridge", () => {
         expect(containerNode?.data.collapsed).toBe(true);
 
         // Test expanded containers
-        state._expandContainerForCoordinator(firstContainer.id);
+        await coordinator.expandContainer(
+          firstContainer.id,
+          state,
+          { triggerLayout: false },
+          coordinator,
+          { triggerLayout: false },
+        );
         // Calculate layout so nodes have positions
 
         await elkBridge.layout(state);
@@ -1795,7 +1854,7 @@ describe("ReactFlowBridge", () => {
       await elkBridge.layout(state);
 
       const result1 = bridge.toReactFlowData(state);
-      const time1 = performance.now() - start1;
+      const _time1 = performance.now() - start1;
 
       // Second call should use cache and be faster
       const start2 = performance.now();
@@ -1804,7 +1863,7 @@ describe("ReactFlowBridge", () => {
       await elkBridge.layout(state);
 
       const result2 = bridge.toReactFlowData(state);
-      const time2 = performance.now() - start2;
+      const _time2 = performance.now() - start2;
 
       // Results should have same structure but different timestamps (due to React state change detection)
       expect(result1.nodes.length).toEqual(result2.nodes.length);

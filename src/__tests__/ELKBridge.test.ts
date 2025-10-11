@@ -13,15 +13,19 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { Container } from "../types/core.js";
 
 describe("ELKBridge", () => {
+  let coordinator: AsyncCoordinator;
+
   let bridge: ELKBridge;
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     bridge = new ELKBridge({
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
       spacing: 50,
     });
@@ -29,13 +33,19 @@ describe("ELKBridge", () => {
   });
 
   describe("ELK format conversion", () => {
+    let coordinator: AsyncCoordinator;
+
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should convert empty VisualizationState to empty ELK graph", () => {
       const elkGraph = bridge.toELKGraph(state);
 
       expect(elkGraph.id).toBe("root");
       expect(elkGraph.children).toEqual([]);
       expect(elkGraph.edges).toEqual([]);
-      expect(elkGraph.layoutOptions["elk.algorithm"]).toBe("layered");
+      expect(elkGraph.layoutOptions["elk.algorithm"]).toBe("mrtree");
       expect(elkGraph.layoutOptions["elk.direction"]).toBe("DOWN");
       expect(elkGraph.layoutOptions["elk.spacing.nodeNode"]).toBe("50"); // Default spacing
     });
@@ -80,15 +90,21 @@ describe("ELKBridge", () => {
       });
     });
 
-    it("should handle collapsed containers as single nodes", () => {
+    it("should handle collapsed containers as single nodes", async () => {
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
-      const container = createTestContainer("c1", ["n1", "n2"], "Container 1");
+      const container = createTestContainer("c1", ["n1", "n2"], "Container c1");
 
       state.addNode(node1);
       state.addNode(node2);
       state.addContainer(container);
-      state._collapseContainerForCoordinator("c1");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       const elkGraph = bridge.toELKGraph(state);
 
@@ -103,7 +119,7 @@ describe("ELKBridge", () => {
     it("should handle expanded containers with nested structure", () => {
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
-      const container = createTestContainer("c1", ["n1", "n2"], "Container 1");
+      const container = createTestContainer("c1", ["n1", "n2"], "Container c1");
 
       state.addNode(node1);
       state.addNode(node2);
@@ -133,11 +149,11 @@ describe("ELKBridge", () => {
       expect(elkContainer.children![1].layoutOptions).toBeDefined();
     });
 
-    it("should handle aggregated edges for collapsed containers", () => {
+    it("should handle aggregated edges for collapsed containers", async () => {
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
       const node3 = createTestNode("n3", "Node 3");
-      const container = createTestContainer("c1", ["n1", "n2"], "Container 1");
+      const container = createTestContainer("c1", ["n1", "n2"], "Container c1");
       const edge1 = createTestEdge("e1", "n1", "n3"); // Internal to external
       const edge2 = createTestEdge("e2", "n3", "n2"); // External to internal
 
@@ -147,7 +163,13 @@ describe("ELKBridge", () => {
       state.addContainer(container);
       state.addEdge(edge1);
       state.addEdge(edge2);
-      state._collapseContainerForCoordinator("c1");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       const elkGraph = bridge.toELKGraph(state);
 
@@ -209,7 +231,7 @@ describe("ELKBridge", () => {
     });
 
     it("should apply container positions and dimensions", () => {
-      const container = createTestContainer("c1", [], "Container 1");
+      const container = createTestContainer("c1", [], "Container c1");
       state.addContainer(container);
 
       const elkResult = {
@@ -235,7 +257,7 @@ describe("ELKBridge", () => {
 
     it("should handle nested container layout results", () => {
       const node1 = createTestNode("n1", "Node 1");
-      const container = createTestContainer("c1", ["n1"], "Container 1");
+      const container = createTestContainer("c1", ["n1"], "Container c1");
 
       state.addNode(node1);
       state.addContainer(container);
@@ -453,7 +475,7 @@ describe("ELKBridge", () => {
 
       expect(() => {
         new ELKBridge({
-          algorithm: "layered",
+          algorithm: "mrtree",
           direction: "INVALID" as "DOWN",
           spacing: 50,
         });
@@ -516,7 +538,7 @@ describe("ELKBridge", () => {
 
     it("should handle advanced configuration options", () => {
       const advancedConfig = {
-        algorithm: "layered" as const,
+        algorithm: "mrtree" as const,
         nodeSpacing: 30,
         layerSpacing: 40,
         edgeSpacing: 15,
@@ -560,13 +582,19 @@ describe("ELKBridge", () => {
   });
 
   describe("performance optimization", () => {
+    let coordinator: AsyncCoordinator;
+
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should generate performance hints for small graphs", () => {
       const nodes = [
         createTestNode("n1", "Node 1"),
         createTestNode("n2", "Node 2"),
       ];
       const edges = [createTestEdge("e1", "n1", "n2")];
-      const containers: Container[] = [];
+      const _containers: Container[] = [];
 
       nodes.forEach((node) => state.addNode(node));
       edges.forEach((edge) => state.addEdge(edge));
@@ -677,7 +705,7 @@ describe("ELKBridge", () => {
       expect(longNode!.width).toBeGreaterThan(shortNode!.width);
     });
 
-    it("should calculate optimal container sizes", () => {
+    it("should calculate optimal container sizes", async () => {
       const nodes = [
         createTestNode("n1", "Node 1"),
         createTestNode("n2", "Node 2"),
@@ -700,8 +728,20 @@ describe("ELKBridge", () => {
       state.addContainer(largeContainer);
 
       // Test collapsed containers
-      state._collapseContainerForCoordinator("c1");
-      state._collapseContainerForCoordinator("c2");
+      await coordinator.collapseContainer(
+        "c1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
+      await coordinator.collapseContainer(
+        "c2",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       const elkGraph = bridge.toELKGraph(state);
 
@@ -761,17 +801,25 @@ describe("ELKBridge", () => {
   describe("smart collapse integration", () => {
     it("should run smart collapse before layout on first layout", async () => {
       // Create containers with different child counts
-      const smallContainer = createTestContainer("small", ["node1", "node2"]);
-      const largeContainer = createTestContainer("large", [
-        "node3",
-        "node4",
-        "node5",
-        "node6",
-        "node7",
-        "node8",
-        "node9",
-        "node10",
-      ]);
+      const smallContainer = createTestContainer(
+        "small",
+        ["node1", "node2"],
+        "Container small",
+      );
+      const largeContainer = createTestContainer(
+        "large",
+        [
+          "node3",
+          "node4",
+          "node5",
+          "node6",
+          "node7",
+          "node8",
+          "node9",
+          "node10",
+        ],
+        "Container large",
+      );
 
       // Add test nodes
       for (let i = 1; i <= 10; i++) {
@@ -801,16 +849,20 @@ describe("ELKBridge", () => {
     });
 
     it("should not run smart collapse when disabled", async () => {
-      const largeContainer = createTestContainer("large", [
-        "node1",
-        "node2",
-        "node3",
-        "node4",
-        "node5",
-        "node6",
-        "node7",
-        "node8",
-      ]);
+      const largeContainer = createTestContainer(
+        "large",
+        [
+          "node1",
+          "node2",
+          "node3",
+          "node4",
+          "node5",
+          "node6",
+          "node7",
+          "node8",
+        ],
+        "Container large",
+      );
 
       for (let i = 1; i <= 8; i++) {
         state.addNode(createTestNode(`node${i}`));
@@ -828,13 +880,11 @@ describe("ELKBridge", () => {
     });
 
     it("should not run smart collapse after first layout", async () => {
-      const largeContainer = createTestContainer("large", [
-        "node1",
-        "node2",
-        "node3",
-        "node4",
-        "node5",
-      ]);
+      const largeContainer = createTestContainer(
+        "large",
+        ["node1", "node2", "node3", "node4", "node5"],
+        "Container large",
+      );
 
       for (let i = 1; i <= 5; i++) {
         state.addNode(createTestNode(`node${i}`));
@@ -847,13 +897,11 @@ describe("ELKBridge", () => {
       expect(state.isFirstLayout()).toBe(false);
 
       // Add another container
-      const anotherLargeContainer = createTestContainer("another", [
-        "node6",
-        "node7",
-        "node8",
-        "node9",
-        "node10",
-      ]);
+      const anotherLargeContainer = createTestContainer(
+        "another",
+        ["node6", "node7", "node8", "node9", "node10"],
+        "Container another",
+      );
       for (let i = 6; i <= 10; i++) {
         state.addNode(createTestNode(`node${i}`));
       }

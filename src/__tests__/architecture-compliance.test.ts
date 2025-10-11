@@ -9,23 +9,21 @@ import { ELKBridge } from "../bridges/ELKBridge.js";
 import { BridgeFactory } from "../bridges/BridgeFactory.js";
 import { validateStatelessBridge } from "../types/bridges.js";
 import type { StyleConfig, LayoutConfig } from "../types/core.js";
+
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type {
-  IReactFlowBridge,
-  IELKBridge,
-  IBridgeFactory,
-  StatelessBridgeConstraint,
-} from "../types/bridges.js";
-import type {
-  EnforceStateless,
   ArchitectureTests,
   AssertStateless,
 } from "../types/architecture-constraints.js";
 
 describe("Architecture Compliance Enforcement", () => {
+  let coordinator: AsyncCoordinator;
+
   let styleConfig: StyleConfig;
   let layoutConfig: LayoutConfig;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     styleConfig = {
       nodeStyles: {},
       edgeStyles: {},
@@ -33,7 +31,7 @@ describe("Architecture Compliance Enforcement", () => {
     };
 
     layoutConfig = {
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
       nodeSpacing: 20,
       layerSpacing: 25,
@@ -88,13 +86,13 @@ describe("Architecture Compliance Enforcement", () => {
     it("should detect prohibited cache properties", () => {
       // Create a mock bridge with prohibited properties
       class BadBridge {
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private styleCache = new Map(); // Prohibited
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private lastStateHash = ""; // Prohibited
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private cachedResults = {}; // Prohibited
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private memoizedData = null; // Prohibited
 
         constructor(private config: any) {} // Allowed
@@ -271,9 +269,9 @@ describe("Architecture Compliance Enforcement", () => {
   describe("Error Handling", () => {
     it("should provide clear error messages for architecture violations", () => {
       class ViolatingBridge {
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private styleCache = new Map(); // Violation
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private lastResult = null; // Violation
 
         constructor() {}
@@ -288,11 +286,11 @@ describe("Architecture Compliance Enforcement", () => {
 
     it("should identify specific violating properties", () => {
       class MultiViolationBridge {
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private cache = {}; // Violation
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private lastStateHash = ""; // Violation
-        // eslint-disable-next-line hydroscope-architecture/no-bridge-state
+        // eslint-disable-next-line hydroscope-architecture/no-bridge-state -- intentional test violation
         private memoizedResults = []; // Violation
 
         constructor() {}

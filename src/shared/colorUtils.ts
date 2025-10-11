@@ -3,13 +3,13 @@
  *
  * Simple color utilities for the visualization system.
  */
-
 import { COLOR_PALETTES } from "./config";
-
 // Basic color utility functions
-export function hexToRgb(
-  hex: string,
-): { r: number; g: number; b: number } | null {
+export function hexToRgb(hex: string): {
+  r: number;
+  g: number;
+  b: number;
+} | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
@@ -19,20 +19,16 @@ export function hexToRgb(
       }
     : null;
 }
-
 export function rgbToHex(r: number, g: number, b: number): string {
   return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
-
 export function getContrastColor(backgroundColor: string): string {
   const rgb = hexToRgb(backgroundColor);
   if (!rgb) return "#000000";
-
   // Calculate brightness using YIQ formula
   const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
   return brightness > 128 ? "#000000" : "#ffffff";
 }
-
 /**
  * Get bright contrasting colors for search highlighting that work well against any palette
  */
@@ -52,19 +48,14 @@ export function getSearchHighlightColors() {
     },
   };
 }
-
 interface NodeColor {
   primary: string;
   border: string;
   gradient: string;
 }
-
 export type { NodeColor };
-
 type NodeColorResult = NodeColor | Record<string, NodeColor>;
-
 // Function expected by Legend component
-
 export function generateNodeColors(
   nodeTypes: [string],
   palette?: string,
@@ -82,10 +73,12 @@ export function generateNodeColors(
   // Get the selected palette, fallback to Set3 if not found
   const palettes = COLOR_PALETTES as unknown as Record<
     string,
-    Array<{ primary: string; secondary?: string }>
+    Array<{
+      primary: string;
+      secondary?: string;
+    }>
   >;
   const selectedPalette = palettes[palette] || palettes["Set3"] || [];
-
   if (nodeTypes.length === 1) {
     // Single node type - return object with expected properties
     const nodeType = nodeTypes[0];
@@ -94,14 +87,12 @@ export function generateNodeColors(
       Math.abs(nodeType.split("").reduce((a, b) => a + b.charCodeAt(0), 0)) %
       selectedPalette.length;
     const paletteColor = selectedPalette[colorIndex] || { primary: "#8dd3c7" };
-
     return {
       primary: paletteColor.primary,
       border: paletteColor.primary,
       gradient: paletteColor.primary,
     };
   }
-
   // Multiple node types - return a map
   const colors: Record<string, NodeColor> = {};
   nodeTypes.forEach((nodeType, index) => {
@@ -114,6 +105,5 @@ export function generateNodeColors(
       gradient: paletteColor.primary,
     };
   });
-
   return colors;
 }

@@ -10,13 +10,16 @@ import {
   SearchIntegration,
   type SearchIntegrationProps,
 } from "../components/SearchIntegration.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { SearchResult } from "../types/core.js";
 
 describe("SearchIntegration Component", () => {
+  let coordinator: AsyncCoordinator;
+
   let visualizationState: VisualizationState;
 
-  const mockSearchResults: SearchResult[] = [
+  const _mockSearchResults: SearchResult[] = [
     {
       id: "node1",
       label: "Hidden Node",
@@ -39,6 +42,7 @@ describe("SearchIntegration Component", () => {
   };
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     vi.clearAllMocks();
 
     // Create a fresh VisualizationState for each test
@@ -65,6 +69,11 @@ describe("SearchIntegration Component", () => {
   });
 
   describe("Search Result Expansion", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should expand containers when search results are in collapsed containers", async () => {
       const onContainerExpansion = vi.fn();
       render(
@@ -133,7 +142,9 @@ describe("SearchIntegration Component", () => {
 
     it("should not expand containers that are already expanded", async () => {
       // Make container already expanded
-      visualizationState._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer("container1", visualizationState, {
+        triggerLayout: false,
+      });
 
       const onContainerExpansion = vi.fn();
       render(

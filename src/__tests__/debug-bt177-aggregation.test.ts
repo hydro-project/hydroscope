@@ -7,16 +7,20 @@
 import fs from "fs";
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Debug bt_177 Aggregation", () => {
+  let coordinator: AsyncCoordinator;
+
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
 
   beforeEach(async () => {
+    const coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

@@ -1,16 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import {
-  createTestContainer,
   createTestNode,
   createTestEdge,
+  createTestContainer,
 } from "../utils/testData.js";
-import type { GraphNode, Container, GraphEdge } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("VisualizationState Edge Validation", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     // Mock console methods to avoid noise in tests
     vi.spyOn(console, "log").mockImplementation(() => {});
@@ -21,7 +24,11 @@ describe("VisualizationState Edge Validation", () => {
   describe("_validateContainerExpansionPreconditions", () => {
     it("should validate expansion preconditions for simple container", () => {
       // Setup: Create a simple container with nodes and edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -39,7 +46,6 @@ describe("VisualizationState Edge Validation", () => {
       const result = (state as any)._validateContainerExpansionPreconditions(
         "container1",
       );
-
       expect(result).toBeDefined();
       expect(result.canExpand).toBe(true);
       expect(result.issues).toEqual([]);
@@ -48,7 +54,11 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should detect issues with missing edge endpoints", () => {
       // Setup: Container with edge pointing to non-existent node
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
 
       // Add valid components first
@@ -83,8 +93,16 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should handle cross-hierarchy edge validation", () => {
       // Setup: Complex hierarchy with cross-container edges
-      const child1 = createTestContainer("child1", ["node1"]);
-      const child2 = createTestContainer("child2", ["node2"]);
+      const child1 = createTestContainer(
+        "child1",
+        ["node1"],
+        "Container child1",
+      );
+      const child2 = createTestContainer(
+        "child2",
+        ["node2"],
+        "Container child2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const crossEdge = createTestEdge("cross_edge", "node1", "node2");
@@ -97,10 +115,11 @@ describe("VisualizationState Edge Validation", () => {
       state.addEdge(crossEdge);
 
       // Create parent container that contains the child containers
-      const parentContainer = createTestContainer("parent", [
-        "child1",
-        "child2",
-      ]);
+      const parentContainer = createTestContainer(
+        "parent",
+        ["child1", "child2"],
+        "Container parent",
+      );
       state.addContainer(parentContainer);
 
       // Collapse parent to test expansion preconditions
@@ -128,7 +147,11 @@ describe("VisualizationState Edge Validation", () => {
   describe("restoreEdgesForContainer", () => {
     it("should restore edges for expanded container", () => {
       // Setup: Container with internal edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -157,7 +180,11 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should handle restoration with missing edge endpoints gracefully", () => {
       // Setup: Container with edge that has missing target
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
 
       state.addNode(node1);
@@ -179,7 +206,11 @@ describe("VisualizationState Edge Validation", () => {
   describe("_postExpansionEdgeValidation", () => {
     it("should validate edges after container expansion", () => {
       // Setup: Container with valid internal edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -204,7 +235,11 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should identify invalid edges after expansion", () => {
       // Setup: Container with valid edge first
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
 
       state.addNode(node1);
@@ -236,7 +271,11 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should attempt to fix common edge validation issues", () => {
       // Setup: Container with edges that could be auto-fixed
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -270,7 +309,11 @@ describe("VisualizationState Edge Validation", () => {
   describe("Edge validation integration", () => {
     it("should use all validation methods during container expansion", () => {
       // Setup: Simple scenario to test integration
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const internalEdge = createTestEdge("internal_edge", "node1", "node2");

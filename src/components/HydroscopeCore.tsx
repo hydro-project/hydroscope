@@ -46,8 +46,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { nodeTypes } from "./nodes/index.js";
-import { edgeTypes } from "./edges/index.js";
+import { nodeTypes, edgeTypes } from "../render/index.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
@@ -60,6 +59,7 @@ import {
   DEFAULT_COLOR_PALETTE,
   DEFAULT_ELK_ALGORITHM,
 } from "../shared/config.js";
+import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 
 import type {
   HydroscopeData,
@@ -246,7 +246,7 @@ const HydroscopeCoreInternal = forwardRef<
       showControls = true,
       showMiniMap = true,
       showBackground = true,
-      enableCollapse = true, // eslint-disable-line @typescript-eslint/no-unused-vars -- kept for future extensibility
+      enableCollapse = true, // eslint-disable-line unused-imports/no-unused-vars -- kept for future extensibility
       readOnly = false,
       initialLayoutAlgorithm = DEFAULT_ELK_ALGORITHM,
       initialColorPalette,
@@ -287,6 +287,43 @@ const HydroscopeCoreInternal = forwardRef<
     const interactionHandlerRef = useRef<InteractionHandler | null>(null);
     const jsonParserRef = useRef<JSONParser | null>(null);
     const isDraggingRef = useRef<boolean>(false);
+    const prevNodeCountRef = useRef<number>(0);
+
+    // Smart fitView debouncing to prevent ResizeObserver loops while allowing initial fitView
+    const fitViewTimeoutRef = useRef<number | null>(null);
+    const lastFitViewTimeRef = useRef<number>(0);
+    const debouncedFitView = useCallback(() => {
+      const now = Date.now();
+      const timeSinceLastFitView = now - lastFitViewTimeRef.current;
+
+      // If it's been more than 500ms since last fitView, allow immediate execution
+      // Otherwise, debounce to prevent rapid calls
+      if (timeSinceLastFitView > 500) {
+        setState((prev) => ({ ...prev, shouldFitView: true }));
+        lastFitViewTimeRef.current = now;
+      } else {
+        // Debounce rapid calls
+        if (fitViewTimeoutRef.current) {
+          clearTimeout(fitViewTimeoutRef.current);
+        }
+
+        fitViewTimeoutRef.current = setTimeout(() => {
+          setState((prev) => ({ ...prev, shouldFitView: true }));
+          lastFitViewTimeRef.current = Date.now();
+          fitViewTimeoutRef.current = null;
+        }, 150) as unknown as number;
+      }
+    }, []);
+
+    // Cleanup debounced fitView timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (fitViewTimeoutRef.current) {
+          clearTimeout(fitViewTimeoutRef.current);
+          fitViewTimeoutRef.current = null;
+        }
+      };
+    }, []);
 
     // Error handling helper with recovery strategies
     const handleError = useCallback(
@@ -328,8 +365,6 @@ const HydroscopeCoreInternal = forwardRef<
     // Initialize core instances
     useEffect(() => {
       try {
-        console.log("[HydroscopeCore] Initializing core instances");
-
         // Create VisualizationState
         const visualizationState = new VisualizationState();
 
@@ -353,30 +388,16 @@ const HydroscopeCoreInternal = forwardRef<
         // CRITICAL FIX: Set up callback to update React state when AsyncCoordinator generates new ReactFlow data
         let updateTimeout: number | null = null;
         asyncCoordinator.onReactFlowDataUpdate = (reactFlowData: any) => {
-          console.log(
-            `[HydroscopeCore] 🔄 Received ReactFlow data update from AsyncCoordinator`,
-          );
-
           // Throttle updates to prevent ResizeObserver loops
           if (updateTimeout) {
             clearTimeout(updateTimeout);
           }
 
-          updateTimeout = window.setTimeout(() => {
+          updateTimeout = setTimeout(() => {
             const networkNodes = reactFlowData.nodes.filter(
               (n: any) => n.id === "0" || n.id === "8",
             );
             if (networkNodes.length > 0) {
-              console.log(
-                `[HydroscopeCore] 🔍 ASYNC COORDINATOR DATA UPDATE:`,
-                networkNodes.map((n: any) => ({
-                  id: n.id,
-                  isHighlighted: n.data?.isHighlighted,
-                  highlightType: n.data?.highlightType,
-                  timestamp: n.data?.highlightTimestamp,
-                  clearingId: n.data?.clearingId,
-                })),
-              );
             }
 
             setState((prev) => ({
@@ -384,7 +405,7 @@ const HydroscopeCoreInternal = forwardRef<
               reactFlowData: reactFlowData,
             }));
             updateTimeout = null;
-          }, 50); // 50ms throttle to prevent ResizeObserver loops
+          }, 50) as unknown as number; // 50ms throttle to prevent ResizeObserver loops
         };
 
         // Create bridges
@@ -406,7 +427,7 @@ const HydroscopeCoreInternal = forwardRef<
         );
 
         // Create JSONParser
-        console.log("[HydroscopeCore] Creating JSONParser");
+
         jsonParserRef.current = new JSONParser({
           debug: false,
           validateDuringParsing: true,
@@ -418,8 +439,6 @@ const HydroscopeCoreInternal = forwardRef<
           asyncCoordinator,
           error: null,
         }));
-
-        console.log("[HydroscopeCore] Core instances initialized successfully");
       } catch (error) {
         console.error("[HydroscopeCore] Initialization error:", error);
         setState((prev) => ({
@@ -514,14 +533,7 @@ const HydroscopeCoreInternal = forwardRef<
         ? JSON.stringify(processedDataRef.current)
         : null;
 
-      console.log("[HydroscopeCore] Data parsing check:", {
-        hasData: !!data,
-        sameData: processedDataRef.current === data,
-        sameDataString: dataString === lastDataString,
-      });
-
       if (processedDataRef.current === data && dataString === lastDataString) {
-        console.log("[HydroscopeCore] Skipping re-parse: same data");
         return;
       }
 
@@ -535,23 +547,12 @@ const HydroscopeCoreInternal = forwardRef<
             error: null,
             autoFitEnabled: true,
           }));
-          console.log(
-            "[HydroscopeCore] Parsing data and updating visualization state",
-          );
 
           // Validate data structure first
           validateData(data);
 
           // Parse JSON data into a new VisualizationState
           const parseResult = await jsonParserRef.current!.parseData(data);
-
-          console.log("[HydroscopeCore] Data parsed successfully", {
-            nodes: parseResult.stats.nodeCount,
-            edges: parseResult.stats.edgeCount,
-            containers: parseResult.stats.containerCount,
-            warnings: parseResult.warnings.length,
-            processingTime: parseResult.stats.processingTime,
-          });
 
           // Log any warnings from parsing
           if (parseResult.warnings.length > 0) {
@@ -609,18 +610,10 @@ const HydroscopeCoreInternal = forwardRef<
             ) => {
               // Skip container interactions in readOnly mode
               if (readOnly) {
-                console.log(
-                  "[HydroscopeCore] Container interaction disabled in readOnly mode",
-                );
                 return;
               }
 
               try {
-                console.log(
-                  "[HydroscopeCore] Container interaction: starting AsyncCoordinator atomic pipeline for",
-                  containerId,
-                );
-
                 // Validate container exists
                 if (!containerId || !containerId.trim()) {
                   console.warn(
@@ -642,10 +635,6 @@ const HydroscopeCoreInternal = forwardRef<
                 }
 
                 const wasCollapsed = Boolean(container.collapsed);
-                console.log("[HydroscopeCore] Container state before click:", {
-                  containerId,
-                  wasCollapsed,
-                });
 
                 // Use AsyncCoordinator's atomic pipeline: State Change -> Layout -> ReactFlow
                 if (state.asyncCoordinator) {
@@ -653,9 +642,6 @@ const HydroscopeCoreInternal = forwardRef<
                   const eventType = wasCollapsed
                     ? "container_expand"
                     : "container_collapse";
-                  console.log(
-                    `[HydroscopeCore] Queuing ${eventType} event through AsyncCoordinator`,
-                  );
 
                   await state.asyncCoordinator.queueApplicationEvent({
                     type: eventType,
@@ -667,12 +653,7 @@ const HydroscopeCoreInternal = forwardRef<
                     timestamp: Date.now(),
                   });
 
-                  // Step 2: RESET and Queue layout update
-                  console.log(
-                    "[HydroscopeCore] Clearing caches and queuing ELK layout through AsyncCoordinator",
-                  );
-                  // Clear ReactFlow caches first to reset parent relationships
-                  // ReactFlowBridge is now stateless - no caches to clear
+                  // Step 2: Queue layout update
 
                   await state.asyncCoordinator.queueELKLayout(
                     singleVisualizationState,
@@ -680,35 +661,18 @@ const HydroscopeCoreInternal = forwardRef<
                   );
 
                   // Step 3: Update ReactFlow data
-                  console.log(
-                    "[HydroscopeCore] Updating ReactFlow data after atomic pipeline",
-                  );
+
                   await updateReactFlowDataWithState(singleVisualizationState);
 
                   // Verify state change occurred
                   const containerAfter =
                     singleVisualizationState.getContainer(containerId);
                   const isCollapsedAfter = Boolean(containerAfter?.collapsed);
-                  console.log(
-                    "[HydroscopeCore] Container state after atomic pipeline:",
-                    {
-                      containerId,
-                      wasCollapsed,
-                      isCollapsedAfter,
-                      stateChanged: wasCollapsed !== isCollapsedAfter,
-                    },
-                  );
 
                   // Call our callbacks based on the new state
                   if (wasCollapsed && !isCollapsedAfter) {
-                    console.log(
-                      "[HydroscopeCore] Calling onContainerExpand callback",
-                    );
                     onContainerExpand?.(containerId, singleVisualizationState);
                   } else if (!wasCollapsed && isCollapsedAfter) {
-                    console.log(
-                      "[HydroscopeCore] Calling onContainerCollapse callback",
-                    );
                     onContainerCollapse?.(
                       containerId,
                       singleVisualizationState,
@@ -720,15 +684,13 @@ const HydroscopeCoreInternal = forwardRef<
                     );
                   }
 
-                  // Trigger auto-fit after container interaction completes
-                  console.log(
-                    "[HydroscopeCore] Setting shouldFitView=true after container interaction",
-                  );
-                  setState((prev) => ({ ...prev, shouldFitView: true }));
-
-                  console.log(
-                    "[HydroscopeCore] AsyncCoordinator atomic pipeline complete",
-                  );
+                  // FIXED: Trigger auto-fit AFTER layout and ReactFlow update are complete
+                  // Use requestAnimationFrame to ensure ReactFlow has rendered the new layout
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      debouncedFitView();
+                    });
+                  });
                 } else {
                   console.error(
                     "[HydroscopeCore] AsyncCoordinator not available for container interaction",
@@ -739,32 +701,20 @@ const HydroscopeCoreInternal = forwardRef<
                   "[HydroscopeCore] Error in AsyncCoordinator container pipeline:",
                   error,
                 );
-                console.log(
-                  "[HydroscopeCore] Container operations often recover automatically, not showing error dialog",
-                );
                 // Don't show error dialog for container operations as they often recover automatically
               }
             };
           }
 
           // Atomic pipeline step 2: Trigger layout through AsyncCoordinator
-          console.log(
-            "[HydroscopeCore] Starting atomic pipeline: state change -> layout -> render",
-          );
           if (state.asyncCoordinator) {
             try {
-              console.log(
-                "[HydroscopeCore] Pipeline step 2: Clearing caches and queuing ELK layout",
-              );
               // Clear caches first to ensure fresh state
               // ReactFlowBridge is now stateless - no caches to clear
 
               await state.asyncCoordinator.queueELKLayout(
                 singleVisualizationState,
                 elkBridgeRef.current!,
-              );
-              console.log(
-                "[HydroscopeCore] Pipeline step 2 complete: Layout queued and processed",
               );
             } catch (layoutError) {
               console.warn(
@@ -776,13 +726,7 @@ const HydroscopeCoreInternal = forwardRef<
           }
 
           // Atomic pipeline step 3: Generate ReactFlow data (render)
-          console.log(
-            "[HydroscopeCore] Pipeline step 3: Generating ReactFlow data",
-          );
           await updateReactFlowDataWithState(singleVisualizationState);
-          console.log(
-            "[HydroscopeCore] Atomic pipeline complete: state -> layout -> render",
-          );
 
           setState((prev) => ({
             ...prev,
@@ -798,33 +742,32 @@ const HydroscopeCoreInternal = forwardRef<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, state.visualizationState, state.asyncCoordinator, readOnly]);
 
-    // Handle fit view when shouldFitView changes
+    // Handle fit view when shouldFitView changes with debouncing
     useEffect(() => {
-      if (state.shouldFitView && reactFlowInstance) {
+      if (state.shouldFitView) {
+        if (!reactFlowInstance) {
+          return; // Don't reset shouldFitView, let it retry when reactFlowInstance becomes available
+        }
+
         // Only auto-fit if autoFitEnabled is true
         if (state.autoFitEnabled) {
-          console.log(
-            "[HydroscopeCore] 🔄 Triggering auto-fit (AutoFit enabled)",
-          );
-
-          // Use double requestAnimationFrame to ensure ReactFlow has fully rendered
-          // This gives ReactFlow more time to process the new data before fitting
-          requestAnimationFrame(() => {
+          // Use requestAnimationFrame to ensure ReactFlow has fully rendered
+          // Reduced timeout since we have smarter debouncing at trigger level
+          const fitViewTimeout = window.setTimeout(() => {
             requestAnimationFrame(() => {
-              console.log(
-                "[HydroscopeCore] 🔄 Executing fitView with padding 0.15",
-              );
               reactFlowInstance.fitView({
                 padding: 0.15,
                 duration: 300,
                 includeHiddenNodes: false, // Only fit to visible nodes
               });
             });
-          });
+          }, 50); // Reduced to 50ms since we have smarter debouncing
+
+          // Cleanup timeout on unmount or dependency change
+          return () => {
+            clearTimeout(fitViewTimeout);
+          };
         } else {
-          console.log(
-            "[HydroscopeCore] 🔄 Skipping auto-fit (AutoFit disabled)",
-          );
         }
 
         // Always reset the flag regardless of whether we fitted or not
@@ -840,13 +783,8 @@ const HydroscopeCoreInternal = forwardRef<
     // Update ReactFlow data with a specific VisualizationState
     const updateReactFlowDataWithState = useCallback(
       async (visualizationState: VisualizationState) => {
-        console.log("[HydroscopeCore] 🔄 updateReactFlowDataWithState called");
-
         // Skip updates during drag operations to prevent jumping
         if (isDraggingRef.current) {
-          console.log(
-            "[HydroscopeCore] 🔄 Skipping ReactFlow update during drag operation",
-          );
           return;
         }
 
@@ -867,86 +805,31 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
-          console.log(
-            "[HydroscopeCore] Updating ReactFlow data with specific state",
-          );
-
           // ReactFlowBridge is now stateless - no caches to clear
 
           // Log container states before generating ReactFlow data
           const containers = visualizationState.visibleContainers;
-          console.log(
-            "[HydroscopeCore] Container states before ReactFlow generation:",
-            containers.map((c) => ({
-              id: c.id,
-              collapsed: c.collapsed,
-              childrenCount: c.children.size,
-            })),
-          );
 
           // Generate ReactFlow data with interaction handlers
-          console.log("[HydroscopeCore] 🔄 Calling toReactFlowData on bridge");
           const newData = reactFlowBridgeRef.current.toReactFlowData(
             visualizationState,
             interactionHandlerRef.current,
           );
-          console.log(
-            "[HydroscopeCore] 🔄 Bridge returned data with",
-            newData.nodes.length,
-            "nodes",
-            newData.edges.length,
-            "edges",
-          );
 
           // Log the generated ReactFlow nodes to see their types and states
-          console.log(
-            "[HydroscopeCore] Generated ReactFlow nodes:",
-            newData.nodes.map((n) => ({
-              id: n.id,
-              type: n.type,
-              nodeType: n.data?.nodeType,
-              collapsed: n.data?.collapsed,
-              hasOnClick: !!n.data?.onClick,
-              isHighlighted: n.data?.isHighlighted,
-              highlightType: n.data?.highlightType,
-              hasCustomStyle: !!n.style,
-              backgroundColor: n.style?.backgroundColor,
-              border: n.style?.border,
-              boxShadow: n.style?.boxShadow,
-            })),
-          );
 
           // CRITICAL DEBUG: Log container states in the final ReactFlow data
           const containerNodes = newData.nodes.filter(
             (n) => n.type === "container",
           );
-          console.log(
-            "[HydroscopeCore] 🔍 FINAL CONTAINER STATES IN REACTFLOW DATA:",
-          );
           for (const container of containerNodes) {
-            console.log(
-              `  - Container ${container.id}: collapsed=${container.data?.collapsed}, type=${container.type}`,
-            );
           }
-          console.log(
-            `[HydroscopeCore] 🔍 Total nodes in ReactFlow data: ${newData.nodes.length}, Total edges: ${newData.edges.length}`,
-          );
 
           // Debug: Log what data is being set in state
           const networkNodes = newData.nodes.filter(
             (n: any) => n.id === "0" || n.id === "8",
           );
           if (networkNodes.length > 0) {
-            console.log(
-              `[HydroscopeCore] 🔍 SETTING STATE WITH NODES:`,
-              networkNodes.map((n: any) => ({
-                id: n.id,
-                isHighlighted: n.data?.isHighlighted,
-                highlightType: n.data?.highlightType,
-                timestamp: n.data?.highlightTimestamp,
-                clearingId: n.data?.clearingId,
-              })),
-            );
           }
 
           setState((prev) => ({
@@ -956,17 +839,6 @@ const HydroscopeCoreInternal = forwardRef<
 
           // Auto-fit is now handled by the shouldFitView mechanism
           // This prevents jumping during updates while still allowing controlled auto-fit
-          console.log(
-            "[HydroscopeCore] 🔄 ReactFlow data updated - auto-fit handled by shouldFitView mechanism",
-          );
-
-          console.log(
-            "[HydroscopeCore] ReactFlow data updated with specific state",
-            {
-              nodeCount: newData.nodes.length,
-              edgeCount: newData.edges.length,
-            },
-          );
         } catch (error) {
           console.error(
             "[HydroscopeCore] Error updating ReactFlow data:",
@@ -994,10 +866,6 @@ const HydroscopeCoreInternal = forwardRef<
         return;
       }
 
-      console.log(
-        `[HydroscopeCore] 🎯 Layout algorithm changed: ${prevAlgorithm} -> ${initialLayoutAlgorithm}`,
-      );
-
       // Update the previous algorithm reference immediately to prevent re-triggers
       prevLayoutAlgorithmRef.current = initialLayoutAlgorithm;
 
@@ -1014,9 +882,6 @@ const HydroscopeCoreInternal = forwardRef<
           state.visualizationState.visibleNodes.length > 0;
 
         if (!hasData) {
-          console.log(
-            `[HydroscopeCore] ⏳ Skipping layout algorithm change - no data loaded yet`,
-          );
           return;
         }
 
@@ -1026,17 +891,9 @@ const HydroscopeCoreInternal = forwardRef<
             algorithm: initialLayoutAlgorithm,
           });
 
-          console.log(
-            `[HydroscopeCore] ✅ ELKBridge configuration updated to algorithm: ${initialLayoutAlgorithm}`,
-          );
-
           // Trigger a new layout with the updated algorithm through AsyncCoordinator
           const triggerLayoutWithNewAlgorithm = async () => {
             try {
-              console.log(
-                `[HydroscopeCore] 🚀 Triggering layout recalculation with new algorithm: ${initialLayoutAlgorithm}`,
-              );
-
               await state.asyncCoordinator!.queueELKLayout(
                 state.visualizationState!,
                 elkBridgeRef.current!,
@@ -1047,10 +904,6 @@ const HydroscopeCoreInternal = forwardRef<
 
               // Trigger auto-fit after layout change
               setState((prev) => ({ ...prev, shouldFitView: true }));
-
-              console.log(
-                `[HydroscopeCore] ✅ Layout recalculation completed with algorithm: ${initialLayoutAlgorithm}`,
-              );
             } catch (error) {
               console.error(
                 `[HydroscopeCore] ❌ Error during layout recalculation:`,
@@ -1069,15 +922,6 @@ const HydroscopeCoreInternal = forwardRef<
           handleError(error as Error, "layout algorithm update");
         }
       } else {
-        console.log(
-          `[HydroscopeCore] ⏳ Skipping layout algorithm change - dependencies not ready yet`,
-          {
-            hasELKBridge: !!elkBridgeRef.current,
-            hasVisualizationState: !!state.visualizationState,
-            hasAsyncCoordinator: !!state.asyncCoordinator,
-            isLoading: state.isLoading,
-          },
-        );
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
@@ -1088,245 +932,221 @@ const HydroscopeCoreInternal = forwardRef<
     ]);
 
     // Bulk operations with atomic state management and error handling
-    const handleCollapseAll = useCallback(async () => {
-      if (!state.visualizationState || !state.asyncCoordinator) {
-        console.warn(
-          "[HydroscopeCore] Cannot collapse all - missing dependencies",
-        );
-        return;
-      }
+    const handleCollapseAll = useCallback(
+      withAsyncResizeObserverErrorSuppression(async () => {
+        if (!state.visualizationState || !state.asyncCoordinator) {
+          console.warn(
+            "[HydroscopeCore] Cannot collapse all - missing dependencies",
+          );
+          return;
+        }
 
-      // Capture initial state for rollback
-      const initialContainerStates = new Map();
-      try {
-        // Store initial container states for potential rollback
-        state.visualizationState.visibleContainers.forEach((container: any) => {
-          initialContainerStates.set(container.id, container.collapsed);
-        });
-
-        console.log(
-          "[HydroscopeCore] Starting collapseAll operation through AsyncCoordinator",
-        );
-
-        // Trigger fit view for layout operations
-        setState((prev) => ({ ...prev, shouldFitView: true }));
-
-        // Step 1: Atomic bulk state changes through AsyncCoordinator
-        await state.asyncCoordinator.collapseAllContainers(
-          state.visualizationState,
-          {
-            triggerLayout: false, // Don't trigger layout for individual containers
-            triggerValidation: false, // We'll handle ReactFlow update separately
-          },
-        );
-
-        // Step 2: Single coordinated re-layout after all state changes
-        console.log("[HydroscopeCore] Queuing ELK layout after collapseAll");
-        // ReactFlowBridge is now stateless - no caches to clear
-
-        await state.asyncCoordinator.queueELKLayout(
-          state.visualizationState,
-          elkBridgeRef.current!,
-        );
-
-        // Step 3: Single coordinated re-render
-        console.log(
-          "[HydroscopeCore] Updating ReactFlow data after collapseAll atomic pipeline",
-        );
-        await updateReactFlowDataWithState(state.visualizationState);
-
-        console.log("[HydroscopeCore] CollapseAll atomic pipeline complete");
-
-        // Notify parent component of visualization state change
-        onVisualizationStateChange?.(state.visualizationState);
-
-        // Call success callback
-        onCollapseAll?.(state.visualizationState);
-      } catch (error) {
-        console.error(
-          "[HydroscopeCore] Error in collapseAll operation, attempting rollback:",
-          error,
-        );
-
-        // Attempt rollback to initial state
+        // Capture initial state for rollback
+        const initialContainerStates = new Map();
         try {
-          console.log("[HydroscopeCore] Rolling back collapseAll operation");
-          for (const [containerId, wasCollapsed] of initialContainerStates) {
-            const container =
-              state.visualizationState.getContainer(containerId);
-            if (container && container.collapsed !== wasCollapsed) {
-              if (wasCollapsed) {
-                await state.asyncCoordinator!.collapseContainer(
-                  containerId,
-                  state.visualizationState,
-                  { triggerLayout: false },
-                );
-              } else {
-                await state.asyncCoordinator!.expandContainer(
-                  containerId,
-                  state.visualizationState,
-                  { triggerLayout: false },
-                );
+          // Store initial container states for potential rollback
+          state.visualizationState.visibleContainers.forEach(
+            (container: any) => {
+              initialContainerStates.set(container.id, container.collapsed);
+            },
+          );
+
+          // Trigger fit view for layout operations
+          setState((prev) => ({ ...prev, shouldFitView: true }));
+
+          // Step 1: Atomic bulk state changes through AsyncCoordinator
+          await state.asyncCoordinator.collapseAllContainers(
+            state.visualizationState,
+            {
+              triggerLayout: false, // Don't trigger layout for individual containers
+              triggerValidation: false, // We'll handle ReactFlow update separately
+            },
+          );
+
+          // Step 2: Single coordinated re-layout after all state changes
+          // ReactFlowBridge is now stateless - no caches to clear
+
+          await state.asyncCoordinator.queueELKLayout(
+            state.visualizationState,
+            elkBridgeRef.current!,
+          );
+
+          // Step 3: Single coordinated re-render
+          await updateReactFlowDataWithState(state.visualizationState);
+
+          // Trigger fit view AFTER ReactFlow has rendered the collapsed layout
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              debouncedFitView();
+            });
+          });
+
+          // Notify parent component of visualization state change
+          onVisualizationStateChange?.(state.visualizationState);
+
+          // Call success callback
+          onCollapseAll?.(state.visualizationState);
+        } catch (error) {
+          console.error(
+            "[HydroscopeCore] Error in collapseAll operation, attempting rollback:",
+            error,
+          );
+
+          // Attempt rollback to initial state
+          try {
+            for (const [containerId, wasCollapsed] of initialContainerStates) {
+              const container =
+                state.visualizationState.getContainer(containerId);
+              if (container && container.collapsed !== wasCollapsed) {
+                if (wasCollapsed) {
+                  await state.asyncCoordinator!.collapseContainer(
+                    containerId,
+                    state.visualizationState,
+                    { triggerLayout: false },
+                  );
+                } else {
+                  await state.asyncCoordinator!.expandContainer(
+                    containerId,
+                    state.visualizationState,
+                    { triggerLayout: false },
+                  );
+                }
               }
             }
+
+            // Re-render after rollback
+            await updateReactFlowDataWithState(state.visualizationState);
+
+            // Show user-friendly error message
+            const rollbackError = new Error(
+              `Bulk collapse operation failed and was rolled back: ${(error as Error).message}`,
+            );
+            handleError(rollbackError, "bulk collapse operation");
+          } catch (rollbackError) {
+            console.error("[HydroscopeCore] Rollback failed:", rollbackError);
+            const compoundError = new Error(
+              `Bulk collapse operation failed and rollback also failed. Please refresh the component. Original error: ${(error as Error).message}`,
+            );
+            handleError(compoundError, "bulk collapse operation");
           }
-
-          // Re-render after rollback
-          await updateReactFlowDataWithState(state.visualizationState);
-          console.log("[HydroscopeCore] CollapseAll rollback completed");
-
-          // Show user-friendly error message
-          const rollbackError = new Error(
-            `Bulk collapse operation failed and was rolled back: ${(error as Error).message}`,
-          );
-          handleError(rollbackError, "bulk collapse operation");
-        } catch (rollbackError) {
-          console.error("[HydroscopeCore] Rollback failed:", rollbackError);
-          const compoundError = new Error(
-            `Bulk collapse operation failed and rollback also failed. Please refresh the component. Original error: ${(error as Error).message}`,
-          );
-          handleError(compoundError, "bulk collapse operation");
         }
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-      state.visualizationState,
-      state.asyncCoordinator,
-      updateReactFlowDataWithState,
-      handleError,
-    ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }),
+      [
+        state.visualizationState,
+        state.asyncCoordinator,
+        updateReactFlowDataWithState,
+        handleError,
+      ],
+    );
 
-    const handleExpandAll = useCallback(async () => {
-      if (!state.visualizationState || !state.asyncCoordinator) {
-        console.warn(
-          "[HydroscopeCore] Cannot expand all - missing dependencies",
-        );
-        return;
-      }
+    const handleExpandAll = useCallback(
+      withAsyncResizeObserverErrorSuppression(async () => {
+        if (!state.visualizationState || !state.asyncCoordinator) {
+          console.warn(
+            "[HydroscopeCore] Cannot expand all - missing dependencies",
+          );
+          return;
+        }
 
-      // Capture initial state for rollback
-      const initialContainerStates = new Map();
-      try {
-        // Store initial container states for potential rollback
-        state.visualizationState.visibleContainers.forEach((container: any) => {
-          initialContainerStates.set(container.id, container.collapsed);
-        });
-
-        console.log(
-          "[HydroscopeCore] Starting expandAll operation through AsyncCoordinator",
-        );
-
-        // Step 1: Atomic bulk state changes through AsyncCoordinator
-        await state.asyncCoordinator.expandAllContainers(
-          state.visualizationState,
-          {
-            triggerLayout: false, // Don't trigger layout for individual containers
-          },
-        );
-
-        // Step 2: Single coordinated re-layout after all state changes
-        console.log("[HydroscopeCore] Queuing ELK layout after expandAll");
-        // ReactFlowBridge is now stateless - no caches to clear
-
-        await state.asyncCoordinator.queueELKLayout(
-          state.visualizationState,
-          elkBridgeRef.current!,
-        );
-
-        // Step 3: Single coordinated re-render
-        console.log(
-          "[HydroscopeCore] Updating ReactFlow data after expandAll atomic pipeline",
-        );
-        await updateReactFlowDataWithState(state.visualizationState);
-
-        console.log("[HydroscopeCore] ExpandAll atomic pipeline complete");
-
-        // Trigger fit view AFTER the expansion operation completes successfully
-        console.log(
-          "[HydroscopeCore] Setting shouldFitView=true after successful expandAll",
-        );
-        setState((prev) => ({ ...prev, shouldFitView: true }));
-
-        // Notify parent component of visualization state change
-        console.log(
-          "KIRO_DEBUG_EXPAND_ALL: Calling onVisualizationStateChange callback",
-        );
-        console.log(
-          "[HydroscopeCore] 🔍 VisualizationState containers after expandAll:",
-          {
-            visibleContainers:
-              state.visualizationState.visibleContainers.length,
-            collapsedContainers:
-              state.visualizationState.visibleContainers.filter(
-                (c) => c.collapsed,
-              ).length,
-            expandedContainers:
-              state.visualizationState.visibleContainers.filter(
-                (c) => !c.collapsed,
-              ).length,
-          },
-        );
-        onVisualizationStateChange?.(state.visualizationState);
-
-        // Call success callback
-        onExpandAll?.(state.visualizationState);
-      } catch (error) {
-        console.error(
-          "[HydroscopeCore] Error in expandAll operation, attempting rollback:",
-          error,
-        );
-
-        // Attempt rollback to initial state
+        // Capture initial state for rollback
+        const initialContainerStates = new Map();
         try {
-          console.log("[HydroscopeCore] Rolling back expandAll operation");
-          for (const [containerId, wasCollapsed] of initialContainerStates) {
-            const container =
-              state.visualizationState.getContainer(containerId);
-            if (container && container.collapsed !== wasCollapsed) {
-              if (wasCollapsed) {
-                await state.asyncCoordinator!.collapseContainer(
-                  containerId,
-                  state.visualizationState,
-                  { triggerLayout: false },
-                );
-              } else {
-                await state.asyncCoordinator!.expandContainer(
-                  containerId,
-                  state.visualizationState,
-                  { triggerLayout: false },
-                );
+          // Store initial container states for potential rollback
+          state.visualizationState.visibleContainers.forEach(
+            (container: any) => {
+              initialContainerStates.set(container.id, container.collapsed);
+            },
+          );
+
+          // Step 1: Atomic bulk state changes through AsyncCoordinator
+          await state.asyncCoordinator.expandAllContainers(
+            state.visualizationState,
+            {
+              triggerLayout: false, // Don't trigger layout for individual containers
+            },
+          );
+
+          // Step 2: Single coordinated re-layout after all state changes
+          // ReactFlowBridge is now stateless - no caches to clear
+
+          await state.asyncCoordinator.queueELKLayout(
+            state.visualizationState,
+            elkBridgeRef.current!,
+          );
+
+          // Step 3: Single coordinated re-render
+          await updateReactFlowDataWithState(state.visualizationState);
+
+          // Trigger fit view AFTER ReactFlow has rendered the expanded layout
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              debouncedFitView();
+            });
+          });
+
+          // Notify parent component of visualization state change
+          onVisualizationStateChange?.(state.visualizationState);
+
+          // Call success callback
+          onExpandAll?.(state.visualizationState);
+        } catch (error) {
+          console.error(
+            "[HydroscopeCore] Error in expandAll operation, attempting rollback:",
+            error,
+          );
+
+          // Attempt rollback to initial state
+          try {
+            for (const [containerId, wasCollapsed] of initialContainerStates) {
+              const container =
+                state.visualizationState.getContainer(containerId);
+              if (container && container.collapsed !== wasCollapsed) {
+                if (wasCollapsed) {
+                  await state.asyncCoordinator!.collapseContainer(
+                    containerId,
+                    state.visualizationState,
+                    { triggerLayout: false },
+                  );
+                } else {
+                  await state.asyncCoordinator!.expandContainer(
+                    containerId,
+                    state.visualizationState,
+                    { triggerLayout: false },
+                  );
+                }
               }
             }
+
+            // Re-render after rollback
+            await updateReactFlowDataWithState(state.visualizationState);
+
+            // Show user-friendly error message
+            const rollbackError = new Error(
+              `Bulk expand operation failed and was rolled back: ${(error as Error).message}`,
+            );
+            handleError(rollbackError, "bulk expand operation");
+          } catch (rollbackError) {
+            console.error("[HydroscopeCore] Rollback failed:", rollbackError);
+            const compoundError = new Error(
+              `Bulk expand operation failed and rollback also failed. Please refresh the component. Original error: ${(error as Error).message}`,
+            );
+            handleError(compoundError, "bulk expand operation");
           }
-
-          // Re-render after rollback
-          await updateReactFlowDataWithState(state.visualizationState);
-          console.log("[HydroscopeCore] ExpandAll rollback completed");
-
-          // Show user-friendly error message
-          const rollbackError = new Error(
-            `Bulk expand operation failed and was rolled back: ${(error as Error).message}`,
-          );
-          handleError(rollbackError, "bulk expand operation");
-        } catch (rollbackError) {
-          console.error("[HydroscopeCore] Rollback failed:", rollbackError);
-          const compoundError = new Error(
-            `Bulk expand operation failed and rollback also failed. Please refresh the component. Original error: ${(error as Error).message}`,
-          );
-          handleError(compoundError, "bulk expand operation");
         }
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-      state.visualizationState,
-      state.asyncCoordinator,
-      updateReactFlowDataWithState,
-      handleError,
-    ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }),
+      [
+        state.visualizationState,
+        state.asyncCoordinator,
+        updateReactFlowDataWithState,
+        handleError,
+      ],
+    );
 
     // Individual container operations with atomic state management and error handling
     const handleCollapse = useCallback(
-      async (containerId: string) => {
+      withAsyncResizeObserverErrorSuppression(async (containerId: string) => {
         if (!state.visualizationState || !state.asyncCoordinator) {
           console.warn(
             "[HydroscopeCore] Cannot collapse container - missing dependencies",
@@ -1343,18 +1163,11 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         if (container.collapsed) {
-          console.log(
-            `[HydroscopeCore] Container ${containerId} is already collapsed`,
-          );
           return;
         }
 
         const initialCollapsed = container.collapsed;
         try {
-          console.log(
-            `[HydroscopeCore] Starting collapse operation for container ${containerId}`,
-          );
-
           // Use AsyncCoordinator's atomic collapse operation
           await state.asyncCoordinator.collapseContainer(
             containerId,
@@ -1364,18 +1177,11 @@ const HydroscopeCoreInternal = forwardRef<
           // EXPERIMENT: Force ReactFlow reset to work around floating edge bug
           setReactFlowResetKey((prev) => {
             const newKey = prev + 1;
-            console.log(
-              `[HydroscopeCore] 🔄 EXPERIMENT: ReactFlow reset key changed from ${prev} to ${newKey} after container COLLAPSE`,
-            );
             return newKey;
           });
 
           // Step 4: Trigger fit view for individual container operations
           setState((prev) => ({ ...prev, shouldFitView: true }));
-
-          console.log(
-            `[HydroscopeCore] Collapse operation complete for container ${containerId}`,
-          );
 
           // Call success callback
           onContainerCollapse?.(containerId, state.visualizationState);
@@ -1403,7 +1209,7 @@ const HydroscopeCoreInternal = forwardRef<
 
           handleError(error as Error, `collapse container ${containerId}`);
         }
-      },
+      }),
       [
         state.visualizationState,
         state.asyncCoordinator,
@@ -1413,7 +1219,7 @@ const HydroscopeCoreInternal = forwardRef<
     );
 
     const handleExpand = useCallback(
-      async (containerId: string) => {
+      withAsyncResizeObserverErrorSuppression(async (containerId: string) => {
         if (!state.visualizationState || !state.asyncCoordinator) {
           console.warn(
             "[HydroscopeCore] Cannot expand container - missing dependencies",
@@ -1430,18 +1236,11 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         if (!container.collapsed) {
-          console.log(
-            `[HydroscopeCore] Container ${containerId} is already expanded`,
-          );
           return;
         }
 
         const initialCollapsed = container.collapsed;
         try {
-          console.log(
-            `[HydroscopeCore] Starting expand operation for container ${containerId}`,
-          );
-
           // Use AsyncCoordinator's atomic expand operation
           await state.asyncCoordinator.expandContainer(
             containerId,
@@ -1451,18 +1250,11 @@ const HydroscopeCoreInternal = forwardRef<
           // EXPERIMENT: Force ReactFlow reset to work around floating edge bug
           setReactFlowResetKey((prev) => {
             const newKey = prev + 1;
-            console.log(
-              `[HydroscopeCore] 🔄 EXPERIMENT: ReactFlow reset key changed from ${prev} to ${newKey} after container EXPAND`,
-            );
             return newKey;
           });
 
           // Step 4: Trigger fit view for individual container operations
           setState((prev) => ({ ...prev, shouldFitView: true }));
-
-          console.log(
-            `[HydroscopeCore] Expand operation complete for container ${containerId}`,
-          );
 
           // Call success callback
           onContainerExpand?.(containerId, state.visualizationState);
@@ -1490,7 +1282,7 @@ const HydroscopeCoreInternal = forwardRef<
 
           handleError(error as Error, `expand container ${containerId}`);
         }
-      },
+      }),
       [
         state.visualizationState,
         state.asyncCoordinator,
@@ -1500,7 +1292,7 @@ const HydroscopeCoreInternal = forwardRef<
     );
 
     const handleToggle = useCallback(
-      async (containerId: string) => {
+      withAsyncResizeObserverErrorSuppression(async (containerId: string) => {
         if (!state.visualizationState) {
           console.warn(
             "[HydroscopeCore] Cannot toggle container - missing VisualizationState",
@@ -1516,16 +1308,12 @@ const HydroscopeCoreInternal = forwardRef<
           return;
         }
 
-        console.log(
-          `[HydroscopeCore] Toggling container ${containerId} from ${container.collapsed ? "collapsed" : "expanded"}`,
-        );
-
         if (container.collapsed) {
           await handleExpand(containerId);
         } else {
           await handleCollapse(containerId);
         }
-      },
+      }),
       [state.visualizationState, handleExpand, handleCollapse],
     );
 
@@ -1542,34 +1330,21 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
-          console.log(
-            `[HydroscopeCore] 🎨 Processing render config update:`,
-            updates,
-          );
-
           // Update render config in VisualizationState
           state.visualizationState.updateRenderConfig(updates);
 
           // If layout algorithm changed, trigger ELK layout, otherwise just update ReactFlow data
           if (updates.layoutAlgorithm) {
-            console.log(
-              `[HydroscopeCore] 🎯 Layout algorithm changed to: ${updates.layoutAlgorithm}`,
-            );
             // Update ELK bridge configuration and trigger layout
             if (elkBridgeRef.current) {
-              console.log(
-                `[HydroscopeCore] 🎯 Updating ELK bridge configuration`,
-              );
               elkBridgeRef.current.updateConfiguration({
                 algorithm: updates.layoutAlgorithm,
               });
 
-              console.log(`[HydroscopeCore] 🎯 Queuing ELK layout operation`);
               await state.asyncCoordinator.queueELKLayout(
                 state.visualizationState,
                 elkBridgeRef.current,
               );
-              console.log(`[HydroscopeCore] 🎯 ELK layout operation completed`);
             } else {
               console.error(
                 `[HydroscopeCore] ❌ ELK bridge not available for layout algorithm change`,
@@ -1577,9 +1352,6 @@ const HydroscopeCoreInternal = forwardRef<
             }
           } else {
             // For non-layout changes (like edge style, color palette), use AsyncCoordinator
-            console.log(
-              `[HydroscopeCore] 🎨 Non-layout change, queuing render config update through AsyncCoordinator`,
-            );
             const newReactFlowData =
               await state.asyncCoordinator.queueRenderConfigUpdate(
                 state.visualizationState,
@@ -1588,9 +1360,6 @@ const HydroscopeCoreInternal = forwardRef<
 
             // Update ReactFlow component with new data
             if (newReactFlowData) {
-              console.log(
-                `[HydroscopeCore] 🎨 Updating ReactFlow with new render config data`,
-              );
               setState((prev) => ({
                 ...prev,
                 reactFlowData: newReactFlowData,
@@ -1604,23 +1373,12 @@ const HydroscopeCoreInternal = forwardRef<
           // Only force ReactFlow reset for edge style changes that require re-initialization
           // Color palette and other visual changes don't need a full reset
           if (updates.edgeStyle) {
-            console.log(
-              `[HydroscopeCore] 🔄 Edge style changed, forcing ReactFlow reset`,
-            );
             setReactFlowResetKey((prev) => {
               const newKey = prev + 1;
-              console.log(
-                `[HydroscopeCore] 🔄 ReactFlow reset key changed from ${prev} to ${newKey} for edge style change`,
-              );
               return newKey;
             });
           } else {
-            console.log(
-              `[HydroscopeCore] 🎨 Non-edge-style change, no ReactFlow reset needed`,
-            );
           }
-
-          console.log(`[HydroscopeCore] ✅ Render config update completed`);
         } catch (error) {
           console.error(
             "[HydroscopeCore] ❌ Error updating render config:",
@@ -1650,10 +1408,6 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
-          console.log(
-            `[HydroscopeCore] Starting navigation to element ${elementId}`,
-          );
-
           // Use AsyncCoordinator's navigateToElementWithErrorHandling method which handles:
           // 1. Automatic container expansion if element is not visible
           // 2. Navigation state update in VisualizationState
@@ -1672,10 +1426,6 @@ const HydroscopeCoreInternal = forwardRef<
           if (!result.success) {
             throw new Error("Navigation failed with error handling");
           }
-
-          console.log(
-            `[HydroscopeCore] Navigation to element ${elementId} completed successfully`,
-          );
         } catch (error) {
           console.error(
             `[HydroscopeCore] Error navigating to element ${elementId}:`,
@@ -1723,7 +1473,6 @@ const HydroscopeCoreInternal = forwardRef<
               console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
           : handleToggle,
         fitView: () => {
-          console.log("[HydroscopeCore] fitView called via imperative handle");
           if (reactFlowInstance) {
             reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
           } else {
@@ -1761,14 +1510,6 @@ const HydroscopeCoreInternal = forwardRef<
     const handleNodeClick = useCallback(
       (event: React.MouseEvent, node: Node) => {
         try {
-          console.log("[HydroscopeCore] Node clicked:", node.id);
-          console.log("[HydroscopeCore] Node type:", node.type);
-          console.log("[HydroscopeCore] Node data:", {
-            nodeType: node.data?.nodeType,
-            collapsed: node.data?.collapsed,
-            hasOnClick: !!node.data?.onClick,
-          });
-
           // Validate node data
           if (!node || !node.id) {
             console.warn("[HydroscopeCore] Invalid node clicked:", node);
@@ -1777,11 +1518,8 @@ const HydroscopeCoreInternal = forwardRef<
 
           // Check if this is a container node
           if (node.data && node.data.nodeType === "container") {
-            console.log("[HydroscopeCore] Container node clicked:", node.id);
-
             // Call the container onClick handler if it exists (this will handle the state update and callbacks)
             if (node.data.onClick && typeof node.data.onClick === "function") {
-              console.log("[HydroscopeCore] Calling container onClick handler");
               node.data.onClick(node.id, "container");
             }
 
@@ -1882,18 +1620,10 @@ const HydroscopeCoreInternal = forwardRef<
         if (readOnly) return;
 
         try {
-          console.log(
-            "[HydroscopeCore] Node drag start:",
-            node.id,
-            "- entering drag mode",
-          );
           isDraggingRef.current = true;
 
           // Disable auto-fit during drag to respect user's manual positioning
           // Don't trigger a state update here to avoid re-renders during drag start
-          console.log(
-            "[HydroscopeCore] Drag mode active - preventing layout updates",
-          );
         } catch (error) {
           console.error("[HydroscopeCore] Error handling drag start:", error);
         }
@@ -1917,19 +1647,10 @@ const HydroscopeCoreInternal = forwardRef<
         if (readOnly) return;
 
         try {
-          console.log(
-            "[HydroscopeCore] Node drag stop:",
-            node.id,
-            "final position:",
-            node.position,
-          );
           isDraggingRef.current = false;
 
           // Keep auto-fit enabled but don't trigger automatic fit view
           // This allows ReactFlow's fit button to still work
-          console.log(
-            "[HydroscopeCore] Drag completed - ReactFlow fit button remains functional",
-          );
 
           // Update the visualization state with the new position
           if (state.visualizationState) {
@@ -1957,14 +1678,8 @@ const HydroscopeCoreInternal = forwardRef<
           // If AutoFit is enabled, trigger a fit view after drag completes
           // This ensures the dragged node remains visible and the view is optimally positioned
           if (state.autoFitEnabled) {
-            console.log(
-              "[HydroscopeCore] AutoFit enabled - triggering fit view after drag completion",
-            );
             setState((prev) => ({ ...prev, shouldFitView: true }));
           } else {
-            console.log(
-              "[HydroscopeCore] AutoFit disabled - no fit view after drag",
-            );
           }
         } catch (error) {
           console.error("[HydroscopeCore] Error handling drag stop:", error);
@@ -1992,7 +1707,6 @@ const HydroscopeCoreInternal = forwardRef<
 
     // Retry mechanism
     const handleRetry = useCallback(() => {
-      console.log("[HydroscopeCore] Retrying after error");
       setState((prev) => ({ ...prev, error: null, isLoading: true }));
       // The useEffect will automatically re-run when error is cleared
     }, []);
@@ -2081,19 +1795,11 @@ const HydroscopeCoreInternal = forwardRef<
       );
     }
 
-    console.log(
-      "[HydroscopeCore] Rendering ReactFlow with",
-      state.reactFlowData.nodes.length,
-      "nodes",
-    );
-    console.log(
-      "[HydroscopeCore] Node types:",
-      state.reactFlowData.nodes.map((n) => ({
-        id: n.id,
-        type: n.type,
-        nodeType: n.data?.nodeType,
-      })),
-    );
+    // Only log on significant changes to reduce console spam
+    const nodeCount = state.reactFlowData.nodes.length;
+    if (nodeCount !== prevNodeCountRef.current) {
+      prevNodeCountRef.current = nodeCount;
+    }
 
     return (
       <div
@@ -2104,37 +1810,19 @@ const HydroscopeCoreInternal = forwardRef<
           position: "relative",
           pointerEvents: "auto",
         }}
-        onClick={() => console.log("[HydroscopeCore] Container div clicked")}
+        onClick={() => {
+          // Container div clicked
+        }}
       >
         <ReactFlow
           key={reactFlowResetKey} // EXPERIMENT: Force ReactFlow reset on container operations
-          nodes={(() => {
-            // Debug: Log what nodes ReactFlow is receiving
-            const networkNodes = (state.reactFlowData.nodes as Node[]).filter(
-              (n) => n.id === "0" || n.id === "8",
-            );
-            if (networkNodes.length > 0) {
-              console.log(
-                `[HydroscopeCore] 🔍 REACTFLOW RECEIVING NODES:`,
-                networkNodes.map((n) => ({
-                  id: n.id,
-                  isHighlighted: (n.data as any)?.isHighlighted,
-                  highlightType: (n.data as any)?.highlightType,
-                  timestamp: (n.data as any)?.highlightTimestamp,
-                  dataRef: n.data,
-                })),
-              );
-            }
-            return state.reactFlowData.nodes as Node[];
-          })()}
+          nodes={state.reactFlowData.nodes as Node[]}
           edges={state.reactFlowData.edges as any[]}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
-          onInit={() =>
-            console.log(
-              `[HydroscopeCore] 🔄 EXPERIMENT: ReactFlow initialized with key=${reactFlowResetKey}`,
-            )
-          }
+          onInit={() => {
+            // ReactFlow instance initialized
+          }}
           onNodeClick={readOnly ? undefined : handleNodeClick}
           onNodesChange={readOnly ? undefined : handleNodesChange}
           onEdgesChange={readOnly ? undefined : handleEdgesChange}
@@ -2144,10 +1832,9 @@ const HydroscopeCoreInternal = forwardRef<
           onPaneClick={
             readOnly
               ? undefined
-              : () =>
-                  console.log(
-                    "[HydroscopeCore] Pane clicked - ReactFlow is receiving events",
-                  )
+              : () => {
+                  // Pane clicked
+                }
           }
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}

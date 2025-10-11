@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, Container } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Container Hierarchy and Relationships", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

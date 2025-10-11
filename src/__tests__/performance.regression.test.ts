@@ -13,6 +13,7 @@ import {
   measureSync,
   createPerformanceReport,
 } from "../utils/PerformanceUtils.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import {
   DEFAULT_PERFORMANCE_THRESHOLDS,
   generateSyntheticGraphData,
@@ -23,8 +24,15 @@ import {
 import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Performance Regression Tests", () => {
+  let coordinator: AsyncCoordinator;
+
+  beforeEach(() => {
+    coordinator = new AsyncCoordinator();
+  });
+
   let paxosData: HydroscopeData;
   let batchTester: BatchPerformanceTester;
   let performanceBaseline: PerformanceBaseline | null = null;
@@ -64,7 +72,7 @@ describe("Performance Regression Tests", () => {
               memoryGrowth: acc.memoryGrowth + m.memoryUsage.growth,
               throughput: (acc.throughput || 0) + (m.throughput || 0),
             }),
-            { duration: 0, memoryGrowth: 0, throughput: 0 }
+            { duration: 0, memoryGrowth: 0, throughput: 0 },
           );
 
           baselineData[testName] = {
@@ -77,17 +85,26 @@ describe("Performance Regression Tests", () => {
 
       const baseline = createPerformanceBaseline("1.0.0", baselineData);
 
-      try {
-        fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
-        console.log("Performance baseline saved to:", baselinePath);
-      } catch (error) {
-        console.warn("Could not save performance baseline:", error);
+      if (process.env.DEBUG_FILES) {
+        try {
+          fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
+          console.log("Performance baseline saved to:", baselinePath);
+        } catch (error) {
+          console.warn("Could not save performance baseline:", error);
+        }
       }
     }
   });
 
   describe("Core Component Performance", () => {
+    let coordinator: AsyncCoordinator;
+
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should maintain JSON parsing performance", async () => {
+      const coordinator = new AsyncCoordinator();
       const testResult = await batchTester.runTest(
         "json-parse",
         async () => {
@@ -97,15 +114,15 @@ describe("Performance Regression Tests", () => {
           return await parser.parseData(paxosData);
         },
         5,
-        2
+        2,
       );
 
       // Check against thresholds
       expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse
+        DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse,
       );
       expect(testResult.average.memoryUsage.growth).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth
+        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
       );
 
       // Check for regression if baseline exists
@@ -122,7 +139,7 @@ describe("Performance Regression Tests", () => {
             },
             throughput: baseline.throughput,
           },
-          testResult.average
+          testResult.average,
         );
 
         // Allow for some performance variation in test environment
@@ -130,7 +147,7 @@ describe("Performance Regression Tests", () => {
 
         if (regression.durationChange > 5) {
           console.warn(
-            `JSON Parse performance regression: ${regression.durationChange.toFixed(2)}% slower`
+            `JSON Parse performance regression: ${regression.durationChange.toFixed(2)}% slower`,
           );
         }
       }
@@ -139,49 +156,53 @@ describe("Performance Regression Tests", () => {
         createPerformanceReport("JSON Parse", testResult.average, {
           maxDuration: DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse,
           maxMemoryGrowth: DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
-        })
+        }),
       );
     });
 
     it("should maintain VisualizationState performance", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
 
       const testResult = await batchTester.runTest(
         "visualization-state-ops",
-        () => {
+        async () => {
           const state = parseResult.visualizationState;
 
           // Perform various operations
-          state._expandAllContainersForCoordinator();
-          state._collapseAllContainersForCoordinator();
+          await coordinator.expandAllContainers(state, {
+            triggerLayout: false,
+          });
+          await coordinator.collapseAllContainers(state, {
+            triggerLayout: false,
+          });
           state.search("paxos");
           state.clearSearch();
 
           return state;
         },
         10,
-        3
+        3,
       );
 
       expect(testResult.average.duration).toBeLessThan(
         DEFAULT_PERFORMANCE_THRESHOLDS.containerOperations +
-          DEFAULT_PERFORMANCE_THRESHOLDS.searchOperations
+          DEFAULT_PERFORMANCE_THRESHOLDS.searchOperations,
       );
       expect(testResult.average.memoryUsage.growth).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth
+        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
       );
 
       console.log(
         createPerformanceReport(
           "VisualizationState Operations",
-          testResult.average
-        )
+          testResult.average,
+        ),
       );
     });
 
     it("should maintain ELK Bridge performance", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
 
@@ -191,23 +212,23 @@ describe("Performance Regression Tests", () => {
           return elkBridge.toELKGraph(parseResult.visualizationState);
         },
         10,
-        3
+        3,
       );
 
       expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.elkConversion
+        DEFAULT_PERFORMANCE_THRESHOLDS.elkConversion,
       );
       expect(testResult.average.memoryUsage.growth).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth
+        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
       );
 
       console.log(
-        createPerformanceReport("ELK Bridge Conversion", testResult.average)
+        createPerformanceReport("ELK Bridge Conversion", testResult.average),
       );
     });
 
     it("should maintain ReactFlow Bridge performance", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
       const reactFlowBridge = new ReactFlowBridge({
@@ -223,32 +244,37 @@ describe("Performance Regression Tests", () => {
         "reactflow-bridge",
         () => {
           return reactFlowBridge.toReactFlowData(
-            parseResult.visualizationState
+            parseResult.visualizationState,
           );
         },
         10,
-        3
+        3,
       );
 
       expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.reactFlowConversion
+        DEFAULT_PERFORMANCE_THRESHOLDS.reactFlowConversion,
       );
       expect(testResult.average.memoryUsage.growth).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth
+        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
       );
 
       console.log(
         createPerformanceReport(
           "ReactFlow Bridge Conversion",
-          testResult.average
-        )
+          testResult.average,
+        ),
       );
     });
   });
 
   describe("Stress Testing", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle container operation stress test", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
 
       const testResult = await batchTester.runTest(
@@ -258,28 +284,32 @@ describe("Performance Regression Tests", () => {
 
           // Rapid container operations
           for (let i = 0; i < 10; i++) {
-            state._expandAllContainersForCoordinator();
-            state._collapseAllContainersForCoordinator();
+            await coordinator.expandAllContainers(state, {
+              triggerLayout: false,
+            });
+            await coordinator.collapseAllContainers(state, {
+              triggerLayout: false,
+            });
           }
 
           return state;
         },
         5,
-        2
+        2,
       );
 
       // Should complete within reasonable time even with many operations
       expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.containerOperations * 20
+        DEFAULT_PERFORMANCE_THRESHOLDS.containerOperations * 20,
       );
 
       console.log(
-        createPerformanceReport("Container Stress Test", testResult.average)
+        createPerformanceReport("Container Stress Test", testResult.average),
       );
     });
 
     it("should handle search operation stress test", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
 
       const testResult = await batchTester.runTest(
@@ -297,23 +327,23 @@ describe("Performance Regression Tests", () => {
           return state;
         },
         5,
-        2
+        2,
       );
 
       expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.searchOperations * 20
+        DEFAULT_PERFORMANCE_THRESHOLDS.searchOperations * 20,
       );
 
       console.log(
-        createPerformanceReport("Search Stress Test", testResult.average)
+        createPerformanceReport("Search Stress Test", testResult.average),
       );
     });
 
     it(
       "should detect memory leaks in repeated operations",
-      { timeout: 30000 },
+      { timeout: 15000 },
       async () => {
-        const parser = new JSONParser();
+        const parser = JSONParser.createPaxosParser({ debug: false });
 
         const testResult = await batchTester.runTest(
           "memory-leak-detection",
@@ -329,43 +359,52 @@ describe("Performance Regression Tests", () => {
             });
 
             // Full pipeline
-            state._expandAllContainersForCoordinator();
+            await coordinator.expandAllContainers(state, {
+              triggerLayout: false,
+            });
             const elkGraph = elkBridge.toELKGraph(state);
             // Calculate layout so nodes have positions
             await elkBridge.layout(state);
             const reactFlowData = reactFlowBridge.toReactFlowData(state);
-            state._collapseAllContainersForCoordinator();
+            await coordinator.collapseAllContainers(state, {
+              triggerLayout: false,
+            });
 
             return { state, elkGraph, reactFlowData };
           },
-          10, // Reduced iterations for CI
-          3   // Reduced warmup runs for CI
+          20,
+          5,
         );
 
         // Memory growth should be minimal across iterations
         expect(testResult.average.memoryUsage.growth).toBeLessThan(
-          DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth * 2
+          DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth * 2,
         );
 
         // Check for consistent memory usage (no significant growth trend)
         const memoryGrowths = testResult.results.map(
-          (r) => r.memoryUsage.growth
+          (r) => r.memoryUsage.growth,
         );
         const maxGrowth = Math.max(...memoryGrowths);
         const minGrowth = Math.min(...memoryGrowths);
         const growthVariance = maxGrowth - minGrowth;
 
-        expect(growthVariance).toBeLessThan(500); // Less than 500MB variance (realistic for test environment)
+        expect(growthVariance).toBeLessThan(300); // Less than 300MB variance (realistic for test environment)
 
         console.log(
-          createPerformanceReport("Memory Leak Detection", testResult.average)
+          createPerformanceReport("Memory Leak Detection", testResult.average),
         );
         console.log(`Memory growth variance: ${growthVariance.toFixed(2)}MB`);
-      }
+      },
     );
   });
 
   describe("Synthetic Data Performance", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it(
       "should handle large synthetic graphs efficiently",
       { timeout: 10000 },
@@ -375,44 +414,47 @@ describe("Performance Regression Tests", () => {
         const testResult = await batchTester.runTest(
           "large-synthetic-graph",
           async () => {
-            const parser = new JSONParser();
+            const parser = JSONParser.createPaxosParser({ debug: false });
             const parseResult = await parser.parseData(largeGraphData);
             const elkBridge = new ELKBridge();
 
             // Test core operations with large data
             const elkGraph = elkBridge.toELKGraph(
-              parseResult.visualizationState
+              parseResult.visualizationState,
             );
-            parseResult.visualizationState._expandAllContainersForCoordinator();
+            await coordinator.expandAllContainers(
+              parseResult.visualizationState,
+              { triggerLayout: false },
+            );
 
             return { parseResult, elkGraph };
           },
           3,
-          1
+          1,
         );
 
         // Should handle large graphs within reasonable time
         expect(testResult.average.duration).toBeLessThan(
-          DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse * 2
+          DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse * 2,
         );
         expect(testResult.average.memoryUsage.peak).toBeLessThan(
-          DEFAULT_PERFORMANCE_THRESHOLDS.memoryUsage * 2
+          DEFAULT_PERFORMANCE_THRESHOLDS.memoryUsage * 2,
         );
 
         console.log(
-          createPerformanceReport("Large Synthetic Graph", testResult.average)
+          createPerformanceReport("Large Synthetic Graph", testResult.average),
         );
-      }
+      },
     );
   });
 
   describe("Throughput Testing", () => {
     it("should maintain node processing throughput", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const nodeCount = parseResult.visualizationState.visibleNodes.length;
 
-      const { metrics } = measureSync(() => {
+      const { _result, metrics } = measureSync(() => {
         const elkBridge = new ELKBridge();
         return elkBridge.toELKGraph(parseResult.visualizationState);
       });
@@ -420,21 +462,21 @@ describe("Performance Regression Tests", () => {
       const throughput = nodeCount / (metrics.duration / 1000); // nodes per second
 
       expect(throughput).toBeGreaterThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.nodeProcessingThroughput
+        DEFAULT_PERFORMANCE_THRESHOLDS.nodeProcessingThroughput,
       );
 
       console.log(
-        `Node Processing Throughput: ${throughput.toFixed(2)} nodes/sec (${nodeCount} nodes in ${metrics.duration.toFixed(2)}ms)`
+        `Node Processing Throughput: ${throughput.toFixed(2)} nodes/sec (${nodeCount} nodes in ${metrics.duration.toFixed(2)}ms)`,
       );
     });
 
     it("should maintain search throughput", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const state = parseResult.visualizationState;
 
       const searchCount = 50;
-      const { metrics } = measureSync(() => {
+      const { _result, metrics } = measureSync(() => {
         for (let i = 0; i < searchCount; i++) {
           const query = getRandomQuery();
           state.search(query);
@@ -445,11 +487,11 @@ describe("Performance Regression Tests", () => {
       const throughput = searchCount / (metrics.duration / 1000); // searches per second
 
       expect(throughput).toBeGreaterThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.searchThroughput
+        DEFAULT_PERFORMANCE_THRESHOLDS.searchThroughput,
       );
 
       console.log(
-        `Search Throughput: ${throughput.toFixed(2)} searches/sec (${searchCount} searches in ${metrics.duration.toFixed(2)}ms)`
+        `Search Throughput: ${throughput.toFixed(2)} searches/sec (${searchCount} searches in ${metrics.duration.toFixed(2)}ms)`,
       );
     });
   });
@@ -458,12 +500,12 @@ describe("Performance Regression Tests", () => {
     it("should not regress significantly from baseline", async () => {
       if (!performanceBaseline) {
         console.log(
-          "No performance baseline available - this run will establish the baseline"
+          "No performance baseline available - this run will establish the baseline",
         );
         return;
       }
 
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
       const reactFlowBridge = new ReactFlowBridge({
@@ -475,102 +517,51 @@ describe("Performance Regression Tests", () => {
       // Calculate layout so nodes have positions
       await elkBridge.layout(parseResult.visualizationState);
 
-      // Test JSON parsing (async operation)
-      const jsonParseMetrics = await new Promise<any>((resolve) => {
-        const start = performance.now();
-        parser.parseData(paxosData).then(() => {
-          const end = performance.now();
-          resolve({
-            duration: end - start,
-            memoryUsage: { initial: 0, peak: 0, final: 0, growth: 0 },
-            throughput: 0,
-          });
-        });
-      });
+      // Test key operations against baseline
+      const operations = [
+        {
+          name: "json-parse",
+          fn: async () => await parser.parseData(paxosData),
+        },
+        {
+          name: "elk-conversion",
+          fn: () => elkBridge.toELKGraph(parseResult.visualizationState),
+        },
+        {
+          name: "reactflow-conversion",
+          fn: () =>
+            reactFlowBridge.toReactFlowData(parseResult.visualizationState),
+        },
+      ];
 
-      // Check JSON parse baseline
-      const jsonParseBaseline = performanceBaseline.results["json-parse"];
-      if (jsonParseBaseline) {
-        const comparison = PerformanceAnalyzer.compareMetrics(
-          {
-            duration: jsonParseBaseline.duration,
-            memoryUsage: {
-              initial: 0,
-              peak: 0,
-              final: 0,
-              growth: jsonParseBaseline.memoryGrowth,
+      for (const operation of operations) {
+        const { _result, metrics } = measureSync(operation.fn);
+        const baselineResult = performanceBaseline.results[operation.name];
+
+        if (baselineResult) {
+          const comparison = PerformanceAnalyzer.compareMetrics(
+            {
+              duration: baselineResult.duration,
+              memoryUsage: {
+                initial: 0,
+                peak: 0,
+                final: 0,
+                growth: baselineResult.memoryGrowth,
+              },
+              throughput: baselineResult.throughput,
             },
-            throughput: jsonParseBaseline.throughput,
-          },
-          jsonParseMetrics
-        );
+            metrics,
+          );
 
-        expect(comparison.durationChange).toBeLessThan(600); // Increased threshold for CI environments and algorithm changes
-        expect(comparison.memoryChange).toBeLessThan(100);
+          // Fail if there's a significant regression (>20% slower or >50% more memory)
+          expect(comparison.durationChange).toBeLessThan(20);
+          expect(comparison.memoryChange).toBeLessThan(50);
 
-        console.log(`json-parse vs baseline:
-          Duration: ${comparison.durationChange.toFixed(2)}% change
-          Memory: ${comparison.memoryChange.toFixed(2)}% change
-          Regression: ${comparison.regression ? "YES" : "NO"}`);
-      }
-
-      // Test ELK conversion
-      const { metrics: elkMetrics } = measureSync(() =>
-        elkBridge.toELKGraph(parseResult.visualizationState)
-      );
-      const elkBaseline = performanceBaseline.results["elk-conversion"];
-      if (elkBaseline) {
-        const comparison = PerformanceAnalyzer.compareMetrics(
-          {
-            duration: elkBaseline.duration,
-            memoryUsage: {
-              initial: 0,
-              peak: 0,
-              final: 0,
-              growth: elkBaseline.memoryGrowth,
-            },
-            throughput: elkBaseline.throughput,
-          },
-          elkMetrics
-        );
-
-        expect(comparison.durationChange).toBeLessThan(100); // Increased threshold for CI environments and algorithm changes
-        expect(comparison.memoryChange).toBeLessThan(100);
-
-        console.log(`elk-conversion vs baseline:
-          Duration: ${comparison.durationChange.toFixed(2)}% change
-          Memory: ${comparison.memoryChange.toFixed(2)}% change
-          Regression: ${comparison.regression ? "YES" : "NO"}`);
-      }
-
-      // Test ReactFlow conversion
-      const { metrics: reactFlowMetrics } = measureSync(() =>
-        reactFlowBridge.toReactFlowData(parseResult.visualizationState)
-      );
-      const reactFlowBaseline =
-        performanceBaseline.results["reactflow-conversion"];
-      if (reactFlowBaseline) {
-        const comparison = PerformanceAnalyzer.compareMetrics(
-          {
-            duration: reactFlowBaseline.duration,
-            memoryUsage: {
-              initial: 0,
-              peak: 0,
-              final: 0,
-              growth: reactFlowBaseline.memoryGrowth,
-            },
-            throughput: reactFlowBaseline.throughput,
-          },
-          reactFlowMetrics
-        );
-
-        expect(comparison.durationChange).toBeLessThan(200); // Increased threshold for CI environments and algorithm changes
-        expect(comparison.memoryChange).toBeLessThan(100);
-
-        console.log(`reactflow-conversion vs baseline:
-          Duration: ${comparison.durationChange.toFixed(2)}% change
-          Memory: ${comparison.memoryChange.toFixed(2)}% change
-          Regression: ${comparison.regression ? "YES" : "NO"}`);
+          console.log(`${operation.name} vs baseline:
+            Duration: ${comparison.durationChange.toFixed(2)}% change
+            Memory: ${comparison.memoryChange.toFixed(2)}% change
+            Regression: ${comparison.regression ? "YES" : "NO"}`);
+        }
       }
     });
   });

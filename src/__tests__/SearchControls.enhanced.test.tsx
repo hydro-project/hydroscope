@@ -10,6 +10,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { SearchControls } from "../components/SearchControls.js";
 import type { SearchResult } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 const defaultProps = {
   searchableItems: [
@@ -46,7 +47,10 @@ const defaultProps = {
 };
 
 describe("SearchControls Enhanced Features", () => {
+  let coordinator: AsyncCoordinator;
+
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     vi.clearAllMocks();
   });
 

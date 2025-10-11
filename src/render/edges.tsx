@@ -7,7 +7,6 @@ import {
   getSmoothStepPath,
   type EdgeProps,
 } from "@xyflow/react";
-
 // Helper function to get the appropriate path based on edge style type
 const getEdgePath = (
   edgeStyleType: string,
@@ -30,7 +29,6 @@ const getEdgePath = (
       return getBezierPath(pathParams);
   }
 };
-
 // Aggregated Edge Component
 // This edge type is used when multiple edges are collapsed into a single aggregated edge
 export const AggregatedEdge: React.FC<EdgeProps> = ({
@@ -47,10 +45,6 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
 }) => {
   // Get edge style type from data, default to bezier
   const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
-  console.log(
-    `[AggregatedEdge] ${_id} using edge style type: ${edgeStyleType}`,
-  );
-
   const pathParams = {
     sourceX,
     sourceY,
@@ -59,30 +53,21 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
     targetY,
     targetPosition,
   };
-
   const [edgePath, labelX, labelY] = getEdgePath(edgeStyleType, pathParams);
-
-  // Use provided style from semantic processing, with subtle aggregation indicator
+  // Use provided style from semantic processing without modification
   const aggregatedStyle = {
-    // Apply semantic styles first
     ...style,
-    // Add subtle visual cue that this is aggregated (slightly thicker than normal)
-    strokeWidth: style.strokeWidth ? (style.strokeWidth as number) + 1 : 3,
   };
-
   // Default to triangle arrowhead if no markerEnd is specified
   const effectiveMarkerEnd = markerEnd || { type: "arrowclosed" };
-
   // Convert object marker to string format for BaseEdge
   const markerEndString: string | undefined =
     typeof effectiveMarkerEnd === "object" && effectiveMarkerEnd?.type
       ? `url(#react-flow__${effectiveMarkerEnd.type})`
       : (effectiveMarkerEnd as string | undefined);
-
   // Show count of aggregated edges if available
   const originalEdgeCount = (data?.originalEdgeIds as string[])?.length || 0;
   const showLabel = originalEdgeCount > 1;
-
   return (
     <>
       <BaseEdge
@@ -114,7 +99,6 @@ export const AggregatedEdge: React.FC<EdgeProps> = ({
     </>
   );
 };
-
 // Default Edge Component
 // This is the standard edge type with default arrowhead
 export const DefaultEdge: React.FC<EdgeProps> = ({
@@ -131,8 +115,6 @@ export const DefaultEdge: React.FC<EdgeProps> = ({
 }) => {
   // Get edge style type from data, default to bezier
   const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
-  console.log(`[DefaultEdge] ${_id} using edge style type: ${edgeStyleType}`);
-
   const pathParams = {
     sourceX,
     sourceY,
@@ -141,25 +123,19 @@ export const DefaultEdge: React.FC<EdgeProps> = ({
     targetY,
     targetPosition,
   };
-
   const [edgePath] = getEdgePath(edgeStyleType, pathParams);
-
   // Default to triangle arrowhead if no markerEnd is specified
   const effectiveMarkerEnd = markerEnd || { type: "arrowclosed" };
-
   // Convert object marker to string format for BaseEdge
   const markerEndString: string | undefined =
     typeof effectiveMarkerEnd === "object" && effectiveMarkerEnd?.type
       ? `url(#react-flow__${effectiveMarkerEnd.type})`
       : (effectiveMarkerEnd as string | undefined);
-
   return <BaseEdge path={edgePath} markerEnd={markerEndString} style={style} />;
 };
-
 // Memoized versions for performance
 export const MemoAggregatedEdge = React.memo(AggregatedEdge);
 export const MemoDefaultEdge = React.memo(DefaultEdge);
-
 // Edge types configuration
 export const edgeTypes = {
   default: MemoDefaultEdge,

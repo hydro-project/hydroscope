@@ -15,6 +15,7 @@ import {
 } from "../components/HydroscopeCore.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Create test data with multiple containers for atomicity testing
 function createAtomicityTestData(): HydroscopeData {
@@ -103,9 +104,12 @@ const AtomicityTestComponent: React.FC<{
 };
 
 describe("Bulk Operations Atomicity Tests", () => {
+  let coordinator: AsyncCoordinator;
+
   let testData: HydroscopeData;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     testData = createAtomicityTestData();
   });
 

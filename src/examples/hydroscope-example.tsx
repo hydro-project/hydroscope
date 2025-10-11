@@ -5,12 +5,10 @@
  * with all its enhanced features including file upload, InfoPanel,
  * StyleTuner, and CustomControls.
  */
-
 import React, { useState } from "react";
 import { Hydroscope } from "../components/Hydroscope";
 import type { HydroscopeData, RenderConfig } from "../components/Hydroscope";
 import { DEFAULT_ELK_ALGORITHM } from "@/shared/config";
-
 // Sample data for demonstration
 const sampleData: HydroscopeData = {
   nodes: [
@@ -54,11 +52,9 @@ const sampleData: HydroscopeData = {
     ],
   },
 };
-
 export default function HydroscopeExample() {
   const [data, setData] = useState<HydroscopeData | undefined>(sampleData);
   const [config, setConfig] = useState<RenderConfig>({});
-
   return (
     <div style={{ height: "100vh", width: "100vw", padding: "20px" }}>
       <h1
@@ -89,30 +85,20 @@ export default function HydroscopeExample() {
           initialLayoutAlgorithm={DEFAULT_ELK_ALGORITHM}
           initialColorPalette="Set3"
           onFileUpload={(uploadedData, filename) => {
-            console.log(`File uploaded: ${filename}`);
+            // File uploaded: filename
             setData(uploadedData);
           }}
           onNodeClick={(event, node, visualizationState) => {
-            console.log("Node clicked:", {
-              nodeId: node.id,
-              position: node.position,
-              hasVisualizationState: !!visualizationState,
-            });
+            // Node clicked: node.id, position: node.position
           }}
           onContainerCollapse={(containerId, visualizationState) => {
-            console.log("Container collapsed:", {
-              containerId,
-              hasVisualizationState: !!visualizationState,
-            });
+            // Container collapsed: containerId
           }}
           onContainerExpand={(containerId, visualizationState) => {
-            console.log("Container expanded:", {
-              containerId,
-              hasVisualizationState: !!visualizationState,
-            });
+            // Container expanded: containerId
           }}
           onConfigChange={(newConfig) => {
-            console.log("Configuration changed:", newConfig);
+            // Configuration changed
             setConfig(newConfig);
           }}
           className="hydroscope-example"
@@ -146,6 +132,5 @@ export default function HydroscopeExample() {
     </div>
   );
 }
-
 // Export for use in other examples
 export { sampleData };

@@ -14,8 +14,11 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { StyleConfig } from "../types/core.js";
 import fs from "fs";
 import path from "path";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Paxos Proposer Container Bug", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let elkBridge: ELKBridge;
   let reactFlowBridge: ReactFlowBridge;
@@ -31,6 +34,7 @@ describe("Paxos Proposer Container Bug", () => {
   };
 
   beforeEach(async () => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     elkBridge = new ELKBridge();
     reactFlowBridge = new ReactFlowBridge(styleConfig);
@@ -99,7 +103,13 @@ describe("Paxos Proposer Container Bug", () => {
 
     // Step 1: Expand the Proposer container
     console.log("\n=== EXPANDING PROPOSER CONTAINER ===");
-    state._expandContainerForCoordinator(proposerContainer!.id);
+    await coordinator.expandContainer(
+      proposerContainer!.id,
+      state,
+      { triggerLayout: false },
+      coordinator,
+      { triggerLayout: false },
+    );
     await elkBridge.layout(state);
 
     // Verify container is expanded and aggregated edges are removed
@@ -135,7 +145,13 @@ describe("Paxos Proposer Container Bug", () => {
         console.log(`  - ${c.id} (${c.label}): collapsed=${c.collapsed}`);
       });
 
-    state._collapseContainerForCoordinator(proposerContainer!.id);
+    await coordinator.collapseContainer(
+      proposerContainer!.id,
+      state,
+      { triggerLayout: false },
+      coordinator,
+      { triggerLayout: false },
+    );
     await elkBridge.layout(state);
 
     // Verify container is collapsed again
@@ -296,11 +312,23 @@ describe("Paxos Proposer Container Bug", () => {
       console.log(`\n=== CYCLE ${cycle} ===`);
 
       // Expand
-      state._expandContainerForCoordinator(proposerContainer!.id);
+      await coordinator.expandContainer(
+        proposerContainer!.id,
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       await elkBridge.layout(state);
 
       // Collapse
-      state._collapseContainerForCoordinator(proposerContainer!.id);
+      await coordinator.collapseContainer(
+        proposerContainer!.id,
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       await elkBridge.layout(state);
 
       // Verify edges are still valid

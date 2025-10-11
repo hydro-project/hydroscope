@@ -4,11 +4,9 @@
  * This example shows how to use HydroscopeCore in read-only mode for
  * embedding graphs in documentation or dashboards without interactions.
  */
-
 import React, { useState } from "react";
 import { HydroscopeCore } from "../components/HydroscopeCore.js";
 import type { HydroscopeData } from "../types/core.js";
-
 // Example data for demonstration
 const exampleData: HydroscopeData = {
   nodes: [
@@ -44,10 +42,8 @@ const exampleData: HydroscopeData = {
     },
   ],
 };
-
 export const ReadOnlyExample: React.FC = () => {
   const [readOnly, setReadOnly] = useState(true);
-
   return (
     <div
       style={{
@@ -93,14 +89,14 @@ export const ReadOnlyExample: React.FC = () => {
           showBackground={true}
           onNodeClick={(event, node) => {
             if (!readOnly) {
-              console.log("Node clicked:", node.id);
+              // Node clicked: node.id
             }
           }}
           onContainerCollapse={(containerId) => {
-            console.log("Container collapsed:", containerId);
+            // Container collapsed: containerId
           }}
           onContainerExpand={(containerId) => {
-            console.log("Container expanded:", containerId);
+            // Container expanded: containerId
           }}
         />
       </div>
@@ -137,5 +133,4 @@ export const ReadOnlyExample: React.FC = () => {
     </div>
   );
 };
-
 export default ReadOnlyExample;

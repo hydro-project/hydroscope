@@ -3,14 +3,11 @@
  *
  * Renders ReactFlow handles based on the current handle configuration.
  */
-
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import { getHandleConfig, HANDLE_STYLES } from "./handleConfig";
-
 export function HandlesRenderer() {
   const config = getHandleConfig();
-
   if (config.enableContinuousHandles) {
     // ReactFlow v12 continuous handles - connections anywhere on perimeter
     return (
@@ -30,7 +27,6 @@ export function HandlesRenderer() {
       </>
     );
   }
-
   // Discrete handles if configured
   return (
     <>

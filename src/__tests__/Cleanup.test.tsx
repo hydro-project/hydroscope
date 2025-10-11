@@ -6,6 +6,8 @@ import React from "react";
 import { render, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Hydroscope } from "../components/Hydroscope";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 // Mock Hydroscope modules
 vi.mock("../core/VisualizationState", () => ({
@@ -53,6 +55,8 @@ vi.mock("../core/InteractionHandler", () => ({
 }));
 
 describe("Cleanup", () => {
+  let coordinator: AsyncCoordinator;
+
   let mockNavbar: HTMLElement;
   let originalQuerySelector: typeof document.querySelector;
   let resizeObserverMock: any;
@@ -64,6 +68,7 @@ describe("Cleanup", () => {
   let clearTimeoutSpy: any;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     // Mock navbar element
     mockNavbar = document.createElement("div");
     mockNavbar.className = "navbar";

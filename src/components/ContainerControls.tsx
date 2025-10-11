@@ -2,12 +2,10 @@
  * ContainerControls - React components for container expand/collapse operations
  * Provides UI controls with proper state management and error handling
  */
-
 import React, { useState, useCallback, useEffect } from "react";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import type { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { Container } from "../types/core.js";
-
 export interface ContainerControlsProps {
   /** VisualizationState instance */
   visualizationState: VisualizationState;
@@ -27,7 +25,6 @@ export interface ContainerControlsProps {
   /** Show operation feedback */
   showFeedback?: boolean;
 }
-
 export interface ContainerControlsState {
   isExpanding: boolean;
   isCollapsing: boolean;
@@ -36,7 +33,6 @@ export interface ContainerControlsState {
   lastError?: Error;
   operationCount: number;
 }
-
 export const ContainerControls: React.FC<ContainerControlsProps> = ({
   visualizationState,
   asyncCoordinator,
@@ -53,13 +49,11 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
     collapsingContainers: new Set(),
     operationCount: 0,
   });
-
   // Monitor async coordinator status
   useEffect(() => {
     const checkAsyncStatus = () => {
       const _status = asyncCoordinator.getQueueStatus();
       const containerStatus = asyncCoordinator.getContainerOperationStatus();
-
       setState((prevState) => ({
         ...prevState,
         isExpanding: containerStatus.expandOperations.processing,
@@ -67,13 +61,10 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
         lastError: containerStatus.lastError,
       }));
     };
-
     // Check status periodically
     const interval = setInterval(checkAsyncStatus, 100);
-
     return () => clearInterval(interval);
   }, [asyncCoordinator]);
-
   // Error handling helper
   const handleError = useCallback(
     (error: Error, operation: string) => {
@@ -81,7 +72,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
         ...prevState,
         lastError: error,
       }));
-
       if (onError) {
         onError(error, operation);
       } else {
@@ -90,11 +80,9 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
     },
     [onError],
   );
-
   // Expand all containers
   const handleExpandAll = useCallback(async () => {
     if (disabled || state.isExpanding) return;
-
     try {
       setState((prevState) => ({
         ...prevState,
@@ -102,40 +90,33 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
         lastError: undefined,
         operationCount: prevState.operationCount + 1,
       }));
-
       // Get all collapsed containers
       if (!visualizationState?.visibleContainers) {
         setState((prevState) => ({ ...prevState, isExpanding: false }));
         return;
       }
-
       const collapsedContainers = visualizationState.visibleContainers.filter(
         (container) => container.collapsed,
       );
-
       if (collapsedContainers.length === 0) {
         setState((prevState) => ({ ...prevState, isExpanding: false }));
         return;
       }
-
       // Track which containers are being expanded
       const expandingIds = new Set(collapsedContainers.map((c) => c.id));
       setState((prevState) => ({
         ...prevState,
         expandingContainers: expandingIds,
       }));
-
       // Use AsyncCoordinator for proper sequencing
       await asyncCoordinator.expandAllContainers(visualizationState, {
         triggerLayout: true,
       });
-
       setState((prevState) => ({
         ...prevState,
         isExpanding: false,
         expandingContainers: new Set(),
       }));
-
       if (onOperationComplete) {
         onOperationComplete("expand");
       }
@@ -155,11 +136,9 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
     onOperationComplete,
     handleError,
   ]);
-
   // Collapse all containers
   const handleCollapseAll = useCallback(async () => {
     if (disabled || state.isCollapsing) return;
-
     try {
       setState((prevState) => ({
         ...prevState,
@@ -167,40 +146,33 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
         lastError: undefined,
         operationCount: prevState.operationCount + 1,
       }));
-
       // Get all expanded containers
       if (!visualizationState?.visibleContainers) {
         setState((prevState) => ({ ...prevState, isCollapsing: false }));
         return;
       }
-
       const expandedContainers = visualizationState.visibleContainers.filter(
         (container) => !container.collapsed,
       );
-
       if (expandedContainers.length === 0) {
         setState((prevState) => ({ ...prevState, isCollapsing: false }));
         return;
       }
-
       // Track which containers are being collapsed
       const collapsingIds = new Set(expandedContainers.map((c) => c.id));
       setState((prevState) => ({
         ...prevState,
         collapsingContainers: collapsingIds,
       }));
-
       // Use AsyncCoordinator for proper sequencing
       await asyncCoordinator.collapseAllContainers(visualizationState, {
         triggerLayout: true,
       });
-
       setState((prevState) => ({
         ...prevState,
         isCollapsing: false,
         collapsingContainers: new Set(),
       }));
-
       if (onOperationComplete) {
         onOperationComplete("collapse");
       }
@@ -220,12 +192,10 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
     onOperationComplete,
     handleError,
   ]);
-
   // Expand specific container
   const _handleExpandContainer = useCallback(
     async (containerId: string) => {
       if (disabled || state.expandingContainers.has(containerId)) return;
-
       try {
         setState((prevState) => ({
           ...prevState,
@@ -236,7 +206,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
           lastError: undefined,
           operationCount: prevState.operationCount + 1,
         }));
-
         await asyncCoordinator.expandContainer(
           containerId,
           visualizationState,
@@ -244,7 +213,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
             triggerLayout: true,
           },
         );
-
         setState((prevState) => {
           const newExpandingContainers = new Set(prevState.expandingContainers);
           newExpandingContainers.delete(containerId);
@@ -253,7 +221,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
             expandingContainers: newExpandingContainers,
           };
         });
-
         if (onOperationComplete) {
           onOperationComplete("expand", containerId);
         }
@@ -278,12 +245,10 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
       handleError,
     ],
   );
-
   // Collapse specific container
   const _handleCollapseContainer = useCallback(
     async (containerId: string) => {
       if (disabled || state.collapsingContainers.has(containerId)) return;
-
       try {
         setState((prevState) => ({
           ...prevState,
@@ -294,7 +259,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
           lastError: undefined,
           operationCount: prevState.operationCount + 1,
         }));
-
         await asyncCoordinator.collapseContainer(
           containerId,
           visualizationState,
@@ -302,7 +266,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
             triggerLayout: true,
           },
         );
-
         setState((prevState) => {
           const newCollapsingContainers = new Set(
             prevState.collapsingContainers,
@@ -313,7 +276,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
             collapsingContainers: newCollapsingContainers,
           };
         });
-
         if (onOperationComplete) {
           onOperationComplete("collapse", containerId);
         }
@@ -340,24 +302,20 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
       handleError,
     ],
   );
-
   // Get container statistics
   const containerStats = React.useMemo(() => {
     if (!visualizationState?.visibleContainers) {
       return { total: 0, collapsed: 0, expanded: 0 };
     }
-
     const containers = visualizationState.visibleContainers;
     const collapsed = containers.filter((c) => c.collapsed).length;
     const expanded = containers.length - collapsed;
-
     return {
       total: containers.length,
       collapsed,
       expanded,
     };
   }, [visualizationState?.visibleContainers]);
-
   // Clear error
   const clearError = useCallback(() => {
     setState((prevState) => ({
@@ -365,7 +323,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
       lastError: undefined,
     }));
   }, []);
-
   return (
     <div className={`hydroscope-container-controls ${className}`}>
       {/* Main Controls */}
@@ -458,7 +415,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
     </div>
   );
 };
-
 // Individual Container Control Component
 export interface IndividualContainerControlProps {
   /** Container to control */
@@ -481,7 +437,6 @@ export interface IndividualContainerControlProps {
   /** Show loading state */
   showLoading?: boolean;
 }
-
 export const IndividualContainerControl: React.FC<
   IndividualContainerControlProps
 > = ({
@@ -496,14 +451,11 @@ export const IndividualContainerControl: React.FC<
 }) => {
   const [isOperating, setIsOperating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-
   const handleToggle = useCallback(async () => {
     if (disabled || isOperating) return;
-
     try {
       setIsOperating(true);
       setError(null);
-
       if (container.collapsed) {
         await asyncCoordinator.expandContainer(
           container.id,
@@ -545,11 +497,9 @@ export const IndividualContainerControl: React.FC<
     onOperationComplete,
     onError,
   ]);
-
   const clearError = useCallback(() => {
     setError(null);
   }, []);
-
   return (
     <div className={`individual-container-control ${className}`}>
       <button
@@ -576,7 +526,6 @@ export const IndividualContainerControl: React.FC<
     </div>
   );
 };
-
 // Hook for using container controls
 export const useContainerControls = (
   visualizationState: VisualizationState,
@@ -588,10 +537,8 @@ export const useContainerControls = (
     new Set(),
   );
   const [lastError, setLastError] = useState<Error | null>(null);
-
   const expandAll = useCallback(async () => {
     if (isExpanding) return;
-
     try {
       setIsExpanding(true);
       setLastError(null);
@@ -603,10 +550,8 @@ export const useContainerControls = (
       setIsExpanding(false);
     }
   }, [isExpanding, asyncCoordinator, visualizationState]);
-
   const collapseAll = useCallback(async () => {
     if (isCollapsing) return;
-
     try {
       setIsCollapsing(true);
       setLastError(null);
@@ -618,20 +563,16 @@ export const useContainerControls = (
       setIsCollapsing(false);
     }
   }, [isCollapsing, asyncCoordinator, visualizationState]);
-
   const toggleContainer = useCallback(
     async (containerId: string) => {
       if (operatingContainers.has(containerId)) return;
-
       try {
         setOperatingContainers((prev) => new Set([...prev, containerId]));
         setLastError(null);
-
         const container = visualizationState.getContainer(containerId);
         if (!container) {
           throw new Error(`Container ${containerId} not found`);
         }
-
         if (container.collapsed) {
           await asyncCoordinator.expandContainer(
             containerId,
@@ -656,11 +597,9 @@ export const useContainerControls = (
     },
     [operatingContainers, asyncCoordinator, visualizationState],
   );
-
   const clearError = useCallback(() => {
     setLastError(null);
   }, []);
-
   return {
     expandAll,
     collapseAll,

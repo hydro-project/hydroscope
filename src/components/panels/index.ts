@@ -5,7 +5,6 @@
  * - InfoPanel: Search, hierarchy, and graph information
  * - StyleTuner: Real-time style configuration and layout controls
  */
-
 export { InfoPanel } from "./InfoPanel.js";
 export type {
   InfoPanelProps,
@@ -16,7 +15,6 @@ export type {
   GroupingOption,
   SearchMatch,
 } from "./InfoPanel.js";
-
 export { StyleTuner } from "./StyleTuner.js";
 export type {
   StyleTunerProps,

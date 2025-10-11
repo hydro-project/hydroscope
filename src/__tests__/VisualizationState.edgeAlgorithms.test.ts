@@ -10,18 +10,26 @@ import {
   createTestNode,
   createTestEdge,
 } from "../utils/testData.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Edge Aggregation and Restoration Algorithms", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
   describe("Basic Edge Aggregation Algorithm", () => {
     it("should aggregate edges from internal nodes to external nodes", () => {
       // Set up: container with internal nodes, edges to external nodes
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const externalNode = createTestNode("external");
@@ -59,7 +67,11 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
     it("should hide internal edges completely", () => {
       // Set up: container with internal nodes and internal edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const internalEdge = createTestEdge("internal", "node1", "node2");
@@ -78,7 +90,11 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
     });
 
     it("should handle bidirectional edges correctly", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
       const edgeOut = createTestEdge("out", "node1", "external");
@@ -99,8 +115,16 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
   describe("Multi-Container Edge Aggregation", () => {
     it("should handle edges between multiple collapsed containers", () => {
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -130,8 +154,16 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
     });
 
     it("should handle partial container collapse scenarios", () => {
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const edge = createTestEdge("edge1", "node1", "node2");
@@ -158,8 +190,16 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
   describe("Nested Container Edge Aggregation", () => {
     it("should aggregate edges to outermost collapsed container", () => {
-      const parentContainer = createTestContainer("parent", ["child"]);
-      const childContainer = createTestContainer("child", ["node1"]);
+      const parentContainer = createTestContainer(
+        "parent",
+        ["child"],
+        "Container parent",
+      );
+      const childContainer = createTestContainer(
+        "child",
+        ["node1"],
+        "Container child",
+      );
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
@@ -186,9 +226,17 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
     it("should handle complex nested hierarchies", () => {
       // Create a 3-level hierarchy: grandparent -> parent -> child -> node
-      const grandparent = createTestContainer("grandparent", ["parent"]);
-      const parent = createTestContainer("parent", ["child"]);
-      const child = createTestContainer("child", ["node1"]);
+      const grandparent = createTestContainer(
+        "grandparent",
+        ["parent"],
+        "Container grandparent",
+      );
+      const parent = createTestContainer(
+        "parent",
+        ["child"],
+        "Container parent",
+      );
+      const child = createTestContainer("child", ["node1"], "Container child");
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
@@ -215,8 +263,17 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
   });
 
   describe("Edge Restoration Algorithm", () => {
-    it("should restore edges when container is expanded", () => {
-      const container = createTestContainer("container1", ["node1"]);
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should restore edges when container is expanded", async () => {
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
@@ -231,15 +288,25 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(state.getAggregatedEdges().length).toBe(1);
       expect(state.getGraphEdge("edge1")?.hidden).toBe(true);
 
-      state._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Edge should be restored
       expect(state.getAggregatedEdges().length).toBe(0);
       expect(state.getGraphEdge("edge1")?.hidden).toBe(false);
     });
 
-    it("should restore internal edges when container is expanded", () => {
-      const container = createTestContainer("container1", ["node1", "node2"]);
+    it("should restore internal edges when container is expanded", async () => {
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const internalEdge = createTestEdge("internal", "node1", "node2");
@@ -253,15 +320,29 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       state.collapseContainerSystemOperation("container1");
       expect(state.getGraphEdge("internal")?.hidden).toBe(true);
 
-      state._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Internal edge should be restored
       expect(state.getGraphEdge("internal")?.hidden).toBe(false);
     });
 
-    it("should handle partial restoration in nested scenarios", () => {
-      const parentContainer = createTestContainer("parent", ["child"]);
-      const childContainer = createTestContainer("child", ["node1"]);
+    it("should handle partial restoration in nested scenarios", async () => {
+      const parentContainer = createTestContainer(
+        "parent",
+        ["child"],
+        "Container parent",
+      );
+      const childContainer = createTestContainer(
+        "child",
+        ["node1"],
+        "Container child",
+      );
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
@@ -275,7 +356,13 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
       // Collapse parent, then expand parent but child remains collapsed
       state.collapseContainerSystemOperation("parent");
-      state._expandContainerForCoordinator("parent");
+      await coordinator.expandContainer(
+        "parent",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Edge should now be aggregated to child container instead of parent
       const aggregatedEdges = state.getAggregatedEdges();
@@ -290,7 +377,11 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
   describe("Performance Optimizations", () => {
     it("should efficiently handle large numbers of edges", () => {
-      const container = createTestContainer("container1", []);
+      const container = createTestContainer(
+        "container1",
+        [],
+        "Container container1",
+      );
       const externalNode = createTestNode("external");
       const nodes = [];
       const edges = [];
@@ -325,7 +416,11 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
     });
 
     it("should optimize memory usage by merging edges with same endpoints", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
 
@@ -352,7 +447,11 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
   describe("Complex Aggregation Scenarios", () => {
     it("should handle mixed internal and external edges", () => {
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const externalNode = createTestNode("external");
@@ -382,8 +481,16 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
     });
 
     it("should handle re-aggregation when containers are collapsed in sequence", () => {
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const externalNode = createTestNode("external");
@@ -421,8 +528,17 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
   });
 
   describe("Algorithm Correctness Validation", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should maintain edge connectivity semantics", () => {
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const externalNode = createTestNode("external");
@@ -452,7 +568,11 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
     });
 
     it("should preserve edge directionality in aggregation", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const externalNode = createTestNode("external");
 
@@ -477,10 +597,14 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(incoming).toBeDefined();
     });
 
-    it("should maintain consistent aggregated edge IDs after expand/collapse cycle", () => {
+    it("should maintain consistent aggregated edge IDs after expand/collapse cycle", async () => {
       // This test specifically addresses the bug where hyperEdges become disconnected
       // after expanding and then collapsing a container again
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const externalNode = createTestNode("external");
@@ -507,7 +631,13 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       ]);
 
       // Expand the container
-      state._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       expect(state.getAggregatedEdges().length).toBe(0);
       expect(state.getGraphEdge("edge1")?.hidden).toBe(false);
       expect(state.getGraphEdge("edge2")?.hidden).toBe(false);

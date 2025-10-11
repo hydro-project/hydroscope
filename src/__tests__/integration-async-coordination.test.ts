@@ -9,17 +9,8 @@ import { VisualizationState } from "../core/VisualizationState";
 import { ELKBridge } from "../bridges/ELKBridge";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge";
 import { InteractionHandler } from "../core/InteractionHandler";
-import type {
-  GraphNode,
-  GraphEdge,
-  Container,
-  LayoutConfig,
-  ApplicationEvent,
-} from "../types/core";
-import {
-  loadPaxosTestData,
-  createTestVisualizationState,
-} from "../utils/testData";
+import type { LayoutConfig, ApplicationEvent } from "../types/core";
+import { createTestVisualizationState } from "../utils/testData";
 
 describe("Async Boundary Integration Tests", () => {
   let coordinator: AsyncCoordinator;
@@ -43,6 +34,11 @@ describe("Async Boundary Integration Tests", () => {
   });
 
   describe("11.1 Test async coordination with paxos.json operations", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle rapid container expand/collapse operations with proper sequencing", async () => {
       // Get some containers from paxos data
       const containers = state.visibleContainers.slice(0, 3);
@@ -61,7 +57,8 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_expand", async () => {
-              state._expandContainerForCoordinator(container.id);
+              // Use internal state method directly instead of coordinator method
+              state._expandContainerInternal(container.id);
               return "expanded";
             });
             await coordinator.processQueue();
@@ -73,7 +70,8 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             coordinator.queueOperation("container_collapse", async () => {
-              state._collapseContainerForCoordinator(container.id);
+              // Use internal state method directly instead of coordinator method
+              state._collapseContainerInternal(container.id);
               return "collapsed";
             });
             await coordinator.processQueue();
@@ -197,9 +195,10 @@ describe("Async Boundary Integration Tests", () => {
 
         operations.push(
           (async () => {
-            coordinator.queueOperation("container_expand", () => {
-              state._expandContainerForCoordinator(container.id);
-              return Promise.resolve("expanded");
+            coordinator.queueOperation("container_expand", async () => {
+              // Use internal state method directly instead of coordinator method
+              state._expandContainerInternal(container.id);
+              return "expanded";
             });
             await coordinator.processQueue();
           })(),
@@ -207,9 +206,10 @@ describe("Async Boundary Integration Tests", () => {
 
         operations.push(
           (async () => {
-            coordinator.queueOperation("container_collapse", () => {
-              state._collapseContainerForCoordinator(container.id);
-              return Promise.resolve("collapsed");
+            coordinator.queueOperation("container_collapse", async () => {
+              // Use internal state method directly instead of coordinator method
+              state._collapseContainerInternal(container.id);
+              return "collapsed";
             });
             await coordinator.processQueue();
           })(),
@@ -292,9 +292,10 @@ describe("Async Boundary Integration Tests", () => {
       // Collapse containers through async coordinator
       const collapseOperations = containers.map((container) =>
         (async () => {
-          coordinator.queueOperation("container_collapse", () => {
-            state._collapseContainerForCoordinator(container.id);
-            return Promise.resolve("collapsed");
+          coordinator.queueOperation("container_collapse", async () => {
+            // Use internal state method directly instead of coordinator method
+            state._collapseContainerInternal(container.id);
+            return "collapsed";
           });
           await coordinator.processQueue();
         })(),
@@ -314,9 +315,10 @@ describe("Async Boundary Integration Tests", () => {
       // Expand containers back
       const expandOperations = containers.map((container) =>
         (async () => {
-          coordinator.queueOperation("container_expand", () => {
-            state._expandContainerForCoordinator(container.id);
-            return Promise.resolve("expanded");
+          coordinator.queueOperation("container_expand", async () => {
+            // Use internal state method directly instead of coordinator method
+            state._expandContainerInternal(container.id);
+            return "expanded";
           });
           await coordinator.processQueue();
         })(),
@@ -326,7 +328,7 @@ describe("Async Boundary Integration Tests", () => {
 
       // Verify edge restoration
       const postExpandEdgeCount = state.visibleEdges.length;
-      const postExpandAggregatedCount = state.getAggregatedEdges().length;
+      const _postExpandAggregatedCount = state.getAggregatedEdges().length;
 
       // Should have restored some edges
       expect(postExpandEdgeCount).toBeGreaterThanOrEqual(postCollapseEdgeCount);
@@ -341,7 +343,13 @@ describe("Async Boundary Integration Tests", () => {
       // Collapse some containers first
       const containers = state.visibleContainers.slice(0, 5);
       for (const container of containers) {
-        state._collapseContainerForCoordinator(container.id);
+        await coordinator.collapseContainer(
+          container.id,
+          state,
+          { triggerLayout: false },
+          coordinator,
+          { triggerLayout: false },
+        );
       }
 
       // Get some node names from paxos data for searching
@@ -387,10 +395,15 @@ describe("Async Boundary Integration Tests", () => {
   });
 
   describe("11.2 Test async boundary coordination", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should test coordination between ELK and ReactFlow async boundaries", async () => {
       // Create a sequence of operations that involve both ELK and ReactFlow
-      const layoutConfig: LayoutConfig = {
-        algorithm: "layered",
+      const _layoutConfig: LayoutConfig = {
+        algorithm: "mrtree",
         direction: "DOWN",
         nodeSpacing: 50,
       };
@@ -457,8 +470,8 @@ describe("Async Boundary Integration Tests", () => {
     it("should verify proper sequencing when multiple boundaries are active", async () => {
       // Create operations across all async boundaries
       const containers = state.visibleContainers.slice(0, 3);
-      const layoutConfig: LayoutConfig = {
-        algorithm: "layered",
+      const _layoutConfig: LayoutConfig = {
+        algorithm: "mrtree",
         direction: "DOWN",
       };
 
@@ -474,9 +487,10 @@ describe("Async Boundary Integration Tests", () => {
       for (const container of containers) {
         operations.push(
           (async () => {
-            coordinator.queueOperation("container_expand", () => {
-              state._expandContainerForCoordinator(container.id);
-              return Promise.resolve("expanded");
+            coordinator.queueOperation("container_expand", async () => {
+              // Use internal state method directly instead of coordinator method
+              state._expandContainerInternal(container.id);
+              return "expanded";
             });
             await coordinator.processQueue();
             operationLog.push({
@@ -662,9 +676,10 @@ describe("Async Boundary Integration Tests", () => {
             id: containerId,
             timestamp: Date.now(),
           });
-          coordinator.queueOperation("container_expand", () => {
-            state._expandContainerForCoordinator(containerId);
-            return Promise.resolve("expanded");
+          coordinator.queueOperation("container_expand", async () => {
+            // Use internal state method directly instead of coordinator method
+            state._expandContainerInternal(containerId);
+            return "expanded";
           });
           await coordinator.processQueue();
         }),

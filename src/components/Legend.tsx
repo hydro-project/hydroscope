@@ -3,13 +3,11 @@
  *
  * Displays a color-coded legend for different node types.
  */
-
 import React, { useMemo, memo } from "react";
 import { LegendProps } from "./types";
 import { generateNodeColors } from "../shared/colorUtils";
 import { COLOR_PALETTES, COMPONENT_COLORS } from "../shared/config";
 import { TYPOGRAPHY } from "../shared/config";
-
 function LegendInner({
   legendData,
   colorPalette = "Set3",
@@ -35,17 +33,21 @@ function LegendInner({
       </div>
     );
   }
-
   const displayTitle = title || legendData.title || "Legend";
   const paletteKey =
     colorPalette in COLOR_PALETTES
       ? (colorPalette as keyof typeof COLOR_PALETTES)
       : "Set3";
-
   // Precompute colors for all legend items using a memoized map
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const colorsByType = useMemo(() => {
-    const map = new Map<string, { primary: string; border: string }>();
+    const map = new Map<
+      string,
+      {
+        primary: string;
+        border: string;
+      }
+    >();
     for (const item of legendData.items) {
       // generateNodeColors accepts an array of types; use single type per item
       const colors = generateNodeColors([item.type], paletteKey) as {
@@ -57,7 +59,6 @@ function LegendInner({
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- nodeTypeConfig is part of the props interface and could affect color generation in future implementations
   }, [legendData.items, paletteKey, nodeTypeConfig]);
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const legendStyle: React.CSSProperties = useMemo(
     () => ({
@@ -66,7 +67,6 @@ function LegendInner({
     }),
     [compact, style],
   );
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const itemStyle: React.CSSProperties = useMemo(
     () => ({
@@ -77,7 +77,6 @@ function LegendInner({
     }),
     [compact],
   );
-
   const colorBoxStyle = (colors: any): React.CSSProperties => ({
     width: compact ? "10px" : "12px",
     height: compact ? "10px" : "12px",
@@ -88,7 +87,6 @@ function LegendInner({
     backgroundColor: colors.primary,
     borderColor: colors.border,
   });
-
   return (
     <div className={`legend ${className}`} style={legendStyle}>
       {!compact && displayTitle && (
@@ -119,5 +117,4 @@ function LegendInner({
     </div>
   );
 }
-
 export const Legend = memo(LegendInner);

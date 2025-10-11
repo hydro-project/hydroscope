@@ -2,19 +2,23 @@
  * Core data types for Hydroscope rewrite
  * Enforces architectural constraints: React-free, stateless bridges
  */
-
 export interface GraphNode {
   id: string;
   label: string;
   longLabel: string;
   type: string;
   semanticTags: string[];
-  position?: { x: number; y: number };
-  dimensions?: { width: number; height: number };
+  position?: {
+    x: number;
+    y: number;
+  };
+  dimensions?: {
+    width: number;
+    height: number;
+  };
   hidden: boolean;
   showingLongLabel?: boolean;
 }
-
 export interface GraphEdge {
   id: string;
   source: string;
@@ -23,21 +27,25 @@ export interface GraphEdge {
   semanticTags: string[];
   hidden: boolean;
 }
-
 export interface Container {
   id: string;
   label: string;
   children: Set<string>;
   collapsed: boolean;
   hidden: boolean;
-  position?: { x: number; y: number };
-  dimensions?: { width: number; height: number };
+  position?: {
+    x: number;
+    y: number;
+  };
+  dimensions?: {
+    width: number;
+    height: number;
+  };
   width?: number;
   height?: number;
   x?: number;
   y?: number;
 }
-
 export interface AggregatedEdge {
   id: string;
   source: string;
@@ -49,7 +57,6 @@ export interface AggregatedEdge {
   originalEdgeIds: string[];
   aggregationSource: string;
 }
-
 export interface LayoutState {
   phase:
     | "initial"
@@ -62,7 +69,6 @@ export interface LayoutState {
   lastUpdate: number;
   error?: string;
 }
-
 export interface SearchResult {
   id: string;
   label: string;
@@ -71,35 +77,29 @@ export interface SearchResult {
   hierarchyPath?: string[]; // Path from root to item
   confidence?: number; // Search relevance score
 }
-
 export interface InvariantViolation {
   type: string;
   message: string;
   entityId?: string;
   severity: "error" | "warning";
 }
-
 export interface SearchNavigationState {
   // Search state
   searchQuery: string;
   searchResults: SearchResult[];
   treeSearchHighlights: Set<string>; // IDs of highlighted elements in tree hierarchy
   graphSearchHighlights: Set<string>; // IDs of highlighted elements in ReactFlow graph
-
   // Navigation state
   navigationSelection: string | null; // Currently selected element
   treeNavigationHighlights: Set<string>; // Navigation highlights in tree hierarchy
   graphNavigationHighlights: Set<string>; // Navigation highlights in ReactFlow graph
-
   // Expansion state (persists through search operations)
   expandedTreeNodes: Set<string>; // Currently expanded tree hierarchy nodes
   expandedGraphContainers: Set<string>; // Currently expanded ReactFlow graph containers
-
   // Viewport state
   lastNavigationTarget: string | null;
   shouldFocusViewport: boolean;
 }
-
 export interface LayoutConfig {
   algorithm?: string;
   spacing?: number;
@@ -115,7 +115,10 @@ export interface LayoutConfig {
   mergeHierarchyEdges?: boolean;
   // Layout hints
   aspectRatio?: number;
-  nodeSize?: { width: number; height: number };
+  nodeSize?: {
+    width: number;
+    height: number;
+  };
   containerPadding?: number;
   // Large graph optimizations
   hierarchicalLayout?: boolean;
@@ -124,7 +127,6 @@ export interface LayoutConfig {
   // ELK-specific options
   elkOptions?: Record<string, string>;
 }
-
 export interface PerformanceHints {
   nodeCount: number;
   edgeCount: number;
@@ -134,7 +136,6 @@ export interface PerformanceHints {
   recommendedAlgorithm?: string;
   recommendedOptions?: Record<string, string>;
 }
-
 export interface StyleConfig {
   nodeStyles?: Record<string, NodeStyleConfig>;
   edgeStyles?: Record<string, EdgeStyleConfig>;
@@ -147,7 +148,6 @@ export interface StyleConfig {
   // Direct property mappings (legacy support)
   propertyMappings?: Record<string, string | EdgeStyleMapping>;
 }
-
 export interface NodeStyleConfig {
   backgroundColor?: string;
   borderColor?: string;
@@ -160,7 +160,6 @@ export interface NodeStyleConfig {
   width?: number;
   height?: number;
 }
-
 export interface EdgeStyleConfig {
   stroke?: string;
   strokeWidth?: number;
@@ -169,7 +168,6 @@ export interface EdgeStyleConfig {
   animated?: boolean;
   type?: "bezier" | "straight" | "smoothstep";
 }
-
 export interface ContainerStyleConfig {
   backgroundColor?: string;
   borderColor?: string;
@@ -178,7 +176,6 @@ export interface ContainerStyleConfig {
   padding?: number;
   opacity?: number;
 }
-
 interface EdgeStyleMapping {
   reactFlowType?: string;
   style?: Record<string, unknown>;
@@ -186,23 +183,23 @@ interface EdgeStyleMapping {
   label?: string;
   styleTag?: string;
 }
-
 export interface ReactFlowData {
   nodes: ReactFlowNode[];
   edges: ReactFlowEdge[];
 }
-
 export interface ReactFlowNode {
   id: string;
   type: string;
-  position: { x: number; y: number };
+  position: {
+    x: number;
+    y: number;
+  };
   data: ReactFlowNodeData;
   style?: Record<string, string | number>;
   parentNode?: string;
   parentId?: string;
   extent?: "parent" | [[number, number], [number, number]];
 }
-
 export interface ReactFlowNodeData {
   label: string;
   longLabel?: string;
@@ -220,7 +217,6 @@ export interface ReactFlowNodeData {
   style?: string;
   [key: string]: unknown; // Index signature for compatibility
 }
-
 export interface ReactFlowEdge {
   id: string;
   source: string;
@@ -231,10 +227,15 @@ export interface ReactFlowEdge {
   style?: Record<string, string | number>;
   animated?: boolean;
   label?: string;
-  markerEnd?: string | { type: string; color?: string; strokeWidth?: number };
+  markerEnd?:
+    | string
+    | {
+        type: string;
+        color?: string;
+        strokeWidth?: number;
+      };
   data?: ReactFlowEdgeData;
 }
-
 export interface ReactFlowEdgeData {
   semanticTags?: string[];
   appliedSemanticTags?: string[];
@@ -244,7 +245,6 @@ export interface ReactFlowEdgeData {
   aggregationSource?: string;
   aggregated?: boolean;
 }
-
 export interface ELKNode {
   id: string;
   children?: ELKNode[];
@@ -254,22 +254,27 @@ export interface ELKNode {
   y?: number;
   width?: number;
   height?: number;
-  labels?: Array<{ text: string; width?: number; height?: number }>;
-  ports?: Array<{ id: string; x?: number; y?: number }>;
+  labels?: Array<{
+    text: string;
+    width?: number;
+    height?: number;
+  }>;
+  ports?: Array<{
+    id: string;
+    x?: number;
+    y?: number;
+  }>;
 }
-
 export interface ELKEdge {
   id: string;
   sources: string[];
   targets: string[];
 }
-
 export interface ELKValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
 }
-
 // AsyncCoordinator types
 export interface QueuedOperation<T = any> {
   id: string;
@@ -295,7 +300,6 @@ export interface QueuedOperation<T = any> {
   error?: Error;
   result?: T;
 }
-
 export interface QueueStatus {
   pending: number;
   processing: number;
@@ -306,7 +310,6 @@ export interface QueueStatus {
   averageProcessingTime: number;
   errors: Error[];
 }
-
 export interface ApplicationEvent {
   type:
     | "container_expand"
@@ -317,7 +320,6 @@ export interface ApplicationEvent {
   payload: ApplicationEventPayload;
   timestamp: number;
 }
-
 export interface ApplicationEventPayload {
   // Common fields
   state?: unknown; // VisualizationState - avoiding circular dependency
@@ -325,19 +327,15 @@ export interface ApplicationEventPayload {
   layoutConfig?: LayoutConfig;
   triggerValidation?: boolean; // New field for triggering ReactFlow validation
   isTreeOperation?: boolean; // New field for tree hierarchy operations
-
   // Container operation fields
   containerId?: string;
   containerIds?: string[];
-
   // Search fields
   query?: string;
   expandContainers?: boolean;
-
   // Layout config change fields
   config?: LayoutConfig;
 }
-
 // File upload and parsing types
 export interface HydroscopeData {
   nodes: RawNodeData[]; // Raw node data from JSON
@@ -349,7 +347,6 @@ export interface HydroscopeData {
   legend?: LegendConfig;
   styles?: StyleConfig;
 }
-
 export interface RawNodeData {
   id: string;
   label?: string;
@@ -357,12 +354,17 @@ export interface RawNodeData {
   type?: string;
   style?: string;
   semanticTags?: string[];
-  position?: { x: number; y: number };
-  dimensions?: { width: number; height: number };
+  position?: {
+    x: number;
+    y: number;
+  };
+  dimensions?: {
+    width: number;
+    height: number;
+  };
   hidden?: boolean;
   [key: string]: unknown; // Allow additional properties from JSON
 }
-
 export interface RawEdgeData {
   id: string;
   source: string;
@@ -375,7 +377,6 @@ export interface RawEdgeData {
   label?: string;
   [key: string]: unknown; // Allow additional properties from JSON
 }
-
 export interface NodeTypeConfig {
   types: Array<{
     id: string;
@@ -385,7 +386,6 @@ export interface NodeTypeConfig {
     style?: NodeStyleConfig;
   }>;
 }
-
 export interface LegendConfig {
   title?: string;
   items: Array<{
@@ -395,13 +395,11 @@ export interface LegendConfig {
     color?: string;
   }>;
 }
-
 export interface HierarchyChoice {
   id: string;
   name: string;
   children?: HierarchyChoice[];
 }
-
 export interface ParseError {
   type: "json_parse" | "processing_error";
   message: string;
@@ -409,14 +407,12 @@ export interface ParseError {
   column?: number;
   context?: Record<string, any>;
 }
-
 export interface ValidationResult {
   type: string;
   message: string;
   severity: "error" | "warning" | "info";
   context?: Record<string, unknown>;
 }
-
 export interface EdgeValidationResult {
   isValid: boolean;
   isFloating: boolean;
@@ -442,20 +438,20 @@ export interface EdgeValidationResult {
   suggestedFix?: string;
   hierarchyLevel?: number;
 }
-
 export interface ContainerExpansionValidationResult {
   canExpand: boolean;
   issues: string[];
   affectedEdges: string[];
   edgeValidationResults: EdgeValidationResult[];
 }
-
 export interface EdgeRestorationResult {
   validEdges: string[];
-  invalidEdges: Array<{ id: string; reason: string }>;
+  invalidEdges: Array<{
+    id: string;
+    reason: string;
+  }>;
   fixedEdges: string[];
 }
-
 export interface ContainerExpansionState {
   containerId: string;
   preExpansionState: {

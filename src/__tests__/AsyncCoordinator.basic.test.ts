@@ -1,0 +1,216 @@
+/**
+ * AsyncCoordinator Basic Tests
+ * Focused tests for the current AsyncCoordinator API
+ */
+
+import { describe, it, expect, beforeEach } from "vitest";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import type { ApplicationEvent } from "../types/core.js";
+
+describe("AsyncCoordinator - Basic API", () => {
+  let coordinator: AsyncCoordinator;
+  let state: VisualizationState;
+  let elkBridge: ELKBridge;
+
+  beforeEach(() => {
+    coordinator = new AsyncCoordinator();
+    state = new VisualizationState();
+    elkBridge = new ELKBridge({
+      algorithm: "mrtree",
+      direction: "DOWN",
+    });
+
+    // Add basic test data
+    state.addNode({
+      id: "node1",
+      label: "Node 1",
+      longLabel: "Node 1 Long Label",
+      type: "default",
+      semanticTags: [],
+      hidden: false,
+    });
+
+    state.addNode({
+      id: "node2",
+      label: "Node 2",
+      longLabel: "Node 2 Long Label",
+      type: "default",
+      semanticTags: [],
+      hidden: false,
+    });
+
+    state.addEdge({
+      id: "edge1",
+      source: "node1",
+      target: "node2",
+      type: "default",
+      semanticTags: [],
+      hidden: false,
+    });
+  });
+
+  describe("Queue System", () => {
+    it("should create empty queue on initialization", () => {
+      const status = coordinator.getQueueStatus();
+      expect(status.pending).toBe(0);
+      expect(status.processing).toBe(0);
+      expect(status.completed).toBe(0);
+      expect(status.failed).toBe(0);
+    });
+
+    it("should queue and process basic operations", async () => {
+      const results: string[] = [];
+
+      const op1 = () =>
+        Promise.resolve().then(() => {
+          results.push("op1");
+          return "result1";
+        });
+
+      const op2 = () =>
+        Promise.resolve().then(() => {
+          results.push("op2");
+          return "result2";
+        });
+
+      coordinator.queueOperation("application_event", op1);
+      coordinator.queueOperation("application_event", op2);
+
+      await coordinator.processQueue();
+
+      expect(results).toEqual(["op1", "op2"]);
+      expect(coordinator.getQueueStatus().completed).toBe(2);
+    });
+  });
+
+  describe("ELK Operations", () => {
+    it("should queue ELK layout operations", async () => {
+      await coordinator.queueELKLayout(state, elkBridge);
+
+      const status = coordinator.getELKOperationStatus();
+      expect(status.lastCompleted).toBeDefined();
+      expect(status.lastCompleted?.type).toBe("elk_layout");
+
+      // Verify layout was applied
+      const node1 = state.getGraphNode("node1");
+      expect(node1?.position).toBeDefined();
+      expect(typeof node1?.position?.x).toBe("number");
+      expect(typeof node1?.position?.y).toBe("number");
+    });
+  });
+
+  describe("Container Operations", () => {
+    beforeEach(() => {
+      // Add a container for testing
+      state.addContainer({
+        id: "container1",
+        label: "Container 1",
+        children: new Set(["node1"]),
+        collapsed: false, // Start expanded so we can test both expand and collapse
+        hidden: false,
+      });
+    });
+
+    it("should expand all containers", async () => {
+      await coordinator.expandAllContainers(state);
+
+      const status = coordinator.getApplicationEventStatus();
+      expect(status.lastCompleted).toBeDefined();
+    });
+
+    it("should collapse all containers", async () => {
+      await coordinator.collapseAllContainers(state);
+
+      const status = coordinator.getApplicationEventStatus();
+      expect(status.lastCompleted).toBeDefined();
+    });
+
+    it("should expand specific container", async () => {
+      await coordinator.expandContainer("container1", state);
+
+      const status = coordinator.getApplicationEventStatus();
+      expect(status.lastCompleted).toBeDefined();
+    });
+
+    it("should collapse specific container", async () => {
+      await coordinator.collapseContainer("container1", state);
+
+      const status = coordinator.getApplicationEventStatus();
+      expect(status.lastCompleted).toBeDefined();
+    });
+  });
+
+  describe("Application Events", () => {
+    it("should process container expand events", async () => {
+      const event: ApplicationEvent = {
+        type: "container_expand",
+        payload: {
+          containerId: "container1",
+          state: state,
+          triggerLayout: false,
+        },
+        timestamp: Date.now(),
+      };
+
+      await coordinator.processApplicationEventAndWait(event);
+
+      const status = coordinator.getApplicationEventStatus();
+      expect(status.lastCompleted).toBeDefined();
+    });
+
+    it("should process search events", async () => {
+      const event: ApplicationEvent = {
+        type: "search",
+        payload: {
+          query: "test",
+          state: state,
+          expandContainers: false,
+          triggerLayout: false,
+        },
+        timestamp: Date.now(),
+      };
+
+      await coordinator.processApplicationEventAndWait(event);
+
+      const status = coordinator.getApplicationEventStatus();
+      expect(status.lastCompleted).toBeDefined();
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should handle operation failures gracefully", async () => {
+      const failingOp = () => Promise.reject(new Error("Test error"));
+
+      coordinator.queueOperation("application_event", failingOp);
+      await coordinator.processQueue();
+
+      const status = coordinator.getQueueStatus();
+      expect(status.failed).toBe(1);
+      expect(status.errors).toHaveLength(1);
+      expect(status.errors[0].message).toBe("Test error");
+    });
+
+    it("should retry failed operations", async () => {
+      let attemptCount = 0;
+      const flakyOp = () => {
+        attemptCount++;
+        if (attemptCount < 2) {
+          return Promise.reject(new Error("Temporary failure"));
+        }
+        return Promise.resolve("success");
+      };
+
+      coordinator.queueOperation("application_event", flakyOp, {
+        maxRetries: 2,
+      });
+      await coordinator.processQueue();
+
+      expect(attemptCount).toBe(2);
+      const status = coordinator.getQueueStatus();
+      expect(status.completed).toBe(1);
+      expect(status.failed).toBe(0);
+    });
+  });
+});

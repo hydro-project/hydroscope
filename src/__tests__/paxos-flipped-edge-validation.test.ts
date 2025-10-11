@@ -3,12 +3,16 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Paxos-Flipped Edge Validation Fix", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let parser: JSONParser;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     parser = new JSONParser();
     // Mock console methods to avoid noise in tests
@@ -18,6 +22,11 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
   });
 
   describe("runtime/park.rs container expansion", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should load paxos-flipped.json without errors", () => {
       try {
         // Load the paxos-flipped test data from file system
@@ -75,7 +84,7 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
       }
     });
 
-    it("should handle runtime/park.rs expansion without invalid edge errors", () => {
+    it("should handle runtime/park.rs expansion without invalid edge errors", async () => {
       // NOTE: This test documents the expected behavior after the fix is implemented
       // It may fail with current buggy implementation
 
@@ -107,9 +116,13 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
           }
 
           // Test expansion - this should not throw invalid edge errors after fix
-          expect(() => {
-            state._expandContainerForCoordinator(runtimeParkContainer.id);
-          }).not.toThrow();
+          await expect(
+            coordinator.expandContainer(
+              runtimeParkContainer.id,
+              state,
+              { triggerLayout: false },
+            )
+          ).resolves.not.toThrow();
 
           // Verify container is expanded
           const expandedContainer = state.getContainer(runtimeParkContainer.id);
@@ -139,7 +152,7 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
       }
     });
 
-    it("should handle multiple expansion/collapse cycles with paxos-flipped data", () => {
+    it("should handle multiple expansion/collapse cycles with paxos-flipped data", async () => {
       // NOTE: This test documents expected behavior for multiple cycles
 
       try {
@@ -180,7 +193,13 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
                 state.collapseContainerSystemOperation(runtimeParkContainer.id);
 
                 // Expand
-                state._expandContainerForCoordinator(runtimeParkContainer.id);
+                await coordinator.expandContainer(
+                  runtimeParkContainer.id,
+                  state,
+                  { triggerLayout: false },
+                  coordinator,
+                  { triggerLayout: false },
+                );
 
                 cyclesCompleted++;
               } catch (cycleError) {

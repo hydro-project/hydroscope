@@ -2,7 +2,6 @@
  * Performance Metrics for Hydroscope
  * Provides performance measurement without visual profiling components
  */
-
 export interface PerformanceMetrics {
   operation: string;
   duration: number;
@@ -14,34 +13,28 @@ export interface PerformanceMetrics {
   };
   metadata?: Record<string, any>;
 }
-
 export class PerformanceProfiler {
   private operationStack: Array<{
     name: string;
     startTime: number;
     startMemory: number;
   }> = [];
-
   startOperation(operationName: string, _metadata?: Record<string, any>): void {
     const startTime = performance.now();
     const startMemory = process.memoryUsage().heapUsed;
-
     this.operationStack.push({
       name: operationName,
       startTime,
       startMemory,
     });
   }
-
   endOperation(metadata?: Record<string, any>): PerformanceMetrics | null {
     if (this.operationStack.length === 0) {
       return null;
     }
-
     const operation = this.operationStack.pop()!;
     const endTime = performance.now();
     const endMemory = process.memoryUsage().heapUsed;
-
     return {
       operation: operation.name,
       duration: endTime - operation.startTime,
@@ -55,10 +48,8 @@ export class PerformanceProfiler {
     };
   }
 }
-
 // Global profiler instance
 export const globalProfiler = new PerformanceProfiler();
-
 // Utility function for manual profiling
 export function profileFunction<T>(
   operationName: string,
@@ -66,7 +57,6 @@ export function profileFunction<T>(
   metadata?: Record<string, any>,
 ): T {
   globalProfiler.startOperation(operationName, metadata);
-
   try {
     const result = fn();
     globalProfiler.endOperation();
@@ -78,14 +68,12 @@ export function profileFunction<T>(
     throw error;
   }
 }
-
 export async function profileAsyncFunction<T>(
   operationName: string,
   fn: () => Promise<T>,
   metadata?: Record<string, any>,
 ): Promise<T> {
   globalProfiler.startOperation(operationName, metadata);
-
   try {
     const result = await fn();
     globalProfiler.endOperation();

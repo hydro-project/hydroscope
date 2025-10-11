@@ -8,13 +8,17 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, Container, StyleConfig } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("ReactFlowBridge Highlighting", () => {
+  let coordinator: AsyncCoordinator;
+
   let bridge: ReactFlowBridge;
   let state: VisualizationState;
   let styleConfig: StyleConfig;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     styleConfig = {
       nodeStyles: {},
       edgeStyles: {},

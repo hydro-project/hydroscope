@@ -2,7 +2,6 @@
  * Performance Monitor and Alerting System
  * Monitors performance metrics and provides alerts for bottlenecks
  */
-
 export interface PerformanceAlert {
   id: string;
   severity: "low" | "medium" | "high" | "critical";
@@ -14,7 +13,6 @@ export interface PerformanceAlert {
   timestamp: number;
   recommendations: string[];
 }
-
 export interface PerformanceThresholds {
   [component: string]: {
     [metric: string]: {
@@ -23,7 +21,6 @@ export interface PerformanceThresholds {
     };
   };
 }
-
 export interface MonitoringConfig {
   enabled: boolean;
   alertThresholds: PerformanceThresholds;
@@ -31,14 +28,12 @@ export interface MonitoringConfig {
   maxAlerts: number;
   alertCallback?: (alert: PerformanceAlert) => void;
 }
-
 export class PerformanceMonitor {
   private config: MonitoringConfig;
   private alerts: PerformanceAlert[] = [];
   private metrics = new Map<string, number[]>();
   private lastSample = Date.now();
   private monitoringInterval?: NodeJS.Timeout;
-
   constructor(config: Partial<MonitoringConfig> = {}) {
     this.config = {
       enabled: true,
@@ -65,28 +60,22 @@ export class PerformanceMonitor {
       maxAlerts: 100,
       ...config,
     };
-
     if (this.config.enabled) {
       this.startMonitoring();
     }
   }
-
   recordMetric(component: string, metric: string, value: number): void {
     if (!this.config.enabled) return;
-
     const key = `${component}.${metric}`;
     const values = this.metrics.get(key) || [];
     values.push(value);
-
     // Keep only last 20 values for trend analysis
     if (values.length > 20) {
       values.shift();
     }
-
     this.metrics.set(key, values);
     this.checkThresholds(component, metric, value);
   }
-
   private checkThresholds(
     component: string,
     metric: string,
@@ -94,10 +83,8 @@ export class PerformanceMonitor {
   ): void {
     const thresholds = this.config.alertThresholds[component]?.[metric];
     if (!thresholds) return;
-
     let severity: PerformanceAlert["severity"] | null = null;
     let threshold = 0;
-
     if (value >= thresholds.critical) {
       severity = "critical";
       threshold = thresholds.critical;
@@ -105,12 +92,10 @@ export class PerformanceMonitor {
       severity = "medium";
       threshold = thresholds.warning;
     }
-
     if (severity) {
       this.createAlert(component, metric, value, threshold, severity);
     }
   }
-
   private createAlert(
     component: string,
     metric: string,
@@ -129,19 +114,15 @@ export class PerformanceMonitor {
       timestamp: Date.now(),
       recommendations: this.generateRecommendations(component, metric, value),
     };
-
     this.alerts.push(alert);
-
     // Keep only recent alerts
     if (this.alerts.length > this.config.maxAlerts) {
       this.alerts.shift();
     }
-
     // Call alert callback if provided
     if (this.config.alertCallback) {
       this.config.alertCallback(alert);
     }
-
     console.warn(
       `🚨 Performance Alert [${severity.toUpperCase()}]: ${alert.message}`,
     );
@@ -149,14 +130,12 @@ export class PerformanceMonitor {
       console.warn("💡 Recommendations:", alert.recommendations);
     }
   }
-
   private generateRecommendations(
     component: string,
     metric: string,
     _value: number,
   ): string[] {
     const recommendations: string[] = [];
-
     switch (component) {
       case "VisualizationState":
         if (metric === "search_duration") {
@@ -171,7 +150,6 @@ export class PerformanceMonitor {
           recommendations.push("Optimize edge aggregation algorithms");
         }
         break;
-
       case "ELKBridge":
         if (metric === "conversion_duration") {
           recommendations.push(
@@ -184,7 +162,6 @@ export class PerformanceMonitor {
           recommendations.push("Consider layout algorithm alternatives");
         }
         break;
-
       case "ReactFlowBridge":
         if (metric === "conversion_duration") {
           recommendations.push("Increase ReactFlow node/edge caching");
@@ -196,7 +173,6 @@ export class PerformanceMonitor {
           recommendations.push("Implement smarter cache eviction policies");
         }
         break;
-
       case "JSONParser":
         if (metric === "parse_duration") {
           recommendations.push("Consider streaming JSON parsing");
@@ -209,22 +185,18 @@ export class PerformanceMonitor {
         }
         break;
     }
-
     return recommendations;
   }
-
   getAlerts(severity?: PerformanceAlert["severity"]): PerformanceAlert[] {
     if (severity) {
       return this.alerts.filter((alert) => alert.severity === severity);
     }
     return [...this.alerts];
   }
-
   getMetricHistory(component: string, metric: string): number[] {
     const key = `${component}.${metric}`;
     return [...(this.metrics.get(key) || [])];
   }
-
   getMetricSummary(
     component: string,
     metric: string,
@@ -237,12 +209,10 @@ export class PerformanceMonitor {
   } | null {
     const values = this.getMetricHistory(component, metric);
     if (values.length === 0) return null;
-
     const current = values[values.length - 1];
     const average = values.reduce((sum, val) => sum + val, 0) / values.length;
     const min = Math.min(...values);
     const max = Math.max(...values);
-
     // Simple trend analysis (compare last 3 values to previous 3)
     let trend: "improving" | "stable" | "degrading" = "stable";
     if (values.length >= 6) {
@@ -250,51 +220,41 @@ export class PerformanceMonitor {
       const previous =
         values.slice(-6, -3).reduce((sum, val) => sum + val, 0) / 3;
       const change = (recent - previous) / previous;
-
       if (change > 0.1) trend = "degrading";
       else if (change < -0.1) trend = "improving";
     }
-
     return { current, average, min, max, trend };
   }
-
   clearAlerts(): void {
     this.alerts = [];
   }
-
   private startMonitoring(): void {
     this.monitoringInterval = setInterval(() => {
       this.sampleSystemMetrics();
     }, this.config.samplingInterval);
   }
-
   private sampleSystemMetrics(): void {
     // Sample system-wide metrics
     const memUsage = process.memoryUsage();
     this.recordMetric("System", "heap_used", memUsage.heapUsed / 1024 / 1024); // MB
     this.recordMetric("System", "heap_total", memUsage.heapTotal / 1024 / 1024); // MB
   }
-
   stop(): void {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = undefined;
     }
   }
-
   generateReport(): string {
     const criticalAlerts = this.getAlerts("critical");
     const highAlerts = this.getAlerts("high");
     const mediumAlerts = this.getAlerts("medium");
-
     let report = "# Performance Monitoring Report\n\n";
     report += `**Generated:** ${new Date().toISOString()}\n\n`;
-
     report += "## Alert Summary\n\n";
     report += `- Critical: ${criticalAlerts.length}\n`;
     report += `- High: ${highAlerts.length}\n`;
     report += `- Medium: ${mediumAlerts.length}\n\n`;
-
     if (criticalAlerts.length > 0) {
       report += "## Critical Alerts\n\n";
       criticalAlerts.forEach((alert) => {
@@ -305,7 +265,6 @@ export class PerformanceMonitor {
         report += "\n";
       });
     }
-
     report += "## Metric Trends\n\n";
     const components = [
       "VisualizationState",
@@ -317,7 +276,6 @@ export class PerformanceMonitor {
       const componentMetrics = Array.from(this.metrics.keys())
         .filter((key) => key.startsWith(component))
         .map((key) => key.split(".")[1]);
-
       if (componentMetrics.length > 0) {
         report += `### ${component}\n\n`;
         componentMetrics.forEach((metric) => {
@@ -335,11 +293,9 @@ export class PerformanceMonitor {
         report += "\n";
       }
     });
-
     return report;
   }
 }
-
 // Global performance monitor instance
 export const globalPerformanceMonitor = new PerformanceMonitor({
   enabled: process.env.NODE_ENV !== "test", // Disable in tests to avoid noise
@@ -350,7 +306,6 @@ export const globalPerformanceMonitor = new PerformanceMonitor({
     }
   },
 });
-
 // Utility function to record metrics easily
 export function recordPerformanceMetric(
   component: string,
@@ -359,7 +314,6 @@ export function recordPerformanceMetric(
 ): void {
   globalPerformanceMonitor.recordMetric(component, metric, value);
 }
-
 // Decorator for automatic performance monitoring
 export function monitorPerformance(component: string, metric?: string) {
   return function (
@@ -369,13 +323,10 @@ export function monitorPerformance(component: string, metric?: string) {
   ) {
     const originalMethod = descriptor.value;
     const metricName = metric || propertyKey;
-
     descriptor.value = function (...args: any[]) {
       const startTime = performance.now();
-
       try {
         const result = originalMethod.apply(this, args);
-
         // Handle async methods
         if (result && typeof result.then === "function") {
           return result.finally(() => {
@@ -405,7 +356,6 @@ export function monitorPerformance(component: string, metric?: string) {
         throw error;
       }
     };
-
     return descriptor;
   };
 }

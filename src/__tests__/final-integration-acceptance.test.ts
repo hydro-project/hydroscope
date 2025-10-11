@@ -17,6 +17,8 @@ import { InteractionHandler } from "../core/InteractionHandler";
 import { GraphNode, GraphEdge, Container } from "../types/core";
 
 describe("Final Integration and Acceptance Testing", () => {
+  let coordinator: AsyncCoordinator;
+
   let visualizationState: VisualizationState;
   let asyncCoordinator: AsyncCoordinator;
   let elkBridge: ELKBridge;
@@ -25,10 +27,11 @@ describe("Final Integration and Acceptance Testing", () => {
   let jsonParser: JSONParser;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
     asyncCoordinator = new AsyncCoordinator();
     elkBridge = new ELKBridge({
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
       nodeSpacing: 50,
       edgeSpacing: 10,
@@ -51,6 +54,11 @@ describe("Final Integration and Acceptance Testing", () => {
   });
 
   describe("Complete Test Suite Validation", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should run all core component tests successfully", async () => {
       // Test VisualizationState core functionality
       const testNode: GraphNode = {
@@ -112,13 +120,19 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(visualizationState.visibleContainers).toHaveLength(1);
 
       // Test container operations
-      expect(() => {
-        visualizationState._collapseContainerForCoordinator("test-container");
-      }).not.toThrow();
+      await coordinator.collapseContainer(
+        "test-container",
+        visualizationState,
+        { triggerLayout: false },
+      );
 
-      expect(() => {
-        visualizationState._expandContainerForCoordinator("test-container");
-      }).not.toThrow();
+      await expect(
+        coordinator.expandContainer(
+          "test-container",
+          visualizationState,
+          { triggerLayout: false },
+        )
+      ).resolves.not.toThrow();
 
       // Test search functionality
       const searchResults = visualizationState.search("test");
@@ -208,7 +222,7 @@ describe("Final Integration and Acceptance Testing", () => {
       const layoutPromise = asyncCoordinator.queueELKLayout(
         visualizationState,
         {
-          algorithm: "layered",
+          algorithm: "mrtree",
           direction: "DOWN",
           nodeSpacing: 50,
         },
@@ -258,6 +272,11 @@ describe("Final Integration and Acceptance Testing", () => {
   });
 
   describe("Requirements Validation", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should meet Requirement 1: Core Architecture Foundation", async () => {
       // VisualizationState as single source of truth
       expect(visualizationState).toBeInstanceOf(VisualizationState);
@@ -305,10 +324,18 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(visualizationState.visibleContainers).toHaveLength(1);
 
       // Container collapse/expand maintains consistency
-      visualizationState._collapseContainerForCoordinator("req2-container");
+      await coordinator.collapseContainer(
+        "req2-container",
+        visualizationState,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       visualizationState.validateInvariants();
 
-      visualizationState._expandContainerForCoordinator("req2-container");
+      await coordinator.expandContainer("req2-container", visualizationState, {
+        triggerLayout: false,
+      });
       visualizationState.validateInvariants();
 
       // Layout state tracking
@@ -380,7 +407,13 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(reactFlowData.edges).toBeDefined();
 
       // Test collapsed container rendering
-      visualizationState._collapseContainerForCoordinator("rf-container");
+      await coordinator.collapseContainer(
+        "rf-container",
+        visualizationState,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       // Calculate layout so nodes have positions
       await elkBridge.layout(visualizationState);
 
@@ -433,6 +466,11 @@ describe("Final Integration and Acceptance Testing", () => {
   });
 
   describe("Realistic Usage Scenarios", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle typical user workflow", async () => {
       // Scenario: User loads paxos.json, explores containers, searches nodes
 
@@ -496,13 +534,21 @@ describe("Final Integration and Acceptance Testing", () => {
       });
 
       // User collapses container
-      testState._collapseContainerForCoordinator("services");
+      await coordinator.collapseContainer(
+        "services",
+        testState,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
       ).toBe(true);
 
       // User expands container
-      testState._expandContainerForCoordinator("services");
+      await coordinator.expandContainer("services", testState, {
+        triggerLayout: false,
+      });
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
       ).toBe(false);
@@ -571,7 +617,11 @@ describe("Final Integration and Acceptance Testing", () => {
 
       // Test container operations
       const containerOpStartTime = Date.now();
-      visualizationState._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(
+        visualizationState,
+        { triggerLayout: false },
+        { triggerLayout: false },
+      );
       const containerOpTime = Date.now() - containerOpStartTime;
 
       expect(containerOpTime).toBeLessThan(2000); // 2 seconds max

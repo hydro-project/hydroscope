@@ -5,8 +5,9 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { JSONParser } from "../utils/JSONParser.js";
+import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
-import type { HydroscopeData, HierarchyChoice } from "../types/core.js";
 
 // Test data
 const simpleTestData: HydroscopeData = {
@@ -110,9 +111,12 @@ const paxosLikeData: HydroscopeData = {
 };
 
 describe("JSONParser", () => {
+  let coordinator: AsyncCoordinator;
+
   let parser: JSONParser;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     parser = new JSONParser();
   });
 
@@ -510,10 +514,16 @@ describe("JSONParser", () => {
       const debugParser = new JSONParser({ debug: true });
       await debugParser.parseData(simpleTestData);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[JSONParser]"),
-        expect.any(Object),
+      // Check that console.log was called with debug messages
+      expect(consoleSpy).toHaveBeenCalled();
+      const calls = consoleSpy.mock.calls;
+      const debugCalls = calls.filter(
+        (call) =>
+          call[0] &&
+          typeof call[0] === "string" &&
+          call[0].includes("[JSONParser]"),
       );
+      expect(debugCalls.length).toBeGreaterThan(0);
 
       consoleSpy.mockRestore();
     });

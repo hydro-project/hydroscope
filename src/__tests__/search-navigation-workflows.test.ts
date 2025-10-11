@@ -24,6 +24,7 @@ describe("Search Navigation Workflow Integration", () => {
   let chatData: HydroscopeData;
 
   beforeEach(async () => {
+    coordinator = new AsyncCoordinator();
     // Load the actual chat.json file
     const chatPath = path.join(process.cwd(), "test-data", "chat.json");
 
@@ -47,10 +48,15 @@ describe("Search Navigation Workflow Integration", () => {
     });
 
     // Initially collapse all containers to test expansion
-    state._collapseAllContainersForCoordinator();
+    await coordinator.collapseAllContainers(state, { triggerLayout: false });
   });
 
   describe("Search Query → Tree Expansion → Graph Update Flow", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should expand tree hierarchy when searching for nodes in containers", () => {
       // Initially, containers should be collapsed
       const containers = ["loc_0", "loc_1"];
@@ -79,9 +85,9 @@ describe("Search Navigation Workflow Integration", () => {
       expect(treeHighlights.size).toBeGreaterThan(0);
     });
 
-    it("should update graph highlights for lowest visible ancestors", () => {
+    it("should update graph highlights for lowest visible ancestors", async () => {
       // Collapse containers so nodes are not directly visible in graph
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Perform search for network nodes
       state.performSearch("network");
@@ -142,6 +148,11 @@ describe("Search Navigation Workflow Integration", () => {
   });
 
   describe("Tree Click → Graph Navigation → Viewport Focus Flow", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should navigate from tree to graph with viewport focus", async () => {
       // Mock ReactFlow instance for viewport operations
       const mockReactFlowInstance = {
@@ -169,7 +180,7 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should expand containers when navigating to hidden elements", async () => {
       // Ensure containers are collapsed
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Mock ReactFlow instance
       const mockReactFlowInstance = {
@@ -285,6 +296,11 @@ describe("Search Navigation Workflow Integration", () => {
   });
 
   describe("Rapid Search Changes and Race Condition Handling", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle rapid search query changes", async () => {
       // Simulate rapid search changes
       const queries = ["per", "pers", "persist"];
@@ -404,13 +420,13 @@ describe("Search Navigation Workflow Integration", () => {
       expect(reactFlowData.nodes.length).toBeGreaterThan(0);
     });
 
-    it("should handle highlight updates during container operations", () => {
+    it("should handle highlight updates during container operations", async () => {
       // Set up search and navigation
       state.performSearch("persist");
       state.navigateToElement("6"); // flatmap node
 
       // Expand containers
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // Convert to ReactFlow data
       const reactFlowData = bridge.toReactFlowData(state);

@@ -3,7 +3,6 @@
  *
  * Essential render components for the v6 branch.
  */
-
 // Node components and types
 export {
   StandardNode,
@@ -12,6 +11,13 @@ export {
   MemoContainerNode,
   nodeTypes,
 } from "./nodes";
-
+// Edge components and types
+export {
+  AggregatedEdge,
+  DefaultEdge,
+  MemoAggregatedEdge,
+  MemoDefaultEdge,
+  edgeTypes,
+} from "./edges";
 // Style configuration
 export { StyleConfigProvider } from "./StyleConfigContext";

@@ -11,7 +11,6 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
@@ -47,7 +46,7 @@ describe("Stateless Bridge Performance Report", () => {
 
   describe("ReactFlowBridge Performance Analysis", () => {
     it("should measure ReactFlowBridge.toReactFlowData performance", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
       const reactFlowBridge = new ReactFlowBridge({
@@ -134,7 +133,7 @@ describe("Stateless Bridge Performance Report", () => {
     });
 
     it("should measure ReactFlowBridge performance with large synthetic graph", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(mediumGraphData);
       const elkBridge = new ELKBridge();
       const reactFlowBridge = new ReactFlowBridge({
@@ -175,7 +174,7 @@ describe("Stateless Bridge Performance Report", () => {
 
   describe("ELKBridge Performance Analysis", () => {
     it("should measure ELKBridge.toELKGraph performance", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
 
@@ -239,7 +238,7 @@ describe("Stateless Bridge Performance Report", () => {
       "should measure ELK layout performance",
       { timeout: 30000 },
       async () => {
-        const parser = new JSONParser();
+        const parser = JSONParser.createPaxosParser({ debug: false });
         const parseResult = await parser.parseData(mediumGraphData);
         const elkBridge = new ELKBridge();
 
@@ -247,7 +246,7 @@ describe("Stateless Bridge Performance Report", () => {
         const edgeCount = parseResult.visualizationState.visibleEdges.length;
 
         // Measure full layout
-        const { result, metrics } = await measureAsync(async () => {
+        const { _result, metrics } = await measureAsync(async () => {
           await elkBridge.layout(parseResult.visualizationState);
           return parseResult.visualizationState;
         });
@@ -283,7 +282,7 @@ describe("Stateless Bridge Performance Report", () => {
 
   describe("Combined Performance Analysis", () => {
     it("should measure full pipeline performance", async () => {
-      const parser = new JSONParser();
+      const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
       const elkBridge = new ELKBridge();
       const reactFlowBridge = new ReactFlowBridge({

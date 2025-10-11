@@ -19,6 +19,8 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("InfoPanel Component", () => {
+  let coordinator: AsyncCoordinator;
+
   let visualizationState: VisualizationState;
   let asyncCoordinator: AsyncCoordinator;
   let mockProps: InfoPanelProps;
@@ -31,6 +33,7 @@ describe("InfoPanel Component", () => {
   };
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     // Reset mocks
     vi.clearAllMocks();
 

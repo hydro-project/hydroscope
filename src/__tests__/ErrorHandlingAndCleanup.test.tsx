@@ -10,6 +10,7 @@ import { Hydroscope } from "../components/Hydroscope.js";
 import { ErrorBoundary } from "../components/ErrorBoundary.js";
 import { ResourceManager } from "../utils/ResourceManager.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Mock console methods to avoid noise in tests
 const originalConsoleError = console.error;
@@ -37,7 +38,10 @@ const ErrorThrowingComponent: React.FC<{ shouldThrow: boolean }> = ({
 };
 
 describe("Error Handling and Resource Cleanup", () => {
+  let coordinator: AsyncCoordinator;
+
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     // Mock console methods to reduce noise
     console.error = vi.fn();
     console.warn = vi.fn();
@@ -100,7 +104,7 @@ describe("Error Handling and Resource Cleanup", () => {
 
     it("should manage timeouts correctly", async () => {
       const callback = vi.fn();
-      const timeoutId = resourceManager.addTimeout(callback, 10);
+      const _timeoutId = resourceManager.addTimeout(callback, 10);
 
       expect(resourceManager.getResourceCount("timeout")).toBe(1);
       expect(callback).not.toHaveBeenCalled();
@@ -112,7 +116,7 @@ describe("Error Handling and Resource Cleanup", () => {
 
     it("should manage intervals correctly", async () => {
       const callback = vi.fn();
-      const intervalId = resourceManager.addInterval(callback, 10);
+      const _intervalId = resourceManager.addInterval(callback, 10);
 
       expect(resourceManager.getResourceCount("interval")).toBe(1);
 

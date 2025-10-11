@@ -3,20 +3,16 @@
  *
  * Centralized configuration for ReactFlow handles to maximize layout flexibility.
  */
-
 import { Position } from "@xyflow/react";
-
 export interface HandleConfig {
   id: string;
   position: Position;
   style?: React.CSSProperties;
 }
-
 /**
  * Handle strategy types
  */
 export type HandleStrategy = "discrete" | "continuous";
-
 /**
  * Handle styles for different strategies
  */
@@ -36,7 +32,6 @@ export const HANDLE_STYLES = {
     height: "100%",
   },
 } as const;
-
 /**
  * Configuration for different handle strategies
  */
@@ -92,7 +87,6 @@ export const HANDLE_STRATEGIES = {
       },
     ] as HandleConfig[],
   },
-
   /**
    * Continuous handles (ReactFlow v12) - connections anywhere on perimeter
    */
@@ -102,12 +96,10 @@ export const HANDLE_STRATEGIES = {
     targetHandles: [] as HandleConfig[],
   },
 } as const;
-
 /**
  * Current handle strategy - using discrete for better edge control
  */
 export const CURRENT_HANDLE_STRATEGY: HandleStrategy = "discrete";
-
 /**
  * Get the current handle configuration
  */

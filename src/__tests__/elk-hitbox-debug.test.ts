@@ -8,6 +8,7 @@
 import fs from "fs";
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
@@ -16,12 +17,15 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("ELK Hitbox Debug", () => {
+  let coordinator: AsyncCoordinator;
+
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
   let elkBridge: ELKBridge;
 
   beforeEach(async () => {
+    const coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),
@@ -216,8 +220,13 @@ describe("ELK Hitbox Debug", () => {
         emptyContainers: emptyContainers.slice(0, 10),
       };
 
-      fs.writeFileSync("elk-analysis.json", JSON.stringify(analysis, null, 2));
-      console.log("📄 Detailed analysis written to elk-analysis.json");
+      if (process.env.DEBUG_FILES) {
+        fs.writeFileSync(
+          "elk-analysis.json",
+          JSON.stringify(analysis, null, 2),
+        );
+        console.log("📄 Detailed analysis written to elk-analysis.json");
+      }
 
       expect(elkGraph).toBeDefined();
     });
@@ -239,7 +248,7 @@ describe("ELK Hitbox Debug", () => {
         {
           name: "Force Layered",
           config: {
-            algorithm: "layered" as const,
+            algorithm: "mrtree" as const,
             hierarchicalLayout: false,
           },
         },
@@ -253,7 +262,7 @@ describe("ELK Hitbox Debug", () => {
         {
           name: "Compact Layout",
           config: {
-            algorithm: "layered" as const,
+            algorithm: "mrtree" as const,
             compactLayout: true,
             hierarchicalLayout: false,
           },
@@ -318,25 +327,27 @@ describe("ELK Hitbox Debug", () => {
       }
 
       // Write results to file for analysis
-      fs.writeFileSync(
-        "elk-config-test-results.json",
-        JSON.stringify(
-          {
-            summary: {
-              totalConfigs: configurations.length,
-              successfulConfigs: results.filter((r) => r.success).length,
-              firstSuccessful: successfulConfig,
+      if (process.env.DEBUG_FILES) {
+        fs.writeFileSync(
+          "elk-config-test-results.json",
+          JSON.stringify(
+            {
+              summary: {
+                totalConfigs: configurations.length,
+                successfulConfigs: results.filter((r) => r.success).length,
+                firstSuccessful: successfulConfig,
+              },
+              results,
             },
-            results,
-          },
-          null,
-          2,
-        ),
-      );
+            null,
+            2,
+          ),
+        );
 
-      console.log(
-        "📄 ELK configuration test results written to elk-config-test-results.json",
-      );
+        console.log(
+          "📄 ELK configuration test results written to elk-config-test-results.json",
+        );
+      }
 
       // If any configuration worked, the test passes
       const successfulResults = results.filter((r) => r.success);
@@ -354,6 +365,11 @@ describe("ELK Hitbox Debug", () => {
   });
 
   describe("Simplified Graph Testing", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should test with progressively simplified graphs", async () => {
       // Parse the data
       const parser = JSONParser.createPaxosParser({ debug: false });
@@ -363,7 +379,12 @@ describe("ELK Hitbox Debug", () => {
       // Test 1: Collapse all containers to simplify
       console.log("🧪 Test 1: Collapse all containers");
       try {
-        visualizationState._collapseAllContainersForCoordinator();
+        await coordinator.collapseAllContainers(
+          coordinator,
+          visualizationState,
+          { triggerLayout: false },
+          { triggerLayout: false },
+        );
         await elkBridge.layout(visualizationState);
         console.log("✅ Collapsed layout succeeded!");
         return;

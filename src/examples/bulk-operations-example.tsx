@@ -4,14 +4,12 @@
  * This example shows how to use the collapseAll and expandAll methods
  * through the imperative handle API.
  */
-
 import React, { useRef, useState } from "react";
 import {
   HydroscopeCore,
   type HydroscopeCoreHandle,
 } from "../components/HydroscopeCore.js";
 import type { HydroscopeData } from "../types/core.js";
-
 // Example data with containers
 const exampleData: HydroscopeData = {
   nodes: [
@@ -35,21 +33,17 @@ const exampleData: HydroscopeData = {
     node4: "container2",
   },
 };
-
 export const BulkOperationsExample: React.FC = () => {
   const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
-
   const handleCollapseAll = async () => {
     if (!hydroscopeRef.current) {
       setMessage("HydroscopeCore not ready");
       return;
     }
-
     setIsLoading(true);
     setMessage("Collapsing all containers...");
-
     try {
       await hydroscopeRef.current.collapseAll();
       setMessage("All containers collapsed successfully!");
@@ -59,16 +53,13 @@ export const BulkOperationsExample: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const handleExpandAll = async () => {
     if (!hydroscopeRef.current) {
       setMessage("HydroscopeCore not ready");
       return;
     }
-
     setIsLoading(true);
     setMessage("Expanding all containers...");
-
     try {
       await hydroscopeRef.current.expandAll();
       setMessage("All containers expanded successfully!");
@@ -78,19 +69,15 @@ export const BulkOperationsExample: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const handleError = (error: Error) => {
     setMessage(`Visualization error: ${error.message}`);
   };
-
   const handleCollapseAllCallback = () => {
     setMessage("CollapseAll operation completed via callback");
   };
-
   const handleExpandAllCallback = () => {
     setMessage("ExpandAll operation completed via callback");
   };
-
   const handleIndividualOperation = async (
     operation: "collapse" | "expand" | "toggle",
     containerId: string,
@@ -99,10 +86,8 @@ export const BulkOperationsExample: React.FC = () => {
       setMessage("HydroscopeCore not ready");
       return;
     }
-
     setIsLoading(true);
     setMessage(`${operation}ing container ${containerId}...`);
-
     try {
       switch (operation) {
         case "collapse":
@@ -126,7 +111,6 @@ export const BulkOperationsExample: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       {/* Control Panel */}
@@ -284,18 +268,17 @@ export const BulkOperationsExample: React.FC = () => {
           onCollapseAll={handleCollapseAllCallback}
           onExpandAll={handleExpandAllCallback}
           onNodeClick={(event, node) => {
-            console.log("Node clicked:", node.id);
+            // Node clicked: node.id
           }}
           onContainerCollapse={(containerId) => {
-            console.log("Container collapsed:", containerId);
+            // Container collapsed: containerId
           }}
           onContainerExpand={(containerId) => {
-            console.log("Container expanded:", containerId);
+            // Container expanded: containerId
           }}
         />
       </div>
     </div>
   );
 };
-
 export default BulkOperationsExample;

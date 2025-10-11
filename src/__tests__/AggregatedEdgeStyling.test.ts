@@ -7,6 +7,7 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { processAggregatedSemanticTags } from "../utils/StyleProcessor.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type {
   GraphNode,
   GraphEdge,
@@ -15,12 +16,16 @@ import type {
 } from "../types/core.js";
 
 describe("Aggregated Edge Styling with Conflict Resolution", () => {
+  let _coordinator: AsyncCoordinator;
+
+  let coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
   let elkBridge: ELKBridge;
   let styleConfig: StyleConfig;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     // Create a comprehensive style config with semantic mappings
     styleConfig = {
       nodeStyles: {
@@ -60,6 +65,11 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
   });
 
   describe("Conflict Resolution System", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should create aggregated edges when container is collapsed", async () => {
       // Simple test to verify aggregated edges are created
       const node1: GraphNode = {
@@ -105,7 +115,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge);
 
       // Collapse container to trigger aggregation
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Check state has aggregated edges
       const stateAggregatedEdges = state.getAggregatedEdges();
@@ -200,7 +216,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Calculate layout
       await elkBridge.layout(state);
@@ -352,7 +374,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Calculate layout
       await elkBridge.layout(state);
@@ -446,7 +474,13 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       state.addEdge(edge2);
 
       // Collapse container to trigger aggregation
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Calculate layout
       await elkBridge.layout(state);
@@ -562,35 +596,29 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
     });
   });
 
-  describe("Visual Aggregation Indicator", () => {
-    it("should add +1 thickness in the React component", () => {
+  describe("Visual Aggregation Styling", () => {
+    it("should preserve original strokeWidth in the React component", () => {
       // This tests the component-level styling logic
       const baseStyle = { strokeWidth: 2, stroke: "#2196f3" };
 
-      // Simulate what the AggregatedEdge component does
+      // Simulate what the AggregatedEdge component does (no modification)
       const aggregatedStyle = {
         ...baseStyle,
-        strokeWidth: baseStyle.strokeWidth
-          ? (baseStyle.strokeWidth as number) + 1
-          : 3,
       };
 
-      expect(aggregatedStyle.strokeWidth).toBe(3); // 2 + 1
+      expect(aggregatedStyle.strokeWidth).toBe(2); // Preserved original
       expect(aggregatedStyle.stroke).toBe("#2196f3"); // Preserved
     });
 
     it("should handle missing strokeWidth in component", () => {
       const baseStyle = { stroke: "#2196f3" }; // No strokeWidth
 
-      // Simulate what the AggregatedEdge component does
+      // Simulate what the AggregatedEdge component does (no modification)
       const aggregatedStyle = {
         ...baseStyle,
-        strokeWidth: baseStyle.strokeWidth
-          ? (baseStyle.strokeWidth as number) + 1
-          : 3,
       };
 
-      expect(aggregatedStyle.strokeWidth).toBe(3); // Default when missing
+      expect(aggregatedStyle.strokeWidth).toBeUndefined(); // No default added
       expect(aggregatedStyle.stroke).toBe("#2196f3"); // Preserved
     });
   });

@@ -15,14 +15,18 @@ import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
+  let coordinator: AsyncCoordinator;
+
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
   let elkBridge: ELKBridge;
 
   beforeEach(async () => {
+    const coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),
@@ -42,9 +46,11 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
     reactFlowBridge = new ReactFlowBridge({});
     elkBridge = new ELKBridge();
 
-    // Write debug info to file
-    const debugInfo = `[PaxosFlippedBug] 📊 Loaded paxos-flipped.json: ${paxosFlippedData.nodes?.length || 0} nodes, ${paxosFlippedData.edges?.length || 0} edges\n`;
-    fs.appendFileSync("debug-output.txt", debugInfo);
+    // Write debug info to file only if DEBUG_FILES is set
+    if (process.env.DEBUG_FILES) {
+      const debugInfo = `[PaxosFlippedBug] 📊 Loaded paxos-flipped.json: ${paxosFlippedData.nodes?.length || 0} nodes, ${paxosFlippedData.edges?.length || 0} edges\n`;
+      fs.appendFileSync("debug-output.txt", debugInfo);
+    }
   });
 
   describe("JSON Parsing with Nested Containers", () => {
@@ -94,7 +100,9 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
   Regular nodes: ${regularNodes.length}
   Total edges: ${renderData.edges.length}
 `;
-      fs.appendFileSync("debug-output.txt", debugInfo);
+      if (process.env.DEBUG_FILES) {
+        fs.appendFileSync("debug-output.txt", debugInfo);
+      }
 
       // Check for nested containers
       const nestedContainers = containerNodes.filter((container) => {
@@ -120,7 +128,9 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
         });
       }
 
-      fs.appendFileSync("debug-output.txt", nestedInfo);
+      if (process.env.DEBUG_FILES) {
+        fs.appendFileSync("debug-output.txt", nestedInfo);
+      }
 
       // This is where the bug should manifest - ELK layout should fail
       let layoutError: Error | null = null;
@@ -140,7 +150,9 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
   Nodes with positions: ${nodesWithPositions.length}/${visualizationState.visibleNodes.length}
   Containers with positions: ${containersWithPositions.length}/${visualizationState.visibleContainers.length}
 `;
-        fs.appendFileSync("debug-output.txt", successInfo);
+        if (process.env.DEBUG_FILES) {
+          fs.appendFileSync("debug-output.txt", successInfo);
+        }
 
         // Verify layout was applied
         expect(nodesWithPositions.length).toBeGreaterThan(0);
@@ -151,23 +163,29 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
   Error message: ${error.message}
   Stack trace: ${error.stack?.split("\n").slice(0, 10).join("\n") || "No stack trace"}
 `;
-        fs.appendFileSync("debug-output.txt", errorInfo);
+        if (process.env.DEBUG_FILES) {
+          fs.appendFileSync("debug-output.txt", errorInfo);
+        }
       }
 
       // Document the current state - if there's an error, we've found the bug
       if (layoutError) {
-        fs.appendFileSync(
-          "debug-output.txt",
-          "[PaxosFlippedBug] 🐛 Bug reproduced - ELK layout failed with nested containers\n",
-        );
+        if (process.env.DEBUG_FILES) {
+          fs.appendFileSync(
+            "debug-output.txt",
+            "[PaxosFlippedBug] 🐛 Bug reproduced - ELK layout failed with nested containers\n",
+          );
+        }
         // For now, we expect this to fail - once fixed, we can change this expectation
         expect(layoutError).toBeDefined();
         expect(layoutError.message).toBeTruthy();
       } else {
-        fs.appendFileSync(
-          "debug-output.txt",
-          "[PaxosFlippedBug] ✅ No bug detected - layout completed successfully\n",
-        );
+        if (process.env.DEBUG_FILES) {
+          fs.appendFileSync(
+            "debug-output.txt",
+            "[PaxosFlippedBug] ✅ No bug detected - layout completed successfully\n",
+          );
+        }
         // If no error, the layout should have been applied
         const nodesWithPositions = visualizationState.visibleNodes.filter(
           (n) => n.position,

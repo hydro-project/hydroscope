@@ -2,10 +2,8 @@
  * SearchInput Component
  * Provides search input with real-time feedback and navigation controls
  */
-
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import type { SearchResult } from "../types/core.js";
-
 export interface SearchInputProps {
   onSearch: (query: string) => void;
   onClear: () => void;
@@ -18,7 +16,6 @@ export interface SearchInputProps {
   placeholder?: string;
   debounceMs?: number;
 }
-
 export const SearchInput: React.FC<SearchInputProps> = ({
   onSearch,
   onClear,
@@ -34,26 +31,22 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   const [inputValue, setInputValue] = useState(query);
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
   const inputRef = useRef<HTMLInputElement>(null);
-
   // Update input value when query prop changes
   useEffect(() => {
     setInputValue(query);
   }, [query]);
-
   // Debounced search function
   const debouncedSearch = useCallback(
     (value: string) => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
       }
-
       debounceTimeoutRef.current = setTimeout(() => {
         onSearch(value);
       }, debounceMs);
     },
     [onSearch, debounceMs],
   );
-
   // Handle input change
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +56,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     },
     [debouncedSearch],
   );
-
   // Handle clear button click
   const handleClear = useCallback(() => {
     setInputValue("");
@@ -72,7 +64,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       inputRef.current.focus();
     }
   }, [onClear]);
-
   // Handle keyboard events
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -111,7 +102,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       handleClear,
     ],
   );
-
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -120,14 +110,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       }
     };
   }, []);
-
   const hasResults = searchResults?.length > 0;
   const hasQuery = inputValue.trim().length > 0;
   const showResultCount = hasQuery || hasResults;
   const isAtFirstResult = currentResultIndex === 0;
   const isAtLastResult =
     currentResultIndex === (searchResults?.length ?? 0) - 1;
-
   return (
     <div className="search-input-container">
       <div className="search-input-wrapper">
@@ -220,5 +208,4 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     </div>
   );
 };
-
 export default SearchInput;

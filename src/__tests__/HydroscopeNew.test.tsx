@@ -10,10 +10,11 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Hydroscope, type HydroscopeProps } from "../components/Hydroscope.js";
+import { Hydroscope } from "../components/Hydroscope.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Mocks are now handled by the shared setup file
 
@@ -84,7 +85,10 @@ const mockGraphData: HydroscopeData = {
 };
 
 describe("New Hydroscope Component", () => {
+  let coordinator: AsyncCoordinator;
+
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     // Reset mocks
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockReturnValue(null);
@@ -338,7 +342,7 @@ describe("New Hydroscope Component", () => {
 
   describe("Error Handling", () => {
     it("should handle component errors gracefully", () => {
-      const onError = vi.fn();
+      const _onError = vi.fn();
 
       expect(() => {
         render(

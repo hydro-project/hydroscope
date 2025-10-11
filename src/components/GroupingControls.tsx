@@ -3,12 +3,10 @@
  *
  * Provides controls for selecting different hierarchical groupings.
  */
-
 import React from "react";
 import { Select } from "antd";
 import { GroupingOption } from "./types";
 import { COMPONENT_COLORS, TYPOGRAPHY } from "../shared/config";
-
 export interface GroupingControlsProps {
   hierarchyChoices?: GroupingOption[];
   currentGrouping?: string | null;
@@ -18,7 +16,6 @@ export interface GroupingControlsProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
 export function GroupingControls({
   hierarchyChoices = [],
   currentGrouping,
@@ -43,7 +40,6 @@ export function GroupingControls({
       </div>
     );
   }
-
   if (hierarchyChoices.length === 1) {
     return (
       <div className={`grouping-controls-single ${className}`} style={style}>
@@ -59,19 +55,16 @@ export function GroupingControls({
       </div>
     );
   }
-
   const handleChange = (value: string) => {
     if (!disabled && onGroupingChange && value) {
       onGroupingChange(value);
     }
   };
-
   const selectStyle: React.CSSProperties = {
     fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
     width: "100%",
     maxWidth: compact ? "120px" : "180px",
   };
-
   const labelStyle: React.CSSProperties = {
     fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
     fontWeight: "bold",
@@ -79,13 +72,11 @@ export function GroupingControls({
     marginBottom: "4px",
     display: "block",
   };
-
   // Create options for Ant Design Select
   const selectOptions = hierarchyChoices.map((choice) => ({
     value: choice.id,
     label: choice.name,
   }));
-
   return (
     <div className={`grouping-controls ${className}`} style={style}>
       {!compact && <label style={labelStyle}>Grouping:</label>}
@@ -93,7 +84,6 @@ export function GroupingControls({
       <Select
         value={currentGrouping}
         onChange={(value) => {
-          console.log("[GroupingControls] Direct onChange called with:", value);
           // Always call handleChange, even if the value seems the same
           handleChange(value);
         }}

@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { Hydroscope } from "../components/Hydroscope.js";
 import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -31,7 +32,10 @@ const testData: HydroscopeData = {
 };
 
 describe("Settings Validation and Persistence", () => {
+  let coordinator: AsyncCoordinator;
+
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockReturnValue(null);
   });

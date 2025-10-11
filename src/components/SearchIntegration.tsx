@@ -2,12 +2,10 @@
  * SearchIntegration Component
  * Integrates search functionality with container expansion and smart collapse prevention
  */
-
 import React, { useState, useCallback, useEffect } from "react";
 import { Search } from "./Search.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { SearchResult } from "../types/core.js";
-
 export interface SearchIntegrationProps {
   visualizationState: VisualizationState;
   onSearchResultSelect: (result: SearchResult) => void;
@@ -18,7 +16,6 @@ export interface SearchIntegrationProps {
   groupByType?: boolean;
   showResultsPanel?: boolean;
 }
-
 export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
   visualizationState,
   onSearchResultSelect,
@@ -32,12 +29,10 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-
   // Find containers that need to be expanded for search results
   const findContainersToExpand = useCallback(
     (results: SearchResult[]): string[] => {
       const containersToExpand: Set<string> = new Set();
-
       for (const result of results) {
         if (result.type === "node") {
           // Find the container hierarchy for this node
@@ -48,7 +43,6 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
               nodeContainer,
               ...visualizationState.getContainerAncestors(nodeContainer),
             ];
-
             for (const ancestorId of ancestors) {
               const container = visualizationState.getContainer(ancestorId);
               if (container && container.collapsed) {
@@ -61,7 +55,6 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
           const parentContainers = visualizationState.getContainerAncestors(
             result.id,
           );
-
           for (const parentId of parentContainers) {
             const container = visualizationState.getContainer(parentId);
             if (container && container.collapsed) {
@@ -70,33 +63,27 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
           }
         }
       }
-
       return Array.from(containersToExpand);
     },
     [visualizationState],
   );
-
   // Handle search input
   const handleSearch = useCallback(
     async (query: string) => {
       setIsSearching(true);
       setSearchQuery(query);
-
       try {
         // Perform search in VisualizationState
         const results = visualizationState.search(query);
         setSearchResults(results);
-
         if (results.length > 0) {
           // Find containers that need to be expanded to show search results
           const containersToExpand = findContainersToExpand(results);
-
           // Expand containers for search results
           for (const containerId of containersToExpand) {
             try {
               // Use search-specific expansion method
               visualizationState.expandContainerForSearch(containerId);
-
               // Notify parent component about container expansion
               if (onContainerExpansion) {
                 await onContainerExpansion(containerId);
@@ -108,7 +95,6 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
               );
             }
           }
-
           // Trigger layout update if containers were expanded
           if (containersToExpand.length > 0 && onLayoutUpdate) {
             onLayoutUpdate();
@@ -127,7 +113,6 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
       onLayoutUpdate,
     ],
   );
-
   // Handle search clear
   const handleClear = useCallback(() => {
     setSearchQuery("");
@@ -135,17 +120,14 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
     visualizationState.clearSearch();
     setIsSearching(false);
   }, [visualizationState]);
-
   // Handle search result selection
   const handleResultSelect = useCallback(
     (result: SearchResult) => {
       // Ensure the result is visible by expanding its containers if needed
       const containersToExpand = findContainersToExpand([result]);
-
       for (const containerId of containersToExpand) {
         try {
           visualizationState.expandContainerForSearch(containerId);
-
           if (onContainerExpansion) {
             onContainerExpansion(containerId);
           }
@@ -156,12 +138,10 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
           );
         }
       }
-
       // Trigger layout update if needed
       if (containersToExpand.length > 0 && onLayoutUpdate) {
         onLayoutUpdate();
       }
-
       // Notify parent component
       onSearchResultSelect(result);
     },
@@ -173,13 +153,11 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
       onSearchResultSelect,
     ],
   );
-
   // Update search results when VisualizationState changes
   useEffect(() => {
     // Force re-render when visualization state changes
     // This ensures search results stay in sync
   }, [visualizationState]);
-
   return (
     <Search
       onSearch={handleSearch}
@@ -195,5 +173,4 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
     />
   );
 };
-
 export default SearchIntegration;

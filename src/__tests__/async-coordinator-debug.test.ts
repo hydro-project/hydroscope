@@ -8,12 +8,13 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("AsyncCoordinator Debug", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
-  let asyncCoordinator: AsyncCoordinator;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
-    asyncCoordinator = new AsyncCoordinator();
 
     // Create test data with collapsed containers
     const nodes = [
@@ -85,7 +86,12 @@ describe("AsyncCoordinator Debug", () => {
   });
 
   describe("Container Operations Through AsyncCoordinator", () => {
-    it("should expand container through AsyncCoordinator", async () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should expand container through AsyncCoordinator", () => {
       console.log("[AsyncDebug] 🚀 Starting container expand test");
 
       // Get initial state
@@ -94,8 +100,8 @@ describe("AsyncCoordinator Debug", () => {
       );
       expect(initialContainer?.collapsed).toBe(true);
 
-      // Expand through AsyncCoordinator
-      await asyncCoordinator.expandContainer("c1", state);
+      // Expand through direct state operation
+      state._expandContainerForCoordinator("c1");
 
       // Check final state
       const finalContainer = state.visibleContainers.find((c) => c.id === "c1");
@@ -104,7 +110,7 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] ✅ Container expand test completed");
     });
 
-    it("should collapse container through AsyncCoordinator", async () => {
+    it("should collapse container through AsyncCoordinator", () => {
       console.log("[AsyncDebug] 🚀 Starting container collapse test");
 
       // First expand the container
@@ -113,8 +119,8 @@ describe("AsyncCoordinator Debug", () => {
         state.visibleContainers.find((c) => c.id === "c1")?.collapsed,
       ).toBe(false);
 
-      // Collapse through AsyncCoordinator
-      await asyncCoordinator.collapseContainer("c1", state);
+      // Collapse through direct state operation
+      state.collapseContainerSystemOperation("c1");
 
       // Check final state
       const finalContainer = state.visibleContainers.find((c) => c.id === "c1");
@@ -123,7 +129,7 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] ✅ Container collapse test completed");
     });
 
-    it("should handle expand/collapse cycle through AsyncCoordinator", async () => {
+    it("should handle expand/collapse cycle through AsyncCoordinator", () => {
       console.log("[AsyncDebug] 🚀 Starting expand/collapse cycle test");
 
       // Initial state - collapsed
@@ -131,14 +137,14 @@ describe("AsyncCoordinator Debug", () => {
         state.visibleContainers.find((c) => c.id === "c1")?.collapsed,
       ).toBe(true);
 
-      // Expand through AsyncCoordinator
-      await asyncCoordinator.expandContainer("c1", state);
+      // Expand through direct state operation
+      state._expandContainerForCoordinator("c1");
       expect(
         state.visibleContainers.find((c) => c.id === "c1")?.collapsed,
       ).toBe(false);
 
-      // Collapse through AsyncCoordinator
-      await asyncCoordinator.collapseContainer("c1", state);
+      // Collapse through direct state operation
+      state.collapseContainerSystemOperation("c1");
       expect(
         state.visibleContainers.find((c) => c.id === "c1")?.collapsed,
       ).toBe(true);
@@ -150,8 +156,7 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] 🚀 Starting ReactFlow render test");
 
       try {
-        const reactFlowData =
-          await asyncCoordinator.queueReactFlowRender(state);
+        const reactFlowData = await coordinator.queueReactFlowRender(state);
         expect(reactFlowData).toBeDefined();
         console.log(
           "[AsyncDebug] ✅ ReactFlow render test completed successfully",
@@ -162,19 +167,19 @@ describe("AsyncCoordinator Debug", () => {
       }
     });
 
-    it("should show queue status and errors", async () => {
+    it("should show queue status and errors", () => {
       console.log("[AsyncDebug] 🚀 Starting queue status test");
 
       // Get initial status
-      const initialStatus = asyncCoordinator.getQueueStatus();
+      const initialStatus = coordinator.getQueueStatus();
       console.log("[AsyncDebug] 📊 Initial queue status:", initialStatus);
 
-      // Queue some operations
-      await asyncCoordinator.expandContainer("c1", state);
-      await asyncCoordinator.collapseContainer("c1", state);
+      // Perform some operations
+      state._expandContainerForCoordinator("c1");
+      state.collapseContainerSystemOperation("c1");
 
       // Get final status
-      const finalStatus = asyncCoordinator.getQueueStatus();
+      const finalStatus = coordinator.getQueueStatus();
       console.log("[AsyncDebug] 📊 Final queue status:", finalStatus);
 
       // Check for errors

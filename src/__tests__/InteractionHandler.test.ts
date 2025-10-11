@@ -10,13 +10,18 @@ import {
 } from "../core/InteractionHandler.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { createTestContainer, createTestNode } from "../utils/testData.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("InteractionHandler Click Event Processing", () => {
+  let coordinator: AsyncCoordinator;
+
   let handler: InteractionHandler;
   let state: VisualizationState;
   let mockAsyncCoordinator: any;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     mockAsyncCoordinator = {
       queueLayoutUpdate: vi.fn(),
@@ -82,7 +87,11 @@ describe("InteractionHandler Click Event Processing", () => {
 
   describe("Container Click Handling", () => {
     it("should toggle container from expanded to collapsed", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
       state.addContainer(container);
       state.addNode(node);
@@ -95,7 +104,11 @@ describe("InteractionHandler Click Event Processing", () => {
     });
 
     it("should toggle container from collapsed to expanded", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
       state.addContainer(container);
       state.addNode(node);
@@ -110,7 +123,11 @@ describe("InteractionHandler Click Event Processing", () => {
     });
 
     it("should always trigger layout update for container clicks", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
       state.addContainer(container);
       state.addNode(node);
@@ -293,8 +310,16 @@ describe("InteractionHandler Click Event Processing", () => {
     });
 
     it("should handle bulk container toggle", () => {
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
 
@@ -351,7 +376,11 @@ describe("InteractionHandler Click Event Processing", () => {
 
   describe("Search Integration", () => {
     it("should expand containers for search result clicks", () => {
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
       state.addContainer(container);
       state.addNode(node);

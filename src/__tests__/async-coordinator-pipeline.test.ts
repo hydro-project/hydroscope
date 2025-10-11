@@ -10,14 +10,17 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { createTestNode } from "../utils/testData.js";
 
 describe("AsyncCoordinator Pipeline Sequencing", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let elkBridge: ELKBridge;
   let asyncCoordinator: AsyncCoordinator;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     elkBridge = new ELKBridge({
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
     });
     asyncCoordinator = new AsyncCoordinator();

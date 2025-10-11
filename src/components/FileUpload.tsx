@@ -2,14 +2,12 @@
  * FileUpload - React component for uploading and validating JSON files
  * Supports drag-and-drop and file selection with comprehensive validation
  */
-
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import type {
   HydroscopeData,
   ParseError,
   ValidationResult,
 } from "../types/core.js";
-
 export interface FileUploadProps {
   /** Callback when file is successfully parsed */
   onFileLoaded?: (data: HydroscopeData, filename: string) => void;
@@ -28,7 +26,6 @@ export interface FileUploadProps {
   /** Show detailed error messages */
   showDetailedErrors?: boolean;
 }
-
 export interface FileUploadState {
   isDragOver: boolean;
   isProcessing: boolean;
@@ -36,7 +33,6 @@ export interface FileUploadState {
   lastSuccess: string | null;
   uploadProgress: number;
 }
-
 export const FileUpload: React.FC<FileUploadProps> = ({
   onFileLoaded,
   onParseError,
@@ -54,16 +50,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     lastSuccess: null,
     uploadProgress: 0,
   });
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(true);
-
   useEffect(() => {
     return () => {
       mountedRef.current = false;
     };
   }, []);
-
   const safeSetState = useCallback(
     (updater: React.SetStateAction<FileUploadState>) => {
       if (mountedRef.current) {
@@ -72,7 +65,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     },
     [],
   );
-
   // Debug logging helper
   const debugLog = useCallback(
     (message: string, data?: any) => {
@@ -82,12 +74,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     },
     [debug],
   );
-
   // Validate file before processing
   const validateFile = useCallback(
     (file: File): ValidationResult[] => {
       const errors: ValidationResult[] = [];
-
       // Check file type
       const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
       if (!acceptedTypes.includes(fileExtension)) {
@@ -98,7 +88,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           context: { filename: file.name, extension: fileExtension },
         });
       }
-
       // Check file size
       if (file.size > maxFileSize) {
         errors.push({
@@ -112,7 +101,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           },
         });
       }
-
       // Check if file is empty
       if (file.size === 0) {
         errors.push({
@@ -122,17 +110,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           context: { filename: file.name },
         });
       }
-
       return errors;
     },
     [acceptedTypes, maxFileSize],
   );
-
   // Validate JSON structure
   const validateJSONStructure = useCallback(
     (data: any, filename: string): ValidationResult[] => {
       const errors: ValidationResult[] = [];
-
       // Check if it's an object
       if (typeof data !== "object" || data === null || Array.isArray(data)) {
         errors.push({
@@ -143,7 +128,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         });
         return errors;
       }
-
       // Check required top-level properties
       const requiredProps = ["nodes", "edges"];
       for (const prop of requiredProps) {
@@ -156,7 +140,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           });
         }
       }
-
       // Validate nodes array
       if ("nodes" in data) {
         if (!Array.isArray(data.nodes)) {
@@ -183,7 +166,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               });
               return;
             }
-
             // Check required node properties
             const requiredNodeProps = ["id"];
             for (const prop of requiredNodeProps) {
@@ -196,7 +178,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 });
               }
             }
-
             // Validate node ID is string
             if ("id" in node && typeof node.id !== "string") {
               errors.push({
@@ -215,7 +196,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           });
         }
       }
-
       // Validate edges array
       if ("edges" in data) {
         if (!Array.isArray(data.edges)) {
@@ -242,7 +222,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               });
               return;
             }
-
             // Check required edge properties
             const requiredEdgeProps = ["id", "source", "target"];
             for (const prop of requiredEdgeProps) {
@@ -258,7 +237,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           });
         }
       }
-
       // Validate hierarchyChoices if present
       if ("hierarchyChoices" in data) {
         if (!Array.isArray(data.hierarchyChoices)) {
@@ -284,7 +262,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               });
               return;
             }
-
             // Check required hierarchy choice properties
             const requiredChoiceProps = ["id", "name"];
             for (const prop of requiredChoiceProps) {
@@ -300,7 +277,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           });
         }
       }
-
       // Run custom validation if provided
       if (customValidator) {
         try {
@@ -318,12 +294,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           });
         }
       }
-
       return errors;
     },
     [customValidator],
   );
-
   // Process uploaded file
   const processFile = useCallback(
     async (file: File) => {
@@ -332,7 +306,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         size: file.size,
         type: file.type,
       });
-
       safeSetState((prev) => ({
         ...prev,
         isProcessing: true,
@@ -340,7 +313,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         lastSuccess: null,
         uploadProgress: 0,
       }));
-
       try {
         // Validate file
         const fileErrors = validateFile(file);
@@ -356,10 +328,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }));
           return;
         }
-
         // Update progress
         safeSetState((prev) => ({ ...prev, uploadProgress: 25 }));
-
         // Read file content
         const fileContent = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -373,10 +343,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           reader.onerror = () => reject(new Error("File reading failed"));
           reader.readAsText(file);
         });
-
         // Update progress
         safeSetState((prev) => ({ ...prev, uploadProgress: 50 }));
-
         // Parse JSON
         let parsedData: any;
         try {
@@ -400,10 +368,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }));
           return;
         }
-
         // Update progress
         safeSetState((prev) => ({ ...prev, uploadProgress: 75 }));
-
         // Validate JSON structure
         const structureErrors = validateJSONStructure(parsedData, file.name);
         if (structureErrors.length > 0) {
@@ -418,10 +384,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }));
           return;
         }
-
         // Update progress
         safeSetState((prev) => ({ ...prev, uploadProgress: 100 }));
-
         // Success - convert to HydroscopeData format
         const hydroscopeData: HydroscopeData = {
           nodes: parsedData.nodes || [],
@@ -433,17 +397,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           legend: parsedData.legend,
           styles: parsedData.styles,
         };
-
         debugLog("File processed successfully", {
           nodeCount: hydroscopeData.nodes.length,
           edgeCount: hydroscopeData.edges.length,
           hierarchyChoicesCount: hydroscopeData.hierarchyChoices.length,
         });
-
         if (onFileLoaded) {
           onFileLoaded(hydroscopeData, file.name);
         }
-
         safeSetState((prev) => ({
           ...prev,
           isProcessing: false,
@@ -478,18 +439,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       safeSetState,
     ],
   );
-
   // Handle file selection
   const handleFileSelect = useCallback(
     (files: FileList | null) => {
       if (!files || files.length === 0) return;
-
       const file = files[0];
       processFile(file);
     },
     [processFile],
   );
-
   // Handle drag events
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
@@ -499,7 +457,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     },
     [safeSetState],
   );
-
   const handleDragLeave = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -508,25 +465,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     },
     [safeSetState],
   );
-
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       safeSetState((prev) => ({ ...prev, isDragOver: false }));
-
       const files = e.dataTransfer.files;
       handleFileSelect(files);
     },
     [handleFileSelect, safeSetState],
   );
-
   // Handle click to open file dialog
   const handleClick = useCallback(() => {
     if (state.isProcessing) return;
     fileInputRef.current?.click();
   }, [state.isProcessing]);
-
   // Handle input change
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -534,7 +487,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     },
     [handleFileSelect],
   );
-
   return (
     <div className="hydroscope-file-upload">
       <div
@@ -732,5 +684,4 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     </div>
   );
 };
-
 export default FileUpload;

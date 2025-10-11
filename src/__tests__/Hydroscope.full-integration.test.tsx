@@ -6,19 +6,21 @@
  * Focuses on component coordination and user workflows
  */
 
-import React, { useRef } from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import React from "react";
+import { render, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { Hydroscope } from "../components/Hydroscope.js";
 import { JSONParser } from "../utils/JSONParser.js";
-import type { HydroscopeData, RenderConfig } from "../types/core.js";
+import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Load actual paxos.json test data
 let paxosData: HydroscopeData;
 
 beforeEach(async () => {
+  const coordinator = new AsyncCoordinator();
   // Load paxos.json from test-data directory
   try {
     const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");
@@ -230,7 +232,7 @@ describe("Full Hydroscope Component Integration Tests", () => {
           onNodeClick={onNodeClick}
           onContainerCollapse={onContainerCollapse}
           onContainerExpand={onContainerExpand}
-          initialLayoutAlgorithm="mrtree"
+          initialLayoutAlgorithm="layered"
           initialColorPalette="Set1"
         />,
       );
@@ -294,7 +296,7 @@ describe("Full Hydroscope Component Integration Tests", () => {
       expect(document.querySelector(".hydroscope")).toBeInTheDocument();
 
       // Simulate successful file upload by calling onFileUpload directly
-      const mockFile = new File(
+      const _mockFile = new File(
         [JSON.stringify(paxosData)],
         "test-paxos.json",
         {

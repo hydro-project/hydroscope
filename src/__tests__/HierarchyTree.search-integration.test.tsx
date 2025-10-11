@@ -10,13 +10,17 @@ import { describe, it, expect, vi } from "vitest";
 import { HierarchyTree } from "../components/HierarchyTree";
 import { VisualizationState } from "../core/VisualizationState";
 import type { SearchResult } from "../types/core";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("HierarchyTree Search Integration", () => {
+  let coordinator: AsyncCoordinator;
+
   let visualizationState: VisualizationState;
   let mockOnToggleContainer: ReturnType<typeof vi.fn>;
   let mockOnElementNavigation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
     mockOnToggleContainer = vi.fn();
     mockOnElementNavigation = vi.fn();

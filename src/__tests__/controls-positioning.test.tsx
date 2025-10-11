@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { vi } from "vitest";
 import { Hydroscope } from "../components/Hydroscope.js";
 
@@ -30,7 +30,7 @@ vi.mock("@xyflow/react", () => ({
   Background: () => <div data-testid="background" />,
   Controls: ({ children, ...props }: any) => (
     <div
-      data-testid="reactflow-controls"
+      data-testid="controls"
       className="react-flow__controls"
       style={{
         position: "absolute",

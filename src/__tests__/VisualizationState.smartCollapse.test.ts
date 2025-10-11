@@ -6,12 +6,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { createTestContainer, createTestNode } from "../utils/testData.js";
-import { LAYOUT_CONSTANTS } from "../shared/config.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Smart Collapse Prevention", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
@@ -41,6 +44,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
   });
 
   describe("User Operation Prevention", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should disable smart collapse after user container operations", () => {
       // Initially should run smart collapse
       expect(state.shouldRunSmartCollapse()).toBe(true);
@@ -52,9 +60,13 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
 
-    it("should prevent smart collapse after user expands containers", () => {
+    it("should prevent smart collapse after user expands containers", async () => {
       // Set up test data
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
@@ -65,7 +77,9 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User expands container
-      state._expandContainerForCoordinator("container1");
+      await coordinator.expandContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // This should disable smart collapse for future layouts
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -75,9 +89,13 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
 
-    it("should prevent smart collapse after user collapses containers", () => {
+    it("should prevent smart collapse after user collapses containers", async () => {
       // Set up test data
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
@@ -86,16 +104,30 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User collapses container
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // This should disable smart collapse for future layouts
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
 
-    it("should prevent smart collapse after bulk container operations", () => {
+    it("should prevent smart collapse after bulk container operations", async () => {
       // Set up test data
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
 
@@ -107,7 +139,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User performs bulk operation
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // This should disable smart collapse
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -116,7 +148,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       state.resetSmartCollapseState(); // Reset for test
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
   });
@@ -124,7 +156,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
   describe("Search Operation Prevention", () => {
     it("should prevent smart collapse after search expands containers", () => {
       // Set up test data with collapsed container
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "searchable node");
 
       state.addContainer(container);
@@ -220,17 +256,25 @@ describe("VisualizationState Smart Collapse Prevention", () => {
   describe("Smart Collapse Implementation", () => {
     it("should perform smart collapse on containers with many children", () => {
       // Create containers with different child counts
-      const smallContainer = createTestContainer("small", ["node1", "node2"]);
-      const largeContainer = createTestContainer("large", [
-        "node3",
-        "node4",
-        "node5",
-        "node6",
-        "node7",
-        "node8",
-        "node9",
-        "node10",
-      ]);
+      const smallContainer = createTestContainer(
+        "small",
+        ["node1", "node2"],
+        "Container small",
+      );
+      const largeContainer = createTestContainer(
+        "large",
+        [
+          "node3",
+          "node4",
+          "node5",
+          "node6",
+          "node7",
+          "node8",
+          "node9",
+          "node10",
+        ],
+        "Container large",
+      );
 
       // Add test nodes
       for (let i = 1; i <= 10; i++) {
@@ -262,13 +306,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     });
 
     it("should not perform smart collapse when disabled", () => {
-      const largeContainer = createTestContainer("large", [
-        "node1",
-        "node2",
-        "node3",
-        "node4",
-        "node5",
-      ]);
+      const largeContainer = createTestContainer(
+        "large",
+        ["node1", "node2", "node3", "node4", "node5"],
+        "Container large",
+      );
 
       for (let i = 1; i <= 5; i++) {
         state.addNode(createTestNode(`node${i}`));
@@ -285,13 +327,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     });
 
     it("should not perform smart collapse after first layout", () => {
-      const largeContainer = createTestContainer("large", [
-        "node1",
-        "node2",
-        "node3",
-        "node4",
-        "node5",
-      ]);
+      const largeContainer = createTestContainer(
+        "large",
+        ["node1", "node2", "node3", "node4", "node5"],
+        "Container large",
+      );
 
       for (let i = 1; i <= 5; i++) {
         state.addNode(createTestNode(`node${i}`));
@@ -311,11 +351,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
   describe("Cost Calculation", () => {
     it("should calculate expansion cost correctly for containers with nodes only", () => {
       // Create container with 3 nodes
-      const container = createTestContainer("container1", [
-        "node1",
-        "node2",
-        "node3",
-      ]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2", "node3"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3");
@@ -338,12 +378,16 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should calculate expansion cost correctly for containers with mixed children", () => {
       // Create container with 2 nodes and 1 child container
-      const childContainer = createTestContainer("child", ["node3"]);
-      const parentContainer = createTestContainer("parent", [
-        "node1",
-        "node2",
+      const childContainer = createTestContainer(
         "child",
-      ]);
+        ["node3"],
+        "Container child",
+      );
+      const parentContainer = createTestContainer(
+        "parent",
+        ["node1", "node2", "child"],
+        "Container parent",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3");
@@ -372,7 +416,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     });
 
     it("should return 0 for empty containers", () => {
-      const emptyContainer = createTestContainer("empty", []);
+      const emptyContainer = createTestContainer(
+        "empty",
+        [],
+        "Container empty",
+      );
       state.addContainer(emptyContainer);
 
       const cost = state.calculateExpansionCost("empty");
@@ -381,12 +429,21 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should calculate cost for deeply nested container structures", () => {
       // Create a 3-level hierarchy: grandparent -> parent -> child
-      const childContainer = createTestContainer("child", ["node1", "node2"]);
-      const parentContainer = createTestContainer("parent", ["node3", "child"]);
-      const grandparentContainer = createTestContainer("grandparent", [
-        "node4",
+      const childContainer = createTestContainer(
+        "child",
+        ["node1", "node2"],
+        "Container child",
+      );
+      const parentContainer = createTestContainer(
         "parent",
-      ]);
+        ["node3", "child"],
+        "Container parent",
+      );
+      const grandparentContainer = createTestContainer(
+        "grandparent",
+        ["node4", "parent"],
+        "Container grandparent",
+      );
 
       // Add containers in dependency order
       state.addContainer(childContainer);
@@ -434,13 +491,21 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     it("should respect budget limits when expanding containers", () => {
       // Create containers with known costs
       // Budget is 25,000, so we need containers that exceed this when combined
-      const smallContainer = createTestContainer("small", ["node1"]); // Cost: 10,800
-      const mediumContainer = createTestContainer("medium", ["node2", "node3"]); // Cost: 21,600
-      const largeContainer = createTestContainer("large", [
-        "node4",
-        "node5",
-        "node6",
-      ]); // Cost: 32,400
+      const smallContainer = createTestContainer(
+        "small",
+        ["node1"],
+        "Container small",
+      ); // Cost: 10,800
+      const mediumContainer = createTestContainer(
+        "medium",
+        ["node2", "node3"],
+        "Container medium",
+      ); // Cost: 21,600
+      const largeContainer = createTestContainer(
+        "large",
+        ["node4", "node5", "node6"],
+        "Container large",
+      ); // Cost: 32,400
 
       // Add containers and nodes
       state.addContainer(smallContainer);
@@ -463,9 +528,21 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should expand multiple containers within budget", () => {
       // Create containers that fit within budget when combined
-      const container1 = createTestContainer("container1", ["node1"]); // Cost: 10,800
-      const container2 = createTestContainer("container2", ["node2"]); // Cost: 10,800
-      const container3 = createTestContainer("container3", ["node3"]); // Cost: 10,800
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      ); // Cost: 10,800
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      ); // Cost: 10,800
+      const container3 = createTestContainer(
+        "container3",
+        ["node3"],
+        "Container container3",
+      ); // Cost: 10,800
 
       // Add containers and nodes
       state.addContainer(container1);
@@ -510,12 +587,16 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should prioritize lowest-cost containers for expansion", () => {
       // Create containers with different costs
-      const cheapContainer = createTestContainer("cheap", ["node1"]); // Cost: 10,800
-      const expensiveContainer = createTestContainer("expensive", [
-        "node2",
-        "node3",
-        "node4",
-      ]); // Cost: 32,400
+      const cheapContainer = createTestContainer(
+        "cheap",
+        ["node1"],
+        "Container cheap",
+      ); // Cost: 10,800
+      const expensiveContainer = createTestContainer(
+        "expensive",
+        ["node2", "node3", "node4"],
+        "Container expensive",
+      ); // Cost: 32,400
 
       state.addContainer(cheapContainer);
       state.addContainer(expensiveContainer);
@@ -534,8 +615,16 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should handle hierarchical container expansion within budget", () => {
       // Create nested structure where parent expansion reveals child containers
-      const childContainer = createTestContainer("child", ["node1"]); // Cost: 10,800
-      const parentContainer = createTestContainer("parent", ["node2", "child"]); // Cost: 40,800
+      const childContainer = createTestContainer(
+        "child",
+        ["node1"],
+        "Container child",
+      ); // Cost: 10,800
+      const parentContainer = createTestContainer(
+        "parent",
+        ["node2", "child"],
+        "Container parent",
+      ); // Cost: 40,800
 
       state.addContainer(childContainer);
       state.addContainer(parentContainer);
@@ -554,11 +643,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     it("should handle empty budget scenario", () => {
       // Create containers where even the smallest exceeds budget
       // This tests the edge case where budget is very restrictive
-      const container = createTestContainer("container", [
-        "node1",
-        "node2",
-        "node3",
-      ]); // Cost: 32,400
+      const container = createTestContainer(
+        "container",
+        ["node1", "node2", "node3"],
+        "Container container",
+      ); // Cost: 32,400
 
       state.addContainer(container);
       for (let i = 1; i <= 3; i++) {
@@ -578,9 +667,13 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     it("should handle flat container structure with budget constraints", () => {
       // Create multiple root-level containers
       const containers = [
-        createTestContainer("root1", ["node1", "node2"]), // Cost: 21,600
-        createTestContainer("root2", ["node3"]), // Cost: 10,800
-        createTestContainer("root3", ["node4", "node5", "node6"]), // Cost: 32,400
+        createTestContainer("root1", ["node1", "node2"], "Container root1"), // Cost: 21,600
+        createTestContainer("root2", ["node3"], "Container root2"), // Cost: 10,800
+        createTestContainer(
+          "root3",
+          ["node4", "node5", "node6"],
+          "Container root3",
+        ), // Cost: 32,400
       ];
 
       containers.forEach((container) => state.addContainer(container));
@@ -600,10 +693,26 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should handle deep hierarchical structure with budget constraints", () => {
       // Create 4-level deep hierarchy
-      const level4 = createTestContainer("level4", ["node1"]);
-      const level3 = createTestContainer("level3", ["node2", "level4"]);
-      const level2 = createTestContainer("level2", ["node3", "level3"]);
-      const level1 = createTestContainer("level1", ["node4", "level2"]);
+      const level4 = createTestContainer(
+        "level4",
+        ["node1"],
+        "Container level4",
+      );
+      const level3 = createTestContainer(
+        "level3",
+        ["node2", "level4"],
+        "Container level3",
+      );
+      const level2 = createTestContainer(
+        "level2",
+        ["node3", "level3"],
+        "Container level2",
+      );
+      const level1 = createTestContainer(
+        "level1",
+        ["node4", "level2"],
+        "Container level1",
+      );
 
       // Add in dependency order
       state.addContainer(level4);
@@ -628,9 +737,21 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should handle mixed structure with both flat and hierarchical containers", () => {
       // Create mixed structure: some flat, some hierarchical
-      const flatContainer = createTestContainer("flat", ["node1"]); // Cost: 10,800
-      const childContainer = createTestContainer("child", ["node2"]); // Cost: 10,800
-      const parentContainer = createTestContainer("parent", ["node3", "child"]); // Cost: 40,800
+      const flatContainer = createTestContainer(
+        "flat",
+        ["node1"],
+        "Container flat",
+      ); // Cost: 10,800
+      const childContainer = createTestContainer(
+        "child",
+        ["node2"],
+        "Container child",
+      ); // Cost: 10,800
+      const parentContainer = createTestContainer(
+        "parent",
+        ["node3", "child"],
+        "Container parent",
+      ); // Cost: 40,800
 
       state.addContainer(flatContainer);
       state.addContainer(childContainer);
@@ -652,9 +773,21 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should handle containers with only child containers (no direct nodes)", () => {
       // Create containers that only contain other containers
-      const leafContainer1 = createTestContainer("leaf1", ["node1", "node2"]);
-      const leafContainer2 = createTestContainer("leaf2", ["node3"]);
-      const branchContainer = createTestContainer("branch", ["leaf1", "leaf2"]);
+      const leafContainer1 = createTestContainer(
+        "leaf1",
+        ["node1", "node2"],
+        "Container leaf1",
+      );
+      const leafContainer2 = createTestContainer(
+        "leaf2",
+        ["node3"],
+        "Container leaf2",
+      );
+      const branchContainer = createTestContainer(
+        "branch",
+        ["leaf1", "leaf2"],
+        "Container branch",
+      );
 
       state.addContainer(leafContainer1);
       state.addContainer(leafContainer2);
@@ -676,12 +809,16 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should handle containers with mixed node and container children", () => {
       // Create containers with both nodes and child containers
-      const childContainer = createTestContainer("child", ["node1"]);
-      const mixedContainer = createTestContainer("mixed", [
-        "node2",
-        "node3",
+      const childContainer = createTestContainer(
         "child",
-      ]);
+        ["node1"],
+        "Container child",
+      );
+      const mixedContainer = createTestContainer(
+        "mixed",
+        ["node2", "node3", "child"],
+        "Container mixed",
+      );
 
       state.addContainer(childContainer);
       state.addContainer(mixedContainer);
@@ -722,9 +859,18 @@ describe("VisualizationState Smart Collapse Prevention", () => {
   });
 
   describe("Integration with Container Operations", () => {
-    it("should automatically disable smart collapse when user toggles containers", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should automatically disable smart collapse when user toggles containers", async () => {
       // Set up test data
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
@@ -732,15 +878,22 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
-      // User toggles container (this should be a user operation)
-      state._toggleContainerForCoordinator("container1");
+      // User toggles container (this should be a user operation through AsyncCoordinator)
+      // Since container is initially expanded, collapse it as a user operation
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       // Smart collapse should be disabled
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
 
-    it("should track user vs system operations", () => {
-      const container = createTestContainer("container1", ["node1"]);
+    it("should track user vs system operations", async () => {
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1");
 
       state.addContainer(container);
@@ -753,7 +906,13 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User operation should disable smart collapse
-      state._collapseContainerForCoordinator("container1"); // This is a user operation
+      await coordinator.collapseContainer(
+        "container1",
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      ); // This is a user operation
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
   });

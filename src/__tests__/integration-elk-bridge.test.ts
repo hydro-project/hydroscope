@@ -13,19 +13,36 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import {
-  loadPaxosTestData,
   createTestNode,
   createTestEdge,
   createTestContainer,
 } from "../utils/testData.js";
+import { JSONParser } from "../utils/JSONParser.js";
+import type { HydroscopeData } from "../types/core.js";
+import fs from "fs";
+import path from "path";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { LayoutConfig, ELKNode } from "../types/core.js";
 
 describe("VisualizationState + ELKBridge Integration", () => {
+  let coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let bridge: ELKBridge;
   let defaultConfig: LayoutConfig;
 
+  // Helper function to load paxos test data
+  const loadPaxosTestData = async (): Promise<VisualizationState> => {
+    const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");
+    const paxosJson = fs.readFileSync(paxosPath, "utf-8");
+    const paxosData = JSON.parse(paxosJson) as HydroscopeData;
+
+    const parser = JSONParser.createPaxosParser({ debug: false });
+    const result = await parser.parseData(paxosData);
+    return result.visualizationState;
+  };
+
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     defaultConfig = {
       algorithm: "mrtree",
@@ -38,26 +55,9 @@ describe("VisualizationState + ELKBridge Integration", () => {
   });
 
   describe("Complete Layout Pipeline with Paxos.json", () => {
-    it("should process complete paxos.json layout pipeline successfully", () => {
+    it("should process complete paxos.json layout pipeline successfully", async () => {
       // Load paxos.json test data
-      const paxosData = loadPaxosTestData();
-
-      // Add all data to state
-      for (const node of paxosData.nodes) {
-        state.addNode(node);
-      }
-      for (const edge of paxosData.edges) {
-        state.addEdge(edge);
-      }
-      for (const container of paxosData.containers) {
-        state.addContainer(container);
-        // Move nodes to containers
-        for (const childId of container.children) {
-          if (state.getGraphNode(childId)) {
-            state.assignNodeToContainer(childId, container.id);
-          }
-        }
-      }
+      state = await loadPaxosTestData();
 
       // Verify initial state
       expect(state.visibleNodes.length).toBeGreaterThan(0);
@@ -80,11 +80,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("mrtree");
       expect(elkGraph.layoutOptions!["elk.direction"]).toBe("DOWN");
 
-      // Simulate ELK layout results
-      const elkResult = createMockELKResult(elkGraph);
-
-      // Apply layout results back to state
-      bridge.applyLayout(state, elkResult);
+      // Perform actual ELK layout
+      await bridge.layout(state);
 
       // Verify positions were applied
       for (const node of state.visibleNodes) {
@@ -109,7 +106,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(state.getLayoutState().phase).toBe("ready");
     });
 
-    it("should handle empty paxos.json gracefully", () => {
+    it("should handle empty paxos.json gracefully", async () => {
       // Test with minimal data when paxos.json is not available
       const node1 = createTestNode("n1", "Test Node 1");
       const node2 = createTestNode("n2", "Test Node 2");
@@ -126,9 +123,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(elkGraph.children).toHaveLength(2);
       expect(elkGraph.edges).toHaveLength(1);
 
-      // Apply mock layout
-      const elkResult = createMockELKResult(elkGraph);
-      bridge.applyLayout(state, elkResult);
+      // Perform actual ELK layout
+      await bridge.layout(state);
 
       // Verify layout was applied
       expect(state.getLayoutState().phase).toBe("ready");
@@ -186,7 +182,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       state.addEdge(edge2);
     });
 
-    it("should generate different ELK graphs for expanded vs collapsed containers", () => {
+    it("should generate different ELK graphs for expanded vs collapsed containers", async () => {
       // Test expanded container
       state._expandContainerForCoordinator("c1");
       const expandedElkGraph = bridge.toELKGraph(state);
@@ -221,7 +217,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       );
     });
 
-    it("should handle container toggle operations correctly", () => {
+    it("should handle container toggle operations correctly", async () => {
       // Start with expanded container
       state._expandContainerForCoordinator("c1");
       let elkGraph = bridge.toELKGraph(state);
@@ -256,7 +252,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(reExpandedContainer?.position).toBeDefined();
     });
 
-    it("should handle bulk container operations", () => {
+    it("should handle bulk container operations", async () => {
       // Add more containers for bulk testing
       const container2 = createTestContainer("c2", ["n3"], "Container 2");
       state.addContainer(container2);
@@ -339,11 +335,11 @@ describe("VisualizationState + ELKBridge Integration", () => {
       state.addEdge(edge2);
     });
 
-    it("should apply algorithm changes to ELK graph", () => {
+    it("should apply algorithm changes to ELK graph", async () => {
       // Test layered algorithm
-      bridge.updateConfiguration({ algorithm: "layered" });
+      bridge.updateConfiguration({ algorithm: "mrtree" });
       let elkGraph = bridge.toELKGraph(state);
-      expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("layered");
+      expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("mrtree");
 
       // Test force algorithm
       bridge.updateConfiguration({ algorithm: "force" });
@@ -356,7 +352,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(elkGraph.layoutOptions!["elk.algorithm"]).toBe("stress");
     });
 
-    it("should apply direction changes to ELK graph", () => {
+    it("should apply direction changes to ELK graph", async () => {
       // Test different directions
       const directions = ["UP", "DOWN", "LEFT", "RIGHT"] as const;
 
@@ -367,7 +363,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       }
     });
 
-    it("should apply spacing changes to ELK graph", () => {
+    it("should apply spacing changes to ELK graph", async () => {
       // Test node spacing - need to clear spacing to use nodeSpacing
       bridge.updateConfiguration({ spacing: undefined, nodeSpacing: 30 });
       let elkGraph = bridge.toELKGraph(state);
@@ -386,7 +382,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(elkGraph.layoutOptions!["elk.spacing.edgeNode"]).toBe("15");
     });
 
-    it("should apply performance optimizations based on graph size", () => {
+    it("should apply performance optimizations based on graph size", async () => {
       // Create a large graph to trigger optimizations
       for (let i = 0; i < 150; i++) {
         state.addNode(createTestNode(`large_n${i}`, `Large Node ${i}`));
@@ -411,7 +407,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(hints!.nodeCount).toBeGreaterThan(100);
     });
 
-    it("should handle custom ELK options", () => {
+    it("should handle custom ELK options", async () => {
       const customOptions = {
         "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
         "elk.stress.epsilon": "0.1",
@@ -426,7 +422,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(elkGraph.layoutOptions!["elk.stress.epsilon"]).toBe("0.1");
     });
 
-    it("should reset configuration to defaults", () => {
+    it("should reset configuration to defaults", async () => {
       // Change configuration
       bridge.updateConfiguration({
         algorithm: "force",
@@ -453,8 +449,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       state.addNode(node2);
     });
 
-    it("should handle invalid ELK results gracefully", () => {
-      const elkGraph = bridge.toELKGraph(state);
+    it("should handle invalid ELK results gracefully", async () => {
+      const _elkGraph = bridge.toELKGraph(state);
 
       // Test with invalid ELK result - missing position
       const invalidResult = {
@@ -474,8 +470,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(state.getLayoutState().phase).toBe("error");
     });
 
-    it("should handle non-finite position values", () => {
-      const elkGraph = bridge.toELKGraph(state);
+    it("should handle non-finite position values", async () => {
+      const _elkGraph = bridge.toELKGraph(state);
 
       // Test with NaN values
       const invalidResult = {
@@ -492,8 +488,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(state.getLayoutState().phase).toBe("error");
     });
 
-    it("should handle negative dimensions", () => {
-      const elkGraph = bridge.toELKGraph(state);
+    it("should handle negative dimensions", async () => {
+      const _elkGraph = bridge.toELKGraph(state);
 
       // Test with negative dimensions
       const invalidResult = {
@@ -510,8 +506,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(state.getLayoutState().phase).toBe("error");
     });
 
-    it("should recover from errors on subsequent valid layouts", () => {
-      const elkGraph = bridge.toELKGraph(state);
+    it("should recover from errors on subsequent valid layouts", async () => {
+      const _elkGraph = bridge.toELKGraph(state);
 
       // First, cause an error
       const invalidResult = {
@@ -546,8 +542,8 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(node2?.position).toEqual({ x: 250, y: 150 });
     });
 
-    it("should ignore layout results for non-existent elements", () => {
-      const elkGraph = bridge.toELKGraph(state);
+    it("should ignore layout results for non-existent elements", async () => {
+      const _elkGraph = bridge.toELKGraph(state);
 
       // Include result for non-existent node
       const resultWithUnknown = {
@@ -569,7 +565,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(node1?.position).toEqual({ x: 100, y: 50 });
     });
 
-    it("should validate configuration changes", () => {
+    it("should validate configuration changes", async () => {
       // Test invalid algorithm
       expect(() => {
         bridge.updateConfiguration({ algorithm: "invalid" as any });
@@ -588,7 +584,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
   });
 
   describe("Performance and Complexity Analysis", () => {
-    it("should analyze layout complexity correctly", () => {
+    it("should analyze layout complexity correctly", async () => {
       // Small graph
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
@@ -614,7 +610,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       expect(largeAnalysis.recommendations.length).toBeGreaterThan(0);
     });
 
-    it("should generate appropriate performance hints", () => {
+    it("should generate appropriate performance hints", async () => {
       // Create medium-sized graph
       for (let i = 0; i < 50; i++) {
         state.addNode(createTestNode(`n${i}`, `Node ${i}`));

@@ -20,9 +20,12 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { LayoutConfig, StyleConfig } from "../types/core.js";
 
 describe("End-to-End Integration: Complete Data Flow", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let elkBridge: ELKBridge;
   let reactFlowBridge: ReactFlowBridge;
@@ -31,10 +34,11 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   let styleConfig: StyleConfig;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     layoutConfig = {
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
       spacing: 50,
       nodeSpacing: 20,
@@ -181,7 +185,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
       const node3 = createTestNode("n3", "Node 3");
-      const container = createTestContainer("c1", ["n1", "n2"], "Container 1");
+      const container = createTestContainer("c1", ["n1", "n2"], "Container c1");
       const edge1 = createTestEdge("e1", "n1", "n2");
       const edge2 = createTestEdge("e2", "n2", "n3");
 
@@ -247,14 +251,25 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   });
 
   describe("Container Operations Through Complete Pipeline", () => {
+    let coordinator: AsyncCoordinator;
+
     beforeEach(() => {
+      coordinator = new AsyncCoordinator();
       // Set up test data with containers
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
       const node3 = createTestNode("n3", "Node 3");
       const node4 = createTestNode("n4", "Node 4");
-      const container1 = createTestContainer("c1", ["n1", "n2"], "Container 1");
-      const container2 = createTestContainer("c2", ["n3", "n4"], "Container 2");
+      const container1 = createTestContainer(
+        "c1",
+        ["n1", "n2"],
+        "Container c1",
+      );
+      const container2 = createTestContainer(
+        "c2",
+        ["n3", "n4"],
+        "Container c2",
+      );
       const edge1 = createTestEdge("e1", "n1", "n3");
       const edge2 = createTestEdge("e2", "n2", "n4");
 
@@ -274,7 +289,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle container expand/collapse through complete pipeline", async () => {
       // Initial state - both containers expanded
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // Run through pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -302,7 +317,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       expect(originalEdges.length).toBe(2);
 
       // Collapse all containers
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Run through pipeline again
       elkGraph = elkBridge.toELKGraph(state);
@@ -333,10 +348,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle individual container toggle through pipeline", async () => {
       // Start with all expanded
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // Toggle one container
-      state._collapseContainerForCoordinator("c1");
+      await coordinator.collapseContainer("c1", state, { triggerLayout: false });
 
       // Run through pipeline
       const elkGraph = elkBridge.toELKGraph(state);
@@ -380,7 +395,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       });
 
       // Start with expanded containers
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
 
       // Run initial pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -449,7 +464,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   });
 
   describe("Search Operations Through Complete Pipeline", () => {
+    let coordinator: AsyncCoordinator;
+
     beforeEach(() => {
+      coordinator = new AsyncCoordinator();
       // Set up searchable test data
       const node1 = createTestNode("search_node_1", "Searchable Node 1");
       const node2 = createTestNode("search_node_2", "Another Node");
@@ -471,7 +489,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle search operations affecting rendering", async () => {
       // Start with container collapsed
-      state._collapseContainerForCoordinator("search_container");
+      await coordinator.collapseContainer("search_container", state, { triggerLayout: false });
 
       // Run initial pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -503,7 +521,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       expect(searchResults.length).toBeGreaterThan(0);
 
       // Manually expand container to show search results (simulating search expansion)
-      state.expandContainerForSearch("search_container");
+      await coordinator.expandContainer("search_container", state, { triggerLayout: false });
       const expandedContainer = state.getContainer("search_container");
       expect(expandedContainer?.collapsed).toBe(false);
 
@@ -545,7 +563,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       await elkBridge.layout(state);
 
-      let reactFlowData = reactFlowBridge.toReactFlowData(
+      let _reactFlowData = reactFlowBridge.toReactFlowData(
         state,
         interactionHandler,
       );
@@ -564,7 +582,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       await elkBridge.layout(state);
 
-      reactFlowData = reactFlowBridge.toReactFlowData(
+      _reactFlowData = reactFlowBridge.toReactFlowData(
         state,
         interactionHandler,
       );
@@ -638,6 +656,11 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   });
 
   describe("Performance Validation", () => {
+    let coordinator: AsyncCoordinato;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle large datasets through complete pipeline efficiently", async () => {
       // Create a moderately large dataset
       const nodeCount = 100;
@@ -748,7 +771,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       const startTime = Date.now();
 
       // Expand all
-      state._expandAllContainersForCoordinator();
+      await coordinator.expandAllContainers(state, { triggerLayout: false });
       let elkGraph = elkBridge.toELKGraph(state);
       let elkResult = createMockELKResult(elkGraph);
       elkBridge.applyLayout(state, elkResult);
@@ -762,7 +785,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       );
 
       // Collapse all
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
       elkGraph = elkBridge.toELKGraph(state);
       elkResult = createMockELKResult(elkGraph);
       elkBridge.applyLayout(state, elkResult);
@@ -830,7 +853,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node2);
 
       // Generate valid ELK graph
-      const elkGraph = elkBridge.toELKGraph(state);
+      const _elkGraph = elkBridge.toELKGraph(state);
 
       // Create invalid ELK result
       const invalidELKResult = {
@@ -866,7 +889,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node2);
 
       // Cause error first
-      const elkGraph = elkBridge.toELKGraph(state);
+      const _elkGraph = elkBridge.toELKGraph(state);
       const invalidResult = {
         id: "root",
         children: [

@@ -3,7 +3,6 @@
  * Tests container expand/collapse UI components with proper state management
  */
 
-import React from "react";
 import {
   render,
   screen,
@@ -22,31 +21,14 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { Container } from "../types/core.js";
 
 describe("ContainerControls Component", () => {
+  let coordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
-  let asyncCoordinator: AsyncCoordinator;
   let mockOnOperationComplete: ReturnType<typeof vi.fn>;
   let mockOnError: ReturnType<typeof vi.fn>;
 
-  const testContainer: Container = {
-    id: "test-container",
-    label: "Test Container",
-    children: new Set(["node1", "node2"]),
-    collapsed: true,
-    hidden: false,
-  };
-
-  const expandedContainer: Container = {
-    id: "test-container",
-    label: "Test Container",
-    children: new Set(["node1", "node2"]),
-    collapsed: false,
-    hidden: false,
-  };
-
   beforeEach(() => {
-    // Create real instances
+    coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
-    asyncCoordinator = new AsyncCoordinator();
 
     // Add test data
     visualizationState.addContainer({
@@ -82,7 +64,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
         />,
       );
 
@@ -94,7 +76,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           showFeedback={true}
         />,
       );
@@ -110,7 +92,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={emptyState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
         />,
       );
 
@@ -125,7 +107,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           disabled={true}
         />,
       );
@@ -143,7 +125,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           onOperationComplete={mockOnOperationComplete}
         />,
       );
@@ -161,7 +143,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           showFeedback={true}
         />,
       );
@@ -183,7 +165,6 @@ describe("ContainerControls Component", () => {
     it("should handle expand all errors gracefully", async () => {
       // Create a coordinator that will fail
       const failingCoordinator = new AsyncCoordinator();
-      const originalMethod = failingCoordinator.expandAllContainers;
       failingCoordinator.expandAllContainers = vi
         .fn()
         .mockRejectedValue(new Error("Test error"));
@@ -221,7 +202,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={allExpandedState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
         />,
       );
 
@@ -233,8 +214,12 @@ describe("ContainerControls Component", () => {
   describe("Collapse All Functionality", () => {
     it("should call collapseAllContainers when collapse all is clicked", async () => {
       // Ensure we have expanded containers to collapse
-      visualizationState._expandContainerForCoordinator("container1");
-      visualizationState._expandContainerForCoordinator("container3");
+      await coordinator.expandContainer("container1", visualizationState, {
+        triggerLayout: false,
+      });
+      await coordinator.expandContainer("container3", visualizationState, {
+        triggerLayout: false,
+      });
 
       let operationCompleted = false;
       const onOperationComplete = (operation: "expand" | "collapse") => {
@@ -246,7 +231,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           onOperationComplete={onOperationComplete}
         />,
       );
@@ -267,7 +252,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           showFeedback={true}
         />,
       );
@@ -375,7 +360,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           showFeedback={true}
         />,
       );
@@ -395,7 +380,7 @@ describe("ContainerControls Component", () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           showFeedback={false}
         />,
       );
@@ -408,8 +393,8 @@ describe("ContainerControls Component", () => {
 });
 
 describe("IndividualContainerControl Component", () => {
+  let coordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
-  let asyncCoordinator: AsyncCoordinator;
   let mockOnOperationComplete: ReturnType<typeof vi.fn>;
   let mockOnError: ReturnType<typeof vi.fn>;
 
@@ -430,8 +415,8 @@ describe("IndividualContainerControl Component", () => {
   };
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
-    asyncCoordinator = new AsyncCoordinator();
     mockOnOperationComplete = vi.fn();
     mockOnError = vi.fn();
   });
@@ -442,7 +427,7 @@ describe("IndividualContainerControl Component", () => {
         <IndividualContainerControl
           container={testContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
         />,
       );
 
@@ -456,7 +441,7 @@ describe("IndividualContainerControl Component", () => {
         <IndividualContainerControl
           container={expandedContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
         />,
       );
 
@@ -468,7 +453,7 @@ describe("IndividualContainerControl Component", () => {
         <IndividualContainerControl
           container={testContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           disabled={true}
         />,
       );
@@ -484,7 +469,7 @@ describe("IndividualContainerControl Component", () => {
         <IndividualContainerControl
           container={testContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           onOperationComplete={mockOnOperationComplete}
         />,
       );
@@ -506,7 +491,7 @@ describe("IndividualContainerControl Component", () => {
         <IndividualContainerControl
           container={expandedContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           onOperationComplete={mockOnOperationComplete}
         />,
       );
@@ -528,7 +513,7 @@ describe("IndividualContainerControl Component", () => {
         <IndividualContainerControl
           container={testContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={asyncCoordinator}
+          asyncCoordinator={coordinator}
           showLoading={true}
         />,
       );
@@ -605,12 +590,12 @@ describe("IndividualContainerControl Component", () => {
 });
 
 describe("useContainerControls Hook", () => {
+  let coordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
-  let asyncCoordinator: AsyncCoordinator;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
-    asyncCoordinator = new AsyncCoordinator();
   });
 
   const TestComponent = () => {
@@ -623,7 +608,7 @@ describe("useContainerControls Hook", () => {
       operatingContainers,
       lastError,
       clearError,
-    } = useContainerControls(visualizationState, asyncCoordinator);
+    } = useContainerControls(visualizationState, coordinator);
 
     return (
       <div>
@@ -662,8 +647,12 @@ describe("useContainerControls Hook", () => {
 
   it("should provide collapse all functionality", async () => {
     // Ensure we have expanded containers to collapse
-    visualizationState._expandContainerForCoordinator("container1");
-    visualizationState._expandContainerForCoordinator("container3");
+    await coordinator.expandContainer("container1", visualizationState, {
+      triggerLayout: false,
+    });
+    await coordinator.expandContainer("container3", visualizationState, {
+      triggerLayout: false,
+    });
 
     render(<TestComponent />);
 

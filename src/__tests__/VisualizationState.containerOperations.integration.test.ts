@@ -20,7 +20,11 @@ describe("VisualizationState Container Operations Integration", () => {
   describe("Complete container expansion/collapse cycles", () => {
     it("should handle simple expand/collapse cycle without errors", () => {
       // Setup: Simple container with internal edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const internalEdge = createTestEdge("edge1", "node1", "node2");
@@ -55,8 +59,16 @@ describe("VisualizationState Container Operations Integration", () => {
 
     it("should handle multiple containers with cross-edges", () => {
       // Setup: Two containers with cross-container edge
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const crossEdge = createTestEdge("cross_edge", "node1", "node2");
@@ -97,7 +109,11 @@ describe("VisualizationState Container Operations Integration", () => {
 
     it("should maintain edge visibility consistency during cycles", () => {
       // Setup: Container with internal and external edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const node3 = createTestNode("node3"); // External node
@@ -155,9 +171,21 @@ describe("VisualizationState Container Operations Integration", () => {
   describe("Complex hierarchy container operations", () => {
     it("should handle nested container hierarchies", () => {
       // Setup: Nested container structure
-      const grandchild = createTestContainer("grandchild", ["node1"]);
-      const child = createTestContainer("child", ["grandchild"]);
-      const parent = createTestContainer("parent", ["child"]);
+      const grandchild = createTestContainer(
+        "grandchild",
+        ["node1"],
+        "Container grandchild",
+      );
+      const child = createTestContainer(
+        "child",
+        ["grandchild"],
+        "Container child",
+      );
+      const parent = createTestContainer(
+        "parent",
+        ["child"],
+        "Container parent",
+      );
       const node1 = createTestNode("node1");
 
       state.addNode(node1);
@@ -191,8 +219,16 @@ describe("VisualizationState Container Operations Integration", () => {
       // The purpose is to document expected behavior once fixes are implemented
 
       // Setup: Simplified hierarchy to avoid nested container complexity
-      const container1 = createTestContainer("container1", ["node1"]);
-      const container2 = createTestContainer("container2", ["node2"]);
+      const container1 = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
+      const container2 = createTestContainer(
+        "container2",
+        ["node2"],
+        "Container container2",
+      );
 
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
@@ -240,9 +276,9 @@ describe("VisualizationState Container Operations Integration", () => {
     it("should maintain data integrity during complex operations", () => {
       // Setup: Complex scenario with multiple containers and edges
       const containers = [
-        createTestContainer("c1", ["n1", "n2"]),
-        createTestContainer("c2", ["n3", "n4"]),
-        createTestContainer("c3", ["n5", "n6"]),
+        createTestContainer("c1", ["n1", "n2"], "Container c1"),
+        createTestContainer("c2", ["n3", "n4"], "Container c2"),
+        createTestContainer("c3", ["n5", "n6"], "Container c3"),
       ];
 
       const nodes = [
@@ -270,8 +306,6 @@ describe("VisualizationState Container Operations Integration", () => {
 
       // Test: Complex operations sequence
       const initialEdgeCount = state.getOriginalEdges().length;
-      const initialNodeCount = nodes.length;
-      const initialContainerCount = containers.length;
 
       // Perform multiple operations
       state.collapseContainerSystemOperation("c1");
@@ -293,7 +327,11 @@ describe("VisualizationState Container Operations Integration", () => {
   describe("Edge aggregation/restoration during container operations", () => {
     it("should properly aggregate edges during collapse", () => {
       // Setup: Container with multiple outgoing edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const external1 = createTestNode("external1");
@@ -341,7 +379,11 @@ describe("VisualizationState Container Operations Integration", () => {
 
     it("should properly restore edges during expansion", () => {
       // Setup: Container with aggregated edges
-      const container = createTestContainer("container1", ["node1", "node2"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1", "node2"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const node2 = createTestNode("node2");
       const external = createTestNode("external");
@@ -391,8 +433,8 @@ describe("VisualizationState Container Operations Integration", () => {
 
     it("should handle multiple aggregation/restoration cycles", () => {
       // Setup: Multiple containers with interconnected edges
-      const container1 = createTestContainer("c1", ["n1"]);
-      const container2 = createTestContainer("c2", ["n2"]);
+      const container1 = createTestContainer("c1", ["n1"], "Container c1");
+      const container2 = createTestContainer("c2", ["n2"], "Container c2");
       const node1 = createTestNode("n1");
       const node2 = createTestNode("n2");
       const external = createTestNode("external");
@@ -434,7 +476,11 @@ describe("VisualizationState Container Operations Integration", () => {
 
     it("should maintain aggregation metadata consistency", () => {
       // Setup: Container with edges for metadata tracking
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
       const external = createTestNode("external");
       const edge = createTestEdge("edge1", "node1", "external");
@@ -481,7 +527,11 @@ describe("VisualizationState Container Operations Integration", () => {
 
     it("should maintain consistency during failed operations", () => {
       // Setup: Valid container
-      const container = createTestContainer("container1", ["node1"]);
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node1 = createTestNode("node1");
 
       state.addNode(node1);

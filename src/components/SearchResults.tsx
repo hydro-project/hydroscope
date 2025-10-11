@@ -2,10 +2,8 @@
  * SearchResults Component
  * Displays search results with highlighting and navigation
  */
-
 import React, { useCallback, useMemo } from "react";
 import type { SearchResult } from "../types/core.js";
-
 export interface SearchResultsProps {
   searchResults: readonly SearchResult[];
   currentResultIndex: number;
@@ -15,13 +13,11 @@ export interface SearchResultsProps {
   maxResults?: number;
   groupByType?: boolean;
 }
-
 interface HighlightedTextProps {
   text: string;
   matchIndices: number[][];
   className?: string;
 }
-
 const HighlightedText: React.FC<HighlightedTextProps> = ({
   text,
   matchIndices,
@@ -31,13 +27,13 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
     if (!matchIndices || matchIndices.length === 0) {
       return [{ text, highlighted: false }];
     }
-
-    const segments: Array<{ text: string; highlighted: boolean }> = [];
+    const segments: Array<{
+      text: string;
+      highlighted: boolean;
+    }> = [];
     let lastIndex = 0;
-
     // Sort match indices by start position
     const sortedMatches = [...matchIndices].sort((a, b) => a[0] - b[0]);
-
     for (const [start, end] of sortedMatches) {
       // Add non-highlighted text before this match
       if (start > lastIndex) {
@@ -46,16 +42,13 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
           highlighted: false,
         });
       }
-
       // Add highlighted match
       segments.push({
         text: text.slice(start, end),
         highlighted: true,
       });
-
       lastIndex = end;
     }
-
     // Add remaining non-highlighted text
     if (lastIndex < text.length) {
       segments.push({
@@ -63,10 +56,8 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
         highlighted: false,
       });
     }
-
     return segments;
   }, [text, matchIndices]);
-
   return (
     <span className={className}>
       {highlightedText.map((segment, index) =>
@@ -81,7 +72,6 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({
     </span>
   );
 };
-
 interface SearchResultItemProps {
   result: SearchResult;
   index: number;
@@ -89,7 +79,6 @@ interface SearchResultItemProps {
   onResultClick: (result: SearchResult, index: number) => void;
   onResultHover?: (result: SearchResult, index: number) => void;
 }
-
 const SearchResultItem: React.FC<SearchResultItemProps> = ({
   result,
   index,
@@ -100,11 +89,9 @@ const SearchResultItem: React.FC<SearchResultItemProps> = ({
   const handleClick = useCallback(() => {
     onResultClick(result, index);
   }, [result, index, onResultClick]);
-
   const handleHover = useCallback(() => {
     onResultHover?.(result, index);
   }, [result, index, onResultHover]);
-
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -114,7 +101,6 @@ const SearchResultItem: React.FC<SearchResultItemProps> = ({
     },
     [result, index, onResultClick],
   );
-
   return (
     <li
       className={`search-result-item ${isCurrent ? "current-result" : ""}`}
@@ -143,7 +129,6 @@ const SearchResultItem: React.FC<SearchResultItemProps> = ({
     </li>
   );
 };
-
 export const SearchResults: React.FC<SearchResultsProps> = ({
   searchResults,
   currentResultIndex,
@@ -159,12 +144,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     }
     return searchResults;
   }, [searchResults, maxResults]);
-
   const groupedResults = useMemo(() => {
     if (!groupByType) {
       return { all: displayedResults };
     }
-
     const groups: Record<string, SearchResult[]> = {};
     displayedResults.forEach((result) => {
       const type = result.type;
@@ -173,17 +156,14 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       }
       groups[type].push(result);
     });
-
     return groups;
   }, [displayedResults, groupByType]);
-
   const hiddenResultsCount = useMemo(() => {
     if (!maxResults || searchResults.length <= maxResults) {
       return 0;
     }
     return searchResults.length - maxResults;
   }, [searchResults.length, maxResults]);
-
   if (searchResults.length === 0) {
     return (
       <div className="search-results-empty">
@@ -191,11 +171,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       </div>
     );
   }
-
   const getResultGlobalIndex = (result: SearchResult): number => {
     return searchResults.findIndex((r) => r.id === result.id);
   };
-
   return (
     <div className="search-results-container">
       <ul
@@ -238,5 +216,4 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     </div>
   );
 };
-
 export default SearchResults;

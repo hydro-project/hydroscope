@@ -11,11 +11,9 @@
  * The component maintains all existing styling, fonts, icons, and positioning
  * while providing seamless integration between core and enhanced features.
  */
-
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-
 import {
   HydroscopeCore,
   type HydroscopeCoreProps,
@@ -32,20 +30,22 @@ import {
   type StyleConfig as StyleTunerConfig,
 } from "./panels/StyleTuner.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
-
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { HydroscopeData } from "../types/core.js";
 import {
   DEFAULT_COLOR_PALETTE,
-  DEFAULT_LAYOUT_CONFIG,
   DEFAULT_ELK_ALGORITHM,
 } from "../shared/config.js";
-
+import {
+  enableResizeObserverErrorSuppression,
+  disableResizeObserverErrorSuppression,
+  DebouncedOperationManager,
+  withAsyncResizeObserverErrorSuppression,
+} from "../utils/ResizeObserverErrorSuppression.js";
 // ============================================================================
 // TypeScript Interfaces
 // ============================================================================
-
 /**
  * Render configuration interface for styling the visualization
  */
@@ -67,7 +67,6 @@ export interface RenderConfig {
   /** Whether to automatically fit view after layout changes */
   fitView?: boolean;
 }
-
 /**
  * Props interface for the Hydroscope component
  *
@@ -76,63 +75,48 @@ export interface RenderConfig {
 export interface HydroscopeProps extends Omit<HydroscopeCoreProps, "data"> {
   /** JSON data to visualize (optional - can be uploaded via FileDropZone) */
   data?: HydroscopeData;
-
   /** Show file upload interface when no data provided */
   showFileUpload?: boolean;
-
   /** Show InfoPanel with search and hierarchy controls */
   showInfoPanel?: boolean;
-
   /** Show StyleTuner panel for customization */
   showStylePanel?: boolean;
-
   /** Enable responsive height calculation */
   responsive?: boolean;
-
   /** Callback when file is uploaded */
   onFileUpload?: (data: HydroscopeData, filename?: string) => void;
-
   /** Callback when configuration changes */
   onConfigChange?: (config: RenderConfig) => void;
 }
-
 /**
  * Internal state interface for the Hydroscope component
  */
 interface HydroscopeState {
   /** Current data being visualized */
   data: HydroscopeData | null;
-
   /** Panel visibility */
   infoPanelOpen: boolean;
   stylePanelOpen: boolean;
-
   /** Configuration with persistence */
   colorPalette: string;
   layoutAlgorithm: string;
   renderConfig: RenderConfig;
   autoFitEnabled: boolean;
-
   /** Search state */
   searchQuery: string;
   searchMatches: SearchMatch[];
   currentSearchMatch: SearchMatch | undefined;
-
   /** Current visualization state from HydroscopeCore */
   currentVisualizationState: VisualizationState | null;
-
   /** File upload state */
   uploadedData: HydroscopeData | null;
   uploadedFilename: string | null;
-
   /** Error and loading state */
   error: Error | null;
   isLoading: boolean;
-
   /** Status message for e2e testing */
   statusMessage: string;
 }
-
 /**
  * Settings interface for localStorage persistence
  */
@@ -144,14 +128,11 @@ interface HydroscopeSettings {
   layoutAlgorithm: string;
   renderConfig: RenderConfig;
 }
-
 // ============================================================================
 // Settings Persistence Utilities
 // ============================================================================
-
 const STORAGE_KEY = "hydroscope-settings";
-const SETTINGS_VERSION = 1;
-
+const SETTINGS_VERSION = 2; // Incremented to trigger migration to mrtree default
 const DEFAULT_RENDER_CONFIG: Required<RenderConfig> = {
   edgeStyle: "bezier",
   edgeWidth: 2,
@@ -162,7 +143,6 @@ const DEFAULT_RENDER_CONFIG: Required<RenderConfig> = {
   colorPalette: DEFAULT_COLOR_PALETTE,
   fitView: true,
 };
-
 const DEFAULT_SETTINGS: HydroscopeSettings = {
   infoPanelOpen: true,
   stylePanelOpen: false,
@@ -171,7 +151,6 @@ const DEFAULT_SETTINGS: HydroscopeSettings = {
   layoutAlgorithm: DEFAULT_ELK_ALGORITHM,
   renderConfig: DEFAULT_RENDER_CONFIG,
 };
-
 /**
  * Save settings to localStorage with error handling
  */
@@ -186,7 +165,6 @@ const saveSettings = (settings: HydroscopeSettings): void => {
     console.error("Hydroscope: Failed to save settings:", error);
   }
 };
-
 /**
  * Load settings from localStorage with migration support
  */
@@ -195,8 +173,8 @@ const loadSettings = (): HydroscopeSettings => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Merge with defaults to handle missing properties
-      return {
+      // Merge with defaults to handle missing properties first
+      const result = {
         ...DEFAULT_SETTINGS,
         ...parsed,
         renderConfig: {
@@ -204,17 +182,37 @@ const loadSettings = (): HydroscopeSettings => {
           ...parsed.renderConfig,
         },
       };
+      // Migration: If no version or old version, update layoutAlgorithm default and save merged settings
+      if (!parsed.version || parsed.version < SETTINGS_VERSION) {
+        result.layoutAlgorithm = DEFAULT_ELK_ALGORITHM; // Update to new default
+        result.version = SETTINGS_VERSION;
+        // Save the complete migrated settings back to localStorage
+        try {
+          const settingsWithVersion = {
+            ...result,
+            version: SETTINGS_VERSION,
+          };
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(settingsWithVersion),
+          );
+        } catch (saveError) {
+          console.error(
+            "Hydroscope: Failed to save migrated settings:",
+            saveError,
+          );
+        }
+      }
+      return result;
     }
   } catch (error) {
     console.error("Hydroscope: Failed to load settings:", error);
   }
   return DEFAULT_SETTINGS;
 };
-
 // ============================================================================
 // SVG Icons for CustomControls
 // ============================================================================
-
 const PackIcon = () => (
   <svg
     id="Layer_1"
@@ -232,7 +230,6 @@ const PackIcon = () => (
     />
   </svg>
 );
-
 const UnpackIcon = () => (
   <svg
     id="Layer_1"
@@ -250,7 +247,6 @@ const UnpackIcon = () => (
     />
   </svg>
 );
-
 const AutoFitIcon = ({ enabled }: { enabled?: boolean }) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     {/* Outer frame */}
@@ -287,17 +283,14 @@ const AutoFitIcon = ({ enabled }: { enabled?: boolean }) => (
     )}
   </svg>
 );
-
 const LoadFileIcon = () => (
   <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
     <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9zM2.5 3a.5.5 0 0 0-.5.5V6h12v-.5a.5.5 0 0 0-.5-.5H9c-.964 0-1.71-.629-2.174-1.154C6.374 3.334 5.82 3 5.264 3H2.5zM14 7H2v5.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V7z" />
   </svg>
 );
-
 // ============================================================================
 // CustomControls Component
 // ============================================================================
-
 interface CustomControlsProps {
   visualizationState?: VisualizationState | null;
   asyncCoordinator?: AsyncCoordinator | null;
@@ -308,7 +301,6 @@ interface CustomControlsProps {
   showLoadFile?: boolean;
   autoFitEnabled?: boolean;
 }
-
 const CustomControls = memo(
   ({
     visualizationState,
@@ -330,10 +322,8 @@ const CustomControls = memo(
       visualizationState?.visibleContainers?.some(
         (container) => !container.collapsed,
       ) ?? false;
-
     // Calculate if we have any custom controls to show
     const hasCustomControls = hasContainers || onAutoFitToggle || showLoadFile;
-
     return (
       <>
         {/* Custom Controls - positioned dynamically above standard controls */}
@@ -356,10 +346,6 @@ const CustomControls = memo(
             {onAutoFitToggle && (
               <button
                 onClick={() => {
-                  console.log(
-                    "[Hydroscope] AutoFit button clicked, current state:",
-                    autoFitEnabled,
-                  );
                   onAutoFitToggle();
                 }}
                 title={`Toggle Auto-Fit (currently ${autoFitEnabled ? "ON" : "OFF"})`}
@@ -415,114 +401,73 @@ const CustomControls = memo(
                 <LoadFileIcon />
               </button>
             )}
-            {/* Pack/Unpack buttons - always show when pack/unpack is enabled */}
-            {hasContainers && (
-              <>
-                {/* Pack All (Collapse All) Button */}
-                <button
-                  onClick={onCollapseAll}
-                  disabled={!hasContainers || !hasExpandedContainers}
-                  data-testid="collapse-all-button"
-                  title={
-                    !hasContainers
-                      ? "No containers available"
-                      : !hasExpandedContainers
-                        ? "No containers to collapse"
-                        : "Collapse All Containers"
-                  }
-                  className="react-flow__controls-button"
-                  style={{
-                    alignItems: "center",
-                    background:
-                      hasContainers && hasExpandedContainers
-                        ? "#fefefe"
-                        : "#f5f5f5", // Grayed out background when disabled
-                    border: "none",
-                    borderBottom: "1px solid #b1b1b7",
-                    color:
-                      !hasContainers || !hasExpandedContainers
-                        ? "#ccc"
-                        : "#555",
-                    cursor:
-                      !hasContainers || !hasExpandedContainers
-                        ? "not-allowed"
-                        : "pointer",
-                    display: "flex",
-                    height: "26px",
-                    justifyContent: "center",
-                    padding: "4px",
-                    userSelect: "none",
-                    width: "26px",
-                    fontSize: "12px",
-                    margin: "0",
-                    borderRadius: "0",
-                    opacity: !hasContainers || !hasExpandedContainers ? 0.4 : 1, // More obvious opacity change
-                  }}
-                >
-                  <PackIcon />
-                </button>
-                {/* Unpack All (Expand All) Button */}
-                <button
-                  onClick={onExpandAll}
-                  disabled={!hasContainers || !hasCollapsedContainers}
-                  data-testid="expand-all-button"
-                  title={
-                    !hasContainers
-                      ? "No containers available"
-                      : !hasCollapsedContainers
-                        ? "No containers to expand"
-                        : "Expand All Containers"
-                  }
-                  className="react-flow__controls-button"
-                  style={{
-                    alignItems: "center",
-                    background:
-                      hasContainers && hasCollapsedContainers
-                        ? "#fefefe"
-                        : "#f5f5f5", // Grayed out background when disabled
-                    border: "none",
-                    borderBottom:
-                      !hasContainers || !hasCollapsedContainers
-                        ? "1px solid #b1b1b7"
-                        : "none", // Last button has no bottom border
-                    color:
-                      !hasContainers || !hasCollapsedContainers
-                        ? "#ccc"
-                        : "#555",
-                    cursor:
-                      !hasContainers || !hasCollapsedContainers
-                        ? "not-allowed"
-                        : "pointer",
-                    display: "flex",
-                    height: "26px",
-                    justifyContent: "center",
-                    padding: "4px",
-                    userSelect: "none",
-                    width: "26px",
-                    fontSize: "12px",
-                    margin: "0",
-                    borderRadius: "0",
-                    opacity:
-                      !hasContainers || !hasCollapsedContainers ? 0.4 : 1, // More obvious opacity change
-                  }}
-                >
-                  <UnpackIcon />
-                </button>
-              </>
-            )}
+            {/* Pack/Unpack buttons - always show */}
+            <>
+              {/* Pack All (Collapse All) Button */}
+              <button
+                onClick={onCollapseAll}
+                data-testid="collapse-all-button"
+                title="Collapse All Containers"
+                className="react-flow__controls-button"
+                style={{
+                  alignItems: "center",
+                  background: "#fefefe",
+                  border: "none",
+                  borderBottom: "1px solid #b1b1b7",
+                  color: "#555",
+                  cursor: "pointer",
+                  display: "flex",
+                  height: "26px",
+                  justifyContent: "center",
+                  padding: "4px",
+                  userSelect: "none",
+                  width: "26px",
+                  fontSize: "12px",
+                  margin: "0",
+                  borderRadius: "0",
+                  opacity: 1,
+                }}
+              >
+                <PackIcon />
+              </button>
+              {/* Unpack All (Expand All) Button */}
+              <button
+                onClick={onExpandAll}
+                data-testid="expand-all-button"
+                title="Expand All Containers"
+                className="react-flow__controls-button"
+                style={{
+                  alignItems: "center",
+                  background: "#fefefe",
+                  border: "none",
+                  borderBottom: "none", // Last button has no bottom border
+                  color: "#555",
+                  cursor: "pointer",
+                  display: "flex",
+                  height: "26px",
+                  justifyContent: "center",
+                  padding: "4px",
+                  userSelect: "none",
+                  width: "26px",
+                  fontSize: "12px",
+                  margin: "0",
+                  borderRadius: "0",
+                  opacity: 1,
+                }}
+              >
+                <UnpackIcon />
+              </button>
+            </>
           </div>
         )}
       </>
     );
   },
 );
-
 CustomControls.displayName = "CustomControls";
-
 // ============================================================================
 // Main Hydroscope Component
 // ============================================================================
-
 /**
  * Hydroscope - Full-featured wrapper component with enhanced UI features
  *
@@ -557,7 +502,6 @@ export const Hydroscope = memo<HydroscopeProps>(
     const [settings, setSettings] = useState<HydroscopeSettings>(() =>
       loadSettings(),
     );
-
     // Component state
     const [state, setState] = useState<HydroscopeState>({
       data: data || null,
@@ -577,26 +521,62 @@ export const Hydroscope = memo<HydroscopeProps>(
       isLoading: false,
       statusMessage: "",
     });
-
     // Track current grouping (can be changed by user)
     const [selectedGrouping, setSelectedGrouping] = useState<string | null>(
       null,
     );
-
     const currentGrouping = useMemo(() => {
       // Use selected grouping if available, otherwise default to first hierarchy choice
       return selectedGrouping || data?.hierarchyChoices?.[0]?.id;
     }, [selectedGrouping, data]);
-
     // Refs for component instances
     const hydroscopeCoreRef = useRef<HydroscopeCoreHandle>(null);
     const infoPanelRef = useRef<InfoPanelRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // Refs for cleanup
+    const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isMountedRef = useRef(true);
+    // ResizeObserver error suppression
+    const debouncedOperationManagerRef =
+      useRef<DebouncedOperationManager | null>(null);
+    // Initialize ResizeObserver error suppression and debounced operation manager
+    useEffect(() => {
+      // Enable ResizeObserver error suppression
+      enableResizeObserverErrorSuppression();
 
+      // Create debounced operation manager
+      debouncedOperationManagerRef.current = new DebouncedOperationManager(150);
+
+      // Create complete settings from current state to ensure all properties are included
+      const completeSettings: HydroscopeSettings = {
+        infoPanelOpen: state.infoPanelOpen,
+        stylePanelOpen: state.stylePanelOpen,
+        autoFitEnabled: state.autoFitEnabled,
+        colorPalette: state.colorPalette,
+        layoutAlgorithm: state.layoutAlgorithm,
+        renderConfig: state.renderConfig,
+      };
+      saveSettings(completeSettings);
+    }, []); // Only run once on mount
+    // Cleanup timeouts and error suppression on unmount
+    useEffect(() => {
+      return () => {
+        isMountedRef.current = false;
+        if (statusTimeoutRef.current) {
+          clearTimeout(statusTimeoutRef.current);
+        }
+        // Cleanup debounced operations
+        if (debouncedOperationManagerRef.current) {
+          debouncedOperationManagerRef.current.destroy();
+          debouncedOperationManagerRef.current = null;
+        }
+        // Disable ResizeObserver error suppression
+        disableResizeObserverErrorSuppression();
+      };
+    }, []);
     // Update data when prop changes
     // Removed: This useEffect was causing double parsing during hierarchy changes
     // by reverting state.data back to the original prop after AsyncCoordinator updates it
-
     // Save settings when they change
     useEffect(() => {
       const newSettings: HydroscopeSettings = {
@@ -607,7 +587,6 @@ export const Hydroscope = memo<HydroscopeProps>(
         layoutAlgorithm: state.layoutAlgorithm,
         renderConfig: state.renderConfig,
       };
-
       setSettings(newSettings);
       saveSettings(newSettings);
     }, [
@@ -618,7 +597,6 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.layoutAlgorithm,
       state.renderConfig,
     ]);
-
     // Handle file upload
     const handleFileUpload = useCallback(
       (uploadedData: HydroscopeData, filename?: string) => {
@@ -629,12 +607,10 @@ export const Hydroscope = memo<HydroscopeProps>(
           uploadedFilename: filename || null,
           error: null,
         }));
-
         onFileUpload?.(uploadedData, filename);
       },
       [onFileUpload],
     );
-
     // Handle configuration changes
     const handleConfigChange = useCallback(
       (config: RenderConfig) => {
@@ -642,32 +618,21 @@ export const Hydroscope = memo<HydroscopeProps>(
           ...prev,
           renderConfig: { ...prev.renderConfig, ...config },
         }));
-
         onConfigChange?.(config);
       },
       [onConfigChange],
     );
-
     // Handle edge style changes - use HydroscopeCore's updateRenderConfig method
     const handleEdgeStyleChange = useCallback(
       async (edgeStyle: "bezier" | "straight" | "smoothstep") => {
-        console.log(
-          `[Hydroscope] 🎨 Edge style change requested: ${edgeStyle}`,
-        );
-
         try {
           // Update local state first to keep UI in sync
           setState((prev) => ({
             ...prev,
             renderConfig: { ...prev.renderConfig, edgeStyle },
           }));
-
           // Update render config through HydroscopeCore's AsyncCoordinator
           await hydroscopeCoreRef.current?.updateRenderConfig({ edgeStyle });
-
-          console.log(
-            `[Hydroscope] ✅ Edge style change completed: ${edgeStyle}`,
-          );
         } catch (error) {
           console.error(
             "[Hydroscope] ❌ Error handling edge style change:",
@@ -678,7 +643,6 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [onError],
     );
-
     // Handle style tuner changes (for non-edge style changes)
     const handleStyleChange = useCallback(
       (styleConfig: StyleTunerConfig) => {
@@ -692,31 +656,20 @@ export const Hydroscope = memo<HydroscopeProps>(
           colorPalette: state.colorPalette,
           fitView: state.autoFitEnabled,
         };
-
         handleConfigChange(renderConfig);
       },
       [state.colorPalette, state.autoFitEnabled, handleConfigChange],
     );
-
     // Handle palette changes - use HydroscopeCore's updateRenderConfig method
     const handlePaletteChange = useCallback(
       async (palette: string) => {
-        console.log(
-          `[Hydroscope] 🎨 Color palette change requested: ${palette}`,
-        );
-
         try {
           // Update local state first to keep UI in sync
           setState((prev) => ({ ...prev, colorPalette: palette }));
-
           // Update color palette through HydroscopeCore's AsyncCoordinator
           await hydroscopeCoreRef.current?.updateRenderConfig({
             colorPalette: palette,
           });
-
-          console.log(
-            `[Hydroscope] ✅ Color palette change completed: ${palette}`,
-          );
         } catch (error) {
           console.error(
             "[Hydroscope] ❌ Error handling color palette change:",
@@ -727,26 +680,16 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [onError],
     );
-
     // Handle layout changes - use HydroscopeCore's updateRenderConfig method
     const handleLayoutChange = useCallback(
       async (layout: string) => {
-        console.log(
-          `[Hydroscope] 🎯 Layout algorithm change requested: ${state.layoutAlgorithm} -> ${layout}`,
-        );
-
         try {
           // Update local state first to keep UI in sync
           setState((prev) => ({ ...prev, layoutAlgorithm: layout }));
-
           // Update layout algorithm through HydroscopeCore's AsyncCoordinator
           await hydroscopeCoreRef.current?.updateRenderConfig({
             layoutAlgorithm: layout,
           });
-
-          console.log(
-            `[Hydroscope] ✅ Layout algorithm change completed: ${layout}`,
-          );
         } catch (error) {
           console.error("[Hydroscope] ❌ Error handling layout change:", error);
           onError?.(error as Error);
@@ -754,96 +697,110 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [state.layoutAlgorithm, onError],
     );
-
-    // Handle bulk operations
+    // Handle bulk operations with ResizeObserver error suppression
     const handleCollapseAll = useCallback(async () => {
-      try {
-        console.log("[Hydroscope] CollapseAll operation starting");
-        console.log("[Hydroscope] 🔍 COLLAPSE ALL TRIGGERED - Stack trace:");
-        console.trace();
-        await hydroscopeCoreRef.current?.collapseAll();
-        console.log("[Hydroscope] CollapseAll operation completed");
+      if (!debouncedOperationManagerRef.current) return;
 
-        // Update status message for e2e testing
-        setState((prev) => ({
-          ...prev,
-          statusMessage: "All containers collapsed",
-        }));
+      const debouncedCollapseAll =
+        debouncedOperationManagerRef.current.debounce(
+          "collapseAll",
+          withAsyncResizeObserverErrorSuppression(async () => {
+            try {
+              await hydroscopeCoreRef.current?.collapseAll();
+              // Update status message for e2e testing
+              setState((prev) => ({
+                ...prev,
+                statusMessage: "All containers collapsed",
+              }));
+              // Clear status message after a delay
+              if (statusTimeoutRef.current) {
+                clearTimeout(statusTimeoutRef.current);
+              }
+              statusTimeoutRef.current = setTimeout(() => {
+                if (isMountedRef.current) {
+                  setState((prev) => ({ ...prev, statusMessage: "" }));
+                }
+                statusTimeoutRef.current = null;
+              }, 2000);
+            } catch (error) {
+              console.error("Failed to collapse all containers:", error);
+              if (isMountedRef.current) {
+                setState((prev) => ({
+                  ...prev,
+                  statusMessage: "Failed to collapse containers",
+                }));
+              }
+              onError?.(error as Error);
+            }
+          }),
+          200, // Longer delay for bulk operations
+        );
 
-        // Clear status message after a delay
-        setTimeout(() => {
-          setState((prev) => ({ ...prev, statusMessage: "" }));
-        }, 2000);
-      } catch (error) {
-        console.error("Failed to collapse all containers:", error);
-        setState((prev) => ({
-          ...prev,
-          statusMessage: "Failed to collapse containers",
-        }));
-        onError?.(error as Error);
-      }
+      debouncedCollapseAll();
     }, [onError]);
-
     const handleExpandAll = useCallback(async () => {
-      try {
-        console.log("[Hydroscope] ExpandAll operation starting");
-        await hydroscopeCoreRef.current?.expandAll();
-        console.log("[Hydroscope] ExpandAll operation completed");
+      if (!debouncedOperationManagerRef.current) return;
 
-        // Update status message for e2e testing
-        setState((prev) => ({
-          ...prev,
-          statusMessage: "All containers expanded",
-        }));
+      const debouncedExpandAll = debouncedOperationManagerRef.current.debounce(
+        "expandAll",
+        withAsyncResizeObserverErrorSuppression(async () => {
+          try {
+            await hydroscopeCoreRef.current?.expandAll();
+            // Update status message for e2e testing
+            setState((prev) => ({
+              ...prev,
+              statusMessage: "All containers expanded",
+            }));
+            // Clear status message after a delay
+            if (statusTimeoutRef.current) {
+              clearTimeout(statusTimeoutRef.current);
+            }
+            statusTimeoutRef.current = setTimeout(() => {
+              if (isMountedRef.current) {
+                setState((prev) => ({ ...prev, statusMessage: "" }));
+              }
+              statusTimeoutRef.current = null;
+            }, 2000);
+          } catch (error) {
+            console.error("Failed to expand all containers:", error);
+            if (isMountedRef.current) {
+              setState((prev) => ({
+                ...prev,
+                statusMessage: "Failed to expand containers",
+              }));
+            }
+            onError?.(error as Error);
+          }
+        }),
+        200, // Longer delay for bulk operations
+      );
 
-        // Clear status message after a delay
-        setTimeout(() => {
-          setState((prev) => ({ ...prev, statusMessage: "" }));
-        }, 2000);
-      } catch (error) {
-        console.error("Failed to expand all containers:", error);
-        setState((prev) => ({
-          ...prev,
-          statusMessage: "Failed to expand containers",
-        }));
-        onError?.(error as Error);
-      }
+      debouncedExpandAll();
     }, [onError]);
-
     // Handle auto-fit toggle
     const handleAutoFitToggle = useCallback(() => {
       setState((prev) => {
         const newAutoFitEnabled = !prev.autoFitEnabled;
-
         // If we're enabling auto-fit, trigger a fit view immediately
         if (newAutoFitEnabled && hydroscopeCoreRef.current) {
-          console.log("[Hydroscope] AutoFit enabled - triggering fit view");
           hydroscopeCoreRef.current.fitView();
         }
-
         return { ...prev, autoFitEnabled: newAutoFitEnabled };
       });
     }, []);
-
     // Handle load file button
     const handleLoadFile = useCallback(() => {
       fileInputRef.current?.click();
     }, []);
-
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
       async (query: string, matches: SearchMatch[], current?: SearchMatch) => {
-        console.log(
-          `[Hydroscope] 🔍 handleSearchUpdate called: query="${query}", matches=${matches.length}, current=${current?.id || "none"}`,
-        );
-
         setState((prev) => ({
           ...prev,
           searchQuery: query,
           searchMatches: matches,
           currentSearchMatch: current,
         }));
-
         // CRITICAL FIX: Perform search in VisualizationState to expand containers and set highlights
         if (hydroscopeCoreRef.current) {
           try {
@@ -851,60 +808,31 @@ export const Hydroscope = memo<HydroscopeProps>(
               hydroscopeCoreRef.current.getAsyncCoordinator();
             const currentVisualizationState =
               hydroscopeCoreRef.current.getVisualizationState();
-
             if (asyncCoordinator && currentVisualizationState) {
               // Don't perform search again if it was already done in SearchControls
               // This prevents double search execution which can clear highlights
               const existingHighlights =
                 currentVisualizationState.getGraphSearchHighlights();
-
               let searchResults;
               if (query && existingHighlights.size === 0) {
                 // Search not yet performed or highlights cleared, perform search
-                console.log(
-                  `[Hydroscope] 🔍 Performing new search for "${query}" (no existing highlights)`,
-                );
                 searchResults = currentVisualizationState.performSearch(query);
-                console.log(
-                  `[Hydroscope] 🔍 New search results: ${searchResults.length} matches`,
-                );
               } else if (query) {
                 // Search already performed, get existing results
-                console.log(
-                  `[Hydroscope] 🔍 Getting existing search results for "${query}" (highlights exist: ${existingHighlights.size})`,
-                );
                 searchResults = currentVisualizationState.getSearchResults();
-                console.log(
-                  `[Hydroscope] 🔍 Existing search results: ${searchResults.length} matches`,
-                );
               } else {
                 // Clear search
-                console.log(`[Hydroscope] 🔍 Clearing search (empty query)`);
                 searchResults = currentVisualizationState.performSearch("");
-                console.log(
-                  `[Hydroscope] 🔍 Clear search results: ${searchResults.length} matches`,
-                );
               }
-
               // Container expansion requires ELK layout, not just ReactFlow render
               // When containers are expanded, visible nodes change and positions need recalculation
               const hydroscopeCore = hydroscopeCoreRef.current;
               if (hydroscopeCore) {
                 if (searchResults.length > 0) {
                   // Search with results - use expandAll (needed for highlighting to work)
-                  console.log(
-                    `[Hydroscope] 🔍 Search has ${searchResults.length} results - calling expandAll()`,
-                  );
                   try {
                     await hydroscopeCore.expandAll();
-                    console.log(
-                      `[Hydroscope] 🔍 expandAll() completed successfully`,
-                    );
                   } catch (error) {
-                    console.log(
-                      `[Hydroscope] 🔍 expandAll() failed, using fallback ReactFlow render:`,
-                      error,
-                    );
                     // Fallback to ReactFlow render
                     if (asyncCoordinator.queueReactFlowRender) {
                       asyncCoordinator.queueReactFlowRender(
@@ -914,9 +842,6 @@ export const Hydroscope = memo<HydroscopeProps>(
                   }
                 } else {
                   // Search cleared - use ReactFlow render only
-                  console.log(
-                    `[Hydroscope] 🔍 Search has no results - using ReactFlow render only`,
-                  );
                   if (asyncCoordinator.queueReactFlowRender) {
                     asyncCoordinator.queueReactFlowRender(
                       currentVisualizationState,
@@ -937,26 +862,17 @@ export const Hydroscope = memo<HydroscopeProps>(
           }
         }
       },
-      [], // Remove stale dependency
+      [],
     );
-
     // Handle navigation from tree hierarchy to graph
     const handleElementNavigation = useCallback(
       async (elementId: string, elementType: "node" | "container") => {
-        console.log(
-          `[Hydroscope] Navigation requested for ${elementType} ${elementId}`,
-        );
-
         try {
           // Use HydroscopeCore's navigateToElement method which handles:
           // 1. Automatic container expansion if element is not visible
           // 2. Navigation state update in VisualizationState
           // 3. Viewport focusing in ReactFlow graph
           await hydroscopeCoreRef.current?.navigateToElement(elementId);
-
-          console.log(
-            `[Hydroscope] Navigation to ${elementType} ${elementId} completed`,
-          );
         } catch (error) {
           console.error(
             `[Hydroscope] Error navigating to ${elementType} ${elementId}:`,
@@ -966,7 +882,6 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [],
     );
-
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
@@ -977,7 +892,6 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [],
     );
-
     // Container dimensions
     const containerStyle = useMemo(
       () => ({
@@ -989,10 +903,8 @@ export const Hydroscope = memo<HydroscopeProps>(
       }),
       [height, width, style],
     );
-
     // Show file upload if no data and file upload is enabled
     const shouldShowFileUpload = showFileUpload && !state.data;
-
     return (
       <ErrorBoundary
         fallback={(_error, _errorInfo, retry) => (
@@ -1143,9 +1055,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     hierarchyChoices={state.data?.hierarchyChoices || []}
                     currentGrouping={currentGrouping}
                     onGroupingChange={(groupingId) => {
-                      console.log("🔄 Hierarchy change requested:", groupingId);
                       setSelectedGrouping(groupingId);
-
                       // Use AsyncCoordinator to queue hierarchy change
                       if (data && groupingId && hydroscopeCoreRef.current) {
                         setState((prev) => ({
@@ -1153,7 +1063,6 @@ export const Hydroscope = memo<HydroscopeProps>(
                           isLoading: true,
                           error: null,
                         }));
-
                         const asyncCoordinator =
                           hydroscopeCoreRef.current.getAsyncCoordinator();
                         if (asyncCoordinator) {
@@ -1212,7 +1121,6 @@ export const Hydroscope = memo<HydroscopeProps>(
                     }}
                     collapsedContainers={new Set()}
                     onToggleContainer={(containerId) => {
-                      console.log("Toggle container:", containerId);
                       // This will be handled by HydroscopeCore
                     }}
                     onElementNavigation={handleElementNavigation}
@@ -1242,34 +1150,23 @@ export const Hydroscope = memo<HydroscopeProps>(
                     onEdgeStyleChange={handleEdgeStyleChange}
                     onResetToDefaults={async () => {
                       try {
-                        console.log("[Hydroscope] 🔄 Resetting to defaults");
-
-                        // Update local state
+                        // Clear localStorage to ensure we get true defaults
+                        localStorage.removeItem(STORAGE_KEY);
+                        // Update local state with hardcoded defaults
                         setState((prev) => ({
                           ...prev,
                           renderConfig: DEFAULT_RENDER_CONFIG,
-                          colorPalette: DEFAULT_SETTINGS.colorPalette,
-                          layoutAlgorithm: DEFAULT_SETTINGS.layoutAlgorithm,
+                          colorPalette: DEFAULT_COLOR_PALETTE,
+                          layoutAlgorithm: DEFAULT_ELK_ALGORITHM, // Use hardcoded default
                         }));
-
                         // Apply the defaults to the visualization through the same handlers
                         // Reset color palette
-                        await handlePaletteChange(
-                          DEFAULT_SETTINGS.colorPalette,
-                        );
-
-                        // Reset layout algorithm
-                        await handleLayoutChange(
-                          DEFAULT_SETTINGS.layoutAlgorithm,
-                        );
-
+                        await handlePaletteChange(DEFAULT_COLOR_PALETTE);
+                        // Reset layout algorithm - use hardcoded default
+                        await handleLayoutChange(DEFAULT_ELK_ALGORITHM);
                         // Reset edge style (part of render config)
                         await handleEdgeStyleChange(
                           DEFAULT_RENDER_CONFIG.edgeStyle,
-                        );
-
-                        console.log(
-                          "[Hydroscope] ✅ Reset to defaults completed",
                         );
                       } catch (error) {
                         console.error(
@@ -1415,5 +1312,4 @@ export const Hydroscope = memo<HydroscopeProps>(
     );
   },
 );
-
 Hydroscope.displayName = "Hydroscope";

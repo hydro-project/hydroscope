@@ -2,7 +2,6 @@
  * JSONParser - Converts JSON data to VisualizationState
  * Handles paxos.json format with hierarchyChoices and nodeAssignments
  */
-
 import { VisualizationState } from "../core/VisualizationState.js";
 import type {
   HydroscopeData,
@@ -13,7 +12,6 @@ import type {
   ParseError,
   ValidationResult,
 } from "../types/core.js";
-
 export interface JSONParserOptions {
   /** Enable debug logging */
   debug?: boolean;
@@ -24,7 +22,6 @@ export interface JSONParserOptions {
   /** Validate data during parsing */
   validateDuringParsing?: boolean;
 }
-
 export interface ParseResult {
   visualizationState: VisualizationState;
   hierarchyChoices: HierarchyChoice[];
@@ -39,11 +36,10 @@ export interface ParseResult {
     processingTime: number;
   };
 }
-
 export class JSONParser {
   private options: Required<JSONParserOptions>;
   private debug: boolean;
-
+  private _totalElementCount: number = 0;
   constructor(options: JSONParserOptions = {}) {
     this.options = {
       debug: options.debug || false,
@@ -53,7 +49,6 @@ export class JSONParser {
     };
     this.debug = this.options.debug;
   }
-
   // Debug logging helper
   private debugLog(message: string, data?: any): void {
     if (this.debug) {
@@ -61,6 +56,13 @@ export class JSONParser {
     }
   }
 
+  /**
+   * Get the total element count from the last parsed data
+   * Used to determine if edge validation should be suppressed for large graphs
+   */
+  get totalElementCount(): number {
+    return this._totalElementCount;
+  }
   /**
    * Parse HydroscopeData into VisualizationState
    */
@@ -71,10 +73,8 @@ export class JSONParser {
       edgeCount: data.edges.length,
       hierarchyChoicesCount: data.hierarchyChoices.length,
     });
-
     const warnings: ValidationResult[] = [];
     const visualizationState = new VisualizationState();
-
     try {
       // Step 1: Parse hierarchy choices
       const hierarchyChoices = this.parseHierarchyChoices(
@@ -83,14 +83,12 @@ export class JSONParser {
       this.debugLog("Parsed hierarchy choices", {
         count: hierarchyChoices.length,
       });
-
       // Step 2: Determine which hierarchy to use for grouping
       const selectedHierarchy = this.selectDefaultHierarchy(
         hierarchyChoices,
         data.nodeAssignments,
       );
       this.debugLog("Selected hierarchy", { hierarchy: selectedHierarchy });
-
       // Step 3: Create containers from selected hierarchy
       let containerCount = 0;
       if (selectedHierarchy && data.nodeAssignments[selectedHierarchy]) {
@@ -100,7 +98,6 @@ export class JSONParser {
           warnings,
         );
       }
-
       // Step 4: Parse and add nodes
       const nodeCount = await this.parseNodes(
         visualizationState,
@@ -108,7 +105,6 @@ export class JSONParser {
         warnings,
       );
       this.debugLog("Parsed nodes", { count: nodeCount });
-
       // Step 5: Assign nodes to containers
       if (selectedHierarchy && data.nodeAssignments[selectedHierarchy]) {
         await this.assignNodesToContainers(
@@ -117,7 +113,6 @@ export class JSONParser {
           warnings,
         );
       }
-
       // Step 6: Parse and add edges
       const edgeCount = await this.parseEdges(
         visualizationState,
@@ -125,12 +120,14 @@ export class JSONParser {
         warnings,
       );
       this.debugLog("Parsed edges", { count: edgeCount });
+      // Step 7: Store total element count for validation suppression
+      this._totalElementCount = nodeCount + containerCount;
+      visualizationState.setTotalElementCount(this._totalElementCount);
 
-      // Step 7: Validate final state
+      // Step 8: Validate final state
       if (this.options.validateDuringParsing) {
         visualizationState.validateInvariants();
       }
-
       const processingTime = Date.now() - startTime;
       this.debugLog("Parsing completed", {
         processingTime,
@@ -139,7 +136,6 @@ export class JSONParser {
         containerCount,
         warningCount: warnings.length,
       });
-
       return {
         visualizationState,
         hierarchyChoices,
@@ -166,7 +162,6 @@ export class JSONParser {
       throw parseError;
     }
   }
-
   /**
    * Parse hierarchy choices from raw data
    */
@@ -174,17 +169,14 @@ export class JSONParser {
     if (!Array.isArray(rawChoices)) {
       return [];
     }
-
     return rawChoices.map((choice, index) => {
       if (!choice.id || !choice.name) {
         throw new Error(
           `Invalid hierarchy choice at index ${index}: missing id or name`,
         );
       }
-
       // Handle different formats: some have 'children', others have 'hierarchy'
       const childrenArray = choice.children || choice.hierarchy || [];
-
       return {
         id: choice.id,
         name: choice.name,
@@ -192,7 +184,6 @@ export class JSONParser {
       };
     });
   }
-
   /**
    * Parse hierarchy children recursively
    */
@@ -200,14 +191,12 @@ export class JSONParser {
     if (!Array.isArray(rawChildren)) {
       return [];
     }
-
     return rawChildren.map((child, index) => {
       if (!child.id || !child.name) {
         throw new Error(
           `Invalid hierarchy child at index ${index}: missing id or name`,
         );
       }
-
       return {
         id: child.id,
         name: child.name,
@@ -215,7 +204,6 @@ export class JSONParser {
       };
     });
   }
-
   /**
    * Select the default hierarchy for grouping
    * Uses the first hierarchy choice as per JSON format specification
@@ -234,7 +222,6 @@ export class JSONParser {
         return firstChoice.id;
       }
     }
-
     // Fallback: any available hierarchy with assignments
     for (const choice of hierarchyChoices) {
       this.debugLog(`falling back to hierarchy ${choice.id}`);
@@ -242,10 +229,8 @@ export class JSONParser {
         return choice.id;
       }
     }
-
     return null;
   }
-
   /**
    * Create containers from hierarchy choice
    */
@@ -257,18 +242,17 @@ export class JSONParser {
     if (!hierarchy) {
       return 0;
     }
-
     let containerCount = 0;
-
     // First, collect all containers in the hierarchy
-    const allContainers: Array<{ node: any; parentId?: string }> = [];
-
+    const allContainers: Array<{
+      node: any;
+      parentId?: string;
+    }> = [];
     const collectContainersRecursively = (
       hierarchyNode: any,
       parentId?: string,
     ) => {
       allContainers.push({ node: hierarchyNode, parentId });
-
       // Recursively collect children
       if (hierarchyNode.children && hierarchyNode.children.length > 0) {
         for (const child of hierarchyNode.children) {
@@ -276,17 +260,14 @@ export class JSONParser {
         }
       }
     };
-
     // Collect all containers first
     for (const child of hierarchy.children || []) {
       collectContainersRecursively(child);
     }
-
     // Create containers in reverse order (deepest children first)
     // This ensures child containers exist before their parents try to reference them
     for (let i = allContainers.length - 1; i >= 0; i--) {
       const { node: hierarchyNode, parentId } = allContainers[i];
-
       try {
         // Collect children IDs for this container
         const childrenIds = new Set<string>();
@@ -295,7 +276,6 @@ export class JSONParser {
             childrenIds.add(child.id);
           }
         }
-
         const container: Container = {
           id: hierarchyNode.id,
           label: hierarchyNode.name,
@@ -303,10 +283,8 @@ export class JSONParser {
           collapsed: false, // Start expanded by default to avoid invariant violations
           hidden: false,
         };
-
         state.addContainer(container);
         containerCount++;
-
         this.debugLog("Created container", {
           id: hierarchyNode.id,
           name: hierarchyNode.name,
@@ -325,12 +303,9 @@ export class JSONParser {
         });
       }
     }
-
     // Containers are now created above in the correct order
-
     return containerCount;
   }
-
   /**
    * Parse nodes from raw data
    */
@@ -340,12 +315,10 @@ export class JSONParser {
     warnings: ValidationResult[],
   ): Promise<number> {
     let nodeCount = 0;
-
     for (const [index, rawNode] of rawNodes.entries()) {
       try {
         // Apply custom transformation if provided
         const transformedNode = this.options.nodeTransformer(rawNode);
-
         // Create GraphNode from raw data
         const node: GraphNode = {
           id: rawNode.id || transformedNode.id || `node_${index}`,
@@ -372,10 +345,8 @@ export class JSONParser {
           showingLongLabel: false,
           ...transformedNode, // Allow transformer to override any field
         };
-
         state.addNode(node);
         nodeCount++;
-
         if (nodeCount % 100 === 0) {
           this.debugLog("Parsed nodes progress", { count: nodeCount });
         }
@@ -388,10 +359,8 @@ export class JSONParser {
         });
       }
     }
-
     return nodeCount;
   }
-
   /**
    * Assign nodes to containers based on nodeAssignments
    */
@@ -401,7 +370,6 @@ export class JSONParser {
     warnings: ValidationResult[],
   ): Promise<void> {
     let assignmentCount = 0;
-
     for (const [nodeId, containerId] of Object.entries(assignments)) {
       try {
         // Check if node exists
@@ -415,7 +383,6 @@ export class JSONParser {
           });
           continue;
         }
-
         // Check if container exists
         const container = state.getContainer(containerId);
         if (!container) {
@@ -427,11 +394,9 @@ export class JSONParser {
           });
           continue;
         }
-
         // Assign node to container
         state.assignNodeToContainer(nodeId, containerId);
         assignmentCount++;
-
         if (assignmentCount % 100 === 0) {
           this.debugLog("Node assignment progress", { count: assignmentCount });
         }
@@ -444,10 +409,8 @@ export class JSONParser {
         });
       }
     }
-
     this.debugLog("Completed node assignments", { count: assignmentCount });
   }
-
   /**
    * Parse edges from raw data
    */
@@ -457,12 +420,10 @@ export class JSONParser {
     warnings: ValidationResult[],
   ): Promise<number> {
     let edgeCount = 0;
-
     for (const [index, rawEdge] of rawEdges.entries()) {
       try {
         // Apply custom transformation if provided
         const transformedEdge = this.options.edgeTransformer(rawEdge);
-
         // Create GraphEdge from raw data
         const edge: GraphEdge = {
           id: rawEdge.id || transformedEdge.id || `edge_${index}`,
@@ -477,24 +438,14 @@ export class JSONParser {
           hidden: false,
           ...transformedEdge, // Allow transformer to override any field
         };
-
         // Validate required fields
         if (!edge.source || !edge.target) {
           throw new Error(
             `Edge missing source or target: source=${edge.source}, target=${edge.target}`,
           );
         }
-
-        // Debug: Log first few edges to verify source/target values
-        if (edgeCount < 5) {
-          console.log(
-            `[JSONParser] 🔍 Edge ${edge.id}: ${edge.source} -> ${edge.target}`,
-          );
-        }
-
         state.addEdge(edge);
         edgeCount++;
-
         if (edgeCount % 100 === 0) {
           this.debugLog("Parsed edges progress", { count: edgeCount });
         }
@@ -507,10 +458,8 @@ export class JSONParser {
         });
       }
     }
-
     return edgeCount;
   }
-
   /**
    * Create a parser with paxos.json specific configuration
    */
@@ -524,7 +473,6 @@ export class JSONParser {
       // Paxos-specific node transformer
       nodeTransformer: (rawNode) => {
         const transformed: Partial<GraphNode> = {};
-
         // Handle paxos.json specific fields
         if (rawNode.shortLabel) {
           transformed.label = rawNode.shortLabel;
@@ -535,7 +483,6 @@ export class JSONParser {
         if (rawNode.nodeType) {
           transformed.type = rawNode.nodeType;
         }
-
         // Extract semantic tags from various sources
         const semanticTags: string[] = [];
         if (rawNode.semanticTags) {
@@ -548,32 +495,26 @@ export class JSONParser {
           semanticTags.push(rawNode.data.locationType);
         }
         transformed.semanticTags = [...new Set(semanticTags)]; // Remove duplicates
-
         // Apply custom transformer if provided
         if (options.nodeTransformer) {
           Object.assign(transformed, options.nodeTransformer(rawNode));
         }
-
         return transformed;
       },
       // Paxos-specific edge transformer
       edgeTransformer: (rawEdge) => {
         const transformed: Partial<GraphEdge> = {};
-
         // Handle paxos.json specific fields
         if (rawEdge.edgeProperties) {
           transformed.semanticTags = rawEdge.edgeProperties;
         }
-
         // Apply custom transformer if provided
         if (options.edgeTransformer) {
           Object.assign(transformed, options.edgeTransformer(rawEdge));
         }
-
         return transformed;
       },
     });
   }
 }
-
 export default JSONParser;

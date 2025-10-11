@@ -4,10 +4,8 @@
  * Displays a legend showing what different edge visual styles represent
  * in terms of stream properties (Bounded/Unbounded, TotalOrder/NoOrder, etc.)
  */
-
 import React, { useMemo } from "react";
 import { COMPONENT_COLORS, TYPOGRAPHY } from "../shared/config";
-
 interface EdgeStyleLegendProps {
   edgeStyleConfig?: {
     semanticMappings?: Record<
@@ -27,14 +25,17 @@ interface EdgeStyleLegendProps {
     // (additional fields from internal configs are tolerated but ignored by the legend)
     propertyMappings?: Record<
       string,
-      string | { styleTag?: string; [key: string]: any }
+      | string
+      | {
+          styleTag?: string;
+          [key: string]: any;
+        }
     >;
   };
   compact?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
-
 // Visual representations of each edge style
 const EDGE_STYLE_SAMPLES = {
   // New numbered edge style system
@@ -109,7 +110,6 @@ const EDGE_STYLE_SAMPLES = {
       />
     </svg>
   ),
-
   // Legacy styles for backward compatibility
   "thick-stroke": (
     <svg width="40" height="3" viewBox="0 0 40 3">
@@ -156,9 +156,7 @@ const EDGE_STYLE_SAMPLES = {
     </svg>
   ),
 };
-
 // Note: Removed unused PROPERTY_DESCRIPTIONS dead constant
-
 function EdgeStyleLegendInner({
   edgeStyleConfig,
   compact = false,
@@ -187,7 +185,6 @@ function EdgeStyleLegendInner({
       </div>
     );
   }
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const legendStyle: React.CSSProperties = useMemo(
     () => ({
@@ -196,7 +193,6 @@ function EdgeStyleLegendInner({
     }),
     [compact, style],
   );
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const styles = useMemo(() => {
     const pairBoxStyle: React.CSSProperties = {
@@ -208,7 +204,6 @@ function EdgeStyleLegendInner({
       margin: "3px 0",
       backgroundColor: "#fafafa",
     };
-
     const numberStyle: React.CSSProperties = {
       fontSize: "12px",
       fontWeight: "bold",
@@ -217,28 +212,23 @@ function EdgeStyleLegendInner({
       color: COMPONENT_COLORS.TEXT_PRIMARY,
       flexShrink: 0,
     };
-
     const contentStyle: React.CSSProperties = { flex: 1 };
-
     const edgeRowStyle: React.CSSProperties = {
       display: "flex",
       alignItems: "center",
       margin: "1px 0",
       fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
     };
-
     const sampleStyle: React.CSSProperties = {
       marginRight: "8px",
       minWidth: "48px",
       display: "flex",
       alignItems: "center",
     };
-
     const labelStyle: React.CSSProperties = {
       fontSize: "10px",
       color: COMPONENT_COLORS.TEXT_PRIMARY,
     };
-
     return {
       pairBoxStyle,
       numberStyle,
@@ -248,14 +238,11 @@ function EdgeStyleLegendInner({
       labelStyle,
     };
   }, [compact]);
-
   // Helper function to render semantic mapping boxes
   const renderSemanticMappingBoxes = () => {
     if (!edgeStyleConfig.semanticMappings) return null;
-
     let groupNumber = 1;
     const allBoxes: JSX.Element[] = [];
-
     // Process each group
     Object.entries(edgeStyleConfig.semanticMappings).forEach(
       ([groupName, group]) => {
@@ -275,13 +262,11 @@ function EdgeStyleLegendInner({
           </div>
         );
         allBoxes.push(groupHeader);
-
         // Process each option within the group
         Object.entries(group).forEach(
           ([optionName, styleSettings], optionIndex) => {
             // Generate a visual sample based on the style settings
             const sample = generateVisualSample(styleSettings);
-
             const box = (
               <div
                 key={`${groupName}-${optionName}`}
@@ -311,18 +296,14 @@ function EdgeStyleLegendInner({
                 </div>
               </div>
             );
-
             allBoxes.push(box);
           },
         );
-
         groupNumber++;
       },
     );
-
     return allBoxes;
   };
-
   // Helper function to generate visual sample from style settings
   const generateVisualSample = (
     styleSettings: Record<string, string | number>,
@@ -335,7 +316,6 @@ function EdgeStyleLegendInner({
     const halo = styleSettings["halo"] as string;
     const arrowhead = styleSettings["arrowhead"] as string;
     const waviness = styleSettings["waviness"] as string;
-
     let strokeDasharray = undefined;
     switch (linePattern) {
       case "dashed":
@@ -348,19 +328,16 @@ function EdgeStyleLegendInner({
         strokeDasharray = "8,2,2,2";
         break;
     }
-
     const haloColors = {
       "light-blue": "#e6f3ff",
       // Slightly stronger so it peeks beyond the stroke clearly
       "light-red": "#ffb3b3",
       "light-green": "#e6ffe6",
     };
-
     const haloColor =
       halo && halo !== "none"
         ? haloColors[halo as keyof typeof haloColors]
         : undefined;
-
     // Helper to render a head marker according to arrowhead
     const renderHeadMarker = (x: number, y: number, color: string) => {
       switch (arrowhead) {
@@ -395,12 +372,9 @@ function EdgeStyleLegendInner({
           return null;
       }
     };
-
     // Helper to build a gentle wavy path centered on y
     const wavePathD = (y: number) => `M0,${y} Q10,${y - 3} 20,${y} T40,${y}`;
-
     const isWavy = waviness === "wavy";
-
     if (lineStyle === "double") {
       // Render double lines with extra height to avoid stroke clipping
       const height = Math.max(10, lineWidth + 6);
@@ -600,11 +574,9 @@ function EdgeStyleLegendInner({
       );
     }
   };
-
   // Helper function to render boolean pair boxes
   const renderBooleanPairBoxes = () => {
     if (!edgeStyleConfig.booleanPropertyPairs) return null;
-
     return edgeStyleConfig.booleanPropertyPairs.map((pairConfig, index) => {
       const [defaultProp, altProp] = pairConfig.pair;
       const defaultSample =
@@ -615,7 +587,6 @@ function EdgeStyleLegendInner({
         EDGE_STYLE_SAMPLES[
           pairConfig.altStyle as keyof typeof EDGE_STYLE_SAMPLES
         ];
-
       return (
         <div key={`pair-${index}`} style={styles.pairBoxStyle}>
           <div style={styles.numberStyle}>{index + 1}</div>
@@ -639,17 +610,14 @@ function EdgeStyleLegendInner({
       );
     });
   };
-
   // Helper function to render single property boxes
   const renderSinglePropertyBoxes = () => {
     if (!edgeStyleConfig.singlePropertyMappings) return null;
-
     return Object.entries(edgeStyleConfig.singlePropertyMappings).map(
       ([property, styleTag], _index) => {
         const sample =
           EDGE_STYLE_SAMPLES[styleTag as keyof typeof EDGE_STYLE_SAMPLES];
         const styleNumber = styleTag.replace("edge_style_", "");
-
         return (
           <div key={property} style={styles.pairBoxStyle}>
             <div style={styles.numberStyle}>{styleNumber}</div>
@@ -665,11 +633,9 @@ function EdgeStyleLegendInner({
       },
     );
   };
-
   // Legacy support - render old format in simple boxes
   const renderLegacyBoxes = () => {
     if (!edgeStyleConfig.propertyMappings) return null;
-
     return Object.entries(edgeStyleConfig.propertyMappings).map(
       ([property, styleDefinition], index) => {
         let sample;
@@ -684,7 +650,9 @@ function EdgeStyleLegendInner({
           typeof styleDefinition === "object" &&
           styleDefinition !== null
         ) {
-          const config = styleDefinition as { styleTag?: string };
+          const config = styleDefinition as {
+            styleTag?: string;
+          };
           sample = config.styleTag
             ? EDGE_STYLE_SAMPLES[
                 config.styleTag as keyof typeof EDGE_STYLE_SAMPLES
@@ -706,7 +674,6 @@ function EdgeStyleLegendInner({
       },
     );
   };
-
   // Memoize sections to avoid re-computation on unrelated re-renders
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const semanticBoxes = useMemo(
@@ -732,7 +699,6 @@ function EdgeStyleLegendInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderLegacyBoxes is stable
     [edgeStyleConfig?.propertyMappings, styles],
   );
-
   return (
     <div className={`edge-style-legend ${className}`} style={legendStyle}>
       <div
@@ -760,5 +726,4 @@ function EdgeStyleLegendInner({
     </div>
   );
 }
-
 export const EdgeStyleLegend = React.memo(EdgeStyleLegendInner);

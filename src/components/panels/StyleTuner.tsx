@@ -14,7 +14,6 @@
  * KEY FIX: The lock must be released before calling onChange/onControlsScaleChange
  * because those callbacks trigger refreshLayout() which needs to acquire the same lock.
  */
-
 import React, { useState, useEffect, memo } from "react";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
@@ -25,9 +24,7 @@ import {
 } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
-
 type EdgeStyleKind = "bezier" | "straight" | "smoothstep";
-
 export interface StyleConfig {
   edgeStyle?: EdgeStyleKind;
   edgeWidth?: number;
@@ -37,7 +34,6 @@ export interface StyleConfig {
   containerBorderWidth?: number;
   containerShadow?: "none" | "light" | "medium" | "heavy";
 }
-
 // Layout algorithm options (matching ELK's available algorithms)
 const layoutOptions = {
   mrtree: "MR Tree",
@@ -45,7 +41,6 @@ const layoutOptions = {
   force: "Force-Directed",
   stress: "Stress Minimization",
 };
-
 // Color palette options
 const paletteOptions = {
   Set3: "Set3",
@@ -53,7 +48,6 @@ const paletteOptions = {
   Pastel1: "Pastel1",
   Dark2: "Dark2",
 };
-
 export interface StyleTunerPanelProps {
   // Feed and control the FlowGraph RenderConfig style fields
   value: StyleConfig;
@@ -72,7 +66,6 @@ export interface StyleTunerPanelProps {
   asyncCoordinator?: AsyncCoordinator | null;
   onError?: (error: Error) => void;
 }
-
 const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   value,
   onChange,
@@ -91,9 +84,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
 }: StyleTunerPanelProps) => {
   const [local, setLocal] = useState(value);
   useEffect(() => setLocal(value), [value]);
-
   // Removed unused _update function - using direct state updates instead
-
   const inputStyle: React.CSSProperties = {
     padding: "4px 8px",
     border: "1px solid #ced4da",
@@ -102,7 +93,6 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
     fontSize: `${PANEL_CONSTANTS.FONT_SIZE_SMALL}px`,
     width: "100%",
   };
-
   const rowStyle: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: "1fr 120px",
@@ -110,7 +100,6 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
     gap: "8px",
     marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5, // 8px
   };
-
   // Custom button style for open/close, matching CustomControls
   const controlButtonStyle: React.CSSProperties = {
     fontSize: PANEL_CONSTANTS.FONT_SIZE_LARGE,
@@ -125,7 +114,6 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
     outline: "none",
     cursor: "pointer",
   };
-
   // Add hover/focus effect via inline event handlers
   const [btnHover, setBtnHover] = useState(false);
   const [btnFocus, setBtnFocus] = useState(false);
@@ -141,7 +129,6 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
         : controlButtonStyle.boxShadow,
     borderColor: btnHover || btnFocus ? "#2563eb" : "#3b82f6",
   };
-
   return (
     <div
       style={{
@@ -200,14 +187,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             onChange={(e) => {
               // Update immediately for responsive UI and execute synchronously
               const newLayout = e.target.value;
-              console.log(
-                `[StyleTuner] Layout algorithm dropdown changed: ${currentLayout} -> ${newLayout}`,
-              );
               try {
                 onLayoutChange?.(newLayout);
-                console.log(
-                  `[StyleTuner] Layout change callback executed successfully for: ${newLayout}`,
-                );
               } catch (error) {
                 console.error(
                   `[StyleTuner] Layout change failed for ${newLayout}:`,
@@ -231,26 +212,15 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             onChange={(e) => {
               // Update local state immediately for responsive UI
               const newEdgeStyle = e.target.value as EdgeStyleKind;
-              console.log(
-                `[StyleTuner] Edge style dropdown changed: ${local.edgeStyle || "bezier"} -> ${newEdgeStyle}`,
-              );
-
               const next = { ...local, edgeStyle: newEdgeStyle };
               setLocal(next);
-
               try {
                 // Use the new AsyncCoordinator-based handler if available, otherwise fall back to the old one
                 if (onEdgeStyleChange) {
                   onEdgeStyleChange(newEdgeStyle);
-                  console.log(
-                    `[StyleTuner] Edge style change callback executed successfully for: ${newEdgeStyle}`,
-                  );
                 } else {
                   // Fallback to the old onChange handler
                   onChange(next);
-                  console.log(
-                    `[StyleTuner] Edge style change fallback executed for: ${newEdgeStyle}`,
-                  );
                 }
               } catch (error) {
                 console.error(
@@ -303,15 +273,11 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
     </div>
   );
 };
-
 // Memoized component for performance optimization
 export const StyleTunerPanel = memo(StyleTunerPanelInternal);
-
 export default StyleTunerPanel;
-
 // Export as StyleTuner for compatibility
 export { StyleTunerPanel as StyleTuner };
-
 // Export types for compatibility
 export type StyleTunerProps = StyleTunerPanelProps;
 export type LayoutAlgorithm = {
@@ -324,5 +290,9 @@ export type ColorPaletteOption = {
   id: string;
   name: string;
   description: string;
-  colors: Array<{ primary: string; secondary?: string; name?: string }>;
+  colors: Array<{
+    primary: string;
+    secondary?: string;
+    name?: string;
+  }>;
 };

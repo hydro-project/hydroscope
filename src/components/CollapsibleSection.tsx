@@ -4,10 +4,8 @@
  * Refactored to use native <details>/<summary> for accessibility and simplicity,
  * while keeping a controlled open state via props.
  */
-
 import { CollapsibleSectionProps } from "./types";
 import { COMPONENT_COLORS, TYPOGRAPHY } from "../shared/config";
-
 export function CollapsibleSection({
   title,
   isCollapsed,
@@ -21,7 +19,6 @@ export function CollapsibleSection({
 }: CollapsibleSectionProps) {
   const isOpen = !isCollapsed;
   const indent = level * 8;
-
   return (
     <details
       open={isOpen}

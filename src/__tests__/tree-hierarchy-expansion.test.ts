@@ -6,11 +6,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, Container, SearchResult } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Tree Hierarchy Expansion and Highlighting", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     // Create a nested hierarchy for testing
@@ -137,7 +141,7 @@ describe("Tree Hierarchy Expansion and Highlighting", () => {
   describe("Collapsed Ancestor Highlighting", () => {
     it("should highlight collapsed ancestors containing search matches", () => {
       // Set up search results
-      const searchResults: SearchResult[] = [
+      const _searchResults: SearchResult[] = [
         {
           id: "node1",
           label: "Test Node 1",
@@ -163,7 +167,7 @@ describe("Tree Hierarchy Expansion and Highlighting", () => {
     });
 
     it("should not highlight expanded ancestors", () => {
-      const searchResults: SearchResult[] = [
+      const _searchResults: SearchResult[] = [
         {
           id: "node1",
           label: "Test Node 1",

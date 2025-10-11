@@ -9,15 +9,24 @@ import {
   createTestContainer,
   createTestEdge,
 } from "../utils/testData.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Search Functionality", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
   describe("Search State Management", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should initialize with empty search state", () => {
       expect(state.getSearchQuery()).toBe("");
       expect(state.getSearchResults()).toHaveLength(0);
@@ -94,13 +103,19 @@ describe("VisualizationState Search Functionality", () => {
       expect(state.getSearchExpandedContainers()).toHaveLength(0);
     });
 
-    it("should track containers expanded for search", () => {
-      const container = createTestContainer("container1", ["node1"]);
+    it("should track containers expanded for search", async () => {
+      const container = createTestContainer(
+        "container1",
+        ["node1"],
+        "Container container1",
+      );
       const node = createTestNode("node1", "Test Node");
 
       state.addContainer(container);
       state.addNode(node);
-      state._collapseContainerForCoordinator("container1");
+      await coordinator.collapseContainer("container1", state, {
+        triggerLayout: false,
+      });
 
       state.expandContainerForSearch("container1");
 

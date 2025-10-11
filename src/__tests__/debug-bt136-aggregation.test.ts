@@ -5,16 +5,20 @@
 import fs from "fs";
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 import { VisualizationState } from "../core/VisualizationState.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("Debug bt_136 Aggregation", () => {
+  let coordinator: AsyncCoordinator;
+
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
 
   beforeEach(async () => {
+    coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),
@@ -30,7 +34,7 @@ describe("Debug bt_136 Aggregation", () => {
     visualizationState = parseResult.visualizationState;
   });
 
-  it("should trace edge creation and resolution for bt_136", () => {
+  it("should trace edge creation and resolution for bt_136", async () => {
     console.log("🔍 Tracing edge creation and resolution for bt_136...");
 
     // Check initial state - before any operations
@@ -87,8 +91,12 @@ describe("Debug bt_136 Aggregation", () => {
 
     if (runtimeParkContainer) {
       console.log(`🔄 EXPANDING: ${runtimeParkContainer.id}`);
-      visualizationState._expandContainerForCoordinator(
+      await coordinator.expandContainer(
         runtimeParkContainer.id,
+        visualizationState,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
       );
 
       // Check edges after expansion
@@ -165,7 +173,7 @@ describe("Debug bt_136 Aggregation", () => {
     }
   });
 
-  it("should trace bt_136 ancestor visibility during runtime/park.rs expansion", () => {
+  it("should trace bt_136 ancestor visibility during runtime/park.rs expansion", async () => {
     console.log("🔍 Tracing bt_136 ancestor visibility...");
 
     // Get initial state
@@ -209,8 +217,12 @@ describe("Debug bt_136 Aggregation", () => {
 
     if (runtimeParkContainer) {
       // Expand runtime/park.rs
-      visualizationState._expandContainerForCoordinator(
+      await coordinator.expandContainer(
         runtimeParkContainer.id,
+        visualizationState,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
       );
 
       // Check state after expansion

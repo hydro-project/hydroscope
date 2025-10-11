@@ -4,9 +4,7 @@
  * Functions for parsing graph data from URL parameters, useful for
  * sharing visualizations via URLs.
  */
-
 import type { HydroscopeData } from "../types/core.js";
-
 /**
  * Parse graph data from URL parameters
  *
@@ -29,13 +27,11 @@ export async function parseDataFromUrl(
       const decodedData = atob(compressedParam);
       return JSON.parse(decodedData) as HydroscopeData;
     }
-
     // Handle uncompressed data
     if (dataParam) {
       const decodedData = atob(dataParam);
       return JSON.parse(decodedData) as HydroscopeData;
     }
-
     return null;
   } catch (error) {
     throw new Error(
@@ -43,7 +39,6 @@ export async function parseDataFromUrl(
     );
   }
 }
-
 /**
  * Encode graph data for URL sharing
  *
@@ -59,12 +54,10 @@ export function encodeDataForUrl(
 ): string {
   try {
     const jsonString = JSON.stringify(data);
-
     if (compress) {
       // For now, just use base64. In the future, could add compression
       console.warn("Compression not implemented yet, using base64 encoding");
     }
-
     return btoa(jsonString);
   } catch (error) {
     throw new Error(

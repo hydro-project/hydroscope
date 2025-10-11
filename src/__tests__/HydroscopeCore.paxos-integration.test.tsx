@@ -17,11 +17,13 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Load actual paxos.json test data
 let paxosData: HydroscopeData;
 
 beforeEach(async () => {
+  const coordinator = new AsyncCoordinator();
   // Load paxos.json from test-data directory
   try {
     const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");

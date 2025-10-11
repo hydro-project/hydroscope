@@ -6,25 +6,41 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import {
   createTestNode,
   createTestEdge,
   createTestContainer,
-  loadPaxosTestData,
 } from "../utils/testData.js";
+import { JSONParser } from "../utils/JSONParser.js";
+import type { HydroscopeData } from "../types/core.js";
+import fs from "fs";
+import path from "path";
+import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Real ELK Integration Tests (No Mocks)", () => {
+  let coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let elkBridge: ELKBridge;
   let asyncCoordinator: AsyncCoordinator;
 
+  // Helper function to load paxos test data
+  const loadPaxosTestData = async (): Promise<VisualizationState> => {
+    const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");
+    const paxosJson = fs.readFileSync(paxosPath, "utf-8");
+    const paxosData = JSON.parse(paxosJson) as HydroscopeData;
+
+    const parser = JSONParser.createPaxosParser({ debug: false });
+    const result = await parser.parseData(paxosData);
+    return result.visualizationState;
+  };
+
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     elkBridge = new ELKBridge({
-      algorithm: "layered",
+      algorithm: "mrtree",
       direction: "DOWN",
       nodeSpacing: 50,
       layerSpacing: 25,
@@ -113,7 +129,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
     it("should handle container layout with real ELK", async () => {
       // Create container with children
-      const container = createTestContainer("c1", ["n1", "n2"], "Container 1");
+      const container = createTestContainer("c1", ["n1", "n2"], "Container c1");
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
 

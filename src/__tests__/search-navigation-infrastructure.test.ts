@@ -5,11 +5,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, Container } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Search and Navigation Infrastructure", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
@@ -201,7 +205,12 @@ describe("Search and Navigation Infrastructure", () => {
   });
 
   describe("Enhanced Container Operations", () => {
-    it("should expand specific containers", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
+    it("should expand specific containers", async () => {
       const container1 = createTestContainer("container1", "Container 1", []);
       const container2 = createTestContainer("container2", "Container 2", []);
 
@@ -209,16 +218,18 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse both
-      state._collapseAllContainersForCoordinator();
+      await coordinator.collapseAllContainers(state, { triggerLayout: false });
 
       // Expand only container1
-      state._expandAllContainersForCoordinator(["container1"]);
+      await coordinator.expandAllContainers(state, ["container1"], {
+        triggerLayout: false,
+      });
 
       expect(state.getContainer("container1")?.collapsed).toBe(false);
       expect(state.getContainer("container2")?.collapsed).toBe(true);
     });
 
-    it("should collapse specific containers", () => {
+    it("should collapse specific containers", async () => {
       const container1 = createTestContainer("container1", "Container 1", []);
       const container2 = createTestContainer("container2", "Container 2", []);
 
@@ -226,7 +237,9 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse only container1
-      state._collapseAllContainersForCoordinator(["container1"]);
+      await coordinator.collapseAllContainers(state, ["container1"], {
+        triggerLayout: false,
+      });
 
       expect(state.getContainer("container1")?.collapsed).toBe(true);
       expect(state.getContainer("container2")?.collapsed).toBe(false);

@@ -1,7 +1,6 @@
 /**
  * @fileoverview Standard graph node component
  */
-
 import React, { useState, useCallback } from "react";
 import { type NodeProps } from "@xyflow/react";
 import {
@@ -19,7 +18,6 @@ import {
   COLOR_CONSTANTS,
   DEFAULT_COLOR_PALETTE,
 } from "../shared/config";
-
 // Container color generation (copied from ContainerNode for consistency)
 function generateContainerColors(containerId: string, palette: string) {
   const hash = containerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
@@ -70,10 +68,8 @@ function generateContainerColors(containerId: string, palette: string) {
       "#e5c494",
     ],
   };
-
   const colors = colorPalettes[palette] || colorPalettes["Set3"];
   const baseColor = colors[hash % colors.length];
-
   const lighten = (color: string, factor: number) => {
     const hex = color.replace("#", "");
     const r = parseInt(hex.substring(0, 2), 16);
@@ -84,7 +80,6 @@ function generateContainerColors(containerId: string, palette: string) {
     const newB = Math.floor(b + (255 - b) * factor);
     return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
   };
-
   const darken = (color: string, factor: number) => {
     const hex = color.replace("#", "");
     const r = parseInt(hex.substring(0, 2), 16);
@@ -95,56 +90,36 @@ function generateContainerColors(containerId: string, palette: string) {
     const newB = Math.floor(b * (1 - factor));
     return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
   };
-
   return {
     background: lighten(baseColor, COLOR_CONSTANTS.LIGHTEN_FACTOR),
     border: darken(baseColor, COLOR_CONSTANTS.DARKEN_FACTOR),
     text: darken(baseColor, COLOR_CONSTANTS.CONTRAST_FACTOR),
   };
 }
-
 export function StandardNode({
   id,
   data,
   style,
-}: NodeProps & { style?: React.CSSProperties }) {
+}: NodeProps & {
+  style?: React.CSSProperties;
+}) {
   // Test if React is detecting changes by logging render count
   const renderCount = React.useRef(0);
-
   // Debug logging for search highlights - expanded to network nodes
   if (id === "0" || id === "8" || id === "2" || id === "7") {
-    console.log(`[StandardNode] 🔍 NODE ${id} RENDER - received data:`, {
-      isHighlighted: (data as any)?.isHighlighted,
-      highlightType: (data as any)?.highlightType,
-      searchHighlight: (data as any)?.searchHighlight,
-      searchHighlightStrong: (data as any)?.searchHighlightStrong,
-      highlightTimestamp: (data as any)?.highlightTimestamp,
-      dataObjectRef: data,
-      renderTime: Date.now(),
-    });
-    console.log(`[StandardNode] 🔍 NODE ${id} RENDER - received style:`, style);
-
     renderCount.current++;
-    console.log(
-      `[StandardNode] 🔍 NODE ${id} RENDER COUNT: ${renderCount.current}`,
-    );
   }
-
   // Click animation state
   const [isClicked, setIsClicked] = useState(false);
-
   const styleCfg = useStyleConfig();
-
   // Handle click animation
   const handleClick = useCallback(() => {
     // Trigger the visual pop-out effect
     setIsClicked(true);
-
     // Reset the animation after a short duration
     setTimeout(() => {
       setIsClicked(false);
     }, 200); // 200ms animation duration
-
     // Check if this is a collapsed container and call its onClick handler
     if (
       data.collapsed === true &&
@@ -153,14 +128,11 @@ export function StandardNode({
     ) {
       data.onClick(id, "container");
     }
-
     // Don't prevent the event from bubbling up to ReactFlow
     // This ensures the onNodeClick handler still fires
   }, [data, id]);
-
   // Check if this is a collapsed container
   const isCollapsedContainer = data.collapsed === true;
-
   // Get dynamic colors based on node type (preferred) or style as fallback
   // Support nodeType possibly nested under a 'data' payload coming from JSON
   const nodeType = String(
@@ -170,12 +142,10 @@ export function StandardNode({
       "default",
   );
   const colorPalette = String(data.colorPalette || DEFAULT_COLOR_PALETTE);
-
   // Use different color generation for collapsed containers
   const rawColors = isCollapsedContainer
     ? generateContainerColors(id, colorPalette)
     : (generateNodeColors([nodeType], colorPalette) as NodeColor);
-
   // Unified colors interface - normalize different color formats
   const baseColors =
     "primary" in rawColors
@@ -184,12 +154,10 @@ export function StandardNode({
           backgroundColor: rawColors.background,
           borderColor: rawColors.border,
         };
-
   // Apply search highlight colors if needed
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
   const searchColors = getSearchHighlightColors();
-
   const colors = searchHighlight
     ? {
         backgroundColor: searchHighlightStrong
@@ -203,7 +171,6 @@ export function StandardNode({
           : searchColors.match.text,
       }
     : { ...baseColors, textColor: undefined };
-
   // For collapsed containers, get the same variables as ContainerNode
   const width =
     data.width ||
@@ -217,7 +184,6 @@ export function StandardNode({
       : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
-
   // Dev-only: log computed color mapping to verify at runtime
   if (process.env.NODE_ENV !== "production") {
     // Only log a small sample to avoid noise
@@ -227,11 +193,9 @@ export function StandardNode({
       (window as any).__hydroColorLogCount__++;
     }
   }
-
   // Different styling for collapsed containers vs regular nodes
   if (isCollapsedContainer) {
     const containerColors = generateContainerColors(id, colorPalette);
-
     // Apply search highlight colors for containers too
     const finalContainerColors = searchHighlight
       ? {
@@ -246,7 +210,6 @@ export function StandardNode({
             : searchColors.match.text,
         }
       : containerColors;
-
     return (
       <>
         {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -344,18 +307,15 @@ export function StandardNode({
       </>
     );
   }
-
   // Determine which label to display for regular nodes
   // Priority: data.label (if set by toggle) > data.shortLabel > id
   const displayLabel = data.label || data.shortLabel || id;
-
   // Check if showing long label
   const isShowingLongLabel =
     data.label === data.fullLabel &&
     data.fullLabel &&
     data.shortLabel &&
     data.fullLabel !== data.shortLabel;
-
   // Regular node styling
   return (
     <>
@@ -414,7 +374,6 @@ export function StandardNode({
           boxShadow: (() => {
             const searchHighlight = (data as any).searchHighlight;
             const searchHighlightStrong = (data as any).searchHighlightStrong;
-
             if (searchHighlightStrong) {
               return "0 0 0 4px rgba(249, 115, 22, 0.5), 0 8px 20px rgba(0,0,0,0.15)";
             } else if (searchHighlight) {
@@ -454,8 +413,6 @@ export function StandardNode({
     </>
   );
 }
-
 // Memoized variant to avoid unnecessary re-renders when props are unchanged
 export const MemoStandardNode = React.memo(StandardNode);
-
 export default StandardNode;

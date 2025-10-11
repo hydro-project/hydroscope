@@ -6,14 +6,17 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import { loadPaxosTestData } from "../utils/testData.js";
 import type { GraphNode, GraphEdge, Container } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Floating HyperEdge Bug Reproduction", () => {
+  let coordinator: AsyncCoordinator;
+
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
 
   beforeEach(() => {
+    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
 
@@ -204,11 +207,11 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     edges.forEach((edge) => state.addEdge(edge));
   });
 
-  it("should reproduce floating hyperedge bug with exact steps", () => {
+  it("should reproduce floating hyperedge bug with exact steps", async () => {
     console.log("[FloatingBug] 🚀 Starting precise bug reproduction");
 
     // Step 1: Get initial state with all containers collapsed
-    state._collapseAllContainersForCoordinator();
+    await coordinator.collapseAllContainers(state, { triggerLayout: false });
     const initialData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -237,7 +240,13 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     // Step 2: Expand the Acceptor container (this is where the bug occurs)
     console.log(`[FloatingBug] 📦 Expanding Acceptor container: loc_1`);
 
-    state._expandContainerForCoordinator("loc_1");
+    await coordinator.expandContainer(
+      "loc_1",
+      state,
+      { triggerLayout: false },
+      coordinator,
+      { triggerLayout: false },
+    );
     const expandedData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -253,7 +262,13 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     // Step 3: Collapse the Acceptor container back
     console.log(`[FloatingBug] 📦 Collapsing Acceptor container: loc_1`);
 
-    state._collapseContainerForCoordinator("loc_1");
+    await coordinator.collapseContainer(
+      "loc_1",
+      state,
+      { triggerLayout: false },
+      coordinator,
+      { triggerLayout: false },
+    );
     const reCollapsedData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -308,12 +323,12 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] ✅ Bug reproduction test completed");
   });
 
-  it("should reproduce bug with multiple expand/collapse cycles", () => {
+  it("should reproduce bug with multiple expand/collapse cycles", async () => {
     console.log("[FloatingBug] 🚀 Starting multiple cycle reproduction");
 
     // Start with all collapsed
-    state._collapseAllContainersForCoordinator();
-    const initialData = reactFlowBridge.toReactFlowData(state);
+    await coordinator.collapseAllContainers(state, { triggerLayout: false });
+    const _initialData = reactFlowBridge.toReactFlowData(state);
 
     const collapsedContainers = state.visibleContainers.filter(
       (c) => c.collapsed,
@@ -327,12 +342,24 @@ describe("Floating HyperEdge Bug Reproduction", () => {
       console.log(
         `[FloatingBug] 🔄 Cycle ${cycle}: Expanding ${targetContainer.id}`,
       );
-      state._expandContainerForCoordinator(targetContainer.id);
+      await coordinator.expandContainer(
+        targetContainer.id,
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       console.log(
         `[FloatingBug] 🔄 Cycle ${cycle}: Collapsing ${targetContainer.id}`,
       );
-      state._collapseContainerForCoordinator(targetContainer.id);
+      await coordinator.collapseContainer(
+        targetContainer.id,
+        state,
+        { triggerLayout: false },
+        coordinator,
+        { triggerLayout: false },
+      );
 
       // Check for floating edges after each cycle
       const cycleData = reactFlowBridge.toReactFlowData(state);

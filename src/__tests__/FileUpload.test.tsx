@@ -7,7 +7,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FileUpload } from "../components/FileUpload.js";
-import type { HydroscopeData } from "../types/core.js";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Mock FileReader
 class MockFileReader {
@@ -16,7 +16,7 @@ class MockFileReader {
   onload: ((event: any) => void) | null = null;
   onerror: ((event: any) => void) | null = null;
 
-  readAsText(file: File) {
+  readAsText(_file: File) {
     // Simulate async file reading
     setTimeout(() => {
       if (this.error) {
@@ -32,6 +32,7 @@ class MockFileReader {
 const originalFileReader = global.FileReader;
 
 beforeEach(() => {
+  const coordinator = new AsyncCoordinator();
   // Reset FileReader to original before each test
   global.FileReader = originalFileReader;
 });

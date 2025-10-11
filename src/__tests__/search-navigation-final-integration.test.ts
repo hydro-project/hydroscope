@@ -60,7 +60,7 @@ describe("Search Navigation Final Integration", () => {
     };
 
     // Initially collapse all containers to test expansion
-    state._collapseAllContainersForCoordinator();
+    await coordinator.collapseAllContainers(state, { triggerLayout: false });
   });
 
   afterEach(() => {
@@ -86,6 +86,11 @@ describe("Search Navigation Final Integration", () => {
   });
 
   describe("Integration with Existing Hydroscope Architecture", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should integrate seamlessly with VisualizationState", () => {
       // Test that all search and navigation methods are available
       expect(typeof state.performSearch).toBe("function");
@@ -359,6 +364,11 @@ describe("Search Navigation Final Integration", () => {
   });
 
   describe("Edge Cases and Error Scenarios", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should handle empty search queries gracefully", () => {
       expect(() => state.performSearch("")).not.toThrow();
       expect(() => state.performSearch("   ")).not.toThrow();

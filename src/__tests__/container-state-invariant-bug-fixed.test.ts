@@ -12,6 +12,7 @@
 import fs from "fs";
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
@@ -19,11 +20,14 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("Container State Invariant Bug - FIXED", () => {
+  let coordinator: AsyncCoordinator;
+
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
   let elkBridge: ELKBridge;
 
   beforeEach(async () => {
+    const coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),
@@ -39,6 +43,11 @@ describe("Container State Invariant Bug - FIXED", () => {
   });
 
   describe("Invariant Violations - FIXED", () => {
+    let coordinator: AsyncCoordinator;
+    beforeEach(() => {
+      coordinator = new AsyncCoordinator();
+    });
+
     it("should NOT find containers in illegal Expanded/Hidden state", async () => {
       // Parse the data to get the state
       const parser = JSONParser.createPaxosParser({ debug: false });
@@ -165,7 +174,9 @@ describe("Container State Invariant Bug - FIXED", () => {
       });
 
       // Collapse the parent - this should cascade properly
-      state._collapseContainerForCoordinator("parent");
+      await coordinator.collapseContainer("parent", state, {
+        triggerLayout: false,
+      });
 
       // Verify the fix: child and grandchild should be both hidden AND collapsed
       const child = state.getContainer("child");

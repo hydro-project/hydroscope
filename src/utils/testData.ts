@@ -2,15 +2,12 @@
  * Test data utilities for paxos.json and other test scenarios
  * Provides consistent test data throughout development
  */
-
 import type { GraphNode, GraphEdge, Container } from "../types/core.js";
-
 export interface TestGraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
   containers: Container[];
 }
-
 export function loadPaxosTestData(): TestGraphData {
   // In browser environment, return minimal test data
   // File system access is not available in browsers
@@ -19,7 +16,6 @@ export function loadPaxosTestData(): TestGraphData {
   );
   return getMinimalTestData();
 }
-
 function _convertHierarchyToContainers(
   hierarchy: any,
   containers: Container[],
@@ -29,7 +25,6 @@ function _convertHierarchyToContainers(
     const childIds = hierarchy.children
       .filter((child: any) => !child.children || child.children.length === 0)
       .map((child: any) => child.id);
-
     if (childIds.length > 0) {
       containers.push({
         id: hierarchy.id || `container_${containers.length}`,
@@ -39,7 +34,6 @@ function _convertHierarchyToContainers(
         hidden: false,
       });
     }
-
     // Recursively process nested hierarchies
     for (const child of hierarchy.children) {
       if (child.children && child.children.length > 0) {
@@ -48,7 +42,6 @@ function _convertHierarchyToContainers(
     }
   }
 }
-
 export function getMinimalTestData(): TestGraphData {
   return {
     nodes: [
@@ -90,7 +83,6 @@ export function getMinimalTestData(): TestGraphData {
     ],
   };
 }
-
 export function createTestNode(id: string, label?: string): GraphNode {
   return {
     id,
@@ -101,7 +93,6 @@ export function createTestNode(id: string, label?: string): GraphNode {
     hidden: false,
   };
 }
-
 export function createTestEdge(
   id: string,
   source: string,
@@ -116,7 +107,6 @@ export function createTestEdge(
     hidden: false,
   };
 }
-
 export function createTestContainer(
   id: string,
   children: string[],
@@ -130,24 +120,19 @@ export function createTestContainer(
     hidden: false,
   };
 }
-
 export async function createTestVisualizationState() {
   const { VisualizationState } = await import("../core/VisualizationState.js");
   const state = new VisualizationState();
   const testData = loadPaxosTestData();
-
   // Add test data to state
   for (const node of testData.nodes) {
     state.addNode(node);
   }
-
   for (const container of testData.containers) {
     state.addContainer(container);
   }
-
   for (const edge of testData.edges) {
     state.addEdge(edge);
   }
-
   return state;
 }

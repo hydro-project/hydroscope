@@ -1,7 +1,6 @@
 /**
  * @fileoverview Container graph node component
  */
-
 import React from "react";
 import { type NodeProps } from "@xyflow/react";
 import { truncateLabel } from "../shared/textUtils";
@@ -13,39 +12,27 @@ import {
   getContrastColor,
 } from "../shared/colorUtils";
 import { SIZES } from "../shared/config";
-
 export function ContainerNode({
   id,
   data,
   style,
-}: NodeProps & { style?: React.CSSProperties }) {
+}: NodeProps & {
+  style?: React.CSSProperties;
+}) {
   // Debug logging for search highlights (only for containers, nodes 2 and 7 are handled in StandardNode)
   if (id === "loc_1" || id === "loc_0") {
-    console.log(`[ContainerNode] 🔍 CONTAINER ${id} received style:`, style);
-    console.log(
-      `[ContainerNode] 🔍 CONTAINER ${id} data.isHighlighted:`,
-      (data as any)?.isHighlighted,
-    );
-    console.log(
-      `[ContainerNode] 🔍 CONTAINER ${id} data.highlightType:`,
-      (data as any)?.highlightType,
-    );
   }
-
   const styleCfg = useStyleConfig();
-
   // Use dimensions from ReactFlow data (calculated by ELK) with proper fallbacks from config
   const width = Number(data.width) || SIZES.COLLAPSED_CONTAINER_WIDTH;
   const height =
     Number(data.height) ||
     (data.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
-
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
   const colorPalette = String(data.colorPalette || DEFAULT_COLOR_PALETTE);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
-
   const generateContainerColors = (containerId: string, palette: string) => {
     const hash = containerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
     const colorPalettes: Record<string, string[]> = {
@@ -95,10 +82,8 @@ export function ContainerNode({
         "#e5c494",
       ],
     };
-
     const colors = colorPalettes[palette] || colorPalettes["Set3"];
     const baseColor = colors[hash % colors.length];
-
     const lighten = (color: string, factor: number) => {
       const hex = color.replace("#", "");
       const r = parseInt(hex.substring(0, 2), 16);
@@ -109,7 +94,6 @@ export function ContainerNode({
       const newB = Math.floor(b + (255 - b) * factor);
       return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
     };
-
     const darken = (color: string, factor: number) => {
       const hex = color.replace("#", "");
       const r = parseInt(hex.substring(0, 2), 16);
@@ -120,7 +104,6 @@ export function ContainerNode({
       const newB = Math.floor(b * (1 - factor));
       return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
     };
-
     // Convert hex to rgba for transparency
     const hexToRgba = (hex: string, alpha: number) => {
       const r = parseInt(hex.substring(1, 3), 16);
@@ -128,18 +111,15 @@ export function ContainerNode({
       const b = parseInt(hex.substring(5, 7), 16);
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
-
     return {
       background: hexToRgba(lighten(baseColor, 0.8), 0.3), // Much more transparent
       border: darken(baseColor, 0.2),
       text: darken(baseColor, 0.4),
     };
   };
-
   if (data.collapsed) {
     const baseContainerColors = generateContainerColors(id, colorPalette);
     const searchColors = getSearchHighlightColors();
-
     // Apply search highlight colors if needed
     const containerColors = searchHighlight
       ? {
@@ -278,7 +258,6 @@ export function ContainerNode({
       </>
     );
   }
-
   // Apply search highlight colors for non-collapsed containers too
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
@@ -298,7 +277,6 @@ export function ContainerNode({
         border: "#1976d2",
         text: "#1976d2", // Blue text on light blue background provides good contrast
       };
-
   return (
     <>
       {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -397,8 +375,6 @@ export function ContainerNode({
     </>
   );
 }
-
 // Memoized variant to avoid unnecessary re-renders when props are unchanged
 export const MemoContainerNode = React.memo(ContainerNode);
-
 export default ContainerNode;
