@@ -226,6 +226,17 @@ export class VisualizationState {
     if (!edge.target || edge.target.trim() === "") {
       throw new Error("Invalid edge: target cannot be empty");
     }
+
+    // Validate that source and target nodes/containers actually exist
+    const sourceExists = this._nodes.has(edge.source) || this._containers.has(edge.source);
+    const targetExists = this._nodes.has(edge.target) || this._containers.has(edge.target);
+
+    if (!sourceExists) {
+      throw new Error(`Edge ${edge.id} references non-existent source: ${edge.source}`);
+    }
+    if (!targetExists) {
+      throw new Error(`Edge ${edge.id} references non-existent target: ${edge.target}`);
+    }
   }
   addContainer(container: Container): void {
     this._validateContainerData(container);

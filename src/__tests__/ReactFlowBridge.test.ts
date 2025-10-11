@@ -813,9 +813,10 @@ describe("ReactFlowBridge", () => {
       const result = semanticBridge.toReactFlowData(state);
 
       expect(result.edges[0].style).toMatchObject({
-        strokeDasharray: undefined, // solid from TotalOrder
         strokeWidth: 3, // from Unbounded
       });
+      // TotalOrder should result in solid line (no strokeDasharray property)
+      expect(result.edges[0].style?.strokeDasharray).toBeUndefined();
       expect(result.edges[0].data?.appliedSemanticTags).toEqual([
         "TotalOrder",
         "Unbounded",
@@ -1184,7 +1185,7 @@ describe("ReactFlowBridge", () => {
       expect(result.edges).toHaveLength(0); // No edges should be present
     });
 
-    it("should skip floating edges (source node doesn't exist)", async () => {
+    it("should prevent floating edges (source node doesn't exist)", async () => {
       const node2: GraphNode = {
         id: "node2",
         label: "Node 2",
@@ -1204,18 +1205,17 @@ describe("ReactFlowBridge", () => {
 
       state.addNode(node2);
 
-      // VisualizationState should reject edges with non-existent source
+      // VisualizationState should prevent bad edges from being added
       expect(() => state.addEdge(floatingEdge)).toThrow(
-        "references non-existent source",
+        "references non-existent source"
       );
 
-      // Don't call layout since the state might be inconsistent after validation failure
-      // Just test that the bridge would handle it correctly if it somehow got through
+      // Since the edge was prevented, there should be no edges in the state
       const result = bridge.toReactFlowData(state);
-      expect(result.edges).toHaveLength(0); // No edges should be present
+      expect(result.edges).toHaveLength(0); // No edges because the bad edge was prevented
     });
 
-    it("should skip floating edges (target node doesn't exist)", async () => {
+    it("should prevent floating edges (target node doesn't exist)", async () => {
       const node1: GraphNode = {
         id: "node1",
         label: "Node 1",
@@ -1235,15 +1235,14 @@ describe("ReactFlowBridge", () => {
 
       state.addNode(node1);
 
-      // VisualizationState should reject edges with non-existent target
+      // VisualizationState should prevent bad edges from being added
       expect(() => state.addEdge(floatingEdge)).toThrow(
-        "references non-existent target",
+        "references non-existent target"
       );
 
-      // Don't call layout since the state might be inconsistent after validation failure
-      // Just test that the bridge would handle it correctly if it somehow got through
+      // Since the edge was prevented, there should be no edges in the state
       const result = bridge.toReactFlowData(state);
-      expect(result.edges).toHaveLength(0); // No edges should be present
+      expect(result.edges).toHaveLength(0); // No edges because the bad edge was prevented
     });
 
     it("should handle edges connecting to containers", async () => {
@@ -1344,7 +1343,7 @@ describe("ReactFlowBridge", () => {
       ]);
     });
 
-    it("should skip invalid aggregated edges", async () => {
+    it("should prevent invalid aggregated edges", async () => {
       const invalidAggregatedEdge: AggregatedEdge = {
         id: "agg_edge1",
         source: "nonexistent_source",
@@ -1357,15 +1356,14 @@ describe("ReactFlowBridge", () => {
         aggregationSource: "container_collapse",
       };
 
-      // VisualizationState should reject edges with non-existent source and target
+      // VisualizationState should prevent bad edges from being added
       expect(() => state.addEdge(invalidAggregatedEdge)).toThrow(
-        "references non-existent",
+        "references non-existent source"
       );
 
-      // Don't call layout since the state might be inconsistent after validation failure
-      // Just test that the bridge would handle it correctly if it somehow got through
+      // Since the edge was prevented, there should be no edges in the state
       const result = bridge.toReactFlowData(state);
-      expect(result.edges).toHaveLength(0); // No edges should be present
+      expect(result.edges).toHaveLength(0); // No edges because the bad edge was prevented
     });
 
     it("should handle self-loop edges with warning", async () => {

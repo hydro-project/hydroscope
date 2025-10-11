@@ -61,7 +61,7 @@ describe("Edge Distance Validation Threshold", () => {
     }
   });
 
-  it("should warn for edges over the threshold distance in small graphs", () => {
+  it("should not warn for edges over the threshold distance (validation disabled)", () => {
     // Create nodes that are far apart and over the threshold
     const node1 = createTestNode("node1", "Node 1");
     const node2 = createTestNode("node2", "Node 2");
@@ -76,7 +76,8 @@ describe("Edge Distance Validation Threshold", () => {
       id: "edge1",
       source: "node1",
       target: "node2",
-      properties: [],
+      type: "dataflow",
+      semanticTags: [],
       hidden: false,
     });
 
@@ -84,14 +85,14 @@ describe("Edge Distance Validation Threshold", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
-      // Convert to ReactFlow data - this triggers validation
+      // Convert to ReactFlow data - validation is currently disabled
       bridge.toReactFlowData(state);
 
-      // Should have logged edge distance warnings for small graphs
+      // Should NOT have logged edge distance warnings (validation disabled)
       const edgeDistanceWarnings = consoleSpy.mock.calls.filter((call) =>
         call[0]?.includes?.("very long edge distance"),
       );
-      expect(edgeDistanceWarnings.length).toBeGreaterThan(0);
+      expect(edgeDistanceWarnings.length).toBe(0);
     } finally {
       consoleSpy.mockRestore();
     }

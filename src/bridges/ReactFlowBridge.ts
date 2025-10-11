@@ -14,6 +14,7 @@ import type { IReactFlowBridge } from "../types/bridges.js";
 import {
   processSemanticTags,
   processAggregatedSemanticTags,
+  DEFAULT_STYLE,
 } from "../utils/StyleProcessor.js";
 import { CURRENT_HANDLE_STRATEGY } from "../render/handleConfig.js";
 import {
@@ -448,11 +449,11 @@ export class ReactFlowBridge implements IReactFlowBridge {
       }
       nodes.push({
         id: node.id,
-        type: node.nodeType || "default",
+        type: node.type || "default",
         position: adjustedPosition,
         data: {
           label: node.label,
-          nodeType: node.nodeType,
+          nodeType: node.type,
           semanticTags: node.semanticTags || [],
           onClick: interactionHandler
             ? (elementId: string, elementType: "node" | "container") => {
@@ -1070,12 +1071,16 @@ export class ReactFlowBridge implements IReactFlowBridge {
           // Cache the result for reuse
           ephemeralState.aggregatedStyleCache.set(cacheKey, processedStyle);
         } else {
-          // No valid original edges found
+          // No valid original edges found, use default style
           processedStyle = {
-            style: {},
+            style: {
+              stroke: DEFAULT_STYLE.DEFAULT_STROKE_COLOR,
+              strokeWidth: DEFAULT_STYLE.STROKE_WIDTH,
+            },
             appliedTags: [],
             animated: false,
             label: edge.label,
+            markerEnd: { type: "arrowclosed" },
           };
           ephemeralState.aggregatedStyleCache.set(cacheKey, processedStyle);
         }
