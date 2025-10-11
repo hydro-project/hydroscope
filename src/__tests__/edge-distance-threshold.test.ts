@@ -40,7 +40,8 @@ describe("Edge Distance Validation Threshold", () => {
       id: "edge1",
       source: "node1",
       target: "node2",
-      properties: [],
+      type: "dataflow",
+      semanticTags: [],
       hidden: false,
     });
 
@@ -114,7 +115,8 @@ describe("Edge Distance Validation Threshold", () => {
       id: "edge1",
       source: "node0",
       target: "node24", // 24000px apart - way over threshold
-      properties: [],
+      type: "dataflow",
+      semanticTags: [],
       hidden: false,
     });
 

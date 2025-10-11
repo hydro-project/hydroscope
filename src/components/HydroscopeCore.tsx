@@ -808,7 +808,7 @@ const HydroscopeCoreInternal = forwardRef<
           // ReactFlowBridge is now stateless - no caches to clear
 
           // Log container states before generating ReactFlow data
-          const containers = visualizationState.visibleContainers;
+          const _containers = visualizationState.visibleContainers;
 
           // Generate ReactFlow data with interaction handlers
           const newData = reactFlowBridgeRef.current.toReactFlowData(
@@ -822,7 +822,8 @@ const HydroscopeCoreInternal = forwardRef<
           const containerNodes = newData.nodes.filter(
             (n) => n.type === "container",
           );
-          for (const container of containerNodes) {
+          for (const _container of containerNodes) {
+            // Container processing logic would go here if needed
           }
 
           // Debug: Log what data is being set in state
@@ -1616,7 +1617,7 @@ const HydroscopeCoreInternal = forwardRef<
 
     // Handle drag start
     const handleNodeDragStart = useCallback(
-      (_event: React.MouseEvent, node: Node) => {
+      (_event: React.MouseEvent, _node: Node) => {
         if (readOnly) return;
 
         try {

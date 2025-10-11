@@ -314,11 +314,11 @@ const CustomControls = memo(
     // Check if there are any containers that can be collapsed/expanded
     const hasContainers =
       (visualizationState?.visibleContainers?.length ?? 0) > 0;
-    const hasCollapsedContainers =
+    const _hasCollapsedContainers =
       visualizationState?.visibleContainers?.some(
         (container) => container.collapsed,
       ) ?? false;
-    const hasExpandedContainers =
+    const _hasExpandedContainers =
       visualizationState?.visibleContainers?.some(
         (container) => !container.collapsed,
       ) ?? false;
@@ -1120,7 +1120,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                       }
                     }}
                     collapsedContainers={new Set()}
-                    onToggleContainer={(containerId) => {
+                    onToggleContainer={(_containerId) => {
                       // This will be handled by HydroscopeCore
                     }}
                     onElementNavigation={handleElementNavigation}

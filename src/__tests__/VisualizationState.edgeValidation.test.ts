@@ -4,16 +4,12 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("VisualizationState Edge Validation", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     // Mock console methods to avoid noise in tests
     vi.spyOn(console, "log").mockImplementation(() => {});
@@ -193,7 +189,7 @@ describe("VisualizationState Edge Validation", () => {
       // Test: Should prevent adding edge with missing target
       const invalidEdge = createTestEdge("edge1", "node1", "missing_node");
       expect(() => state.addEdge(invalidEdge)).toThrow(
-        "references non-existent target"
+        "references non-existent target",
       );
 
       // Verify no invalid edge was added
@@ -344,9 +340,9 @@ describe("VisualizationState Edge Validation", () => {
 
       // Test: Try to add edge with non-existent source
       const badEdge = createTestEdge("edge1", "nonexistent_source", "target");
-      
+
       expect(() => state.addEdge(badEdge)).toThrow(
-        "Edge edge1 references non-existent source: nonexistent_source"
+        "Edge edge1 references non-existent source: nonexistent_source",
       );
 
       // Verify edge was not added
@@ -361,9 +357,9 @@ describe("VisualizationState Edge Validation", () => {
 
       // Test: Try to add edge with non-existent target
       const badEdge = createTestEdge("edge1", "source", "nonexistent_target");
-      
+
       expect(() => state.addEdge(badEdge)).toThrow(
-        "Edge edge1 references non-existent target: nonexistent_target"
+        "Edge edge1 references non-existent target: nonexistent_target",
       );
 
       // Verify edge was not added
@@ -373,10 +369,14 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should prevent edges with both non-existent source and target", () => {
       // Test: Try to add edge with both endpoints non-existent
-      const badEdge = createTestEdge("edge1", "nonexistent_source", "nonexistent_target");
-      
+      const badEdge = createTestEdge(
+        "edge1",
+        "nonexistent_source",
+        "nonexistent_target",
+      );
+
       expect(() => state.addEdge(badEdge)).toThrow(
-        "Edge edge1 references non-existent source: nonexistent_source"
+        "Edge edge1 references non-existent source: nonexistent_source",
       );
 
       // Verify edge was not added
@@ -393,7 +393,7 @@ describe("VisualizationState Edge Validation", () => {
 
       // Test: Add valid edge
       const validEdge = createTestEdge("edge1", "source", "target");
-      
+
       expect(() => state.addEdge(validEdge)).not.toThrow();
 
       // Verify edge was added
@@ -403,14 +403,22 @@ describe("VisualizationState Edge Validation", () => {
 
     it("should allow edges between existing containers", () => {
       // Setup: Add both containers
-      const sourceContainer = createTestContainer("container1", [], "Container 1");
-      const targetContainer = createTestContainer("container2", [], "Container 2");
+      const sourceContainer = createTestContainer(
+        "container1",
+        [],
+        "Container 1",
+      );
+      const targetContainer = createTestContainer(
+        "container2",
+        [],
+        "Container 2",
+      );
       state.addContainer(sourceContainer);
       state.addContainer(targetContainer);
 
       // Test: Add valid edge between containers
       const validEdge = createTestEdge("edge1", "container1", "container2");
-      
+
       expect(() => state.addEdge(validEdge)).not.toThrow();
 
       // Verify edge was added
@@ -452,9 +460,9 @@ describe("VisualizationState Edge Validation", () => {
         originalEdgeIds: ["original1"],
         aggregationSource: "container_collapse",
       };
-      
+
       expect(() => state.addEdge(badAggregatedEdge as any)).toThrow(
-        "Edge agg_edge1 references non-existent source: nonexistent_source"
+        "Edge agg_edge1 references non-existent source: nonexistent_source",
       );
 
       // Verify edge was not added

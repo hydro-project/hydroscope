@@ -182,7 +182,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
     interactionHandler?: any,
   ): ReactFlowData {
-    const startTime = performance.now();
+    const _startTime = performance.now();
 
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
@@ -328,7 +328,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
     interactionHandler?: any,
   ): ReactFlowNode[] {
-    const startTime = performance.now();
+    const _startTime = performance.now();
     const nodes: ReactFlowNode[] = [];
 
     // Build parent mapping for nodes and containers
@@ -390,7 +390,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           label: container.label,
           nodeType: "container",
           isExpanded: !container.collapsed,
-          childCount: this.getVisibleChildCount(container, state),
+          childCount: container.children.size,
           onClick: interactionHandler
             ? (elementId: string, elementType: "node" | "container") => {
                 if (elementType === "container") {
@@ -402,16 +402,19 @@ export class ReactFlowBridge implements IReactFlowBridge {
         style: {
           width: dimensions.width,
           height: dimensions.height,
+          // Default styles
           border: container.collapsed ? "2px dashed #ccc" : "2px solid #333",
           backgroundColor: container.collapsed
             ? "rgba(240, 240, 240, 0.8)"
             : "rgba(255, 255, 255, 0.9)",
           borderRadius: "8px",
+          // Apply configured container styles (overrides defaults)
+          ...(container.collapsed
+            ? this.styleConfig.containerStyles?.collapsed
+            : this.styleConfig.containerStyles?.expanded),
         },
         parentId: parentId,
         extent: parentId ? "parent" : undefined,
-        expandParent: true,
-        draggable: true,
       });
     }
     // Add regular nodes with proper parent relationships
@@ -433,7 +436,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           height:
             parentContainer.dimensions?.height || parentContainer.height || 150,
         };
-        const parentPosition = parentContainer.position || {
+        const _parentPosition = parentContainer.position || {
           x: 0,
           y: 0,
         };
@@ -441,7 +444,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         const padding = 20;
         const maxX = parentDimensions.width - 60 - padding; // Node width ~60px
         const maxY = parentDimensions.height - 40 - padding; // Node height ~40px
-        const withinBounds =
+        const _withinBounds =
           adjustedPosition.x >= padding &&
           adjustedPosition.x <= maxX &&
           adjustedPosition.y >= padding &&
@@ -465,8 +468,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
         },
         parentId: parentId,
         extent: parentId ? "parent" : undefined,
-        expandParent: true,
-        draggable: true,
       });
     }
     return nodes;
@@ -636,7 +637,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         // See: https://www.eclipse.org/elk/documentation/tooldevelopers/graphdatastructure/coordinatesystem.html
         // "The coordinates of most elements are relative to their parent element."
         // Check if position is within parent bounds (for debugging only)
-        const withinBounds =
+        const _withinBounds =
           adjustedPosition.x >= 0 &&
           adjustedPosition.y >= 0 &&
           adjustedPosition.x <= parentDimensions.width &&
@@ -1105,8 +1106,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       };
 
       // Skip freezing for large batches to improve performance
-      const skipFreezing = aggregatedEdges.length > 100;
-      styledEdges.push(this.createImmutableEdge(edge, styleData, skipFreezing));
+      const _skipFreezing = aggregatedEdges.length > 100;
+      styledEdges.push(this.createImmutableEdge(edge, styleData));
     }
 
     return styledEdges;
@@ -1201,6 +1202,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     edges: ReactFlowEdge[],
     state?: VisualizationState,
   ): ReactFlowEdge[] {
+    const startTime = performance.now();
     const result = edges.map((edge) => {
       // Get semantic tags from edge data
       const edgeData = edge.data as any;
@@ -1619,7 +1621,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     // For larger graphs (>20 nodes), use relaxed validation to reduce flakiness
     const nodeCount = state.visibleNodes.length;
     const isLargeGraph = nodeCount > 20;
-    const useRelaxedValidation = isLargeGraph;
+    const _useRelaxedValidation = isLargeGraph;
     // Check for null/undefined/empty source or target
     if (!edge.source || !edge.target) {
       return {
@@ -2227,14 +2229,14 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
   ): ReactFlowNode[] {
     try {
-      let highlightedCount = 0;
+      let _highlightedCount = 0;
       const result = nodes.map((node) => {
         try {
           const highlightType = state.getGraphElementHighlightType
             ? state.getGraphElementHighlightType(node.id)
             : null;
           if (highlightType === "search" || highlightType === "both") {
-            highlightedCount++;
+            _highlightedCount++;
             // Apply search highlight styling
             const searchStyle = this.getSearchHighlightStyle(node, state);
             return this.createHighlightedNode(node, searchStyle, "search");
@@ -2582,7 +2584,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   // OPTIMIZED: Helper methods for combined highlight processing
   private clearHighlights<T extends ReactFlowNode | ReactFlowEdge>(
     element: T,
-    elementType: "node" | "edge",
+    _elementType: "node" | "edge",
   ): T {
     const clearedStyle = { ...element.style };
     delete clearedStyle.boxShadow;

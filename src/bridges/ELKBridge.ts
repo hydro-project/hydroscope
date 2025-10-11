@@ -287,9 +287,9 @@ export class ELKBridge implements IELKBridge {
     depth: number,
     includePositions: boolean = false,
   ): void {
-    const indent = "  ".repeat(depth);
+    const _indent = "  ".repeat(depth);
     for (const child of elkChildren) {
-      const positionInfo =
+      const _positionInfo =
         includePositions && child.x !== undefined && child.y !== undefined
           ? `, position=(${child.x}, ${child.y})`
           : "";

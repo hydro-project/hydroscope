@@ -122,11 +122,11 @@ export class InteractionHandler {
     this._visualizationState.toggleNodeLabel(event.elementId);
   }
   private _handleContainerClickInternal(event: ClickEvent): void {
-    const containerBefore = this._visualizationState.getContainer(
+    const _containerBefore = this._visualizationState.getContainer(
       event.elementId,
     );
     this._visualizationState._toggleContainerForCoordinator(event.elementId);
-    const containerAfter = this._visualizationState.getContainer(
+    const _containerAfter = this._visualizationState.getContainer(
       event.elementId,
     );
   }

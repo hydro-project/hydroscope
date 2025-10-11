@@ -228,14 +228,20 @@ export class VisualizationState {
     }
 
     // Validate that source and target nodes/containers actually exist
-    const sourceExists = this._nodes.has(edge.source) || this._containers.has(edge.source);
-    const targetExists = this._nodes.has(edge.target) || this._containers.has(edge.target);
+    const sourceExists =
+      this._nodes.has(edge.source) || this._containers.has(edge.source);
+    const targetExists =
+      this._nodes.has(edge.target) || this._containers.has(edge.target);
 
     if (!sourceExists) {
-      throw new Error(`Edge ${edge.id} references non-existent source: ${edge.source}`);
+      throw new Error(
+        `Edge ${edge.id} references non-existent source: ${edge.source}`,
+      );
     }
     if (!targetExists) {
-      throw new Error(`Edge ${edge.id} references non-existent target: ${edge.target}`);
+      throw new Error(
+        `Edge ${edge.id} references non-existent target: ${edge.target}`,
+      );
     }
   }
   addContainer(container: Container): void {
@@ -441,13 +447,13 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _expandAllContainersForCoordinator(containerIds?: string[]): void {
-    const containersToExpand = containerIds
+    const _containersToExpand = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
     // CRITICAL FIX: Expand containers in hierarchical order (parents before children)
     // This prevents invariant violations where children are expanded before their parents
     let expandedInThisIteration = 0;
-    let totalExpanded = 0;
+    let _totalExpanded = 0;
     let iteration = 0;
     const maxIterations = 10; // Safety limit to prevent infinite loops
     do {
@@ -473,7 +479,7 @@ export class VisualizationState {
         if (this._canExpandContainer(container.id)) {
           this._expandContainerInternal(container.id);
           expandedInThisIteration++;
-          totalExpanded++;
+          _totalExpanded++;
         } else {
         }
       }
@@ -514,7 +520,7 @@ export class VisualizationState {
       import("../bridges/BridgeFactory.js")
         .then(({ bridgeFactory }) => {
           const bridge = bridgeFactory.getReactFlowBridge();
-          const result = bridge.toReactFlowData(this);
+          const _result = bridge.toReactFlowData(this);
         })
         .catch((error) => {
           console.error(
@@ -1530,11 +1536,11 @@ export class VisualizationState {
       return;
     }
     // Collapse all root containers initially
-    let collapsedCount = 0;
+    let _collapsedCount = 0;
     for (const container of rootContainers) {
       if (!container.collapsed) {
         this.collapseContainerSystemOperation(container.id);
-        collapsedCount++;
+        _collapsedCount++;
       }
     }
     // Step 2: Create expansion candidates sorted by cost
@@ -1555,7 +1561,7 @@ export class VisualizationState {
     // Step 3: Expand containers until budget is reached
     const budget = budgetOverride ?? LAYOUT_CONSTANTS.SMART_COLLAPSE_BUDGET;
     let currentCost = 0;
-    let expandedCount = 0;
+    let _expandedCount = 0;
     while (expansionCandidates.length > 0) {
       // Get the lowest-cost candidate
       const candidate = expansionCandidates.shift()!;
@@ -1565,7 +1571,7 @@ export class VisualizationState {
       }
       this._expandContainerInternal(candidate.containerId);
       currentCost += candidate.cost;
-      expandedCount++;
+      _expandedCount++;
       // Step 4: Add child containers to expansion candidates
       const expandedContainer = this._containers.get(candidate.containerId);
       if (expandedContainer) {
@@ -1584,7 +1590,8 @@ export class VisualizationState {
         }
       }
     }
-    for (const container of this._containers.values()) {
+    for (const _container of this._containers.values()) {
+      // Container processing logic would go here if needed
     }
   }
   /**
@@ -1672,7 +1679,7 @@ export class VisualizationState {
     } else {
       this._collapseContainerForCoordinator(id);
     }
-    const containerAfter = this._containers.get(id);
+    const _containerAfter = this._containers.get(id);
   }
   // Internal methods for container operations
   private _expandContainerInternal(id: string): void {
