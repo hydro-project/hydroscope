@@ -267,6 +267,12 @@ const HydroscopeCoreInternal = forwardRef<
       readOnly = false,
       initialLayoutAlgorithm = DEFAULT_ELK_ALGORITHM,
       initialColorPalette,
+      initialEdgeStyle = "bezier",
+      initialEdgeWidth = 2,
+      initialEdgeDashed = false,
+      initialNodePadding = 8,
+      initialNodeFontSize = 12,
+      initialContainerBorderWidth = 2,
       autoFitEnabled = true,
       onNodeClick,
       onContainerCollapse,
@@ -332,6 +338,13 @@ const HydroscopeCoreInternal = forwardRef<
       }
     }, []);
 
+    // Set ReactFlow instance in AsyncCoordinator for direct fitView operations
+    useEffect(() => {
+      if (reactFlowInstance && state.asyncCoordinator) {
+        state.asyncCoordinator.setReactFlowInstance(reactFlowInstance);
+      }
+    }, [reactFlowInstance, state.asyncCoordinator]);
+
     // Cleanup debounced fitView timeout on unmount
     useEffect(() => {
       return () => {
@@ -387,12 +400,12 @@ const HydroscopeCoreInternal = forwardRef<
 
         // Initialize render config from props
         const initialRenderConfig = {
-          edgeStyle: "bezier" as const,
-          edgeWidth: 2,
-          edgeDashed: false,
-          nodePadding: 8,
-          nodeFontSize: 12,
-          containerBorderWidth: 2,
+          edgeStyle: initialEdgeStyle || "bezier",
+          edgeWidth: initialEdgeWidth || 2,
+          edgeDashed: initialEdgeDashed || false,
+          nodePadding: initialNodePadding || 8,
+          nodeFontSize: initialNodeFontSize || 12,
+          containerBorderWidth: initialContainerBorderWidth || 2,
           colorPalette: initialColorPalette || DEFAULT_COLOR_PALETTE,
           layoutAlgorithm: initialLayoutAlgorithm || DEFAULT_ELK_ALGORITHM,
           fitView: true,
@@ -726,9 +739,15 @@ const HydroscopeCoreInternal = forwardRef<
                   return;
                 }
 
+                // Get the current VisualizationState
+                const currentVisualizationState = state.visualizationState;
+                if (!currentVisualizationState) {
+                  console.warn("[HydroscopeCore] No VisualizationState available for container interaction");
+                  return;
+                }
+
                 // Get container state before the click
-                const container =
-                  singleVisualizationState.getContainer(containerId);
+                const container = currentVisualizationState.getContainer(containerId);
                 if (!container) {
                   console.warn(
                     "[HydroscopeCore] Container not found:",
@@ -740,33 +759,33 @@ const HydroscopeCoreInternal = forwardRef<
                 const wasCollapsed = Boolean(container.collapsed);
 
                 // Use AsyncCoordinator's synchronous container methods
-                if (state.asyncCoordinator && elkBridgeRef.current) {
+                if (state.asyncCoordinator) {
                   let reactFlowData;
 
                   if (wasCollapsed) {
                     // Synchronous expand - when it returns, the complete pipeline is done
                     reactFlowData = await state.asyncCoordinator.expandContainer(
                       containerId,
-                      singleVisualizationState,
+                      currentVisualizationState,
                       {
                         relayoutEntities: [containerId], // Only re-layout this container
                         fitView: state.autoFitEnabled,
                       }
                     );
                     // Call callback after synchronous operation completes
-                    onContainerExpand?.(containerId, singleVisualizationState);
+                    onContainerExpand?.(containerId, currentVisualizationState);
                   } else {
                     // Synchronous collapse - when it returns, the complete pipeline is done
                     reactFlowData = await state.asyncCoordinator.collapseContainer(
                       containerId,
-                      singleVisualizationState,
+                      currentVisualizationState,
                       {
                         relayoutEntities: [containerId], // Only re-layout this container
                         fitView: state.autoFitEnabled,
                       }
                     );
                     // Call callback after synchronous operation completes
-                    onContainerCollapse?.(containerId, singleVisualizationState);
+                    onContainerCollapse?.(containerId, currentVisualizationState);
                   }
 
                   // At this point, the ENTIRE pipeline is complete:
@@ -1296,31 +1315,15 @@ const HydroscopeCoreInternal = forwardRef<
           // Update render config in VisualizationState
           state.visualizationState.updateRenderConfig(updates);
 
-          // Use AsyncCoordinator's synchronous pipeline for render config updates
-          if (updates.layoutAlgorithm && elkBridgeRef.current) {
-            // Update ELK bridge configuration and trigger full pipeline
-            elkBridgeRef.current.updateConfiguration({
-              algorithm: updates.layoutAlgorithm,
-            });
-
-            // Execute complete pipeline: layout + render (no fitView for config changes)
-            await state.asyncCoordinator.executeLayoutAndRenderPipeline(
-              state.visualizationState,
-              {
-                relayoutEntities: undefined, // Full layout for algorithm change
-                fitView: false, // Don't auto-fit for config changes
-              }
-            );
-          } else {
-            // For non-layout changes (like edge style, color palette), use render-only pipeline
-            await state.asyncCoordinator.executeLayoutAndRenderPipeline(
-              state.visualizationState,
-              {
-                relayoutEntities: [], // No layout needed for visual changes
-                fitView: false, // Don't auto-fit for config changes
-              }
-            );
-          }
+          // Use AsyncCoordinator's unified render config update pipeline
+          await state.asyncCoordinator.updateRenderConfig(
+            state.visualizationState,
+            updates,
+            {
+              fitView: true, // Enable fitView for render config changes
+              relayoutEntities: updates.layoutAlgorithm ? undefined : [], // Full layout for algorithm changes, render-only for visual changes
+            }
+          );
 
           // Notify parent component of the change
           onRenderConfigChange?.(updates);
