@@ -1499,7 +1499,6 @@ export class AsyncCoordinator {
    * Execute viewport focus with comprehensive error handling
    */
   focusViewportOnElementWithErrorHandling(
-    elementId: string,
     _reactFlowInstance: any, // ReactFlowInstance
     _options: {
       timeout?: number;

@@ -38,12 +38,12 @@ class TestErrorBoundary {
 }
 
 describe("Error Boundary Validation", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let mockConsoleError: any;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
@@ -170,7 +170,9 @@ describe("Error Boundary Validation", () => {
       // Other operations should still work
       const appEventPromise = asyncCoordinator.queueApplicationEvent({
         type: "container_toggle",
-        containerId: "container1",
+        payload: {
+          containerId: "container1",
+        },
         timestamp: Date.now(),
       });
 
@@ -293,9 +295,9 @@ describe("Error Boundary Validation", () => {
   });
 
   describe("Resource Exhaustion Error Boundaries", () => {
-    let coordinator: AsyncCoordinato;
+    let _coordinator: AsyncCoordinator;
     beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+      _coordinator = new AsyncCoordinator();
     });
 
     it("should handle memory exhaustion gracefully", async () => {

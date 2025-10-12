@@ -14,7 +14,7 @@ import type { SearchResult } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("SearchResults Component", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   const mockSearchResults: SearchResult[] = [
     {
@@ -49,7 +49,7 @@ describe("SearchResults Component", () => {
   };
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     vi.clearAllMocks();
   });
 

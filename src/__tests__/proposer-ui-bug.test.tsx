@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 
 describe("Proposer Container Data Processing", () => {
-  let paxosData: HydroscopeData;
+  let _paxosData: HydroscopeData;
   let jsonParser: JSONParser;
   let parseResult: any;
 
@@ -26,7 +26,7 @@ describe("Proposer Container Data Processing", () => {
     parseResult = await jsonParser.parseData(rawData);
 
     // Use the processed data
-    paxosData = rawData;
+    _paxosData = rawData;
 
     console.log("[ProposerTest] 🔧 JSONParser processed data:", {
       hierarchyChoices: parseResult.hierarchyChoices.length,

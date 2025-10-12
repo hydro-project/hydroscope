@@ -38,10 +38,10 @@ const ErrorThrowingComponent: React.FC<{ shouldThrow: boolean }> = ({
 };
 
 describe("Error Handling and Resource Cleanup", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     // Mock console methods to reduce noise
     console.error = vi.fn();
     console.warn = vi.fn();

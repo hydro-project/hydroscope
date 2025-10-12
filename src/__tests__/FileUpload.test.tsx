@@ -32,7 +32,7 @@ class MockFileReader {
 const originalFileReader = global.FileReader;
 
 beforeEach(() => {
-  const coordinator = new AsyncCoordinator();
+  const _coordinator = new AsyncCoordinator();
   // Reset FileReader to original before each test
   global.FileReader = originalFileReader;
 });

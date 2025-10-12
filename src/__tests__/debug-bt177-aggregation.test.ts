@@ -14,13 +14,13 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Debug bt_177 Aggregation", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
 
   beforeEach(async () => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

@@ -18,13 +18,10 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
-  let coordinator: AsyncCoordinator;
-
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
 
   beforeEach(async () => {
-    coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

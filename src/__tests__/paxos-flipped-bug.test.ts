@@ -18,7 +18,7 @@ import type { HydroscopeData } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
@@ -26,7 +26,7 @@ describe("Paxos-Flipped Nested Container Hierarchy Bug", () => {
   let elkBridge: ELKBridge;
 
   beforeEach(async () => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

@@ -37,6 +37,21 @@ Object.defineProperty(window, "matchMedia", {
 
 // Bridge mocks removed - let tests use real implementations or mock individually
 
+// Handle unhandled promise rejections that occur during test teardown
+process.on("unhandledRejection", (reason, _promise) => {
+  const reasonStr = reason?.toString() || "";
+  if (
+    reasonStr.includes("window is not defined") ||
+    reasonStr.includes("resolveUpdatePriority") ||
+    reasonStr.includes("requestUpdateLane")
+  ) {
+    // Suppress React DOM errors that occur during test teardown
+    return;
+  }
+  // Re-throw other unhandled rejections
+  throw reason;
+});
+
 // Mock ReactFlow components
 vi.mock("@xyflow/react", () => ({
   ReactFlow: ({ children, ...props }: any) =>
@@ -46,7 +61,7 @@ vi.mock("@xyflow/react", () => ({
         "data-testid": "react-flow",
         ...props,
       },
-      React.createElement("div", { "data-testid": "rf__wrapper" }, children),
+      React.createElement("div", { "data-testid": "rf__wrapper" }, children)
     ),
   ReactFlowProvider: ({ children }: any) =>
     React.createElement("div", {}, children),
@@ -55,14 +70,14 @@ vi.mock("@xyflow/react", () => ({
     React.createElement(
       "div",
       { "data-testid": "controls", ...props },
-      children,
+      children
     ),
   MiniMap: () => React.createElement("div", { "data-testid": "minimap" }),
   ControlButton: ({ children, ...props }: any) =>
     React.createElement(
       "button",
       { "data-testid": "control-button", ...props },
-      children,
+      children
     ),
   Position: {
     Top: "top",

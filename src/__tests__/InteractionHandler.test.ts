@@ -13,15 +13,15 @@ import { createTestContainer, createTestNode } from "../utils/testData.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("InteractionHandler Click Event Processing", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let handler: InteractionHandler;
   let state: VisualizationState;
   let mockAsyncCoordinator: any;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     mockAsyncCoordinator = {
       queueLayoutUpdate: vi.fn(),

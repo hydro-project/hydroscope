@@ -8,12 +8,9 @@ import type { GraphNode, Container } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Search and Navigation Infrastructure", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

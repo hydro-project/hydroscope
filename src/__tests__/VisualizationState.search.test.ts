@@ -12,9 +12,8 @@ import {
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Search Functionality", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
+  let coordinator: AsyncCoordinator;
 
   beforeEach(() => {
     coordinator = new AsyncCoordinator();
@@ -22,11 +21,6 @@ describe("VisualizationState Search Functionality", () => {
   });
 
   describe("Search State Management", () => {
-    let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
-    });
-
     it("should initialize with empty search state", () => {
       expect(state.getSearchQuery()).toBe("");
       expect(state.getSearchResults()).toHaveLength(0);

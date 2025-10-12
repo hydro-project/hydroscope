@@ -85,10 +85,10 @@ const mockGraphData: HydroscopeData = {
 };
 
 describe("New Hydroscope Component", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     // Reset mocks
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockReturnValue(null);

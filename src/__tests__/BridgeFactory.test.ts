@@ -9,10 +9,10 @@ import { ELKBridge } from "../bridges/ELKBridge.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("BridgeFactory", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const __coordinator = new AsyncCoordinator();
     // Reset factory state for each test
     bridgeFactory.reset();
   });

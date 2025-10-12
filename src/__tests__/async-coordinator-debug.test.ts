@@ -8,12 +8,9 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("AsyncCoordinator Debug", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     // Create test data with collapsed containers

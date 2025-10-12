@@ -35,7 +35,7 @@ const invalidTestData = {
 } as any;
 
 describe("HydroscopeCore Component", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let mockOnError: ReturnType<typeof vi.fn>;
   let mockOnNodeClick: ReturnType<typeof vi.fn>;
@@ -43,7 +43,7 @@ describe("HydroscopeCore Component", () => {
   let mockOnContainerExpand: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     mockOnError = vi.fn();
     mockOnNodeClick = vi.fn();
     mockOnContainerCollapse = vi.fn();

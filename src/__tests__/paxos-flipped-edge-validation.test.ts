@@ -6,13 +6,13 @@ import { join } from "path";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Paxos-Flipped Edge Validation Fix", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let state: VisualizationState;
   let parser: JSONParser;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     parser = new JSONParser();
     // Mock console methods to avoid noise in tests
@@ -22,9 +22,9 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
   });
 
   describe("runtime/park.rs container expansion", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+      _coordinator = new AsyncCoordinator();
     });
 
     it("should load paxos-flipped.json without errors", () => {

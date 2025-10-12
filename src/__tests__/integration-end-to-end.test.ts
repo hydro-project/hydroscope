@@ -24,8 +24,6 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { LayoutConfig, StyleConfig } from "../types/core.js";
 
 describe("End-to-End Integration: Complete Data Flow", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
   let elkBridge: ELKBridge;
   let reactFlowBridge: ReactFlowBridge;
@@ -34,7 +32,6 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   let styleConfig: StyleConfig;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     layoutConfig = {
@@ -569,11 +566,6 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       await elkBridge.layout(state);
 
-      let _reactFlowData = reactFlowBridge.toReactFlowData(
-        state,
-        interactionHandler,
-      );
-
       // Verify search results exist
       expect(searchResults.length).toBeGreaterThan(0);
 
@@ -588,7 +580,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
       await elkBridge.layout(state);
 
-      _reactFlowData = reactFlowBridge.toReactFlowData(
+      const _reactFlowData = reactFlowBridge.toReactFlowData(
         state,
         interactionHandler,
       );
@@ -662,7 +654,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   });
 
   describe("Performance Validation", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -858,9 +850,6 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node1);
       state.addNode(node2);
 
-      // Generate valid ELK graph
-      const _elkGraph = elkBridge.toELKGraph(state);
-
       // Create invalid ELK result
       const invalidELKResult = {
         id: "root",
@@ -895,7 +884,6 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       state.addNode(node2);
 
       // Cause error first
-      const _elkGraph = elkBridge.toELKGraph(state);
       const invalidResult = {
         id: "root",
         children: [

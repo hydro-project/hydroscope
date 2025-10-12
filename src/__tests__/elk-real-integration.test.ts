@@ -20,7 +20,7 @@ import path from "path";
 import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Real ELK Integration Tests (No Mocks)", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let elkBridge: ELKBridge;
   let asyncCoordinator: AsyncCoordinator;
@@ -37,7 +37,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
   };
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     elkBridge = new ELKBridge({
       algorithm: "mrtree",
@@ -87,7 +87,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
     it("should calculate real positions for paxos.json data", async () => {
       // Load real paxos.json data
-      const paxosData = await loadPaxosTestData();
+      const _paxosData = await loadPaxosTestData();
 
       // Create state and load the data
       const paxosState = new VisualizationState();

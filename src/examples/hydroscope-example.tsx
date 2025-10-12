@@ -84,17 +84,17 @@ export default function HydroscopeExample() {
           enableCollapse={true}
           initialLayoutAlgorithm={DEFAULT_ELK_ALGORITHM}
           initialColorPalette="Set3"
-          onFileUpload={(uploadedData, filename) => {
+          onFileUpload={(uploadedData, _filename) => {
             // File uploaded: filename
             setData(uploadedData);
           }}
-          onNodeClick={(event, node, visualizationState) => {
+          onNodeClick={(_event, _node, _visualizationState) => {
             // Node clicked: node.id, position: node.position
           }}
-          onContainerCollapse={(containerId, visualizationState) => {
+          onContainerCollapse={(_containerId, _visualizationState) => {
             // Container collapsed: containerId
           }}
-          onContainerExpand={(containerId, visualizationState) => {
+          onContainerExpand={(_containerId, _visualizationState) => {
             // Container expanded: containerId
           }}
           onConfigChange={(newConfig) => {

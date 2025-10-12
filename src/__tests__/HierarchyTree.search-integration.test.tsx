@@ -13,14 +13,14 @@ import type { SearchResult } from "../types/core";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("HierarchyTree Search Integration", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let visualizationState: VisualizationState;
   let mockOnToggleContainer: ReturnType<typeof vi.fn>;
   let mockOnElementNavigation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
     mockOnToggleContainer = vi.fn();
     mockOnElementNavigation = vi.fn();

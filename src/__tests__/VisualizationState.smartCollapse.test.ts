@@ -9,12 +9,9 @@ import { createTestContainer, createTestNode } from "../utils/testData.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Smart Collapse Prevention", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

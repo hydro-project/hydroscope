@@ -15,12 +15,9 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("Paxos-Flipped Performance and Stability Validation", () => {
-  let coordinator: AsyncCoordinator;
-
   let paxosFlippedData: HydroscopeData;
 
   beforeEach(async () => {
-    coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

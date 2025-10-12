@@ -14,16 +14,12 @@ import {
   createTestContainer,
 } from "../utils/testData";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import type { Container } from "../types/core.js";
 
 describe("ELKBridge", () => {
-  let coordinator: AsyncCoordinator;
-
   let bridge: ELKBridge;
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     bridge = new ELKBridge({
       algorithm: "mrtree",
       direction: "DOWN",
@@ -594,7 +590,6 @@ describe("ELKBridge", () => {
         createTestNode("n2", "Node 2"),
       ];
       const edges = [createTestEdge("e1", "n1", "n2")];
-      const _containers: Container[] = [];
 
       nodes.forEach((node) => state.addNode(node));
       edges.forEach((edge) => state.addEdge(edge));

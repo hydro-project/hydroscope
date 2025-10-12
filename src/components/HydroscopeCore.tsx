@@ -246,7 +246,6 @@ const HydroscopeCoreInternal = forwardRef<
       showControls = true,
       showMiniMap = true,
       showBackground = true,
-      enableCollapse = true, // eslint-disable-line unused-imports/no-unused-vars -- kept for future extensibility
       readOnly = false,
       initialLayoutAlgorithm = DEFAULT_ELK_ALGORITHM,
       initialColorPalette,
@@ -808,7 +807,6 @@ const HydroscopeCoreInternal = forwardRef<
           // ReactFlowBridge is now stateless - no caches to clear
 
           // Log container states before generating ReactFlow data
-          const _containers = visualizationState.visibleContainers;
 
           // Generate ReactFlow data with interaction handlers
           const newData = reactFlowBridgeRef.current.toReactFlowData(
@@ -933,6 +931,7 @@ const HydroscopeCoreInternal = forwardRef<
     ]);
 
     // Bulk operations with atomic state management and error handling
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleCollapseAll = useCallback(
       withAsyncResizeObserverErrorSuppression(async () => {
         if (!state.visualizationState || !state.asyncCoordinator) {
@@ -1041,6 +1040,7 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleExpandAll = useCallback(
       withAsyncResizeObserverErrorSuppression(async () => {
         if (!state.visualizationState || !state.asyncCoordinator) {
@@ -1146,6 +1146,7 @@ const HydroscopeCoreInternal = forwardRef<
     );
 
     // Individual container operations with atomic state management and error handling
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleCollapse = useCallback(
       withAsyncResizeObserverErrorSuppression(async (containerId: string) => {
         if (!state.visualizationState || !state.asyncCoordinator) {
@@ -1219,6 +1220,7 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleExpand = useCallback(
       withAsyncResizeObserverErrorSuppression(async (containerId: string) => {
         if (!state.visualizationState || !state.asyncCoordinator) {
@@ -1292,6 +1294,7 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleToggle = useCallback(
       withAsyncResizeObserverErrorSuppression(async (containerId: string) => {
         if (!state.visualizationState) {

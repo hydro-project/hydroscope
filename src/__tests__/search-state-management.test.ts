@@ -6,18 +6,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, Container } from "../types/core.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Mock timers for debouncing tests
 vi.useFakeTimers();
 
 describe("Search and Navigation State Management", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     vi.clearAllTimers();
   });
@@ -167,26 +163,6 @@ describe("Search and Navigation State Management", () => {
       // Clear cache
       state.clearSearchCache();
       expect(state.getSearchCacheStats().size).toBe(0);
-    });
-
-    // TODO: Implement LRU cache eviction optimization
-    // This test is skipped until LRU cache eviction is implemented as an optimization
-    it.skip("should implement LRU eviction when cache is full", () => {
-      // Create a single node that will match our test query
-      const node1 = createTestNode("node1", "Test");
-      state.addNode(node1);
-
-      // Fill cache with exactly max size + 1 entries to test eviction
-      const maxSize = state.getSearchCacheStats().maxSize;
-      for (let i = 0; i <= maxSize; i++) {
-        state.performSearch(`query${i}`);
-      }
-
-      const cacheStats = state.getSearchCacheStats();
-      // Cache should not exceed max size
-      expect(cacheStats.size).toBeLessThanOrEqual(cacheStats.maxSize);
-      // Cache should have at least some entries (not be empty)
-      expect(cacheStats.size).toBeGreaterThan(0);
     });
   });
 

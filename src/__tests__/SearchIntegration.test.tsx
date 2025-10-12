@@ -42,7 +42,7 @@ describe("SearchIntegration Component", () => {
   };
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     vi.clearAllMocks();
 
     // Create a fresh VisualizationState for each test
@@ -69,7 +69,7 @@ describe("SearchIntegration Component", () => {
   });
 
   describe("Search Result Expansion", () => {
-    let coordinator: AsyncCoordinato;
+    let _coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });

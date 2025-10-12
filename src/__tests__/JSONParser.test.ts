@@ -110,12 +110,12 @@ const paxosLikeData: HydroscopeData = {
 };
 
 describe("JSONParser", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let parser: JSONParser;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const __coordinator = new AsyncCoordinator();
     parser = new JSONParser();
   });
 
@@ -141,7 +141,7 @@ describe("JSONParser", () => {
     it("creates paxos parser with custom options", () => {
       const paxosParser = JSONParser.createPaxosParser({
         debug: true,
-        nodeTransformer: (node) => ({ type: "CustomType" }),
+        nodeTransformer: (_node) => ({ type: "CustomType" }),
       });
       expect(paxosParser).toBeInstanceOf(JSONParser);
     });
@@ -278,7 +278,7 @@ describe("JSONParser", () => {
 
     it("applies custom node transformer", async () => {
       const customParser = new JSONParser({
-        nodeTransformer: (node) => ({
+        nodeTransformer: (_node) => ({
           type: "CustomType",
           semanticTags: ["custom"],
         }),
@@ -366,7 +366,7 @@ describe("JSONParser", () => {
 
     it("applies custom edge transformer", async () => {
       const customParser = new JSONParser({
-        edgeTransformer: (edge) => ({
+        edgeTransformer: (_edge) => ({
           type: "CustomEdgeType",
           semanticTags: ["custom_edge"],
         }),
@@ -399,7 +399,7 @@ describe("JSONParser", () => {
 
     it("handles paxos data with custom transformers", async () => {
       const paxosParser = JSONParser.createPaxosParser({
-        nodeTransformer: (node) => ({
+        nodeTransformer: (_node) => ({
           semanticTags: ["paxos_custom"],
         }),
       });

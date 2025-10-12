@@ -4,12 +4,12 @@ import type { GraphNode, GraphEdge, Container } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState CRUD Operations", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

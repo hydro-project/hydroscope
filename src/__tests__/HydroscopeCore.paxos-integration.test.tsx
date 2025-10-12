@@ -23,7 +23,7 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 let paxosData: HydroscopeData;
 
 beforeEach(async () => {
-  const coordinator = new AsyncCoordinator();
+  const _coordinator = new AsyncCoordinator();
   // Load paxos.json from test-data directory
   try {
     const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");

@@ -13,7 +13,7 @@ import type { SearchableItem } from "../components/SearchControls.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Search Navigation UI Components Integration", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let state: VisualizationState;
   let searchableItems: SearchableItem[];
@@ -23,7 +23,7 @@ describe("Search Navigation UI Components Integration", () => {
   let mockOnElementNavigation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     // Add test data - nodes first, then containers

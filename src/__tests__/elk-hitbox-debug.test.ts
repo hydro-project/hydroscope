@@ -17,15 +17,15 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("ELK Hitbox Debug", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
-  let reactFlowBridge: ReactFlowBridge;
+  let _reactFlowBridge: ReactFlowBridge;
   let elkBridge: ELKBridge;
 
   beforeEach(async () => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),
@@ -37,7 +37,7 @@ describe("ELK Hitbox Debug", () => {
 
     // Initialize components
     visualizationState = new VisualizationState();
-    reactFlowBridge = new ReactFlowBridge({});
+    _reactFlowBridge = new ReactFlowBridge({});
     elkBridge = new ELKBridge();
   });
 
@@ -367,7 +367,7 @@ describe("ELK Hitbox Debug", () => {
   describe("Simplified Graph Testing", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+      _coordinator = new AsyncCoordinator();
     });
 
     it("should test with progressively simplified graphs", async () => {

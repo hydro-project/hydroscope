@@ -4,12 +4,9 @@ import type { GraphNode, GraphEdge, Container } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Container Visibility and Edge Aggregation", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
@@ -46,13 +43,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(false);
 
       // Collapse container
-      await coordinator.collapseContainer(
-        "c1",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("c1", state);
 
       // Children should be hidden, container should be collapsed
       expect(state.getGraphNode("n1")?.hidden).toBe(true);
@@ -87,13 +78,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c1")?.collapsed).toBe(true);
 
       // Expand container
-      await coordinator.expandContainer(
-        "c1",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.expandContainer("c1", state);
 
       // Children should be visible, container should be expanded
       expect(state.getGraphNode("n1")?.hidden).toBe(false);
@@ -132,13 +117,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       state.addContainer(parentContainer);
 
       // Collapse parent - should hide child container and its contents
-      await coordinator.collapseContainer(
-        "parent",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("parent", state);
 
       expect(state.getContainer("parent")?.collapsed).toBe(true);
       expect(state.getContainer("child")?.hidden).toBe(true);
@@ -203,13 +182,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(0);
 
       // Collapse container - edges should be aggregated
-      await coordinator.collapseContainer(
-        "c1",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("c1", state);
 
       // Original edges should be hidden
       expect(state.getGraphEdge("e1")?.hidden).toBe(true);
@@ -272,13 +245,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getAggregatedEdges()).toHaveLength(1);
 
       // Expand container - should restore original edges
-      await coordinator.expandContainer(
-        "c1",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.expandContainer("c1", state);
 
       // Original edges should be visible again
       expect(state.getGraphEdge("e1")?.hidden).toBe(false);
@@ -342,20 +309,8 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       edges.forEach((edge) => state.addEdge(edge));
 
       // Collapse both containers
-      await coordinator.collapseContainer(
-        "c1",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
-      await coordinator.collapseContainer(
-        "c2",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("c1", state);
+      await coordinator.collapseContainer("c2", state);
 
       // Should have aggregated edge from c1 to c2
       const aggregatedEdges = state.getAggregatedEdges();
@@ -542,13 +497,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       edges.forEach((edge) => state.addEdge(edge));
 
       // Collapse c1 only
-      await coordinator.collapseContainer(
-        "c1",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("c1", state);
 
       const aggregatedEdges = state.getAggregatedEdges();
 
@@ -620,13 +569,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       state.addEdge(edge);
 
       // Collapse parent container
-      await coordinator.collapseContainer(
-        "parent",
-        state,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("parent", state);
 
       // Should aggregate edge from n3 to parent container
       const aggregatedEdges = state.getAggregatedEdges();

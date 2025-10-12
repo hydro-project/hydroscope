@@ -59,7 +59,6 @@ describe("Stateless Bridge Performance Tests", () => {
       await elkBridge.layout(visualizationState);
 
       const nodeCount = visualizationState.visibleNodes.length;
-      const edgeCount = visualizationState.visibleEdges.length;
 
       // Skip test if no nodes are available
       if (nodeCount === 0) {
@@ -72,7 +71,7 @@ describe("Stateless Bridge Performance Tests", () => {
       // Benchmark multiple runs
       const runs = [];
       for (let i = 0; i < 5; i++) {
-        const { result, metrics } = measureSync(() => {
+        const { result: _result, metrics } = measureSync(() => {
           return reactFlowBridge.toReactFlowData(visualizationState);
         });
         runs.push(metrics);
@@ -120,7 +119,7 @@ describe("Stateless Bridge Performance Tests", () => {
       const nodeCount = parseResult.visualizationState.visibleNodes.length;
 
       // Single benchmark run for large graph
-      const { result, metrics } = measureSync(() => {
+      const { result: _result, metrics } = measureSync(() => {
         return reactFlowBridge.toReactFlowData(parseResult.visualizationState);
       });
 
@@ -189,12 +188,11 @@ describe("Stateless Bridge Performance Tests", () => {
       const elkBridge = new ELKBridge();
 
       const nodeCount = parseResult.visualizationState.visibleNodes.length;
-      const edgeCount = parseResult.visualizationState.visibleEdges.length;
 
       // Benchmark ELK graph conversion
       const runs = [];
       for (let i = 0; i < 5; i++) {
-        const { result, metrics } = measureSync(() => {
+        const { result: _result, metrics } = measureSync(() => {
           return elkBridge.toELKGraph(parseResult.visualizationState);
         });
         runs.push(metrics);
@@ -230,7 +228,7 @@ describe("Stateless Bridge Performance Tests", () => {
         const nodeCount = parseResult.visualizationState.visibleNodes.length;
 
         // Benchmark full layout
-        const { result, metrics } = await measureAsync(async () => {
+        const { result: _result, metrics } = await measureAsync(async () => {
           await elkBridge.layout(parseResult.visualizationState);
           return parseResult.visualizationState;
         });
@@ -319,7 +317,7 @@ describe("Stateless Bridge Performance Tests", () => {
       }
 
       // Measure full pipeline
-      const { result, metrics } = await measureAsync(async () => {
+      const { result: result, metrics } = await measureAsync(async () => {
         const elkGraph = elkBridge.toELKGraph(visualizationState);
         const reactFlowData =
           reactFlowBridge.toReactFlowData(visualizationState);

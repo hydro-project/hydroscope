@@ -11,14 +11,14 @@ import type { GraphNode, Container, StyleConfig } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("ReactFlowBridge Highlighting", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let bridge: ReactFlowBridge;
   let state: VisualizationState;
   let styleConfig: StyleConfig;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const __coordinator = new AsyncCoordinator();
     styleConfig = {
       nodeStyles: {},
       edgeStyles: {},

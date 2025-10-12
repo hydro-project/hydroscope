@@ -15,16 +15,16 @@ import { createTestVisualizationState } from "../utils/testData";
 describe("Async Boundary Integration Tests", () => {
   let coordinator: AsyncCoordinator;
   let state: VisualizationState;
-  let elkBridge: ELKBridge;
-  let reactFlowBridge: ReactFlowBridge;
-  let interactionHandler: InteractionHandler;
+  let _elkBridge: ELKBridge;
+  let _reactFlowBridge: ReactFlowBridge;
+  let _interactionHandler: InteractionHandler;
 
   beforeEach(async () => {
     coordinator = new AsyncCoordinator();
     state = await createTestVisualizationState();
-    elkBridge = new ELKBridge();
-    reactFlowBridge = new ReactFlowBridge({});
-    interactionHandler = new InteractionHandler(state, coordinator);
+    _elkBridge = new ELKBridge();
+    _reactFlowBridge = new ReactFlowBridge({});
+    _interactionHandler = new InteractionHandler(state, coordinator);
 
     vi.useFakeTimers();
   });
@@ -34,7 +34,7 @@ describe("Async Boundary Integration Tests", () => {
   });
 
   describe("11.1 Test async coordination with paxos.json operations", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -395,7 +395,7 @@ describe("Async Boundary Integration Tests", () => {
   });
 
   describe("11.2 Test async boundary coordination", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });

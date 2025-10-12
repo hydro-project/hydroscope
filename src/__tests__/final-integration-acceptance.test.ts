@@ -17,8 +17,6 @@ import { InteractionHandler } from "../core/InteractionHandler";
 import { GraphNode, GraphEdge, Container } from "../types/core";
 
 describe("Final Integration and Acceptance Testing", () => {
-  let coordinator: AsyncCoordinator;
-
   let visualizationState: VisualizationState;
   let asyncCoordinator: AsyncCoordinator;
   let elkBridge: ELKBridge;
@@ -27,7 +25,6 @@ describe("Final Integration and Acceptance Testing", () => {
   let jsonParser: JSONParser;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
     asyncCoordinator = new AsyncCoordinator();
     elkBridge = new ELKBridge({
@@ -38,9 +35,9 @@ describe("Final Integration and Acceptance Testing", () => {
       layerSpacing: 20,
     });
     reactFlowBridge = new ReactFlowBridge({
-      nodeStyles: new Map(),
-      edgeStyles: new Map(),
-      containerStyles: new Map(),
+      nodeStyles: {},
+      edgeStyles: {},
+      containerStyles: {},
     });
     interactionHandler = new InteractionHandler(
       visualizationState,
@@ -54,7 +51,7 @@ describe("Final Integration and Acceptance Testing", () => {
   });
 
   describe("Complete Test Suite Validation", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -200,7 +197,9 @@ describe("Final Integration and Acceptance Testing", () => {
       // Test application event queuing
       const operationId = asyncCoordinator.queueApplicationEvent({
         type: "container_toggle",
-        containerId: "test-container",
+        payload: {
+          containerId: "test-container",
+        },
         timestamp: Date.now(),
       });
 
@@ -270,7 +269,7 @@ describe("Final Integration and Acceptance Testing", () => {
   });
 
   describe("Requirements Validation", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -325,8 +324,6 @@ describe("Final Integration and Acceptance Testing", () => {
       await coordinator.collapseContainer(
         "req2-container",
         visualizationState,
-        { triggerLayout: false },
-        coordinator,
         { triggerLayout: false },
       );
       visualizationState.validateInvariants();
@@ -405,13 +402,9 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(reactFlowData.edges).toBeDefined();
 
       // Test collapsed container rendering
-      await coordinator.collapseContainer(
-        "rf-container",
-        visualizationState,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("rf-container", visualizationState, {
+        triggerLayout: false,
+      });
       // Calculate layout so nodes have positions
       await elkBridge.layout(visualizationState);
 
@@ -433,13 +426,17 @@ describe("Final Integration and Acceptance Testing", () => {
       // Queue multiple operations
       const op1 = asyncCoordinator.queueApplicationEvent({
         type: "container_toggle",
-        containerId: "test1",
+        payload: {
+          containerId: "test1",
+        },
         timestamp: Date.now(),
       });
 
       const op2 = asyncCoordinator.queueApplicationEvent({
         type: "container_toggle",
-        containerId: "test2",
+        payload: {
+          containerId: "test2",
+        },
         timestamp: Date.now(),
       });
 
@@ -464,7 +461,7 @@ describe("Final Integration and Acceptance Testing", () => {
   });
 
   describe("Realistic Usage Scenarios", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -532,13 +529,9 @@ describe("Final Integration and Acceptance Testing", () => {
       });
 
       // User collapses container
-      await coordinator.collapseContainer(
-        "services",
-        testState,
-        { triggerLayout: false },
-        coordinator,
-        { triggerLayout: false },
-      );
+      await coordinator.collapseContainer("services", testState, {
+        triggerLayout: false,
+      });
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
       ).toBe(true);

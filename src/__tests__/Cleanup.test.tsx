@@ -54,20 +54,20 @@ vi.mock("../core/InteractionHandler", () => ({
 }));
 
 describe("Cleanup", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let mockNavbar: HTMLElement;
   let originalQuerySelector: typeof document.querySelector;
   let resizeObserverMock: any;
-  let addEventListenerSpy: any;
-  let removeEventListenerSpy: any;
-  let requestAnimationFrameSpy: any;
-  let cancelAnimationFrameSpy: any;
+  let _addEventListenerSpy: any;
+  let _removeEventListenerSpy: any;
+  let _requestAnimationFrameSpy: any;
+  let _cancelAnimationFrameSpy: any;
   let setTimeoutSpy: any;
   let clearTimeoutSpy: any;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     // Mock navbar element
     mockNavbar = document.createElement("div");
     mockNavbar.className = "navbar";
@@ -90,17 +90,17 @@ describe("Cleanup", () => {
     global.ResizeObserver = vi.fn(() => resizeObserverMock);
 
     // Spy on event listeners
-    addEventListenerSpy = vi.spyOn(window, "addEventListener");
-    removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
+    _addEventListenerSpy = vi.spyOn(window, "addEventListener");
+    _removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
 
     // Spy on animation frame methods
-    requestAnimationFrameSpy = vi
+    _requestAnimationFrameSpy = vi
       .spyOn(global, "requestAnimationFrame")
       .mockImplementation((cb) => {
         setTimeout(cb, 16);
         return 1;
       });
-    cancelAnimationFrameSpy = vi
+    _cancelAnimationFrameSpy = vi
       .spyOn(global, "cancelAnimationFrame")
       .mockImplementation(() => {});
 

@@ -26,12 +26,6 @@ import fs from "fs";
 import path from "path";
 
 describe("Performance Regression Tests", () => {
-  let coordinator: AsyncCoordinator;
-
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
-  });
-
   let paxosData: HydroscopeData;
   let batchTester: BatchPerformanceTester;
   let performanceBaseline: PerformanceBaseline | null = null;
@@ -103,7 +97,6 @@ describe("Performance Regression Tests", () => {
     });
 
     it("should maintain JSON parsing performance", async () => {
-      const coordinator = new AsyncCoordinator();
       const testResult = await batchTester.runTest(
         "json-parse",
         async () => {
@@ -267,7 +260,7 @@ describe("Performance Regression Tests", () => {
   });
 
   describe("Stress Testing", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -399,7 +392,7 @@ describe("Performance Regression Tests", () => {
   });
 
   describe("Synthetic Data Performance", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });

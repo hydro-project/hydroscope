@@ -13,12 +13,9 @@ import {
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Interaction State Management", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 
@@ -106,7 +103,7 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Container Click Handling", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -264,7 +261,7 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Interaction State Queries", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -356,11 +353,6 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Interaction State Validation", () => {
-    let coordinator: AsyncCoordinato;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
-    });
-
     it("should validate interaction state consistency", () => {
       const container = createTestContainer(
         "container1",
@@ -398,7 +390,7 @@ describe("VisualizationState Interaction State Management", () => {
   });
 
   describe("Integration with Container Operations", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });

@@ -11,21 +11,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../../core/VisualizationState.js";
 import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
-import { ELKBridge } from "../../bridges/ELKBridge.js";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
 
 describe("Container Collapse/Expand E2E Tests", () => {
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
-  let elkBridge: ELKBridge;
-  let coordinator: AsyncCoordinator;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
-    elkBridge = new ELKBridge({});
-    coordinator = new AsyncCoordinator();
 
     // Create test data with containers and nodes
     const container1 = {

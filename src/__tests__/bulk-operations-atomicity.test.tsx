@@ -104,12 +104,12 @@ const AtomicityTestComponent: React.FC<{
 };
 
 describe("Bulk Operations Atomicity Tests", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let testData: HydroscopeData;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     testData = createAtomicityTestData();
   });
 

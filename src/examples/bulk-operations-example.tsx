@@ -267,13 +267,13 @@ export const BulkOperationsExample: React.FC = () => {
           onError={handleError}
           onCollapseAll={handleCollapseAllCallback}
           onExpandAll={handleExpandAllCallback}
-          onNodeClick={(event, node) => {
+          onNodeClick={(_event, _node) => {
             // Node clicked: node.id
           }}
-          onContainerCollapse={(containerId) => {
+          onContainerCollapse={(_containerId) => {
             // Container collapsed: containerId
           }}
-          onContainerExpand={(containerId) => {
+          onContainerExpand={(_containerId) => {
             // Container expanded: containerId
           }}
         />

@@ -87,15 +87,15 @@ export const ReadOnlyExample: React.FC = () => {
           showControls={true}
           showMiniMap={false}
           showBackground={true}
-          onNodeClick={(event, node) => {
+          onNodeClick={(_event, _node) => {
             if (!readOnly) {
               // Node clicked: node.id
             }
           }}
-          onContainerCollapse={(containerId) => {
+          onContainerCollapse={(_containerId) => {
             // Container collapsed: containerId
           }}
-          onContainerExpand={(containerId) => {
+          onContainerExpand={(_containerId) => {
             // Container expanded: containerId
           }}
         />

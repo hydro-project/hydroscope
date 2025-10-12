@@ -314,6 +314,7 @@ export interface ApplicationEvent {
   type:
     | "container_expand"
     | "container_collapse"
+    | "container_toggle"
     | "container_expand_all"
     | "search"
     | "layout_config_change";

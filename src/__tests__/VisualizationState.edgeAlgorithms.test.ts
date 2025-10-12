@@ -13,12 +13,9 @@ import {
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Edge Aggregation and Restoration Algorithms", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

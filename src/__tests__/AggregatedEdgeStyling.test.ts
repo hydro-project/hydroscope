@@ -16,16 +16,12 @@ import type {
 } from "../types/core.js";
 
 describe("Aggregated Edge Styling with Conflict Resolution", () => {
-  let _coordinator: AsyncCoordinator;
-
-  let coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
   let elkBridge: ELKBridge;
   let styleConfig: StyleConfig;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     // Create a comprehensive style config with semantic mappings
     styleConfig = {
       nodeStyles: {
@@ -65,7 +61,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
   });
 
   describe("Conflict Resolution System", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });

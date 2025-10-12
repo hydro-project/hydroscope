@@ -10,11 +10,9 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import type { GraphNode, Container } from "../types/core.js";
 
 describe("AsyncCoordinator Tree Hierarchy", () => {
-  let coordinator: AsyncCoordinator;
   let state: VisualizationState;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

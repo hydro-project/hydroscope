@@ -27,7 +27,6 @@ import { Hydroscope } from "../components/Hydroscope.js";
 import { HydroscopeCore } from "../components/HydroscopeCore.js";
 import { FileUpload } from "../components/FileUpload.js";
 import type { HydroscopeData } from "../types/core.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 // Mock FileReader for testing file upload scenarios
 class MockFileReader {
@@ -82,12 +81,9 @@ const corruptedDataScenarios = {
 };
 
 describe("Integration Error Handling Tests", () => {
-  let coordinator: AsyncCoordinator;
-
   let originalFileReader: typeof FileReader;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
     // Mock FileReader
     originalFileReader = global.FileReader;
     global.FileReader = MockFileReader as any;

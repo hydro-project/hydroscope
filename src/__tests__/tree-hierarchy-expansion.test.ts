@@ -9,12 +9,12 @@ import type { GraphNode, Container, SearchResult } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Tree Hierarchy Expansion and Highlighting", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let state: VisualizationState;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const __coordinator = new AsyncCoordinator();
     state = new VisualizationState();
 
     // Create a nested hierarchy for testing

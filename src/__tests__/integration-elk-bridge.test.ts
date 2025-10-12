@@ -25,7 +25,7 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { LayoutConfig, ELKNode } from "../types/core.js";
 
 describe("VisualizationState + ELKBridge Integration", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let bridge: ELKBridge;
   let defaultConfig: LayoutConfig;
@@ -42,7 +42,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
   };
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const __coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     defaultConfig = {
       algorithm: "mrtree",
@@ -131,7 +131,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
     });
 
     // Helper function to create mock ELK results
-    function createMockELKResult(elkGraph: ELKNode) {
+    function _createMockELKResult(elkGraph: ELKNode) {
       const result: ELKNode = {
         id: "root",
         children: [],

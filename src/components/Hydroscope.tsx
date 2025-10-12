@@ -557,7 +557,14 @@ export const Hydroscope = memo<HydroscopeProps>(
         renderConfig: state.renderConfig,
       };
       saveSettings(completeSettings);
-    }, []); // Only run once on mount
+    }, [
+      state.infoPanelOpen,
+      state.stylePanelOpen,
+      state.autoFitEnabled,
+      state.colorPalette,
+      state.layoutAlgorithm,
+      state.renderConfig,
+    ]);
     // Cleanup timeouts and error suppression on unmount
     useEffect(() => {
       return () => {
@@ -695,7 +702,7 @@ export const Hydroscope = memo<HydroscopeProps>(
           onError?.(error as Error);
         }
       },
-      [state.layoutAlgorithm, onError],
+      [onError],
     );
     // Handle bulk operations with ResizeObserver error suppression
     const handleCollapseAll = useCallback(async () => {

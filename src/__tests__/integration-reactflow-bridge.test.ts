@@ -27,7 +27,7 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { JSONParser } from "../utils/JSONParser.js";
 
 describe("VisualizationState + ReactFlowBridge Integration", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let bridge: ReactFlowBridge;
   let elkBridge: ELKBridge;
@@ -65,7 +65,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
   };
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     elkBridge = new ELKBridge({
       algorithm: "mrtree",

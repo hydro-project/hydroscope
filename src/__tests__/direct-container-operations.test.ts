@@ -9,13 +9,10 @@ import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
 

@@ -47,10 +47,10 @@ const defaultProps = {
 };
 
 describe("SearchControls Enhanced Features", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     vi.clearAllMocks();
   });
 

@@ -20,14 +20,11 @@ import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
 describe("Container State Invariant Bug - FIXED", () => {
-  let coordinator: AsyncCoordinator;
-
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
   let elkBridge: ELKBridge;
 
   beforeEach(async () => {
-    const coordinator = new AsyncCoordinator();
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

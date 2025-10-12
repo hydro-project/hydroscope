@@ -13,14 +13,14 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Proposer HyperEdge Bug - Exact Reproduction", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
   let paxosData: any;
 
   beforeEach(async () => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
 

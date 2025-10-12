@@ -9,17 +9,14 @@ import type { GraphNode, GraphEdge, Container } from "../types/core.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("Enhanced Edge Restoration", () => {
-  let coordinator: AsyncCoordinator;
-
   let visualizationState: VisualizationState;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
   });
 
   describe("Pre-restoration Validation", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -112,15 +109,6 @@ describe("Enhanced Edge Restoration", () => {
         hidden: true,
       };
 
-      const badEdge: GraphEdge = {
-        id: "edge1",
-        source: "node1",
-        target: "nonexistent",
-        type: "edge",
-        semanticTags: [],
-        hidden: true,
-      };
-
       // Add to state
       visualizationState.addContainer(container);
       visualizationState.addNode(node1);
@@ -145,7 +133,7 @@ describe("Enhanced Edge Restoration", () => {
   });
 
   describe.skip("Rollback Functionality", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -261,7 +249,7 @@ describe("Enhanced Edge Restoration", () => {
   });
 
   describe("Post-expansion Validation", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });
@@ -327,7 +315,7 @@ describe("Enhanced Edge Restoration", () => {
   });
 
   describe("Integration with Existing Functionality", () => {
-    let coordinator: AsyncCoordinato;
+    let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
     });

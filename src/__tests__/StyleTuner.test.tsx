@@ -42,7 +42,7 @@ const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 
 describe("StyleTuner Component", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let visualizationState: VisualizationState;
   let asyncCoordinator: AsyncCoordinator;
@@ -63,7 +63,7 @@ describe("StyleTuner Component", () => {
   };
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
+    const _coordinator = new AsyncCoordinator();
     // Reset mocks
     vi.clearAllMocks();
     mockLocalStorage.getItem.mockReturnValue(null);

@@ -13,12 +13,9 @@ import {
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 describe("VisualizationState Edge Aggregation Data Structures", () => {
-  let coordinator: AsyncCoordinator;
-
   let state: VisualizationState;
 
   beforeEach(() => {
-    const coordinator = new AsyncCoordinator();
     state = new VisualizationState();
   });
 

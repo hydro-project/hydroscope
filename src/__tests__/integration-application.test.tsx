@@ -84,12 +84,12 @@ const TestFileUpload: React.FC<{
 };
 
 describe("Application Integration: Complete Application with paxos.json", () => {
-  let coordinator: AsyncCoordinator;
+  let _coordinator: AsyncCoordinator;
 
   let originalFileReader: typeof FileReader;
 
   beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+    _coordinator = new AsyncCoordinator();
     originalFileReader = global.FileReader;
     vi.clearAllMocks();
   });
@@ -263,9 +263,9 @@ describe("Application Integration: Complete Application with paxos.json", () => 
   });
 
   describe("Core Integration with VisualizationState", () => {
-    let coordinator: AsyncCoordinator;
+    let _coordinator: AsyncCoordinator;
     beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+      _coordinator = new AsyncCoordinator();
     });
 
     it("should integrate paxos.json data with VisualizationState", async () => {
