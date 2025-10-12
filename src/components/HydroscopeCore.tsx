@@ -462,6 +462,9 @@ const HydroscopeCoreInternal = forwardRef<
           elkBridgeRef.current
         );
 
+        // CRITICAL FIX: Set React state setter for direct imperative updates
+        asyncCoordinator.setReactStateSetter(setState);
+
         // Create InteractionHandler
         interactionHandlerRef.current = new InteractionHandler(
           visualizationState,
@@ -557,6 +560,126 @@ const HydroscopeCoreInternal = forwardRef<
     const processedDataRef = useRef<HydroscopeData | null>(null);
 
     /**
+     * Apply container click handler override to InteractionHandler
+     * This ensures manual container clicks work properly through AsyncCoordinator
+     */
+    const applyContainerClickOverride = useCallback((interactionHandler: any) => {
+      if (!interactionHandler) return;
+
+      // Override the container click handler to use AsyncCoordinator's synchronous methods
+      // CRITICAL FIX: Use direct method override to bypass debouncing and prevent double-click issues
+      const originalHandleContainerClick = interactionHandler.handleContainerClick.bind(interactionHandler);
+      
+      interactionHandler.handleContainerClick = async (
+        containerId: string,
+        _position?: { x: number; y: number },
+      ) => {
+        // Skip container interactions in readOnly mode
+        if (readOnly) {
+          return;
+        }
+
+        // CRITICAL FIX: Prevent double-click by checking if we're already processing this container
+        const processingKey = `container-${containerId}`;
+        if (interactionHandler._processingContainers?.has(processingKey)) {
+          console.warn(`[HydroscopeCore] Container ${containerId} click ignored - already processing`);
+          return;
+        }
+
+        // Mark container as being processed
+        if (!interactionHandler._processingContainers) {
+          interactionHandler._processingContainers = new Set();
+        }
+        interactionHandler._processingContainers.add(processingKey);
+
+        try {
+          // Validate container exists
+          if (!containerId || !containerId.trim()) {
+            console.warn(
+              "[HydroscopeCore] Invalid container ID:",
+              containerId,
+            );
+            return;
+          }
+
+          // Get the current VisualizationState
+          const currentVisualizationState = state.visualizationState;
+          if (!currentVisualizationState) {
+            console.warn("[HydroscopeCore] No VisualizationState available for container interaction");
+            return;
+          }
+
+          // Get container state before the click
+          const container = currentVisualizationState.getContainer(containerId);
+          if (!container) {
+            console.warn(
+              "[HydroscopeCore] Container not found:",
+              containerId,
+            );
+            return;
+          }
+
+          const wasCollapsed = Boolean(container.collapsed);
+
+          // Use AsyncCoordinator's synchronous container methods
+          if (state.asyncCoordinator) {
+            let reactFlowData;
+
+            if (wasCollapsed) {
+              // Synchronous expand - when it returns, the complete pipeline is done
+              reactFlowData = await state.asyncCoordinator.expandContainer(
+                containerId,
+                currentVisualizationState,
+                {
+                  relayoutEntities: [containerId], // Only re-layout this container
+                  fitView: state.autoFitEnabled,
+                }
+              );
+              // Call callback after synchronous operation completes
+              onContainerExpand?.(containerId, currentVisualizationState);
+            } else {
+              // Synchronous collapse - when it returns, the complete pipeline is done
+              reactFlowData = await state.asyncCoordinator.collapseContainer(
+                containerId,
+                currentVisualizationState,
+                {
+                  relayoutEntities: [containerId], // Only re-layout this container
+                  fitView: state.autoFitEnabled,
+                }
+              );
+              // Call callback after synchronous operation completes
+              onContainerCollapse?.(containerId, currentVisualizationState);
+            }
+
+            // At this point, the ENTIRE pipeline is complete:
+            // - State change applied
+            // - Layout calculated
+            // - ReactFlow data generated and updated
+            // - FitView triggered (if enabled)
+            
+            console.debug(
+              `[HydroscopeCore] Container ${wasCollapsed ? 'expand' : 'collapse'} operation completed`,
+              { containerId, reactFlowData }
+            );
+          } else {
+            console.error(
+              "[HydroscopeCore] AsyncCoordinator not available for container interaction",
+            );
+          }
+        } catch (error) {
+          console.error(
+            "[HydroscopeCore] Error in AsyncCoordinator container operation:",
+            error,
+          );
+          handleError(error as Error, "container interaction");
+        } finally {
+          // Always remove the processing flag
+          interactionHandler._processingContainers?.delete(processingKey);
+        }
+      };
+    }, [readOnly, state.visualizationState, state.asyncCoordinator, state.autoFitEnabled, onContainerExpand, onContainerCollapse, handleError]);
+
+    /**
      * Unified data processing pipeline using AsyncCoordinator
      * This delegates all data processing logic to AsyncCoordinator for consistency
      */
@@ -585,6 +708,12 @@ const HydroscopeCoreInternal = forwardRef<
             state.visualizationState,
             state.asyncCoordinator,
           );
+
+          // CRITICAL FIX: Apply container click override for manual container clicks
+          applyContainerClickOverride(interactionHandlerRef.current);
+
+          // CRITICAL FIX: Update AsyncCoordinator's InteractionHandler reference
+          state.asyncCoordinator.setInteractionHandler(interactionHandlerRef.current);
         }
 
         // Delegate to AsyncCoordinator's unified pipeline
@@ -653,242 +782,6 @@ const HydroscopeCoreInternal = forwardRef<
         return;
       }
 
-      const parseAndRender = async () => {
-        try {
-          // Mark this data as being processed
-          processedDataRef.current = data;
-          setState((prev) => ({
-            ...prev,
-            isLoading: true,
-            error: null,
-            autoFitEnabled: true,
-          }));
-
-          // Validate data structure first
-          validateData(data);
-
-          // Parse JSON data into a new VisualizationState
-          const parseResult = await jsonParserRef.current!.parseData(data);
-
-          // Log any warnings from parsing
-          if (parseResult.warnings.length > 0) {
-            console.warn(
-              "[HydroscopeCore] Parsing warnings:",
-              parseResult.warnings,
-            );
-          }
-
-          // Validate that we got some data
-          if (parseResult.stats.nodeCount === 0) {
-            throw new Error(
-              "No valid nodes found in the data. Please check that your data contains valid node definitions.",
-            );
-          }
-
-          // Warn about potential issues but don't fail
-          if (parseResult.stats.edgeCount === 0) {
-            console.warn(
-              "[HydroscopeCore] No edges found in data - visualization will only show nodes",
-            );
-          }
-
-          if (parseResult.stats.containerCount === 0) {
-            console.warn(
-              "[HydroscopeCore] No containers found in data - nodes will not be grouped",
-            );
-          }
-
-          // Replace our visualization state with the parsed one
-          // This ensures we get all the properly parsed and validated data
-          // IMPORTANT: This is the ONLY VisualizationState instance we should use
-          const singleVisualizationState = parseResult.visualizationState;
-
-          setState((prev) => ({
-            ...prev,
-            visualizationState: singleVisualizationState,
-          }));
-
-          // Notify parent component of visualization state change (for InfoPanel integration)
-          onVisualizationStateChange?.(singleVisualizationState);
-
-          // Update the interaction handler with the SAME visualization state instance
-          if (state.asyncCoordinator) {
-            // Create a custom interaction handler that calls our callbacks
-            interactionHandlerRef.current = new InteractionHandler(
-              singleVisualizationState,
-              state.asyncCoordinator,
-            );
-
-            // Override the container click handler to use AsyncCoordinator's synchronous methods
-            interactionHandlerRef.current.handleContainerClick = async (
-              containerId: string,
-              _position?: { x: number; y: number },
-            ) => {
-              // Skip container interactions in readOnly mode
-              if (readOnly) {
-                return;
-              }
-
-              try {
-                // Validate container exists
-                if (!containerId || !containerId.trim()) {
-                  console.warn(
-                    "[HydroscopeCore] Invalid container ID:",
-                    containerId,
-                  );
-                  return;
-                }
-
-                // Get the current VisualizationState
-                const currentVisualizationState = state.visualizationState;
-                if (!currentVisualizationState) {
-                  console.warn("[HydroscopeCore] No VisualizationState available for container interaction");
-                  return;
-                }
-
-                // Get container state before the click
-                const container = currentVisualizationState.getContainer(containerId);
-                if (!container) {
-                  console.warn(
-                    "[HydroscopeCore] Container not found:",
-                    containerId,
-                  );
-                  return;
-                }
-
-                const wasCollapsed = Boolean(container.collapsed);
-
-                // Use AsyncCoordinator's synchronous container methods
-                if (state.asyncCoordinator) {
-                  let reactFlowData;
-
-                  if (wasCollapsed) {
-                    // Synchronous expand - when it returns, the complete pipeline is done
-                    reactFlowData = await state.asyncCoordinator.expandContainer(
-                      containerId,
-                      currentVisualizationState,
-                      {
-                        relayoutEntities: [containerId], // Only re-layout this container
-                        fitView: state.autoFitEnabled,
-                      }
-                    );
-                    // Call callback after synchronous operation completes
-                    onContainerExpand?.(containerId, currentVisualizationState);
-                  } else {
-                    // Synchronous collapse - when it returns, the complete pipeline is done
-                    reactFlowData = await state.asyncCoordinator.collapseContainer(
-                      containerId,
-                      currentVisualizationState,
-                      {
-                        relayoutEntities: [containerId], // Only re-layout this container
-                        fitView: state.autoFitEnabled,
-                      }
-                    );
-                    // Call callback after synchronous operation completes
-                    onContainerCollapse?.(containerId, currentVisualizationState);
-                  }
-
-                  // At this point, the ENTIRE pipeline is complete:
-                  // - State change applied
-                  // - Layout calculated
-                  // - ReactFlow data generated and updated
-                  // - FitView triggered (if enabled)
-                  
-                  console.debug(
-                    `[HydroscopeCore] Container ${wasCollapsed ? 'expand' : 'collapse'} operation completed`,
-                    { containerId, reactFlowData }
-                  );
-                } else {
-                  console.error(
-                    "[HydroscopeCore] AsyncCoordinator or ELKBridge not available for container interaction",
-                  );
-                }
-              } catch (error) {
-                console.error(
-                  "[HydroscopeCore] Error in AsyncCoordinator container operation:",
-                  error,
-                );
-                handleError(error as Error, "container interaction");
-              }
-            };
-          }
-
-          // Use AsyncCoordinator's synchronous pipeline for data initialization
-          if (state.asyncCoordinator && elkBridgeRef.current) {
-            try {
-              // Execute complete pipeline: layout + render + fitView
-              const reactFlowData = await state.asyncCoordinator.executeLayoutAndRenderPipeline(
-                singleVisualizationState,
-                {
-                  relayoutEntities: undefined, // Full layout for new data
-                  fitView: true, // Trigger initial fit view
-                }
-              );
-
-              console.debug(
-                "[HydroscopeCore] Data initialization pipeline completed successfully",
-                { 
-                  nodeCount: reactFlowData?.nodes?.length || 0,
-                  edgeCount: reactFlowData?.edges?.length || 0 
-                }
-              );
-
-              setState((prev) => ({
-                ...prev,
-                isLoading: false,
-              }));
-            } catch (pipelineError) {
-              console.error(
-                "[HydroscopeCore] Data initialization pipeline failed:",
-                pipelineError,
-              );
-              
-              // Enhanced error handling for synchronous pipeline
-              const errorMessage = pipelineError instanceof Error 
-                ? pipelineError.message 
-                : "Unknown pipeline error";
-              
-              const enhancedError = new Error(
-                `Failed to initialize visualization: ${errorMessage}. The data may be invalid or the layout engine encountered an error.`
-              );
-              enhancedError.stack = pipelineError instanceof Error ? pipelineError.stack : undefined;
-              
-              setState((prev) => ({
-                ...prev,
-                error: enhancedError,
-                isLoading: false,
-              }));
-              
-              // Call error callback with enhanced error
-              onError?.(enhancedError);
-              return; // Exit early on pipeline failure
-            }
-          } else {
-            // Enhanced error for missing dependencies
-            const missingDeps = [];
-            if (!state.asyncCoordinator) missingDeps.push("AsyncCoordinator");
-            if (!elkBridgeRef.current) missingDeps.push("ELKBridge");
-            
-            const dependencyError = new Error(
-              `Cannot initialize visualization: Missing required dependencies: ${missingDeps.join(", ")}. Please check component initialization.`
-            );
-            
-            console.error("[HydroscopeCore] Missing dependencies for data initialization:", missingDeps);
-            
-            setState((prev) => ({
-              ...prev,
-              error: dependencyError,
-              isLoading: false,
-            }));
-            
-            onError?.(dependencyError);
-            return; // Exit early on missing dependencies
-          }
-        } catch (error) {
-          handleError(error as Error, "data parsing");
-        }
-      };
-
       // Determine the reason for data processing
       const isInitialLoad = processedDataRef.current === null;
       const isHierarchyChange = processedDataRef.current !== null && 
@@ -898,7 +791,7 @@ const HydroscopeCoreInternal = forwardRef<
       const reason = isInitialLoad ? 'initial_load' : 
                      isHierarchyChange ? 'hierarchy_change' : 'file_load';
 
-      // Use unified pipeline for all data processing
+      // Use unified pipeline for ALL data processing - this includes smart collapse logic
       processDataPipeline(data, reason);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, processDataPipeline]);

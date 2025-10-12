@@ -311,7 +311,11 @@ export class ELKBridge implements IELKBridge {
     try {
       // Run smart collapse before layout if enabled
       if (state.shouldRunSmartCollapse()) {
+        console.log('🎯 SMART COLLAPSE CALLED - running smart collapse before layout');
         state.performSmartCollapse();
+        console.log('✅ SMART COLLAPSE COMPLETED');
+      } else {
+        console.log('❌ SMART COLLAPSE SKIPPED - shouldRunSmartCollapse() returned false');
       }
       // Convert VisualizationState to ELK format
       const elkGraph = this.toELKGraph(state);

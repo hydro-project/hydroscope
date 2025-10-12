@@ -66,7 +66,10 @@ export class InteractionHandler {
       timestamp: Date.now(),
       position: position || { x: 0, y: 0 },
     };
-    this.processClickEvent(clickEvent);
+    
+    // CRITICAL FIX: Disable debouncing for container clicks to prevent double-click issues
+    // Container operations are already atomic through AsyncCoordinator
+    this._executeClickEvent(clickEvent);
   }
   // Core click event processing with debouncing
   processClickEvent(event: ClickEvent): void {
@@ -122,13 +125,50 @@ export class InteractionHandler {
     this._visualizationState.toggleNodeLabel(event.elementId);
   }
   private _handleContainerClickInternal(event: ClickEvent): void {
-    const _containerBefore = this._visualizationState.getContainer(
+    const containerBefore = this._visualizationState.getContainer(
       event.elementId,
     );
-    this._visualizationState._toggleContainerForCoordinator(event.elementId);
-    const _containerAfter = this._visualizationState.getContainer(
-      event.elementId,
-    );
+    
+    if (!containerBefore) {
+      console.warn(`[InteractionHandler] Container ${event.elementId} not found`);
+      return;
+    }
+
+    // Use AsyncCoordinator methods if available for proper pipeline execution
+    if (this._asyncCoordinator && 
+        this._asyncCoordinator.expandContainer && 
+        this._asyncCoordinator.collapseContainer) {
+      
+      const wasCollapsed = containerBefore.collapsed;
+      
+      // Use AsyncCoordinator's container methods for proper pipeline execution
+      if (wasCollapsed) {
+        this._asyncCoordinator.expandContainer(
+          event.elementId,
+          this._visualizationState,
+          {
+            relayoutEntities: [event.elementId], // Only re-layout this container
+            fitView: false, // Don't auto-fit on manual interactions
+          }
+        ).catch((error: Error) => {
+          console.error('[InteractionHandler] Container expand failed:', error);
+        });
+      } else {
+        this._asyncCoordinator.collapseContainer(
+          event.elementId,
+          this._visualizationState,
+          {
+            relayoutEntities: [event.elementId], // Only re-layout this container
+            fitView: false, // Don't auto-fit on manual interactions
+          }
+        ).catch((error: Error) => {
+          console.error('[InteractionHandler] Container collapse failed:', error);
+        });
+      }
+    } else {
+      // Fallback to direct VisualizationState methods (legacy behavior)
+      this._visualizationState._toggleContainerForCoordinator(event.elementId);
+    }
   }
   private _triggerLayoutUpdateIfNeeded(event: ClickEvent): void {
     // Container clicks always need layout updates
@@ -149,9 +189,15 @@ export class InteractionHandler {
     }
   }
   private _triggerLayoutUpdate(): void {
-    if (this._asyncCoordinator && this._asyncCoordinator.queueLayoutUpdate) {
-      // Queue layout update through AsyncCoordinator
-      this._asyncCoordinator.queueLayoutUpdate();
+    if (this._asyncCoordinator && this._asyncCoordinator.executeLayoutAndRenderPipeline) {
+      // Use the new AsyncCoordinator pipeline method
+      // Note: This is async but we don't await it to maintain the synchronous interface
+      this._asyncCoordinator.executeLayoutAndRenderPipeline(this._visualizationState, {
+        relayoutEntities: undefined, // Full layout
+        fitView: false, // Don't auto-fit on manual interactions
+      }).catch((error: Error) => {
+        console.error('[InteractionHandler] Layout update failed:', error);
+      });
     }
   }
   // Bulk operations

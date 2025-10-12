@@ -1521,11 +1521,13 @@ export class VisualizationState {
     this._layoutState.lastUpdate = Date.now();
   }
   resetLayoutState(): void {
+    console.log(`🔄 RESET LAYOUT STATE: Before reset - layoutCount=${this._layoutState.layoutCount}`);
     this._layoutState = {
       phase: "initial",
       layoutCount: 0,
       lastUpdate: Date.now(),
     };
+    console.log(`🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}`);
   }
   // Smart Collapse Management
   private _smartCollapseEnabled = true;
@@ -1533,9 +1535,14 @@ export class VisualizationState {
   shouldRunSmartCollapse(): boolean {
     if (this._smartCollapseOverride) {
       this._smartCollapseOverride = false; // Reset after checking
+      console.log('🎯 SMART COLLAPSE: Override enabled, returning true');
       return true;
     }
-    return this._smartCollapseEnabled && this.isFirstLayout();
+    const enabled = this._smartCollapseEnabled;
+    const isFirst = this.isFirstLayout();
+    const result = enabled && isFirst;
+    console.log(`🎯 SMART COLLAPSE CHECK: enabled=${enabled}, isFirstLayout=${isFirst}, layoutCount=${this._layoutState.layoutCount}, result=${result}`);
+    return result;
   }
   enableSmartCollapseForNextLayout(): void {
     this._smartCollapseOverride = true;

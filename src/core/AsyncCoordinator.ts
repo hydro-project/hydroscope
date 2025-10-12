@@ -626,11 +626,11 @@ export class AsyncCoordinator {
       );
     }
 
-    // Get ELK bridge from bridge factory - no need to pass it as parameter
-    const elkBridge = bridgeFactory.getELKBridge();
-    if (!elkBridge) {
-      throw new Error("ELK bridge is not available from bridge factory");
+    // Use the ELK bridge instance set via setBridgeInstances
+    if (!this.elkBridge) {
+      throw new Error("ELK bridge is not available - ensure setBridgeInstances was called");
     }
+    const elkBridge = this.elkBridge;
 
     try {
       console.log(
@@ -694,13 +694,13 @@ export class AsyncCoordinator {
           throw new Error('ELK bridge not available for layout execution');
         }
         console.log('🎯 Calling executeELKLayoutAsync', {
-          elkBridge: !!this.elkBridge,
-          elkBridgeType: typeof this.elkBridge,
+          elkBridge: !!elkBridge,
+          elkBridgeType: typeof elkBridge,
           relayoutEntities: options.relayoutEntities
         });
         await this.executeELKLayoutAsync(
           state,
-          this.elkBridge,
+          elkBridge,
           options.relayoutEntities
         );
         performanceMetrics.layoutDuration = Date.now() - layoutStart;
@@ -1566,10 +1566,9 @@ export class AsyncCoordinator {
         throw new Error("VisualizationState is required for expand operation");
       }
 
-      // Get ELK bridge from bridge factory - no need to pass it as parameter
-      const elkBridge = bridgeFactory.getELKBridge();
-      if (!elkBridge) {
-        throw new Error("ELK bridge is not available from bridge factory");
+      // Use the ELK bridge instance set via setBridgeInstances
+      if (!this.elkBridge) {
+        throw new Error("ELK bridge is not available - ensure setBridgeInstances was called");
       }
 
       // Process state change synchronously with error handling
@@ -1684,10 +1683,9 @@ export class AsyncCoordinator {
         );
       }
 
-      // Get ELK bridge from bridge factory - no need to pass it as parameter
-      const elkBridge = bridgeFactory.getELKBridge();
-      if (!elkBridge) {
-        throw new Error("ELK bridge is not available from bridge factory");
+      // Use the ELK bridge instance set via setBridgeInstances
+      if (!this.elkBridge) {
+        throw new Error("ELK bridge is not available - ensure setBridgeInstances was called");
       }
 
       // Process state change synchronously with error handling
@@ -1823,10 +1821,9 @@ export class AsyncCoordinator {
         );
       }
 
-      // Get ELK bridge from bridge factory - no need to pass it as parameter
-      const elkBridge = bridgeFactory.getELKBridge();
-      if (!elkBridge) {
-        throw new Error("ELK bridge is not available from bridge factory");
+      // Use the ELK bridge instance set via setBridgeInstances
+      if (!this.elkBridge) {
+        throw new Error("ELK bridge is not available - ensure setBridgeInstances was called");
       }
 
       // Process state change synchronously with error handling
@@ -1969,10 +1966,9 @@ export class AsyncCoordinator {
         );
       }
 
-      // Get ELK bridge from bridge factory - no need to pass it as parameter
-      const elkBridge = bridgeFactory.getELKBridge();
-      if (!elkBridge) {
-        throw new Error("ELK bridge is not available from bridge factory");
+      // Use the ELK bridge instance set via setBridgeInstances
+      if (!this.elkBridge) {
+        throw new Error("ELK bridge is not available - ensure setBridgeInstances was called");
       }
 
       // Get containers to collapse - either specified list or all expanded containers
@@ -2618,10 +2614,9 @@ export class AsyncCoordinator {
         throw new Error("VisualizationState is required for search operations");
       }
 
-      // Get ELK bridge from bridge factory - no need to pass it as parameter
-      const elkBridge = bridgeFactory.getELKBridge();
-      if (!elkBridge) {
-        throw new Error("ELK bridge is not available from bridge factory");
+      // Use the ELK bridge instance set via setBridgeInstances
+      if (!this.elkBridge) {
+        throw new Error("ELK bridge is not available - ensure setBridgeInstances was called");
       }
 
       // Step 1: Perform search in VisualizationState (synchronous) - FAIL FAST on errors
