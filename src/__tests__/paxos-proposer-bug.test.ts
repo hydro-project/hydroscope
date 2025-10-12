@@ -34,7 +34,9 @@ describe("Paxos Proposer Container Bug", () => {
   };
 
   beforeEach(async () => {
-    coordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     state = new VisualizationState();
     elkBridge = new ELKBridge();
     reactFlowBridge = new ReactFlowBridge(styleConfig);

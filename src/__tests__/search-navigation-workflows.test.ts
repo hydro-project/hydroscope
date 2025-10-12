@@ -24,7 +24,10 @@ describe("Search Navigation Workflow Integration", () => {
   let chatData: HydroscopeData;
 
   beforeEach(async () => {
-    coordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
+    
     // Load the actual chat.json file
     const chatPath = path.join(process.cwd(), "test-data", "chat.json");
 
@@ -40,7 +43,6 @@ describe("Search Navigation Workflow Integration", () => {
     const parseResult = await parser.parseData(chatData);
 
     state = parseResult.visualizationState;
-    coordinator = new AsyncCoordinator();
     bridge = new ReactFlowBridge({
       nodeStyles: {},
       edgeStyles: {},
@@ -52,10 +54,7 @@ describe("Search Navigation Workflow Integration", () => {
   });
 
   describe("Search Query → Tree Expansion → Graph Update Flow", () => {
-    let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
-    });
+    // Note: coordinator is already set up in the main beforeEach with proper bridge instances
 
     it("should expand tree hierarchy when searching for nodes in containers", () => {
       // Initially, containers should be collapsed

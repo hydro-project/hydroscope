@@ -33,15 +33,20 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
   const findContainersToExpand = useCallback(
     (results: SearchResult[]): string[] => {
       const containersToExpand: Set<string> = new Set();
-      for (const result of results) {
+      
+      // Limit the number of results we process to prevent expanding too many containers
+      const maxResultsToProcess = 10;
+      const limitedResults = results.slice(0, maxResultsToProcess);
+      
+      for (const result of limitedResults) {
         if (result.type === "node") {
           // Find the container hierarchy for this node
           const nodeContainer = visualizationState.getNodeContainer(result.id);
           if (nodeContainer) {
-            // Add all ancestor containers that are collapsed
+            // Add immediate container and up to 2 levels of ancestors
             const ancestors = [
               nodeContainer,
-              ...visualizationState.getContainerAncestors(nodeContainer),
+              ...visualizationState.getContainerAncestors(nodeContainer).slice(0, 2),
             ];
             for (const ancestorId of ancestors) {
               const container = visualizationState.getContainer(ancestorId);
@@ -54,7 +59,7 @@ export const SearchIntegration: React.FC<SearchIntegrationProps> = ({
           // For container results, expand parent containers if they're collapsed
           const parentContainers = visualizationState.getContainerAncestors(
             result.id,
-          );
+          ).slice(0, 2); // Limit to 2 levels of parents
           for (const parentId of parentContainers) {
             const container = visualizationState.getContainer(parentId);
             if (container && container.collapsed) {

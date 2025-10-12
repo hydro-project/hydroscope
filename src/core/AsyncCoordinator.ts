@@ -3374,8 +3374,14 @@ export class AsyncCoordinator {
     try {
       console.log('[AsyncCoordinator] 🎯 Executing direct ReactFlow fitView', options);
       
-      // Use a small delay to ensure ReactFlow has processed the node changes
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Use requestAnimationFrame to ensure ReactFlow has rendered the nodes
+      await new Promise(resolve => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve(void 0);
+          });
+        });
+      });
       
       const fitViewOptions = {
         padding: options?.padding || 0.15,
@@ -3393,6 +3399,56 @@ export class AsyncCoordinator {
         this.onFitViewRequested(options);
       }
     }
+  }
+
+  /**
+   * Wait deterministically for ReactFlow to process node position updates
+   * This replaces the arbitrary timing delay with a proper readiness check
+   */
+  private async _waitForReactFlowReady(): Promise<void> {
+    if (!this.reactFlowInstance) {
+      return;
+    }
+
+    const maxAttempts = 30; // Max 3 seconds (30 * 100ms) - increased timeout
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Check if ReactFlow has nodes with valid positions
+        const nodes = this.reactFlowInstance.getNodes();
+        
+        // If we have nodes and they have valid positions, ReactFlow is ready
+        if (nodes.length > 0) {
+          const validNodes = nodes.filter((node: any) => 
+            node.position && 
+            typeof node.position.x === 'number' && 
+            typeof node.position.y === 'number' &&
+            !isNaN(node.position.x) && 
+            !isNaN(node.position.y) &&
+            node.position.x !== 0 || node.position.y !== 0 // Ensure positions are not just default (0,0)
+          );
+          
+          // Require at least 50% of nodes to have valid positions for better reliability
+          const validRatio = validNodes.length / nodes.length;
+          if (validRatio >= 0.5) {
+            console.log(`[AsyncCoordinator] ✅ ReactFlow ready after ${attempts * 100}ms - found ${validNodes.length}/${nodes.length} nodes with valid positions`);
+            return;
+          }
+        }
+        
+        // If no nodes yet, or not enough valid positions, wait a bit more
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        
+      } catch (error) {
+        console.warn(`[AsyncCoordinator] Error checking ReactFlow readiness (attempt ${attempts}):`, error);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+    }
+    
+    console.warn(`[AsyncCoordinator] ⚠️ ReactFlow readiness timeout after ${maxAttempts * 100}ms - proceeding anyway`);
   }
 
   /**

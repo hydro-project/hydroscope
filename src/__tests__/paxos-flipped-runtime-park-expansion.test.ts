@@ -39,8 +39,10 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
   describe("Runtime/Park.rs Container Expansion", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should find runtime/park.rs container in paxos-flipped.json", () => {

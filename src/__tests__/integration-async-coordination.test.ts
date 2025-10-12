@@ -20,7 +20,9 @@ describe("Async Boundary Integration Tests", () => {
   let _interactionHandler: InteractionHandler;
 
   beforeEach(async () => {
-    coordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     state = await createTestVisualizationState();
     _elkBridge = new ELKBridge();
     _reactFlowBridge = new ReactFlowBridge({});
@@ -34,10 +36,7 @@ describe("Async Boundary Integration Tests", () => {
   });
 
   describe("11.1 Test async coordination with paxos.json operations", () => {
-    let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
-    });
+    // Note: coordinator is already set up in the main beforeEach with proper bridge instances
 
     it("should handle rapid container expand/collapse operations with proper sequencing", async () => {
       // Get some containers from paxos data

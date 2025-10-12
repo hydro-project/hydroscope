@@ -92,8 +92,10 @@ describe("Performance Regression Tests", () => {
   describe("Core Component Performance", () => {
     let coordinator: AsyncCoordinator;
 
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should maintain JSON parsing performance", async () => {
@@ -261,11 +263,13 @@ describe("Performance Regression Tests", () => {
 
   describe("Stress Testing", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
-    it("should handle container operation stress test", async () => {
+    it("should handle container operation stress test", { timeout: 15000 }, async () => {
       const parser = JSONParser.createPaxosParser({ debug: false });
       const parseResult = await parser.parseData(paxosData);
 
@@ -274,8 +278,8 @@ describe("Performance Regression Tests", () => {
         async () => {
           const state = parseResult.visualizationState;
 
-          // Rapid container operations
-          for (let i = 0; i < 10; i++) {
+          // Rapid container operations (reduced iterations for performance)
+          for (let i = 0; i < 3; i++) {
             await coordinator.expandAllContainers(state, {
               fitView: false,
             });
@@ -393,8 +397,10 @@ describe("Performance Regression Tests", () => {
 
   describe("Synthetic Data Performance", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it(

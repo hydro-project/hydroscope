@@ -36,8 +36,12 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
     return result.visualizationState;
   };
 
-  beforeEach(() => {
-    _coordinator = new AsyncCoordinator();
+  beforeEach(async () => {
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    _coordinator = testSetup.asyncCoordinator;
+    asyncCoordinator = testSetup.asyncCoordinator;
+    
     state = new VisualizationState();
     elkBridge = new ELKBridge({
       algorithm: "mrtree",
@@ -45,7 +49,6 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       nodeSpacing: 50,
       layerSpacing: 25,
     });
-    asyncCoordinator = new AsyncCoordinator();
   });
 
   describe("Real ELK Layout Calculation", () => {

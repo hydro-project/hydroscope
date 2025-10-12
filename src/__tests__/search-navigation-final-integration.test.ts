@@ -45,7 +45,9 @@ describe("Search Navigation Final Integration", () => {
     const parseResult = await parser.parseData(paxosData);
 
     state = parseResult.visualizationState;
-    coordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     bridge = new ReactFlowBridge({
       nodeStyles: {},
       edgeStyles: {},

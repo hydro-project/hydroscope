@@ -95,7 +95,9 @@ describe("Proposer Container Data Processing", () => {
 
     // Create a fresh VisualizationState and AsyncCoordinator for testing
     const visualizationState = parseResult.visualizationState;
-    const asyncCoordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    const asyncCoordinator = testSetup.asyncCoordinator;
 
     // Find the Proposer container
     const proposerContainer = visualizationState

@@ -96,8 +96,10 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
   describe("Single Container Collapse", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should collapse container and change visual representation", async () => {
@@ -174,8 +176,10 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
   describe("Bulk Container Operations", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should collapse all containers", async () => {
@@ -246,8 +250,10 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
   describe("Layout Integration", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should handle collapsed containers in layout", async () => {
@@ -416,8 +422,10 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
   describe("Error Handling", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should handle collapse of non-existent container gracefully", async () => {
@@ -474,8 +482,10 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
   describe("Visual Consistency", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should maintain consistent node types for containers", async () => {

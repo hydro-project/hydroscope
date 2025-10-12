@@ -60,8 +60,10 @@ describe("Stateless Bridge Performance Regression Tests", () => {
   describe("ReactFlowBridge Performance (Stateless)", () => {
     let coordinator: AsyncCoordinator;
 
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should maintain ReactFlowBridge.toReactFlowData performance with paxos.json", async () => {
@@ -289,8 +291,10 @@ describe("Stateless Bridge Performance Regression Tests", () => {
 
   describe("ELKBridge Performance (Stateless)", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should maintain ELKBridge.toELKGraph performance with paxos.json", async () => {
@@ -460,8 +464,10 @@ describe("Stateless Bridge Performance Regression Tests", () => {
 
   describe("Combined Bridge Performance", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it(

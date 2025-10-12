@@ -200,6 +200,24 @@ export class InteractionHandler {
       });
     }
   }
+
+  private _triggerLayoutUpdateWithAutofit(): void {
+    if (this._asyncCoordinator && this._asyncCoordinator.executeLayoutAndRenderPipeline) {
+      // Use the new AsyncCoordinator pipeline method with autofit for search expansions
+      // Note: This is async but we don't await it to maintain the synchronous interface
+      this._asyncCoordinator.executeLayoutAndRenderPipeline(this._visualizationState, {
+        relayoutEntities: undefined, // Full layout
+        fitView: true, // Enable auto-fit for search result expansions
+        fitViewOptions: { 
+          padding: 0.3, // Use relative padding (30% of viewport) for better scaling
+          duration: 500, // Slower animation for better user experience
+          includeHiddenNodes: false // Don't include hidden nodes in fit calculation
+        }
+      }).catch((error: Error) => {
+        console.error('[InteractionHandler] Layout update with autofit failed:', error);
+      });
+    }
+  }
   // Bulk operations
   handleBulkNodeLabelToggle(nodeIds: string[], showLongLabel: boolean): void {
     for (const nodeId of nodeIds) {
@@ -281,7 +299,7 @@ export class InteractionHandler {
     if (elementType === "container") {
       // Search result clicks should expand containers
       this._visualizationState.expandContainerForSearch(elementId);
-      this._triggerLayoutUpdate();
+      this._triggerLayoutUpdateWithAutofit();
     } else {
       // For nodes, just show long label
       this._visualizationState.setNodeLabelState(elementId, true);

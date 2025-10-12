@@ -15,8 +15,10 @@ describe("Floating HyperEdge Bug Reproduction", () => {
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
 
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+  beforeEach(async () => {
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
 

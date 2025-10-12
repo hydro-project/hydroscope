@@ -30,8 +30,10 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
 
   describe("Performance Characteristics", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should measure parsing performance with complex hierarchical data", async () => {

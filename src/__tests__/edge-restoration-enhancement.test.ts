@@ -17,8 +17,10 @@ describe("Enhanced Edge Restoration", () => {
 
   describe("Pre-restoration Validation", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should validate edge restoration preconditions", async () => {

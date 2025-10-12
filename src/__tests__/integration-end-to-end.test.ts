@@ -250,8 +250,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   describe("Container Operations Through Complete Pipeline", () => {
     let coordinator: AsyncCoordinator;
 
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
       // Set up test data with containers
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
@@ -465,8 +467,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   describe("Search Operations Through Complete Pipeline", () => {
     let coordinator: AsyncCoordinator;
 
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
       // Set up searchable test data
       const node1 = createTestNode("search_node_1", "Searchable Node 1");
       const node2 = createTestNode("search_node_2", "Another Node");
@@ -655,8 +659,10 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
   describe("Performance Validation", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should handle large datasets through complete pipeline efficiently", async () => {

@@ -24,9 +24,11 @@ describe("Final Integration and Acceptance Testing", () => {
   let interactionHandler: InteractionHandler;
   let jsonParser: JSONParser;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     visualizationState = new VisualizationState();
-    asyncCoordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    asyncCoordinator = testSetup.asyncCoordinator;
     elkBridge = new ELKBridge({
       algorithm: "mrtree",
       direction: "DOWN",

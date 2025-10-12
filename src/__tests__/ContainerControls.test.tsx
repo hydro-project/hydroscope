@@ -26,8 +26,10 @@ describe("ContainerControls Component", () => {
   let mockOnOperationComplete: ReturnType<typeof vi.fn>;
   let mockOnError: ReturnType<typeof vi.fn>;
 
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+  beforeEach(async () => {
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     visualizationState = new VisualizationState();
 
     // Add test data

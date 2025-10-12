@@ -136,3 +136,25 @@ export async function createTestVisualizationState() {
   }
   return state;
 }
+
+/**
+ * Create a properly configured AsyncCoordinator for testing
+ * Sets up bridge instances to avoid "ELK bridge is not available" errors
+ */
+export async function createTestAsyncCoordinator() {
+  const { AsyncCoordinator } = await import("../core/AsyncCoordinator.js");
+  const { ReactFlowBridge } = await import("../bridges/ReactFlowBridge.js");
+  const { ELKBridge } = await import("../bridges/ELKBridge.js");
+  
+  const asyncCoordinator = new AsyncCoordinator();
+  const reactFlowBridge = new ReactFlowBridge({});
+  const elkBridge = new ELKBridge({
+    algorithm: "mrtree",
+    direction: "DOWN",
+  });
+  
+  // Set bridge instances to avoid "ELK bridge is not available" errors
+  asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
+  
+  return { asyncCoordinator, reactFlowBridge, elkBridge };
+}

@@ -43,8 +43,10 @@ describe("Error Boundary Validation", () => {
 
   let mockConsoleError: any;
 
-  beforeEach(() => {
-    _coordinator = new AsyncCoordinator();
+  beforeEach(async () => {
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    _coordinator = testSetup.asyncCoordinator;
     mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
@@ -131,7 +133,7 @@ describe("Error Boundary Validation", () => {
 
       await expect(
         asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, invalidElkBridge)
-      ).rejects.toThrow("ELKBridge instance is required");
+      ).rejects.toThrow("ELK bridge is not available");
 
       // Coordinator should remain functional after error
       expect(asyncCoordinator).toBeDefined();
@@ -156,7 +158,7 @@ describe("Error Boundary Validation", () => {
 
       await expect(
         asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, invalidElkBridge)
-      ).rejects.toThrow("ELKBridge layout method is not available");
+      ).rejects.toThrow("ELK bridge is not available");
 
       // State should remain intact after error
       const node1 = visualizationState.getGraphNode("node1");
