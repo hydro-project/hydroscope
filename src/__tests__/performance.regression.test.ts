@@ -163,10 +163,10 @@ describe("Performance Regression Tests", () => {
 
           // Perform various operations
           await coordinator.expandAllContainers(state, {
-            triggerLayout: false,
+            fitView: false,
           });
           await coordinator.collapseAllContainers(state, {
-            triggerLayout: false,
+            fitView: false,
           });
           state.search("paxos");
           state.clearSearch();
@@ -277,10 +277,10 @@ describe("Performance Regression Tests", () => {
           // Rapid container operations
           for (let i = 0; i < 10; i++) {
             await coordinator.expandAllContainers(state, {
-              triggerLayout: false,
+              fitView: false,
             });
             await coordinator.collapseAllContainers(state, {
-              triggerLayout: false,
+              fitView: false,
             });
           }
 
@@ -352,14 +352,14 @@ describe("Performance Regression Tests", () => {
 
             // Full pipeline
             await coordinator.expandAllContainers(state, {
-              triggerLayout: false,
+              fitView: false,
             });
             const elkGraph = elkBridge.toELKGraph(state);
             // Calculate layout so nodes have positions
             await elkBridge.layout(state);
             const reactFlowData = reactFlowBridge.toReactFlowData(state);
             await coordinator.collapseAllContainers(state, {
-              triggerLayout: false,
+              fitView: false,
             });
 
             return { state, elkGraph, reactFlowData };
@@ -416,7 +416,7 @@ describe("Performance Regression Tests", () => {
             );
             await coordinator.expandAllContainers(
               parseResult.visualizationState,
-              { triggerLayout: false },
+              { fitView: false },
             );
 
             return { parseResult, elkGraph };

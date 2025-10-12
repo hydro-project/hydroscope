@@ -97,9 +97,9 @@ describe("ELKBridge", () => {
       await coordinator.collapseContainer(
         "c1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       const elkGraph = bridge.toELKGraph(state);
@@ -162,9 +162,9 @@ describe("ELKBridge", () => {
       await coordinator.collapseContainer(
         "c1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       const elkGraph = bridge.toELKGraph(state);
@@ -726,16 +726,16 @@ describe("ELKBridge", () => {
       await coordinator.collapseContainer(
         "c1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       await coordinator.collapseContainer(
         "c2",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       const elkGraph = bridge.toELKGraph(state);

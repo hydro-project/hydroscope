@@ -154,7 +154,7 @@ describe("AsyncCoordinator - Basic API", () => {
         payload: {
           containerId: "container1",
           state: state,
-          triggerLayout: false,
+          fitView: false,
         },
         timestamp: Date.now(),
       };
@@ -172,7 +172,7 @@ describe("AsyncCoordinator - Basic API", () => {
           query: "test",
           state: state,
           expandContainers: false,
-          triggerLayout: false,
+          fitView: false,
         },
         timestamp: Date.now(),
       };

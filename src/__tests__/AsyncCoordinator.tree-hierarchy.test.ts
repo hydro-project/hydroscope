@@ -241,11 +241,11 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       state.addContainer(container2);
 
       // Collapse both containers first
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
 
       // Expand only container1 using new signature
       await coordinator.expandAllContainers(state, ["container1"], {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Only container1 should be expanded
@@ -275,7 +275,7 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
 
       // Collapse only container1 using new signature
       await coordinator.collapseAllContainers(state, ["container1"], {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Only container1 should be collapsed
@@ -294,13 +294,13 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       state.addContainer(container1);
 
       // Test old signature for expandAllContainers
-      await coordinator.expandAllContainers(state, { triggerLayout: false });
+      await coordinator.expandAllContainers(state, { fitView: false });
 
       // Should work with old signature
       expect(state.getContainer("container1")?.collapsed).toBe(false);
 
       // Test old signature for collapseAllContainers
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
 
       // Should work with old signature
       expect(state.getContainer("container1")?.collapsed).toBe(true);

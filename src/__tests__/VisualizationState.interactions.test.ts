@@ -120,13 +120,13 @@ describe("VisualizationState Interaction State Management", () => {
 
       // Start collapsed
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
 
       // Toggle should expand
       await coordinator.expandContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(state.getContainer("container1")?.collapsed).toBe(false);
     });
@@ -147,7 +147,7 @@ describe("VisualizationState Interaction State Management", () => {
 
       // Toggle should collapse
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
     });
@@ -173,7 +173,7 @@ describe("VisualizationState Interaction State Management", () => {
 
       // User interaction should disable smart collapse
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -206,16 +206,16 @@ describe("VisualizationState Interaction State Management", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       await coordinator.expandContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Node label state should persist
@@ -302,9 +302,9 @@ describe("VisualizationState Interaction State Management", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       const summary = state.getInteractionStateSummary();
@@ -421,16 +421,16 @@ describe("VisualizationState Interaction State Management", () => {
       await coordinator.collapseContainer(
         "parent",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       await coordinator.expandContainer(
         "parent",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state
       // // TODO: Replace with coordinator.expandContainer() or collapseContainer() based on current state

@@ -288,9 +288,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       await coordinator.expandContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Edge should be restored
@@ -320,9 +320,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       await coordinator.expandContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Internal edge should be restored
@@ -356,9 +356,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       await coordinator.expandContainer(
         "parent",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Edge should now be aggregated to child container instead of parent
@@ -631,9 +631,9 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       await coordinator.expandContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       expect(state.getAggregatedEdges().length).toBe(0);
       expect(state.getGraphEdge("edge1")?.hidden).toBe(false);

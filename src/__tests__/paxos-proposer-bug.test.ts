@@ -106,9 +106,9 @@ describe("Paxos Proposer Container Bug", () => {
     await coordinator.expandContainer(
       proposerContainer!.id,
       state,
-      { triggerLayout: false },
+      { fitView: false },
       coordinator,
-      { triggerLayout: false },
+      { fitView: false },
     );
     await elkBridge.layout(state);
 
@@ -148,9 +148,9 @@ describe("Paxos Proposer Container Bug", () => {
     await coordinator.collapseContainer(
       proposerContainer!.id,
       state,
-      { triggerLayout: false },
+      { fitView: false },
       coordinator,
-      { triggerLayout: false },
+      { fitView: false },
     );
     await elkBridge.layout(state);
 
@@ -315,9 +315,9 @@ describe("Paxos Proposer Container Bug", () => {
       await coordinator.expandContainer(
         proposerContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       await elkBridge.layout(state);
 
@@ -325,9 +325,9 @@ describe("Paxos Proposer Container Bug", () => {
       await coordinator.collapseContainer(
         proposerContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       await elkBridge.layout(state);
 

@@ -211,7 +211,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] 🚀 Starting precise bug reproduction");
 
     // Step 1: Get initial state with all containers collapsed
-    await coordinator.collapseAllContainers(state, { triggerLayout: false });
+    await coordinator.collapseAllContainers(state, { fitView: false });
     const initialData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -243,9 +243,9 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     await coordinator.expandContainer(
       "loc_1",
       state,
-      { triggerLayout: false },
+      { fitView: false },
       coordinator,
-      { triggerLayout: false },
+      { fitView: false },
     );
     const expandedData = reactFlowBridge.toReactFlowData(state);
 
@@ -265,9 +265,9 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     await coordinator.collapseContainer(
       "loc_1",
       state,
-      { triggerLayout: false },
+      { fitView: false },
       coordinator,
-      { triggerLayout: false },
+      { fitView: false },
     );
     const reCollapsedData = reactFlowBridge.toReactFlowData(state);
 
@@ -327,7 +327,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] 🚀 Starting multiple cycle reproduction");
 
     // Start with all collapsed
-    await coordinator.collapseAllContainers(state, { triggerLayout: false });
+    await coordinator.collapseAllContainers(state, { fitView: false });
     const _initialData = reactFlowBridge.toReactFlowData(state);
 
     const collapsedContainers = state.visibleContainers.filter(
@@ -345,9 +345,9 @@ describe("Floating HyperEdge Bug Reproduction", () => {
       await coordinator.expandContainer(
         targetContainer.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       console.log(
@@ -356,9 +356,9 @@ describe("Floating HyperEdge Bug Reproduction", () => {
       await coordinator.collapseContainer(
         targetContainer.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Check for floating edges after each cycle

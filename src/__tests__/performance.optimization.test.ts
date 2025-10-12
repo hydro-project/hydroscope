@@ -178,10 +178,10 @@ describe("Performance Optimization Tests", () => {
       // Basic performance measurement without profiler
       const startTime = performance.now();
       await coordinator.expandAllContainers(parseResult.visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
       await coordinator.collapseAllContainers(parseResult.visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
       const endTime = performance.now();
 

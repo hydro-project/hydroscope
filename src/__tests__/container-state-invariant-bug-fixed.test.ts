@@ -172,7 +172,7 @@ describe("Container State Invariant Bug - FIXED", () => {
 
       // Collapse the parent - this should cascade properly
       await coordinator.collapseContainer("parent", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify the fix: child and grandchild should be both hidden AND collapsed

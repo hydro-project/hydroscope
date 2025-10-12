@@ -346,9 +346,9 @@ describe("Async Boundary Integration Tests", () => {
         await coordinator.collapseContainer(
           container.id,
           state,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -366,7 +366,7 @@ describe("Async Boundary Integration Tests", () => {
             query,
             state,
             expandContainers: true,
-            triggerLayout: false,
+            fitView: false,
           },
           timestamp: Date.now(),
         };

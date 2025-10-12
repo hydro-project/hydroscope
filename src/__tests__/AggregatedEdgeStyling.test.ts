@@ -114,9 +114,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Check state has aggregated edges
@@ -215,9 +215,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Calculate layout
@@ -373,9 +373,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Calculate layout
@@ -473,9 +473,9 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Calculate layout

@@ -183,7 +183,7 @@ describe("Enhanced Edge Restoration", () => {
 
       // Expand container
       await coordinator.expandContainer("container1", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Check that rollback operations are available
@@ -223,7 +223,7 @@ describe("Enhanced Edge Restoration", () => {
 
       // Expand container
       await coordinator.expandContainer("container1", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Get rollback operation
@@ -299,7 +299,7 @@ describe("Enhanced Edge Restoration", () => {
 
       // Expand container - this will trigger post-expansion validation
       await coordinator.expandContainer("container1", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify expansion succeeded
@@ -398,7 +398,7 @@ describe("Enhanced Edge Restoration", () => {
 
       // Expand child container
       await coordinator.expandContainer("child", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify internal edge is now visible

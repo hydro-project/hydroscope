@@ -444,7 +444,7 @@ describe("ReactFlowBridge", () => {
 
       // Collapse container to trigger edge aggregation
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Calculate layout so nodes have positions
@@ -535,7 +535,7 @@ describe("ReactFlowBridge", () => {
 
       // Initial collapse
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       await elkBridge.layout(state);
 
@@ -553,7 +553,7 @@ describe("ReactFlowBridge", () => {
 
       // Expand
       await coordinator.expandContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       await elkBridge.layout(state);
 
@@ -565,7 +565,7 @@ describe("ReactFlowBridge", () => {
 
       // Collapse again
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       await elkBridge.layout(state);
 
@@ -1533,7 +1533,7 @@ describe("ReactFlowBridge", () => {
       const firstContainer = paxosData.containers[0];
       if (firstContainer) {
         await coordinator.collapseContainer(firstContainer.id, state, {
-          triggerLayout: false,
+          fitView: false,
         });
 
         // Calculate layout so nodes have positions
@@ -1548,7 +1548,7 @@ describe("ReactFlowBridge", () => {
 
         // Test expanded containers
         await coordinator.expandContainer(firstContainer.id, state, {
-          triggerLayout: false,
+          fitView: false,
         });
         // Calculate layout so nodes have positions
 

@@ -255,13 +255,13 @@ describe("Stateless Bridge Performance Regression Tests", () => {
 
           // Test conversion with different container states
           await coordinator.expandAllContainers(state, {
-            triggerLayout: false,
+            fitView: false,
           });
           await elkBridge.layout(state);
           const expandedResult = reactFlowBridge.toReactFlowData(state);
 
           await coordinator.collapseAllContainers(state, {
-            triggerLayout: false,
+            fitView: false,
           });
           await elkBridge.layout(state);
           const collapsedResult = reactFlowBridge.toReactFlowData(state);
@@ -429,7 +429,7 @@ describe("Stateless Bridge Performance Regression Tests", () => {
 
       // Create complex hierarchy by expanding all containers
       await coordinator.expandAllContainers(parseResult.visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       const testResult = await batchTester.runTest(
@@ -536,12 +536,12 @@ describe("Stateless Bridge Performance Regression Tests", () => {
             // Stress test: rapid state changes with conversions (reduced iterations)
             for (let i = 0; i < 3; i++) {
               await coordinator.expandAllContainers(state, {
-                triggerLayout: false,
+                fitView: false,
               });
               elkBridge.toELKGraph(state);
 
               await coordinator.collapseAllContainers(state, {
-                triggerLayout: false,
+                fitView: false,
               });
               elkBridge.toELKGraph(state);
 

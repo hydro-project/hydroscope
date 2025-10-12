@@ -90,9 +90,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -103,9 +103,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         await coordinator.expandContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
         const expansionTime = performance.now() - expansionStartTime;
 
@@ -283,18 +283,18 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
           await coordinator.collapseContainer(
             containerId,
             visualizationState,
-            { triggerLayout: false },
+            { fitView: false },
             coordinator,
-            { triggerLayout: false },
+            { fitView: false },
           );
 
           // Expand
           await coordinator.expandContainer(
             containerId,
             visualizationState,
-            { triggerLayout: false },
+            { fitView: false },
             coordinator,
-            { triggerLayout: false },
+            { fitView: false },
           );
 
           successfulOperations++;
@@ -375,9 +375,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
         stateSnapshots.push({
           operation: "collapse",
@@ -390,9 +390,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         await coordinator.expandContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
         stateSnapshots.push({
           operation: "expand",
@@ -405,9 +405,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
         stateSnapshots.push({
           operation: "collapse_again",

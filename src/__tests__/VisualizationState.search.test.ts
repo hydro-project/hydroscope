@@ -108,7 +108,7 @@ describe("VisualizationState Search Functionality", () => {
       state.addContainer(container);
       state.addNode(node);
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       state.expandContainerForSearch("container1");

@@ -97,7 +97,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           runtimeParkContainer!.id,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -106,7 +106,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.expandContainer(
           runtimeParkContainer!.id,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }).not.toThrow();
 
@@ -143,9 +143,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           runtimeParkContainer!.id,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -153,9 +153,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.expandContainer(
         runtimeParkContainer!.id,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Convert to ReactFlow data - this should not throw any invalid edge errors
@@ -205,7 +205,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         if (!preCollapseContainer?.collapsed) {
           console.log(`🔄 Cycle ${cycle}: Collapsing container...`);
           await coordinator.collapseContainer(containerId, visualizationState, {
-            triggerLayout: false,
+            fitView: false,
           });
         } else {
           console.log(
@@ -224,7 +224,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
         // Expand
         await coordinator.expandContainer(containerId, visualizationState, {
-          triggerLayout: false,
+          fitView: false,
         });
 
         // Get fresh container reference after expand
@@ -267,9 +267,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -284,7 +284,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Expand the container using AsyncCoordinator
       await coordinator.expandContainer(containerId, visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Check that we have more visible nodes after expansion (children should be visible)
@@ -310,9 +310,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.collapseContainer(
         containerId,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       const collapsedNodeCount = visualizationState.visibleNodes.length;
@@ -359,9 +359,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           runtimeParkContainer!.id,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -369,9 +369,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.expandContainer(
         runtimeParkContainer!.id,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Convert to ReactFlow data
@@ -473,9 +473,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -490,7 +490,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       try {
         // Expand the container using AsyncCoordinator
         await coordinator.expandContainer(containerId, visualizationState, {
-          triggerLayout: false,
+          fitView: false,
         });
 
         // Trigger layout after expansion (AsyncCoordinator doesn't do this automatically)
@@ -545,9 +545,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
       }
 
@@ -561,9 +561,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.expandContainer(
         containerId,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Get edge counts after expansion
@@ -577,9 +577,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.collapseContainer(
         containerId,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Get edge counts after re-collapse

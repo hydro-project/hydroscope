@@ -120,12 +120,12 @@ describe("Final Integration and Acceptance Testing", () => {
       await coordinator.collapseContainer(
         "test-container",
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       await expect(
         coordinator.expandContainer("test-container", visualizationState, {
-          triggerLayout: false,
+          fitView: false,
         }),
       ).resolves.not.toThrow();
 
@@ -324,12 +324,12 @@ describe("Final Integration and Acceptance Testing", () => {
       await coordinator.collapseContainer(
         "req2-container",
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
       );
       visualizationState.validateInvariants();
 
       await coordinator.expandContainer("req2-container", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
       visualizationState.validateInvariants();
 
@@ -403,7 +403,7 @@ describe("Final Integration and Acceptance Testing", () => {
 
       // Test collapsed container rendering
       await coordinator.collapseContainer("rf-container", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
       // Calculate layout so nodes have positions
       await elkBridge.layout(visualizationState);
@@ -530,7 +530,7 @@ describe("Final Integration and Acceptance Testing", () => {
 
       // User collapses container
       await coordinator.collapseContainer("services", testState, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
@@ -538,7 +538,7 @@ describe("Final Integration and Acceptance Testing", () => {
 
       // User expands container
       await coordinator.expandContainer("services", testState, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(
         testState.visibleContainers.find((c) => c.id === "services")?.collapsed,
@@ -610,8 +610,8 @@ describe("Final Integration and Acceptance Testing", () => {
       const containerOpStartTime = Date.now();
       await coordinator.collapseAllContainers(
         visualizationState,
-        { triggerLayout: false },
-        { triggerLayout: false },
+        { fitView: false },
+        { fitView: false },
       );
       const containerOpTime = Date.now() - containerOpStartTime;
 

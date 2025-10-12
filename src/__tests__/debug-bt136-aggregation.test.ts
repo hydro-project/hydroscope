@@ -94,7 +94,7 @@ describe("Debug bt_136 Aggregation", () => {
       await coordinator.expandContainer(
         runtimeParkContainer.id,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Check edges after expansion
@@ -218,7 +218,7 @@ describe("Debug bt_136 Aggregation", () => {
       await coordinator.expandContainer(
         runtimeParkContainer.id,
         visualizationState,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Check state after expansion

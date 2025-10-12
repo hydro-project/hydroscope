@@ -194,9 +194,9 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
                 await coordinator.expandContainer(
                   runtimeParkContainer.id,
                   state,
-                  { triggerLayout: false },
+                  { fitView: false },
                   coordinator,
-                  { triggerLayout: false },
+                  { fitView: false },
                 );
 
                 cyclesCompleted++;

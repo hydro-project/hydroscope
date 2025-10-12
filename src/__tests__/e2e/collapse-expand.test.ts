@@ -113,7 +113,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Collapse the container
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify logical state
@@ -138,7 +138,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
     it("should expand collapsed container and restore children", async () => {
       // First collapse the container
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify it's collapsed
@@ -147,7 +147,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Now expand it
       await coordinator.expandContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify logical state
@@ -184,7 +184,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       expect(state.getContainer("container2")?.collapsed).toBe(false);
 
       // Collapse all containers
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
 
       // Verify all containers are collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);
@@ -211,14 +211,14 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
     it("should expand all containers", async () => {
       // First collapse all containers
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
 
       // Verify they're collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);
       expect(state.getContainer("container2")?.collapsed).toBe(true);
 
       // Now expand all
-      await coordinator.expandAllContainers(state, { triggerLayout: false });
+      await coordinator.expandAllContainers(state, { fitView: false });
 
       // Verify all containers are expanded
       expect(state.getContainer("container1")?.collapsed).toBe(false);
@@ -253,7 +253,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
     it("should handle collapsed containers in layout", async () => {
       // Collapse container
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Get ReactFlow data - should work without layout
@@ -296,7 +296,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Collapse container1
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Get ReactFlow data
@@ -379,7 +379,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Collapse container1
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // After collapse - edges should be redirected to container1
@@ -425,7 +425,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Let's just verify it doesn't crash the system
       try {
         await coordinator.collapseContainer("non-existent", state, {
-          triggerLayout: false,
+          fitView: false,
         });
       } catch (error) {
         // Expected - non-existent container should cause an error
@@ -438,7 +438,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       // Let's just verify it doesn't crash the system
       try {
         await coordinator.expandContainer("non-existent", state, {
-          triggerLayout: false,
+          fitView: false,
         });
       } catch (error) {
         // Expected - non-existent container should cause an error
@@ -449,13 +449,13 @@ describe("Container Collapse/Expand E2E Tests", () => {
     it("should handle double collapse gracefully", async () => {
       // Collapse once
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
 
       // Collapse again - should not error
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(state.getContainer("container1")?.collapsed).toBe(true);
     });
@@ -466,7 +466,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // Expand again - should not error
       await coordinator.expandContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       expect(state.getContainer("container1")?.collapsed).toBe(false);
     });
@@ -491,7 +491,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       });
 
       // Test collapsed state
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
       reactFlowData = reactFlowBridge.toReactFlowData(state);
       containerNodes = reactFlowData.nodes.filter(
         (n) => n.data.nodeType === "container",
@@ -518,7 +518,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
       // After collapse
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
       const collapsedData = reactFlowBridge.toReactFlowData(state);
       const collapsedContainer = collapsedData.nodes.find(

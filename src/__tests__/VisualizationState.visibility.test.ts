@@ -362,7 +362,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c2")?.collapsed).toBe(true);
 
       // Expand all containers
-      await coordinator.expandAllContainers(state, { triggerLayout: false });
+      await coordinator.expandAllContainers(state, { fitView: false });
 
       // All containers should be expanded
       expect(state.getContainer("c1")?.collapsed).toBe(false);
@@ -409,7 +409,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       expect(state.getContainer("c2")?.collapsed).toBe(false);
 
       // Collapse all containers
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
 
       // All containers should be collapsed
       expect(state.getContainer("c1")?.collapsed).toBe(true);

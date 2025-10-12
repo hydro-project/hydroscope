@@ -105,9 +105,9 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       await coordinator.expandContainer(
         collapsedContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Check container is expanded
@@ -123,9 +123,9 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       await coordinator.collapseContainer(
         collapsedContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Check container is collapsed
@@ -155,9 +155,9 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       await coordinator.expandContainer(
         collapsedContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Get ReactFlow data after expand
@@ -172,9 +172,9 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       await coordinator.collapseContainer(
         collapsedContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Get ReactFlow data after collapse
@@ -226,9 +226,9 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
         await coordinator.expandContainer(
           collapsedContainer!.id,
           state,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
         const expandedData = reactFlowBridge.toReactFlowData(state);
         console.log(
@@ -239,9 +239,9 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
         await coordinator.collapseContainer(
           collapsedContainer!.id,
           state,
-          { triggerLayout: false },
+          { fitView: false },
           coordinator,
-          { triggerLayout: false },
+          { fitView: false },
         );
         const collapsedData = reactFlowBridge.toReactFlowData(state);
         console.log(
@@ -288,16 +288,16 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       await coordinator.expandContainer(
         collapsedContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
       await coordinator.collapseContainer(
         collapsedContainer!.id,
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // Get final aggregated edges

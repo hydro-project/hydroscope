@@ -237,7 +237,7 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
 
       state.collapseContainerSystemOperation("container1");
       await coordinator.expandContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       const history = state.getAggregationHistory();

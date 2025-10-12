@@ -215,11 +215,11 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse both
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
 
       // Expand only container1
       await coordinator.expandAllContainers(state, ["container1"], {
-        triggerLayout: false,
+        fitView: false,
       });
 
       expect(state.getContainer("container1")?.collapsed).toBe(false);
@@ -235,7 +235,7 @@ describe("Search and Navigation Infrastructure", () => {
 
       // Collapse only container1
       await coordinator.collapseAllContainers(state, ["container1"], {
-        triggerLayout: false,
+        fitView: false,
       });
 
       expect(state.getContainer("container1")?.collapsed).toBe(true);

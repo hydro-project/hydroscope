@@ -75,7 +75,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       // User expands container
       await coordinator.expandContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // This should disable smart collapse for future layouts
@@ -104,9 +104,9 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       );
 
       // This should disable smart collapse for future layouts
@@ -136,7 +136,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User performs bulk operation
-      await coordinator.expandAllContainers(state, { triggerLayout: false });
+      await coordinator.expandAllContainers(state, { fitView: false });
 
       // This should disable smart collapse
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -145,7 +145,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       state.resetSmartCollapseState(); // Reset for test
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
-      await coordinator.collapseAllContainers(state, { triggerLayout: false });
+      await coordinator.collapseAllContainers(state, { fitView: false });
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });
   });
@@ -878,7 +878,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User toggles container (this should be a user operation through AsyncCoordinator)
       // Since container is initially expanded, collapse it as a user operation
       await coordinator.collapseContainer("container1", state, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Smart collapse should be disabled
@@ -906,9 +906,9 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       await coordinator.collapseContainer(
         "container1",
         state,
-        { triggerLayout: false },
+        { fitView: false },
         coordinator,
-        { triggerLayout: false },
+        { fitView: false },
       ); // This is a user operation
       expect(state.shouldRunSmartCollapse()).toBe(false);
     });

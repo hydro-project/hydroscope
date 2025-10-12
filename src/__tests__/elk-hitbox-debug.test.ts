@@ -382,8 +382,8 @@ describe("ELK Hitbox Debug", () => {
         await coordinator.collapseAllContainers(
           coordinator,
           visualizationState,
-          { triggerLayout: false },
-          { triggerLayout: false },
+          { fitView: false },
+          { fitView: false },
         );
         await elkBridge.layout(visualizationState);
         console.log("✅ Collapsed layout succeeded!");

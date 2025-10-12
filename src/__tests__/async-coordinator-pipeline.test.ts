@@ -499,7 +499,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute container expand and expect it to throw
       await expect(
-        asyncCoordinator.expandContainer("container1", state, elkBridge, {
+        asyncCoordinator.expandContainer("container1", state, {
           relayoutEntities: ["container1"],
           fitView: false
         })
@@ -521,7 +521,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute container collapse and expect it to throw
       await expect(
-        asyncCoordinator.collapseContainer("container1", state, elkBridge, {
+        asyncCoordinator.collapseContainer("container1", state, {
           relayoutEntities: ["container1"],
           fitView: false
         })
