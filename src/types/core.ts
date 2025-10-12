@@ -289,7 +289,8 @@ export interface QueuedOperation<T = any> {
     | "expand-all-tree-nodes"
     | "collapse-all-tree-nodes"
     | "navigate-to-element"
-    | "focus-viewport";
+    | "focus-viewport"
+    | "synchronous_pipeline"; // NEW: For synchronous pipeline operations
   operation: () => Promise<T>;
   timeout?: number;
   retryCount: number;

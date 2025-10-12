@@ -66,7 +66,7 @@ describe("Enhanced Edge Restoration", () => {
 
       // Test pre-restoration validation through expansion
       await coordinator.expandContainer("container1", visualizationState, {
-        triggerLayout: false,
+        fitView: false,
       });
 
       // Verify that the container was expanded successfully
@@ -119,7 +119,7 @@ describe("Enhanced Edge Restoration", () => {
       // Expand container - should work without issues
       await expect(
         coordinator.expandContainer("container1", visualizationState, {
-          triggerLayout: false,
+          fitView: false,
         }),
       ).resolves.not.toThrow();
 

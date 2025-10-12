@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState";
 import { AsyncCoordinator } from "../core/AsyncCoordinator";
+import { ELKBridge } from "../bridges/ELKBridge";
 
 // Mock Error Boundary for testing (without JSX)
 class TestErrorBoundary {
@@ -120,27 +121,23 @@ describe("Error Boundary Validation", () => {
     });
   });
 
-  describe("Async Operation Error Boundaries", () => {
-    it("should contain async coordinator errors", async () => {
+  describe("Pipeline Error Boundaries", () => {
+    it("should handle pipeline errors gracefully", async () => {
       const asyncCoordinator = new AsyncCoordinator();
-      const _visualizationState = new VisualizationState();
+      const visualizationState = new VisualizationState();
 
-      // Queue an operation that will fail
-      const operationId = asyncCoordinator.queueApplicationEvent({
-        type: "test_operation",
-        timestamp: Date.now(),
-      } as any);
+      // Test with invalid ELKBridge to trigger error
+      const invalidElkBridge = null;
 
-      // Process the queue and expect it to handle errors gracefully
-      await asyncCoordinator.processQueue();
+      await expect(
+        asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, invalidElkBridge)
+      ).rejects.toThrow("ELKBridge instance is required");
 
       // Coordinator should remain functional after error
-      const queueStatus = asyncCoordinator.getQueueStatus();
-      expect(queueStatus.processing).toBeGreaterThanOrEqual(0);
-      expect(operationId).toBeDefined();
+      expect(asyncCoordinator).toBeDefined();
     });
 
-    it("should handle ELK layout errors without affecting other operations", async () => {
+    it("should handle ELK layout errors in pipeline without affecting state", async () => {
       const asyncCoordinator = new AsyncCoordinator();
       const visualizationState = new VisualizationState();
 
@@ -154,30 +151,17 @@ describe("Error Boundary Validation", () => {
         hidden: false,
       });
 
-      // Queue layout operation (may fail due to missing ELK setup)
-      const layoutPromise = asyncCoordinator.queueELKLayout(
-        visualizationState,
-        {
-          algorithm: "mrtree",
-          direction: "DOWN",
-          spacing: { nodeNode: 50, edgeNode: 10, edgeEdge: 10 },
-        },
-      );
+      // Test pipeline with invalid ELKBridge
+      const invalidElkBridge = { layout: "not a function" };
 
-      // Should handle layout error gracefully (may be "elkBridge.layout is not a function" or other ELK error)
-      await expect(layoutPromise).rejects.toThrow();
+      await expect(
+        asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, invalidElkBridge)
+      ).rejects.toThrow("ELKBridge layout method is not available");
 
-      // Other operations should still work
-      const appEventPromise = asyncCoordinator.queueApplicationEvent({
-        type: "container_toggle",
-        payload: {
-          containerId: "container1",
-        },
-        timestamp: Date.now(),
-      });
-
-      // Should not be affected by previous error
-      expect(appEventPromise).toBeDefined();
+      // State should remain intact after error
+      const node1 = visualizationState.getGraphNode("node1");
+      expect(node1).toBeDefined();
+      expect(node1?.id).toBe("node1");
     });
 
     it("should handle ReactFlow render errors without affecting state", async () => {
@@ -195,12 +179,17 @@ describe("Error Boundary Validation", () => {
         position: { x: 0, y: 0 },
       });
 
-      // Queue ReactFlow render operation
-      const renderPromise =
-        asyncCoordinator.queueReactFlowRender(visualizationState);
+      // Test pipeline with real bridges
+      const elkBridge = new ELKBridge();
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        visualizationState, 
+        elkBridge
+      );
 
-      // Should complete successfully or handle errors gracefully
-      await expect(renderPromise).resolves.toBeDefined();
+      // Should complete successfully
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
 
       // VisualizationState should remain intact
       expect(visualizationState.visibleNodes).toHaveLength(1);

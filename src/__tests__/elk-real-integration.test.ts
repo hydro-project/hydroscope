@@ -63,8 +63,13 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       expect(node1.position).toBeUndefined();
       expect(node2.position).toBeUndefined();
 
-      // Call real ELK layout (this should fail until we implement real ELK)
-      await asyncCoordinator.queueELKLayout(state, elkBridge);
+      // Call layout and render pipeline (includes ELK layout)
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge);
+
+      // Verify pipeline returned ReactFlow data
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
 
       // Verify ELK calculated real positions (check state's copies, not original references)
       const stateNode1 = state.getGraphNode("n1");
@@ -107,8 +112,9 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
         expect(node.position).toBeUndefined();
       }
 
-      // Call real ELK layout
-      await asyncCoordinator.queueELKLayout(paxosState, elkBridge);
+      // Call layout and render pipeline
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(paxosState, elkBridge);
+      expect(reactFlowData).toBeDefined();
 
       // Verify all nodes have real ELK-calculated positions
       for (const node of paxosState.visibleNodes) {
@@ -140,8 +146,9 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       // Expand container to show children
       state._expandContainerForCoordinator("c1");
 
-      // Call real ELK layout
-      await asyncCoordinator.queueELKLayout(state, elkBridge);
+      // Call layout and render pipeline
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge);
+      expect(reactFlowData).toBeDefined();
 
       // Verify container and nodes have real positions (check state's copies)
       const stateContainer = state.getContainer("c1");
@@ -175,11 +182,11 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
       // Should complete without error (empty graphs are valid)
       await expect(
-        asyncCoordinator.queueELKLayout(state, elkBridge),
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge),
       ).resolves.not.toThrow();
 
-      // Layout state should be ready
-      expect(state.getLayoutState().phase).toBe("ready");
+      // Layout state should be displayed (pipeline includes rendering)
+      expect(state.getLayoutState().phase).toBe("displayed");
     });
 
     it("should throw explicit error if positions are missing after layout", async () => {
@@ -189,7 +196,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
       // If ELK fails to calculate positions, should throw explicit error
       try {
-        await asyncCoordinator.queueELKLayout(state, elkBridge);
+        await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge);
 
         // Verify position was actually calculated (not fallback) - check state's copy
         const stateNode = state.getGraphNode("n1");
@@ -214,8 +221,9 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
       const startTime = performance.now();
 
-      // Call real ELK layout
-      await asyncCoordinator.queueELKLayout(perfState, elkBridge);
+      // Call layout and render pipeline
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(perfState, elkBridge);
+      expect(reactFlowData).toBeDefined();
 
       const endTime = performance.now();
       const duration = endTime - startTime;
@@ -223,8 +231,8 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       // Real ELK should complete within reasonable time (adjust as needed)
       expect(duration).toBeLessThan(5000); // 5 seconds max for paxos.json
 
-      // Verify layout actually completed
-      expect(perfState.getLayoutState().phase).toBe("ready");
+      // Verify layout and render pipeline completed
+      expect(perfState.getLayoutState().phase).toBe("displayed");
     });
   });
 });

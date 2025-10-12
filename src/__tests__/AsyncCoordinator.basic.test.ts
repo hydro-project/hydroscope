@@ -85,15 +85,16 @@ describe("AsyncCoordinator - Basic API", () => {
     });
   });
 
-  describe("ELK Operations", () => {
-    it("should queue ELK layout operations", async () => {
-      await coordinator.queueELKLayout(state, elkBridge);
+  describe("Layout and Render Pipeline", () => {
+    it("should execute layout and render pipeline", async () => {
+      const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state, elkBridge);
 
-      const status = coordinator.getELKOperationStatus();
-      expect(status.lastCompleted).toBeDefined();
-      expect(status.lastCompleted?.type).toBe("elk_layout");
+      // Verify pipeline returned ReactFlow data
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
 
-      // Verify layout was applied
+      // Verify layout was applied to state
       const node1 = state.getGraphNode("node1");
       expect(node1?.position).toBeDefined();
       expect(typeof node1?.position?.x).toBe("number");
@@ -114,31 +115,35 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should expand all containers", async () => {
-      await coordinator.expandAllContainers(state);
+      const reactFlowData = await coordinator.expandAllContainers(state, elkBridge);
 
-      const status = coordinator.getApplicationEventStatus();
-      expect(status.lastCompleted).toBeDefined();
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
     });
 
     it("should collapse all containers", async () => {
-      await coordinator.collapseAllContainers(state);
+      const reactFlowData = await coordinator.collapseAllContainers(state, elkBridge);
 
-      const status = coordinator.getApplicationEventStatus();
-      expect(status.lastCompleted).toBeDefined();
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
     });
 
     it("should expand specific container", async () => {
-      await coordinator.expandContainer("container1", state);
+      const reactFlowData = await coordinator.expandContainer("container1", state, elkBridge);
 
-      const status = coordinator.getApplicationEventStatus();
-      expect(status.lastCompleted).toBeDefined();
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
     });
 
     it("should collapse specific container", async () => {
-      await coordinator.collapseContainer("container1", state);
+      const reactFlowData = await coordinator.collapseContainer("container1", state, elkBridge);
 
-      const status = coordinator.getApplicationEventStatus();
-      expect(status.lastCompleted).toBeDefined();
+      expect(reactFlowData).toBeDefined();
+      expect(reactFlowData.nodes).toBeDefined();
+      expect(reactFlowData.edges).toBeDefined();
     });
   });
 

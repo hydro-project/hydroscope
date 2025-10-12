@@ -118,7 +118,7 @@ describe("Paxos-Flipped Edge Validation Fix", () => {
           // Test expansion - this should not throw invalid edge errors after fix
           await expect(
             coordinator.expandContainer(runtimeParkContainer.id, state, {
-              triggerLayout: false,
+              fitView: false,
             }),
           ).resolves.not.toThrow();
 
