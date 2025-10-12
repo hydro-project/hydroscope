@@ -209,14 +209,14 @@ describe("Error Handling and Resource Cleanup", () => {
     it("should clean up old resources", async () => {
       resourceManager.addCustomResource({}, () => {});
 
-      // Wait a bit then add another resource
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      // Wait longer to ensure a clear time difference
+      await new Promise((resolve) => setTimeout(resolve, 20));
       resourceManager.addCustomResource({}, () => {});
 
       expect(resourceManager.getResourceCount()).toBe(2);
 
-      // Clean up resources older than 5ms
-      const cleaned = resourceManager.cleanupOldResources(5);
+      // Clean up resources older than 10ms (should only clean up the first one)
+      const cleaned = resourceManager.cleanupOldResources(10);
       expect(cleaned).toBe(1);
       expect(resourceManager.getResourceCount()).toBe(1);
     });

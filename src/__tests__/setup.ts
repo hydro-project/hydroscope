@@ -61,7 +61,7 @@ vi.mock("@xyflow/react", () => ({
         "data-testid": "react-flow",
         ...props,
       },
-      React.createElement("div", { "data-testid": "rf__wrapper" }, children)
+      React.createElement("div", { "data-testid": "rf__wrapper" }, children),
     ),
   ReactFlowProvider: ({ children }: any) =>
     React.createElement("div", {}, children),
@@ -70,14 +70,14 @@ vi.mock("@xyflow/react", () => ({
     React.createElement(
       "div",
       { "data-testid": "controls", ...props },
-      children
+      children,
     ),
   MiniMap: () => React.createElement("div", { "data-testid": "minimap" }),
   ControlButton: ({ children, ...props }: any) =>
     React.createElement(
       "button",
       { "data-testid": "control-button", ...props },
-      children
+      children,
     ),
   Position: {
     Top: "top",

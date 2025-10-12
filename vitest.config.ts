@@ -8,7 +8,7 @@ export default defineConfig({
     pool: 'forks',
     setupFiles: ['src/__tests__/setup.ts'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/playwright/**', '**/*.spec.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
     onConsoleLog(log, type) {
       if (process.env.ENABLE_TEST_LOGS === 'true') {
         return;
