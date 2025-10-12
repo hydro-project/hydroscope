@@ -235,6 +235,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
         id: container.id,
         type: "container",
         position,
+        // CRITICAL FIX: Set width and height directly on the ReactFlow node for fitView calculations
+        width: dimensions.width,
+        height: dimensions.height,
         data: {
           label: container.label,
           nodeType: "container",
@@ -264,7 +267,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         },
         parentId: parentId,
         extent: parentId ? "parent" : undefined,
-      });
+      } as ReactFlowNode & { width: number; height: number });
     }
     // Add regular nodes with proper parent relationships
     for (const node of state.visibleNodes) {
@@ -281,10 +284,17 @@ export class ReactFlowBridge implements IReactFlowBridge {
         // Get the parent container's position and dimensions for bounds checking
         // Ensure node is within parent bounds (with some padding)
       }
+      // Get node dimensions from ELK to ensure rendered size matches layout
+      const width = node.dimensions?.width || 120;
+      const height = node.dimensions?.height || 60;
+      
       nodes.push({
         id: node.id,
         type: node.type || "default",
         position: adjustedPosition,
+        // CRITICAL FIX: Set width and height directly on the ReactFlow node for fitView calculations
+        width,
+        height,
         data: {
           label: node.label,
           nodeType: node.type,
@@ -299,7 +309,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         },
         parentId: parentId,
         extent: parentId ? "parent" : undefined,
-      });
+      } as ReactFlowNode & { width: number; height: number });
     }
     return nodes;
   }
@@ -405,10 +415,13 @@ export class ReactFlowBridge implements IReactFlowBridge {
       const nodeCount = container.collapsed
         ? this.countContainerNodes(container, state)
         : 0;
-      const containerNode: ReactFlowNode = {
+      const containerNode: ReactFlowNode & { width: number; height: number } = {
         id: container.id,
         type: container.collapsed ? "standard" : "container", // Collapsed containers use 'standard' type for edge connections
         position,
+        // CRITICAL FIX: Set width and height directly on the ReactFlow node for fitView calculations
+        width,
+        height,
         data: {
           label: container.label || container.id,
           nodeType: "container",
@@ -472,10 +485,13 @@ export class ReactFlowBridge implements IReactFlowBridge {
       // CRITICAL FIX: Get node dimensions from ELK to ensure rendered size matches layout
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
-      const reactFlowNode: ReactFlowNode = {
+      const reactFlowNode: ReactFlowNode & { width: number; height: number } = {
         id: node.id,
         type: "standard",
         position: adjustedPosition,
+        // CRITICAL FIX: Set width and height directly on the ReactFlow node for fitView calculations
+        width,
+        height,
         data: {
           label: node.showingLongLabel ? node.longLabel : node.label,
           longLabel: node.longLabel,
@@ -704,6 +720,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     // EPHEMERAL STATE: Temporary caches for this computation only
     const ephemeralState = {
+      // Current edge style from VisualizationState
+      currentEdgeStyle: state?.getEdgeStyle() || "bezier",
       // Pre-compute type-based styles for all edge types
       typeStyleCache: new Map<string, any>(),
       // Cache aggregated edge processing by original edge signature
@@ -834,7 +852,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           markerEnd: computedStyle.markerEnd || edge.markerEnd,
           appliedTags: computedStyle.appliedTags,
           lineStyle: computedStyle.lineStyle || "single",
-          edgeStyleType: "bezier",
+          edgeStyleType: ephemeralState.currentEdgeStyle,
         };
 
         styledEdges.push(this.createImmutableEdge(edge, styleData));
@@ -922,7 +940,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         markerEnd: processedStyle.markerEnd || edge.markerEnd,
         appliedTags: processedStyle.appliedTags || [],
         lineStyle: processedStyle.lineStyle || "single",
-        edgeStyleType: "bezier",
+        edgeStyleType: ephemeralState.currentEdgeStyle,
       };
 
       // Skip freezing for large batches to improve performance
@@ -951,7 +969,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
       markerEnd: edge.markerEnd,
       appliedTags: [],
       lineStyle: "single",
-      edgeStyleType: "bezier",
+      edgeStyleType: ephemeralState.currentEdgeStyle,
     };
 
     return this.createImmutableEdge(edge, styleData);

@@ -33,7 +33,7 @@ export const CONTAINER_STYLES = {
 } as const;
 // Layout constants
 export const LAYOUT_CONSTANTS = {
-  defaultNodePadding: 12,
+  defaultNodePadding: 8,
   defaultNodeFontSize: 12,
   DEFAULT_NODE_WIDTH: 180,
   DEFAULT_NODE_HEIGHT: 60,
@@ -470,7 +470,7 @@ export const DEFAULT_RENDER_CONFIG = {
   edgeWidth: 2, // px
   edgeDashed: false, // solid by default
   nodeBorderRadius: 4, // px
-  nodePadding: 12, // px
+  nodePadding: 8, // px
   nodeFontSize: 12, // px
   containerBorderRadius: 8, // px
   containerBorderWidth: 2, // px

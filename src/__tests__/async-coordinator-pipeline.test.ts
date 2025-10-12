@@ -100,7 +100,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node2);
 
       // Execute enhanced pipeline with full layout (default)
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: undefined, // Full layout
         fitView: false
       });
@@ -124,7 +124,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute pipeline with no layout
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [], // No layout
         fitView: false
       });
@@ -149,7 +149,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute pipeline with FitView enabled
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true,
         fitViewOptions: { padding: 50, duration: 300 }
@@ -172,7 +172,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute pipeline with FitView disabled
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -194,7 +194,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute pipeline
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -220,7 +220,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node2);
 
       // Execute search without container expansion
-      const result = await asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+      const result = await asyncCoordinator.updateSearchResults("Test", state, {
         expandContainers: false,
         fitView: false
       });
@@ -255,7 +255,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       asyncCoordinator['_getContainersForSearchResults'] = () => ['container1', 'container2'];
 
       // Execute search with container expansion
-      const result = await asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+      const result = await asyncCoordinator.updateSearchResults("Test", state, {
         expandContainers: true,
         fitView: false
       });
@@ -283,7 +283,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute search with FitView enabled
-      await asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+      await asyncCoordinator.updateSearchResults("Test", state, {
         expandContainers: false,
         fitView: true,
         fitViewOptions: { padding: 100, duration: 500 }
@@ -305,7 +305,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute search with FitView disabled
-      await asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+      await asyncCoordinator.updateSearchResults("Test", state, {
         expandContainers: false,
         fitView: false
       });
@@ -327,7 +327,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       };
 
       // Execute search
-      const result = await asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+      const result = await asyncCoordinator.updateSearchResults("Test", state, {
         expandContainers: false,
         fitView: false
       });
@@ -342,7 +342,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node);
 
       // Execute search with empty query
-      const result = await asyncCoordinator.updateSearchResults("", state, elkBridge, {
+      const result = await asyncCoordinator.updateSearchResults("", state, {
         expandContainers: false,
         fitView: false
       });
@@ -369,7 +369,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute search and expect it to throw
       await expect(
-        asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+        asyncCoordinator.updateSearchResults("Test", state, {
           expandContainers: false,
           fitView: false
         })
@@ -393,7 +393,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: undefined, // Full layout
           fitView: false
         })
@@ -415,7 +415,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute pipeline and expect it to throw for rendering failures
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: false
         })
@@ -436,7 +436,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: true
         })
@@ -454,7 +454,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: false
         })
@@ -480,7 +480,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute pipeline - should fail fast but log detailed error info first
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: undefined,
           fitView: false
         })
@@ -558,7 +558,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Execute search with container expansion - should fail fast with clear error
       await expect(
-        asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+        asyncCoordinator.updateSearchResults("Test", state, {
           expandContainers: true,
           fitView: false
         })
@@ -572,13 +572,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     it("should validate required parameters and throw meaningful errors", async () => {
       // Test missing state parameter
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(null as any, elkBridge)
+        asyncCoordinator.executeLayoutAndRenderPipeline(null as any)
       ).rejects.toThrow("VisualizationState instance is required for layout and render pipeline");
 
-      // Test missing ELK bridge parameter
+      // Test missing container ID for expand operation
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, null as any)
-      ).rejects.toThrow("ELKBridge instance is required for layout and render pipeline");
+        asyncCoordinator.expandContainer("", state)
+      ).rejects.toThrow("Container ID is required for expand operation");
 
       // Test missing container ID for expand operation
       await expect(
@@ -587,7 +587,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       // Test missing state for search operation
       await expect(
-        asyncCoordinator.updateSearchResults("test", null as any, elkBridge)
+        asyncCoordinator.updateSearchResults("test", null as any)
       ).rejects.toThrow("VisualizationState is required for search operations");
     });
   });

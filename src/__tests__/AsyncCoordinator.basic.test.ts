@@ -87,7 +87,7 @@ describe("AsyncCoordinator - Basic API", () => {
 
   describe("Layout and Render Pipeline", () => {
     it("should execute layout and render pipeline", async () => {
-      const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state, elkBridge);
+      const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state);
 
       // Verify pipeline returned ReactFlow data
       expect(reactFlowData).toBeDefined();
@@ -156,6 +156,7 @@ describe("AsyncCoordinator - Basic API", () => {
         collapsed: true,
         position: { x: 0, y: 0 },
         size: { width: 100, height: 100 },
+        children: new Set(),
         childNodes: [],
         childContainers: []
       });
@@ -172,7 +173,7 @@ describe("AsyncCoordinator - Basic API", () => {
 
     it("should process search events", async () => {
       // Use new synchronous search method instead of deprecated processApplicationEventAndWait
-      await coordinator.updateSearchResults("test", state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+      await coordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false
       });

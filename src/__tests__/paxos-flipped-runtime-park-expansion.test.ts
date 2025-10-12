@@ -495,7 +495,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
         // Trigger layout after expansion using new pipeline method
         const elkBridge = new ELKBridge();
-        await coordinator.executeLayoutAndRenderPipeline(visualizationState, elkBridge, {
+        await coordinator.executeLayoutAndRenderPipeline(visualizationState, {
           relayoutEntities: undefined, // Full layout
           fitView: false
         });

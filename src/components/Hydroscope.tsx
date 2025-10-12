@@ -32,6 +32,7 @@ import {
 import { ErrorBoundary } from "./ErrorBoundary.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
 import type { HydroscopeData } from "../types/core.js";
 import {
   DEFAULT_COLOR_PALETTE,
@@ -507,8 +508,8 @@ export const Hydroscope = memo<HydroscopeProps>(
       data: data || null,
       infoPanelOpen: settings.infoPanelOpen,
       stylePanelOpen: settings.stylePanelOpen,
-      colorPalette: initialColorPalette || settings.colorPalette,
-      layoutAlgorithm: initialLayoutAlgorithm || settings.layoutAlgorithm,
+      colorPalette: settings.colorPalette || initialColorPalette,
+      layoutAlgorithm: settings.layoutAlgorithm || initialLayoutAlgorithm,
       renderConfig: settings.renderConfig,
       autoFitEnabled: true, // Always start with autoFit enabled, regardless of saved settings
       searchQuery: "",
@@ -533,6 +534,7 @@ export const Hydroscope = memo<HydroscopeProps>(
     const hydroscopeCoreRef = useRef<HydroscopeCoreHandle>(null);
     const infoPanelRef = useRef<InfoPanelRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const elkBridgeRef = useRef<ELKBridge | null>(null);
     // Refs for cleanup
     const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
@@ -546,6 +548,11 @@ export const Hydroscope = memo<HydroscopeProps>(
 
       // Create debounced operation manager
       debouncedOperationManagerRef.current = new DebouncedOperationManager(150);
+
+      // Initialize ELK bridge
+      elkBridgeRef.current = new ELKBridge({
+        algorithm: state.layoutAlgorithm,
+      });
 
       // Create complete settings from current state to ensure all properties are included
       const completeSettings: HydroscopeSettings = {
@@ -844,7 +851,6 @@ export const Hydroscope = memo<HydroscopeProps>(
                     if (asyncCoordinator.executeLayoutAndRenderPipeline) {
                       asyncCoordinator.executeLayoutAndRenderPipeline(
                         currentVisualizationState,
-                        elkBridgeRef.current!,
                         {
                           relayoutEntities: [], // No layout, just render
                           fitView: false
@@ -857,7 +863,6 @@ export const Hydroscope = memo<HydroscopeProps>(
                   if (asyncCoordinator.executeLayoutAndRenderPipeline) {
                     asyncCoordinator.executeLayoutAndRenderPipeline(
                       currentVisualizationState,
-                      elkBridgeRef.current!,
                       {
                         relayoutEntities: [], // No layout, just render
                         fitView: false
@@ -870,7 +875,6 @@ export const Hydroscope = memo<HydroscopeProps>(
                 if (asyncCoordinator.executeLayoutAndRenderPipeline) {
                   asyncCoordinator.executeLayoutAndRenderPipeline(
                     currentVisualizationState,
-                    elkBridgeRef.current!,
                     {
                       relayoutEntities: [], // No layout, just render
                       fitView: false
@@ -1023,6 +1027,13 @@ export const Hydroscope = memo<HydroscopeProps>(
                   enableCollapse={enableCollapse}
                   initialLayoutAlgorithm={state.layoutAlgorithm}
                   initialColorPalette={state.colorPalette}
+                  initialEdgeStyle={state.renderConfig.edgeStyle}
+
+                  initialEdgeWidth={state.renderConfig.edgeWidth}
+                  initialEdgeDashed={state.renderConfig.edgeDashed}
+                  initialNodePadding={state.renderConfig.nodePadding}
+                  initialNodeFontSize={state.renderConfig.nodeFontSize}
+                  initialContainerBorderWidth={state.renderConfig.containerBorderWidth}
                   autoFitEnabled={state.autoFitEnabled}
                   onNodeClick={onNodeClick}
                   onContainerCollapse={onContainerCollapse}

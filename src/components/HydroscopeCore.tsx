@@ -147,6 +147,24 @@ export interface HydroscopeCoreProps {
   /** Initial color palette */
   initialColorPalette?: string;
 
+  /** Initial edge style */
+  initialEdgeStyle?: "bezier" | "straight" | "smoothstep";
+
+  /** Initial edge width */
+  initialEdgeWidth?: number;
+
+  /** Initial edge dashed setting */
+  initialEdgeDashed?: boolean;
+
+  /** Initial node padding */
+  initialNodePadding?: number;
+
+  /** Initial node font size */
+  initialNodeFontSize?: number;
+
+  /** Initial container border width */
+  initialContainerBorderWidth?: number;
+
   /** Whether auto-fit is enabled (controlled by parent component) */
   autoFitEnabled?: boolean;
 
@@ -425,6 +443,12 @@ const HydroscopeCoreInternal = forwardRef<
           algorithm: initialLayoutAlgorithm,
         });
 
+        // Pass bridge instances to AsyncCoordinator for direct imperative operations
+        asyncCoordinator.setBridgeInstances(
+          reactFlowBridgeRef.current,
+          elkBridgeRef.current
+        );
+
         // Create InteractionHandler
         interactionHandlerRef.current = new InteractionHandler(
           visualizationState,
@@ -519,7 +543,81 @@ const HydroscopeCoreInternal = forwardRef<
     // Track if we've already processed this data to prevent infinite loops
     const processedDataRef = useRef<HydroscopeData | null>(null);
 
-    // Parse data and update visualization state
+    /**
+     * Unified data processing pipeline using AsyncCoordinator
+     * This delegates all data processing logic to AsyncCoordinator for consistency
+     */
+    const processDataPipeline = useCallback(async (
+      newData: HydroscopeData,
+      reason: 'initial_load' | 'file_load' | 'hierarchy_change'
+    ) => {
+      if (!state.visualizationState || !state.asyncCoordinator || !jsonParserRef.current) {
+        console.warn(`[HydroscopeCore] Cannot process data: missing core instances`);
+        return;
+      }
+
+      try {
+        // Mark this data as being processed
+        processedDataRef.current = newData;
+        setState((prev) => ({
+          ...prev,
+          isLoading: true,
+          error: null,
+          autoFitEnabled: true,
+        }));
+
+        // Update the interaction handler for the current state
+        if (state.asyncCoordinator) {
+          interactionHandlerRef.current = new InteractionHandler(
+            state.visualizationState,
+            state.asyncCoordinator,
+          );
+        }
+
+        // Delegate to AsyncCoordinator's unified pipeline
+        const reactFlowData = await state.asyncCoordinator.processDataChange(
+          newData,
+          state.visualizationState,
+          jsonParserRef.current,
+          reason,
+          {
+            fitView: true, // Enable fit view for all data changes
+            validateData: validateData, // Pass validation function
+            onVisualizationStateChange: onVisualizationStateChange, // Pass state change callback
+          }
+        );
+
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+        }));
+
+        return reactFlowData;
+
+      } catch (error) {
+        console.error(`[HydroscopeCore] Data processing failed for ${reason}:`, error);
+        
+        // Enhanced error handling
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : "Unknown pipeline error";
+        
+        const enhancedError = new Error(
+          `Failed to process ${reason}: ${errorMessage}. The data may be invalid or the layout engine encountered an error.`
+        );
+        enhancedError.stack = error instanceof Error ? error.stack : undefined;
+        
+        setState((prev) => ({
+          ...prev,
+          error: enhancedError,
+          isLoading: false,
+        }));
+        
+        onError?.(enhancedError);
+      }
+    }, [state.visualizationState, state.asyncCoordinator, validateData, onVisualizationStateChange, onError]);
+
+    // Unified data processing effect - handles initial load, file load, and hierarchy changes
     useEffect(() => {
       // Only proceed if we have data and all core instances are ready
       if (
@@ -650,7 +748,6 @@ const HydroscopeCoreInternal = forwardRef<
                     reactFlowData = await state.asyncCoordinator.expandContainer(
                       containerId,
                       singleVisualizationState,
-                      elkBridgeRef.current,
                       {
                         relayoutEntities: [containerId], // Only re-layout this container
                         fitView: state.autoFitEnabled,
@@ -663,7 +760,6 @@ const HydroscopeCoreInternal = forwardRef<
                     reactFlowData = await state.asyncCoordinator.collapseContainer(
                       containerId,
                       singleVisualizationState,
-                      elkBridgeRef.current,
                       {
                         relayoutEntities: [containerId], // Only re-layout this container
                         fitView: state.autoFitEnabled,
@@ -704,7 +800,6 @@ const HydroscopeCoreInternal = forwardRef<
               // Execute complete pipeline: layout + render + fitView
               const reactFlowData = await state.asyncCoordinator.executeLayoutAndRenderPipeline(
                 singleVisualizationState,
-                elkBridgeRef.current,
                 {
                   relayoutEntities: undefined, // Full layout for new data
                   fitView: true, // Trigger initial fit view
@@ -775,9 +870,19 @@ const HydroscopeCoreInternal = forwardRef<
         }
       };
 
-      parseAndRender();
+      // Determine the reason for data processing
+      const isInitialLoad = processedDataRef.current === null;
+      const isHierarchyChange = processedDataRef.current !== null && 
+                               processedDataRef.current !== data && 
+                               dataString !== lastDataString;
+      
+      const reason = isInitialLoad ? 'initial_load' : 
+                     isHierarchyChange ? 'hierarchy_change' : 'file_load';
+
+      // Use unified pipeline for all data processing
+      processDataPipeline(data, reason);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data, state.visualizationState, state.asyncCoordinator, readOnly]);
+    }, [data, processDataPipeline]);
 
     // Handle fit view when shouldFitView changes with debouncing
     useEffect(() => {
@@ -862,7 +967,6 @@ const HydroscopeCoreInternal = forwardRef<
             try {
               await state.asyncCoordinator!.executeLayoutAndRenderPipeline(
                 state.visualizationState!,
-                elkBridgeRef.current!,
                 {
                   relayoutEntities: undefined, // Full layout for algorithm change
                   fitView: true, // Auto-fit after layout algorithm change
@@ -911,7 +1015,6 @@ const HydroscopeCoreInternal = forwardRef<
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
           const reactFlowData = await state.asyncCoordinator.collapseAllContainers(
             state.visualizationState,
-            elkBridgeRef.current,
             {
               relayoutEntities: undefined, // Full layout for collapse all
               fitView: state.autoFitEnabled,
@@ -968,7 +1071,6 @@ const HydroscopeCoreInternal = forwardRef<
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
           const reactFlowData = await state.asyncCoordinator.expandAllContainers(
             state.visualizationState,
-            elkBridgeRef.current,
             {
               relayoutEntities: undefined, // Full layout for expand all
               fitView: state.autoFitEnabled,
@@ -1039,7 +1141,6 @@ const HydroscopeCoreInternal = forwardRef<
           const reactFlowData = await state.asyncCoordinator.collapseContainer(
             containerId,
             state.visualizationState,
-            elkBridgeRef.current,
             {
               relayoutEntities: [containerId], // Only re-layout this container
               fitView: state.autoFitEnabled,
@@ -1110,7 +1211,6 @@ const HydroscopeCoreInternal = forwardRef<
           const reactFlowData = await state.asyncCoordinator.expandContainer(
             containerId,
             state.visualizationState,
-            elkBridgeRef.current,
             {
               relayoutEntities: [containerId], // Only re-layout this container
               fitView: state.autoFitEnabled,
@@ -1206,7 +1306,6 @@ const HydroscopeCoreInternal = forwardRef<
             // Execute complete pipeline: layout + render (no fitView for config changes)
             await state.asyncCoordinator.executeLayoutAndRenderPipeline(
               state.visualizationState,
-              elkBridgeRef.current,
               {
                 relayoutEntities: undefined, // Full layout for algorithm change
                 fitView: false, // Don't auto-fit for config changes
@@ -1216,7 +1315,6 @@ const HydroscopeCoreInternal = forwardRef<
             // For non-layout changes (like edge style, color palette), use render-only pipeline
             await state.asyncCoordinator.executeLayoutAndRenderPipeline(
               state.visualizationState,
-              elkBridgeRef.current!,
               {
                 relayoutEntities: [], // No layout needed for visual changes
                 fitView: false, // Don't auto-fit for config changes

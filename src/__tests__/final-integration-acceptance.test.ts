@@ -202,6 +202,7 @@ describe("Final Integration and Acceptance Testing", () => {
         collapsed: true,
         position: { x: 0, y: 0 },
         size: { width: 100, height: 100 },
+        children: new Set(),
         childNodes: [],
         childContainers: []
       });
@@ -440,6 +441,7 @@ describe("Final Integration and Acceptance Testing", () => {
         collapsed: true,
         position: { x: 0, y: 0 },
         size: { width: 100, height: 100 },
+        children: new Set(),
         childNodes: [],
         childContainers: []
       });
@@ -450,6 +452,7 @@ describe("Final Integration and Acceptance Testing", () => {
         collapsed: true,
         position: { x: 200, y: 0 },
         size: { width: 100, height: 100 },
+        children: new Set(),
         childNodes: [],
         childContainers: []
       });

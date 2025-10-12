@@ -122,6 +122,44 @@ export class VisualizationState {
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
   // Data Management
+  
+  /**
+   * Clear all data from the VisualizationState
+   */
+  clear(): void {
+    this._nodes.clear();
+    this._edges.clear();
+    this._containers.clear();
+    this._nodeContainerMap.clear();
+    this._aggregatedEdges.clear();
+    this._originalToAggregatedMap.clear();
+    this._aggregatedToOriginalMap.clear();
+    this._containerAggregationMap.clear();
+    this._orphanedNodes.clear();
+    this._orphanedContainers.clear();
+    this._searchState.query = "";
+    this._searchState.resultCount = 0;
+    this._searchState.expandedContainers.clear();
+    this._searchNavigationState.searchQuery = "";
+    this._searchNavigationState.searchResults = [];
+    this._searchNavigationState.treeSearchHighlights.clear();
+    this._searchNavigationState.graphSearchHighlights.clear();
+    this._searchNavigationState.treeNavigationHighlights.clear();
+    this._searchNavigationState.graphNavigationHighlights.clear();
+    this._searchNavigationState.navigationSelection = null;
+    this._searchNavigationState.shouldFocusViewport = false;
+    this._searchIndex.clear();
+    this._searchCache.clear();
+    this._searchCacheTimestamps.clear();
+    this._descendantCache.clear();
+    this._ancestorCache.clear();
+    this._rootContainersCache = null;
+    this._collapsedContainersCache = null;
+    this._visibleNodesCache = null;
+    this._visibleContainersCache = null;
+    this._invalidateAllCaches();
+  }
+
   addNode(node: GraphNode): void {
     this._validateNodeData(node);
     this._nodes.set(node.id, { ...node });

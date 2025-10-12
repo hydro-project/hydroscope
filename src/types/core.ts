@@ -199,6 +199,9 @@ export interface ReactFlowNode {
   parentNode?: string;
   parentId?: string;
   extent?: "parent" | [[number, number], [number, number]];
+  // CRITICAL FIX: Add width and height properties for fitView calculations
+  width?: number;
+  height?: number;
 }
 export interface ReactFlowNodeData {
   label: string;

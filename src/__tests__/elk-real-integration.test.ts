@@ -64,7 +64,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       expect(node2.position).toBeUndefined();
 
       // Call layout and render pipeline (includes ELK layout)
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge);
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state);
 
       // Verify pipeline returned ReactFlow data
       expect(reactFlowData).toBeDefined();
@@ -113,7 +113,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       }
 
       // Call layout and render pipeline
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(paxosState, elkBridge);
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(paxosState);
       expect(reactFlowData).toBeDefined();
 
       // Verify all nodes have real ELK-calculated positions
@@ -147,7 +147,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       state._expandContainerForCoordinator("c1");
 
       // Call layout and render pipeline
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge);
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state);
       expect(reactFlowData).toBeDefined();
 
       // Verify container and nodes have real positions (check state's copies)
@@ -182,7 +182,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
       // Should complete without error (empty graphs are valid)
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge),
+        asyncCoordinator.executeLayoutAndRenderPipeline(state),
       ).resolves.not.toThrow();
 
       // Layout state should be displayed (pipeline includes rendering)
@@ -196,7 +196,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
       // If ELK fails to calculate positions, should throw explicit error
       try {
-        await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge);
+        await asyncCoordinator.executeLayoutAndRenderPipeline(state);
 
         // Verify position was actually calculated (not fallback) - check state's copy
         const stateNode = state.getGraphNode("n1");
@@ -222,7 +222,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       const startTime = performance.now();
 
       // Call layout and render pipeline
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(perfState, elkBridge);
+      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(perfState);
       expect(reactFlowData).toBeDefined();
 
       const endTime = performance.now();

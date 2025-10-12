@@ -37,13 +37,13 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // First execution - should perform layout (no previous state)
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [], // Empty array allows optimization
         fitView: false
       });
 
       // Second execution with same state - should skip layout
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [], // Empty array allows optimization
         fitView: false
       });
@@ -70,7 +70,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute with full layout (undefined relayoutEntities)
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: undefined, // Full layout - should not skip
         fitView: false
       });
@@ -97,7 +97,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute with specific entities
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: ["container1"], // Specific entities - should not skip
         fitView: false
       });
@@ -124,7 +124,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // First execution
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -134,7 +134,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       state.addNode(node2);
 
       // Second execution - should detect change and perform layout
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -161,7 +161,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: false
         })
@@ -194,7 +194,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute pipeline with FitView enabled
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true,
         fitViewOptions: { padding: 50, duration: 300 }
@@ -234,7 +234,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute pipeline with FitView enabled on empty state
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true
       });
@@ -269,7 +269,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
 
       // Execute pipeline with FitView enabled - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: true
         })
@@ -296,7 +296,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute pipeline
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true
       });
@@ -335,7 +335,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute pipeline (should be fast for single node)
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -373,7 +373,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute pipeline
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: undefined, // Full layout to trigger slow path
         fitView: false
       });
@@ -416,7 +416,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // Execute pipeline with full layout (should trigger suggestions)
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: undefined, // Full layout
         fitView: false
       });
@@ -442,12 +442,12 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       state.addNode(node1);
 
       // Execute pipeline multiple times
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
 
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -477,7 +477,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
 
       // Execute pipeline multiple times
       for (let i = 0; i < 5; i++) {
-        await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: false
         });
@@ -512,13 +512,13 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       };
 
       // First execution
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
 
       // Second execution with same cache version - should skip layout
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -527,7 +527,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       cacheVersion = 2;
 
       // Third execution with different cache version - should perform layout
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -555,7 +555,7 @@ describe("AsyncCoordinator Performance Optimizations (Task 8)", () => {
       ];
 
       for (const config of configurations) {
-        await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, config);
+        await asyncCoordinator.executeLayoutAndRenderPipeline(state, config);
       }
 
       // Verify AsyncCoordinator state is minimal and stateless

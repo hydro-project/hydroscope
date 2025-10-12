@@ -4,6 +4,7 @@
  */
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 import { bridgeFactory } from "../bridges/BridgeFactory.js";
+
 interface ErrorRecoveryResult {
   success: boolean;
   fallbackApplied: boolean;
@@ -21,11 +22,67 @@ export class AsyncCoordinator {
   private processingTimes: number[] = [];
   private currentOperation?: QueuedOperation;
   private operationIdCounter = 0;
-  // Callback to update HydroscopeCore's React state when ReactFlow data changes
+  private interactionHandler?: any;
+
+  // DEPRECATED: Callback to update HydroscopeCore's React state when ReactFlow data changes (replaced by direct state updates)
   public onReactFlowDataUpdate?: (reactFlowData: any) => void;
 
-  // NEW: FitView integration callback for React integration
-  public onFitViewRequested?: (options?: { padding?: number; duration?: number }) => void;
+  // Direct ReactFlow instance reference for fitView operations
+  private reactFlowInstance?: any;
+
+  // Direct React state setter for imperative updates
+  private setReactState?: (updater: (prev: any) => any) => void;
+
+  // Direct bridge instances for imperative operations
+  private reactFlowBridge?: any;
+  private elkBridge?: any;
+
+  constructor(interactionHandler?: any) {
+    this.interactionHandler = interactionHandler;
+  }
+
+  /**
+   * Set the InteractionHandler reference after construction
+   */
+  setInteractionHandler(interactionHandler: any): void {
+    this.interactionHandler = interactionHandler;
+  }
+
+  /**
+   * Set the ReactFlow instance reference for direct fitView operations
+   */
+  setReactFlowInstance(reactFlowInstance: any): void {
+    this.reactFlowInstance = reactFlowInstance;
+    console.log('🎯 AsyncCoordinator: ReactFlow instance set for direct fitView operations');
+  }
+
+  /**
+   * Set the React state setter for direct imperative state updates
+   * This enables AsyncCoordinator to update React state directly instead of using callbacks
+   */
+  setReactStateSetter(setReactState: (updater: (prev: any) => any) => void): void {
+    this.setReactState = setReactState;
+    console.log('🎯 AsyncCoordinator: React state setter configured for direct updates');
+  }
+
+  /**
+   * Set bridge instances for direct imperative operations
+   * This eliminates the need for bridge factory imports and makes operations more sequential
+   */
+  setBridgeInstances(reactFlowBridge: any, elkBridge: any): void {
+    this.reactFlowBridge = reactFlowBridge;
+    this.elkBridge = elkBridge;
+    console.log('🎯 AsyncCoordinator: Bridge instances set for direct imperative operations');
+  }
+
+  // DEPRECATED: FitView integration callback for React integration (replaced by direct ReactFlow calls)
+  public onFitViewRequested?: (options?: {
+    padding?: number;
+    duration?: number;
+  }) => void;
+  
+  // Pending fitView request (to be executed after React re-renders)
+  public pendingFitViewRequest?: { padding?: number; duration?: number } | null = null;
 
   // PERFORMANCE OPTIMIZATION: Stateless performance tracking (no persistent caches)
   private _lastStateSnapshot?: {
@@ -42,7 +99,7 @@ export class AsyncCoordinator {
   queueOperation<T>(
     type: QueuedOperation["type"],
     operation: () => Promise<T>,
-    options: QueueOptions = {},
+    options: QueueOptions = {}
   ): string {
     const id = `op_${++this.operationIdCounter}`;
     const queuedOp: QueuedOperation<T> = {
@@ -95,7 +152,7 @@ export class AsyncCoordinator {
         operation.retryCount++;
         console.error(
           `[AsyncCoordinator] ❌ Operation ${operation.id} (${operation.type}) failed (attempt ${operation.retryCount}/${operation.maxRetries + 1}):`,
-          error,
+          error
         );
         // If we've exhausted retries, mark as failed
         if (operation.retryCount > operation.maxRetries) {
@@ -103,12 +160,12 @@ export class AsyncCoordinator {
           this.failedOperations.push(operation);
           this.recordProcessingTime(operation);
           console.error(
-            `[AsyncCoordinator] 💀 Operation ${operation.id} (${operation.type}) failed permanently after ${operation.retryCount} attempts`,
+            `[AsyncCoordinator] 💀 Operation ${operation.id} (${operation.type}) failed permanently after ${operation.retryCount} attempts`
           );
           return;
         }
         await new Promise((resolve) =>
-          setTimeout(resolve, 100 * operation.retryCount),
+          setTimeout(resolve, 100 * operation.retryCount)
         );
       }
     }
@@ -124,8 +181,8 @@ export class AsyncCoordinator {
       const timeoutId = setTimeout(() => {
         reject(
           new Error(
-            `Operation ${operation.id} timed out after ${operation.timeout}ms`,
-          ),
+            `Operation ${operation.id} timed out after ${operation.timeout}ms`
+          )
         );
       }, operation.timeout);
       operation
@@ -221,7 +278,7 @@ export class AsyncCoordinator {
   private async executeELKLayout(
     state: any, // VisualizationState - using any to avoid circular dependency
     elkBridge: any, // ELKBridge instance
-    options: QueueOptions = {},
+    options: QueueOptions = {}
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const operation = async () => {
@@ -239,7 +296,7 @@ export class AsyncCoordinator {
         } catch (error) {
           console.error(
             `[AsyncCoordinator] ❌ ELK layout operation failed:`,
-            error,
+            error
           );
           state.setLayoutPhase("error");
           throw error;
@@ -253,10 +310,10 @@ export class AsyncCoordinator {
       // Set up a way to resolve/reject the Promise when the operation completes
       const checkCompletion = () => {
         const completed = this.completedOperations.find(
-          (op) => op.id === operationId,
+          (op) => op.id === operationId
         );
         const failed = this.failedOperations.find(
-          (op) => op.id === operationId,
+          (op) => op.id === operationId
         );
         if (completed) {
           resolve();
@@ -286,7 +343,7 @@ export class AsyncCoordinator {
    */
   cancelELKOperation(operationId: string): boolean {
     const index = this.queue.findIndex(
-      (op) => op.id === operationId && op.type === "elk_layout",
+      (op) => op.id === operationId && op.type === "elk_layout"
     );
     if (index !== -1) {
       this.queue.splice(index, 1);
@@ -320,80 +377,203 @@ export class AsyncCoordinator {
   }
   // ReactFlow-specific async operations
   /**
-   * Generate ReactFlow data synchronously (private method)
+   * Generate ReactFlow data synchronously (private method) - OPTIMIZED
    * This method ensures ReactFlow rendering uses current VisualizationState data
+   * Removed unnecessary async wrapper for better performance
    */
-  private async generateReactFlowData(
+  private generateReactFlowDataImperative(
     state: any, // VisualizationState - using any to avoid circular dependency
-    options: QueueOptions = {},
-  ): Promise<any> {
+  ): any {
     // ReactFlowData
-    return new Promise((resolve, reject) => {
-      const operation = async () => {
-        // Import BridgeFactory to get singleton bridge instance
-        const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
-        try {
-          // Get stateless ReactFlow bridge instance (singleton)
-          const reactFlowBridge = bridgeFactory.getReactFlowBridge();
-          // Set layout phase to indicate rendering
-          state.setLayoutPhase("rendering");
-          // Convert to ReactFlow format using current VisualizationState data
-          const reactFlowData = reactFlowBridge.toReactFlowData(state);
-          // Set layout phase to displayed
-          state.setLayoutPhase("displayed");
-          // CRITICAL FIX: Trigger HydroscopeCore state update
-          // The AsyncCoordinator generates ReactFlow data but doesn't update HydroscopeCore's React state
-          // We need to ensure the HydroscopeCore gets the updated data
-          if (this.onReactFlowDataUpdate) {
-            this.onReactFlowDataUpdate(reactFlowData);
-          }
-          return reactFlowData;
-        } catch (error) {
-          console.error(
-            `[AsyncCoordinator] ❌ ReactFlow render operation failed:`,
-            error,
-          );
-          state.setLayoutPhase("error");
-          reject(error);
-          throw error;
-        }
-      };
-      // Queue the operation
-      const operationId = this.queueOperation("reactflow_render", operation, {
-        timeout: options.timeout || 5000, // 5 second default timeout
-        maxRetries: options.maxRetries || 1,
-      });
-      // Set up proper completion tracking
-      const checkCompletion = () => {
-        const completed = this.completedOperations.find(
-          (op) => op.id === operationId,
-        );
-        const failed = this.failedOperations.find(
-          (op) => op.id === operationId,
-        );
-        if (completed) {
-          resolve(completed.result);
-        } else if (failed) {
-          reject(failed.error || new Error("Operation failed"));
-        } else {
-          // Check again after a short delay
-          setTimeout(checkCompletion, 10);
-        }
-      };
-      // Process the queue if not already processing
-      if (!this.processing) {
-        this.processQueue()
-          .then(() => {
-            // Start checking for completion after processing starts
-            checkCompletion();
-          })
-          .catch(reject);
-      } else {
-        // If already processing, just start checking for completion
-        checkCompletion();
+    const startTime = Date.now();
+
+    try {
+      console.debug("[AsyncCoordinator] 🎨 Starting imperative ReactFlow data generation");
+
+      // Use direct bridge instance (set via setBridgeInstances) for better performance
+      const reactFlowBridge = this.reactFlowBridge || bridgeFactory.getReactFlowBridge();
+
+      if (!reactFlowBridge) {
+        throw new Error("ReactFlowBridge instance not available");
       }
-    });
+
+      // Set layout phase to indicate rendering
+      if (typeof state.setLayoutPhase === 'function') {
+        state.setLayoutPhase("rendering");
+      }
+
+      // Convert to ReactFlow format using current VisualizationState data
+      const reactFlowData = reactFlowBridge.toReactFlowData(
+        state,
+        this.interactionHandler
+      );
+
+      // Set layout phase to displayed
+      if (typeof state.setLayoutPhase === 'function') {
+        state.setLayoutPhase("displayed");
+      }
+
+      // Update React state directly (imperative approach)
+      if (this.setReactState) {
+        this.setReactState((prev: any) => ({
+          ...prev,
+          reactFlowData: reactFlowData,
+        }));
+      } else if (this.onReactFlowDataUpdate) {
+        this.onReactFlowDataUpdate(reactFlowData);
+      }
+
+      const endTime = Date.now();
+      console.debug(
+        `[AsyncCoordinator] ✅ Imperative ReactFlow data generation completed in ${endTime - startTime}ms`
+      );
+
+      return reactFlowData;
+
+    } catch (error) {
+      console.error(
+        `[AsyncCoordinator] ❌ Imperative ReactFlow render operation failed:`,
+        error
+      );
+      
+      if (typeof state.setLayoutPhase === 'function') {
+        state.setLayoutPhase("error");
+      }
+      
+      throw error;
+    }
   }
+  /**
+   * Unified data processing pipeline for initial load, file load, and hierarchy changes
+   * This ensures consistent behavior and smart collapse logic across all scenarios
+   * 
+   * @param newData - The new HydroscopeData to process
+   * @param visualizationState - The VisualizationState instance to update
+   * @param jsonParser - The JSONParser instance for data parsing
+   * @param reason - The reason for data processing (for logging and debugging)
+   * @param options - Pipeline execution options
+   * @returns Promise<ReactFlowData> when complete pipeline is finished
+   */
+  async processDataChange(
+    newData: any, // HydroscopeData - using any to avoid circular dependency
+    visualizationState: any, // VisualizationState - using any to avoid circular dependency
+    jsonParser: any, // JSONParser - using any to avoid circular dependency
+    reason: 'initial_load' | 'file_load' | 'hierarchy_change',
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      validateData?: (data: any) => void;
+      onVisualizationStateChange?: (state: any) => void;
+    } = {}
+  ): Promise<any> { // ReactFlowData
+    const startTime = Date.now();
+
+    try {
+      console.log(`🚀 AsyncCoordinator: Starting unified data processing pipeline: ${reason}`);
+
+      // Validate data structure if validator provided
+      if (options.validateData) {
+        options.validateData(newData);
+      }
+
+      // CRITICAL: Reset layout state for ALL data changes to enable smart collapse
+      // This ensures smart collapse runs on first layout after any data change
+      if (typeof visualizationState.resetLayoutState === 'function') {
+        visualizationState.resetLayoutState();
+        console.log(`🔄 AsyncCoordinator: Reset layout state for ${reason} - smart collapse will run on next layout`);
+      } else {
+        console.warn(`[AsyncCoordinator] VisualizationState.resetLayoutState not available`);
+      }
+
+      // Parse JSON data into the VisualizationState
+      if (typeof jsonParser.parseData !== 'function') {
+        throw new Error('JSONParser.parseData method not available');
+      }
+
+      const parseResult = await jsonParser.parseData(newData, visualizationState);
+
+      // Log any warnings from parsing
+      if (parseResult.warnings && parseResult.warnings.length > 0) {
+        console.warn(
+          `[AsyncCoordinator] Parsing warnings for ${reason}:`,
+          parseResult.warnings,
+        );
+      }
+
+      // Validate that we got some data
+      if (parseResult.stats && parseResult.stats.nodeCount === 0) {
+        throw new Error(
+          "No valid nodes found in the data. Please check that your data contains valid node definitions.",
+        );
+      }
+
+      // Warn about potential issues but don't fail
+      if (parseResult.stats) {
+        if (parseResult.stats.edgeCount === 0) {
+          console.warn(
+            `[AsyncCoordinator] No edges found in data for ${reason} - visualization will only show nodes`,
+          );
+        }
+
+        if (parseResult.stats.containerCount === 0) {
+          console.warn(
+            `[AsyncCoordinator] No containers found in data for ${reason} - nodes will not be grouped`,
+          );
+        }
+      }
+
+      // Notify about visualization state change
+      if (options.onVisualizationStateChange) {
+        options.onVisualizationStateChange(visualizationState);
+      }
+
+      // Execute complete pipeline: layout + render + fitView
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(
+        visualizationState,
+        {
+          relayoutEntities: undefined, // Full layout for data changes
+          fitView: options.fitView !== false, // Default to true unless explicitly disabled
+          fitViewOptions: options.fitViewOptions,
+        }
+      );
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.log(
+        `✅ AsyncCoordinator: Unified data processing pipeline completed successfully for ${reason}`,
+        { 
+          duration: `${duration}ms`,
+          nodeCount: reactFlowData?.nodes?.length || 0,
+          edgeCount: reactFlowData?.edges?.length || 0 
+        }
+      );
+
+      return reactFlowData;
+
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.error(`[AsyncCoordinator] Unified data processing pipeline failed for ${reason}:`, {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        duration: `${duration}ms`,
+        reason,
+        timestamp: endTime,
+      });
+
+      // Set error state on VisualizationState if possible
+      if (visualizationState && typeof visualizationState.setLayoutPhase === 'function') {
+        visualizationState.setLayoutPhase('error');
+      }
+
+      throw error;
+    }
+  }
+
   // REMOVED: Deprecated queueLayoutAndRenderPipeline method
   // This method has been replaced by executeLayoutAndRenderPipeline which provides:
   // - Better error handling with fail-fast behavior
@@ -404,10 +584,10 @@ export class AsyncCoordinator {
   /**
    * Execute synchronous layout and render pipeline with layout entity control and FitView integration
    * This is the enhanced synchronous method that replaces manual orchestration patterns
-   * 
+   *
    * Note: While this method appears synchronous, ELK layout is inherently async.
    * This method returns a Promise but ensures atomic execution of the complete pipeline.
-   * 
+   *
    * @param state - VisualizationState instance
    * @param elkBridge - ELKBridge instance
    * @param options - Pipeline execution options
@@ -415,20 +595,20 @@ export class AsyncCoordinator {
    */
   async executeLayoutAndRenderPipeline(
     state: any, // VisualizationState - using any to avoid circular dependency
-    elkBridge: any, // ELKBridge instance
     options: {
       // Layout control - which entities need re-layout
       relayoutEntities?: string[]; // undefined = full layout, [] = no layout, [ids] = constrained
-      
+
       // FitView control - handled internally, no callbacks needed
       fitView?: boolean;
       fitViewOptions?: { padding?: number; duration?: number };
-      
+
       // Standard options
       timeout?: number;
       maxRetries?: number;
-    } = {},
-  ): Promise<any> { // ReactFlowData
+    } = {}
+  ): Promise<any> {
+    // ReactFlowData
     const startTime = Date.now();
     const performanceMetrics = {
       stateChangeDetection: 0,
@@ -436,116 +616,194 @@ export class AsyncCoordinator {
       layoutDuration: 0,
       renderDuration: 0,
       fitViewOptimized: false,
-      totalOptimizationSavings: 0
+      totalOptimizationSavings: 0,
     };
 
     // Validate required parameters - FAIL FAST with clear messages
     if (!state) {
-      throw new Error('VisualizationState instance is required for layout and render pipeline');
+      throw new Error(
+        "VisualizationState instance is required for layout and render pipeline"
+      );
     }
+
+    // Get ELK bridge from bridge factory - no need to pass it as parameter
+    const elkBridge = bridgeFactory.getELKBridge();
     if (!elkBridge) {
-      throw new Error('ELKBridge instance is required for layout and render pipeline');
+      throw new Error("ELK bridge is not available from bridge factory");
     }
 
     try {
-      console.debug('[AsyncCoordinator] 🚀 Starting optimized synchronous layout and render pipeline', {
-        relayoutEntities: options.relayoutEntities,
-        fitView: options.fitView,
-        timestamp: startTime
-      });
+      console.log(
+        "[AsyncCoordinator] 🚀 Starting optimized synchronous layout and render pipeline",
+        {
+          relayoutEntities: options.relayoutEntities,
+          relayoutEntitiesType: typeof options.relayoutEntities,
+          relayoutEntitiesIsUndefined: options.relayoutEntities === undefined,
+          fitView: options.fitView,
+          timestamp: startTime,
+        }
+      );
 
       // PERFORMANCE OPTIMIZATION 1: State change detection using VisualizationState's cache invalidation
       const stateDetectionStart = Date.now();
-      const shouldSkipLayout = this._shouldSkipLayoutBasedOnStateChanges(state, options.relayoutEntities);
-      performanceMetrics.stateChangeDetection = Date.now() - stateDetectionStart;
-      
+      console.log('🎯 Checking if layout should be skipped', {
+        relayoutEntities: options.relayoutEntities,
+        relayoutEntitiesType: typeof options.relayoutEntities,
+        relayoutEntitiesIsUndefined: options.relayoutEntities === undefined
+      });
+      const shouldSkipLayout = this._shouldSkipLayoutBasedOnStateChanges(
+        state,
+        options.relayoutEntities
+      );
+      console.log('🎯 Layout skip decision:', shouldSkipLayout);
+      performanceMetrics.stateChangeDetection =
+        Date.now() - stateDetectionStart;
+
       if (shouldSkipLayout) {
         performanceMetrics.layoutSkipped = true;
         performanceMetrics.totalOptimizationSavings += 50; // Estimated layout time savings
-        console.debug('[AsyncCoordinator] ⚡ Layout optimization: Skipping unnecessary layout based on state analysis', {
-          stateChangeDetectionTime: `${performanceMetrics.stateChangeDetection}ms`,
-          estimatedSavings: '50ms'
-        });
+        console.debug(
+          "[AsyncCoordinator] ⚡ Layout optimization: Skipping unnecessary layout based on state analysis",
+          {
+            stateChangeDetectionTime: `${performanceMetrics.stateChangeDetection}ms`,
+            estimatedSavings: "50ms",
+          }
+        );
       }
 
       // Step 1: Execute ELK layout if needed - FAIL FAST on errors
       const layoutStart = Date.now();
-      if (options.relayoutEntities !== undefined && options.relayoutEntities.length === 0) {
+      if (
+        options.relayoutEntities !== undefined &&
+        options.relayoutEntities.length === 0
+      ) {
         // Skip layout - relayoutEntities is empty array
-        console.debug('[AsyncCoordinator] ⏭️ Skipping ELK layout - no entities to re-layout');
+        console.debug(
+          "[AsyncCoordinator] ⏭️ Skipping ELK layout - no entities to re-layout"
+        );
         performanceMetrics.layoutSkipped = true;
       } else if (shouldSkipLayout) {
         // Skip layout - state hasn't changed meaningfully
-        console.debug('[AsyncCoordinator] ⚡ Skipping ELK layout - no meaningful state changes detected');
+        console.debug(
+          "[AsyncCoordinator] ⚡ Skipping ELK layout - no meaningful state changes detected"
+        );
         performanceMetrics.layoutSkipped = true;
       } else {
         // Execute layout (async but atomic within this pipeline) - NO ERROR SUPPRESSION
-        await this.executeELKLayoutAsync(state, elkBridge, options.relayoutEntities);
-        performanceMetrics.layoutDuration = Date.now() - layoutStart;
-        console.debug('[AsyncCoordinator] ✅ ELK layout completed successfully', {
-          layoutDuration: `${performanceMetrics.layoutDuration}ms`
+        if (!this.elkBridge) {
+          throw new Error('ELK bridge not available for layout execution');
+        }
+        console.log('🎯 Calling executeELKLayoutAsync', {
+          elkBridge: !!this.elkBridge,
+          elkBridgeType: typeof this.elkBridge,
+          relayoutEntities: options.relayoutEntities
         });
+        await this.executeELKLayoutAsync(
+          state,
+          this.elkBridge,
+          options.relayoutEntities
+        );
+        performanceMetrics.layoutDuration = Date.now() - layoutStart;
+        console.debug(
+          "[AsyncCoordinator] ✅ ELK layout completed successfully",
+          {
+            layoutDuration: `${performanceMetrics.layoutDuration}ms`,
+          }
+        );
       }
 
-      // Step 2: Generate ReactFlow data synchronously - FAIL FAST on errors
+      // Step 2: Generate ReactFlow data imperatively - FAIL FAST on errors
       const renderStart = Date.now();
-      const reactFlowData = this.generateReactFlowDataSync(state);
+      const reactFlowData = this.generateReactFlowDataImperative(state);
       performanceMetrics.renderDuration = Date.now() - renderStart;
-      console.debug('[AsyncCoordinator] ✅ ReactFlow data generation completed successfully', {
-        renderDuration: `${performanceMetrics.renderDuration}ms`
-      });
+      console.debug(
+        "[AsyncCoordinator] ✅ ReactFlow data generation completed successfully",
+        {
+          renderDuration: `${performanceMetrics.renderDuration}ms`,
+        }
+      );
 
-      // PERFORMANCE OPTIMIZATION 2: Optimize FitView execution within synchronous pipeline
-      if (options.fitView && this.onFitViewRequested) {
-        const fitViewOptimized = this._optimizeFitViewExecution(options.fitViewOptions, reactFlowData);
+      // Step 4: Update HydroscopeCore's React state directly (imperative approach)
+      if (this.setReactState) {
+        // Direct imperative state update - no callbacks needed
+        this.setReactState((prev: any) => ({
+          ...prev,
+          reactFlowData: reactFlowData,
+        }));
+        console.debug(
+          "[AsyncCoordinator] ✅ ReactFlow data updated directly (imperative)"
+        );
+      } else if (this.onReactFlowDataUpdate) {
+        // Fallback to callback for backward compatibility
+        this.onReactFlowDataUpdate(reactFlowData);
+        console.debug(
+          "[AsyncCoordinator] ✅ ReactFlow data update callback completed successfully (fallback)"
+        );
+      }
+
+      // PERFORMANCE OPTIMIZATION 2: Optimize FitView execution within synchronous pipeline (after ReactFlow update)
+      if (options.fitView) {
+        const fitViewOptimized = this._optimizeFitViewExecution(
+          options.fitViewOptions,
+          reactFlowData
+        );
         performanceMetrics.fitViewOptimized = fitViewOptimized.optimized;
-        
+
         if (fitViewOptimized.shouldExecute) {
-          this.onFitViewRequested(fitViewOptimized.optimizedOptions);
-          console.debug('[AsyncCoordinator] ✅ FitView callback triggered successfully', {
-            optimized: fitViewOptimized.optimized,
-            optimizationApplied: fitViewOptimized.optimizationApplied
-          });
+          // Execute fitView directly using ReactFlow instance
+          await this._executeFitViewDirect(fitViewOptimized.optimizedOptions);
+          console.debug(
+            "[AsyncCoordinator] ✅ FitView executed directly",
+            {
+              optimized: fitViewOptimized.optimized,
+              optimizationApplied: fitViewOptimized.optimizationApplied,
+            }
+          );
         } else {
           performanceMetrics.totalOptimizationSavings += 10; // Estimated FitView time savings
-          console.debug('[AsyncCoordinator] ⚡ FitView optimization: Skipping unnecessary FitView operation', {
-            reason: fitViewOptimized.skipReason,
-            estimatedSavings: '10ms'
-          });
+          console.debug(
+            "[AsyncCoordinator] ⚡ FitView optimization: Skipping unnecessary FitView operation",
+            {
+              reason: fitViewOptimized.skipReason,
+              estimatedSavings: "10ms",
+            }
+          );
         }
-      }
-
-      // Step 4: Update HydroscopeCore's React state if callback is available - FAIL FAST on errors
-      if (this.onReactFlowDataUpdate) {
-        this.onReactFlowDataUpdate(reactFlowData);
-        console.debug('[AsyncCoordinator] ✅ ReactFlow data update callback completed successfully');
       }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
+
       // PERFORMANCE OPTIMIZATION 3: Performance logging using local variables (no persistent caches)
-      this._logPipelinePerformanceMetrics(duration, performanceMetrics, reactFlowData, options);
+      this._logPipelinePerformanceMetrics(
+        duration,
+        performanceMetrics,
+        reactFlowData,
+        options
+      );
 
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Optimized synchronous layout and render pipeline failed:', {
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        performanceMetrics,
-        options,
-        timestamp: endTime
-      });
-      
+
+      console.error(
+        "[AsyncCoordinator] ❌ Optimized synchronous layout and render pipeline failed:",
+        {
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+          duration: `${duration}ms`,
+          performanceMetrics,
+          options,
+          timestamp: endTime,
+        }
+      );
+
       // Set error state
-      if (state && typeof state.setLayoutPhase === 'function') {
-        state.setLayoutPhase('error');
+      if (state && typeof state.setLayoutPhase === "function") {
+        state.setLayoutPhase("error");
       }
-      
+
       throw error;
     }
   }
@@ -556,39 +814,41 @@ export class AsyncCoordinator {
   private async executeELKLayoutAsync(
     state: any, // VisualizationState
     elkBridge: any, // ELKBridge instance
-    relayoutEntities?: string[], // undefined = full, [] = none, [ids] = constrained
+    relayoutEntities?: string[] // undefined = full, [] = none, [ids] = constrained
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
-      console.debug('[AsyncCoordinator] 🎯 Starting ELK layout execution', {
+      console.debug("[AsyncCoordinator] 🎯 Starting ELK layout execution", {
         relayoutEntities,
         elkBridgeAvailable: !!elkBridge,
         stateAvailable: !!state,
-        timestamp: startTime
+        timestamp: startTime,
       });
 
       // Set layout phase to indicate processing
-      if (state && typeof state.setLayoutPhase === 'function') {
+      if (state && typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("laying_out");
       }
 
       // Validate ELK bridge availability
       if (!elkBridge) {
-        throw new Error('ELKBridge instance is required for layout operations');
+        throw new Error("ELKBridge instance is required for layout operations");
       }
 
-      if (typeof elkBridge.layout !== 'function') {
-        throw new Error('ELKBridge layout method is not available');
+      if (typeof elkBridge.layout !== "function") {
+        throw new Error("ELKBridge layout method is not available");
       }
 
       // Execute ELK layout calculation with timeout protection
       const layoutPromise = elkBridge.layout(state);
       const timeoutMs = 15000; // 15 second timeout for layout operations
-      
+
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          reject(new Error(`ELK layout operation timed out after ${timeoutMs}ms`));
+          reject(
+            new Error(`ELK layout operation timed out after ${timeoutMs}ms`)
+          );
         }, timeoutMs);
       });
 
@@ -596,42 +856,42 @@ export class AsyncCoordinator {
       await Promise.race([layoutPromise, timeoutPromise]);
 
       // Increment layout count for smart collapse logic
-      if (state && typeof state.incrementLayoutCount === 'function') {
+      if (state && typeof state.incrementLayoutCount === "function") {
         state.incrementLayoutCount();
       }
 
       // Set layout phase to ready after successful ELK layout
-      if (state && typeof state.setLayoutPhase === 'function') {
+      if (state && typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("ready");
       }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ ELK layout completed successfully', {
+
+      console.debug("[AsyncCoordinator] ✅ ELK layout completed successfully", {
         duration: `${duration}ms`,
         relayoutEntities,
-        timestamp: endTime
+        timestamp: endTime,
       });
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ ELK layout operation failed:', {
+
+      console.error("[AsyncCoordinator] ❌ ELK layout operation failed:", {
         error: (error as Error).message,
         stack: (error as Error).stack,
         duration: `${duration}ms`,
         relayoutEntities,
         elkBridgeAvailable: !!elkBridge,
         stateAvailable: !!state,
-        timestamp: endTime
+        timestamp: endTime,
       });
-      
+
       // Set error state but don't prevent recovery
-      if (state && typeof state.setLayoutPhase === 'function') {
+      if (state && typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("error");
       }
-      
+
       throw error;
     }
   }
@@ -639,86 +899,110 @@ export class AsyncCoordinator {
   /**
    * Generate ReactFlow data synchronously (private helper for synchronous pipeline)
    */
-  private generateReactFlowDataSync(state: any): any { // ReactFlowData
+  private generateReactFlowDataSync(state: any): any {
+    // ReactFlowData
     const startTime = Date.now();
-    
+
     try {
-      console.debug('[AsyncCoordinator] 🎨 Starting ReactFlow data generation', {
-        stateAvailable: !!state,
-        timestamp: startTime
-      });
+      console.debug(
+        "[AsyncCoordinator] 🎨 Starting ReactFlow data generation",
+        {
+          stateAvailable: !!state,
+          timestamp: startTime,
+        }
+      );
 
       // Validate state availability
       if (!state) {
-        throw new Error('VisualizationState instance is required for ReactFlow data generation');
+        throw new Error(
+          "VisualizationState instance is required for ReactFlow data generation"
+        );
       }
 
       // Set layout phase to indicate rendering
-      if (typeof state.setLayoutPhase === 'function') {
+      if (typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("rendering");
       }
 
-      // Get ReactFlowBridge instance synchronously using imported bridge factory
-      const reactFlowBridge = bridgeFactory.getReactFlowBridge();
-      
+      // Get ReactFlowBridge instance - prefer direct instance, fallback to bridge factory
+      const reactFlowBridge = this.reactFlowBridge || bridgeFactory.getReactFlowBridge();
+
       if (!reactFlowBridge) {
-        throw new Error('ReactFlowBridge instance is not available from bridge factory');
+        throw new Error(
+          "ReactFlowBridge instance is not available (neither direct instance nor bridge factory)"
+        );
       }
 
-      if (typeof reactFlowBridge.toReactFlowData !== 'function') {
-        throw new Error('ReactFlowBridge toReactFlowData method is not available');
+      if (typeof reactFlowBridge.toReactFlowData !== "function") {
+        throw new Error(
+          "ReactFlowBridge toReactFlowData method is not available"
+        );
       }
 
       // Convert to ReactFlow format using current VisualizationState data
-      const reactFlowData = reactFlowBridge.toReactFlowData(state);
+      // Type assertion: we know the actual VisualizationState implementation is compatible
+      const reactFlowData = reactFlowBridge.toReactFlowData(
+        state as any,
+        this.interactionHandler
+      );
 
       // Validate generated data structure
-      if (!reactFlowData || typeof reactFlowData !== 'object') {
-        throw new Error('ReactFlowBridge returned invalid data structure');
+      if (!reactFlowData || typeof reactFlowData !== "object") {
+        throw new Error("ReactFlowBridge returned invalid data structure");
       }
 
       if (!Array.isArray(reactFlowData.nodes)) {
-        console.warn('[AsyncCoordinator] ⚠️ ReactFlow data missing nodes array, using empty array');
+        console.warn(
+          "[AsyncCoordinator] ⚠️ ReactFlow data missing nodes array, using empty array"
+        );
         (reactFlowData as any).nodes = [];
       }
 
       if (!Array.isArray(reactFlowData.edges)) {
-        console.warn('[AsyncCoordinator] ⚠️ ReactFlow data missing edges array, using empty array');
+        console.warn(
+          "[AsyncCoordinator] ⚠️ ReactFlow data missing edges array, using empty array"
+        );
         (reactFlowData as any).edges = [];
       }
 
       // Set layout phase to displayed
-      if (typeof state.setLayoutPhase === 'function') {
+      if (typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("displayed");
       }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ ReactFlow data generation completed successfully', {
-        duration: `${duration}ms`,
-        nodesCount: reactFlowData.nodes.length,
-        edgesCount: reactFlowData.edges.length,
-        timestamp: endTime
-      });
+
+      console.debug(
+        "[AsyncCoordinator] ✅ ReactFlow data generation completed successfully",
+        {
+          duration: `${duration}ms`,
+          nodesCount: reactFlowData.nodes.length,
+          edgesCount: reactFlowData.edges.length,
+          timestamp: endTime,
+        }
+      );
 
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Synchronous ReactFlow render operation failed:', {
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        stateAvailable: !!state,
-        timestamp: endTime
-      });
-      
-      if (state && typeof state.setLayoutPhase === 'function') {
+
+      console.error(
+        "[AsyncCoordinator] ❌ Synchronous ReactFlow render operation failed:",
+        {
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+          duration: `${duration}ms`,
+          stateAvailable: !!state,
+          timestamp: endTime,
+        }
+      );
+
+      if (state && typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("error");
       }
-      
+
       throw error;
     }
   }
@@ -728,7 +1012,7 @@ export class AsyncCoordinator {
    */
   cancelReactFlowOperation(operationId: string): boolean {
     const index = this.queue.findIndex(
-      (op) => op.id === operationId && op.type === "reactflow_render",
+      (op) => op.id === operationId && op.type === "reactflow_render"
     );
     if (index !== -1) {
       this.queue.splice(index, 1);
@@ -746,7 +1030,7 @@ export class AsyncCoordinator {
     lastFailed?: QueuedOperation;
   } {
     const reactFlowOps = this.queue.filter(
-      (op) => op.type === "reactflow_render",
+      (op) => op.type === "reactflow_render"
     );
     const currentReactFlow = this.currentOperation?.type === "reactflow_render";
     const lastCompleted = [...this.completedOperations]
@@ -770,7 +1054,7 @@ export class AsyncCoordinator {
   async queueRenderConfigUpdate(
     state: any, // VisualizationState - using any to avoid circular dependency
     updates: any, // RenderConfig updates
-    options: QueueOptions = {},
+    options: QueueOptions = {}
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const operation = async () => {
@@ -781,13 +1065,16 @@ export class AsyncCoordinator {
           const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
           const reactFlowBridge = bridgeFactory.getReactFlowBridge();
           // Generate new ReactFlow data with updated config
-          const reactFlowData = reactFlowBridge.toReactFlowData(state);
+          const reactFlowData = reactFlowBridge.toReactFlowData(
+            state,
+            this.interactionHandler
+          );
           resolve(reactFlowData);
           return reactFlowData;
         } catch (error) {
           console.error(
             `[AsyncCoordinator] ❌ Render config update failed:`,
-            error,
+            error
           );
           reject(error);
           throw error;
@@ -810,7 +1097,7 @@ export class AsyncCoordinator {
    */
   private processStateChange(
     event: ApplicationEvent,
-    _options: QueueOptions = {},
+    _options: QueueOptions = {}
   ): void {
     // Process the application event synchronously based on its type
     this.processApplicationEventSync(event);
@@ -822,9 +1109,7 @@ export class AsyncCoordinator {
   /**
    * Process individual application event synchronously
    */
-  private processApplicationEventSync(
-    event: ApplicationEvent,
-  ): void {
+  private processApplicationEventSync(event: ApplicationEvent): void {
     switch (event.type) {
       case "container_expand":
         this.handleContainerExpandEventSync(event);
@@ -850,7 +1135,7 @@ export class AsyncCoordinator {
    * Process individual application event (legacy async version)
    */
   private async processApplicationEvent(
-    event: ApplicationEvent,
+    event: ApplicationEvent
   ): Promise<void> {
     switch (event.type) {
       case "container_expand":
@@ -875,9 +1160,7 @@ export class AsyncCoordinator {
   /**
    * Handle container expand event synchronously
    */
-  private handleContainerExpandEventSync(
-    event: ApplicationEvent,
-  ): void {
+  private handleContainerExpandEventSync(event: ApplicationEvent): void {
     const { containerId, state, isTreeOperation } = event.payload;
     if (!containerId || !state) {
       throw new Error("Container expand event missing required payload");
@@ -888,7 +1171,7 @@ export class AsyncCoordinator {
         (state as any).expandTreeNodes([containerId]);
       } else {
         console.warn(
-          `[AsyncCoordinator] expandTreeNodes method not available on state`,
+          `[AsyncCoordinator] expandTreeNodes method not available on state`
         );
       }
     } else {
@@ -897,7 +1180,7 @@ export class AsyncCoordinator {
         (state as any)._expandContainerForCoordinator(containerId);
       } else {
         console.warn(
-          `[AsyncCoordinator] _expandContainerForCoordinator method not available on state`,
+          `[AsyncCoordinator] _expandContainerForCoordinator method not available on state`
         );
       }
     }
@@ -909,7 +1192,7 @@ export class AsyncCoordinator {
    * Handle container expand event (legacy async version)
    */
   private async handleContainerExpandEvent(
-    event: ApplicationEvent,
+    event: ApplicationEvent
   ): Promise<void> {
     const { containerId, state, isTreeOperation } = event.payload;
     if (!containerId || !state) {
@@ -921,7 +1204,7 @@ export class AsyncCoordinator {
         (state as any).expandTreeNodes([containerId]);
       } else {
         console.warn(
-          `[AsyncCoordinator] expandTreeNodes method not available on state`,
+          `[AsyncCoordinator] expandTreeNodes method not available on state`
         );
       }
     } else {
@@ -930,7 +1213,7 @@ export class AsyncCoordinator {
         (state as any)._expandContainerForCoordinator(containerId);
       } else {
         console.warn(
-          `[AsyncCoordinator] _expandContainerForCoordinator method not available on state`,
+          `[AsyncCoordinator] _expandContainerForCoordinator method not available on state`
         );
       }
     }
@@ -940,11 +1223,8 @@ export class AsyncCoordinator {
   /**
    * Handle container collapse event synchronously
    */
-  private handleContainerCollapseEventSync(
-    event: ApplicationEvent,
-  ): void {
-    const { containerId, state, isTreeOperation } =
-      event.payload;
+  private handleContainerCollapseEventSync(event: ApplicationEvent): void {
+    const { containerId, state, isTreeOperation } = event.payload;
     if (!containerId || !state) {
       throw new Error("Container collapse event missing required payload");
     }
@@ -954,7 +1234,7 @@ export class AsyncCoordinator {
         (state as any).collapseTreeNodes([containerId]);
       } else {
         console.warn(
-          `[AsyncCoordinator] collapseTreeNodes method not available on state`,
+          `[AsyncCoordinator] collapseTreeNodes method not available on state`
         );
       }
     } else {
@@ -963,7 +1243,7 @@ export class AsyncCoordinator {
         (state as any)._collapseContainerForCoordinator(containerId);
       } else {
         console.warn(
-          `[AsyncCoordinator] _collapseContainerForCoordinator method not available on state`,
+          `[AsyncCoordinator] _collapseContainerForCoordinator method not available on state`
         );
       }
     }
@@ -975,7 +1255,7 @@ export class AsyncCoordinator {
    * Handle container collapse event (legacy async version)
    */
   private async handleContainerCollapseEvent(
-    event: ApplicationEvent,
+    event: ApplicationEvent
   ): Promise<void> {
     const { containerId, state, triggerValidation, isTreeOperation } =
       event.payload;
@@ -988,7 +1268,7 @@ export class AsyncCoordinator {
         (state as any).collapseTreeNodes([containerId]);
       } else {
         console.warn(
-          `[AsyncCoordinator] collapseTreeNodes method not available on state`,
+          `[AsyncCoordinator] collapseTreeNodes method not available on state`
         );
       }
     } else {
@@ -997,19 +1277,19 @@ export class AsyncCoordinator {
         (state as any)._collapseContainerForCoordinator(containerId);
       } else {
         console.warn(
-          `[AsyncCoordinator] _collapseContainerForCoordinator method not available on state`,
+          `[AsyncCoordinator] _collapseContainerForCoordinator method not available on state`
         );
       }
     }
     // Trigger ReactFlow validation if requested (only for container operations)
     if (triggerValidation && !isTreeOperation) {
       try {
-        // Use proper sequencing through generateReactFlowData instead of direct bridge access
-        await this.generateReactFlowData(state as any);
+        // Use imperative ReactFlow data generation for better performance
+        this.generateReactFlowDataImperative(state as any);
       } catch (error) {
         console.error(
           `[AsyncCoordinator] ❌ ReactFlow validation failed after container ${containerId} collapse event:`,
-          error,
+          error
         );
         // Don't throw - validation failure shouldn't break the collapse operation
       }
@@ -1020,9 +1300,7 @@ export class AsyncCoordinator {
   /**
    * Handle container expand all event synchronously
    */
-  private handleContainerExpandAllEventSync(
-    event: ApplicationEvent,
-  ): void {
+  private handleContainerExpandAllEventSync(event: ApplicationEvent): void {
     const { containerIds, state } = event.payload;
     if (!state) {
       throw new Error("Container expand all event missing required payload");
@@ -1044,7 +1322,7 @@ export class AsyncCoordinator {
    * Handle container expand all event (legacy async version)
    */
   private async handleContainerExpandAllEvent(
-    event: ApplicationEvent,
+    event: ApplicationEvent
   ): Promise<void> {
     const { containerIds, state } = event.payload;
     if (!state) {
@@ -1124,9 +1402,7 @@ export class AsyncCoordinator {
   /**
    * Handle layout config change event synchronously
    */
-  private handleLayoutConfigChangeEventSync(
-    event: ApplicationEvent,
-  ): void {
+  private handleLayoutConfigChangeEventSync(event: ApplicationEvent): void {
     const { config, state } = event.payload;
     if (!config || !state) {
       throw new Error("Layout config change event missing required payload");
@@ -1140,7 +1416,7 @@ export class AsyncCoordinator {
    * Handle layout config change event (legacy async version)
    */
   private async handleLayoutConfigChangeEvent(
-    event: ApplicationEvent,
+    event: ApplicationEvent
   ): Promise<void> {
     const { config, state } = event.payload;
     if (!config || !state) {
@@ -1154,7 +1430,7 @@ export class AsyncCoordinator {
    * Get event priority for queue ordering
    */
   private getEventPriority(
-    eventType: ApplicationEvent["type"],
+    eventType: ApplicationEvent["type"]
   ): "high" | "normal" | "low" {
     switch (eventType) {
       case "container_expand":
@@ -1183,7 +1459,7 @@ export class AsyncCoordinator {
    */
   cancelApplicationEvent(operationId: string): boolean {
     const index = this.queue.findIndex(
-      (op) => op.id === operationId && op.type === "application_event",
+      (op) => op.id === operationId && op.type === "application_event"
     );
     if (index !== -1) {
       this.queue.splice(index, 1);
@@ -1219,7 +1495,7 @@ export class AsyncCoordinator {
     queuedByType: Record<string, number>;
   } {
     const appEventOps = this.queue.filter(
-      (op) => op.type === "application_event",
+      (op) => op.type === "application_event"
     );
     const currentAppEvent = this.currentOperation?.type === "application_event";
     const lastCompleted = [...this.completedOperations]
@@ -1266,30 +1542,34 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
-    } = {},
-  ): Promise<any> { // ReactFlowData
+    } = {}
+  ): Promise<any> {
+    // ReactFlowData
     const startTime = Date.now();
-    
+
     try {
-      console.debug('[AsyncCoordinator] 📦 Starting container expand operation', {
-        containerId,
-        relayoutEntities: options.relayoutEntities,
-        fitView: options.fitView,
-        timestamp: startTime
-      });
+      console.debug(
+        "[AsyncCoordinator] 📦 Starting container expand operation",
+        {
+          containerId,
+          relayoutEntities: options.relayoutEntities,
+          fitView: options.fitView,
+          timestamp: startTime,
+        }
+      );
 
       // Validate inputs
       if (!containerId) {
-        throw new Error('Container ID is required for expand operation');
+        throw new Error("Container ID is required for expand operation");
       }
       if (!state) {
-        throw new Error('VisualizationState is required for expand operation');
+        throw new Error("VisualizationState is required for expand operation");
       }
-      
+
       // Get ELK bridge from bridge factory - no need to pass it as parameter
       const elkBridge = bridgeFactory.getELKBridge();
       if (!elkBridge) {
-        throw new Error('ELK bridge is not available from bridge factory');
+        throw new Error("ELK bridge is not available from bridge factory");
       }
 
       // Process state change synchronously with error handling
@@ -1304,20 +1584,25 @@ export class AsyncCoordinator {
           },
           timestamp: Date.now(),
         };
-        
+
         this.processStateChange(event);
-        console.debug('[AsyncCoordinator] ✅ Container state change processed successfully', { containerId });
+        console.debug(
+          "[AsyncCoordinator] ✅ Container state change processed successfully",
+          { containerId }
+        );
       } catch (stateError) {
-        console.error('[AsyncCoordinator] ❌ Container state change failed:', {
+        console.error("[AsyncCoordinator] ❌ Container state change failed:", {
           containerId,
           error: (stateError as Error).message,
-          stack: (stateError as Error).stack
+          stack: (stateError as Error).stack,
         });
-        throw new Error(`Failed to expand container ${containerId}: ${(stateError as Error).message}`);
+        throw new Error(
+          `Failed to expand container ${containerId}: ${(stateError as Error).message}`
+        );
       }
-      
+
       // Use enhanced pipeline for layout and render with graceful error handling
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: options.relayoutEntities || [containerId],
         fitView: options.fitView,
         fitViewOptions: options.fitViewOptions,
@@ -1327,29 +1612,35 @@ export class AsyncCoordinator {
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ Container expand operation completed successfully', {
-        containerId,
-        duration: `${duration}ms`,
-        nodesCount: reactFlowData?.nodes?.length || 0,
-        edgesCount: reactFlowData?.edges?.length || 0,
-        timestamp: endTime
-      });
+
+      console.debug(
+        "[AsyncCoordinator] ✅ Container expand operation completed successfully",
+        {
+          containerId,
+          duration: `${duration}ms`,
+          nodesCount: reactFlowData?.nodes?.length || 0,
+          edgesCount: reactFlowData?.edges?.length || 0,
+          timestamp: endTime,
+        }
+      );
 
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Container expand operation failed:', {
-        containerId,
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        options,
-        timestamp: endTime
-      });
-      
+
+      console.error(
+        "[AsyncCoordinator] ❌ Container expand operation failed:",
+        {
+          containerId,
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+          duration: `${duration}ms`,
+          options,
+          timestamp: endTime,
+        }
+      );
+
       throw error;
     }
   }
@@ -1367,30 +1658,36 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
-    } = {},
-  ): Promise<any> { // ReactFlowData
+    } = {}
+  ): Promise<any> {
+    // ReactFlowData
     const startTime = Date.now();
-    
+
     try {
-      console.debug('[AsyncCoordinator] 📦 Starting container collapse operation', {
-        containerId,
-        relayoutEntities: options.relayoutEntities,
-        fitView: options.fitView,
-        timestamp: startTime
-      });
+      console.debug(
+        "[AsyncCoordinator] 📦 Starting container collapse operation",
+        {
+          containerId,
+          relayoutEntities: options.relayoutEntities,
+          fitView: options.fitView,
+          timestamp: startTime,
+        }
+      );
 
       // Validate inputs
       if (!containerId) {
-        throw new Error('Container ID is required for collapse operation');
+        throw new Error("Container ID is required for collapse operation");
       }
       if (!state) {
-        throw new Error('VisualizationState is required for collapse operation');
+        throw new Error(
+          "VisualizationState is required for collapse operation"
+        );
       }
-      
+
       // Get ELK bridge from bridge factory - no need to pass it as parameter
       const elkBridge = bridgeFactory.getELKBridge();
       if (!elkBridge) {
-        throw new Error('ELK bridge is not available from bridge factory');
+        throw new Error("ELK bridge is not available from bridge factory");
       }
 
       // Process state change synchronously with error handling
@@ -1405,20 +1702,25 @@ export class AsyncCoordinator {
           },
           timestamp: Date.now(),
         };
-        
+
         this.processStateChange(event);
-        console.debug('[AsyncCoordinator] ✅ Container state change processed successfully', { containerId });
+        console.debug(
+          "[AsyncCoordinator] ✅ Container state change processed successfully",
+          { containerId }
+        );
       } catch (stateError) {
-        console.error('[AsyncCoordinator] ❌ Container state change failed:', {
+        console.error("[AsyncCoordinator] ❌ Container state change failed:", {
           containerId,
           error: (stateError as Error).message,
-          stack: (stateError as Error).stack
+          stack: (stateError as Error).stack,
         });
-        throw new Error(`Failed to collapse container ${containerId}: ${(stateError as Error).message}`);
+        throw new Error(
+          `Failed to collapse container ${containerId}: ${(stateError as Error).message}`
+        );
       }
-      
+
       // Use enhanced pipeline for layout and render with graceful error handling
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: options.relayoutEntities || [containerId],
         fitView: options.fitView,
         fitViewOptions: options.fitViewOptions,
@@ -1428,29 +1730,35 @@ export class AsyncCoordinator {
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ Container collapse operation completed successfully', {
-        containerId,
-        duration: `${duration}ms`,
-        nodesCount: reactFlowData?.nodes?.length || 0,
-        edgesCount: reactFlowData?.edges?.length || 0,
-        timestamp: endTime
-      });
+
+      console.debug(
+        "[AsyncCoordinator] ✅ Container collapse operation completed successfully",
+        {
+          containerId,
+          duration: `${duration}ms`,
+          nodesCount: reactFlowData?.nodes?.length || 0,
+          edgesCount: reactFlowData?.edges?.length || 0,
+          timestamp: endTime,
+        }
+      );
 
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Container collapse operation failed:', {
-        containerId,
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        options,
-        timestamp: endTime
-      });
-      
+
+      console.error(
+        "[AsyncCoordinator] ❌ Container collapse operation failed:",
+        {
+          containerId,
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+          duration: `${duration}ms`,
+          options,
+          timestamp: endTime,
+        }
+      );
+
       throw error;
     }
   }
@@ -1477,14 +1785,15 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
-    } = {},
-  ): Promise<any> { // ReactFlowData
+    } = {}
+  ): Promise<any> {
+    // ReactFlowData
     const startTime = Date.now();
-    
+
     // Handle backward compatibility - if second parameter is options object, use it
     let containerIds: string[] | undefined;
     let actualOptions = options;
-    
+
     try {
       if (containerIdsOrOptions) {
         if (Array.isArray(containerIdsOrOptions)) {
@@ -1497,24 +1806,29 @@ export class AsyncCoordinator {
         }
       }
 
-      console.debug('[AsyncCoordinator] 📦 Starting expand all containers operation', {
-        containerIds,
-        relayoutEntities: actualOptions.relayoutEntities,
-        fitView: actualOptions.fitView,
-        timestamp: startTime
-      });
+      console.debug(
+        "[AsyncCoordinator] 📦 Starting expand all containers operation",
+        {
+          containerIds,
+          relayoutEntities: actualOptions.relayoutEntities,
+          fitView: actualOptions.fitView,
+          timestamp: startTime,
+        }
+      );
 
       // Validate inputs
       if (!state) {
-        throw new Error('VisualizationState is required for expand all containers operation');
+        throw new Error(
+          "VisualizationState is required for expand all containers operation"
+        );
       }
-      
+
       // Get ELK bridge from bridge factory - no need to pass it as parameter
       const elkBridge = bridgeFactory.getELKBridge();
       if (!elkBridge) {
-        throw new Error('ELK bridge is not available from bridge factory');
+        throw new Error("ELK bridge is not available from bridge factory");
       }
-      
+
       // Process state change synchronously with error handling
       try {
         const event: ApplicationEvent = {
@@ -1527,22 +1841,30 @@ export class AsyncCoordinator {
           },
           timestamp: Date.now(),
         };
-        
+
         this.processStateChange(event);
-        console.debug('[AsyncCoordinator] ✅ Expand all containers state change processed successfully', {
-          containerIds: containerIds?.length || 'all'
-        });
+        console.debug(
+          "[AsyncCoordinator] ✅ Expand all containers state change processed successfully",
+          {
+            containerIds: containerIds?.length || "all",
+          }
+        );
       } catch (stateError) {
-        console.error('[AsyncCoordinator] ❌ Expand all containers state change failed:', {
-          containerIds,
-          error: (stateError as Error).message,
-          stack: (stateError as Error).stack
-        });
-        throw new Error(`Failed to expand all containers: ${(stateError as Error).message}`);
+        console.error(
+          "[AsyncCoordinator] ❌ Expand all containers state change failed:",
+          {
+            containerIds,
+            error: (stateError as Error).message,
+            stack: (stateError as Error).stack,
+          }
+        );
+        throw new Error(
+          `Failed to expand all containers: ${(stateError as Error).message}`
+        );
       }
-      
+
       // Use enhanced pipeline for layout and render (full layout for expand all)
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: actualOptions.relayoutEntities, // undefined = full layout for expand all
         fitView: actualOptions.fitView,
         fitViewOptions: actualOptions.fitViewOptions,
@@ -1552,29 +1874,37 @@ export class AsyncCoordinator {
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ Expand all containers operation completed successfully', {
-        containerIds: containerIds?.length || 'all',
-        duration: `${duration}ms`,
-        nodesCount: reactFlowData?.nodes?.length || 0,
-        edgesCount: reactFlowData?.edges?.length || 0,
-        timestamp: endTime
-      });
+
+      console.debug(
+        "[AsyncCoordinator] ✅ Expand all containers operation completed successfully",
+        {
+          containerIds: containerIds?.length || "all",
+          duration: `${duration}ms`,
+          nodesCount: reactFlowData?.nodes?.length || 0,
+          edgesCount: reactFlowData?.edges?.length || 0,
+          timestamp: endTime,
+        }
+      );
 
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Expand all containers operation failed:', {
-        containerIds: Array.isArray(containerIdsOrOptions) ? containerIdsOrOptions : 'all',
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        options: actualOptions,
-        timestamp: endTime
-      });
-      
+
+      console.error(
+        "[AsyncCoordinator] ❌ Expand all containers operation failed:",
+        {
+          containerIds: Array.isArray(containerIdsOrOptions)
+            ? containerIdsOrOptions
+            : "all",
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+          duration: `${duration}ms`,
+          options: actualOptions,
+          timestamp: endTime,
+        }
+      );
+
       throw error;
     }
   }
@@ -1601,14 +1931,15 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
-    } = {},
-  ): Promise<any> { // ReactFlowData
+    } = {}
+  ): Promise<any> {
+    // ReactFlowData
     const startTime = Date.now();
-    
+
     // Handle backward compatibility - if second parameter is options object, use it
     let containerIds: string[] | undefined;
     let actualOptions = options;
-    
+
     try {
       if (containerIdsOrOptions) {
         if (Array.isArray(containerIdsOrOptions)) {
@@ -1621,53 +1952,65 @@ export class AsyncCoordinator {
         }
       }
 
-      console.debug('[AsyncCoordinator] 📦 Starting collapse all containers operation', {
-        containerIds,
-        relayoutEntities: actualOptions.relayoutEntities,
-        fitView: actualOptions.fitView,
-        timestamp: startTime
-      });
+      console.debug(
+        "[AsyncCoordinator] 📦 Starting collapse all containers operation",
+        {
+          containerIds,
+          relayoutEntities: actualOptions.relayoutEntities,
+          fitView: actualOptions.fitView,
+          timestamp: startTime,
+        }
+      );
 
       // Validate inputs
       if (!state) {
-        throw new Error('VisualizationState is required for collapse all containers operation');
+        throw new Error(
+          "VisualizationState is required for collapse all containers operation"
+        );
       }
-      
+
       // Get ELK bridge from bridge factory - no need to pass it as parameter
       const elkBridge = bridgeFactory.getELKBridge();
       if (!elkBridge) {
-        throw new Error('ELK bridge is not available from bridge factory');
+        throw new Error("ELK bridge is not available from bridge factory");
       }
-      
+
       // Get containers to collapse - either specified list or all expanded containers
       let containersToCollapse: any[] = [];
       try {
         if (containerIds && containerIds.length > 0) {
           // Collapse only specified containers that are currently expanded
-          containersToCollapse = state.visibleContainers?.filter(
-            (container: any) =>
-              containerIds!.includes(container.id) && !container.collapsed,
-          ) || [];
+          containersToCollapse =
+            state.visibleContainers?.filter(
+              (container: any) =>
+                containerIds!.includes(container.id) && !container.collapsed
+            ) || [];
         } else {
           // Collapse all expanded containers (existing behavior)
-          containersToCollapse = state.visibleContainers?.filter(
-            (container: any) => !container.collapsed,
-          ) || [];
+          containersToCollapse =
+            state.visibleContainers?.filter(
+              (container: any) => !container.collapsed
+            ) || [];
         }
 
-        console.debug('[AsyncCoordinator] 📋 Found containers to collapse', {
+        console.debug("[AsyncCoordinator] 📋 Found containers to collapse", {
           totalContainers: containersToCollapse.length,
-          containerIds: containersToCollapse.map((c: any) => c.id)
+          containerIds: containersToCollapse.map((c: any) => c.id),
         });
       } catch (containerError) {
-        console.error('[AsyncCoordinator] ❌ Failed to identify containers to collapse:', {
-          containerIds,
-          error: (containerError as Error).message,
-          stack: (containerError as Error).stack
-        });
-        throw new Error(`Failed to identify containers to collapse: ${(containerError as Error).message}`);
+        console.error(
+          "[AsyncCoordinator] ❌ Failed to identify containers to collapse:",
+          {
+            containerIds,
+            error: (containerError as Error).message,
+            stack: (containerError as Error).stack,
+          }
+        );
+        throw new Error(
+          `Failed to identify containers to collapse: ${(containerError as Error).message}`
+        );
       }
-      
+
       // Process state changes synchronously for all containers with error handling
       const successfullyCollapsed: string[] = [];
       for (const container of containersToCollapse) {
@@ -1685,22 +2028,26 @@ export class AsyncCoordinator {
           this.processStateChange(event);
           successfullyCollapsed.push(container.id);
         } catch (stateError) {
-          console.warn('[AsyncCoordinator] ⚠️ Failed to collapse container, continuing with others:', {
-            containerId: container.id,
-            error: (stateError as Error).message
-          });
+          console.warn(
+            "[AsyncCoordinator] ⚠️ Failed to collapse container, continuing with others:",
+            {
+              containerId: container.id,
+              error: (stateError as Error).message,
+            }
+          );
           // Continue with other containers
         }
       }
 
-      console.debug('[AsyncCoordinator] ✅ Container state changes processed', {
+      console.debug("[AsyncCoordinator] ✅ Container state changes processed", {
         totalRequested: containersToCollapse.length,
         successfullyCollapsed: successfullyCollapsed.length,
-        failedContainers: containersToCollapse.length - successfullyCollapsed.length
+        failedContainers:
+          containersToCollapse.length - successfullyCollapsed.length,
       });
-      
+
       // Use enhanced pipeline for layout and render (full layout for collapse all)
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: actualOptions.relayoutEntities, // undefined = full layout for collapse all
         fitView: actualOptions.fitView,
         fitViewOptions: actualOptions.fitViewOptions,
@@ -1710,35 +2057,43 @@ export class AsyncCoordinator {
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ Collapse all containers operation completed successfully', {
-        containerIds: containerIds?.length || 'all',
-        collapsedCount: successfullyCollapsed.length,
-        duration: `${duration}ms`,
-        nodesCount: reactFlowData?.nodes?.length || 0,
-        edgesCount: reactFlowData?.edges?.length || 0,
-        timestamp: endTime
-      });
+
+      console.debug(
+        "[AsyncCoordinator] ✅ Collapse all containers operation completed successfully",
+        {
+          containerIds: containerIds?.length || "all",
+          collapsedCount: successfullyCollapsed.length,
+          duration: `${duration}ms`,
+          nodesCount: reactFlowData?.nodes?.length || 0,
+          edgesCount: reactFlowData?.edges?.length || 0,
+          timestamp: endTime,
+        }
+      );
 
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Collapse all containers operation failed:', {
-        containerIds: Array.isArray(containerIdsOrOptions) ? containerIdsOrOptions : 'all',
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        options: actualOptions,
-        timestamp: endTime
-      });
-      
+
+      console.error(
+        "[AsyncCoordinator] ❌ Collapse all containers operation failed:",
+        {
+          containerIds: Array.isArray(containerIdsOrOptions)
+            ? containerIdsOrOptions
+            : "all",
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+          duration: `${duration}ms`,
+          options: actualOptions,
+          timestamp: endTime,
+        }
+      );
+
       throw error;
     }
   }
   // Legacy methods for backward compatibility (deprecated - use enhanced pipeline methods)
-  
+
   // REMOVED: Deprecated methods queueELKLayout, queueReactFlowRender, queueApplicationEvent
   // These methods encouraged manual orchestration patterns and have been replaced by:
   // - executeLayoutAndRenderPipeline for complete pipeline operations
@@ -1753,7 +2108,7 @@ export class AsyncCoordinator {
   async recoverFromContainerOperationError(
     operationId: string,
     _state: any, // VisualizationState
-    recoveryAction: "retry" | "rollback" | "skip" = "retry",
+    recoveryAction: "retry" | "rollback" | "skip" = "retry"
   ): Promise<void> {
     const failedOp = this.failedOperations.find((op) => op.id === operationId);
     if (!failedOp) {
@@ -1779,7 +2134,7 @@ export class AsyncCoordinator {
       case "skip":
         // Simply remove the failed operation from the failed list and continue
         this.failedOperations = this.failedOperations.filter(
-          (op) => op.id !== operationId,
+          (op) => op.id !== operationId
         );
         break;
       default:
@@ -1820,10 +2175,10 @@ export class AsyncCoordinator {
           .length,
         processing: this.currentOperation?.type === "application_event",
         completed: this.completedOperations.filter(
-          (op) => op.type === "application_event",
+          (op) => op.type === "application_event"
         ).length,
         failed: this.failedOperations.filter(
-          (op) => op.type === "application_event",
+          (op) => op.type === "application_event"
         ).length,
       },
       collapseOperations: {
@@ -1849,7 +2204,7 @@ export class AsyncCoordinator {
   expandTreeNode(
     nodeId: string,
     state: any, // VisualizationState
-    _options: QueueOptions = {},
+    _options: QueueOptions = {}
   ): void {
     const event: ApplicationEvent = {
       type: "container_expand", // Reuse container expand event type
@@ -1870,7 +2225,7 @@ export class AsyncCoordinator {
   collapseTreeNode(
     nodeId: string,
     state: any, // VisualizationState
-    _options: QueueOptions = {},
+    _options: QueueOptions = {}
   ): void {
     const event: ApplicationEvent = {
       type: "container_collapse", // Reuse container collapse event type
@@ -1891,7 +2246,7 @@ export class AsyncCoordinator {
   expandAllTreeNodes(
     state: any, // VisualizationState
     nodeIds?: string[], // Optional list, defaults to all nodes
-    options: QueueOptions = {},
+    options: QueueOptions = {}
   ): void {
     // Get nodes to expand - either specified list or all collapsed nodes
     const nodesToExpand =
@@ -1911,7 +2266,7 @@ export class AsyncCoordinator {
   collapseAllTreeNodes(
     state: any, // VisualizationState
     nodeIds?: string[], // Optional list, defaults to all nodes
-    options: QueueOptions = {},
+    options: QueueOptions = {}
   ): void {
     // Get nodes to collapse - either specified list or all expanded nodes
     const nodesToCollapse =
@@ -1931,7 +2286,7 @@ export class AsyncCoordinator {
   async navigateToElement(
     elementId: string,
     visualizationState: any, // VisualizationState
-    reactFlowInstance?: any,
+    reactFlowInstance?: any
   ): Promise<void> {
     // Set navigation selection in state
     if (visualizationState.navigateToElement) {
@@ -1947,7 +2302,7 @@ export class AsyncCoordinator {
    */
   async focusViewportOnElement(
     elementId: string,
-    reactFlowInstance: any,
+    reactFlowInstance: any
   ): Promise<void> {
     if (!reactFlowInstance) {
       throw new Error("ReactFlow instance is required for viewport focus");
@@ -1962,13 +2317,13 @@ export class AsyncCoordinator {
         reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
       } else {
         console.warn(
-          `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
+          `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`
         );
       }
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Failed to focus viewport on ${elementId}:`,
-        error,
+        error
       );
       throw error;
     }
@@ -1985,7 +2340,7 @@ export class AsyncCoordinator {
       layoutConfig?: any;
       timeout?: number;
       maxRetries?: number;
-    } = {},
+    } = {}
   ): ErrorRecoveryResult {
     try {
       // Execute synchronously (respecting core architecture)
@@ -1998,12 +2353,12 @@ export class AsyncCoordinator {
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Container expansion failed for ${containerId}:`,
-        error,
+        error
       );
       // Log container expansion error
       console.error(
         `[AsyncCoordinator] Container expansion failed for: ${containerId}`,
-        error,
+        error
       );
       return {
         success: false,
@@ -2030,7 +2385,7 @@ export class AsyncCoordinator {
       layoutConfig?: any;
       timeout?: number;
       maxRetries?: number;
-    } = {},
+    } = {}
   ): ErrorRecoveryResult {
     try {
       // Execute synchronously (respecting core architecture)
@@ -2043,7 +2398,7 @@ export class AsyncCoordinator {
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Batch container expansion failed:`,
-        error,
+        error
       );
       // Determine which containers were being expanded
       let containerIds: string[];
@@ -2058,7 +2413,7 @@ export class AsyncCoordinator {
       // Log container expansion error
       console.error(
         `[AsyncCoordinator] Container expansion failed for: ${containerIds.join(", ")}`,
-        error,
+        error
       );
       return {
         success: false,
@@ -2076,7 +2431,7 @@ export class AsyncCoordinator {
     _options: {
       timeout?: number;
       maxRetries?: number;
-    } = {},
+    } = {}
   ): ErrorRecoveryResult {
     try {
       // Execute synchronously (respecting core architecture)
@@ -2093,12 +2448,12 @@ export class AsyncCoordinator {
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Tree node expansion failed for ${nodeId}:`,
-        error,
+        error
       );
       // Log tree expansion error
       console.error(
         `[AsyncCoordinator] Tree expansion failed for node: ${nodeId}`,
-        error,
+        error
       );
       return {
         success: false,
@@ -2117,7 +2472,7 @@ export class AsyncCoordinator {
     _options: {
       timeout?: number;
       maxRetries?: number;
-    } = {},
+    } = {}
   ): ErrorRecoveryResult {
     try {
       // Execute synchronously (respecting core architecture)
@@ -2134,12 +2489,12 @@ export class AsyncCoordinator {
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Navigation failed for element ${elementId}:`,
-        error,
+        error
       );
       // Log navigation error
       console.error(
         `[AsyncCoordinator] Navigation failed for element: ${elementId}`,
-        error,
+        error
       );
       return {
         success: false,
@@ -2156,7 +2511,7 @@ export class AsyncCoordinator {
     _options: {
       timeout?: number;
       maxRetries?: number;
-    } = {},
+    } = {}
   ): ErrorRecoveryResult {
     // TODO: Implement actual viewport focusing logic
     // For now, just return success as this is a placeholder implementation
@@ -2176,7 +2531,7 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       expandContainers?: boolean;
-    } = {},
+    } = {}
   ): {
     results: any[];
     recovery?: ErrorRecoveryResult;
@@ -2190,7 +2545,7 @@ export class AsyncCoordinator {
       if (options.expandContainers && searchResults.length > 0) {
         const containerIds = this._getContainersForSearchResults(
           searchResults,
-          state,
+          state
         );
         if (containerIds.length > 0) {
           try {
@@ -2198,7 +2553,7 @@ export class AsyncCoordinator {
           } catch (expansionError) {
             console.warn(
               `[AsyncCoordinator] Container expansion failed during search:`,
-              expansionError,
+              expansionError
             );
             // Continue with search results even if expansion fails
           }
@@ -2208,12 +2563,12 @@ export class AsyncCoordinator {
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Search failed for query "${query}":`,
-        error,
+        error
       );
       // Log search error
       console.error(
         `[AsyncCoordinator] Search failed for query: "${query}"`,
-        error,
+        error
       );
       return {
         results: [],
@@ -2234,132 +2589,161 @@ export class AsyncCoordinator {
   async updateSearchResults(
     query: string,
     state: any, // VisualizationState
-    elkBridge: any, // ELKBridge instance
     options: {
       // Container expansion control - whether search triggers container expansion (requires layout)
       expandContainers?: boolean;
-      
+
       // FitView control - handled internally, no callbacks needed
       fitView?: boolean;
       fitViewOptions?: { padding?: number; duration?: number };
-      
+
       // Standard options
       timeout?: number;
       maxRetries?: number;
-    } = {},
-  ): Promise<any> { // ReactFlowData
+    } = {}
+  ): Promise<any> {
+    // ReactFlowData
     const startTime = Date.now();
-    
+
     try {
-      console.debug('[AsyncCoordinator] 🔍 Starting search update operation', {
+      console.debug("[AsyncCoordinator] 🔍 Starting search update operation", {
         query,
         expandContainers: options.expandContainers,
         fitView: options.fitView,
-        timestamp: startTime
+        timestamp: startTime,
       });
 
       // Validate inputs
       if (!state) {
-        throw new Error('VisualizationState is required for search operations');
+        throw new Error("VisualizationState is required for search operations");
+      }
+
+      // Get ELK bridge from bridge factory - no need to pass it as parameter
+      const elkBridge = bridgeFactory.getELKBridge();
+      if (!elkBridge) {
+        throw new Error("ELK bridge is not available from bridge factory");
       }
 
       // Step 1: Perform search in VisualizationState (synchronous) - FAIL FAST on errors
       const searchResults = state.search ? state.search(query) : [];
-      console.debug('[AsyncCoordinator] ✅ Search completed successfully', {
+      console.debug("[AsyncCoordinator] ✅ Search completed successfully", {
         query,
-        resultsCount: searchResults.length
+        resultsCount: searchResults.length,
       });
-      
+
       // Step 2: Optionally expand containers containing search results
       if (options.expandContainers && searchResults.length > 0) {
         // Find containers that need to be expanded for search results
-        const containerIds = this._getContainersForSearchResults(searchResults, state);
-        
+        const containerIds = this._getContainersForSearchResults(
+          searchResults,
+          state
+        );
+
         if (containerIds && containerIds.length > 0) {
-          console.debug('[AsyncCoordinator] 📦 Expanding containers for search results', {
-            containerIds,
-            resultsCount: searchResults.length
-          });
+          console.debug(
+            "[AsyncCoordinator] 📦 Expanding containers for search results",
+            {
+              containerIds,
+              resultsCount: searchResults.length,
+            }
+          );
 
           // Expand containers synchronously - FAIL FAST on errors
           for (const containerId of containerIds) {
             if (!state._expandContainerForCoordinator) {
-              throw new Error(`Container expansion method not available for container: ${containerId}`);
+              throw new Error(
+                `Container expansion method not available for container: ${containerId}`
+              );
             }
             state._expandContainerForCoordinator(containerId);
           }
-          
+
           // Execute layout and render pipeline with container expansion
-          const reactFlowData = await this.executeLayoutAndRenderPipeline(state, elkBridge, {
-            relayoutEntities: containerIds, // Re-layout expanded containers
-            fitView: options.fitView,
-            fitViewOptions: options.fitViewOptions,
-            timeout: options.timeout,
-            maxRetries: options.maxRetries,
-          });
+          const reactFlowData = await this.executeLayoutAndRenderPipeline(
+            state,
+            {
+              relayoutEntities: containerIds, // Re-layout expanded containers
+              fitView: options.fitView,
+              fitViewOptions: options.fitViewOptions,
+              timeout: options.timeout,
+              maxRetries: options.maxRetries,
+            }
+          );
 
           const endTime = Date.now();
           const duration = endTime - startTime;
-          
-          console.debug('[AsyncCoordinator] ✅ Search update with container expansion completed successfully', {
-            query,
-            duration: `${duration}ms`,
-            expandedContainers: containerIds.length,
-            resultsCount: searchResults.length,
-            timestamp: endTime
-          });
+
+          console.debug(
+            "[AsyncCoordinator] ✅ Search update with container expansion completed successfully",
+            {
+              query,
+              duration: `${duration}ms`,
+              expandedContainers: containerIds.length,
+              resultsCount: searchResults.length,
+              timestamp: endTime,
+            }
+          );
 
           return reactFlowData;
         }
       }
-      
+
       // Step 3: If no container expansion needed, just update ReactFlow with search highlights - FAIL FAST
       const reactFlowData = this.generateReactFlowDataSync(state);
-      console.debug('[AsyncCoordinator] ✅ ReactFlow data generated for search highlighting');
-      
+      console.debug(
+        "[AsyncCoordinator] ✅ ReactFlow data generated for search highlighting"
+      );
+
       // Step 4: Trigger FitView if enabled (for search results highlighting) - FAIL FAST
       if (options.fitView && this.onFitViewRequested) {
         this.onFitViewRequested(options.fitViewOptions);
-        console.debug('[AsyncCoordinator] ✅ FitView triggered for search results');
+        console.debug(
+          "[AsyncCoordinator] ✅ FitView triggered for search results"
+        );
       }
-      
+
       // Step 5: Update HydroscopeCore's React state if callback is available - FAIL FAST
       if (this.onReactFlowDataUpdate) {
         this.onReactFlowDataUpdate(reactFlowData);
-        console.debug('[AsyncCoordinator] ✅ ReactFlow data update callback completed for search');
+        console.debug(
+          "[AsyncCoordinator] ✅ ReactFlow data update callback completed for search"
+        );
       }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ Search update completed successfully', {
-        query,
-        duration: `${duration}ms`,
-        resultsCount: searchResults.length,
-        expandContainers: options.expandContainers,
-        fitView: options.fitView,
-        timestamp: endTime
-      });
-      
+
+      console.debug(
+        "[AsyncCoordinator] ✅ Search update completed successfully",
+        {
+          query,
+          duration: `${duration}ms`,
+          resultsCount: searchResults.length,
+          expandContainers: options.expandContainers,
+          fitView: options.fitView,
+          timestamp: endTime,
+        }
+      );
+
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Search update failed:', {
+
+      console.error("[AsyncCoordinator] ❌ Search update failed:", {
         query,
         error: (error as Error).message,
         stack: (error as Error).stack,
         duration: `${duration}ms`,
         options,
-        timestamp: endTime
+        timestamp: endTime,
       });
-      
+
       // Set error state
-      if (state && typeof state.setLayoutPhase === 'function') {
-        state.setLayoutPhase('error');
+      if (state && typeof state.setLayoutPhase === "function") {
+        state.setLayoutPhase("error");
       }
-      
+
       throw error;
     }
   }
@@ -2370,7 +2754,7 @@ export class AsyncCoordinator {
   executeWithErrorRecovery<T>(
     operation: () => T,
     operationType: string,
-    context?: Record<string, any>,
+    context?: Record<string, any>
   ): {
     result?: T;
     recovery?: ErrorRecoveryResult;
@@ -2381,12 +2765,12 @@ export class AsyncCoordinator {
     } catch (error) {
       console.error(
         `[AsyncCoordinator] Operation "${operationType}" failed:`,
-        error,
+        error
       );
       // Log operation timeout
       console.error(
         `[AsyncCoordinator] Operation "${operationType}" timed out`,
-        { context },
+        { context }
       );
       return {
         recovery: {
@@ -2429,7 +2813,7 @@ export class AsyncCoordinator {
     groupingId: string,
     data: any, // HydroscopeData
     onDataUpdate: (updatedData: any) => void,
-    options: QueueOptions = {},
+    options: QueueOptions = {}
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const operation = async () => {
@@ -2440,10 +2824,10 @@ export class AsyncCoordinator {
           // Move the selected hierarchy to the front so it becomes the active one
           if (updatedData.hierarchyChoices) {
             const selectedChoice = updatedData.hierarchyChoices.find(
-              (choice: any) => choice.id === groupingId,
+              (choice: any) => choice.id === groupingId
             );
             const otherChoices = updatedData.hierarchyChoices.filter(
-              (choice: any) => choice.id !== groupingId,
+              (choice: any) => choice.id !== groupingId
             );
             if (selectedChoice) {
               updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
@@ -2456,7 +2840,7 @@ export class AsyncCoordinator {
         } catch (error) {
           console.error(
             `[AsyncCoordinator] ❌ Hierarchy change to ${groupingId} failed:`,
-            error,
+            error
           );
           reject(error);
           throw error;
@@ -2474,6 +2858,143 @@ export class AsyncCoordinator {
     });
   }
   /**
+   * Unified render config update pipeline
+   * Handles layout algorithm changes, style updates, and other configuration changes
+   * 
+   * @param visualizationState - The VisualizationState instance to update
+   * @param configUpdates - The configuration updates to apply
+   * @param options - Pipeline execution options
+   * @returns Promise<ReactFlowData> when complete pipeline is finished
+   */
+  async updateRenderConfig(
+    visualizationState: any, // VisualizationState - using any to avoid circular dependency
+    configUpdates: {
+      layoutAlgorithm?: string;
+      edgeStyle?: string;
+      edgeWidth?: number;
+      edgeDashed?: boolean;
+      nodePadding?: number;
+      nodeFontSize?: number;
+      containerBorderWidth?: number;
+      colorPalette?: string;
+      [key: string]: any; // Allow other config properties
+    },
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      relayoutEntities?: string[]; // For targeted re-layout
+      timeout?: number;
+      maxRetries?: number;
+    } = {}
+  ): Promise<any> { // ReactFlowData
+    const startTime = Date.now();
+
+    try {
+      console.log(`🚀 AsyncCoordinator: Starting render config update pipeline`, configUpdates);
+
+      // Apply configuration updates to VisualizationState
+      if (typeof visualizationState.updateRenderConfig === 'function') {
+        visualizationState.updateRenderConfig(configUpdates);
+        console.log(`🔧 AsyncCoordinator: Applied render config updates to VisualizationState`);
+      } else {
+        console.warn(`[AsyncCoordinator] VisualizationState.updateRenderConfig not available`);
+      }
+
+      // Determine if we need to re-layout based on the config changes
+      const needsRelayout = this._configChangeRequiresRelayout(configUpdates);
+      
+      if (needsRelayout) {
+        console.log(`🔄 AsyncCoordinator: Config change requires re-layout`, {
+          layoutAlgorithm: configUpdates.layoutAlgorithm,
+          relayoutEntities: options.relayoutEntities
+        });
+
+        // Execute complete pipeline: layout + render + fitView
+        const reactFlowData = await this.executeLayoutAndRenderPipeline(
+          visualizationState,
+          {
+            relayoutEntities: options.relayoutEntities, // Use provided entities or full layout
+            fitView: options.fitView !== false, // Default to true unless explicitly disabled
+            fitViewOptions: options.fitViewOptions,
+          }
+        );
+
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        console.log(
+          `✅ AsyncCoordinator: Render config update pipeline completed with re-layout`,
+          { 
+            duration: `${duration}ms`,
+            nodeCount: reactFlowData?.nodes?.length || 0,
+            edgeCount: reactFlowData?.edges?.length || 0,
+            configUpdates
+          }
+        );
+
+        return reactFlowData;
+      } else {
+        console.log(`🎨 AsyncCoordinator: Config change only requires re-render (no layout)`);
+
+        // Only re-render without layout using imperative method
+        const reactFlowData = this.generateReactFlowDataImperative(visualizationState);
+
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        console.log(
+          `✅ AsyncCoordinator: Render config update pipeline completed with re-render only`,
+          { 
+            duration: `${duration}ms`,
+            nodeCount: reactFlowData?.nodes?.length || 0,
+            edgeCount: reactFlowData?.edges?.length || 0,
+            configUpdates
+          }
+        );
+
+        return reactFlowData;
+      }
+
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.error(`[AsyncCoordinator] Render config update pipeline failed:`, {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        duration: `${duration}ms`,
+        configUpdates,
+        timestamp: endTime,
+      });
+
+      // Set error state on VisualizationState if possible
+      if (visualizationState && typeof visualizationState.setLayoutPhase === 'function') {
+        visualizationState.setLayoutPhase('error');
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Determine if configuration changes require re-layout or just re-render
+   */
+  private _configChangeRequiresRelayout(configUpdates: any): boolean {
+    // Layout algorithm changes always require re-layout
+    if (configUpdates.layoutAlgorithm) {
+      return true;
+    }
+
+    // Node/container size changes require re-layout
+    if (configUpdates.nodePadding || configUpdates.nodeFontSize || configUpdates.containerBorderWidth) {
+      return true;
+    }
+
+    // Style-only changes (colors, edge styles) only need re-render
+    return false;
+  }
+
+  /**
    * Get status of hierarchy change operations
    */
   getHierarchyChangeStatus(): {
@@ -2483,7 +3004,7 @@ export class AsyncCoordinator {
     lastFailed?: QueuedOperation;
   } {
     const hierarchyOps = this.queue.filter(
-      (op) => op.type === "hierarchy_change",
+      (op) => op.type === "hierarchy_change"
     );
     const currentHierarchy = this.currentOperation?.type === "hierarchy_change";
     const lastCompleted = [...this.completedOperations]
@@ -2500,6 +3021,113 @@ export class AsyncCoordinator {
     };
   }
 
+  /**
+   * Unified search integration pipeline
+   * Handles search execution, result highlighting, and optional container expansion
+   * 
+   * @param visualizationState - The VisualizationState instance
+   * @param searchQuery - The search query to execute
+   * @param options - Search and pipeline options
+   * @returns Promise<ReactFlowData> when complete pipeline is finished
+   */
+  async executeSearchPipeline(
+    visualizationState: any, // VisualizationState - using any to avoid circular dependency
+    searchQuery: string | null,
+    options: {
+      expandContainersOnSearch?: boolean;
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {}
+  ): Promise<any> { // ReactFlowData
+    const startTime = Date.now();
+
+    try {
+      console.log(`🔍 AsyncCoordinator: Starting search pipeline`, { 
+        searchQuery, 
+        expandContainersOnSearch: options.expandContainersOnSearch 
+      });
+
+      if (searchQuery && searchQuery.trim()) {
+        // Execute search
+        if (typeof visualizationState.performSearch === 'function') {
+          const searchResults = visualizationState.performSearch(searchQuery);
+          console.log(`🔍 AsyncCoordinator: Search executed`, { 
+            query: searchQuery,
+            resultCount: searchResults?.length || 0 
+          });
+
+          // Expand containers if requested and search found results
+          if (options.expandContainersOnSearch && searchResults && searchResults.length > 0) {
+            console.log(`🔍 AsyncCoordinator: Expanding containers for search results`);
+            
+            // Use existing expandAllContainers method
+            await this.expandAllContainers(
+              visualizationState,
+              {
+                relayoutEntities: undefined, // Full layout after expansion
+                fitView: false, // Don't fit view yet, do it after final render
+              }
+            );
+          }
+        } else {
+          console.warn(`[AsyncCoordinator] VisualizationState.performSearch not available`);
+        }
+      } else {
+        // Clear search
+        if (typeof visualizationState.clearSearch === 'function') {
+          visualizationState.clearSearch();
+          console.log(`🔍 AsyncCoordinator: Search cleared`);
+        }
+      }
+
+      // Re-render to show search highlights
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(
+        visualizationState,
+        {
+          relayoutEntities: [], // No layout needed, just re-render for highlights
+          fitView: options.fitView !== false, // Default to true unless explicitly disabled
+          fitViewOptions: options.fitViewOptions,
+        }
+      );
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.log(
+        `✅ AsyncCoordinator: Search pipeline completed`,
+        { 
+          duration: `${duration}ms`,
+          searchQuery,
+          nodeCount: reactFlowData?.nodes?.length || 0,
+          edgeCount: reactFlowData?.edges?.length || 0 
+        }
+      );
+
+      return reactFlowData;
+
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.error(`[AsyncCoordinator] Search pipeline failed:`, {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        duration: `${duration}ms`,
+        searchQuery,
+        timestamp: endTime,
+      });
+
+      // Set error state on VisualizationState if possible
+      if (visualizationState && typeof visualizationState.setLayoutPhase === 'function') {
+        visualizationState.setLayoutPhase('error');
+      }
+
+      throw error;
+    }
+  }
+
   // PERFORMANCE OPTIMIZATION METHODS (STATELESS)
 
   /**
@@ -2514,45 +3142,56 @@ export class AsyncCoordinator {
   ): boolean {
     // If full layout is requested (relayoutEntities is undefined), never skip
     if (relayoutEntities === undefined) {
-      console.debug('[AsyncCoordinator] ⚡ State analysis: Full layout requested, cannot skip');
+      console.debug(
+        "[AsyncCoordinator] ⚡ State analysis: Full layout requested, cannot skip"
+      );
       return false;
     }
 
     // If specific entities are requested for layout, never skip
     if (relayoutEntities && relayoutEntities.length > 0) {
-      console.debug('[AsyncCoordinator] ⚡ State analysis: Specific entities requested for layout, cannot skip');
+      console.debug(
+        "[AsyncCoordinator] ⚡ State analysis: Specific entities requested for layout, cannot skip"
+      );
       return false;
     }
 
     // Use VisualizationState's existing cache invalidation mechanisms
     const currentSnapshot = this._createEphemeralStateSnapshot(state);
-    
+
     // Compare with last snapshot (ephemeral, stack-based)
-    const hasSignificantChanges = this._hasSignificantStateChanges(currentSnapshot);
-    
+    const hasSignificantChanges =
+      this._hasSignificantStateChanges(currentSnapshot);
+
     // Update last snapshot for next comparison (stateless - only in memory)
     this._lastStateSnapshot = currentSnapshot;
-    
+
     if (!hasSignificantChanges) {
-      console.debug('[AsyncCoordinator] ⚡ State analysis: No significant changes detected, layout can be skipped', {
+      console.debug(
+        "[AsyncCoordinator] ⚡ State analysis: No significant changes detected, layout can be skipped",
+        {
+          currentSnapshot: {
+            containerCount: currentSnapshot.containerCount,
+            nodeCount: currentSnapshot.nodeCount,
+            layoutPhase: currentSnapshot.layoutPhase,
+            cacheVersion: currentSnapshot.cacheVersion,
+          },
+        }
+      );
+      return true;
+    }
+
+    console.debug(
+      "[AsyncCoordinator] ⚡ State analysis: Significant changes detected, layout required",
+      {
         currentSnapshot: {
           containerCount: currentSnapshot.containerCount,
           nodeCount: currentSnapshot.nodeCount,
           layoutPhase: currentSnapshot.layoutPhase,
-          cacheVersion: currentSnapshot.cacheVersion
-        }
-      });
-      return true;
-    }
-
-    console.debug('[AsyncCoordinator] ⚡ State analysis: Significant changes detected, layout required', {
-      currentSnapshot: {
-        containerCount: currentSnapshot.containerCount,
-        nodeCount: currentSnapshot.nodeCount,
-        layoutPhase: currentSnapshot.layoutPhase,
-        cacheVersion: currentSnapshot.cacheVersion
+          cacheVersion: currentSnapshot.cacheVersion,
+        },
       }
-    });
+    );
     return false;
   }
 
@@ -2572,9 +3211,9 @@ export class AsyncCoordinator {
       containerCount: state.visibleContainers?.length || 0,
       nodeCount: state.visibleNodes?.length || 0,
       edgeCount: state.visibleEdges?.length || 0,
-      layoutPhase: state.layoutPhase || 'unknown',
+      layoutPhase: state.layoutPhase || "unknown",
       // Use VisualizationState's existing cache version if available
-      cacheVersion: state.getCacheVersion ? state.getCacheVersion() : undefined
+      cacheVersion: state.getCacheVersion ? state.getCacheVersion() : undefined,
     };
   }
 
@@ -2597,16 +3236,21 @@ export class AsyncCoordinator {
     const lastSnapshot = this._lastStateSnapshot;
 
     // Check cache version first (most efficient if available)
-    if (currentSnapshot.cacheVersion !== undefined && lastSnapshot.cacheVersion !== undefined) {
+    if (
+      currentSnapshot.cacheVersion !== undefined &&
+      lastSnapshot.cacheVersion !== undefined
+    ) {
       if (currentSnapshot.cacheVersion !== lastSnapshot.cacheVersion) {
         return true; // Cache version changed - significant change
       }
     }
 
     // Check structural changes
-    if (currentSnapshot.containerCount !== lastSnapshot.containerCount ||
-        currentSnapshot.nodeCount !== lastSnapshot.nodeCount ||
-        currentSnapshot.edgeCount !== lastSnapshot.edgeCount) {
+    if (
+      currentSnapshot.containerCount !== lastSnapshot.containerCount ||
+      currentSnapshot.nodeCount !== lastSnapshot.nodeCount ||
+      currentSnapshot.edgeCount !== lastSnapshot.edgeCount
+    ) {
       return true; // Structural changes detected
     }
 
@@ -2639,28 +3283,33 @@ export class AsyncCoordinator {
       return {
         shouldExecute: true,
         optimized: false,
-        optimizedOptions: fitViewOptions
+        optimizedOptions: fitViewOptions,
       };
     }
 
     // Check if there are any visible nodes to fit to
-    const visibleNodes = reactFlowData.nodes.filter((node: any) => !node.hidden);
+    const visibleNodes = reactFlowData.nodes.filter(
+      (node: any) => !node.hidden
+    );
     if (visibleNodes.length === 0) {
       return {
         shouldExecute: false,
         optimized: true,
-        skipReason: 'No visible nodes to fit view to'
+        skipReason: "No visible nodes to fit view to",
       };
     }
 
     // Optimize FitView options based on node count (stateless optimization)
-    const optimizedOptions = this._optimizeFitViewOptions(fitViewOptions, visibleNodes.length);
-    
+    const optimizedOptions = this._optimizeFitViewOptions(
+      fitViewOptions,
+      visibleNodes.length
+    );
+
     return {
       shouldExecute: true,
       optimized: optimizedOptions.optimized,
       optimizedOptions: optimizedOptions.options,
-      optimizationApplied: optimizedOptions.optimizationApplied
+      optimizationApplied: optimizedOptions.optimizationApplied,
     };
   }
 
@@ -2677,7 +3326,7 @@ export class AsyncCoordinator {
   } {
     const options = { ...originalOptions };
     let optimized = false;
-    let optimizationApplied = '';
+    let optimizationApplied = "";
 
     // Optimize duration based on node count
     if (nodeCount !== undefined) {
@@ -2685,12 +3334,12 @@ export class AsyncCoordinator {
         // Large graphs - reduce animation duration for better performance
         options.duration = Math.min(options.duration || 300, 150);
         optimized = true;
-        optimizationApplied = 'Reduced animation duration for large graph';
+        optimizationApplied = "Reduced animation duration for large graph";
       } else if (nodeCount < 10) {
         // Small graphs - can use longer animation for smoother experience
         options.duration = Math.max(options.duration || 300, 500);
         optimized = true;
-        optimizationApplied = 'Increased animation duration for small graph';
+        optimizationApplied = "Increased animation duration for small graph";
       }
     }
 
@@ -2699,14 +3348,56 @@ export class AsyncCoordinator {
       // Large graphs - reduce padding to show more content
       options.padding = Math.min(options.padding || 50, 20);
       optimized = true;
-      optimizationApplied += (optimizationApplied ? ', ' : '') + 'Reduced padding for large graph';
+      optimizationApplied +=
+        (optimizationApplied ? ", " : "") + "Reduced padding for large graph";
     }
 
     return {
       optimized,
       options,
-      optimizationApplied: optimizationApplied || undefined
+      optimizationApplied: optimizationApplied || undefined,
     };
+  }
+
+  /**
+   * Execute fitView directly using the ReactFlow instance
+   * This replaces the callback-based approach with direct ReactFlow integration
+   */
+  private async _executeFitViewDirect(
+    options?: { padding?: number; duration?: number }
+  ): Promise<void> {
+    if (!this.reactFlowInstance) {
+      console.warn('[AsyncCoordinator] ⚠️ ReactFlow instance not available for direct fitView');
+      // Fallback to callback if available
+      if (this.onFitViewRequested) {
+        console.log('[AsyncCoordinator] 🔄 Falling back to fitView callback');
+        this.onFitViewRequested(options);
+      }
+      return;
+    }
+
+    try {
+      console.log('[AsyncCoordinator] 🎯 Executing direct ReactFlow fitView', options);
+      
+      // Use a small delay to ensure ReactFlow has processed the node changes
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const fitViewOptions = {
+        padding: options?.padding || 0.15,
+        duration: options?.duration || 300,
+        includeHiddenNodes: false,
+      };
+
+      this.reactFlowInstance.fitView(fitViewOptions);
+      console.log('[AsyncCoordinator] ✅ Direct ReactFlow fitView completed');
+    } catch (error) {
+      console.error('[AsyncCoordinator] ❌ Error executing direct fitView:', error);
+      // Fallback to callback if available
+      if (this.onFitViewRequested) {
+        console.log('[AsyncCoordinator] 🔄 Falling back to fitView callback after error');
+        this.onFitViewRequested(options);
+      }
+    }
   }
 
   /**
@@ -2727,57 +3418,71 @@ export class AsyncCoordinator {
     options: any
   ): void {
     // Calculate performance statistics (local variables only)
-    const optimizationEfficiency = performanceMetrics.totalOptimizationSavings > 0 
-      ? (performanceMetrics.totalOptimizationSavings / totalDuration) * 100 
-      : 0;
-    
-    const layoutEfficiency = performanceMetrics.layoutDuration > 0 
-      ? (performanceMetrics.layoutDuration / totalDuration) * 100 
-      : 0;
-    
-    const renderEfficiency = performanceMetrics.renderDuration > 0 
-      ? (performanceMetrics.renderDuration / totalDuration) * 100 
-      : 0;
+    const optimizationEfficiency =
+      performanceMetrics.totalOptimizationSavings > 0
+        ? (performanceMetrics.totalOptimizationSavings / totalDuration) * 100
+        : 0;
+
+    const layoutEfficiency =
+      performanceMetrics.layoutDuration > 0
+        ? (performanceMetrics.layoutDuration / totalDuration) * 100
+        : 0;
+
+    const renderEfficiency =
+      performanceMetrics.renderDuration > 0
+        ? (performanceMetrics.renderDuration / totalDuration) * 100
+        : 0;
 
     // Log comprehensive performance metrics (no persistent storage)
-    console.debug('[AsyncCoordinator] 📊 Pipeline Performance Metrics', {
+    console.debug("[AsyncCoordinator] 📊 Pipeline Performance Metrics", {
       // Overall performance
       totalDuration: `${totalDuration}ms`,
       optimizationSavings: `${performanceMetrics.totalOptimizationSavings}ms`,
       optimizationEfficiency: `${optimizationEfficiency.toFixed(1)}%`,
-      
+
       // Phase breakdown
       stateChangeDetection: `${performanceMetrics.stateChangeDetection}ms`,
-      layoutDuration: performanceMetrics.layoutSkipped ? 'skipped' : `${performanceMetrics.layoutDuration}ms`,
+      layoutDuration: performanceMetrics.layoutSkipped
+        ? "skipped"
+        : `${performanceMetrics.layoutDuration}ms`,
       renderDuration: `${performanceMetrics.renderDuration}ms`,
       layoutEfficiency: `${layoutEfficiency.toFixed(1)}%`,
       renderEfficiency: `${renderEfficiency.toFixed(1)}%`,
-      
+
       // Optimization flags
       layoutSkipped: performanceMetrics.layoutSkipped,
       fitViewOptimized: performanceMetrics.fitViewOptimized,
-      
+
       // Data metrics
       nodesCount: reactFlowData?.nodes?.length || 0,
       edgesCount: reactFlowData?.edges?.length || 0,
-      
+
       // Configuration
       relayoutEntities: options.relayoutEntities,
       fitView: options.fitView,
-      
+
       // Performance classification
-      performanceClass: this._classifyPipelinePerformance(totalDuration, performanceMetrics),
-      
-      timestamp: Date.now()
+      performanceClass: this._classifyPipelinePerformance(
+        totalDuration,
+        performanceMetrics
+      ),
+
+      timestamp: Date.now(),
     });
 
     // Log performance warnings if needed (local analysis only)
     if (totalDuration > 1000) {
-      console.warn('[AsyncCoordinator] ⚠️ Pipeline performance warning: Slow execution detected', {
-        duration: `${totalDuration}ms`,
-        threshold: '1000ms',
-        suggestions: this._generatePerformanceSuggestions(totalDuration, performanceMetrics)
-      });
+      console.warn(
+        "[AsyncCoordinator] ⚠️ Pipeline performance warning: Slow execution detected",
+        {
+          duration: `${totalDuration}ms`,
+          threshold: "1000ms",
+          suggestions: this._generatePerformanceSuggestions(
+            totalDuration,
+            performanceMetrics
+          ),
+        }
+      );
     }
   }
 
@@ -2795,11 +3500,11 @@ export class AsyncCoordinator {
       totalOptimizationSavings: number;
     }
   ): string {
-    if (totalDuration < 100) return 'excellent';
-    if (totalDuration < 300) return 'good';
-    if (totalDuration < 500) return 'acceptable';
-    if (totalDuration < 1000) return 'slow';
-    return 'very-slow';
+    if (totalDuration < 100) return "excellent";
+    if (totalDuration < 300) return "good";
+    if (totalDuration < 500) return "acceptable";
+    if (totalDuration < 1000) return "slow";
+    return "very-slow";
   }
 
   /**
@@ -2819,19 +3524,30 @@ export class AsyncCoordinator {
     const suggestions: string[] = [];
 
     if (performanceMetrics.layoutDuration > totalDuration * 0.7) {
-      suggestions.push('Consider using constrained layout (relayoutEntities) instead of full layout');
+      suggestions.push(
+        "Consider using constrained layout (relayoutEntities) instead of full layout"
+      );
     }
 
     if (performanceMetrics.renderDuration > totalDuration * 0.5) {
-      suggestions.push('ReactFlow rendering is slow - consider reducing node/edge complexity');
+      suggestions.push(
+        "ReactFlow rendering is slow - consider reducing node/edge complexity"
+      );
     }
 
-    if (!performanceMetrics.layoutSkipped && performanceMetrics.stateChangeDetection < 5) {
-      suggestions.push('State change detection is fast but layout was not skipped - verify state change logic');
+    if (
+      !performanceMetrics.layoutSkipped &&
+      performanceMetrics.stateChangeDetection < 5
+    ) {
+      suggestions.push(
+        "State change detection is fast but layout was not skipped - verify state change logic"
+      );
     }
 
     if (performanceMetrics.totalOptimizationSavings === 0) {
-      suggestions.push('No optimizations were applied - consider enabling layout skipping or FitView optimization');
+      suggestions.push(
+        "No optimizations were applied - consider enabling layout skipping or FitView optimization"
+      );
     }
 
     return suggestions;
@@ -2841,17 +3557,20 @@ export class AsyncCoordinator {
    * Helper method to get containers that need to be expanded for search results
    * This is a stateless helper that analyzes search results and returns container IDs
    */
-  private _getContainersForSearchResults(searchResults: any[], state: any): string[] {
+  private _getContainersForSearchResults(
+    searchResults: any[],
+    state: any
+  ): string[] {
     const containerIds: string[] = [];
-    
+
     try {
       for (const result of searchResults) {
         if (result.type === "node") {
           // Find containers that contain this node and are currently collapsed
-          const containers = state.getContainersForNode 
+          const containers = state.getContainersForNode
             ? state.getContainersForNode(result.id)
             : [];
-          
+
           for (const container of containers) {
             if (container.collapsed && !containerIds.includes(container.id)) {
               containerIds.push(container.id);
@@ -2859,13 +3578,16 @@ export class AsyncCoordinator {
           }
         }
       }
-      
+
       return containerIds;
     } catch (error) {
-      console.warn('[AsyncCoordinator] ⚠️ Failed to get containers for search results:', {
-        error: (error as Error).message,
-        searchResultsCount: searchResults.length
-      });
+      console.warn(
+        "[AsyncCoordinator] ⚠️ Failed to get containers for search results:",
+        {
+          error: (error as Error).message,
+          searchResultsCount: searchResults.length,
+        }
+      );
       return [];
     }
   }

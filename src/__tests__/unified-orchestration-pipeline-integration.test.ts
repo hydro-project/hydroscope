@@ -32,6 +32,12 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
   describe("Atomic and Sequential Operations (Requirement 3.1, 3.2)", () => {
     it("should execute container operations atomically", async () => {
+      // Setup test nodes first (needed for FitView to work)
+      const node1 = createTestNode("n1", "Node 1");
+      const node2 = createTestNode("n2", "Node 2");
+      state.addNode(node1);
+      state.addNode(node2);
+
       // Setup test container
       state.addContainer({
         id: "test-container",
@@ -60,12 +66,13 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       const result = await asyncCoordinator.expandContainer(
         "test-container", 
         state, 
-        elkBridge, 
         {
           relayoutEntities: ["test-container"],
           fitView: true
         }
       );
+
+
 
       // Verify atomic completion
       expect(result).toBeDefined();
@@ -95,7 +102,8 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
           collapsed: true,
           position: { x: i * 100, y: 0 },
           size: { width: 100, height: 100 },
-          childNodes: [],
+          children: new Set(),
+        childNodes: [],
           childContainers: []
         });
       }
@@ -106,7 +114,6 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
         const result = await asyncCoordinator.expandContainer(
           `container-${i}`,
           state,
-          elkBridge,
           {
             relayoutEntities: [`container-${i}`],
             fitView: false
@@ -230,7 +237,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: undefined,
           fitView: false
         })
@@ -248,6 +255,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
         collapsed: true,
         position: { x: 0, y: 0 },
         size: { width: 100, height: 100 },
+        children: new Set(),
         childNodes: [],
         childContainers: []
       });
@@ -260,7 +268,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute container expand and expect it to throw
       await expect(
-        asyncCoordinator.expandContainer("test-container", state, elkBridge, {
+        asyncCoordinator.expandContainer("test-container", state, {
           relayoutEntities: ["test-container"],
           fitView: false
         })
@@ -282,7 +290,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute search and expect it to throw
       await expect(
-        asyncCoordinator.updateSearchResults("Test", state, elkBridge, {
+        asyncCoordinator.updateSearchResults("Test", state, {
           expandContainers: false,
           fitView: false
         })
@@ -303,7 +311,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: true
         })
@@ -321,7 +329,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute pipeline - should fail fast with clear error
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
           fitView: false
         })
@@ -331,7 +339,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
     it("should validate required parameters and provide meaningful errors", async () => {
       // Test missing state parameter
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(null as any, elkBridge)
+        asyncCoordinator.executeLayoutAndRenderPipeline(null as any)
       ).rejects.toThrow("VisualizationState instance is required for layout and render pipeline");
 
       // Test missing ELK bridge parameter
@@ -346,7 +354,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Test missing state for search operation
       await expect(
-        asyncCoordinator.updateSearchResults("test", null as any, elkBridge)
+        asyncCoordinator.updateSearchResults("test", null as any)
       ).rejects.toThrow("VisualizationState is required for search operations");
     });
 
@@ -369,7 +377,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute pipeline - should fail fast but log detailed error info first
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: undefined,
           fitView: false
         })
@@ -430,6 +438,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
         collapsed: true,
         position: { x: 0, y: 0 },
         size: { width: 100, height: 100 },
+        children: new Set(),
         childNodes: [],
         childContainers: []
       });
@@ -443,14 +452,14 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       expect(pipelineResult.edges).toBeDefined();
 
       const expandResult = await asyncCoordinator.expandContainer(
-        "test-container", state, elkBridge, { relayoutEntities: ["test-container"], fitView: false }
+        "test-container", state, { relayoutEntities: ["test-container"], fitView: false }
       );
       expect(expandResult).toBeDefined();
       expect(expandResult.nodes).toBeDefined();
       expect(expandResult.edges).toBeDefined();
 
       const collapseResult = await asyncCoordinator.collapseContainer(
-        "test-container", state, elkBridge, { relayoutEntities: ["test-container"], fitView: false }
+        "test-container", state, { relayoutEntities: ["test-container"], fitView: false }
       );
       expect(collapseResult).toBeDefined();
       expect(collapseResult.nodes).toBeDefined();
@@ -473,14 +482,15 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
           collapsed: true,
           position: { x: i * 100, y: 0 },
           size: { width: 100, height: 100 },
-          childNodes: [],
+          children: new Set(),
+        childNodes: [],
           childContainers: []
         });
       }
 
       // Test expand all
       const expandAllResult = await asyncCoordinator.expandAllContainers(
-        state, elkBridge, { relayoutEntities: undefined, fitView: false }
+        state, { relayoutEntities: undefined, fitView: false }
       );
       expect(expandAllResult).toBeDefined();
       expect(expandAllResult.nodes).toBeDefined();
@@ -494,7 +504,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Test collapse all
       const collapseAllResult = await asyncCoordinator.collapseAllContainers(
-        state, elkBridge, { relayoutEntities: undefined, fitView: false }
+        state, { relayoutEntities: undefined, fitView: false }
       );
       expect(collapseAllResult).toBeDefined();
       expect(collapseAllResult.nodes).toBeDefined();
@@ -522,7 +532,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       };
 
       // Execute pipeline with no layout
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [], // No layout
         fitView: false
       });
@@ -545,7 +555,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       };
 
       // Execute pipeline with FitView enabled and custom options
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true,
         fitViewOptions: { padding: 50, duration: 300 }
@@ -567,13 +577,13 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
 
       // Execute multiple operations concurrently
       const operations = [
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [], fitView: false
         }),
-        asyncCoordinator.updateSearchResults("Node", state, elkBridge, {
+        asyncCoordinator.updateSearchResults("Node", state, {
           expandContainers: false, fitView: false
         }),
-        asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+        asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [], fitView: false
         })
       ];
@@ -603,7 +613,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       };
 
       // Execute pipeline operation
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -623,7 +633,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       };
 
       // Execute with FitView disabled
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: false
       });
@@ -631,7 +641,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       expect(fitViewCallCount).toBe(0);
 
       // Execute with FitView enabled
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true
       });
@@ -649,7 +659,7 @@ describe("Unified Orchestration Pipeline Integration Tests", () => {
       };
 
       // Execute with custom FitView options
-      await asyncCoordinator.executeLayoutAndRenderPipeline(state, elkBridge, {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
         relayoutEntities: [],
         fitView: true,
         fitViewOptions: { padding: 100, duration: 500 }
