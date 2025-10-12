@@ -493,9 +493,12 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           fitView: false,
         });
 
-        // Trigger layout after expansion (AsyncCoordinator doesn't do this automatically)
+        // Trigger layout after expansion using new pipeline method
         const elkBridge = new ELKBridge();
-        await coordinator.queueELKLayout(visualizationState, elkBridge);
+        await coordinator.executeLayoutAndRenderPipeline(visualizationState, elkBridge, {
+          relayoutEntities: undefined, // Full layout
+          fitView: false
+        });
 
         // Convert to ReactFlow data to trigger edge validation
         const reactFlowBridge = new ReactFlowBridge({});

@@ -840,26 +840,41 @@ export const Hydroscope = memo<HydroscopeProps>(
                   try {
                     await hydroscopeCore.expandAll();
                   } catch (error) {
-                    // Fallback to ReactFlow render
-                    if (asyncCoordinator.queueReactFlowRender) {
-                      asyncCoordinator.queueReactFlowRender(
+                    // Fallback to ReactFlow render using new pipeline method
+                    if (asyncCoordinator.executeLayoutAndRenderPipeline) {
+                      asyncCoordinator.executeLayoutAndRenderPipeline(
                         currentVisualizationState,
+                        elkBridgeRef.current!,
+                        {
+                          relayoutEntities: [], // No layout, just render
+                          fitView: false
+                        }
                       );
                     }
                   }
                 } else {
                   // Search cleared - use ReactFlow render only
-                  if (asyncCoordinator.queueReactFlowRender) {
-                    asyncCoordinator.queueReactFlowRender(
+                  if (asyncCoordinator.executeLayoutAndRenderPipeline) {
+                    asyncCoordinator.executeLayoutAndRenderPipeline(
                       currentVisualizationState,
+                      elkBridgeRef.current!,
+                      {
+                        relayoutEntities: [], // No layout, just render
+                        fitView: false
+                      }
                     );
                   }
                 }
               } else {
                 // No HydroscopeCore, just queue ReactFlow render
-                if (asyncCoordinator.queueReactFlowRender) {
-                  asyncCoordinator.queueReactFlowRender(
+                if (asyncCoordinator.executeLayoutAndRenderPipeline) {
+                  asyncCoordinator.executeLayoutAndRenderPipeline(
                     currentVisualizationState,
+                    elkBridgeRef.current!,
+                    {
+                      relayoutEntities: [], // No layout, just render
+                      fitView: false
+                    }
                   );
                 }
               }

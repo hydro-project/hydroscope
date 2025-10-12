@@ -394,57 +394,12 @@ export class AsyncCoordinator {
       }
     });
   }
-  /**
-   * Queue complete layout and render pipeline with proper sequencing
-   * Ensures: ELK Layout → State Update → ReactFlow Render
-   * This is the recommended method for full layout updates
-   * 
-   * @deprecated Use executeLayoutAndRenderPipeline instead for better error handling
-   */
-  async queueLayoutAndRenderPipeline(
-    state: any, // VisualizationState - using any to avoid circular dependency
-    elkBridge: any, // ELKBridge instance
-    options: QueueOptions = {},
-  ): Promise<any> {
-    const startTime = Date.now();
-    
-    try {
-      console.debug('[AsyncCoordinator] 🔄 Starting legacy layout and render pipeline', {
-        timestamp: startTime
-      });
-
-      // Use the enhanced pipeline method for better error handling
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, elkBridge, {
-        relayoutEntities: undefined, // Full layout for legacy compatibility
-        fitView: false, // No FitView for legacy method
-        timeout: options.timeout,
-        maxRetries: options.maxRetries,
-      });
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      console.debug('[AsyncCoordinator] ✅ Legacy layout and render pipeline completed successfully', {
-        duration: `${duration}ms`,
-        timestamp: endTime
-      });
-
-      return reactFlowData;
-    } catch (error) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      console.error('[AsyncCoordinator] ❌ Legacy layout and render pipeline failed:', {
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-        duration: `${duration}ms`,
-        options,
-        timestamp: endTime
-      });
-      
-      throw error;
-    }
-  }
+  // REMOVED: Deprecated queueLayoutAndRenderPipeline method
+  // This method has been replaced by executeLayoutAndRenderPipeline which provides:
+  // - Better error handling with fail-fast behavior
+  // - Layout entity control (relayoutEntities parameter)
+  // - FitView integration
+  // - Synchronous execution semantics
 
   /**
    * Execute synchronous layout and render pipeline with layout entity control and FitView integration
@@ -860,39 +815,10 @@ export class AsyncCoordinator {
     // Process the application event synchronously based on its type
     this.processApplicationEventSync(event);
   }
-  /**
-   * Process application event and wait for completion (legacy async version)
-   */
-  async processApplicationEventAndWait(
-    event: ApplicationEvent,
-    options: QueueOptions = {},
-  ): Promise<void> {
-    const operation = async () => {
-      // Process the application event based on its type
-      await this.processApplicationEvent(event);
-      return "event_processed";
-    };
-    // Queue the operation
-    const operationId = this.queueOperation("application_event", operation, {
-      timeout: options.timeout || 5000, // 5 second default timeout
-      maxRetries: options.maxRetries || 1,
-    });
-    // Process the queue if not already processing
-    if (!this.processing) {
-      await this.processQueue();
-    }
-    // Check if our operation completed successfully
-    const completedOp = this.completedOperations.find(
-      (op) => op.id === operationId,
-    );
-    const failedOp = this.failedOperations.find((op) => op.id === operationId);
-    if (failedOp) {
-      throw failedOp.error || new Error("Application event processing failed");
-    }
-    if (!completedOp) {
-      throw new Error("Application event operation not found");
-    }
-  }
+  // REMOVED: Deprecated processApplicationEventAndWait method
+  // This method has been replaced by synchronous container and search methods:
+  // - expandContainer/collapseContainer for container operations
+  // - updateSearchResults for search operations
   /**
    * Process individual application event synchronously
    */
@@ -1813,37 +1739,11 @@ export class AsyncCoordinator {
   }
   // Legacy methods for backward compatibility (deprecated - use enhanced pipeline methods)
   
-  /**
-   * @deprecated Use executeELKLayout instead
-   */
-  async queueELKLayout(
-    state: any,
-    elkBridge: any,
-    options: QueueOptions = {},
-  ): Promise<void> {
-    return this.executeELKLayout(state, elkBridge, options);
-  }
-
-  /**
-   * @deprecated Use generateReactFlowData instead
-   */
-  async queueReactFlowRender(
-    state: any,
-    options: QueueOptions = {},
-  ): Promise<any> {
-    return this.generateReactFlowData(state, options);
-  }
-
-  /**
-   * @deprecated Use processStateChange instead
-   */
-  queueApplicationEvent(
-    event: ApplicationEvent,
-    options: QueueOptions = {},
-  ): string {
-    this.processStateChange(event, options);
-    return `legacy_${Date.now()}`; // Return a dummy ID for compatibility
-  }
+  // REMOVED: Deprecated methods queueELKLayout, queueReactFlowRender, queueApplicationEvent
+  // These methods encouraged manual orchestration patterns and have been replaced by:
+  // - executeLayoutAndRenderPipeline for complete pipeline operations
+  // - expandContainer/collapseContainer for container operations
+  // - updateSearchResults for search operations
 
   // Tree hierarchy and navigation methods are implemented later in the file
   // to avoid duplication with error handling methods

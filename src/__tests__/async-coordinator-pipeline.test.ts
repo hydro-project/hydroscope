@@ -29,9 +29,9 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     asyncCoordinator = new AsyncCoordinator();
   });
 
-  it("should have queueLayoutAndRenderPipeline method", () => {
-    expect(asyncCoordinator.queueLayoutAndRenderPipeline).toBeDefined();
-    expect(typeof asyncCoordinator.queueLayoutAndRenderPipeline).toBe(
+  it("should have executeLayoutAndRenderPipeline method (replacement for deprecated queueLayoutAndRenderPipeline)", () => {
+    expect(asyncCoordinator.executeLayoutAndRenderPipeline).toBeDefined();
+    expect(typeof asyncCoordinator.executeLayoutAndRenderPipeline).toBe(
       "function",
     );
   });
@@ -44,11 +44,15 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     state.addNode(node1);
     state.addNode(node2);
 
-    // Execute complete pipeline - should not throw
-    const result = await asyncCoordinator.queueLayoutAndRenderPipeline(
+    // Execute complete pipeline using new method - should not throw
+    const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
       state,
       elkBridge,
-      { timeout: 5000 },
+      { 
+        relayoutEntities: undefined, // Full layout
+        fitView: false,
+        timeout: 5000 
+      },
     );
 
     // Verify result is returned
@@ -62,8 +66,15 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     const node = createTestNode("n1", "Node 1");
     state.addNode(node);
 
-    // Execute pipeline - should complete without error
-    const result = await asyncCoordinator.queueLayoutAndRenderPipeline(state, elkBridge);
+    // Execute pipeline using new method - should complete without error
+    const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+      state, 
+      elkBridge,
+      {
+        relayoutEntities: undefined, // Full layout
+        fitView: false
+      }
+    );
 
     // Verify result is returned
     expect(result).toBeDefined();

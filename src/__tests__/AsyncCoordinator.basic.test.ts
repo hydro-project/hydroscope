@@ -149,35 +149,33 @@ describe("AsyncCoordinator - Basic API", () => {
 
   describe("Application Events", () => {
     it("should process container expand events", async () => {
-      const event: ApplicationEvent = {
-        type: "container_expand",
-        payload: {
-          containerId: "container1",
-          state: state,
-          fitView: false,
-        },
-        timestamp: Date.now(),
-      };
+      // Add a test container first
+      state.addContainer({
+        id: "container1",
+        label: "Test Container",
+        collapsed: true,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        childNodes: [],
+        childContainers: []
+      });
 
-      await coordinator.processApplicationEventAndWait(event);
+      // Use new synchronous container method instead of deprecated processApplicationEventAndWait
+      await coordinator.expandContainer("container1", state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+        relayoutEntities: ["container1"],
+        fitView: false
+      });
 
       const status = coordinator.getApplicationEventStatus();
       expect(status.lastCompleted).toBeDefined();
     });
 
     it("should process search events", async () => {
-      const event: ApplicationEvent = {
-        type: "search",
-        payload: {
-          query: "test",
-          state: state,
-          expandContainers: false,
-          fitView: false,
-        },
-        timestamp: Date.now(),
-      };
-
-      await coordinator.processApplicationEventAndWait(event);
+      // Use new synchronous search method instead of deprecated processApplicationEventAndWait
+      await coordinator.updateSearchResults("test", state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+        expandContainers: false,
+        fitView: false
+      });
 
       const status = coordinator.getApplicationEventStatus();
       expect(status.lastCompleted).toBeDefined();

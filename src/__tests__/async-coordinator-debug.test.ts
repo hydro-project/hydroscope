@@ -153,7 +153,10 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] 🚀 Starting ReactFlow render test");
 
       try {
-        const reactFlowData = await coordinator.queueReactFlowRender(state);
+        const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+          relayoutEntities: [], // No layout, just render
+          fitView: false
+        });
         expect(reactFlowData).toBeDefined();
         console.log(
           "[AsyncDebug] ✅ ReactFlow render test completed successfully",

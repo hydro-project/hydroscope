@@ -254,8 +254,11 @@ describe("Async Boundary Integration Tests", () => {
 
         operations.push(
           (async () => {
-            coordinator.queueApplicationEvent(event);
-            await coordinator.processQueue();
+            // Use new synchronous search method instead of deprecated queueApplicationEvent
+            await coordinator.updateSearchResults(event.payload.query, event.payload.state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+              expandContainers: event.payload.expandContainers,
+              fitView: false
+            });
           })(),
         );
       }
@@ -372,8 +375,11 @@ describe("Async Boundary Integration Tests", () => {
         };
 
         return (async () => {
-          coordinator.queueApplicationEvent(event);
-          await coordinator.processQueue();
+          // Use new synchronous search method instead of deprecated queueApplicationEvent
+          await coordinator.updateSearchResults(event.payload.query, event.payload.state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+            expandContainers: event.payload.expandContainers,
+            fitView: event.payload.fitView
+          });
         })();
       });
 
@@ -546,8 +552,11 @@ describe("Async Boundary Integration Tests", () => {
 
         operations.push(
           (async () => {
-            coordinator.queueApplicationEvent(event);
-            await coordinator.processQueue();
+            // Use new synchronous search method instead of deprecated queueApplicationEvent
+            await coordinator.updateSearchResults(event.payload.query, event.payload.state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+              expandContainers: event.payload.expandContainers,
+              fitView: false
+            });
             operationLog.push({
               type: "event",
               id: `search-${i}`,

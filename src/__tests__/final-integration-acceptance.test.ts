@@ -194,17 +194,26 @@ describe("Final Integration and Acceptance Testing", () => {
       // Test async coordinator functionality
       expect(asyncCoordinator.getQueueStatus()).toBeDefined();
 
-      // Test application event queuing
-      const operationId = asyncCoordinator.queueApplicationEvent({
-        type: "container_toggle",
-        payload: {
-          containerId: "test-container",
-        },
-        timestamp: Date.now(),
+      // Test container operation using new synchronous methods
+      // First add a container to the state
+      visualizationState.addContainer({
+        id: "test-container",
+        label: "Test Container",
+        collapsed: true,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        childNodes: [],
+        childContainers: []
       });
 
-      expect(operationId).toBeDefined();
-      expect(typeof operationId).toBe("string");
+      const result = await asyncCoordinator.expandContainer("test-container", visualizationState, elkBridge, {
+        relayoutEntities: ["test-container"],
+        fitView: false
+      });
+
+      expect(result).toBeDefined();
+      expect(result.nodes).toBeDefined();
+      expect(result.edges).toBeDefined();
 
       // Test ELK layout queuing
       visualizationState.addNode({
@@ -216,7 +225,7 @@ describe("Final Integration and Acceptance Testing", () => {
         hidden: false,
       });
 
-      const layoutPromise = asyncCoordinator.queueELKLayout(
+      const layoutPromise = asyncCoordinator.executeLayoutAndRenderPipeline(
         visualizationState,
         {
           algorithm: "mrtree",
@@ -423,26 +432,42 @@ describe("Final Integration and Acceptance Testing", () => {
       const status1 = asyncCoordinator.getQueueStatus();
       expect(status1).toBeDefined();
 
-      // Queue multiple operations
-      const op1 = asyncCoordinator.queueApplicationEvent({
-        type: "container_toggle",
-        payload: {
-          containerId: "test1",
-        },
-        timestamp: Date.now(),
+      // Test multiple container operations using new synchronous methods
+      // Add test containers
+      visualizationState.addContainer({
+        id: "test1",
+        label: "Test Container 1",
+        collapsed: true,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        childNodes: [],
+        childContainers: []
+      });
+      
+      visualizationState.addContainer({
+        id: "test2",
+        label: "Test Container 2",
+        collapsed: true,
+        position: { x: 200, y: 0 },
+        size: { width: 100, height: 100 },
+        childNodes: [],
+        childContainers: []
       });
 
-      const op2 = asyncCoordinator.queueApplicationEvent({
-        type: "container_toggle",
-        payload: {
-          containerId: "test2",
-        },
-        timestamp: Date.now(),
+      const result1 = await asyncCoordinator.expandContainer("test1", visualizationState, elkBridge, {
+        relayoutEntities: ["test1"],
+        fitView: false
       });
 
-      expect(op1).toBeDefined();
-      expect(op2).toBeDefined();
-      expect(op1).not.toBe(op2); // Different operation IDs
+      const result2 = await asyncCoordinator.expandContainer("test2", visualizationState, elkBridge, {
+        relayoutEntities: ["test2"],
+        fitView: false
+      });
+
+      expect(result1).toBeDefined();
+      expect(result2).toBeDefined();
+      expect(result1.nodes).toBeDefined();
+      expect(result2.nodes).toBeDefined();
     });
 
     it("should meet Requirement 6: Test-Driven Development", async () => {

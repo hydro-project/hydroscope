@@ -220,17 +220,10 @@ export class InteractionHandler {
     this._recentClicks.clear();
   }
   // Event queuing through AsyncCoordinator (when available)
+  // NOTE: This method should be updated to use new synchronous AsyncCoordinator methods
+  // For now, fallback to synchronous processing since queueApplicationEvent is deprecated
   queueInteractionEvent(event: ClickEvent): Promise<void> {
-    if (
-      this._asyncCoordinator &&
-      this._asyncCoordinator.queueApplicationEvent
-    ) {
-      return this._asyncCoordinator.queueApplicationEvent({
-        type: "interaction",
-        data: event,
-      });
-    }
-    // Fallback to synchronous processing
+    // Always use synchronous processing since queueApplicationEvent is deprecated
     this.processClickEvent(event);
     return Promise.resolve();
   }
