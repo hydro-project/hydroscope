@@ -15,6 +15,10 @@ import {
   recordDOMUpdate,
   type OperationType 
 } from "./operationPerformanceMonitor.js";
+import {
+  withResizeObserverErrorSuppression,
+  withAsyncResizeObserverErrorSuppression
+} from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Panel operation types supported by the utilities
@@ -355,28 +359,9 @@ export function changeStyleImperatively(options: {
     return true;
   };
 
-  // Optionally suppress ResizeObserver errors during style changes
+  // Use centralized ResizeObserver error suppression
   if (suppressResizeObserver) {
-    // Temporarily suppress ResizeObserver errors
-    const originalError = window.console.error;
-    const suppressedError = (...args: any[]) => {
-      const message = args[0]?.toString() || '';
-      if (message.includes('ResizeObserver loop limit exceeded')) {
-        // Suppress ResizeObserver loop errors during style changes
-        if (debug) {
-          console.log('[PanelOperationUtils] Suppressed ResizeObserver error during style change');
-        }
-        return;
-      }
-      originalError.apply(console, args);
-    };
-
-    window.console.error = suppressedError;
-    
-    // Restore original error handler after a short delay
-    setTimeout(() => {
-      window.console.error = originalError;
-    }, 200);
+    return withResizeObserverErrorSuppression(performStyleChange)();
   }
 
   return performStyleChange();

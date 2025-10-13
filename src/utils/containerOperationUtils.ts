@@ -15,6 +15,10 @@ import {
   recordCoordinatorCall,
   type OperationType 
 } from "./operationPerformanceMonitor.js";
+import {
+  withResizeObserverErrorSuppression,
+  withAsyncResizeObserverErrorSuppression
+} from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Debounce utility for rapid container operations
@@ -81,6 +85,7 @@ export function toggleContainerImperatively(options: {
   forceCollapsed?: boolean; // Force to collapsed state
   debounce?: boolean; // Enable debouncing for rapid operations
   debounceKey?: string; // Custom debounce key (defaults to containerId)
+  suppressResizeObserver?: boolean; // Enable ResizeObserver error suppression
   debug?: boolean;
   enablePerformanceMonitoring?: boolean; // Enable performance monitoring
 }): boolean {
@@ -91,6 +96,7 @@ export function toggleContainerImperatively(options: {
     forceCollapsed,
     debounce = false,
     debounceKey,
+    suppressResizeObserver = true,
     debug = false,
     enablePerformanceMonitoring = true
   } = options;
@@ -154,58 +160,67 @@ export function toggleContainerImperatively(options: {
 
   // Define the operation function
   const performOperation = () => {
-    try {
-      if (targetCollapsed) {
-        // Use the coordinator method for collapse
-        if (visualizationState._collapseContainerForCoordinator) {
-          // Record coordinator call for performance monitoring
-          if (enablePerformanceMonitoring) {
-            recordCoordinatorCall();
-          }
-          visualizationState._collapseContainerForCoordinator(containerId);
-          if (debug) {
-            console.log(`[ContainerOperationUtils] Container ${containerId} collapsed imperatively`);
-          }
-        } else {
-          console.error('[ContainerOperationUtils] _collapseContainerForCoordinator method not available');
-          if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { error: '_collapseContainerForCoordinator not available' });
-          }
-          return false;
-        }
-      } else {
-        // Use the coordinator method for expand
-        if (visualizationState._expandContainerForCoordinator) {
-          // Record coordinator call for performance monitoring
-          if (enablePerformanceMonitoring) {
-            recordCoordinatorCall();
-          }
-          visualizationState._expandContainerForCoordinator(containerId);
-          if (debug) {
-            console.log(`[ContainerOperationUtils] Container ${containerId} expanded imperatively`);
+    const containerOperation = () => {
+      try {
+        if (targetCollapsed) {
+          // Use the coordinator method for collapse
+          if (visualizationState._collapseContainerForCoordinator) {
+            // Record coordinator call for performance monitoring
+            if (enablePerformanceMonitoring) {
+              recordCoordinatorCall();
+            }
+            visualizationState._collapseContainerForCoordinator(containerId);
+            if (debug) {
+              console.log(`[ContainerOperationUtils] Container ${containerId} collapsed imperatively`);
+            }
+          } else {
+            console.error('[ContainerOperationUtils] _collapseContainerForCoordinator method not available');
+            if (enablePerformanceMonitoring) {
+              globalOperationMonitor.endOperation(operation, { error: '_collapseContainerForCoordinator not available' });
+            }
+            return false;
           }
         } else {
-          console.error('[ContainerOperationUtils] _expandContainerForCoordinator method not available');
-          if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { error: '_expandContainerForCoordinator not available' });
+          // Use the coordinator method for expand
+          if (visualizationState._expandContainerForCoordinator) {
+            // Record coordinator call for performance monitoring
+            if (enablePerformanceMonitoring) {
+              recordCoordinatorCall();
+            }
+            visualizationState._expandContainerForCoordinator(containerId);
+            if (debug) {
+              console.log(`[ContainerOperationUtils] Container ${containerId} expanded imperatively`);
+            }
+          } else {
+            console.error('[ContainerOperationUtils] _expandContainerForCoordinator method not available');
+            if (enablePerformanceMonitoring) {
+              globalOperationMonitor.endOperation(operation, { error: '_expandContainerForCoordinator not available' });
+            }
+            return false;
           }
-          return false;
         }
+        
+        // End performance monitoring on success
+        if (enablePerformanceMonitoring) {
+          globalOperationMonitor.endOperation(operation, { success: true, targetCollapsed });
+        }
+        return true;
+      } catch (error) {
+        console.error(`[ContainerOperationUtils] Error toggling container ${containerId}:`, error);
+        if (enablePerformanceMonitoring) {
+          globalOperationMonitor.endOperation(operation, { 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          });
+        }
+        return false;
       }
-      
-      // End performance monitoring on success
-      if (enablePerformanceMonitoring) {
-        globalOperationMonitor.endOperation(operation, { success: true, targetCollapsed });
-      }
-      return true;
-    } catch (error) {
-      console.error(`[ContainerOperationUtils] Error toggling container ${containerId}:`, error);
-      if (enablePerformanceMonitoring) {
-        globalOperationMonitor.endOperation(operation, { 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        });
-      }
-      return false;
+    };
+
+    // Use ResizeObserver error suppression if enabled
+    if (suppressResizeObserver) {
+      return withResizeObserverErrorSuppression(containerOperation)();
+    } else {
+      return containerOperation();
     }
   };
 
@@ -231,6 +246,7 @@ export function expandContainerImperatively(options: {
   visualizationState?: VisualizationState;
   debounce?: boolean;
   debounceKey?: string;
+  suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): boolean {
@@ -248,6 +264,7 @@ export function collapseContainerImperatively(options: {
   visualizationState?: VisualizationState;
   debounce?: boolean;
   debounceKey?: string;
+  suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): boolean {
@@ -268,10 +285,11 @@ export function batchContainerOperationsImperatively(options: {
     operation: 'expand' | 'collapse' | 'toggle';
   }>;
   visualizationState?: VisualizationState;
+  suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): { success: number; failed: number; errors: string[] } {
-  const { operations, visualizationState, debug = false, enablePerformanceMonitoring = true } = options;
+  const { operations, visualizationState, suppressResizeObserver = true, debug = false, enablePerformanceMonitoring = true } = options;
 
   // Start performance monitoring for batch operation
   const batchOperation: OperationType = 'container_batch';
@@ -300,51 +318,64 @@ export function batchContainerOperationsImperatively(options: {
     return results;
   }
 
-  for (const { containerId, operation } of operations) {
-    try {
-      let success = false;
-      
-      switch (operation) {
-        case 'expand':
-          success = expandContainerImperatively({
-            containerId,
-            visualizationState,
-            debug,
-            enablePerformanceMonitoring: false // Disable individual monitoring in batch
-          });
-          break;
-        case 'collapse':
-          success = collapseContainerImperatively({
-            containerId,
-            visualizationState,
-            debug,
-            enablePerformanceMonitoring: false // Disable individual monitoring in batch
-          });
-          break;
-        case 'toggle':
-          success = toggleContainerImperatively({
-            containerId,
-            visualizationState,
-            debug,
-            enablePerformanceMonitoring: false // Disable individual monitoring in batch
-          });
-          break;
-        default:
-          results.errors.push(`Unknown operation: ${operation} for container ${containerId}`);
-          results.failed++;
-          continue;
-      }
+  // Define batch operation function
+  const performBatchOperation = () => {
+    for (const { containerId, operation } of operations) {
+      try {
+        let success = false;
+        
+        switch (operation) {
+          case 'expand':
+            success = expandContainerImperatively({
+              containerId,
+              visualizationState,
+              suppressResizeObserver: false, // Already handled at batch level
+              debug,
+              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+            });
+            break;
+          case 'collapse':
+            success = collapseContainerImperatively({
+              containerId,
+              visualizationState,
+              suppressResizeObserver: false, // Already handled at batch level
+              debug,
+              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+            });
+            break;
+          case 'toggle':
+            success = toggleContainerImperatively({
+              containerId,
+              visualizationState,
+              suppressResizeObserver: false, // Already handled at batch level
+              debug,
+              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+            });
+            break;
+          default:
+            results.errors.push(`Unknown operation: ${operation} for container ${containerId}`);
+            results.failed++;
+            continue;
+        }
 
-      if (success) {
-        results.success++;
-      } else {
+        if (success) {
+          results.success++;
+        } else {
+          results.failed++;
+          results.errors.push(`Failed to ${operation} container ${containerId}`);
+        }
+      } catch (error) {
         results.failed++;
-        results.errors.push(`Failed to ${operation} container ${containerId}`);
+        results.errors.push(`Error ${operation} container ${containerId}: ${error}`);
       }
-    } catch (error) {
-      results.failed++;
-      results.errors.push(`Error ${operation} container ${containerId}: ${error}`);
     }
+  };
+
+  // Use ResizeObserver error suppression for batch operations
+  if (suppressResizeObserver) {
+    withResizeObserverErrorSuppression(performBatchOperation)();
+  } else {
+    performBatchOperation();
   }
 
   if (debug) {

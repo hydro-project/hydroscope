@@ -54,6 +54,11 @@ import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { InteractionHandler } from "../core/InteractionHandler.js";
 import { JSONParser } from "../utils/JSONParser.js";
+import { 
+  createAutoFitOptions, 
+  createFitViewOptions, 
+  AutoFitScenarios 
+} from "../utils/autoFitUtils.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
 import type { RenderConfig } from "./Hydroscope.js";
 import {
@@ -589,7 +594,10 @@ const HydroscopeCoreInternal = forwardRef<
                 currentVisualizationState,
                 {
                   relayoutEntities: [containerId], // Only re-layout this container
-                  fitView: state.autoFitEnabled,
+                  ...createFitViewOptions(createAutoFitOptions(
+                    AutoFitScenarios.CONTAINER_OPERATION,
+                    state.autoFitEnabled
+                  )),
                 }
               );
               // Call callback after synchronous operation completes
@@ -601,7 +609,10 @@ const HydroscopeCoreInternal = forwardRef<
                 currentVisualizationState,
                 {
                   relayoutEntities: [containerId], // Only re-layout this container
-                  fitView: state.autoFitEnabled,
+                  ...createFitViewOptions(createAutoFitOptions(
+                    AutoFitScenarios.CONTAINER_OPERATION,
+                    state.autoFitEnabled
+                  )),
                 }
               );
               // Call callback after synchronous operation completes
@@ -680,7 +691,10 @@ const HydroscopeCoreInternal = forwardRef<
           jsonParserRef.current,
           reason,
           {
-            fitView: true, // Enable fit view for all data changes
+            ...createFitViewOptions(createAutoFitOptions(
+              reason === 'initial_load' ? AutoFitScenarios.INITIAL_LOAD : AutoFitScenarios.FILE_LOAD,
+              state.autoFitEnabled
+            )),
             validateData: validateData, // Pass validation function
             onVisualizationStateChange: onVisualizationStateChange, // Pass state change callback
           }
@@ -755,8 +769,9 @@ const HydroscopeCoreInternal = forwardRef<
 
     // Update autoFitEnabled when prop changes
     useEffect(() => {
+
       setState((prev) => ({ ...prev, autoFitEnabled: autoFitEnabled }));
-    }, [autoFitEnabled]);
+    }, [autoFitEnabled]); // Remove state.autoFitEnabled from deps to avoid infinite loops
 
     // Manual ReactFlow data update method removed - replaced by AsyncCoordinator.executeLayoutAndRenderPipeline
     // All data updates now go through the unified orchestration pipeline for consistency
@@ -805,7 +820,10 @@ const HydroscopeCoreInternal = forwardRef<
                 state.visualizationState!,
                 {
                   relayoutEntities: undefined, // Full layout for algorithm change
-                  fitView: true, // Auto-fit after layout algorithm change
+                  ...createFitViewOptions(createAutoFitOptions(
+                    AutoFitScenarios.LAYOUT_ALGORITHM_CHANGE,
+                    state.autoFitEnabled
+                  )),
                 }
               );
             } catch (error) {
@@ -853,7 +871,10 @@ const HydroscopeCoreInternal = forwardRef<
             state.visualizationState,
             {
               relayoutEntities: undefined, // Full layout for collapse all
-              fitView: state.autoFitEnabled,
+              ...createFitViewOptions(createAutoFitOptions(
+                AutoFitScenarios.CONTAINER_OPERATION,
+                state.autoFitEnabled
+              )),
             }
           );
 
@@ -909,7 +930,10 @@ const HydroscopeCoreInternal = forwardRef<
             state.visualizationState,
             {
               relayoutEntities: undefined, // Full layout for expand all
-              fitView: state.autoFitEnabled,
+              ...createFitViewOptions(createAutoFitOptions(
+                AutoFitScenarios.CONTAINER_OPERATION,
+                state.autoFitEnabled
+              )),
             }
           );
 
@@ -979,7 +1003,10 @@ const HydroscopeCoreInternal = forwardRef<
             state.visualizationState,
             {
               relayoutEntities: [containerId], // Only re-layout this container
-              fitView: state.autoFitEnabled,
+              ...createFitViewOptions(createAutoFitOptions(
+                AutoFitScenarios.CONTAINER_OPERATION,
+                state.autoFitEnabled
+              )),
             }
           );
 
@@ -1049,7 +1076,10 @@ const HydroscopeCoreInternal = forwardRef<
             state.visualizationState,
             {
               relayoutEntities: [containerId], // Only re-layout this container
-              fitView: state.autoFitEnabled,
+              ...createFitViewOptions(createAutoFitOptions(
+                AutoFitScenarios.CONTAINER_OPERATION,
+                state.autoFitEnabled
+              )),
             }
           );
 
@@ -1133,11 +1163,19 @@ const HydroscopeCoreInternal = forwardRef<
           state.visualizationState.updateRenderConfig(updates);
 
           // Use AsyncCoordinator's unified render config update pipeline
+          const scenario = updates.layoutAlgorithm 
+            ? AutoFitScenarios.LAYOUT_ALGORITHM_CHANGE 
+            : AutoFitScenarios.STYLE_CHANGE;
+          const autoFitOptions = createAutoFitOptions(scenario, autoFitEnabled); // Use prop directly instead of state
+          const fitViewOptions = createFitViewOptions(autoFitOptions);
+          
+
+          
           await state.asyncCoordinator.updateRenderConfig(
             state.visualizationState,
             updates,
             {
-              fitView: true, // Enable fitView for render config changes
+              ...fitViewOptions,
               relayoutEntities: updates.layoutAlgorithm ? undefined : [], // Full layout for algorithm changes, render-only for visual changes
             }
           );
@@ -1145,15 +1183,9 @@ const HydroscopeCoreInternal = forwardRef<
           // Notify parent component of the change
           onRenderConfigChange?.(updates);
 
-          // Only force ReactFlow reset for edge style changes that require re-initialization
-          // Color palette and other visual changes don't need a full reset
-          if (updates.edgeStyle) {
-            setReactFlowResetKey((prev) => {
-              const newKey = prev + 1;
-              return newKey;
-            });
-          } else {
-          }
+          // ReactFlow reset is not needed for edge style changes - they're just CSS changes
+          // Only reset ReactFlow for changes that require component re-initialization
+          // Edge style, color palette, and other visual changes don't need a full reset
         } catch (error) {
           console.error(
             "[HydroscopeCore] ❌ Error updating render config:",
@@ -1387,12 +1419,18 @@ const HydroscopeCoreInternal = forwardRef<
               },
             };
           });
+
+          // Notify AsyncCoordinator that React has finished rendering
+          // This triggers any pending post-render callbacks (like fitView)
+          if (state.asyncCoordinator) {
+            state.asyncCoordinator.notifyRenderComplete();
+          }
         } catch (error) {
           console.error("[HydroscopeCore] Error handling edge changes:", error);
           handleError(error as Error, "edge changes");
         }
       },
-      [readOnly, handleError],
+      [readOnly, handleError, state.asyncCoordinator],
     );
 
     // Handle drag start

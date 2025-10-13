@@ -38,6 +38,20 @@ function shouldSuppressError(error: Error | string): boolean {
 }
 
 /**
+ * Log suppressed ResizeObserver errors in development mode
+ */
+function logSuppressedError(error: Error | string, context?: string): void {
+  if (process.env.NODE_ENV === "development") {
+    const errorMessage = typeof error === "string" ? error : error.message;
+    const contextInfo = context ? ` (${context})` : "";
+    console.debug(
+      `[Hydroscope] Suppressed ResizeObserver error${contextInfo}:`,
+      errorMessage,
+    );
+  }
+}
+
+/**
  * Custom error handler that suppresses ResizeObserver errors
  */
 function customErrorHandler(event: ErrorEvent): void {
@@ -48,12 +62,7 @@ function customErrorHandler(event: ErrorEvent): void {
 
   if (shouldSuppressError(errorToCheck)) {
     // Log in development for debugging
-    if (process.env.NODE_ENV === "development") {
-      console.debug(
-        "[Hydroscope] Suppressed ResizeObserver error:",
-        error?.message || message,
-      );
-    }
+    logSuppressedError(errorToCheck, "global error handler");
     event.preventDefault();
     return;
   }
@@ -71,12 +80,7 @@ function customUnhandledRejectionHandler(event: PromiseRejectionEvent): void {
   const reason = event.reason;
   if (reason && shouldSuppressError(reason)) {
     // Log in development for debugging
-    if (process.env.NODE_ENV === "development") {
-      console.debug(
-        "[Hydroscope] Suppressed ResizeObserver promise rejection:",
-        reason,
-      );
-    }
+    logSuppressedError(reason, "unhandled promise rejection");
     event.preventDefault();
     return;
   }
@@ -222,12 +226,7 @@ export function withResizeObserverErrorSuppression<
       return operation(...args);
     } catch (error) {
       if (shouldSuppressError(error as Error)) {
-        if (process.env.NODE_ENV === "development") {
-          console.debug(
-            "[Hydroscope] Suppressed ResizeObserver error in operation:",
-            error,
-          );
-        }
+        logSuppressedError(error as Error, "synchronous operation");
         return;
       }
       throw error;
@@ -246,12 +245,7 @@ export function withAsyncResizeObserverErrorSuppression<
       return await operation(...args);
     } catch (error) {
       if (shouldSuppressError(error as Error)) {
-        if (process.env.NODE_ENV === "development") {
-          console.debug(
-            "[Hydroscope] Suppressed ResizeObserver error in async operation:",
-            error,
-          );
-        }
+        logSuppressedError(error as Error, "asynchronous operation");
         return;
       }
       throw error;
@@ -272,4 +266,100 @@ export function useResizeObserverErrorSuppression(): {
     disable: disableResizeObserverErrorSuppression,
     isActive: isErrorSuppressionActive,
   };
+}
+
+/**
+ * Enhanced wrapper for DOM manipulation operations that might trigger ResizeObserver errors
+ */
+export function withDOMResizeObserverErrorSuppression<
+  T extends (...args: any[]) => any,
+>(operation: T, context?: string): T {
+  return ((...args: any[]) => {
+    try {
+      const result = operation(...args);
+      
+      // If the operation returns a promise, handle async errors
+      if (result && typeof result.then === 'function') {
+        return result.catch((error: Error) => {
+          if (shouldSuppressError(error)) {
+            logSuppressedError(error, context || "DOM operation");
+            return;
+          }
+          throw error;
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      if (shouldSuppressError(error as Error)) {
+        logSuppressedError(error as Error, context || "DOM operation");
+        return;
+      }
+      throw error;
+    }
+  }) as T;
+}
+
+/**
+ * Wrapper for layout operations that commonly trigger ResizeObserver errors
+ */
+export function withLayoutResizeObserverErrorSuppression<
+  T extends (...args: any[]) => any,
+>(operation: T): T {
+  return withDOMResizeObserverErrorSuppression(operation, "layout operation");
+}
+
+/**
+ * Wrapper for style operations that commonly trigger ResizeObserver errors
+ */
+export function withStyleResizeObserverErrorSuppression<
+  T extends (...args: any[]) => any,
+>(operation: T): T {
+  return withDOMResizeObserverErrorSuppression(operation, "style operation");
+}
+
+/**
+ * Wrapper for container operations that commonly trigger ResizeObserver errors
+ */
+export function withContainerResizeObserverErrorSuppression<
+  T extends (...args: any[]) => any,
+>(operation: T): T {
+  return withDOMResizeObserverErrorSuppression(operation, "container operation");
+}
+
+/**
+ * Wrapper for search operations that commonly trigger ResizeObserver errors
+ */
+export function withSearchResizeObserverErrorSuppression<
+  T extends (...args: any[]) => any,
+>(operation: T): T {
+  return withDOMResizeObserverErrorSuppression(operation, "search operation");
+}
+
+/**
+ * Batch operation wrapper that suppresses ResizeObserver errors for multiple operations
+ */
+export function withBatchResizeObserverErrorSuppression<T>(
+  operations: Array<() => T>,
+  context?: string
+): T[] {
+  const results: T[] = [];
+  
+  for (let i = 0; i < operations.length; i++) {
+    const operation = operations[i];
+    try {
+      const result = withDOMResizeObserverErrorSuppression(
+        operation, 
+        context ? `${context} (batch ${i + 1}/${operations.length})` : `batch operation ${i + 1}/${operations.length}`
+      )();
+      results.push(result);
+    } catch (error) {
+      // Log the error but continue with other operations
+      console.error(`[Hydroscope] Error in batch operation ${i + 1}:`, error);
+      // Push undefined for failed operations to maintain array length
+      results.push(undefined as T);
+    }
+  }
+  
+  return results;
 }

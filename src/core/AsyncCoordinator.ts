@@ -4,6 +4,10 @@
  */
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 import { bridgeFactory } from "../bridges/BridgeFactory.js";
+import {
+  withAsyncResizeObserverErrorSuppression,
+  withLayoutResizeObserverErrorSuppression,
+} from "../utils/ResizeObserverErrorSuppression.js";
 
 interface ErrorRecoveryResult {
   success: boolean;
@@ -337,7 +341,10 @@ export class AsyncCoordinator {
           state.setLayoutPhase("laying_out");
           // ELKBridge is now stateless - no caches to clear
           // Call real ELK layout calculation - this updates VisualizationState directly
-          await elkBridge.layout(state);
+          // Wrap with ResizeObserver error suppression
+          await withAsyncResizeObserverErrorSuppression(
+            async () => await elkBridge.layout(state)
+          )();
           // Increment layout count for smart collapse logic
           state.incrementLayoutCount();
           // Set layout phase to ready after successful ELK layout
@@ -3073,6 +3080,41 @@ export class AsyncCoordinator {
         // Only re-render without layout using imperative method
         const reactFlowData = this.generateReactFlowDataImperative(visualizationState);
 
+        // Handle fitView even when no layout is needed (e.g., for edge style changes)
+        if (options.fitView) {
+          const fitViewCheck = this._shouldExecuteFitView(
+            options.fitViewOptions,
+            reactFlowData
+          );
+
+          if (fitViewCheck.shouldExecute) {
+            this.enqueuePostRenderCallback(() => {
+              if (!this.reactFlowInstance) {
+                console.warn('[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView');
+                return;
+              }
+
+              const fitViewOptions = {
+                padding: options.fitViewOptions?.padding || 0.15,
+                duration: options.fitViewOptions?.duration || 300,
+                includeHiddenNodes: false,
+              };
+
+              console.log('[AsyncCoordinator] 🎯 Executing post-render fitView for config change', fitViewOptions);
+              this.reactFlowInstance.fitView(fitViewOptions);
+              console.log('[AsyncCoordinator] ✅ FitView completed for config change');
+            });
+            console.debug(
+              "[AsyncCoordinator] ✅ FitView enqueued for post-render execution (config change)"
+            );
+          } else {
+            console.debug(
+              "[AsyncCoordinator] ⏭️ Skipping FitView execution for config change",
+              { reason: fitViewCheck.skipReason }
+            );
+          }
+        }
+
         const endTime = Date.now();
         const duration = endTime - startTime;
 
@@ -3082,7 +3124,8 @@ export class AsyncCoordinator {
             duration: `${duration}ms`,
             nodeCount: reactFlowData?.nodes?.length || 0,
             edgeCount: reactFlowData?.edges?.length || 0,
-            configUpdates
+            configUpdates,
+            fitViewRequested: options.fitView
           }
         );
 

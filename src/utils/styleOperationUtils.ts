@@ -15,6 +15,10 @@ import {
   recordDOMUpdate,
   type OperationType 
 } from "./operationPerformanceMonitor.js";
+import {
+  withResizeObserverErrorSuppression,
+  withAsyncResizeObserverErrorSuppression
+} from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Style operation types supported by the utilities
@@ -87,56 +91,17 @@ class StyleOperationDebouncer {
 const styleDebouncer = new StyleOperationDebouncer();
 
 /**
- * ResizeObserver error suppression utility
+ * ResizeObserver error suppression utility (deprecated - use centralized utilities)
  * 
- * Temporarily suppresses ResizeObserver loop errors during style operations
+ * @deprecated Use withResizeObserverErrorSuppression from ResizeObserverErrorSuppression.ts instead
  */
-function withResizeObserverSuppression<T>(
+function withResizeObserverSuppressionLegacy<T>(
   operation: () => T,
   duration: number = 200,
   debug: boolean = false
 ): T {
-  // Check if we're in a browser environment
-  if (typeof window === 'undefined') {
-    // In test environment, just execute the operation
-    return operation();
-  }
-
-  const originalError = window.console.error;
-  
-  const suppressedError = (...args: any[]) => {
-    const message = args[0]?.toString() || '';
-    if (message.includes('ResizeObserver loop limit exceeded')) {
-      // Suppress ResizeObserver loop errors during style changes
-      if (debug) {
-        console.log('[StyleOperationUtils] Suppressed ResizeObserver error during style operation');
-      }
-      return;
-    }
-    originalError.apply(console, args);
-  };
-
-  // Apply suppression
-  window.console.error = suppressedError;
-  
-  try {
-    const result = operation();
-    
-    // Restore original error handler after duration
-    setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        window.console.error = originalError;
-      }
-    }, duration);
-    
-    return result;
-  } catch (error) {
-    // Restore immediately on error
-    if (typeof window !== 'undefined') {
-      window.console.error = originalError;
-    }
-    throw error;
-  }
+  // Use centralized suppression utility
+  return withResizeObserverErrorSuppression(operation)();
 }
 
 /**
@@ -236,7 +201,7 @@ export function changeLayoutImperatively(options: {
     };
 
     if (suppressResizeObserver) {
-      withResizeObserverSuppression(layoutOperation, 300, debug);
+      withResizeObserverErrorSuppression(layoutOperation)();
     } else {
       layoutOperation();
     }
@@ -348,7 +313,7 @@ export function changeColorPaletteImperatively(options: {
     };
 
     if (suppressResizeObserver) {
-      withResizeObserverSuppression(paletteOperation, 200, debug);
+      withResizeObserverErrorSuppression(paletteOperation)();
     } else {
       paletteOperation();
     }
@@ -460,7 +425,7 @@ export function changeEdgeStyleImperatively(options: {
     };
 
     if (suppressResizeObserver) {
-      withResizeObserverSuppression(edgeStyleOperation, 200, debug);
+      withResizeObserverErrorSuppression(edgeStyleOperation)();
     } else {
       edgeStyleOperation();
     }
@@ -557,7 +522,7 @@ export function resetStylesImperatively(options: {
     };
 
     if (suppressResizeObserver) {
-      withResizeObserverSuppression(resetOperation, 300, debug);
+      withResizeObserverErrorSuppression(resetOperation)();
     } else {
       resetOperation();
     }
@@ -689,7 +654,7 @@ export function batchStyleOperationsImperatively(options: {
   };
 
   if (suppressResizeObserver) {
-    withResizeObserverSuppression(performBatchOperation, 400, debug);
+    withResizeObserverErrorSuppression(performBatchOperation)();
   } else {
     performBatchOperation();
   }

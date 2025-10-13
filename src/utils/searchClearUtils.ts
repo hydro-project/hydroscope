@@ -10,6 +10,10 @@ import {
   recordDOMUpdate,
   type OperationType 
 } from "./operationPerformanceMonitor.js";
+import {
+  withResizeObserverErrorSuppression,
+  withAsyncResizeObserverErrorSuppression
+} from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Clear search imperatively without triggering AsyncCoordinator cascades
@@ -27,6 +31,7 @@ export function clearSearchImperatively(options: {
   setMatches?: (matches: any[]) => void;
   setCurrentIndex?: (index: number) => void;
   clearTimer?: () => void;
+  suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): void {
@@ -37,6 +42,7 @@ export function clearSearchImperatively(options: {
     setMatches,
     setCurrentIndex,
     clearTimer,
+    suppressResizeObserver = true,
     debug = false,
     enablePerformanceMonitoring = true
   } = options;
@@ -55,52 +61,62 @@ export function clearSearchImperatively(options: {
     console.log('[SearchClearUtils] Starting imperative search clear');
   }
 
-  // 1. Clear any pending timers
-  if (clearTimer) {
-    clearTimer();
-  }
+  // Define the search clear operation
+  const performSearchClear = () => {
+    // 1. Clear any pending timers
+    if (clearTimer) {
+      clearTimer();
+    }
 
-  // 2. Clear VisualizationState directly (imperative)
-  if (visualizationState && visualizationState.clearSearchEnhanced) {
-    try {
-      visualizationState.clearSearchEnhanced();
-      if (debug) {
-        console.log('[SearchClearUtils] VisualizationState cleared imperatively');
+    // 2. Clear VisualizationState directly (imperative)
+    if (visualizationState && visualizationState.clearSearchEnhanced) {
+      try {
+        visualizationState.clearSearchEnhanced();
+        if (debug) {
+          console.log('[SearchClearUtils] VisualizationState cleared imperatively');
+        }
+      } catch (error) {
+        console.error('[SearchClearUtils] VisualizationState clear failed:', error);
       }
-    } catch (error) {
-      console.error('[SearchClearUtils] VisualizationState clear failed:', error);
     }
-  }
 
-  // 3. Clear DOM input directly (imperative)
-  if (inputRef?.current) {
-    // Record DOM update for performance monitoring
-    if (enablePerformanceMonitoring) {
-      recordDOMUpdate();
+    // 3. Clear DOM input directly (imperative)
+    if (inputRef?.current) {
+      // Record DOM update for performance monitoring
+      if (enablePerformanceMonitoring) {
+        recordDOMUpdate();
+      }
+      inputRef.current.value = "";
+      if (debug) {
+        console.log('[SearchClearUtils] Input cleared imperatively');
+      }
     }
-    inputRef.current.value = "";
+
+    // 4. Update React state minimally (React 18 will batch these automatically)
+    if (setQuery) setQuery("");
+    if (setMatches) setMatches([]);
+    if (setCurrentIndex) setCurrentIndex(0);
+
     if (debug) {
-      console.log('[SearchClearUtils] Input cleared imperatively');
+      console.log('[SearchClearUtils] React state cleared imperatively');
     }
-  }
 
-  // 4. Update React state minimally (React 18 will batch these automatically)
-  if (setQuery) setQuery("");
-  if (setMatches) setMatches([]);
-  if (setCurrentIndex) setCurrentIndex(0);
+    // End performance monitoring
+    if (enablePerformanceMonitoring) {
+      globalOperationMonitor.endOperation(operation, { 
+        success: true,
+        clearedVisualizationState: !!visualizationState,
+        clearedDOM: !!inputRef?.current,
+        clearedReactState: !!(setQuery && setMatches && setCurrentIndex)
+      });
+    }
+  };
 
-  if (debug) {
-    console.log('[SearchClearUtils] React state cleared imperatively');
-  }
-
-  // End performance monitoring
-  if (enablePerformanceMonitoring) {
-    globalOperationMonitor.endOperation(operation, { 
-      success: true,
-      clearedVisualizationState: !!visualizationState,
-      clearedDOM: !!inputRef?.current,
-      clearedReactState: !!(setQuery && setMatches && setCurrentIndex)
-    });
+  // Use ResizeObserver error suppression if enabled
+  if (suppressResizeObserver) {
+    withResizeObserverErrorSuppression(performSearchClear)();
+  } else {
+    performSearchClear();
   }
 }
 
@@ -113,6 +129,7 @@ export function clearSearchPanelImperatively(options: {
   setSearchQuery?: (query: string) => void;
   setSearchMatches?: (matches: any[]) => void;
   setCurrentSearchMatch?: (match: any) => void;
+  suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): void {
@@ -120,6 +137,7 @@ export function clearSearchPanelImperatively(options: {
     setSearchQuery,
     setSearchMatches,
     setCurrentSearchMatch,
+    suppressResizeObserver = true,
     debug = false,
     enablePerformanceMonitoring = true
   } = options;
@@ -136,21 +154,31 @@ export function clearSearchPanelImperatively(options: {
     console.log('[SearchClearUtils] Starting imperative panel clear');
   }
 
-  // Update React state minimally (React 18 will batch these automatically)
-  if (setSearchQuery) setSearchQuery("");
-  if (setSearchMatches) setSearchMatches([]);
-  if (setCurrentSearchMatch) setCurrentSearchMatch(undefined);
+  // Define the panel clear operation
+  const performPanelClear = () => {
+    // Update React state minimally (React 18 will batch these automatically)
+    if (setSearchQuery) setSearchQuery("");
+    if (setSearchMatches) setSearchMatches([]);
+    if (setCurrentSearchMatch) setCurrentSearchMatch(undefined);
 
-  if (debug) {
-    console.log('[SearchClearUtils] Panel state cleared imperatively');
-  }
+    if (debug) {
+      console.log('[SearchClearUtils] Panel state cleared imperatively');
+    }
 
-  // End performance monitoring
-  if (enablePerformanceMonitoring) {
-    globalOperationMonitor.endOperation(operation, { 
-      success: true,
-      clearedReactState: !!(setSearchQuery && setSearchMatches && setCurrentSearchMatch)
-    });
+    // End performance monitoring
+    if (enablePerformanceMonitoring) {
+      globalOperationMonitor.endOperation(operation, { 
+        success: true,
+        clearedReactState: !!(setSearchQuery && setSearchMatches && setCurrentSearchMatch)
+      });
+    }
+  };
+
+  // Use ResizeObserver error suppression if enabled
+  if (suppressResizeObserver) {
+    withResizeObserverErrorSuppression(performPanelClear)();
+  } else {
+    performPanelClear();
   }
 }
 

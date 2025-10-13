@@ -28,6 +28,12 @@ export {
   withResizeObserverErrorSuppression,
   withAsyncResizeObserverErrorSuppression,
   useResizeObserverErrorSuppression,
+  withDOMResizeObserverErrorSuppression,
+  withLayoutResizeObserverErrorSuppression,
+  withStyleResizeObserverErrorSuppression,
+  withContainerResizeObserverErrorSuppression,
+  withSearchResizeObserverErrorSuppression,
+  withBatchResizeObserverErrorSuppression,
 } from "./utils/ResizeObserverErrorSuppression.js";
 export {
   clearSearchImperatively,

@@ -19,6 +19,10 @@ import {
   DEFAULT_ELK_ALGORITHM,
   DEFAULT_LAYOUT_CONFIG,
 } from "../shared/config.js";
+import {
+  withAsyncResizeObserverErrorSuppression,
+  withLayoutResizeObserverErrorSuppression,
+} from "../utils/ResizeObserverErrorSuppression.js";
 export class ELKBridge implements IELKBridge {
   private performanceHints?: PerformanceHints;
   private elk: any;
@@ -327,7 +331,10 @@ export class ELKBridge implements IELKBridge {
       // Call real ELK library to calculate layout with fallback mechanism
       let layoutResult;
       try {
-        layoutResult = await this.elk.layout(elkGraph);
+        // Wrap ELK layout operation with ResizeObserver error suppression
+        layoutResult = await withAsyncResizeObserverErrorSuppression(
+          async () => await this.elk.layout(elkGraph)
+        )();
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -347,7 +354,10 @@ export class ELKBridge implements IELKBridge {
             },
           };
           try {
-            layoutResult = await this.elk.layout(fallbackElkGraph);
+            // Wrap fallback ELK layout operation with ResizeObserver error suppression
+            layoutResult = await withAsyncResizeObserverErrorSuppression(
+              async () => await this.elk.layout(fallbackElkGraph)
+            )();
           } catch (fallbackError) {
             console.error(
               `[ELKBridge] ❌ Stress algorithm fallback also failed:`,
