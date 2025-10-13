@@ -9,7 +9,7 @@ The InfoPanel and StyleTuner components have been extracted from HydroscopeEnhan
 - Better separation of concerns
 - Improved testability
 - Enhanced reusability
-- Cleaner architecture with v6 integration
+- Cleaner architecture with v1.0.0 integration
 - Better error handling and resilience
 
 ## Migration Paths
@@ -112,7 +112,7 @@ function CleanComponent() {
       onContainerExpand={(containerId, visualizationState) => {
         console.log(`Container ${containerId} expanded`);
       }}
-      // No architectural bugs, proper v6 integration
+      // No architectural bugs, proper v1.0.0 integration
     />
   );
 }
@@ -204,7 +204,7 @@ If you were somehow using internal InfoPanel or StyleTuner implementations direc
 />
 ```
 
-### V6 Architecture Integration
+### v1.0.0 Architecture Integration
 
 ```tsx
 // Access to VisualizationState in callbacks
@@ -212,7 +212,7 @@ If you were somehow using internal InfoPanel or StyleTuner implementations direc
   data={data}
   onNodeClick={(event, node, visualizationState) => {
     if (visualizationState) {
-      // Use v6 architecture features
+      // Use v1.0.0 architecture features
       const nodeData = visualizationState.getNode(node.id);
       console.log('Full node data:', nodeData);
     }
@@ -270,7 +270,7 @@ If you were somehow using internal InfoPanel or StyleTuner implementations direc
 - [ ] Implement panel visibility state management
 - [ ] Update callback signatures
 - [ ] Add error handling
-- [ ] Test v6 architecture integration
+- [ ] Test v1.0.0 architecture integration
 
 ## Common Issues and Solutions
 

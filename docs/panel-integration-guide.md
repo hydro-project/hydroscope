@@ -1,13 +1,13 @@
 # Panel Integration Guide
 
-This guide explains how to integrate InfoPanel and StyleTuner components with the Hydroscope visualization component, including advanced patterns for custom layouts and v6 architecture integration.
+This guide explains how to integrate InfoPanel and StyleTuner components with the Hydroscope visualization component, including advanced patterns for custom layouts and v1.0.0 architecture integration.
 
 ## Overview
 
 The Hydroscope component provides seamless integration with InfoPanel and StyleTuner components through:
 
 - **Automatic State Coordination**: Panels automatically sync with visualization state
-- **V6 Architecture Integration**: Proper use of VisualizationState and AsyncCoordinator
+- **v1.0.0 Architecture Integration**: Proper use of VisualizationState and AsyncCoordinator
 - **Error Isolation**: Panel errors don't crash the main visualization
 - **Settings Persistence**: Panel states are automatically saved to localStorage
 - **Keyboard Shortcuts**: Built-in shortcuts for common panel operations
@@ -100,7 +100,7 @@ function CustomPanelLayout() {
   const [stylePanelOpen, setStylePanelOpen] = useState(false);
   const [styleConfig, setStyleConfig] = useState({});
 
-  // Initialize v6 architecture
+  // Initialize v1.0.0 architecture
   useEffect(() => {
     const initialize = async () => {
       try {
@@ -113,7 +113,7 @@ function CustomPanelLayout() {
         setVisualizationState(visState);
         setAsyncCoordinator(coordinator);
       } catch (error) {
-        console.error('Failed to initialize v6 architecture:', error);
+        console.error('Failed to initialize v1.0.0 architecture:', error);
       }
     };
 
@@ -251,20 +251,20 @@ function StyleConfigSyncExample() {
 }
 ```
 
-## V6 Architecture Integration
+## v1.0.0 Architecture Integration
 
 ### Proper VisualizationState Usage
 
 ```tsx
-function V6IntegrationExample() {
+function v1.0.0IntegrationExample() {
   const [visualizationState, setVisualizationState] = useState(null);
   const [asyncCoordinator, setAsyncCoordinator] = useState(null);
 
-  // Initialize v6 architecture properly
+  // Initialize v1.0.0 architecture properly
   useEffect(() => {
-    const initializeV6 = async () => {
+    const initializev1.0.0 = async () => {
       try {
-        // Create v6 instances
+        // Create v1.0.0 instances
         const visState = new VisualizationState();
         const coordinator = new AsyncCoordinator();
         
@@ -287,11 +287,11 @@ function V6IntegrationExample() {
         setVisualizationState(visState);
         setAsyncCoordinator(coordinator);
       } catch (error) {
-        console.error('V6 initialization failed:', error);
+        console.error('v1.0.0 initialization failed:', error);
       }
     };
 
-    initializeV6();
+    initializev1.0.0();
   }, [data]);
 
   return (
@@ -301,7 +301,7 @@ function V6IntegrationExample() {
         asyncCoordinator={asyncCoordinator}
         open={true}
         onOpenChange={() => {}}
-        // V6 integration enables advanced features
+        // v1.0.0 integration enables advanced features
       />
       
       <StyleTuner
@@ -311,14 +311,14 @@ function V6IntegrationExample() {
         onChange={setStyleConfig}
         open={true}
         onOpenChange={() => {}}
-        // V6 integration enables layout coordination
+        // v1.0.0 integration enables layout coordination
       />
     </>
   );
 }
 ```
 
-### Container Operations with V6
+### Container Operations with v1.0.0
 
 ```tsx
 function ContainerOperationsExample() {
@@ -326,7 +326,7 @@ function ContainerOperationsExample() {
     if (!asyncCoordinator || !visualizationState) return;
 
     try {
-      // Use v6 AsyncCoordinator for proper operation sequencing
+      // Use v1.0.0 AsyncCoordinator for proper operation sequencing
       const isCollapsed = visualizationState.isContainerCollapsed(containerId);
       
       if (isCollapsed) {
@@ -628,10 +628,10 @@ function CustomShortcutsExample() {
 />
 ```
 
-### 2. Use V6 Architecture Properly
+### 2. Use v1.0.0 Architecture Properly
 
 ```tsx
-// Initialize v6 components correctly
+// Initialize v1.0.0 components correctly
 const visState = new VisualizationState();
 const coordinator = new AsyncCoordinator();
 
@@ -675,4 +675,4 @@ useEffect(() => {
 )}
 ```
 
-This guide covers the essential patterns for integrating InfoPanel and StyleTuner components with Hydroscope visualizations. The key is to leverage the v6 architecture properly while providing robust error handling and performance optimization.
+This guide covers the essential patterns for integrating InfoPanel and StyleTuner components with Hydroscope visualizations. The key is to leverage the v1.0.0 architecture properly while providing robust error handling and performance optimization.

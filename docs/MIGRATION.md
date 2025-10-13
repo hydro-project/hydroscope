@@ -9,7 +9,7 @@ This guide helps you migrate from the deprecated `HydroscopeEnhanced` component 
 The new architecture provides:
 
 - **Better Performance**: React.memo optimization and efficient rendering
-- **Cleaner Architecture**: Proper v6 integration without timing bugs
+- **Cleaner Architecture**: Proper v1.0.0 integration without timing bugs
 - **Flexibility**: Use components individually or together
 - **Better Error Handling**: Graceful degradation and error recovery
 - **Improved TypeScript Support**: Better type safety and IntelliSense

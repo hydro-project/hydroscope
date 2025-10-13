@@ -14,7 +14,7 @@ This document provides comprehensive usage examples for the cleaned Hydroscope c
 
 ## Hydroscope Component Examples
 
-The new Hydroscope component provides complete functionality with clean architecture and v6 integration.
+The new Hydroscope component provides complete functionality with clean architecture and v1.0.0 integration.
 
 ## InfoPanel Component
 
@@ -60,7 +60,7 @@ function BasicInfoPanelExample() {
 }
 ```
 
-### Advanced Usage with V6 Architecture
+### Advanced Usage with v1.0.0 Architecture
 
 ```tsx
 import React, { useState, useEffect, useRef } from 'react';
@@ -76,9 +76,9 @@ function AdvancedInfoPanelExample() {
   const [asyncCoordinator, setAsyncCoordinator] = useState<AsyncCoordinator | null>(null);
   const infoPanelRef = useRef<InfoPanelRef>(null);
 
-  // Initialize v6 architecture
+  // Initialize v1.0.0 architecture
   useEffect(() => {
-    const initializeV6 = async () => {
+    const initializev1.0.0 = async () => {
       const visState = new VisualizationState();
       const coordinator = new AsyncCoordinator();
       
@@ -89,7 +89,7 @@ function AdvancedInfoPanelExample() {
       setAsyncCoordinator(coordinator);
     };
 
-    initializeV6();
+    initializev1.0.0();
   }, []);
 
   // Keyboard shortcut for search
@@ -181,7 +181,7 @@ function BasicStyleTunerExample() {
 }
 ```
 
-### Advanced Usage with V6 Integration
+### Advanced Usage with v1.0.0 Integration
 
 ```tsx
 import React, { useState, useEffect } from 'react';
@@ -369,7 +369,7 @@ function CustomIntegrationExample() {
   const [infoPanelOpen, setInfoPanelOpen] = useState(true);
   const [stylePanelOpen, setStylePanelOpen] = useState(true);
 
-  // Initialize v6 architecture
+  // Initialize v1.0.0 architecture
   useEffect(() => {
     const initialize = async () => {
       try {
@@ -389,7 +389,7 @@ function CustomIntegrationExample() {
         setVisualizationState(visState);
         setAsyncCoordinator(coordinator);
       } catch (error) {
-        console.error('Failed to initialize v6 architecture:', error);
+        console.error('Failed to initialize v1.0.0 architecture:', error);
       }
     };
 
@@ -540,7 +540,7 @@ function NewCleanComponent() {
   return (
     <Hydroscope
       data={data}
-      // Same props but with v6 architecture integration
+      // Same props but with v1.0.0 architecture integration
       onNodeClick={(event, node, visualizationState) => {
         // Now includes visualizationState for better integration
         handleNodeClick(event, node, visualizationState);
@@ -559,7 +559,7 @@ function NewCleanComponent() {
 1. **Always handle errors**: Implement error callbacks for graceful degradation
 2. **Use TypeScript**: Leverage the comprehensive type definitions
 3. **Persist settings**: Save user preferences to localStorage
-4. **V6 Integration**: Use VisualizationState and AsyncCoordinator for proper architecture
+4. **v1.0.0 Integration**: Use VisualizationState and AsyncCoordinator for proper architecture
 5. **Performance**: Use React.memo for components that don't need frequent re-renders
 6. **Accessibility**: Ensure keyboard navigation works (Ctrl+F for search)
 7. **Responsive Design**: Consider different screen sizes and container dimensions

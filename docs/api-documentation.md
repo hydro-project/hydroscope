@@ -229,7 +229,7 @@ const graphData = {
 **Parameters**:
 - `event: React.MouseEvent` - React click event
 - `node: NodeData` - Clicked node data
-- `visualizationState?: VisualizationState` - Current v6 visualization state
+- `visualizationState?: VisualizationState` - Current v1.0.0 visualization state
 
 **Usage**:
 ```tsx
@@ -237,7 +237,7 @@ const graphData = {
   onNodeClick={(event, node, visualizationState) => {
     console.log('Node clicked:', node.id);
     
-    // Access additional node data through v6 architecture
+    // Access additional node data through v1.0.0 architecture
     if (visualizationState) {
       const fullNodeData = visualizationState.getNode(node.id);
       console.log('Full node data:', fullNodeData);
@@ -265,7 +265,7 @@ const graphData = {
 
 **Parameters**:
 - `containerId: string` - ID of collapsed container
-- `visualizationState?: VisualizationState` - Current v6 visualization state
+- `visualizationState?: VisualizationState` - Current v1.0.0 visualization state
 
 **Usage**:
 ```tsx
@@ -291,7 +291,7 @@ const graphData = {
 
 **Parameters**:
 - `containerId: string` - ID of expanded container
-- `visualizationState?: VisualizationState` - Current v6 visualization state
+- `visualizationState?: VisualizationState` - Current v1.0.0 visualization state
 
 **Usage**:
 ```tsx
@@ -426,7 +426,7 @@ onNodeClick={(event, node) => {
 **After (New Hydroscope)**:
 ```tsx
 onNodeClick={(event, node, visualizationState) => {
-  // Enhanced with v6 architecture access
+  // Enhanced with v1.0.0 architecture access
   console.log('Node clicked:', node.id);
   
   if (visualizationState) {
@@ -515,7 +515,7 @@ import { Hydroscope } from '@hydro-project/hydroscope';
   showInfoPanel={true}
   showStylePanel={true}
   onNodeClick={(event, node, visualizationState) => {
-    // Enhanced callback with v6 integration
+    // Enhanced callback with v1.0.0 integration
     handleNodeClick(event, node, visualizationState);
   }}
   onConfigChange={(config) => {
@@ -640,15 +640,15 @@ Save important configuration:
 />
 ```
 
-### 4. V6 Architecture Usage
+### 4. v1.0.0 Architecture Usage
 
-Leverage v6 architecture in callbacks:
+Leverage v1.0.0 architecture in callbacks:
 
 ```tsx
 <Hydroscope
   onNodeClick={(event, node, visualizationState) => {
     if (visualizationState) {
-      // Use v6 features for enhanced functionality
+      // Use v1.0.0 features for enhanced functionality
       const nodeData = visualizationState.getNode(node.id);
       const connections = visualizationState.getConnectedNodes(node.id);
     }
