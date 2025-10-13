@@ -29,3 +29,8 @@ export {
   withAsyncResizeObserverErrorSuppression,
   useResizeObserverErrorSuppression,
 } from "./utils/ResizeObserverErrorSuppression.js";
+export {
+  clearSearchImperatively,
+  clearSearchPanelImperatively,
+  SEARCH_CLEAR_PATTERN,
+} from "./utils/searchClearUtils.js";

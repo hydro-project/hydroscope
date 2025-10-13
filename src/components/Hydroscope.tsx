@@ -1264,6 +1264,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     }
                     edgeStyleConfig={state.data?.edgeStyleConfig}
                     nodeTypeConfig={state.data?.nodeTypeConfig}
+                    asyncCoordinator={hydroscopeCoreRef.current?.getAsyncCoordinator() || null}
                   />
                 )}
 

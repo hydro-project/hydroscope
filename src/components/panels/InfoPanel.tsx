@@ -25,6 +25,7 @@ import {
 } from "../SearchControls";
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
+import { clearSearchPanelImperatively } from "../../utils/searchClearUtils.js";
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
@@ -54,6 +55,7 @@ const InfoPanelInternal = forwardRef<
       onToggleContainer,
       onElementNavigation,
       layoutOrchestrator,
+      asyncCoordinator,
       colorPalette = "Set3",
       defaultCollapsed: _defaultCollapsed = false,
       className: _className = "",
@@ -194,10 +196,12 @@ const InfoPanelInternal = forwardRef<
       onSearchUpdate?.(query, matches, matches.length ? matches[0] : undefined);
     };
     const handleSearchClear = () => {
-      setSearchQuery("");
-      setSearchMatches([]);
-      setCurrentSearchMatch(undefined);
-      onSearchUpdate?.("", [], undefined);
+      clearSearchPanelImperatively({
+        setSearchQuery,
+        setSearchMatches,
+        setCurrentSearchMatch,
+        debug: process.env.NODE_ENV === 'development'
+      });
     };
     const handleSearchNavigate = (
       _dir: "prev" | "next",
@@ -328,6 +332,7 @@ const InfoPanelInternal = forwardRef<
                     placeholder="Search nodes and containers..."
                     compact
                     visualizationState={visualizationState}
+                    asyncCoordinator={asyncCoordinator}
                   />
                   <HierarchyTree
                     collapsedContainers={collapsedContainers}

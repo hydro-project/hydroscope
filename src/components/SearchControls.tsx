@@ -21,6 +21,7 @@ import {
 import { Input, Button, Tooltip, AutoComplete, List, Typography } from "antd";
 import { PANEL_CONSTANTS } from "../shared/config";
 import type { SearchResult } from "../types/core.js";
+import { clearSearchImperatively } from "../utils/searchClearUtils.js";
 export type SearchableItem = {
   id: string;
   label: string;
@@ -47,6 +48,8 @@ type Props = {
   compact?: boolean;
   // Add VisualizationState for delegated search
   visualizationState?: any;
+  // Add AsyncCoordinator for coordinated operations
+  asyncCoordinator?: any;
   // Enhanced navigation and accessibility props
   onResultNavigation?: (result: SearchResult) => void;
   onViewportFocus?: (elementId: string) => void;
@@ -81,6 +84,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       onNavigate,
       placeholder = "Search (wildcards: * ?)",
       visualizationState,
+      asyncCoordinator,
       compact = false,
       onResultNavigation,
       onViewportFocus,
@@ -222,17 +226,32 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         try {
           const rx = toRegex(query);
           if (!rx) {
-            setMatches([]);
-            setCurrentIndex(0);
-            // Clear search in VisualizationState if available
-            if (visualizationState && visualizationState.clearSearchEnhanced) {
+            // Use AsyncCoordinator if available for coordinated clear
+            if (asyncCoordinator && visualizationState) {
               try {
-                visualizationState.clearSearchEnhanced();
-                // ReactFlow regeneration will be handled by Hydroscope component
+                // Use AsyncCoordinator for coordinated clear (async but don't await to prevent blocking)
+                asyncCoordinator.clearSearch(visualizationState, {
+                  fitView: false,
+                }).catch((error: any) => {
+                  console.error('[SearchControls] Coordinated search clear failed in debounced effect:', error);
+                });
               } catch (error) {
-                // Silently handle clear errors
+                console.error('[SearchControls] AsyncCoordinator clear failed:', error);
+              }
+            } else {
+              // Fallback to direct VisualizationState clear
+              if (visualizationState && visualizationState.clearSearchEnhanced) {
+                try {
+                  visualizationState.clearSearchEnhanced();
+                  // ReactFlow regeneration will be handled by Hydroscope component
+                } catch (error) {
+                  // Silently handle clear errors
+                }
               }
             }
+            
+            setMatches([]);
+            setCurrentIndex(0);
             // Apply clear operation synchronously to prevent race conditions
             onSearch("", []);
             return;
@@ -342,17 +361,20 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       navigateToResultIndex(idx, dir);
     };
     const clearAll = () => {
-      // Clear any pending debounced search
-      if (timerRef.current) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      setQuery("");
-      setMatches([]);
-      setCurrentIndex(0);
-      // Apply clear operations synchronously to prevent race conditions
-      onClear();
-      onSearch("", []);
+      clearSearchImperatively({
+        visualizationState,
+        inputRef,
+        setQuery,
+        setMatches,
+        setCurrentIndex,
+        clearTimer: () => {
+          if (timerRef.current) {
+            window.clearTimeout(timerRef.current);
+            timerRef.current = null;
+          }
+        },
+        debug: process.env.NODE_ENV === 'development'
+      });
     };
     // Cleanup effect to clear timers on unmount
     useEffect(() => {
@@ -466,13 +488,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             value={query}
             onChange={(v) => {
               setQuery(v);
-              if (v === "") {
-                setMatches([]);
-                setCurrentIndex(0);
-                // Apply clear operations synchronously to prevent race conditions
-                onClear();
-                onSearch("", []);
-              }
+              // Note: When the X button is clicked, onClear will handle the clearing
+              // This onChange is primarily for typing changes
+              // If v === "", it could be from typing or from the X button
+              // We'll let the debounced effect handle empty queries to avoid double-clearing
             }}
             onSelect={(v) => {
               setQuery(v);
@@ -484,6 +503,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             <Input
               ref={inputRef}
               allowClear
+              onClear={clearAll}
               data-testid="search-input"
               aria-label="Search input"
               aria-describedby="search-results-count"

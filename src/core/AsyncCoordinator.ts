@@ -2804,6 +2804,85 @@ export class AsyncCoordinator {
   }
 
   /**
+   * Clear search results and highlights
+   * This method coordinates all search clearing operations to prevent React re-render cascades
+   */
+  async clearSearch(
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {}
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      console.debug("[AsyncCoordinator] 🧹 Starting search clear operation", {
+        fitView: options.fitView,
+        timestamp: startTime,
+      });
+
+      // Validate inputs
+      if (!state) {
+        throw new Error("VisualizationState is required for search clear operations");
+      }
+
+      // Step 1: Clear search state in VisualizationState (synchronous)
+      if (typeof state.clearSearchEnhanced === 'function') {
+        state.clearSearchEnhanced();
+        console.debug("[AsyncCoordinator] ✅ Search state cleared");
+      } else if (typeof state.clearSearch === 'function') {
+        state.clearSearch();
+        console.debug("[AsyncCoordinator] ✅ Search state cleared (legacy)");
+      }
+
+      // Step 2: Re-render to remove search highlights (no layout needed, just styling update)
+      const reactFlowData = await this.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: [], // No layout needed, just re-render to remove highlights
+          fitView: options.fitView || false, // Default to false for clear operations
+          fitViewOptions: options.fitViewOptions,
+        }
+      );
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.debug(
+        "[AsyncCoordinator] ✅ Search clear completed successfully",
+        {
+          duration: `${duration}ms`,
+          fitView: options.fitView,
+          timestamp: endTime,
+        }
+      );
+
+      return reactFlowData;
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.error("[AsyncCoordinator] ❌ Search clear failed:", {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        duration: `${duration}ms`,
+        options,
+        timestamp: endTime,
+      });
+
+      // Set error state
+      if (state && typeof state.setLayoutPhase === "function") {
+        state.setLayoutPhase("error");
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * Execute operation with error recovery (synchronous core)
    */
   executeWithErrorRecovery<T>(
