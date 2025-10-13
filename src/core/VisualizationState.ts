@@ -1527,7 +1527,9 @@ export class VisualizationState {
       layoutCount: 0,
       lastUpdate: Date.now(),
     };
-    console.log(`🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}`);
+    // CRITICAL FIX: Reset smart collapse state for new data
+    this.resetSmartCollapseState();
+    console.log(`🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}, smartCollapseEnabled=${this._smartCollapseEnabled}`);
   }
   // Smart Collapse Management
   private _smartCollapseEnabled = true;

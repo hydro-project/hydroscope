@@ -687,7 +687,7 @@ describe("ELKBridge", () => {
       );
     });
 
-    it("should calculate optimal node sizes based on labels", () => {
+    it("should calculate consistent node sizes regardless of labels", () => {
       const shortLabelNode = createTestNode("n1", "Short");
       const longLabelNode = createTestNode(
         "n2",
@@ -706,7 +706,10 @@ describe("ELKBridge", () => {
 
       expect(shortNode?.width).toBeDefined();
       expect(longNode?.width).toBeDefined();
-      expect(longNode!.width).toBeGreaterThan(shortNode!.width);
+      // Nodes should have consistent sizes to avoid layout instability
+      expect(longNode!.width).toBe(shortNode!.width);
+      expect(longNode!.width).toBe(120);
+      expect(shortNode!.width).toBe(120);
     });
 
     it("should calculate optimal container sizes", async () => {

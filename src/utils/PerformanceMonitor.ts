@@ -234,10 +234,26 @@ export class PerformanceMonitor {
     }, this.config.samplingInterval);
   }
   private sampleSystemMetrics(): void {
-    // Sample system-wide metrics
-    const memUsage = process.memoryUsage();
-    this.recordMetric("System", "heap_used", memUsage.heapUsed / 1024 / 1024); // MB
-    this.recordMetric("System", "heap_total", memUsage.heapTotal / 1024 / 1024); // MB
+    // Sample system-wide metrics (only available in Node.js environment)
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      try {
+        const memUsage = process.memoryUsage();
+        this.recordMetric("System", "heap_used", memUsage.heapUsed / 1024 / 1024); // MB
+        this.recordMetric("System", "heap_total", memUsage.heapTotal / 1024 / 1024); // MB
+      } catch (error) {
+        // Silently ignore memory sampling errors in browser environment
+      }
+    } else if (typeof window !== 'undefined' && (window as any).performance && (window as any).performance.memory) {
+      // Use browser performance.memory API if available (Chrome)
+      try {
+        const memInfo = (window as any).performance.memory;
+        this.recordMetric("System", "heap_used", memInfo.usedJSHeapSize / 1024 / 1024); // MB
+        this.recordMetric("System", "heap_total", memInfo.totalJSHeapSize / 1024 / 1024); // MB
+      } catch (error) {
+        // Silently ignore memory sampling errors
+      }
+    }
+    // If neither Node.js process nor browser performance.memory is available, skip memory sampling
   }
   stop(): void {
     if (this.monitoringInterval) {
@@ -298,7 +314,7 @@ export class PerformanceMonitor {
 }
 // Global performance monitor instance
 export const globalPerformanceMonitor = new PerformanceMonitor({
-  enabled: process.env.NODE_ENV !== "test", // Disable in tests to avoid noise
+  enabled: typeof process !== 'undefined' ? process.env.NODE_ENV !== "test" : true, // Disable in tests to avoid noise
   alertCallback: (alert) => {
     // In production, this could send alerts to monitoring systems
     if (alert.severity === "critical") {

@@ -21,7 +21,7 @@ export class PerformanceProfiler {
   }> = [];
   startOperation(operationName: string, _metadata?: Record<string, any>): void {
     const startTime = performance.now();
-    const startMemory = process.memoryUsage().heapUsed;
+    const startMemory = this.getCurrentMemoryUsage();
     this.operationStack.push({
       name: operationName,
       startTime,
@@ -34,7 +34,7 @@ export class PerformanceProfiler {
     }
     const operation = this.operationStack.pop()!;
     const endTime = performance.now();
-    const endMemory = process.memoryUsage().heapUsed;
+    const endMemory = this.getCurrentMemoryUsage();
     return {
       operation: operation.name,
       duration: endTime - operation.startTime,
@@ -46,6 +46,29 @@ export class PerformanceProfiler {
       },
       metadata,
     };
+  }
+
+  private getCurrentMemoryUsage(): number {
+    // Try Node.js process.memoryUsage first
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      try {
+        return process.memoryUsage().heapUsed;
+      } catch (error) {
+        // Fall through to browser API
+      }
+    }
+    
+    // Try browser performance.memory API (Chrome)
+    if (typeof window !== 'undefined' && (window as any).performance && (window as any).performance.memory) {
+      try {
+        return (window as any).performance.memory.usedJSHeapSize;
+      } catch (error) {
+        // Fall through to default
+      }
+    }
+    
+    // Return 0 if no memory API is available
+    return 0;
   }
 }
 // Global profiler instance

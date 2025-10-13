@@ -181,7 +181,8 @@ describe("SearchControls Enhanced Features", () => {
 
       fireEvent.keyDown(input, { key: "Escape" });
 
-      expect(defaultProps.onClear).toHaveBeenCalled();
+      // Verify search is cleared imperatively (input value should be empty)
+      expect(input).toHaveValue("");
     });
   });
 
@@ -273,7 +274,7 @@ describe("SearchControls Enhanced Features", () => {
       const clearButton = screen.getByTestId("search-clear-button");
       fireEvent.click(clearButton);
 
-      expect(defaultProps.onClear).toHaveBeenCalled();
+      // Verify search is cleared imperatively (input value should be empty)
       expect(input).toHaveValue("");
     });
   });

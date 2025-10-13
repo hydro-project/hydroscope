@@ -26,6 +26,10 @@ import type { VisualizationState } from "../core/VisualizationState";
 // import type { AsyncCoordinator } from "../core/AsyncCoordinator";
 import type { Container } from "../shared/types";
 import type { GraphNode, SearchResult } from "../types/core";
+import { 
+  toggleContainerImperatively,
+  clearContainerOperationDebouncing 
+} from "../utils/containerOperationUtils.js";
 // ============ TREE DATA FORMATTING UTILITIES ============
 /**
  * Build hierarchy tree structure from VisualizationState
@@ -425,6 +429,13 @@ export function HierarchyTree({
   // Track the last search expansion to prevent duplicate operations
   const lastSearchExpansionRef = useRef<string>("");
   const searchExpansionInProgressRef = useRef<boolean>(false);
+
+  // Cleanup debounced operations on unmount
+  useEffect(() => {
+    return () => {
+      clearContainerOperationDebouncing();
+    };
+  }, []);
   // Sync local expanded state whenever the derived value changes (e.g., collapse/expand in vis, search)
   useEffect(() => {
     setExpandedKeys(derivedExpandedKeys);
@@ -526,9 +537,18 @@ export function HierarchyTree({
               searchExpansionInProgressRef.current = false;
             });
         } else {
-          // Fallback to individual toggles if LayoutOrchestrator not available
+          // Fallback to imperative utilities if LayoutOrchestrator not available
           containersToToggle.forEach((containerId) => {
-            if (onToggleContainer) {
+            const success = toggleContainerImperatively({
+              containerId,
+              visualizationState,
+              forceExpanded: true, // Search expansion always expands
+              debounce: false, // Don't debounce search expansion
+              debug: false
+            });
+            
+            // Final fallback to onToggleContainer if imperative operation fails
+            if (!success && onToggleContainer) {
               onToggleContainer(containerId);
             }
           });
@@ -561,40 +581,35 @@ export function HierarchyTree({
       if (containersToToggle.length > 0) {
         // Use the same synchronous approach for consistency
         const _operationId = `hierarchy-sync-${Date.now()}`;
-        // Use AsyncCoordinator for v6 architecture if available
-        if (asyncCoordinator && visualizationState) {
-          // Toggle each container through AsyncCoordinator
-          Promise.all(
-            containersToToggle.map(async (containerId) => {
-              const container = visualizationState.getContainer(containerId);
-              if (container) {
-                if (container.collapsed) {
-                  return asyncCoordinator.expandContainer(
-                    containerId,
-                    visualizationState,
-                    { triggerLayout: false },
-                  );
-                } else {
-                  return asyncCoordinator.collapseContainer(
-                    containerId,
-                    visualizationState,
-                    { triggerLayout: false },
-                  );
-                }
-              }
-            }),
-          )
-            .then(() => {
-              // Note: Layout updates should be triggered separately by the parent component
-              // as per v6 architecture design
-            })
-            .catch((error: unknown) => {
-              console.warn(`[HierarchyTree] Hierarchy sync failed: ${error}`);
-            });
-        } else {
-          // Fallback to direct operations
+        // Use imperative operations to avoid coordination cascades
+        if (visualizationState) {
+          // Use imperative utilities for all container operations
           for (const containerId of containersToToggle) {
-            onToggleContainer?.(containerId);
+            const success = toggleContainerImperatively({
+              containerId,
+              visualizationState,
+              debounce: false, // Don't debounce sync operations
+              debug: false
+            });
+            
+            if (!success) {
+              console.warn(`[HierarchyTree] Failed to toggle container ${containerId} imperatively`);
+            }
+          }
+        } else {
+          // Fallback to imperative operations
+          for (const containerId of containersToToggle) {
+            const success = toggleContainerImperatively({
+              containerId,
+              visualizationState,
+              debounce: false, // Don't debounce sync operations
+              debug: false
+            });
+            
+            // Final fallback to onToggleContainer if imperative operation fails
+            if (!success) {
+              onToggleContainer?.(containerId);
+            }
           }
         }
       }
@@ -637,16 +652,27 @@ export function HierarchyTree({
   ) => {
     // Update UI immediately
     setExpandedKeys(nextExpandedKeys);
-    // Then toggle corresponding container in the visualization (batched to prevent ResizeObserver loops)
-    if (onToggleContainer && info.node) {
+    // Then toggle corresponding container in the visualization using imperative utilities
+    if (info.node && visualizationState) {
       const nodeKey = info.node.key as string;
       // Check if we're expanding or collapsing by comparing current state
       const wasExpanded = expandedKeys.includes(nodeKey);
       const isNowExpanded = nextExpandedKeys.includes(nodeKey);
-      // Only call onToggleContainer if the state actually changed
+      // Only toggle if the state actually changed
       if (wasExpanded !== isNowExpanded) {
-        // Execute synchronously to prevent race conditions with layout operations
-        onToggleContainer(nodeKey);
+        // Use imperative container operations with debouncing for rapid interactions
+        const success = toggleContainerImperatively({
+          containerId: nodeKey,
+          visualizationState,
+          forceExpanded: isNowExpanded,
+          debounce: true, // Enable debouncing for rapid tree interactions
+          debug: false
+        });
+        
+        // Fallback to onToggleContainer if imperative operation fails
+        if (!success && onToggleContainer) {
+          onToggleContainer(nodeKey);
+        }
       }
     }
   };

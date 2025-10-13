@@ -70,6 +70,7 @@ vi.mock("@xyflow/react", () => ({
     getNodes: vi.fn(() => []),
     getEdges: vi.fn(() => []),
   }),
+  useUpdateNodeInternals: () => vi.fn(),
   useNodesInitialized: () => true,
   applyNodeChanges: vi.fn(),
   applyEdgeChanges: vi.fn(),

@@ -3,16 +3,17 @@
  *
  * Provides UI controls for adjusting visualization styling and layout settings.
  *
- * IMPORTANT: This component implements comprehensive ResizeObserver loop prevention:
- * 1. Controls Scale changes use global layout lock to serialize operations
- * 2. Lock is released BEFORE triggering callbacks to allow subsequent layout operations
- * 3. Throttling prevents rapid-fire changes (max 1 change per 200ms)
- * 4. All style changes use requestAnimationFrame batching
- * 5. Visual feedback shows when scale updates are processing
+ * IMPORTANT: This component implements comprehensive ResizeObserver loop prevention
+ * using imperative style operation utilities:
+ * 1. Layout algorithm changes use changeLayoutImperatively() to avoid coordination cascades
+ * 2. Color palette changes use changeColorPaletteImperatively() with ResizeObserver suppression
+ * 3. Edge style changes use changeEdgeStyleImperatively() with requestAnimationFrame batching
+ * 4. Reset operations use resetStylesImperatively() with comprehensive error suppression
+ * 5. All operations avoid AsyncCoordinator calls during UI interactions
  * 6. Multi-layer error suppression handles any remaining ResizeObserver errors
  *
- * KEY FIX: The lock must be released before calling onChange/onControlsScaleChange
- * because those callbacks trigger refreshLayout() which needs to acquire the same lock.
+ * This follows the established pattern from containerOperationUtils and panelOperationUtils
+ * for stable UI operations without browser errors or performance issues.
  */
 import React, { useState, useEffect, memo } from "react";
 import { Button, Divider } from "antd";
@@ -24,7 +25,14 @@ import {
 } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
-type EdgeStyleKind = "bezier" | "straight" | "smoothstep";
+import {
+  changeLayoutImperatively,
+  changeColorPaletteImperatively,
+  changeEdgeStyleImperatively,
+  resetStylesImperatively,
+  type EdgeStyleKind
+} from "../../utils/styleOperationUtils.js";
+// EdgeStyleKind is now imported from styleOperationUtils
 export interface StyleConfig {
   edgeStyle?: EdgeStyleKind;
   edgeWidth?: number;
@@ -185,16 +193,15 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             value={currentLayout}
             style={inputStyle}
             onChange={(e) => {
-              // Update immediately for responsive UI and execute synchronously
+              // Use imperative utility to avoid coordination cascades and ResizeObserver loops
               const newLayout = e.target.value;
-              try {
-                onLayoutChange?.(newLayout);
-              } catch (error) {
-                console.error(
-                  `[StyleTuner] Layout change failed for ${newLayout}:`,
-                  error,
-                );
-              }
+              changeLayoutImperatively({
+                algorithm: newLayout,
+                onLayoutChange,
+                visualizationState: _visualizationState || undefined,
+                suppressResizeObserver: true,
+                debug: false
+              });
             }}
           >
             {Object.entries(layoutOptions).map(([key, label]) => (
@@ -214,20 +221,15 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
               const newEdgeStyle = e.target.value as EdgeStyleKind;
               const next = { ...local, edgeStyle: newEdgeStyle };
               setLocal(next);
-              try {
-                // Use the new AsyncCoordinator-based handler if available, otherwise fall back to the old one
-                if (onEdgeStyleChange) {
-                  onEdgeStyleChange(newEdgeStyle);
-                } else {
-                  // Fallback to the old onChange handler
-                  onChange(next);
-                }
-              } catch (error) {
-                console.error(
-                  `[StyleTuner] Edge style change failed for ${newEdgeStyle}:`,
-                  error,
-                );
-              }
+              
+              // Use imperative utility to avoid coordination cascades and ResizeObserver loops
+              changeEdgeStyleImperatively({
+                edgeStyle: newEdgeStyle,
+                onEdgeStyleChange: onEdgeStyleChange || (() => onChange(next)),
+                visualizationState: _visualizationState || undefined,
+                suppressResizeObserver: true,
+                debug: false
+              });
             }}
           >
             <option value="bezier">Bezier</option>
@@ -240,13 +242,15 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           <select
             value={colorPalette}
             onChange={(e) => {
-              // Update immediately for responsive UI and execute synchronously
+              // Use imperative utility to avoid coordination cascades and ResizeObserver loops
               const newPalette = e.target.value;
-              try {
-                onPaletteChange?.(newPalette);
-              } catch (error) {
-                console.error("Palette change failed:", error);
-              }
+              changeColorPaletteImperatively({
+                palette: newPalette,
+                onPaletteChange,
+                visualizationState: _visualizationState || undefined,
+                suppressResizeObserver: true,
+                debug: false
+              });
             }}
             style={inputStyle}
           >
@@ -262,7 +266,15 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
         <Button
           type="default"
           icon={<ReloadOutlined />}
-          onClick={onResetToDefaults}
+          onClick={() => {
+            // Use imperative utility to avoid coordination cascades and ResizeObserver loops
+            resetStylesImperatively({
+              onResetToDefaults,
+              visualizationState: _visualizationState || undefined,
+              suppressResizeObserver: true,
+              debug: false
+            });
+          }}
           block
           size="small"
           style={{ fontSize: "12px" }}

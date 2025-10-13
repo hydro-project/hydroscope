@@ -11,6 +11,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
   memo,
+  useEffect,
 } from "react";
 import { Button } from "antd";
 import { InfoPanelProps, LegendData } from "../types";
@@ -26,6 +27,11 @@ import {
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
 import { clearSearchPanelImperatively } from "../../utils/searchClearUtils.js";
+import { 
+  togglePanelImperatively,
+  batchPanelOperationsImperatively,
+  type InfoPanelSection 
+} from "../../utils/panelOperationUtils.js";
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
@@ -80,6 +86,48 @@ const InfoPanelInternal = forwardRef<
       focusSearch: () => searchControlsRef.current?.focus(),
       clearSearch: () => searchControlsRef.current?.clear(),
     }));
+
+    // ResizeObserver error suppression during panel operations
+    useEffect(() => {
+      let suppressionTimer: NodeJS.Timeout | null = null;
+      
+      const suppressResizeObserverErrors = () => {
+        const originalError = window.console.error;
+        const suppressedError = (...args: any[]) => {
+          const message = args[0]?.toString() || '';
+          if (message.includes('ResizeObserver loop limit exceeded')) {
+            // Suppress ResizeObserver loop errors during panel operations
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[InfoPanel] Suppressed ResizeObserver error during panel operation');
+            }
+            return;
+          }
+          originalError.apply(console, args);
+        };
+
+        window.console.error = suppressedError;
+        
+        // Clear any existing timer
+        if (suppressionTimer) {
+          clearTimeout(suppressionTimer);
+        }
+        
+        // Restore original error handler after panel operations settle
+        suppressionTimer = setTimeout(() => {
+          window.console.error = originalError;
+          suppressionTimer = null;
+        }, 300);
+      };
+
+      // Suppress errors when any panel section state changes
+      suppressResizeObserverErrors();
+
+      return () => {
+        if (suppressionTimer) {
+          clearTimeout(suppressionTimer);
+        }
+      };
+    }, [legendCollapsed, groupingCollapsed, edgeStyleCollapsed, open]);
     // Get default legend data if none provided
     const defaultLegendData: LegendData = {
       title: "Node Types",
@@ -203,6 +251,90 @@ const InfoPanelInternal = forwardRef<
         debug: process.env.NODE_ENV === 'development'
       });
     };
+
+    // Imperative panel section toggle handlers
+    const handleLegendToggle = () => {
+      togglePanelImperatively({
+        panelId: 'legend',
+        setState: setLegendCollapsed,
+        currentState: legendCollapsed,
+        debounce: true,
+        debug: process.env.NODE_ENV === 'development'
+      });
+    };
+
+    const handleGroupingToggle = () => {
+      togglePanelImperatively({
+        panelId: 'grouping',
+        setState: setGroupingCollapsed,
+        currentState: groupingCollapsed,
+        debounce: true,
+        debug: process.env.NODE_ENV === 'development'
+      });
+    };
+
+    const handleEdgeStyleToggle = () => {
+      togglePanelImperatively({
+        panelId: 'edgeStyles',
+        setState: setEdgeStyleCollapsed,
+        currentState: edgeStyleCollapsed,
+        debounce: true,
+        debug: process.env.NODE_ENV === 'development'
+      });
+    };
+
+    // Batched panel operations for bulk actions
+    const handleExpandAllSections = () => {
+      batchPanelOperationsImperatively({
+        operations: [
+          {
+            panelId: 'legend',
+            operation: 'expand',
+            setState: setLegendCollapsed,
+            currentState: legendCollapsed
+          },
+          {
+            panelId: 'grouping',
+            operation: 'expand',
+            setState: setGroupingCollapsed,
+            currentState: groupingCollapsed
+          },
+          {
+            panelId: 'edgeStyles',
+            operation: 'expand',
+            setState: setEdgeStyleCollapsed,
+            currentState: edgeStyleCollapsed
+          }
+        ],
+        debug: process.env.NODE_ENV === 'development'
+      });
+    };
+
+    const handleCollapseAllSections = () => {
+      batchPanelOperationsImperatively({
+        operations: [
+          {
+            panelId: 'legend',
+            operation: 'collapse',
+            setState: setLegendCollapsed,
+            currentState: legendCollapsed
+          },
+          {
+            panelId: 'grouping',
+            operation: 'collapse',
+            setState: setGroupingCollapsed,
+            currentState: groupingCollapsed
+          },
+          {
+            panelId: 'edgeStyles',
+            operation: 'collapse',
+            setState: setEdgeStyleCollapsed,
+            currentState: edgeStyleCollapsed
+          }
+        ],
+        debug: process.env.NODE_ENV === 'development'
+      });
+    };
     const handleSearchNavigate = (
       _dir: "prev" | "next",
       current: SearchMatch,
@@ -210,7 +342,7 @@ const InfoPanelInternal = forwardRef<
       setCurrentSearchMatch(current);
       onSearchUpdate?.(searchQuery, searchMatches, current);
     };
-    // Panel style
+    // Panel style with ResizeObserver loop prevention
     const panelStyle: React.CSSProperties = {
       position: "absolute",
       top: PANEL_CONSTANTS.PANEL_TOP,
@@ -227,6 +359,9 @@ const InfoPanelInternal = forwardRef<
       transform: open ? "translateX(0)" : "translateX(120%)", // slide from right
       opacity: open ? 1 : 0,
       pointerEvents: open ? "auto" : "none",
+      // Prevent layout thrashing during panel operations
+      containIntrinsicSize: "auto 400px", // Provide size hint to prevent layout shifts
+      contentVisibility: open ? "visible" : "hidden", // Optimize rendering for closed panels
     };
     // Custom button style for open/close, matching CustomControls
     const controlButtonStyle: React.CSSProperties = {
@@ -301,7 +436,7 @@ const InfoPanelInternal = forwardRef<
             <CollapsibleSection
               title="Grouping"
               isCollapsed={groupingCollapsed}
-              onToggle={() => setGroupingCollapsed(!groupingCollapsed)}
+              onToggle={handleGroupingToggle}
             >
               {/* Grouping Controls */}
               {safeHierarchyChoices.length > 0 && (
@@ -363,7 +498,7 @@ const InfoPanelInternal = forwardRef<
             <CollapsibleSection
               title="Edge Styles"
               isCollapsed={edgeStyleCollapsed}
-              onToggle={() => setEdgeStyleCollapsed(!edgeStyleCollapsed)}
+              onToggle={handleEdgeStyleToggle}
             >
               <EdgeStyleLegend
                 edgeStyleConfig={edgeStyleConfig}
@@ -375,7 +510,7 @@ const InfoPanelInternal = forwardRef<
           <CollapsibleSection
             title={effectiveLegendData.title}
             isCollapsed={legendCollapsed}
-            onToggle={() => setLegendCollapsed(!legendCollapsed)}
+            onToggle={handleLegendToggle}
           >
             <Legend
               legendData={effectiveLegendData}
@@ -399,6 +534,14 @@ export { CollapsibleSection } from "../CollapsibleSection";
 // Export types for compatibility
 export type { InfoPanelProps, LegendData } from "../types";
 export type { SearchMatch } from "../SearchControls";
+
+// Export imperative operation functions for external use
+export { 
+  togglePanelImperatively,
+  batchPanelOperationsImperatively,
+  expandPanelImperatively,
+  collapsePanelImperatively 
+} from "../../utils/panelOperationUtils.js";
 // Additional type exports for compatibility
 export type LegendItem = {
   type: string;

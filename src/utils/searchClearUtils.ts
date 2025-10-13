@@ -5,6 +5,12 @@
  * and ResizeObserver loops by using direct DOM manipulation and minimal state updates.
  */
 
+import { 
+  globalOperationMonitor, 
+  recordDOMUpdate,
+  type OperationType 
+} from "./operationPerformanceMonitor.js";
+
 /**
  * Clear search imperatively without triggering AsyncCoordinator cascades
  * 
@@ -22,6 +28,7 @@ export function clearSearchImperatively(options: {
   setCurrentIndex?: (index: number) => void;
   clearTimer?: () => void;
   debug?: boolean;
+  enablePerformanceMonitoring?: boolean;
 }): void {
   const {
     visualizationState,
@@ -30,8 +37,19 @@ export function clearSearchImperatively(options: {
     setMatches,
     setCurrentIndex,
     clearTimer,
-    debug = false
+    debug = false,
+    enablePerformanceMonitoring = true
   } = options;
+
+  // Start performance monitoring
+  const operation: OperationType = 'search_clear';
+  if (enablePerformanceMonitoring) {
+    globalOperationMonitor.startOperation(operation, { 
+      hasVisualizationState: !!visualizationState,
+      hasInputRef: !!inputRef,
+      hasSetters: !!(setQuery && setMatches && setCurrentIndex)
+    });
+  }
 
   if (debug) {
     console.log('[SearchClearUtils] Starting imperative search clear');
@@ -56,6 +74,10 @@ export function clearSearchImperatively(options: {
 
   // 3. Clear DOM input directly (imperative)
   if (inputRef?.current) {
+    // Record DOM update for performance monitoring
+    if (enablePerformanceMonitoring) {
+      recordDOMUpdate();
+    }
     inputRef.current.value = "";
     if (debug) {
       console.log('[SearchClearUtils] Input cleared imperatively');
@@ -70,6 +92,16 @@ export function clearSearchImperatively(options: {
   if (debug) {
     console.log('[SearchClearUtils] React state cleared imperatively');
   }
+
+  // End performance monitoring
+  if (enablePerformanceMonitoring) {
+    globalOperationMonitor.endOperation(operation, { 
+      success: true,
+      clearedVisualizationState: !!visualizationState,
+      clearedDOM: !!inputRef?.current,
+      clearedReactState: !!(setQuery && setMatches && setCurrentIndex)
+    });
+  }
 }
 
 /**
@@ -82,13 +114,23 @@ export function clearSearchPanelImperatively(options: {
   setSearchMatches?: (matches: any[]) => void;
   setCurrentSearchMatch?: (match: any) => void;
   debug?: boolean;
+  enablePerformanceMonitoring?: boolean;
 }): void {
   const {
     setSearchQuery,
     setSearchMatches,
     setCurrentSearchMatch,
-    debug = false
+    debug = false,
+    enablePerformanceMonitoring = true
   } = options;
+
+  // Start performance monitoring
+  const operation: OperationType = 'search_panel_clear';
+  if (enablePerformanceMonitoring) {
+    globalOperationMonitor.startOperation(operation, { 
+      hasSetters: !!(setSearchQuery && setSearchMatches && setCurrentSearchMatch)
+    });
+  }
 
   if (debug) {
     console.log('[SearchClearUtils] Starting imperative panel clear');
@@ -101,6 +143,14 @@ export function clearSearchPanelImperatively(options: {
 
   if (debug) {
     console.log('[SearchClearUtils] Panel state cleared imperatively');
+  }
+
+  // End performance monitoring
+  if (enablePerformanceMonitoring) {
+    globalOperationMonitor.endOperation(operation, { 
+      success: true,
+      clearedReactState: !!(setSearchQuery && setSearchMatches && setCurrentSearchMatch)
+    });
   }
 }
 
@@ -127,3 +177,13 @@ export const SEARCH_CLEAR_PATTERN = {
     "Create cascading state update chains"
   ]
 } as const;
+
+// Export performance monitoring utilities for search operations
+export {
+  globalOperationMonitor as searchOperationMonitor,
+  recordDOMUpdate,
+  monitorOperation,
+  measureOperationPerformance,
+  type OperationType,
+  type OperationMetrics
+} from "./operationPerformanceMonitor.js";

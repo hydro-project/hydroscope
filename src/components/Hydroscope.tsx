@@ -44,6 +44,7 @@ import {
   DebouncedOperationManager,
   withAsyncResizeObserverErrorSuppression,
 } from "../utils/ResizeObserverErrorSuppression.js";
+
 // ============================================================================
 // TypeScript Interfaces
 // ============================================================================
@@ -315,14 +316,6 @@ const CustomControls = memo(
     // Check if there are any containers that can be collapsed/expanded
     const hasContainers =
       (visualizationState?.visibleContainers?.length ?? 0) > 0;
-    const _hasCollapsedContainers =
-      visualizationState?.visibleContainers?.some(
-        (container) => container.collapsed,
-      ) ?? false;
-    const _hasExpandedContainers =
-      visualizationState?.visibleContainers?.some(
-        (container) => !container.collapsed,
-      ) ?? false;
     // Calculate if we have any custom controls to show
     const hasCustomControls = hasContainers || onAutoFitToggle || showLoadFile;
     return (
@@ -621,6 +614,8 @@ export const Hydroscope = memo<HydroscopeProps>(
           uploadedFilename: filename || null,
           error: null,
         }));
+        // Reset grouping selection to default (first hierarchy choice) for new data
+        setSelectedGrouping(null);
         onFileUpload?.(uploadedData, filename);
       },
       [onFileUpload],
@@ -752,6 +747,7 @@ export const Hydroscope = memo<HydroscopeProps>(
 
       debouncedCollapseAll();
     }, [onError]);
+
     const handleExpandAll = useCallback(async () => {
       if (!debouncedOperationManagerRef.current) return;
 

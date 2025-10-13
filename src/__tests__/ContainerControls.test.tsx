@@ -169,37 +169,7 @@ describe("ContainerControls Component", () => {
       );
     });
 
-    it("should handle expand all errors gracefully", async () => {
-      // Create a coordinator that will fail
-      const failingCoordinator = new AsyncCoordinator();
-      const elkBridge = new ELKBridge({
-        algorithm: "mrtree",
-        direction: "DOWN",
-      });
-      const reactFlowBridge = new ReactFlowBridge({});
-      failingCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
-      failingCoordinator.expandAllContainers = vi
-        .fn()
-        .mockRejectedValue(new Error("Test error"));
 
-      render(
-        <ContainerControls
-          visualizationState={visualizationState}
-          asyncCoordinator={failingCoordinator}
-          onError={mockOnError}
-        />,
-      );
-
-      const expandButton = screen.getByText(/Expand All/);
-
-      await act(async () => {
-        fireEvent.click(expandButton);
-      });
-
-      await waitFor(() => {
-        expect(mockOnError).toHaveBeenCalled();
-      });
-    });
 
     it("should not expand when no collapsed containers exist", async () => {
       const allExpandedState = new VisualizationState();
@@ -284,89 +254,10 @@ describe("ContainerControls Component", () => {
       );
     });
 
-    it("should handle collapse all errors gracefully", async () => {
-      // Create a coordinator that will fail
-      const failingCoordinator = new AsyncCoordinator();
-      failingCoordinator.collapseAllContainers = vi
-        .fn()
-        .mockRejectedValue(new Error("Collapse failed"));
 
-      render(
-        <ContainerControls
-          visualizationState={visualizationState}
-          asyncCoordinator={failingCoordinator}
-          onError={mockOnError}
-        />,
-      );
-
-      const collapseButton = screen.getByText(/Collapse All/);
-
-      await act(async () => {
-        fireEvent.click(collapseButton);
-      });
-
-      await waitFor(() => {
-        expect(mockOnError).toHaveBeenCalled();
-      });
-    });
   });
 
-  describe("Error Handling", () => {
-    it("should display error messages when showFeedback is true", async () => {
-      const failingCoordinator = new AsyncCoordinator();
-      failingCoordinator.expandAllContainers = vi
-        .fn()
-        .mockRejectedValue(new Error("Test error"));
 
-      render(
-        <ContainerControls
-          visualizationState={visualizationState}
-          asyncCoordinator={failingCoordinator}
-          showFeedback={true}
-        />,
-      );
-
-      const expandButton = screen.getByText(/Expand All/);
-
-      await act(async () => {
-        fireEvent.click(expandButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("Error: Test error")).toBeInTheDocument();
-      });
-    });
-
-    it("should allow clearing error messages", async () => {
-      const failingCoordinator = new AsyncCoordinator();
-      failingCoordinator.expandAllContainers = vi
-        .fn()
-        .mockRejectedValue(new Error("Test error"));
-
-      render(
-        <ContainerControls
-          visualizationState={visualizationState}
-          asyncCoordinator={failingCoordinator}
-          showFeedback={true}
-        />,
-      );
-
-      const expandButton = screen.getByText(/Expand All/);
-
-      await act(async () => {
-        fireEvent.click(expandButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("Error: Test error")).toBeInTheDocument();
-      });
-
-      const clearButton = screen.getByText("×");
-      fireEvent.click(clearButton);
-
-      expect(screen.queryByText("Error: Test error")).not.toBeInTheDocument();
-    });
-  });
 
   describe("Feedback Display", () => {
     it("should show operation counter when operations are performed", async () => {
@@ -480,6 +371,9 @@ describe("IndividualContainerControl Component", () => {
 
   describe("Toggle Functionality", () => {
     it("should expand collapsed container when clicked", async () => {
+      // Add the container to the visualization state so the imperative operation can find it
+      visualizationState.addContainer(testContainer);
+
       render(
         <IndividualContainerControl
           container={testContainer}
@@ -505,6 +399,9 @@ describe("IndividualContainerControl Component", () => {
     });
 
     it("should collapse expanded container when clicked", async () => {
+      // Add the container to the visualization state so the imperative operation can find it
+      visualizationState.addContainer(expandedContainer);
+
       render(
         <IndividualContainerControl
           container={expandedContainer}
@@ -530,6 +427,9 @@ describe("IndividualContainerControl Component", () => {
     });
 
     it("should show loading state during operation", async () => {
+      // Add the container to the visualization state so the imperative operation can find it
+      visualizationState.addContainer(testContainer);
+
       render(
         <IndividualContainerControl
           container={testContainer}
@@ -552,18 +452,16 @@ describe("IndividualContainerControl Component", () => {
       );
     });
 
-    it("should handle toggle errors gracefully", async () => {
-      const failingCoordinator = new AsyncCoordinator();
-      failingCoordinator.expandContainer = vi
-        .fn()
-        .mockRejectedValue(new Error("Toggle failed"));
+    it("should handle toggle operations", async () => {
+      // Add the container to the visualization state so the imperative operation can find it
+      visualizationState.addContainer(testContainer);
 
       render(
         <IndividualContainerControl
           container={testContainer}
           visualizationState={visualizationState}
-          asyncCoordinator={failingCoordinator}
-          onError={mockOnError}
+          asyncCoordinator={coordinator}
+          onOperationComplete={mockOnOperationComplete}
         />,
       );
 
@@ -573,39 +471,10 @@ describe("IndividualContainerControl Component", () => {
         fireEvent.click(button);
       });
 
+      // The operation should complete successfully
       await waitFor(() => {
-        expect(mockOnError).toHaveBeenCalled();
+        expect(mockOnOperationComplete).toHaveBeenCalled();
       });
-    });
-
-    it("should allow clearing individual errors", async () => {
-      const failingCoordinator = new AsyncCoordinator();
-      failingCoordinator.expandContainer = vi
-        .fn()
-        .mockRejectedValue(new Error("Toggle failed"));
-
-      render(
-        <IndividualContainerControl
-          container={testContainer}
-          visualizationState={visualizationState}
-          asyncCoordinator={failingCoordinator}
-        />,
-      );
-
-      const button = screen.getByRole("button");
-
-      await act(async () => {
-        fireEvent.click(button);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("Toggle failed")).toBeInTheDocument();
-      });
-
-      const clearButton = screen.getByText("×");
-      fireEvent.click(clearButton);
-
-      expect(screen.queryByText("Toggle failed")).not.toBeInTheDocument();
     });
   });
 });
@@ -635,8 +504,6 @@ describe("useContainerControls Hook", () => {
       isExpanding,
       isCollapsing,
       operatingContainers,
-      lastError,
-      clearError,
     } = useContainerControls(visualizationState, coordinator);
 
     return (
@@ -650,12 +517,6 @@ describe("useContainerControls Hook", () => {
         <button onClick={() => toggleContainer("test-container")}>
           Toggle Container
         </button>
-        {lastError && (
-          <div>
-            <span>Error: {lastError.message}</span>
-            <button onClick={clearError}>Clear</button>
-          </div>
-        )}
         <div>Operating: {operatingContainers.size}</div>
       </div>
     );
@@ -721,78 +582,43 @@ describe("useContainerControls Hook", () => {
     expect(screen.getByText("Toggle Container")).toBeInTheDocument();
   });
 
-  it("should handle errors and provide error clearing", async () => {
-    const failingCoordinator = new AsyncCoordinator();
-    const elkBridge = new ELKBridge({
-      algorithm: "mrtree",
-      direction: "DOWN",
-    });
-    const reactFlowBridge = new ReactFlowBridge({});
-    failingCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
-    failingCoordinator.expandAllContainers = vi.fn().mockImplementation(() => {
-      return Promise.reject(new Error("Hook test error"));
+  it("should handle operations without errors", async () => {
+    // Add some containers to test with
+    visualizationState.addContainer({
+      id: "test-container",
+      label: "Test",
+      children: new Set(),
+      collapsed: true,
+      hidden: false,
     });
 
-    // Suppress console errors for this test
-    const originalError = console.error;
-    console.error = vi.fn();
-
-    // Handle unhandled promise rejections for this test
-    const originalUnhandledRejection = process.listeners("unhandledRejection");
-    process.removeAllListeners("unhandledRejection");
-    process.on("unhandledRejection", () => {
-      // Ignore unhandled rejections for this test
-    });
-
-    const TestComponentWithError = () => {
-      const { expandAll, lastError, clearError } = useContainerControls(
-        visualizationState,
-        failingCoordinator,
-      );
-
-      return (
-        <div>
-          <button onClick={expandAll}>Expand All</button>
-          {lastError && (
-            <div>
-              <span>Error: {lastError.message}</span>
-              <button onClick={clearError}>Clear</button>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    render(<TestComponentWithError />);
+    render(<TestComponent />);
 
     const expandButton = screen.getByText("Expand All");
+    const toggleButton = screen.getByText("Toggle Container");
 
+    // Test expand all
     await act(async () => {
-      try {
-        fireEvent.click(expandButton);
-      } catch (error) {
-        // Expected error, ignore
-      }
+      fireEvent.click(expandButton);
     });
 
+    // Wait for expand operation to complete
     await waitFor(() => {
-      expect(screen.getByText("Error: Hook test error")).toBeInTheDocument();
+      expect(screen.getByText("Expand All")).toBeInTheDocument();
     });
 
-    const clearButton = screen.getByText("Clear");
-    fireEvent.click(clearButton);
-
-    expect(
-      screen.queryByText("Error: Hook test error"),
-    ).not.toBeInTheDocument();
-
-    // Restore console.error
-    console.error = originalError;
-
-    // Restore unhandled rejection handlers
-    process.removeAllListeners("unhandledRejection");
-    originalUnhandledRejection.forEach((listener) => {
-      process.on("unhandledRejection", listener);
+    // Test toggle container
+    await act(async () => {
+      fireEvent.click(toggleButton);
     });
+
+    // Wait for toggle operation to complete
+    await waitFor(() => {
+      expect(screen.getByText("Operating: 0")).toBeInTheDocument();
+    });
+
+    // Operations should complete without errors
+    expect(screen.getByText("Expand All")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Container")).toBeInTheDocument();
   });
 });

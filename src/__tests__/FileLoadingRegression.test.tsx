@@ -44,6 +44,7 @@ vi.mock("@xyflow/react", () => ({
     setNodes: vi.fn(),
     setEdges: vi.fn(),
   }),
+  useUpdateNodeInternals: () => vi.fn(),
 }));
 
 // Mock VisualizationState

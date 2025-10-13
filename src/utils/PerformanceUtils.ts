@@ -76,7 +76,26 @@ export class PerformanceProfiler {
     }
   }
   private getCurrentMemoryUsage(): number {
-    return process.memoryUsage().heapUsed;
+    // Try Node.js process.memoryUsage first
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      try {
+        return process.memoryUsage().heapUsed;
+      } catch (error) {
+        // Fall through to browser API
+      }
+    }
+    
+    // Try browser performance.memory API (Chrome)
+    if (typeof window !== 'undefined' && (window as any).performance && (window as any).performance.memory) {
+      try {
+        return (window as any).performance.memory.usedJSHeapSize;
+      } catch (error) {
+        // Fall through to default
+      }
+    }
+    
+    // Return 0 if no memory API is available
+    return 0;
   }
   private reset(): void {
     this.startTime = 0;

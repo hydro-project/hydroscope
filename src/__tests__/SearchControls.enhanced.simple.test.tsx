@@ -158,7 +158,8 @@ describe("SearchControls Enhanced Features - Core", () => {
       fireEvent.change(input, { target: { value: "test" } });
       fireEvent.keyDown(input, { key: "Escape" });
 
-      expect(defaultProps.onClear).toHaveBeenCalled();
+      // Verify search is cleared imperatively (input value should be empty)
+      expect(input).toHaveValue("");
     });
   });
 
