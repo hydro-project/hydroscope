@@ -548,10 +548,9 @@ describe("ReactFlowBridge", () => {
       const initialEdgeIds = initialAggregatedEdges.map((e) => e.id).sort();
 
       expect(initialAggregatedEdges).toHaveLength(2);
-      expect(initialEdgeIds).toEqual([
-        "agg-container1-external",
-        "agg-external-container1",
-      ]);
+      // Edge IDs now include dimension keys for cache busting
+      expect(initialEdgeIds[0]).toMatch(/^agg-container1-external/);
+      expect(initialEdgeIds[1]).toMatch(/^agg-external-container1/);
 
       // Expand
       await coordinator.expandContainer("container1", state, {
@@ -1309,8 +1308,9 @@ describe("ReactFlowBridge", () => {
       const result = bridge.toReactFlowData(state);
 
       expect(result.edges).toHaveLength(1);
+      // Edge ID now includes dimension keys for cache busting
+      expect(result.edges[0].id).toMatch(/^agg_edge1/);
       expect(result.edges[0]).toMatchObject({
-        id: "agg_edge1",
         source: "node1",
         target: "container1",
         type: "aggregated",

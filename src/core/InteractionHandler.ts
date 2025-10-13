@@ -175,17 +175,10 @@ export class InteractionHandler {
     if (event.elementType === "container") {
       this._triggerLayoutUpdate();
     }
-    // Node label changes might need layout updates if the label size changes significantly
+    // Node label changes always need layout updates to accommodate size changes
     if (event.elementType === "node") {
-      const node = this._visualizationState.getGraphNode(event.elementId);
-      if (
-        node &&
-        node.longLabel &&
-        node.longLabel.length > node.label.length * 2
-      ) {
-        // Significant label size change - trigger layout update
-        this._triggerLayoutUpdate();
-      }
+      // Use constrained layout to only re-layout the specific node that changed
+      this._triggerConstrainedLayoutUpdate([event.elementId]);
     }
   }
   private _triggerLayoutUpdate(): void {
@@ -197,6 +190,19 @@ export class InteractionHandler {
         fitView: false, // Don't auto-fit on manual interactions
       }).catch((error: Error) => {
         console.error('[InteractionHandler] Layout update failed:', error);
+      });
+    }
+  }
+
+  private _triggerConstrainedLayoutUpdate(entityIds: string[]): void {
+    if (this._asyncCoordinator && this._asyncCoordinator.executeLayoutAndRenderPipeline) {
+      // Use constrained layout to only re-layout specific entities
+      // Note: This is async but we don't await it to maintain the synchronous interface
+      this._asyncCoordinator.executeLayoutAndRenderPipeline(this._visualizationState, {
+        relayoutEntities: entityIds, // Only re-layout specified entities
+        fitView: false, // Don't auto-fit on manual interactions
+      }).catch((error: Error) => {
+        console.error('[InteractionHandler] Constrained layout update failed:', error);
       });
     }
   }
@@ -223,8 +229,8 @@ export class InteractionHandler {
     for (const nodeId of nodeIds) {
       this._visualizationState.setNodeLabelState(nodeId, showLongLabel);
     }
-    // Trigger single layout update for all changes
-    this._triggerLayoutUpdate();
+    // Trigger constrained layout update for only the affected nodes
+    this._triggerConstrainedLayoutUpdate(nodeIds);
   }
   handleBulkContainerToggle(containerIds: string[], collapsed: boolean): void {
     for (const containerId of containerIds) {
@@ -297,9 +303,23 @@ export class InteractionHandler {
     elementType: "node" | "container",
   ): void {
     if (elementType === "container") {
-      // Search result clicks should expand containers
-      this._visualizationState.expandContainerForSearch(elementId);
-      this._triggerLayoutUpdateWithAutofit();
+      // Search result clicks should expand containers using AsyncCoordinator
+      if (this._asyncCoordinator && this._asyncCoordinator.expandContainer) {
+        this._asyncCoordinator.expandContainer(elementId, this._visualizationState, {
+          fitView: true, // Auto-fit for search results
+          fitViewOptions: { 
+            padding: 0.3,
+            duration: 500,
+            includeHiddenNodes: false
+          }
+        }).catch((error: Error) => {
+          console.error('[InteractionHandler] Search result container expansion failed:', error);
+        });
+      } else {
+        // Fallback to direct method
+        this._visualizationState.expandContainerForSearch(elementId);
+        this._triggerLayoutUpdateWithAutofit();
+      }
     } else {
       // For nodes, just show long label
       this._visualizationState.setNodeLabelState(elementId, true);

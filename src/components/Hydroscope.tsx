@@ -982,27 +982,27 @@ export const Hydroscope = memo<HydroscopeProps>(
               : updatedNode?.label,
           });
 
-          // Trigger a refresh to update the display
-          // We need to force a re-render by calling updateRenderConfig with a dummy change
-          // that triggers the render pipeline but doesn't actually change anything visual
+          // Trigger a layout update to accommodate node size changes
           try {
             const asyncCoordinator =
               hydroscopeCoreRef.current?.getAsyncCoordinator();
             if (asyncCoordinator) {
-              // Force a re-render by calling the render pipeline directly
-              await asyncCoordinator.updateRenderConfig(
+              // Use executeLayoutAndRenderPipeline with constrained layout for the specific node
+              await asyncCoordinator.executeLayoutAndRenderPipeline(
                 visualizationState,
-                {}, // Empty config still triggers re-render
-                { fitView: false }, // Don't fit view on label toggle
+                {
+                  relayoutEntities: [node.id], // Only re-layout this specific node
+                  fitView: false, // Don't change viewport on label toggle
+                }
               );
-              console.log("[Hydroscope] Refresh triggered successfully");
+              console.log("[Hydroscope] Layout update triggered successfully for node:", node.id);
             } else {
               console.warn(
-                "[Hydroscope] AsyncCoordinator not available for refresh",
+                "[Hydroscope] AsyncCoordinator not available for layout update",
               );
             }
           } catch (err) {
-            console.error("❌ Error refreshing after label toggle:", err);
+            console.error("❌ Error updating layout after label toggle:", err);
           }
         } else {
           console.log(

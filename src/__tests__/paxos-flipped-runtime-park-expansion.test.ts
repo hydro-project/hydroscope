@@ -413,8 +413,10 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
   describe("Edge Validation During Expansion", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should not produce any invalid edge errors during expansion", async () => {

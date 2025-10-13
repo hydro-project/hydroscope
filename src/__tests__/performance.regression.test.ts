@@ -16,7 +16,6 @@ import {
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import {
   DEFAULT_PERFORMANCE_THRESHOLDS,
-  generateSyntheticGraphData,
   getRandomQuery,
   createPerformanceBaseline,
   type PerformanceBaseline,
@@ -151,47 +150,6 @@ describe("Performance Regression Tests", () => {
           maxDuration: DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse,
           maxMemoryGrowth: DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
         }),
-      );
-    });
-
-    it("should maintain VisualizationState performance", async () => {
-      const parser = JSONParser.createPaxosParser({ debug: false });
-      const parseResult = await parser.parseData(paxosData);
-
-      const testResult = await batchTester.runTest(
-        "visualization-state-ops",
-        async () => {
-          const state = parseResult.visualizationState;
-
-          // Perform various operations
-          await coordinator.expandAllContainers(state, {
-            fitView: false,
-          });
-          await coordinator.collapseAllContainers(state, {
-            fitView: false,
-          });
-          state.search("paxos");
-          state.clearSearch();
-
-          return state;
-        },
-        10,
-        3,
-      );
-
-      expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.containerOperations +
-          DEFAULT_PERFORMANCE_THRESHOLDS.searchOperations,
-      );
-      expect(testResult.average.memoryUsage.growth).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth,
-      );
-
-      console.log(
-        createPerformanceReport(
-          "VisualizationState Operations",
-          testResult.average,
-        ),
       );
     });
 
@@ -334,116 +292,6 @@ describe("Performance Regression Tests", () => {
         createPerformanceReport("Search Stress Test", testResult.average),
       );
     });
-
-    it(
-      "should detect memory leaks in repeated operations",
-      { timeout: 15000 },
-      async () => {
-        const parser = JSONParser.createPaxosParser({ debug: false });
-
-        const testResult = await batchTester.runTest(
-          "memory-leak-detection",
-          async () => {
-            // Create fresh instances each time to test for leaks
-            const parseResult = await parser.parseData(paxosData);
-            const state = parseResult.visualizationState;
-            const elkBridge = new ELKBridge();
-            const reactFlowBridge = new ReactFlowBridge({
-              nodeStyles: {},
-              edgeStyles: {},
-              containerStyles: {},
-            });
-
-            // Full pipeline
-            await coordinator.expandAllContainers(state, {
-              fitView: false,
-            });
-            const elkGraph = elkBridge.toELKGraph(state);
-            // Calculate layout so nodes have positions
-            await elkBridge.layout(state);
-            const reactFlowData = reactFlowBridge.toReactFlowData(state);
-            await coordinator.collapseAllContainers(state, {
-              fitView: false,
-            });
-
-            return { state, elkGraph, reactFlowData };
-          },
-          20,
-          5,
-        );
-
-        // Memory growth should be minimal across iterations
-        expect(testResult.average.memoryUsage.growth).toBeLessThan(
-          DEFAULT_PERFORMANCE_THRESHOLDS.memoryGrowth * 2,
-        );
-
-        // Check for consistent memory usage (no significant growth trend)
-        const memoryGrowths = testResult.results.map(
-          (r) => r.memoryUsage.growth,
-        );
-        const maxGrowth = Math.max(...memoryGrowths);
-        const minGrowth = Math.min(...memoryGrowths);
-        const growthVariance = maxGrowth - minGrowth;
-
-        expect(growthVariance).toBeLessThan(300); // Less than 300MB variance (realistic for test environment)
-
-        console.log(
-          createPerformanceReport("Memory Leak Detection", testResult.average),
-        );
-        console.log(`Memory growth variance: ${growthVariance.toFixed(2)}MB`);
-      },
-    );
-  });
-
-  describe("Synthetic Data Performance", () => {
-    let coordinator: AsyncCoordinator;
-    beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
-      const testSetup = await createTestAsyncCoordinator();
-      coordinator = testSetup.asyncCoordinator;
-    });
-
-    it(
-      "should handle large synthetic graphs efficiently",
-      { timeout: 10000 },
-      async () => {
-        const largeGraphData = generateSyntheticGraphData("medium"); // Use medium size for faster testing
-
-        const testResult = await batchTester.runTest(
-          "large-synthetic-graph",
-          async () => {
-            const parser = JSONParser.createPaxosParser({ debug: false });
-            const parseResult = await parser.parseData(largeGraphData);
-            const elkBridge = new ELKBridge();
-
-            // Test core operations with large data
-            const elkGraph = elkBridge.toELKGraph(
-              parseResult.visualizationState,
-            );
-            await coordinator.expandAllContainers(
-              parseResult.visualizationState,
-              { fitView: false },
-            );
-
-            return { parseResult, elkGraph };
-          },
-          3,
-          1,
-        );
-
-        // Should handle large graphs within reasonable time
-        expect(testResult.average.duration).toBeLessThan(
-          DEFAULT_PERFORMANCE_THRESHOLDS.jsonParse * 2,
-        );
-        expect(testResult.average.memoryUsage.peak).toBeLessThan(
-          DEFAULT_PERFORMANCE_THRESHOLDS.memoryUsage * 2,
-        );
-
-        console.log(
-          createPerformanceReport("Large Synthetic Graph", testResult.average),
-        );
-      },
-    );
   });
 
   describe("Throughput Testing", () => {

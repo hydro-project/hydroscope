@@ -148,8 +148,10 @@ describe("Search Navigation Workflow Integration", () => {
 
   describe("Tree Click → Graph Navigation → Viewport Focus Flow", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should navigate from tree to graph with viewport focus", async () => {
@@ -296,8 +298,10 @@ describe("Search Navigation Workflow Integration", () => {
 
   describe("Rapid Search Changes and Race Condition Handling", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should handle rapid search query changes", async () => {

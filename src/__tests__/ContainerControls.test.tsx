@@ -140,7 +140,10 @@ describe("ContainerControls Component", () => {
         fireEvent.click(expandButton);
       });
 
-      expect(mockOnOperationComplete).toHaveBeenCalledWith("expand");
+      // Wait for the async operation to complete
+      await waitFor(() => {
+        expect(mockOnOperationComplete).toHaveBeenCalledWith("expand");
+      });
     });
 
     it("should show loading state during expand all operation", async () => {
@@ -424,8 +427,10 @@ describe("IndividualContainerControl Component", () => {
     hidden: false,
   };
 
-  beforeEach(() => {
-    coordinator = new AsyncCoordinator();
+  beforeEach(async () => {
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     visualizationState = new VisualizationState();
     mockOnOperationComplete = vi.fn();
     mockOnError = vi.fn();
@@ -490,10 +495,13 @@ describe("IndividualContainerControl Component", () => {
         fireEvent.click(button);
       });
 
-      expect(mockOnOperationComplete).toHaveBeenCalledWith(
-        "expand",
-        "test-container",
-      );
+      // Wait for the async operation to complete
+      await waitFor(() => {
+        expect(mockOnOperationComplete).toHaveBeenCalledWith(
+          "expand",
+          "test-container",
+        );
+      });
     });
 
     it("should collapse expanded container when clicked", async () => {
@@ -512,10 +520,13 @@ describe("IndividualContainerControl Component", () => {
         fireEvent.click(button);
       });
 
-      expect(mockOnOperationComplete).toHaveBeenCalledWith(
-        "collapse",
-        "test-container",
-      );
+      // Wait for the async operation to complete
+      await waitFor(() => {
+        expect(mockOnOperationComplete).toHaveBeenCalledWith(
+          "collapse",
+          "test-container",
+        );
+      });
     });
 
     it("should show loading state during operation", async () => {
@@ -659,8 +670,10 @@ describe("useContainerControls Hook", () => {
       fireEvent.click(expandButton);
     });
 
-    // Should complete without errors
-    expect(screen.getByText("Expand All")).toBeInTheDocument();
+    // Wait for the operation to complete and button to return to normal state
+    await waitFor(() => {
+      expect(screen.getByText("Expand All")).toBeInTheDocument();
+    });
   });
 
   it("should provide collapse all functionality", async () => {

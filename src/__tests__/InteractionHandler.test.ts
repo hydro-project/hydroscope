@@ -96,7 +96,7 @@ describe("InteractionHandler Click Event Processing", () => {
       expect(layoutSpy).toHaveBeenCalledTimes(1);
     });
 
-    it("should not trigger layout update for minor label changes", () => {
+    it("should trigger constrained layout update for all label changes", () => {
       const node = createTestNode("node1", "Short");
       node.longLabel = "Short2"; // Minor change
       state.addNode(node);
@@ -105,7 +105,12 @@ describe("InteractionHandler Click Event Processing", () => {
 
       handler.handleNodeClick("node1");
 
-      expect(layoutSpy).toHaveBeenCalledTimes(0);
+      // Now all node clicks trigger constrained layout updates to ensure proper sizing
+      expect(layoutSpy).toHaveBeenCalledTimes(1);
+      expect(layoutSpy).toHaveBeenCalledWith(state, {
+        relayoutEntities: ["node1"], // Constrained to just this node
+        fitView: false,
+      });
     });
   });
 

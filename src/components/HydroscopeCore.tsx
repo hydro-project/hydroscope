@@ -38,6 +38,7 @@ import {
   MiniMap,
   ReactFlowProvider,
   useReactFlow,
+  useUpdateNodeInternals,
   applyNodeChanges,
   applyEdgeChanges,
   type Node,
@@ -286,6 +287,7 @@ const HydroscopeCoreInternal = forwardRef<
   ) => {
     // ReactFlow instance for programmatic control
     const reactFlowInstance = useReactFlow();
+    const updateNodeInternals = useUpdateNodeInternals();
 
     // State management
     const [state, setState] = useState<HydroscopeCoreState>({
@@ -312,6 +314,7 @@ const HydroscopeCoreInternal = forwardRef<
     useEffect(() => {
       if (reactFlowInstance && state.asyncCoordinator) {
         state.asyncCoordinator.setReactFlowInstance(reactFlowInstance);
+        state.asyncCoordinator.setUpdateNodeInternals(updateNodeInternals);
       }
     }, [reactFlowInstance, state.asyncCoordinator]);
 

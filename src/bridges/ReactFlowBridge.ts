@@ -34,6 +34,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
     interactionHandler?: any,
   ): ReactFlowData {
+
+    
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
 
@@ -91,9 +93,12 @@ export class ReactFlowBridge implements IReactFlowBridge {
       // Add metadata to force React state change detection
       _timestamp: Date.now(),
       _changeId: Math.random().toString(36).substr(2, 9),
+
     };
     return finalResult;
   }
+
+
   private isLargeGraph(state: VisualizationState): boolean {
     return (
       state.visibleNodes.length > LARGE_GRAPH_NODE_THRESHOLD ||
@@ -1134,23 +1139,33 @@ export class ReactFlowBridge implements IReactFlowBridge {
       ) {
         return { sourceHandle: "out-bottom", targetHandle: "in-top" };
       }
-      // Get dimensions with fallbacks
+      // Get dimensions with fallbacks - prioritize fresh dimensions from ELK layout
       const sourceWidth = Math.max(
         1,
-        sourceElement.dimensions?.width ?? (sourceElement as any).width ?? 120,
+        sourceElement.dimensions?.width ?? 
+        (sourceElement as any).width ?? 
+        120, // Default fallback
       );
       const sourceHeight = Math.max(
         1,
-        sourceElement.dimensions?.height ?? (sourceElement as any).height ?? 40,
+        sourceElement.dimensions?.height ?? 
+        (sourceElement as any).height ?? 
+        60, // Default fallback
       );
       const targetWidth = Math.max(
         1,
-        targetElement.dimensions?.width ?? (targetElement as any).width ?? 120,
+        targetElement.dimensions?.width ?? 
+        (targetElement as any).width ?? 
+        120, // Default fallback
       );
       const targetHeight = Math.max(
         1,
-        targetElement.dimensions?.height ?? (targetElement as any).height ?? 40,
+        targetElement.dimensions?.height ?? 
+        (targetElement as any).height ?? 
+        60, // Default fallback
       );
+
+      
       // Calculate centers
       const sourceCenterX = sourcePos.x + sourceWidth / 2;
       const sourceCenterY = sourcePos.y + sourceHeight / 2;
@@ -1316,6 +1331,12 @@ export class ReactFlowBridge implements IReactFlowBridge {
     const handles = visState
       ? this.getSmartHandles(visState, edge.source, edge.target)
       : {};
+    // Get source and target node dimensions to create a unique key
+    const sourceNode = visState?.getGraphNode(edge.source);
+    const targetNode = visState?.getGraphNode(edge.target);
+    const sourceDim = sourceNode?.dimensions ? `${sourceNode.dimensions.width}x${sourceNode.dimensions.height}` : 'def';
+    const targetDim = targetNode?.dimensions ? `${targetNode.dimensions.width}x${targetNode.dimensions.height}` : 'def';
+    
     const renderedEdge = {
       id: edge.id,
       source: edge.source,
@@ -1323,6 +1344,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
       type: edge.type || "default",
+
       data: {
         semanticTags: edge.semanticTags || [],
         originalEdge: edge,
@@ -1359,6 +1381,12 @@ export class ReactFlowBridge implements IReactFlowBridge {
           aggregatedEdge.target,
         )
       : {};
+    // Get source and target node dimensions to create a unique key
+    const sourceNode = visState?.getGraphNode(aggregatedEdge.source);
+    const targetNode = visState?.getGraphNode(aggregatedEdge.target);
+    const sourceDim = sourceNode?.dimensions ? `${sourceNode.dimensions.width}x${sourceNode.dimensions.height}` : 'def';
+    const targetDim = targetNode?.dimensions ? `${targetNode.dimensions.width}x${targetNode.dimensions.height}` : 'def';
+    
     const renderedEdge = {
       id: aggregatedEdge.id,
       source: aggregatedEdge.source,
@@ -1366,6 +1394,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
       type: "aggregated",
+      // Add a key that changes when node dimensions change to force ReactFlow recalculation
+      key: `${aggregatedEdge.id}-${sourceDim}-${targetDim}`,
       data: {
         semanticTags: aggregatedEdge.semanticTags || [],
         originalEdgeIds: aggregatedEdge.originalEdgeIds || [],

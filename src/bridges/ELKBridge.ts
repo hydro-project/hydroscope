@@ -276,6 +276,9 @@ export class ELKBridge implements IELKBridge {
     // Deep clone the result to prevent mutation issues with nested hierarchies
     return this.deepCloneELKNode(elkNode);
   }
+
+
+
   private deepCloneELKNode(node: ELKNode): ELKNode {
     return JSON.parse(JSON.stringify(node));
   }
@@ -307,7 +310,7 @@ export class ELKBridge implements IELKBridge {
    * Calculate and apply ELK layout to VisualizationState
    * This is the main method to use - it runs the ELK algorithm and applies results
    */
-  async layout(state: VisualizationState): Promise<void> {
+  async layout(state: VisualizationState, constrainedEntities?: string[]): Promise<void> {
     try {
       // Run smart collapse before layout if enabled
       if (state.shouldRunSmartCollapse()) {
@@ -317,8 +320,10 @@ export class ELKBridge implements IELKBridge {
       } else {
         console.log('❌ SMART COLLAPSE SKIPPED - shouldRunSmartCollapse() returned false');
       }
+      
       // Convert VisualizationState to ELK format
       const elkGraph = this.toELKGraph(state);
+        
       // Call real ELK library to calculate layout with fallback mechanism
       let layoutResult;
       try {
@@ -630,15 +635,14 @@ export class ELKBridge implements IELKBridge {
     height: number;
   } {
     const baseSize = config.nodeSize || { width: 120, height: 60 };
-    // Adjust size based on label length for better readability
-    const labelLength = node.showingLongLabel
-      ? node.longLabel.length
-      : node.label.length;
-    const widthMultiplier = Math.max(1, Math.min(2, labelLength / 20));
+    
+    // Always use the same dimensions regardless of label state to avoid resizing
+    // The React component can handle text overflow/truncation
     return {
-      width: Math.round(baseSize.width * widthMultiplier),
+      width: baseSize.width,
       height: baseSize.height,
     };
+
   }
   private calculateOptimalContainerSize(
     container: Container,
@@ -672,10 +676,10 @@ export class ELKBridge implements IELKBridge {
   ): Record<string, any> {
     const options: Record<string, any> = {};
     // Add node-specific layout hints based on semantic tags
-    if (node.semanticTags.includes("important")) {
+    if (node.semanticTags?.includes("important")) {
       options["elk.priority"] = "10";
     }
-    if (node.semanticTags.includes("central")) {
+    if (node.semanticTags?.includes("central")) {
       options["elk.layered.layering.nodePromotion.strategy"] = "NONE";
     }
     return options;

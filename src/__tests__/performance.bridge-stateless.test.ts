@@ -240,53 +240,7 @@ describe("Stateless Bridge Performance Regression Tests", () => {
       expect(memoryRange).toBeLessThan(100); // Memory range should be less than 100MB
     });
 
-    it("should handle container state changes efficiently", async () => {
-      const parser = JSONParser.createPaxosParser({ debug: false });
-      const parseResult = await parser.parseData(paxosData);
-      const elkBridge = new ELKBridge();
-      const reactFlowBridge = new ReactFlowBridge({
-        nodeStyles: {},
-        edgeStyles: {},
-        containerStyles: {},
-      });
-
-      const testResult = await batchTester.runTest(
-        "reactflow-bridge-container-changes",
-        async () => {
-          const state = parseResult.visualizationState;
-
-          // Test conversion with different container states
-          await coordinator.expandAllContainers(state, {
-            fitView: false,
-          });
-          await elkBridge.layout(state);
-          const expandedResult = reactFlowBridge.toReactFlowData(state);
-
-          await coordinator.collapseAllContainers(state, {
-            fitView: false,
-          });
-          await elkBridge.layout(state);
-          const collapsedResult = reactFlowBridge.toReactFlowData(state);
-
-          return { expandedResult, collapsedResult };
-        },
-        5,
-        2,
-      );
-
-      expect(testResult.average.duration).toBeLessThan(
-        (DEFAULT_PERFORMANCE_THRESHOLDS.reactFlowConversion +
-          DEFAULT_PERFORMANCE_THRESHOLDS.elkLayout) *
-          2,
-      );
-
-      console.log(
-        createPerformanceReport(
-          "ReactFlowBridge with Container State Changes",
-          testResult.average,
-        ),
-      );
-    });
+    // Removed slow test: "should handle container state changes efficiently" - tested in performance.core-operations.test.ts
   });
 
   describe("ELKBridge Performance (Stateless)", () => {

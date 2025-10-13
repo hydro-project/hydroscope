@@ -29,6 +29,7 @@ export class AsyncCoordinator {
 
   // Direct ReactFlow instance reference for fitView operations
   private reactFlowInstance?: any;
+  private updateNodeInternals?: (nodeId: string) => void;
 
   // Direct React state setter for imperative updates
   private setReactState?: (updater: (prev: any) => any) => void;
@@ -36,6 +37,8 @@ export class AsyncCoordinator {
   // Direct bridge instances for imperative operations
   private reactFlowBridge?: any;
   private elkBridge?: any;
+
+
 
   // Post-render callback queue - executed after React renders new nodes
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
@@ -58,6 +61,11 @@ export class AsyncCoordinator {
   setReactFlowInstance(reactFlowInstance: any): void {
     this.reactFlowInstance = reactFlowInstance;
     console.log('🎯 AsyncCoordinator: ReactFlow instance set for direct fitView operations');
+  }
+
+  setUpdateNodeInternals(updateNodeInternals: (nodeId: string) => void): void {
+    this.updateNodeInternals = updateNodeInternals;
+    console.log('🎯 AsyncCoordinator: updateNodeInternals callback set');
   }
 
   /**
@@ -429,6 +437,8 @@ export class AsyncCoordinator {
     // ReactFlowData
     const startTime = Date.now();
 
+
+
     try {
       console.debug("[AsyncCoordinator] 🎨 Starting imperative ReactFlow data generation");
 
@@ -464,6 +474,8 @@ export class AsyncCoordinator {
       } else if (this.onReactFlowDataUpdate) {
         this.onReactFlowDataUpdate(reactFlowData);
       }
+
+      // Removed resize detection - just change text without resizing nodes
 
       const endTime = Date.now();
       console.debug(
@@ -650,6 +662,7 @@ export class AsyncCoordinator {
       maxRetries?: number;
     } = {}
   ): Promise<any> {
+
     // ReactFlowData
     const startTime = Date.now();
     const performanceMetrics = {
@@ -709,6 +722,8 @@ export class AsyncCoordinator {
         );
       }
 
+
+
       // Step 1: Execute ELK layout if needed - FAIL FAST on errors
       const layoutStart = Date.now();
       if (
@@ -754,6 +769,8 @@ export class AsyncCoordinator {
       const renderStart = Date.now();
       const reactFlowData = this.generateReactFlowDataImperative(state);
       performanceMetrics.renderDuration = Date.now() - renderStart;
+
+
       console.debug(
         "[AsyncCoordinator] ✅ ReactFlow data generation completed successfully",
         {
@@ -884,7 +901,7 @@ export class AsyncCoordinator {
       }
 
       // Execute ELK layout calculation with timeout protection
-      const layoutPromise = elkBridge.layout(state);
+      const layoutPromise = elkBridge.layout(state, relayoutEntities);
       const timeoutMs = 15000; // 15 second timeout for layout operations
 
       const timeoutPromise = new Promise<never>((_, reject) => {
