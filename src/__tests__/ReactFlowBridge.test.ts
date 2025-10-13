@@ -344,6 +344,8 @@ describe("ReactFlowBridge", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      // Set bridge instances for the new architecture
+      coordinator.setBridgeInstances(bridge, elkBridge);
     });
 
     it("should render original edges normally", async () => {
@@ -1468,6 +1470,8 @@ describe("ReactFlowBridge", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      // Set bridge instances for the new architecture
+      coordinator.setBridgeInstances(bridge, elkBridge);
     });
 
     it("should convert paxos.json data correctly", async () => {

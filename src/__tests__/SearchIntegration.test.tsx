@@ -12,6 +12,8 @@ import {
 } from "../components/SearchIntegration.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import type { SearchResult } from "../types/core.js";
 
 describe("SearchIntegration Component", () => {
@@ -72,6 +74,12 @@ describe("SearchIntegration Component", () => {
     let _coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      const elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      const reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should expand containers when search results are in collapsed containers", async () => {

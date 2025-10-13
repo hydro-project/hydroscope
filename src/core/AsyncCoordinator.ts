@@ -37,6 +37,10 @@ export class AsyncCoordinator {
   private reactFlowBridge?: any;
   private elkBridge?: any;
 
+  // Post-render callback queue - executed after React renders new nodes
+  private postRenderCallbacks: Array<() => void | Promise<void>> = [];
+  private lastRenderTimestamp: number = 0;
+
   constructor(interactionHandler?: any) {
     this.interactionHandler = interactionHandler;
   }
@@ -54,6 +58,44 @@ export class AsyncCoordinator {
   setReactFlowInstance(reactFlowInstance: any): void {
     this.reactFlowInstance = reactFlowInstance;
     console.log('🎯 AsyncCoordinator: ReactFlow instance set for direct fitView operations');
+  }
+
+  /**
+   * Called by HydroscopeCore when React finishes rendering nodes
+   * This is the deterministic trigger to execute post-render callbacks (like fitView)
+   */
+  notifyRenderComplete(): void {
+    this.lastRenderTimestamp = Date.now();
+    
+    if (this.postRenderCallbacks.length === 0) {
+      return;
+    }
+
+    // Execute all pending callbacks
+    const callbacks = [...this.postRenderCallbacks];
+    this.postRenderCallbacks = [];
+
+    console.log(`[AsyncCoordinator] 🎯 Executing ${callbacks.length} post-render callbacks`);
+    
+    callbacks.forEach(callback => {
+      try {
+        const result = callback();
+        if (result instanceof Promise) {
+          result.catch(error => {
+            console.error('[AsyncCoordinator] Post-render callback error:', error);
+          });
+        }
+      } catch (error) {
+        console.error('[AsyncCoordinator] Post-render callback error:', error);
+      }
+    });
+  }
+
+  /**
+   * Enqueue a callback to be executed after the next React render
+   */
+  private enqueuePostRenderCallback(callback: () => void | Promise<void>): void {
+    this.postRenderCallbacks.push(callback);
   }
 
   /**
@@ -615,8 +657,6 @@ export class AsyncCoordinator {
       layoutSkipped: false,
       layoutDuration: 0,
       renderDuration: 0,
-      fitViewOptimized: false,
-      totalOptimizationSavings: 0,
     };
 
     // Validate required parameters - FAIL FAST with clear messages
@@ -661,12 +701,10 @@ export class AsyncCoordinator {
 
       if (shouldSkipLayout) {
         performanceMetrics.layoutSkipped = true;
-        performanceMetrics.totalOptimizationSavings += 50; // Estimated layout time savings
         console.debug(
           "[AsyncCoordinator] ⚡ Layout optimization: Skipping unnecessary layout based on state analysis",
           {
             stateChangeDetectionTime: `${performanceMetrics.stateChangeDetection}ms`,
-            estimatedSavings: "50ms",
           }
         );
       }
@@ -725,7 +763,7 @@ export class AsyncCoordinator {
 
       // Step 4: Update HydroscopeCore's React state directly (imperative approach)
       if (this.setReactState) {
-        // Direct imperative state update - no callbacks needed
+        // Update React state with new nodes/edges
         this.setReactState((prev: any) => ({
           ...prev,
           reactFlowData: reactFlowData,
@@ -733,42 +771,47 @@ export class AsyncCoordinator {
         console.debug(
           "[AsyncCoordinator] ✅ ReactFlow data updated directly (imperative)"
         );
+
+        // If fitView is requested, enqueue it to execute AFTER React renders
+        if (options.fitView) {
+          const fitViewCheck = this._shouldExecuteFitView(
+            options.fitViewOptions,
+            reactFlowData
+          );
+
+          if (fitViewCheck.shouldExecute) {
+            this.enqueuePostRenderCallback(() => {
+              if (!this.reactFlowInstance) {
+                console.warn('[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView');
+                return;
+              }
+
+              const fitViewOptions = {
+                padding: options.fitViewOptions?.padding || 0.15,
+                duration: options.fitViewOptions?.duration || 300,
+                includeHiddenNodes: false,
+              };
+
+              console.log('[AsyncCoordinator] 🎯 Executing post-render fitView', fitViewOptions);
+              this.reactFlowInstance.fitView(fitViewOptions);
+              console.log('[AsyncCoordinator] ✅ FitView completed');
+            });
+            console.debug(
+              "[AsyncCoordinator] ✅ FitView enqueued for post-render execution"
+            );
+          } else {
+            console.debug(
+              "[AsyncCoordinator] ⏭️ Skipping FitView execution",
+              { reason: fitViewCheck.skipReason }
+            );
+          }
+        }
       } else if (this.onReactFlowDataUpdate) {
         // Fallback to callback for backward compatibility
         this.onReactFlowDataUpdate(reactFlowData);
         console.debug(
           "[AsyncCoordinator] ✅ ReactFlow data update callback completed successfully (fallback)"
         );
-      }
-
-      // PERFORMANCE OPTIMIZATION 2: Optimize FitView execution within synchronous pipeline (after ReactFlow update)
-      if (options.fitView) {
-        const fitViewOptimized = this._optimizeFitViewExecution(
-          options.fitViewOptions,
-          reactFlowData
-        );
-        performanceMetrics.fitViewOptimized = fitViewOptimized.optimized;
-
-        if (fitViewOptimized.shouldExecute) {
-          // Execute fitView directly using ReactFlow instance
-          await this._executeFitViewDirect(fitViewOptimized.optimizedOptions);
-          console.debug(
-            "[AsyncCoordinator] ✅ FitView executed directly",
-            {
-              optimized: fitViewOptimized.optimized,
-              optimizationApplied: fitViewOptimized.optimizationApplied,
-            }
-          );
-        } else {
-          performanceMetrics.totalOptimizationSavings += 10; // Estimated FitView time savings
-          console.debug(
-            "[AsyncCoordinator] ⚡ FitView optimization: Skipping unnecessary FitView operation",
-            {
-              reason: fitViewOptimized.skipReason,
-              estimatedSavings: "10ms",
-            }
-          );
-        }
       }
 
       const endTime = Date.now();
@@ -3259,26 +3302,20 @@ export class AsyncCoordinator {
   }
 
   /**
-   * PERFORMANCE OPTIMIZATION 2: Optimize FitView execution within synchronous pipeline
-   * No external state - uses only local analysis and ReactFlowData
-   * FAIL FAST - no error suppression
+   * Deterministic FitView execution check - no optimizations that could cause zoom issues
    */
-  private _optimizeFitViewExecution(
+  private _shouldExecuteFitView(
     fitViewOptions?: { padding?: number; duration?: number },
     reactFlowData?: any
   ): {
     shouldExecute: boolean;
-    optimized: boolean;
-    optimizedOptions?: { padding?: number; duration?: number };
-    optimizationApplied?: string;
     skipReason?: string;
   } {
-    // If no ReactFlow data, can't optimize - execute normally
+    // If no ReactFlow data, can't execute fitView safely
     if (!reactFlowData || !reactFlowData.nodes) {
       return {
-        shouldExecute: true,
-        optimized: false,
-        optimizedOptions: fitViewOptions,
+        shouldExecute: false,
+        skipReason: "No ReactFlow data available",
       };
     }
 
@@ -3289,167 +3326,17 @@ export class AsyncCoordinator {
     if (visibleNodes.length === 0) {
       return {
         shouldExecute: false,
-        optimized: true,
         skipReason: "No visible nodes to fit view to",
       };
     }
 
-    // Optimize FitView options based on node count (stateless optimization)
-    const optimizedOptions = this._optimizeFitViewOptions(
-      fitViewOptions,
-      visibleNodes.length
-    );
-
+    // Execute with original options - no modifications
     return {
       shouldExecute: true,
-      optimized: optimizedOptions.optimized,
-      optimizedOptions: optimizedOptions.options,
-      optimizationApplied: optimizedOptions.optimizationApplied,
     };
   }
 
-  /**
-   * Optimize FitView options based on node count (stateless)
-   */
-  private _optimizeFitViewOptions(
-    originalOptions?: { padding?: number; duration?: number },
-    nodeCount?: number
-  ): {
-    optimized: boolean;
-    options: { padding?: number; duration?: number };
-    optimizationApplied?: string;
-  } {
-    const options = { ...originalOptions };
-    let optimized = false;
-    let optimizationApplied = "";
 
-    // Optimize duration based on node count
-    if (nodeCount !== undefined) {
-      if (nodeCount > 100) {
-        // Large graphs - reduce animation duration for better performance
-        options.duration = Math.min(options.duration || 300, 150);
-        optimized = true;
-        optimizationApplied = "Reduced animation duration for large graph";
-      } else if (nodeCount < 10) {
-        // Small graphs - can use longer animation for smoother experience
-        options.duration = Math.max(options.duration || 300, 500);
-        optimized = true;
-        optimizationApplied = "Increased animation duration for small graph";
-      }
-    }
-
-    // Optimize padding based on node count
-    if (nodeCount !== undefined && nodeCount > 50) {
-      // Large graphs - reduce padding to show more content
-      options.padding = Math.min(options.padding || 50, 20);
-      optimized = true;
-      optimizationApplied +=
-        (optimizationApplied ? ", " : "") + "Reduced padding for large graph";
-    }
-
-    return {
-      optimized,
-      options,
-      optimizationApplied: optimizationApplied || undefined,
-    };
-  }
-
-  /**
-   * Execute fitView directly using the ReactFlow instance
-   * This replaces the callback-based approach with direct ReactFlow integration
-   */
-  private async _executeFitViewDirect(
-    options?: { padding?: number; duration?: number }
-  ): Promise<void> {
-    if (!this.reactFlowInstance) {
-      console.warn('[AsyncCoordinator] ⚠️ ReactFlow instance not available for direct fitView');
-      // Fallback to callback if available
-      if (this.onFitViewRequested) {
-        console.log('[AsyncCoordinator] 🔄 Falling back to fitView callback');
-        this.onFitViewRequested(options);
-      }
-      return;
-    }
-
-    try {
-      console.log('[AsyncCoordinator] 🎯 Executing direct ReactFlow fitView', options);
-      
-      // Use requestAnimationFrame to ensure ReactFlow has rendered the nodes
-      await new Promise(resolve => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve(void 0);
-          });
-        });
-      });
-      
-      const fitViewOptions = {
-        padding: options?.padding || 0.15,
-        duration: options?.duration || 300,
-        includeHiddenNodes: false,
-      };
-
-      this.reactFlowInstance.fitView(fitViewOptions);
-      console.log('[AsyncCoordinator] ✅ Direct ReactFlow fitView completed');
-    } catch (error) {
-      console.error('[AsyncCoordinator] ❌ Error executing direct fitView:', error);
-      // Fallback to callback if available
-      if (this.onFitViewRequested) {
-        console.log('[AsyncCoordinator] 🔄 Falling back to fitView callback after error');
-        this.onFitViewRequested(options);
-      }
-    }
-  }
-
-  /**
-   * Wait deterministically for ReactFlow to process node position updates
-   * This replaces the arbitrary timing delay with a proper readiness check
-   */
-  private async _waitForReactFlowReady(): Promise<void> {
-    if (!this.reactFlowInstance) {
-      return;
-    }
-
-    const maxAttempts = 30; // Max 3 seconds (30 * 100ms) - increased timeout
-    let attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      try {
-        // Check if ReactFlow has nodes with valid positions
-        const nodes = this.reactFlowInstance.getNodes();
-        
-        // If we have nodes and they have valid positions, ReactFlow is ready
-        if (nodes.length > 0) {
-          const validNodes = nodes.filter((node: any) => 
-            node.position && 
-            typeof node.position.x === 'number' && 
-            typeof node.position.y === 'number' &&
-            !isNaN(node.position.x) && 
-            !isNaN(node.position.y) &&
-            node.position.x !== 0 || node.position.y !== 0 // Ensure positions are not just default (0,0)
-          );
-          
-          // Require at least 50% of nodes to have valid positions for better reliability
-          const validRatio = validNodes.length / nodes.length;
-          if (validRatio >= 0.5) {
-            console.log(`[AsyncCoordinator] ✅ ReactFlow ready after ${attempts * 100}ms - found ${validNodes.length}/${nodes.length} nodes with valid positions`);
-            return;
-          }
-        }
-        
-        // If no nodes yet, or not enough valid positions, wait a bit more
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-        
-      } catch (error) {
-        console.warn(`[AsyncCoordinator] Error checking ReactFlow readiness (attempt ${attempts}):`, error);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-    }
-    
-    console.warn(`[AsyncCoordinator] ⚠️ ReactFlow readiness timeout after ${maxAttempts * 100}ms - proceeding anyway`);
-  }
 
   /**
    * PERFORMANCE OPTIMIZATION 3: Performance logging using local variables (no persistent caches)
@@ -3462,18 +3349,10 @@ export class AsyncCoordinator {
       layoutSkipped: boolean;
       layoutDuration: number;
       renderDuration: number;
-      fitViewOptimized: boolean;
-      totalOptimizationSavings: number;
     },
     reactFlowData: any,
     options: any
   ): void {
-    // Calculate performance statistics (local variables only)
-    const optimizationEfficiency =
-      performanceMetrics.totalOptimizationSavings > 0
-        ? (performanceMetrics.totalOptimizationSavings / totalDuration) * 100
-        : 0;
-
     const layoutEfficiency =
       performanceMetrics.layoutDuration > 0
         ? (performanceMetrics.layoutDuration / totalDuration) * 100
@@ -3484,14 +3363,9 @@ export class AsyncCoordinator {
         ? (performanceMetrics.renderDuration / totalDuration) * 100
         : 0;
 
-    // Log comprehensive performance metrics (no persistent storage)
+    // Log performance metrics
     console.debug("[AsyncCoordinator] 📊 Pipeline Performance Metrics", {
-      // Overall performance
       totalDuration: `${totalDuration}ms`,
-      optimizationSavings: `${performanceMetrics.totalOptimizationSavings}ms`,
-      optimizationEfficiency: `${optimizationEfficiency.toFixed(1)}%`,
-
-      // Phase breakdown
       stateChangeDetection: `${performanceMetrics.stateChangeDetection}ms`,
       layoutDuration: performanceMetrics.layoutSkipped
         ? "skipped"
@@ -3502,7 +3376,6 @@ export class AsyncCoordinator {
 
       // Optimization flags
       layoutSkipped: performanceMetrics.layoutSkipped,
-      fitViewOptimized: performanceMetrics.fitViewOptimized,
 
       // Data metrics
       nodesCount: reactFlowData?.nodes?.length || 0,
@@ -3513,96 +3386,27 @@ export class AsyncCoordinator {
       fitView: options.fitView,
 
       // Performance classification
-      performanceClass: this._classifyPipelinePerformance(
-        totalDuration,
-        performanceMetrics
-      ),
+      performanceClass: totalDuration < 100 ? "excellent" : 
+                        totalDuration < 300 ? "good" : 
+                        totalDuration < 500 ? "acceptable" : 
+                        totalDuration < 1000 ? "slow" : "very-slow",
 
       timestamp: Date.now(),
     });
 
-    // Log performance warnings if needed (local analysis only)
+    // Log performance warnings if needed
     if (totalDuration > 1000) {
       console.warn(
         "[AsyncCoordinator] ⚠️ Pipeline performance warning: Slow execution detected",
         {
           duration: `${totalDuration}ms`,
           threshold: "1000ms",
-          suggestions: this._generatePerformanceSuggestions(
-            totalDuration,
-            performanceMetrics
-          ),
         }
       );
     }
   }
 
-  /**
-   * Classify pipeline performance (stateless analysis)
-   */
-  private _classifyPipelinePerformance(
-    totalDuration: number,
-    performanceMetrics: {
-      stateChangeDetection: number;
-      layoutSkipped: boolean;
-      layoutDuration: number;
-      renderDuration: number;
-      fitViewOptimized: boolean;
-      totalOptimizationSavings: number;
-    }
-  ): string {
-    if (totalDuration < 100) return "excellent";
-    if (totalDuration < 300) return "good";
-    if (totalDuration < 500) return "acceptable";
-    if (totalDuration < 1000) return "slow";
-    return "very-slow";
-  }
 
-  /**
-   * Generate performance improvement suggestions (stateless analysis)
-   */
-  private _generatePerformanceSuggestions(
-    totalDuration: number,
-    performanceMetrics: {
-      stateChangeDetection: number;
-      layoutSkipped: boolean;
-      layoutDuration: number;
-      renderDuration: number;
-      fitViewOptimized: boolean;
-      totalOptimizationSavings: number;
-    }
-  ): string[] {
-    const suggestions: string[] = [];
-
-    if (performanceMetrics.layoutDuration > totalDuration * 0.7) {
-      suggestions.push(
-        "Consider using constrained layout (relayoutEntities) instead of full layout"
-      );
-    }
-
-    if (performanceMetrics.renderDuration > totalDuration * 0.5) {
-      suggestions.push(
-        "ReactFlow rendering is slow - consider reducing node/edge complexity"
-      );
-    }
-
-    if (
-      !performanceMetrics.layoutSkipped &&
-      performanceMetrics.stateChangeDetection < 5
-    ) {
-      suggestions.push(
-        "State change detection is fast but layout was not skipped - verify state change logic"
-      );
-    }
-
-    if (performanceMetrics.totalOptimizationSavings === 0) {
-      suggestions.push(
-        "No optimizations were applied - consider enabling layout skipping or FitView optimization"
-      );
-    }
-
-    return suggestions;
-  }
 
   /**
    * Helper method to get containers that need to be expanded for search results

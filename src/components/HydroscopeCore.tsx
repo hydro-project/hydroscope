@@ -235,9 +235,6 @@ interface HydroscopeCoreState {
 
   /** Whether to enable auto-fit (disabled during drag operations) */
   autoFitEnabled: boolean;
-
-  /** Whether to trigger a one-time fit view on next render */
-  shouldFitView: boolean;
 }
 
 // ============================================================================
@@ -298,7 +295,6 @@ const HydroscopeCoreInternal = forwardRef<
       error: null,
       isLoading: true,
       autoFitEnabled: autoFitEnabled,
-      shouldFitView: false,
     });
 
     // EXPERIMENT: ReactFlow reset key to force re-render on container operations
@@ -312,48 +308,12 @@ const HydroscopeCoreInternal = forwardRef<
     const isDraggingRef = useRef<boolean>(false);
     const prevNodeCountRef = useRef<number>(0);
 
-    // Smart fitView debouncing to prevent ResizeObserver loops while allowing initial fitView
-    const fitViewTimeoutRef = useRef<number | null>(null);
-    const lastFitViewTimeRef = useRef<number>(0);
-    const debouncedFitView = useCallback(() => {
-      const now = Date.now();
-      const timeSinceLastFitView = now - lastFitViewTimeRef.current;
-
-      // If it's been more than 500ms since last fitView, allow immediate execution
-      // Otherwise, debounce to prevent rapid calls
-      if (timeSinceLastFitView > 500) {
-        setState((prev) => ({ ...prev, shouldFitView: true }));
-        lastFitViewTimeRef.current = now;
-      } else {
-        // Debounce rapid calls
-        if (fitViewTimeoutRef.current) {
-          clearTimeout(fitViewTimeoutRef.current);
-        }
-
-        fitViewTimeoutRef.current = setTimeout(() => {
-          setState((prev) => ({ ...prev, shouldFitView: true }));
-          lastFitViewTimeRef.current = Date.now();
-          fitViewTimeoutRef.current = null;
-        }, 150) as unknown as number;
-      }
-    }, []);
-
     // Set ReactFlow instance in AsyncCoordinator for direct fitView operations
     useEffect(() => {
       if (reactFlowInstance && state.asyncCoordinator) {
         state.asyncCoordinator.setReactFlowInstance(reactFlowInstance);
       }
     }, [reactFlowInstance, state.asyncCoordinator]);
-
-    // Cleanup debounced fitView timeout on unmount
-    useEffect(() => {
-      return () => {
-        if (fitViewTimeoutRef.current) {
-          clearTimeout(fitViewTimeoutRef.current);
-          fitViewTimeoutRef.current = null;
-        }
-      };
-    }, []);
 
     // Error handling helper with recovery strategies
     const handleError = useCallback(
@@ -436,12 +396,6 @@ const HydroscopeCoreInternal = forwardRef<
             }));
             updateTimeout = null;
           }, 50) as unknown as number; // 50ms throttle to prevent ResizeObserver loops
-        };
-
-        // NEW: Set up FitView callback for AsyncCoordinator integration
-        asyncCoordinator.onFitViewRequested = (options) => {
-          // Use the existing debouncedFitView mechanism
-          debouncedFitView();
         };
 
         // Create bridges
@@ -795,39 +749,6 @@ const HydroscopeCoreInternal = forwardRef<
       processDataPipeline(data, reason);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, processDataPipeline]);
-
-    // Handle fit view when shouldFitView changes with debouncing
-    useEffect(() => {
-      if (state.shouldFitView) {
-        if (!reactFlowInstance) {
-          return; // Don't reset shouldFitView, let it retry when reactFlowInstance becomes available
-        }
-
-        // Only auto-fit if autoFitEnabled is true
-        if (state.autoFitEnabled) {
-          // Use requestAnimationFrame to ensure ReactFlow has fully rendered
-          // Reduced timeout since we have smarter debouncing at trigger level
-          const fitViewTimeout = window.setTimeout(() => {
-            requestAnimationFrame(() => {
-              reactFlowInstance.fitView({
-                padding: 0.15,
-                duration: 300,
-                includeHiddenNodes: false, // Only fit to visible nodes
-              });
-            });
-          }, 50); // Reduced to 50ms since we have smarter debouncing
-
-          // Cleanup timeout on unmount or dependency change
-          return () => {
-            clearTimeout(fitViewTimeout);
-          };
-        } else {
-        }
-
-        // Always reset the flag regardless of whether we fitted or not
-        setState((prev) => ({ ...prev, shouldFitView: false }));
-      }
-    }, [state.shouldFitView, reactFlowInstance, state.autoFitEnabled]);
 
     // Update autoFitEnabled when prop changes
     useEffect(() => {
@@ -1427,12 +1348,18 @@ const HydroscopeCoreInternal = forwardRef<
               },
             };
           });
+
+          // Notify AsyncCoordinator that React has finished rendering
+          // This triggers any pending post-render callbacks (like fitView)
+          if (state.asyncCoordinator) {
+            state.asyncCoordinator.notifyRenderComplete();
+          }
         } catch (error) {
           console.error("[HydroscopeCore] Error handling node changes:", error);
           handleError(error as Error, "node changes");
         }
       },
-      [readOnly, handleError],
+      [readOnly, handleError, state.asyncCoordinator],
     );
 
     // Handle edge changes (required for ReactFlow controls to work properly)

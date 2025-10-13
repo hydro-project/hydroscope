@@ -4,9 +4,11 @@
  * Tests the new tree hierarchy expansion and navigation methods
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import type { GraphNode, Container } from "../types/core.js";
 
 describe("AsyncCoordinator Tree Hierarchy", () => {
@@ -39,9 +41,17 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
 
   describe("Tree Node Operations", () => {
     let coordinator: AsyncCoordinator;
+    let elkBridge: ELKBridge;
+    let reactFlowBridge: ReactFlowBridge;
 
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should expand tree node through async coordination", async () => {
@@ -142,9 +152,17 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
 
   describe("Navigation Operations", () => {
     let coordinator: AsyncCoordinator;
+    let elkBridge: ELKBridge;
+    let reactFlowBridge: ReactFlowBridge;
 
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should navigate to element through async coordination", async () => {
@@ -219,9 +237,17 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
 
   describe("Enhanced Container Operations", () => {
     let coordinator: AsyncCoordinator;
+    let elkBridge: ELKBridge;
+    let reactFlowBridge: ReactFlowBridge;
 
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should support container ID list in expandAllContainers", async () => {

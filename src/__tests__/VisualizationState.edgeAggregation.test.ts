@@ -11,6 +11,8 @@ import {
   createTestEdge,
 } from "../utils/testData.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 
 describe("VisualizationState Edge Aggregation Data Structures", () => {
   let state: VisualizationState;
@@ -191,6 +193,12 @@ describe("VisualizationState Edge Aggregation Data Structures", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      const elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      const reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should track aggregation history", () => {

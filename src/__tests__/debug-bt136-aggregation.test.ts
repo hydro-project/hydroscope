@@ -18,7 +18,9 @@ describe("Debug bt_136 Aggregation", () => {
   let visualizationState: VisualizationState;
 
   beforeEach(async () => {
-    coordinator = new AsyncCoordinator();
+    const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+    const testSetup = await createTestAsyncCoordinator();
+    coordinator = testSetup.asyncCoordinator;
     // Load the actual paxos-flipped.json file
     const paxosFlippedPath = path.join(
       process.cwd(),

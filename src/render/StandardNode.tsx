@@ -1,7 +1,7 @@
 /**
  * @fileoverview Standard graph node component
  */
-import React, { useState, useCallback } from "react";
+import React from "react";
 import { type NodeProps } from "@xyflow/react";
 import {
   generateNodeColors,
@@ -109,28 +109,9 @@ export function StandardNode({
   if (id === "0" || id === "8" || id === "2" || id === "7") {
     renderCount.current++;
   }
-  // Click animation state
-  const [isClicked, setIsClicked] = useState(false);
   const styleCfg = useStyleConfig();
-  // Handle click animation
-  const handleClick = useCallback(() => {
-    // Trigger the visual pop-out effect
-    setIsClicked(true);
-    // Reset the animation after a short duration
-    setTimeout(() => {
-      setIsClicked(false);
-    }, 200); // 200ms animation duration
-    // Check if this is a collapsed container and call its onClick handler
-    if (
-      data.collapsed === true &&
-      data.onClick &&
-      typeof data.onClick === "function"
-    ) {
-      data.onClick(id, "container");
-    }
-    // Don't prevent the event from bubbling up to ReactFlow
-    // This ensures the onNodeClick handler still fires
-  }, [data, id]);
+  // Use isClicked from data prop (set by parent handler)
+  const isClicked = data.isClicked || false;
   // Check if this is a collapsed container
   const isCollapsedContainer = data.collapsed === true;
   // Get dynamic colors based on node type (preferred) or style as fallback
@@ -332,7 +313,6 @@ export function StandardNode({
         `}
       </style>
       <div
-        onClick={handleClick}
         style={{
           // Default component styles
           width: `${width}px`,

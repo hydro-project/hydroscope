@@ -3,6 +3,7 @@
  * Covers search state management, algorithms, and result generation
  */
 
+import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import {
   createTestNode,
@@ -10,6 +11,8 @@ import {
   createTestEdge,
 } from "../utils/testData.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 
 describe("VisualizationState Search Functionality", () => {
   let state: VisualizationState;
@@ -17,6 +20,12 @@ describe("VisualizationState Search Functionality", () => {
 
   beforeEach(() => {
     coordinator = new AsyncCoordinator();
+    const elkBridge = new ELKBridge({
+      algorithm: "mrtree",
+      direction: "DOWN",
+    });
+    const reactFlowBridge = new ReactFlowBridge({});
+    coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     state = new VisualizationState();
   });
 

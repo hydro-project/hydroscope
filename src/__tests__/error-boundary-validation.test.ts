@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState";
 import { AsyncCoordinator } from "../core/AsyncCoordinator";
 import { ELKBridge } from "../bridges/ELKBridge";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge";
 
 // Mock Error Boundary for testing (without JSX)
 class TestErrorBoundary {
@@ -168,6 +169,13 @@ describe("Error Boundary Validation", () => {
 
     it("should handle ReactFlow render errors without affecting state", async () => {
       const asyncCoordinator = new AsyncCoordinator();
+      const elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      const reactFlowBridge = new ReactFlowBridge({});
+      asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
+      
       const visualizationState = new VisualizationState();
 
       // Add test data
@@ -181,11 +189,13 @@ describe("Error Boundary Validation", () => {
         position: { x: 0, y: 0 },
       });
 
-      // Test pipeline with real bridges
-      const elkBridge = new ELKBridge();
+      // Test pipeline with proper API
       const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(
         visualizationState, 
-        elkBridge
+        {
+          relayoutEntities: undefined,
+          fitView: false
+        }
       );
 
       // Should complete successfully

@@ -7,12 +7,14 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import type { ApplicationEvent } from "../types/core.js";
 
 describe("AsyncCoordinator - Basic API", () => {
   let coordinator: AsyncCoordinator;
   let state: VisualizationState;
   let elkBridge: ELKBridge;
+  let reactFlowBridge: ReactFlowBridge;
 
   beforeEach(() => {
     coordinator = new AsyncCoordinator();
@@ -21,6 +23,10 @@ describe("AsyncCoordinator - Basic API", () => {
       algorithm: "mrtree",
       direction: "DOWN",
     });
+    reactFlowBridge = new ReactFlowBridge({});
+    
+    // Set bridge instances for the new architecture
+    coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
 
     // Add basic test data
     state.addNode({
@@ -161,25 +167,29 @@ describe("AsyncCoordinator - Basic API", () => {
         childContainers: []
       });
 
-      // Use new synchronous container method instead of deprecated processApplicationEventAndWait
-      await coordinator.expandContainer("container1", state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+      // Use new synchronous container method with correct parameters
+      const result = await coordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
         fitView: false
       });
 
-      const status = coordinator.getApplicationEventStatus();
-      expect(status.lastCompleted).toBeDefined();
+      // Test that the operation completed successfully
+      expect(result).toBeDefined();
+      expect(result.nodes).toBeDefined();
+      expect(result.edges).toBeDefined();
     });
 
     it("should process search events", async () => {
       // Use new synchronous search method instead of deprecated processApplicationEventAndWait
-      await coordinator.updateSearchResults("test", state, {
+      const result = await coordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false
       });
 
-      const status = coordinator.getApplicationEventStatus();
-      expect(status.lastCompleted).toBeDefined();
+      // Test that the operation completed successfully
+      expect(result).toBeDefined();
+      expect(result.nodes).toBeDefined();
+      expect(result.edges).toBeDefined();
     });
   });
 

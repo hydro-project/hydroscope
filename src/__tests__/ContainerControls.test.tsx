@@ -18,6 +18,8 @@ import {
 } from "../components/ContainerControls.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import type { Container } from "../types/core.js";
 
 describe("ContainerControls Component", () => {
@@ -167,6 +169,12 @@ describe("ContainerControls Component", () => {
     it("should handle expand all errors gracefully", async () => {
       // Create a coordinator that will fail
       const failingCoordinator = new AsyncCoordinator();
+      const elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      const reactFlowBridge = new ReactFlowBridge({});
+      failingCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
       failingCoordinator.expandAllContainers = vi
         .fn()
         .mockRejectedValue(new Error("Test error"));
@@ -594,10 +602,18 @@ describe("IndividualContainerControl Component", () => {
 describe("useContainerControls Hook", () => {
   let coordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
+  let elkBridge: ELKBridge;
+  let reactFlowBridge: ReactFlowBridge;
 
   beforeEach(() => {
     coordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
+    elkBridge = new ELKBridge({
+      algorithm: "mrtree",
+      direction: "DOWN",
+    });
+    reactFlowBridge = new ReactFlowBridge({});
+    coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
   });
 
   const TestComponent = () => {
@@ -694,6 +710,12 @@ describe("useContainerControls Hook", () => {
 
   it("should handle errors and provide error clearing", async () => {
     const failingCoordinator = new AsyncCoordinator();
+    const elkBridge = new ELKBridge({
+      algorithm: "mrtree",
+      direction: "DOWN",
+    });
+    const reactFlowBridge = new ReactFlowBridge({});
+    failingCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     failingCoordinator.expandAllContainers = vi.fn().mockImplementation(() => {
       return Promise.reject(new Error("Hook test error"));
     });

@@ -475,9 +475,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          { fitView: false }
         );
       }
 
@@ -550,9 +548,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         await coordinator.collapseContainer(
           containerId,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          { fitView: false }
         );
       }
 

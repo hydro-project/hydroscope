@@ -252,8 +252,10 @@ describe("Enhanced Edge Restoration", () => {
 
   describe("Post-expansion Validation", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should validate edges after container expansion", async () => {
@@ -318,8 +320,10 @@ describe("Enhanced Edge Restoration", () => {
 
   describe("Integration with Existing Functionality", () => {
     let coordinator: AsyncCoordinator;
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should maintain compatibility with existing edge aggregation", async () => {

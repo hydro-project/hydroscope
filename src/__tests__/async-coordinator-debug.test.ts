@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 
 describe("AsyncCoordinator Debug", () => {
   let state: VisualizationState;
@@ -86,6 +88,12 @@ describe("AsyncCoordinator Debug", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      const elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      const reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should expand container through AsyncCoordinator", () => {
@@ -153,7 +161,7 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] 🚀 Starting ReactFlow render test");
 
       try {
-        const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state, new (await import('../bridges/ELKBridge.js')).ELKBridge(), {
+        const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [], // No layout, just render
           fitView: false
         });

@@ -16,6 +16,7 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { JSONParser } from "../utils/JSONParser.js";
 import type { HydroscopeData } from "../types/core.js";
 
@@ -23,6 +24,7 @@ describe("Container State Invariant Bug - FIXED", () => {
   let paxosFlippedData: HydroscopeData;
   let visualizationState: VisualizationState;
   let elkBridge: ELKBridge;
+  let reactFlowBridge: ReactFlowBridge;
 
   beforeEach(async () => {
     // Load the actual paxos-flipped.json file
@@ -37,12 +39,15 @@ describe("Container State Invariant Bug - FIXED", () => {
     // Initialize components
     visualizationState = new VisualizationState();
     elkBridge = new ELKBridge();
+    reactFlowBridge = new ReactFlowBridge({});
   });
 
   describe("Invariant Violations - FIXED", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      // Set bridge instances for the new architecture
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should NOT find containers in illegal Expanded/Hidden state", async () => {

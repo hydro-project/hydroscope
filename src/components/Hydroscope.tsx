@@ -853,8 +853,8 @@ export const Hydroscope = memo<HydroscopeProps>(
                         currentVisualizationState,
                         {
                           relayoutEntities: [], // No layout, just render
-                          fitView: false
-                        }
+                          fitView: false,
+                        },
                       );
                     }
                   }
@@ -865,8 +865,8 @@ export const Hydroscope = memo<HydroscopeProps>(
                       currentVisualizationState,
                       {
                         relayoutEntities: [], // No layout, just render
-                        fitView: false
-                      }
+                        fitView: false,
+                      },
                     );
                   }
                 }
@@ -877,8 +877,8 @@ export const Hydroscope = memo<HydroscopeProps>(
                     currentVisualizationState,
                     {
                       relayoutEntities: [], // No layout, just render
-                      fitView: false
-                    }
+                      fitView: false,
+                    },
                   );
                 }
               }
@@ -918,6 +918,101 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [],
     );
+
+    // Handle node clicks - default behavior is to toggle label, but allow override
+    const handleNodeClick = useCallback(
+      async (
+        event: React.MouseEvent,
+        node: any,
+        visualizationState?: VisualizationState,
+      ) => {
+        console.log("[Hydroscope] handleNodeClick called!", {
+          nodeId: node?.id,
+          hasOnNodeClick: !!onNodeClick,
+        });
+
+        // If user provided a custom handler, use that instead
+        if (onNodeClick) {
+          onNodeClick(event, node, visualizationState);
+          return;
+        }
+
+        // Default behavior: toggle label for graph nodes with distinct labels
+        if (!visualizationState) {
+          console.warn(
+            "[Hydroscope] No visualization state available for node click",
+          );
+          return;
+        }
+
+        const graphNode = visualizationState.getGraphNode(node.id);
+        console.log("[Hydroscope] Node clicked:", {
+          nodeId: node.id,
+          graphNode,
+          hasGraphNode: !!graphNode,
+          label: graphNode?.label,
+          longLabel: graphNode?.longLabel,
+          showingLongLabel: graphNode?.showingLongLabel,
+        });
+
+        if (
+          graphNode &&
+          graphNode.longLabel &&
+          graphNode.label &&
+          graphNode.longLabel !== graphNode.label
+        ) {
+          console.log(
+            "[Hydroscope] Toggling label for node:",
+            node.id,
+            "from",
+            graphNode.showingLongLabel ? "long" : "short",
+            "to",
+            graphNode.showingLongLabel ? "short" : "long",
+          );
+
+          // Toggle the label using VisualizationState's toggleNodeLabel method
+          visualizationState.toggleNodeLabel(node.id);
+
+          // Re-fetch the node to verify the toggle worked
+          const updatedNode = visualizationState.getGraphNode(node.id);
+          console.log("[Hydroscope] After toggle:", {
+            showingLongLabel: updatedNode?.showingLongLabel,
+            willDisplay: updatedNode?.showingLongLabel
+              ? updatedNode?.longLabel
+              : updatedNode?.label,
+          });
+
+          // Trigger a refresh to update the display
+          // We need to force a re-render by calling updateRenderConfig with a dummy change
+          // that triggers the render pipeline but doesn't actually change anything visual
+          try {
+            const asyncCoordinator =
+              hydroscopeCoreRef.current?.getAsyncCoordinator();
+            if (asyncCoordinator) {
+              // Force a re-render by calling the render pipeline directly
+              await asyncCoordinator.updateRenderConfig(
+                visualizationState,
+                {}, // Empty config still triggers re-render
+                { fitView: false }, // Don't fit view on label toggle
+              );
+              console.log("[Hydroscope] Refresh triggered successfully");
+            } else {
+              console.warn(
+                "[Hydroscope] AsyncCoordinator not available for refresh",
+              );
+            }
+          } catch (err) {
+            console.error("❌ Error refreshing after label toggle:", err);
+          }
+        } else {
+          console.log(
+            "[Hydroscope] Node does not have distinct labels, skipping toggle",
+          );
+        }
+      },
+      [onNodeClick],
+    );
+
     // Container dimensions
     const containerStyle = useMemo(
       () => ({
@@ -1028,14 +1123,15 @@ export const Hydroscope = memo<HydroscopeProps>(
                   initialLayoutAlgorithm={state.layoutAlgorithm}
                   initialColorPalette={state.colorPalette}
                   initialEdgeStyle={state.renderConfig.edgeStyle}
-
                   initialEdgeWidth={state.renderConfig.edgeWidth}
                   initialEdgeDashed={state.renderConfig.edgeDashed}
                   initialNodePadding={state.renderConfig.nodePadding}
                   initialNodeFontSize={state.renderConfig.nodeFontSize}
-                  initialContainerBorderWidth={state.renderConfig.containerBorderWidth}
+                  initialContainerBorderWidth={
+                    state.renderConfig.containerBorderWidth
+                  }
                   autoFitEnabled={state.autoFitEnabled}
-                  onNodeClick={onNodeClick}
+                  onNodeClick={handleNodeClick}
                   onContainerCollapse={onContainerCollapse}
                   onContainerExpand={onContainerExpand}
                   onVisualizationStateChange={handleVisualizationStateChange}

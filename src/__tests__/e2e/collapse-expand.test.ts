@@ -41,42 +41,46 @@ describe("Container Collapse/Expand E2E Tests", () => {
     const node1 = {
       id: "node1",
       label: "Node 1",
-      shortLabel: "Node 1",
-      fullLabel: "Node 1 Full",
-      nodeType: "Process",
-      data: { locationId: 0 },
+      longLabel: "Node 1 Full",
+      type: "node",
+      semanticTags: [],
+      hidden: false,
     };
 
     const node2 = {
       id: "node2",
       label: "Node 2",
-      shortLabel: "Node 2",
-      fullLabel: "Node 2 Full",
-      nodeType: "Process",
-      data: { locationId: 0 },
+      longLabel: "Node 2 Full",
+      type: "node",
+      semanticTags: [],
+      hidden: false,
     };
 
     const node3 = {
       id: "node3",
       label: "Node 3",
-      shortLabel: "Node 3",
-      fullLabel: "Node 3 Full",
-      nodeType: "Process",
-      data: { locationId: 1 },
+      longLabel: "Node 3 Full",
+      type: "node",
+      semanticTags: [],
+      hidden: false,
     };
 
     const edge1 = {
       id: "edge1",
       source: "node1",
       target: "node2",
-      semanticTags: ["DataFlow"],
+      type: "edge",
+      semanticTags: [],
+      hidden: false,
     };
 
     const edge2 = {
       id: "edge2",
       source: "node2",
       target: "node3",
-      semanticTags: ["DataFlow"],
+      type: "edge",
+      semanticTags: [],
+      hidden: false,
     };
 
     // Add to state

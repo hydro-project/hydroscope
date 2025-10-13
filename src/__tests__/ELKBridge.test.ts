@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { ELKBridge } from "../bridges/ELKBridge";
+import { ReactFlowBridge } from "../bridges/ReactFlowBridge";
 import { VisualizationState } from "../core/VisualizationState";
 import {
   createTestNode,
@@ -31,8 +32,10 @@ describe("ELKBridge", () => {
   describe("ELK format conversion", () => {
     let coordinator: AsyncCoordinator;
 
-    beforeEach(() => {
-      coordinator = new AsyncCoordinator();
+    beforeEach(async () => {
+      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const testSetup = await createTestAsyncCoordinator();
+      coordinator = testSetup.asyncCoordinator;
     });
 
     it("should convert empty VisualizationState to empty ELK graph", () => {
@@ -582,6 +585,12 @@ describe("ELKBridge", () => {
 
     beforeEach(() => {
       coordinator = new AsyncCoordinator();
+      const elkBridge = new ELKBridge({
+        algorithm: "mrtree",
+        direction: "DOWN",
+      });
+      const reactFlowBridge = new ReactFlowBridge({});
+      coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
     it("should generate performance hints for small graphs", () => {
