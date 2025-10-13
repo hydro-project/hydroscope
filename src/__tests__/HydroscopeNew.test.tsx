@@ -5,7 +5,7 @@
  * - Basic rendering and data management
  * - Panel integration (InfoPanel and StyleTuner)
  * - Settings persistence and error handling
- * - V6 architecture integration
+ * - v1.0.0 architecture integration
  * - User interactions and workflows
  */
 

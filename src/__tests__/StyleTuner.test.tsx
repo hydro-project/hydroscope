@@ -8,7 +8,7 @@
  * - Style configuration controls for edges, nodes, containers
  * - Reset to defaults functionality
  * - Settings persistence and error handling
- * - Integration with v6 architecture
+ * - Integration with v1.0.0 architecture
  * - Local state management and real-time preview
  * - Operation queuing to prevent timing conflicts
  */
@@ -349,7 +349,7 @@ describe("StyleTuner Component", () => {
     });
   });
 
-  describe("Integration with v6 Architecture", () => {
+  describe("Integration with v1.0.0 Architecture", () => {
     it("should integrate with VisualizationState when available", async () => {
       render(<StyleTuner {...mockProps} />);
 
@@ -372,23 +372,25 @@ describe("StyleTuner Component", () => {
       expect(mockCallbacks.onLayoutChange).toHaveBeenCalledWith("force");
     });
 
-    it("should gracefully degrade when v6 components are unavailable", async () => {
-      const propsWithoutV6 = {
+    it("should gracefully degrade when v1.0.0 components are unavailable", async () => {
+      const propsWithoutv1_0_0 = {
         ...mockProps,
         visualizationState: null,
         asyncCoordinator: null,
       };
 
-      expect(() => render(<StyleTuner {...propsWithoutV6} />)).not.toThrow();
+      expect(() =>
+        render(<StyleTuner {...propsWithoutv1_0_0} />),
+      ).not.toThrow();
 
       // Should still render basic UI
       expect(screen.getByText("Style Tuner")).toBeInTheDocument();
 
-      // Style changes should still work without v6 components
+      // Style changes should still work without v1.0.0 components
       const edgeStyleSelect = screen.getAllByRole("combobox")[1]; // Second select is edge style
       fireEvent.change(edgeStyleSelect, { target: { value: "straight" } });
 
-      // Should work without v6 components
+      // Should work without v1.0.0 components
       expect(mockCallbacks.onChange).toHaveBeenCalledWith(
         expect.objectContaining({ edgeStyle: "straight" }),
       );

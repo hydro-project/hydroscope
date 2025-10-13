@@ -221,13 +221,13 @@ export interface HydroscopeCoreProps {
  * Internal state interface for the HydroscopeCore component
  *
  * Manages all component state including data, UI state, and coordination
- * with v6 architecture components.
+ * with v1.0.0 architecture components.
  */
 interface HydroscopeCoreState {
-  /** V6 VisualizationState instance for graph operations */
+  /** v1.0.0 VisualizationState instance for graph operations */
   visualizationState: VisualizationState | null;
 
-  /** V6 AsyncCoordinator for managing async operations */
+  /** v1.0.0 AsyncCoordinator for managing async operations */
   asyncCoordinator: AsyncCoordinator | null;
 
   /** ReactFlow data for rendering */

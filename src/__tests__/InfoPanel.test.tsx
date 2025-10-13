@@ -101,7 +101,7 @@ describe("InfoPanel Component", () => {
       expect(screen.getByText("Graph Info")).toBeInTheDocument();
     });
 
-    it("should render gracefully when v6 components unavailable", () => {
+    it("should render gracefully when v1.0.0 components unavailable", () => {
       expect(() =>
         render(
           <InfoPanel

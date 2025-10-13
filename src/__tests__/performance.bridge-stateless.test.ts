@@ -116,7 +116,7 @@ describe("Stateless Bridge Performance Regression Tests", () => {
       console.log(
         `Performance consistency: ${variancePercent.toFixed(2)}% variance`,
       );
-      expect(variancePercent).toBeLessThan(750); // Less than 500% variance between runs (realistic for different system loads)
+      expect(variancePercent).toBeLessThan(750); // Less than 750% variance between runs (realistic for different system loads)
     });
 
     it(

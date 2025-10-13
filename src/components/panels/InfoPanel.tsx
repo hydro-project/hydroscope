@@ -224,7 +224,7 @@ const InfoPanelInternal = forwardRef<
             (container as any)?.data?.label || container?.label || container.id;
           items.push({ id: container.id, label, type: "container" });
         });
-        // Use visible nodes since allNodes doesn't exist in v6
+        // Use visible nodes since allNodes doesn't exist in v1.0.0
         const visibleNodes = visualizationState.visibleNodes || [];
         visibleNodes.forEach((node) => {
           const label =

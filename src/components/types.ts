@@ -12,7 +12,7 @@ import type {
   LayoutConfig,
   SearchResult,
 } from "../types/core.js";
-// Define EdgeStyleConfig locally since EdgeStyleProcessor doesn't exist in v6
+// Define EdgeStyleConfig locally since EdgeStyleProcessor doesn't exist in v1.0.0
 export interface EdgeStyleConfig {
   [key: string]: {
     color?: string;
@@ -21,7 +21,7 @@ export interface EdgeStyleConfig {
     type?: "bezier" | "straight" | "smoothstep";
   };
 }
-// Define LayoutOrchestrator type locally since it doesn't exist in v6
+// Define LayoutOrchestrator type locally since it doesn't exist in v1.0.0
 export interface LayoutOrchestrator {
   // Placeholder for layout orchestrator functionality
   triggerLayout?: (config?: LayoutConfig) => Promise<void>;
@@ -70,7 +70,7 @@ export interface InfoPanelProps extends BaseComponentProps {
   collapsedContainers?: Set<string>;
   onToggleContainer?: (containerId: string) => void;
   layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated operations
-  asyncCoordinator?: AsyncCoordinator | null; // V6 AsyncCoordinator for operation coordination
+  asyncCoordinator?: AsyncCoordinator | null; // v1.0.0 AsyncCoordinator for operation coordination
   // Navigation integration
   onElementNavigation?: (
     elementId: string,
@@ -96,7 +96,7 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   // Interaction
   onToggleContainer?: (containerId: string) => void;
   layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated search expansion
-  asyncCoordinator?: AsyncCoordinator | null; // V6 AsyncCoordinator for operation coordination
+  asyncCoordinator?: AsyncCoordinator | null; // v1.0.0 AsyncCoordinator for operation coordination
   // Navigation integration
   onElementNavigation?: (
     elementId: string,

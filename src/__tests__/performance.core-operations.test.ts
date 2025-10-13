@@ -133,7 +133,7 @@ describe("Core Operations Performance", () => {
     expect(duration).toBeLessThan(THRESHOLDS.searchOperation);
     expect(results.length).toBeGreaterThan(0);
     console.log(
-      `Search: ${duration.toFixed(2)}ms, found ${results.length} results`
+      `Search: ${duration.toFixed(2)}ms, found ${results.length} results`,
     );
   });
 
@@ -169,7 +169,7 @@ describe("Core Operations Performance", () => {
 
     expect(lastDuration).toBeLessThan(firstDuration * 3);
     console.log(
-      `Repeated operations - Avg: ${avgDuration.toFixed(2)}ms, First: ${firstDuration.toFixed(2)}ms, Last: ${lastDuration.toFixed(2)}ms`
+      `Repeated operations - Avg: ${avgDuration.toFixed(2)}ms, First: ${firstDuration.toFixed(2)}ms, Last: ${lastDuration.toFixed(2)}ms`,
     );
   });
 

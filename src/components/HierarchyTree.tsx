@@ -216,17 +216,17 @@ function getTreeDataStructure(
       // Get container data using VisualizationState accessors
       const containerData = visualizationState?.getContainer(node.id);
       const containerLabel = containerData?.label || `Container ${node.id}`;
-      // Get leaf node count using available v6 methods
+      // Get leaf node count using available v1.0.0 methods
       const containerNodes =
         visualizationState?.getContainerNodes(node.id) || new Set();
       const leafChildrenCount = containerNodes.size;
-      // Get container metadata for shortLabel (simplified since data structure is different in v6)
+      // Get container metadata for shortLabel (simplified since data structure is different in v1.0.0)
       const containerShortLabel = containerData?.label;
       const labelToUse = containerShortLabel || containerLabel;
       const truncatedLabel = truncateLabels
         ? truncateHierarchyLabel(labelToUse, maxLabelLength, true)
         : labelToUse;
-      // Get leaf nodes using available v6 methods
+      // Get leaf nodes using available v1.0.0 methods
       const leafNodeIds = Array.from(containerNodes);
       const leafNodes = leafNodeIds
         .map((id) => visualizationState?.getGraphNode(id))
@@ -400,7 +400,7 @@ export function HierarchyTree({
         .map((container) => container.id);
       return currentlyExpanded;
     }
-    // Enhanced search expansion logic for v6
+    // Enhanced search expansion logic for v1.0.0
     const expansionKeys = new Set<string>();
     // For each search result, expand its container hierarchy
     searchResults.forEach((result) => {

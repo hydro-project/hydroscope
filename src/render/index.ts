@@ -1,7 +1,7 @@
 /**
  * @fileoverview Render Module Exports
  *
- * Essential render components for the v6 branch.
+ * Essential render components for the v1.0.0 branch.
  */
 // Node components and types
 export {

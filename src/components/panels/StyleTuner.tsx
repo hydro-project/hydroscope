@@ -69,7 +69,7 @@ export interface StyleTunerPanelProps {
   defaultCollapsed?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  // V6 Architecture Integration (reserved for future use)
+  // v1.0.0 Architecture Integration (reserved for future use)
   visualizationState?: VisualizationState | null;
   asyncCoordinator?: AsyncCoordinator | null;
   onError?: (error: Error) => void;
