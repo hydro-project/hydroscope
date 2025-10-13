@@ -8,7 +8,6 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import type { ApplicationEvent } from "../types/core.js";
 
 describe("AsyncCoordinator - Basic API", () => {
   let coordinator: AsyncCoordinator;
@@ -122,10 +121,10 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should expand all containers", async () => {
-      const reactFlowData = await coordinator.expandAllContainers(
-        state,
-        elkBridge,
-      );
+      const reactFlowData = await coordinator.expandAllContainers(state, {
+        relayoutEntities: [],
+        fitView: false,
+      });
 
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.nodes).toBeDefined();

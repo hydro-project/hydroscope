@@ -338,7 +338,7 @@ export const IndividualContainerControl: React.FC<
   visualizationState,
   asyncCoordinator,
   onOperationComplete,
-  onError,
+  onError: _onError,
   className = "",
   disabled = false,
   showLoading = true,
@@ -387,7 +387,6 @@ export const IndividualContainerControl: React.FC<
     asyncCoordinator,
     visualizationState,
     onOperationComplete,
-    onError,
   ]);
 
   return (

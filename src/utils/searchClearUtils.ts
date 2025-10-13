@@ -10,10 +10,7 @@ import {
   recordDOMUpdate,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import {
-  withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression,
-} from "./ResizeObserverErrorSuppression.js";
+import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Clear search imperatively without triggering AsyncCoordinator cascades

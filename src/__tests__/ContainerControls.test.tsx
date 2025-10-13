@@ -26,7 +26,6 @@ describe("ContainerControls Component", () => {
   let coordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
   let mockOnOperationComplete: ReturnType<typeof vi.fn>;
-  let mockOnError: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     const { createTestAsyncCoordinator } = await import("../utils/testData.js");
@@ -60,7 +59,6 @@ describe("ContainerControls Component", () => {
     });
 
     mockOnOperationComplete = vi.fn();
-    mockOnError = vi.fn();
   });
 
   describe("Basic Rendering", () => {
@@ -294,7 +292,6 @@ describe("IndividualContainerControl Component", () => {
   let coordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
   let mockOnOperationComplete: ReturnType<typeof vi.fn>;
-  let mockOnError: ReturnType<typeof vi.fn>;
 
   const testContainer: Container = {
     id: "test-container",
@@ -318,7 +315,6 @@ describe("IndividualContainerControl Component", () => {
     coordinator = testSetup.asyncCoordinator;
     visualizationState = new VisualizationState();
     mockOnOperationComplete = vi.fn();
-    mockOnError = vi.fn();
   });
 
   describe("Basic Rendering", () => {

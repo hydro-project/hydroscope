@@ -704,7 +704,8 @@ describe("ReactFlowBridge", () => {
       expect(containerNode).toBeDefined();
       expect(containerNode!.style).toMatchObject({
         backgroundColor: "#fff3e0", // Collapsed container style
-        border: "3px solid #ff9800", // Collapsed container style
+        borderColor: "#ff9800", // Collapsed container style
+        borderWidth: 3,
       });
     });
   });

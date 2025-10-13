@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { JSONParser } from "../utils/JSONParser.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { HydroscopeData } from "../types/core.js";
 import fs from "fs";
 import path from "path";

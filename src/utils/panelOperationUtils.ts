@@ -15,10 +15,7 @@ import {
   recordDOMUpdate,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import {
-  withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression,
-} from "./ResizeObserverErrorSuppression.js";
+import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Panel operation types supported by the utilities
@@ -335,7 +332,7 @@ export function changeStyleImperatively(options: {
   const {
     styleType,
     value,
-    visualizationState,
+    visualizationState: _visualizationState,
     onStyleChange,
     suppressResizeObserver = true,
     debug = false,

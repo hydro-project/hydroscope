@@ -58,15 +58,7 @@ describe("Stateless Bridge Performance Regression Tests", () => {
   });
 
   describe("ReactFlowBridge Performance (Stateless)", () => {
-    let coordinator: AsyncCoordinator;
-
-    beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import(
-        "../utils/testData.js"
-      );
-      const testSetup = await createTestAsyncCoordinator();
-      coordinator = testSetup.asyncCoordinator;
-    });
+    beforeEach(async () => {});
 
     it("should maintain ReactFlowBridge.toReactFlowData performance with paxos.json", async () => {
       const parser = JSONParser.createPaxosParser({ debug: false });

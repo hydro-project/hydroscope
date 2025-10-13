@@ -9,22 +9,8 @@
  * Requirements: 8.1, 8.2, 8.3, 8.4
  */
 
-import {
-  globalPerformanceMonitor,
-  recordPerformanceMetric,
-  type PerformanceAlert,
-} from "./PerformanceMonitor.js";
-import {
-  globalProfiler,
-  profileFunction,
-  profileAsyncFunction,
-  type PerformanceMetrics as ProfilerMetrics,
-} from "./PerformanceProfiler.js";
-import {
-  measureSync,
-  measureAsync,
-  type PerformanceMetrics as UtilsMetrics,
-} from "./PerformanceUtils.js";
+import { recordPerformanceMetric } from "./PerformanceMonitor.js";
+import { globalProfiler } from "./PerformanceProfiler.js";
 
 /**
  * Operation types for performance monitoring
@@ -630,8 +616,8 @@ export function monitorOperationPerformance(
   metadata?: Record<string, any>,
 ) {
   return function (
-    target: any,
-    propertyKey: string,
+    _target: any,
+    _propertyKey: string,
     descriptor: PropertyDescriptor,
   ) {
     const originalMethod = descriptor.value;

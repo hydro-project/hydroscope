@@ -15,10 +15,7 @@ import {
   recordCoordinatorCall,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import {
-  withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression,
-} from "./ResizeObserverErrorSuppression.js";
+import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Debounce utility for rapid container operations

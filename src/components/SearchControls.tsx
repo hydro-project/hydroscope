@@ -80,7 +80,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     {
       searchableItems,
       onSearch,
-      onClear,
+      onClear: _onClear,
       onNavigate,
       placeholder = "Search (wildcards: * ?)",
       visualizationState,

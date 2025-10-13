@@ -27,11 +27,7 @@ import {
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
 import { clearSearchPanelImperatively } from "../../utils/searchClearUtils.js";
-import {
-  togglePanelImperatively,
-  batchPanelOperationsImperatively,
-  type InfoPanelSection,
-} from "../../utils/panelOperationUtils.js";
+import { togglePanelImperatively } from "../../utils/panelOperationUtils.js";
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
@@ -286,57 +282,7 @@ const InfoPanelInternal = forwardRef<
     };
 
     // Batched panel operations for bulk actions
-    const handleExpandAllSections = () => {
-      batchPanelOperationsImperatively({
-        operations: [
-          {
-            panelId: "legend",
-            operation: "expand",
-            setState: setLegendCollapsed,
-            currentState: legendCollapsed,
-          },
-          {
-            panelId: "grouping",
-            operation: "expand",
-            setState: setGroupingCollapsed,
-            currentState: groupingCollapsed,
-          },
-          {
-            panelId: "edgeStyles",
-            operation: "expand",
-            setState: setEdgeStyleCollapsed,
-            currentState: edgeStyleCollapsed,
-          },
-        ],
-        debug: process.env.NODE_ENV === "development",
-      });
-    };
 
-    const handleCollapseAllSections = () => {
-      batchPanelOperationsImperatively({
-        operations: [
-          {
-            panelId: "legend",
-            operation: "collapse",
-            setState: setLegendCollapsed,
-            currentState: legendCollapsed,
-          },
-          {
-            panelId: "grouping",
-            operation: "collapse",
-            setState: setGroupingCollapsed,
-            currentState: groupingCollapsed,
-          },
-          {
-            panelId: "edgeStyles",
-            operation: "collapse",
-            setState: setEdgeStyleCollapsed,
-            currentState: edgeStyleCollapsed,
-          },
-        ],
-        debug: process.env.NODE_ENV === "development",
-      });
-    };
     const handleSearchNavigate = (
       _dir: "prev" | "next",
       current: SearchMatch,
@@ -447,7 +393,6 @@ const InfoPanelInternal = forwardRef<
                     marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5,
                   }}
                 >
-                  {" "}
                   {/* 8px */}
                   <GroupingControls
                     hierarchyChoices={safeHierarchyChoices}
@@ -540,7 +485,6 @@ export type { SearchMatch } from "../SearchControls";
 // Export imperative operation functions for external use
 export {
   togglePanelImperatively,
-  batchPanelOperationsImperatively,
   expandPanelImperatively,
   collapsePanelImperatively,
 } from "../../utils/panelOperationUtils.js";

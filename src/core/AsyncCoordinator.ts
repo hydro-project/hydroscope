@@ -3,11 +3,8 @@
  * Manages async boundaries with FIFO queues and error handling
  */
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
-import { bridgeFactory } from "../bridges/BridgeFactory.js";
-import {
-  withAsyncResizeObserverErrorSuppression,
-  withLayoutResizeObserverErrorSuppression,
-} from "../utils/ResizeObserverErrorSuppression.js";
+// Removed BridgeFactory import - using direct bridge instances only
+import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 
 interface ErrorRecoveryResult {
   success: boolean;
@@ -465,13 +462,14 @@ export class AsyncCoordinator {
         "[AsyncCoordinator] 🎨 Starting imperative ReactFlow data generation",
       );
 
-      // Use direct bridge instance (set via setBridgeInstances) for better performance
-      const reactFlowBridge =
-        this.reactFlowBridge || bridgeFactory.getReactFlowBridge();
-
-      if (!reactFlowBridge) {
-        throw new Error("ReactFlowBridge instance not available");
+      // Use direct bridge instance (must be set via setBridgeInstances)
+      if (!this.reactFlowBridge) {
+        throw new Error(
+          "ReactFlowBridge instance not available - call setBridgeInstances() first",
+        );
       }
+
+      const reactFlowBridge = this.reactFlowBridge;
 
       // Set layout phase to indicate rendering
       if (typeof state.setLayoutPhase === "function") {
@@ -1024,15 +1022,14 @@ export class AsyncCoordinator {
         state.setLayoutPhase("rendering");
       }
 
-      // Get ReactFlowBridge instance - prefer direct instance, fallback to bridge factory
-      const reactFlowBridge =
-        this.reactFlowBridge || bridgeFactory.getReactFlowBridge();
-
-      if (!reactFlowBridge) {
+      // Get ReactFlowBridge instance (must be set via setBridgeInstances)
+      if (!this.reactFlowBridge) {
         throw new Error(
-          "ReactFlowBridge instance is not available (neither direct instance nor bridge factory)",
+          "ReactFlowBridge instance is not available - call setBridgeInstances() first",
         );
       }
+
+      const reactFlowBridge = this.reactFlowBridge;
 
       if (typeof reactFlowBridge.toReactFlowData !== "function") {
         throw new Error(
@@ -1162,9 +1159,13 @@ export class AsyncCoordinator {
         try {
           // Update the render config in VisualizationState
           state.updateRenderConfig(updates);
-          // Import ReactFlowBridge dynamically to avoid circular dependency
-          const { bridgeFactory } = await import("../bridges/BridgeFactory.js");
-          const reactFlowBridge = bridgeFactory.getReactFlowBridge();
+          // Use direct ReactFlowBridge instance (must be set via setBridgeInstances)
+          if (!this.reactFlowBridge) {
+            throw new Error(
+              "ReactFlowBridge instance not available - call setBridgeInstances() first",
+            );
+          }
+          const reactFlowBridge = this.reactFlowBridge;
           // Generate new ReactFlow data with updated config
           const reactFlowData = reactFlowBridge.toReactFlowData(
             state,

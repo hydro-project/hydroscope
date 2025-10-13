@@ -11,7 +11,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { VisualizationState } from "../../core/VisualizationState.js";
 import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
-import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
 import {
   enableResizeObserverErrorSuppression,
   disableResizeObserverErrorSuppression,
@@ -24,12 +23,10 @@ import {
   clearContainerOperationDebouncing,
 } from "../../utils/containerOperationUtils.js";
 import { clearSearchImperatively } from "../../utils/searchClearUtils.js";
-import { globalOperationMonitor } from "../../utils/operationPerformanceMonitor.js";
 
 describe("Stress Testing for UI Operation Stability", () => {
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
-  let coordinator: AsyncCoordinator;
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let performanceStartTime: number;
 
@@ -39,12 +36,6 @@ describe("Stress Testing for UI Operation Stability", () => {
     // Initialize components
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
-
-    const { createTestAsyncCoordinator } = await import(
-      "../../utils/testData.js"
-    );
-    const testSetup = await createTestAsyncCoordinator();
-    coordinator = testSetup.asyncCoordinator;
 
     // Set up error monitoring
     errorSpy = vi.spyOn(window, "onerror");
@@ -190,33 +181,31 @@ describe("Stress Testing for UI Operation Stability", () => {
 
       const concurrentPromises = Array.from(
         { length: concurrentBatches },
-        (_, batchIndex) =>
-          new Promise<void>(async (resolve) => {
-            const batchOperations: Promise<void>[] = [];
+        async (_, batchIndex) => {
+          const batchOperations: Promise<void>[] = [];
 
-            for (let i = 0; i < operationsPerBatch; i++) {
-              const containerId = `stress_container_${(batchIndex * operationsPerBatch + i) % 50}`;
+          for (let i = 0; i < operationsPerBatch; i++) {
+            const containerId = `stress_container_${(batchIndex * operationsPerBatch + i) % 50}`;
 
-              batchOperations.push(
-                new Promise<void>((opResolve) => {
-                  const operation = withResizeObserverErrorSuppression(() => {
-                    toggleContainerImperatively({
-                      containerId,
-                      visualizationState: state,
-                      debounce: Math.random() > 0.5, // Random debouncing
-                      enablePerformanceMonitoring: false,
-                    });
+            batchOperations.push(
+              new Promise<void>((opResolve) => {
+                const operation = withResizeObserverErrorSuppression(() => {
+                  toggleContainerImperatively({
+                    containerId,
+                    visualizationState: state,
+                    debounce: Math.random() > 0.5, // Random debouncing
+                    enablePerformanceMonitoring: false,
                   });
+                });
 
-                  operation();
-                  opResolve();
-                }),
-              );
-            }
+                operation();
+                opResolve();
+              }),
+            );
+          }
 
-            await Promise.all(batchOperations);
-            resolve();
-          }),
+          await Promise.all(batchOperations);
+        },
       );
 
       const startTime = performance.now();
@@ -428,13 +417,10 @@ describe("Stress Testing for UI Operation Stability", () => {
     it("should handle rapid layout algorithm changes with large datasets", async () => {
       // Test layout changes with large dataset
       const layoutChangeCount = 50;
-      const groupingModes = ["location", "semantic", "none"];
 
       const layoutOperations: Promise<void>[] = [];
 
       for (let i = 0; i < layoutChangeCount; i++) {
-        const mode = groupingModes[i % groupingModes.length];
-
         layoutOperations.push(
           new Promise<void>((resolve) => {
             setTimeout(() => {

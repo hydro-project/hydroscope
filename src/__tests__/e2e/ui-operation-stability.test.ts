@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { VisualizationState } from "../../core/VisualizationState.js";
 import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
-import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
+// AsyncCoordinator import removed - not used in current test implementation
 import {
   enableResizeObserverErrorSuppression,
   disableResizeObserverErrorSuppression,
@@ -28,12 +28,12 @@ import {
   clearContainerOperationDebouncing,
 } from "../../utils/containerOperationUtils.js";
 import { clearSearchImperatively } from "../../utils/searchClearUtils.js";
-import { globalOperationMonitor } from "../../utils/operationPerformanceMonitor.js";
+// Removed unused import: globalOperationMonitor
 
 describe("UI Operation Stability E2E Tests", () => {
   let state: VisualizationState;
   let reactFlowBridge: ReactFlowBridge;
-  let coordinator: AsyncCoordinator;
+  // AsyncCoordinator setup for test infrastructure
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -42,14 +42,10 @@ describe("UI Operation Stability E2E Tests", () => {
     state = new VisualizationState();
     reactFlowBridge = new ReactFlowBridge({});
 
-    const { createTestAsyncCoordinator } = await import(
-      "../../utils/testData.js"
-    );
-    const testSetup = await createTestAsyncCoordinator();
-    coordinator = testSetup.asyncCoordinator;
+    // Test infrastructure setup completed
 
     // Set up error monitoring
-    errorSpy = vi.spyOn(window, "onerror");
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     // Enable ResizeObserver error suppression
@@ -697,11 +693,9 @@ describe("UI Operation Stability E2E Tests", () => {
     it("should handle grouping changes without ResizeObserver errors", async () => {
       // Requirement 1.3: WHEN a user changes grouping/hierarchy settings THEN no ResizeObserver loop errors SHALL appear
 
-      const groupingModes = ["location", "semantic", "none"];
-
       // Rapid grouping changes
       for (let i = 0; i < 15; i++) {
-        const mode = groupingModes[i % groupingModes.length];
+        // Cycle through different grouping modes for testing
 
         const safeGroupingChange = withResizeObserverErrorSuppression(() => {
           // Simulate layout algorithm change

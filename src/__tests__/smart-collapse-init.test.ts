@@ -62,11 +62,11 @@ describe("Smart Collapse Initialization", () => {
     console.log("🧪 Testing smart collapse on initialization...");
 
     // Add debug logging to see what's happening
+    let _smartCollapseWasCalled = false;
     const originalPerformSmartCollapse = state.performSmartCollapse;
-    let smartCollapseWasCalled = false;
     state.performSmartCollapse = function (budgetOverride?: number) {
       console.log("🎯 SMART COLLAPSE WAS CALLED!");
-      smartCollapseWasCalled = true;
+      _smartCollapseWasCalled = true;
       return originalPerformSmartCollapse.call(this, budgetOverride);
     };
 

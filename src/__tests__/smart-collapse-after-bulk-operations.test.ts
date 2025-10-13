@@ -43,6 +43,7 @@ describe("Smart Collapse After Bulk Operations Regression", () => {
     id,
     label,
     collapsed: false,
+    hidden: false,
     children: new Set(
       Array.from({ length: childCount }, (_, i) => `${id}_child_${i}`),
     ),
@@ -54,6 +55,9 @@ describe("Smart Collapse After Bulk Operations Regression", () => {
   const createTestNode = (id: string, label: string) => ({
     id,
     label,
+    longLabel: label,
+    type: "node",
+    hidden: false,
     semanticTags: [],
     position: { x: 0, y: 0 },
     size: { width: 100, height: 50 },

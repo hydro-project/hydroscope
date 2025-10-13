@@ -156,7 +156,7 @@ describe("Container Operation Utilities", () => {
       expect(result).toBe(false);
     });
 
-    it("should handle debouncing", (done) => {
+    it("should handle debouncing", async () => {
       // Setup
       mockVisualizationState._addTestContainer("container1", true);
 
@@ -179,12 +179,11 @@ describe("Container Operation Utilities", () => {
       ).not.toHaveBeenCalled();
 
       // Wait for debounce
-      setTimeout(() => {
-        expect(
-          mockVisualizationState._expandContainerForCoordinator,
-        ).toHaveBeenCalledTimes(1);
-        done();
-      }, 200);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      expect(
+        mockVisualizationState._expandContainerForCoordinator,
+      ).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -13,37 +13,20 @@ import {
   createTestEdge,
   createTestContainer,
 } from "../utils/testData.js";
-import { JSONParser } from "../utils/JSONParser.js";
-import type { HydroscopeData } from "../types/core.js";
-import fs from "fs";
-import path from "path";
 import { VisualizationState } from "../core/VisualizationState.js";
 
 describe("Real ELK Integration Tests (No Mocks)", () => {
-  let _coordinator: AsyncCoordinator;
   let state: VisualizationState;
-  let elkBridge: ELKBridge;
+  let _elkBridge: ELKBridge;
   let asyncCoordinator: AsyncCoordinator;
-
-  // Helper function to load paxos test data
-  const loadPaxosTestData = async (): Promise<VisualizationState> => {
-    const paxosPath = path.join(process.cwd(), "test-data", "paxos.json");
-    const paxosJson = fs.readFileSync(paxosPath, "utf-8");
-    const paxosData = JSON.parse(paxosJson) as HydroscopeData;
-
-    const parser = JSONParser.createPaxosParser({ debug: false });
-    const result = await parser.parseData(paxosData);
-    return result.visualizationState;
-  };
 
   beforeEach(async () => {
     const { createTestAsyncCoordinator } = await import("../utils/testData.js");
     const testSetup = await createTestAsyncCoordinator();
-    _coordinator = testSetup.asyncCoordinator;
     asyncCoordinator = testSetup.asyncCoordinator;
 
     state = new VisualizationState();
-    elkBridge = new ELKBridge({
+    _elkBridge = new ELKBridge({
       algorithm: "mrtree",
       direction: "DOWN",
       nodeSpacing: 50,
@@ -96,7 +79,6 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
 
     it("should calculate real positions for paxos.json data", async () => {
       // Load real paxos.json data
-      const _paxosData = await loadPaxosTestData();
 
       // Create state and load the data
       const paxosState = new VisualizationState();

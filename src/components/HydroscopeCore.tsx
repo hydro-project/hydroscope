@@ -321,7 +321,7 @@ const HydroscopeCoreInternal = forwardRef<
         state.asyncCoordinator.setReactFlowInstance(reactFlowInstance);
         state.asyncCoordinator.setUpdateNodeInternals(updateNodeInternals);
       }
-    }, [reactFlowInstance, state.asyncCoordinator]);
+    }, [reactFlowInstance, updateNodeInternals, state.asyncCoordinator]);
 
     // Error handling helper with recovery strategies
     const handleError = useCallback(
@@ -531,8 +531,6 @@ const HydroscopeCoreInternal = forwardRef<
 
         // Override the container click handler to use AsyncCoordinator's synchronous methods
         // CRITICAL FIX: Use direct method override to bypass debouncing and prevent double-click issues
-        const originalHandleContainerClick =
-          interactionHandler.handleContainerClick.bind(interactionHandler);
 
         interactionHandler.handleContainerClick = async (
           containerId: string,
@@ -768,9 +766,11 @@ const HydroscopeCoreInternal = forwardRef<
       [
         state.visualizationState,
         state.asyncCoordinator,
+        state.autoFitEnabled,
         validateData,
         onVisualizationStateChange,
         onError,
+        applyContainerClickOverride,
       ],
     );
 
@@ -1268,10 +1268,9 @@ const HydroscopeCoreInternal = forwardRef<
       [
         state.visualizationState,
         state.asyncCoordinator,
+        autoFitEnabled,
         onRenderConfigChange,
         handleError,
-        setReactFlowResetKey,
-        elkBridgeRef,
       ],
     );
 

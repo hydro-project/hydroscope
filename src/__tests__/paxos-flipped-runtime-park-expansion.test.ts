@@ -148,8 +148,6 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           runtimeParkContainer!.id,
           visualizationState,
           { fitView: false },
-          coordinator,
-          { fitView: false },
         );
       }
 
@@ -157,8 +155,6 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.expandContainer(
         runtimeParkContainer!.id,
         visualizationState,
-        { fitView: false },
-        coordinator,
         { fitView: false },
       );
 
@@ -268,13 +264,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Ensure container is collapsed
       if (!runtimeParkContainer!.collapsed) {
-        await coordinator.collapseContainer(
-          containerId,
-          visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
-        );
+        await coordinator.collapseContainer(containerId, visualizationState, {
+          fitView: false,
+        });
       }
 
       // Capture initial state (after ensuring collapsed)
@@ -311,13 +303,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       );
 
       // Collapse back and verify we return to similar state
-      await coordinator.collapseContainer(
-        containerId,
-        visualizationState,
-        { fitView: false },
-        coordinator,
-        { fitView: false },
-      );
+      await coordinator.collapseContainer(containerId, visualizationState, {
+        fitView: false,
+      });
 
       const collapsedNodeCount = visualizationState.visibleNodes.length;
       const collapsedEdgeCount = visualizationState.visibleEdges.length;
@@ -364,8 +352,6 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
           runtimeParkContainer!.id,
           visualizationState,
           { fitView: false },
-          coordinator,
-          { fitView: false },
         );
       }
 
@@ -373,8 +359,6 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       await coordinator.expandContainer(
         runtimeParkContainer!.id,
         visualizationState,
-        { fitView: false },
-        coordinator,
         { fitView: false },
       );
 
@@ -498,7 +482,6 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         });
 
         // Trigger layout after expansion using new pipeline method
-        const elkBridge = new ELKBridge();
         await coordinator.executeLayoutAndRenderPipeline(visualizationState, {
           relayoutEntities: undefined, // Full layout
           fitView: false,
@@ -561,13 +544,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       );
 
       // Expand the container
-      await coordinator.expandContainer(
-        containerId,
-        visualizationState,
-        { fitView: false },
-        coordinator,
-        { fitView: false },
-      );
+      await coordinator.expandContainer(containerId, visualizationState, {
+        fitView: false,
+      });
 
       // Get edge counts after expansion
       const expandedVisibleEdges = visualizationState.visibleEdges.length;
@@ -577,13 +556,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
       expect(expandedVisibleEdges).toBeGreaterThanOrEqual(initialVisibleEdges);
 
       // Collapse again to test re-aggregation
-      await coordinator.collapseContainer(
-        containerId,
-        visualizationState,
-        { fitView: false },
-        coordinator,
-        { fitView: false },
-      );
+      await coordinator.collapseContainer(containerId, visualizationState, {
+        fitView: false,
+      });
 
       // Get edge counts after re-collapse
       const reCollapsedVisibleEdges = visualizationState.visibleEdges.length;

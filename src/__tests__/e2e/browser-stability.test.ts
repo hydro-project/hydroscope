@@ -510,7 +510,7 @@ describe("Browser-Specific Stability Tests", () => {
         },
       ];
 
-      browserErrorFormats.forEach(({ browser, error, message }) => {
+      browserErrorFormats.forEach(({ _browser, error, message }) => {
         const operation = withResizeObserverErrorSuppression(() => {
           if (error) {
             throw error;

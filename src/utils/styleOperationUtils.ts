@@ -15,10 +15,7 @@ import {
   recordDOMUpdate,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import {
-  withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression,
-} from "./ResizeObserverErrorSuppression.js";
+import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Style operation types supported by the utilities
@@ -95,20 +92,6 @@ class StyleOperationDebouncer {
 const styleDebouncer = new StyleOperationDebouncer();
 
 /**
- * ResizeObserver error suppression utility (deprecated - use centralized utilities)
- *
- * @deprecated Use withResizeObserverErrorSuppression from ResizeObserverErrorSuppression.ts instead
- */
-function withResizeObserverSuppressionLegacy<T>(
-  operation: () => T,
-  duration: number = 200,
-  debug: boolean = false,
-): T {
-  // Use centralized suppression utility
-  return withResizeObserverErrorSuppression(operation)();
-}
-
-/**
  * Change layout algorithm imperatively without coordination cascades
  *
  * This utility implements the pattern for avoiding ResizeObserver loops:
@@ -129,7 +112,7 @@ export function changeLayoutImperatively(options: {
   const {
     algorithm,
     onLayoutChange,
-    visualizationState,
+    visualizationState: _visualizationState,
     suppressResizeObserver = true,
     debounce = false,
     debug = false,
@@ -246,7 +229,7 @@ export function changeColorPaletteImperatively(options: {
   const {
     palette,
     onPaletteChange,
-    visualizationState,
+    visualizationState: _visualizationState,
     suppressResizeObserver = true,
     debounce = false,
     debug = false,
@@ -366,7 +349,7 @@ export function changeEdgeStyleImperatively(options: {
   const {
     edgeStyle,
     onEdgeStyleChange,
-    visualizationState,
+    visualizationState: _visualizationState,
     suppressResizeObserver = true,
     debounce = false,
     debug = false,
@@ -480,7 +463,7 @@ export function resetStylesImperatively(options: {
 }): boolean {
   const {
     onResetToDefaults,
-    visualizationState,
+    visualizationState: _visualizationState,
     suppressResizeObserver = true,
     debug = false,
     enablePerformanceMonitoring = true,

@@ -8,11 +8,7 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import {
-  createTestContainer,
-  createTestNode,
-  createTestEdge,
-} from "../utils/testData.js";
+import { createTestContainer, createTestNode } from "../utils/testData.js";
 
 describe("VisualizationState Interaction State Management", () => {
   let state: VisualizationState;

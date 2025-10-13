@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
-import { BridgeFactory } from "../bridges/BridgeFactory.js";
+// BridgeFactory removed - using direct bridge instances only
 import { validateStatelessBridge } from "../types/bridges.js";
 import type { StyleConfig, LayoutConfig } from "../types/core.js";
 
@@ -67,19 +67,7 @@ describe("Architecture Compliance Enforcement", () => {
       expect(typeof bridge.getConfiguration).toBe("function");
     });
 
-    it("should validate BridgeFactory implements IBridgeFactory", () => {
-      const factory = BridgeFactory.getInstance();
-
-      // Runtime validation
-      expect(() =>
-        validateStatelessBridge(factory, "BridgeFactory"),
-      ).not.toThrow();
-
-      // Check required methods exist
-      expect(typeof factory.getReactFlowBridge).toBe("function");
-      expect(typeof factory.getELKBridge).toBe("function");
-      expect(typeof factory.reset).toBe("function");
-    });
+    // BridgeFactory removed - using direct bridge instances only
   });
 
   describe("Stateless Constraint Validation", () => {
@@ -156,9 +144,7 @@ describe("Architecture Compliance Enforcement", () => {
       type ELKBridgeTest = AssertStateless<ELKBridge>;
       const _elkTest: ELKBridgeTest = true;
 
-      // Test BridgeFactory is stateless
-      type BridgeFactoryTest = AssertStateless<BridgeFactory>;
-      const _factoryTest: BridgeFactoryTest = true;
+      // BridgeFactory removed - using direct bridge instances only
 
       // If we reach here, all bridges pass compile-time validation
       expect(true).toBe(true);
@@ -169,7 +155,7 @@ describe("Architecture Compliance Enforcement", () => {
       type ReactFlowIsStateless =
         ArchitectureTests.IsStateless<ReactFlowBridge>;
       type ELKIsStateless = ArchitectureTests.IsStateless<ELKBridge>;
-      type FactoryIsStateless = ArchitectureTests.IsStateless<BridgeFactory>;
+      // BridgeFactory removed - using direct bridge instances only
 
       // These should all be true if bridges are properly stateless
       const reactFlowStateless: ReactFlowIsStateless = true;
@@ -182,49 +168,7 @@ describe("Architecture Compliance Enforcement", () => {
     });
   });
 
-  describe("Bridge Factory Singleton Pattern", () => {
-    it("should reuse bridge instances", () => {
-      const factory = BridgeFactory.getInstance();
-
-      const bridge1 = factory.getReactFlowBridge(styleConfig);
-      const bridge2 = factory.getReactFlowBridge(styleConfig);
-
-      // Should return same instance for same config
-      expect(bridge1).toBe(bridge2);
-    });
-
-    it("should create new instances for different configs", () => {
-      const factory = BridgeFactory.getInstance();
-
-      const config1: StyleConfig = {
-        nodeStyles: { default: { backgroundColor: "red" } },
-      };
-      const config2: StyleConfig = {
-        nodeStyles: { default: { backgroundColor: "blue" } },
-      };
-
-      // Reset factory to ensure clean state
-      factory.reset();
-
-      const bridge1 = factory.getReactFlowBridge(config1);
-      factory.reset(); // Reset to force new instance
-      const bridge2 = factory.getReactFlowBridge(config2);
-
-      // Should return different instances for different configs
-      expect(bridge1).not.toBe(bridge2);
-    });
-
-    it("should reset all instances", () => {
-      const factory = BridgeFactory.getInstance();
-
-      const bridge1 = factory.getReactFlowBridge(styleConfig);
-      factory.reset();
-      const bridge2 = factory.getReactFlowBridge(styleConfig);
-
-      // Should return new instance after reset
-      expect(bridge1).not.toBe(bridge2);
-    });
-  });
+  // Bridge Factory Singleton Pattern tests removed - using direct bridge instances only
 
   describe("Method Immutability", () => {
     it("should return immutable data from bridge methods", () => {

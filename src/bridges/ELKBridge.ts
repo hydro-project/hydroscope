@@ -302,10 +302,10 @@ export class ELKBridge implements IELKBridge {
           "❌ SMART COLLAPSE SKIPPED - shouldRunSmartCollapse() returned false",
         );
       }
-      
+
       // Convert VisualizationState to ELK format
       const elkGraph = this.toELKGraph(state);
-        
+
       // Call real ELK library to calculate layout with fallback mechanism
       let layoutResult;
       try {
@@ -623,7 +623,7 @@ export class ELKBridge implements IELKBridge {
     height: number;
   } {
     const baseSize = config.nodeSize || { width: 120, height: 60 };
-    
+
     // Always use the same dimensions regardless of label state to avoid resizing
     // The React component can handle text overflow/truncation
     return {

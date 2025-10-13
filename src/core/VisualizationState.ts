@@ -451,8 +451,7 @@ export class VisualizationState {
     this.aggregateEdgesForContainer(id);
     // User operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
-    // Trigger ReactFlow validation after collapse
-    this.triggerReactFlowValidation();
+    // ReactFlow validation removed - handled by AsyncCoordinator pipeline
   }
   private _hideAllDescendants(containerId: string): void {
     const container = this._containers.get(containerId);
@@ -545,34 +544,13 @@ export class VisualizationState {
     }
     // Bulk user operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
-    // Trigger ReactFlow validation after collapse operations
-    this.triggerReactFlowValidation();
+    // ReactFlow validation removed - handled by AsyncCoordinator pipeline
   }
   /**
    * Trigger ReactFlow validation to check for floating edges and other issues
    * TODO This is jank and needs to be cleaned out.
    */
-  triggerReactFlowValidation(): void {
-    try {
-      // Import BridgeFactory to get singleton bridge instance
-      import("../bridges/BridgeFactory.js")
-        .then(({ bridgeFactory }) => {
-          const bridge = bridgeFactory.getReactFlowBridge();
-          const _result = bridge.toReactFlowData(this);
-        })
-        .catch((error) => {
-          console.error(
-            `[VisualizationState] ❌ ReactFlow validation failed:`,
-            error,
-          );
-        });
-    } catch (error) {
-      console.error(
-        `[VisualizationState] ❌ ReactFlow validation import failed:`,
-        error,
-      );
-    }
-  }
+  // ReactFlow validation removed - now handled by AsyncCoordinator pipeline
   // Edge Aggregation Management
   aggregateEdgesForContainer(containerId: string): void {
     const container = this._containers.get(containerId);

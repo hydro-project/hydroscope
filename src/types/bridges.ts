@@ -3,12 +3,7 @@
  * These interfaces ensure bridges remain stateless and follow architectural constraints
  */
 import type { VisualizationState } from "../core/VisualizationState.js";
-import type {
-  ReactFlowData,
-  ELKNode,
-  LayoutConfig,
-  StyleConfig,
-} from "./core.js";
+import type { ReactFlowData, ELKNode, LayoutConfig } from "./core.js";
 import type { ImmutableBridgeMethod } from "./architecture-constraints.js";
 /**
  * Base interface for all stateless bridges
@@ -93,31 +88,7 @@ export interface IELKBridge extends StatelessBridge {
    */
   getConfiguration: ImmutableBridgeMethod<[], Readonly<LayoutConfig>>;
 }
-/**
- * Factory interface for creating stateless bridge instances
- * Enforces singleton pattern to prevent unnecessary instantiation
- */
-export interface IBridgeFactory {
-  /**
-   * Get or create ReactFlow bridge instance
-   * MUST return stateless bridge
-   *
-   * @param styleConfig - Style configuration for the bridge (optional, defaults to empty config)
-   */
-  getReactFlowBridge(styleConfig?: StyleConfig): IReactFlowBridge;
-  /**
-   * Get or create ELK bridge instance
-   * MUST return stateless bridge
-   *
-   * @param layoutConfig - Layout configuration for the bridge (optional, defaults to empty config)
-   */
-  getELKBridge(layoutConfig?: LayoutConfig): IELKBridge;
-  /**
-   * Reset all bridge instances
-   * Used for testing and configuration changes
-   */
-  reset(): void;
-}
+// IBridgeFactory removed - using direct bridge instances only
 /**
  * Type constraint to prevent private state in bridge implementations
  * This type will cause compilation errors if bridges have private state properties

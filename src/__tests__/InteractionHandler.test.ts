@@ -4,10 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import {
-  InteractionHandler,
-  type ClickEvent,
-} from "../core/InteractionHandler.js";
+import { InteractionHandler } from "../core/InteractionHandler.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
@@ -60,13 +57,6 @@ describe("InteractionHandler Click Event Processing", () => {
     it("should handle node click with position", () => {
       const node = createTestNode("node1", "Test Node");
       state.addNode(node);
-
-      const clickEvent: ClickEvent = {
-        elementId: "node1",
-        elementType: "node",
-        position: { x: 100, y: 200 },
-        timestamp: Date.now(),
-      };
 
       handler.handleNodeClick("node1");
 
@@ -378,8 +368,6 @@ describe("InteractionHandler Click Event Processing", () => {
   describe("Error Handling", () => {
     it("should handle errors gracefully during click processing", () => {
       // Create a scenario that might cause errors
-      const invalidNode = createTestNode("", "Invalid Node"); // Empty ID
-
       expect(() => {
         handler.handleNodeClick("");
       }).not.toThrow();
@@ -426,8 +414,6 @@ describe("InteractionHandler Click Event Processing", () => {
       state.addNode(node);
 
       handler.handleNodeClick("node1");
-
-      const beforeCleanup = handler.getPendingOperationsCount();
 
       handler.cleanup();
 
