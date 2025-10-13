@@ -66,7 +66,10 @@ export class JSONParser {
   /**
    * Parse HydroscopeData into VisualizationState
    */
-  async parseData(data: HydroscopeData, existingVisualizationState?: VisualizationState): Promise<ParseResult> {
+  async parseData(
+    data: HydroscopeData,
+    existingVisualizationState?: VisualizationState,
+  ): Promise<ParseResult> {
     const startTime = Date.now();
     this.debugLog("Starting JSON parsing", {
       nodeCount: data.nodes.length,
@@ -74,8 +77,9 @@ export class JSONParser {
       hierarchyChoicesCount: data.hierarchyChoices.length,
     });
     const warnings: ValidationResult[] = [];
-    const visualizationState = existingVisualizationState || new VisualizationState();
-    
+    const visualizationState =
+      existingVisualizationState || new VisualizationState();
+
     // If using existing VisualizationState, clear it first
     if (existingVisualizationState) {
       existingVisualizationState.clear();

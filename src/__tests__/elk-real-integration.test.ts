@@ -41,7 +41,7 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
     const testSetup = await createTestAsyncCoordinator();
     _coordinator = testSetup.asyncCoordinator;
     asyncCoordinator = testSetup.asyncCoordinator;
-    
+
     state = new VisualizationState();
     elkBridge = new ELKBridge({
       algorithm: "mrtree",
@@ -67,7 +67,8 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       expect(node2.position).toBeUndefined();
 
       // Call layout and render pipeline (includes ELK layout)
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state);
+      const reactFlowData =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(state);
 
       // Verify pipeline returned ReactFlow data
       expect(reactFlowData).toBeDefined();
@@ -116,7 +117,8 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       }
 
       // Call layout and render pipeline
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(paxosState);
+      const reactFlowData =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(paxosState);
       expect(reactFlowData).toBeDefined();
 
       // Verify all nodes have real ELK-calculated positions
@@ -150,7 +152,8 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       state._expandContainerForCoordinator("c1");
 
       // Call layout and render pipeline
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(state);
+      const reactFlowData =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(state);
       expect(reactFlowData).toBeDefined();
 
       // Verify container and nodes have real positions (check state's copies)
@@ -225,7 +228,8 @@ describe("Real ELK Integration Tests (No Mocks)", () => {
       const startTime = performance.now();
 
       // Call layout and render pipeline
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(perfState);
+      const reactFlowData =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(perfState);
       expect(reactFlowData).toBeDefined();
 
       const endTime = performance.now();

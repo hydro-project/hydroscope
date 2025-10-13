@@ -39,10 +39,10 @@ describe("Final Integration and Acceptance Testing", () => {
       edgeStyles: {},
       containerStyles: {},
     });
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
-    
+
     interactionHandler = new InteractionHandler(
       visualizationState,
       asyncCoordinator,
@@ -59,20 +59,27 @@ describe("Final Integration and Acceptance Testing", () => {
       // Test VisualizationState
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
-      
+
       visualizationState.addNode(node1);
       visualizationState.addNode(node2);
-      
+
       expect(visualizationState.visibleNodes.length).toBe(2);
-      expect(visualizationState.visibleNodes.find(n => n.id === "n1")).toBeDefined();
-      expect(visualizationState.visibleNodes.find(n => n.id === "n2")).toBeDefined();
+      expect(
+        visualizationState.visibleNodes.find((n) => n.id === "n1"),
+      ).toBeDefined();
+      expect(
+        visualizationState.visibleNodes.find((n) => n.id === "n2"),
+      ).toBeDefined();
 
       // Test AsyncCoordinator
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
-      
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        visualizationState,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
+
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
       expect(result.edges).toBeDefined();
@@ -89,19 +96,27 @@ describe("Final Integration and Acceptance Testing", () => {
         childContainers: [],
       });
 
-      const expandResult = await asyncCoordinator.expandContainer("c1", visualizationState, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const expandResult = await asyncCoordinator.expandContainer(
+        "c1",
+        visualizationState,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(expandResult).toBeDefined();
       expect(expandResult.nodes).toBeDefined();
       expect(expandResult.edges).toBeDefined();
 
-      const collapseResult = await asyncCoordinator.collapseContainer("c1", visualizationState, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const collapseResult = await asyncCoordinator.collapseContainer(
+        "c1",
+        visualizationState,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(collapseResult).toBeDefined();
     });
@@ -112,14 +127,16 @@ describe("Final Integration and Acceptance Testing", () => {
       // Test basic state management
       const node = createTestNode("test", "Test Node");
       visualizationState.addNode(node);
-      
+
       expect(visualizationState.visibleNodes.length).toBe(1);
-      expect(visualizationState.visibleNodes.find(n => n.id === "test")).toBeDefined();
-      
+      expect(
+        visualizationState.visibleNodes.find((n) => n.id === "test"),
+      ).toBeDefined();
+
       // Add another node for edge testing
       const node2 = createTestNode("test2", "Test Node 2");
       visualizationState.addNode(node2);
-      
+
       // Test edge management
       const edge: GraphEdge = {
         id: "e1",
@@ -129,7 +146,7 @@ describe("Final Integration and Acceptance Testing", () => {
         semanticTags: [],
         hidden: false,
       };
-      
+
       visualizationState.addEdge(edge);
       expect(visualizationState.visibleEdges.length).toBe(1);
     });
@@ -151,10 +168,14 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(visualizationState.visibleContainers.length).toBe(1);
 
       // Test container expansion through AsyncCoordinator
-      const result = await asyncCoordinator.expandContainer("container1", visualizationState, {
-        relayoutEntities: ["container1"],
-        fitView: false
-      });
+      const result = await asyncCoordinator.expandContainer(
+        "container1",
+        visualizationState,
+        {
+          relayoutEntities: ["container1"],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -181,7 +202,7 @@ describe("Final Integration and Acceptance Testing", () => {
       // Add test data
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
-      
+
       visualizationState.addNode(node1);
       visualizationState.addNode(node2);
 
@@ -204,10 +225,14 @@ describe("Final Integration and Acceptance Testing", () => {
         childContainers: [],
       });
 
-      const result = await asyncCoordinator.expandContainer("c1", visualizationState, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const result = await asyncCoordinator.expandContainer(
+        "c1",
+        visualizationState,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -217,16 +242,21 @@ describe("Final Integration and Acceptance Testing", () => {
     it("should meet Requirement 5: Async Boundary Management", async () => {
       // Test async coordination
       expect(asyncCoordinator).toBeDefined();
-      expect(typeof asyncCoordinator.executeLayoutAndRenderPipeline).toBe("function");
+      expect(typeof asyncCoordinator.executeLayoutAndRenderPipeline).toBe(
+        "function",
+      );
 
       // Test pipeline execution
       const node = createTestNode("test", "Test Node");
       visualizationState.addNode(node);
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        visualizationState,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -247,7 +277,7 @@ describe("Final Integration and Acceptance Testing", () => {
   describe("Realistic Usage Scenarios", () => {
     it("should handle typical user workflow", async () => {
       // Simulate typical user workflow
-      
+
       // 1. Load data
       const nodes = [
         createTestNode("n1", "Node 1"),
@@ -255,7 +285,7 @@ describe("Final Integration and Acceptance Testing", () => {
         createTestNode("n3", "Node 3"),
       ];
 
-      nodes.forEach(node => visualizationState.addNode(node));
+      nodes.forEach((node) => visualizationState.addNode(node));
 
       // 2. Add containers
       visualizationState.addContainer({
@@ -270,26 +300,38 @@ describe("Final Integration and Acceptance Testing", () => {
       });
 
       // 3. Perform layout
-      const layoutResult = await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+      const layoutResult =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          {
+            relayoutEntities: undefined,
+            fitView: false,
+          },
+        );
 
       expect(layoutResult).toBeDefined();
 
       // 4. Expand container
-      const expandResult = await asyncCoordinator.expandContainer("c1", visualizationState, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const expandResult = await asyncCoordinator.expandContainer(
+        "c1",
+        visualizationState,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(expandResult).toBeDefined();
 
       // 5. Collapse container
-      const collapseResult = await asyncCoordinator.collapseContainer("c1", visualizationState, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const collapseResult = await asyncCoordinator.collapseContainer(
+        "c1",
+        visualizationState,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(collapseResult).toBeDefined();
     });
@@ -298,13 +340,13 @@ describe("Final Integration and Acceptance Testing", () => {
       // Create larger dataset
       const nodeCount = 50;
       const nodes: GraphNode[] = [];
-      
+
       for (let i = 0; i < nodeCount; i++) {
         nodes.push(createTestNode(`n${i}`, `Node ${i}`));
       }
 
       // Add nodes to state
-      nodes.forEach(node => visualizationState.addNode(node));
+      nodes.forEach((node) => visualizationState.addNode(node));
 
       // Create containers
       for (let i = 0; i < 5; i++) {
@@ -314,19 +356,22 @@ describe("Final Integration and Acceptance Testing", () => {
           collapsed: true,
           position: { x: i * 250, y: 0 },
           size: { width: 200, height: 150 },
-          children: new Set(nodes.slice(i * 10, (i + 1) * 10).map(n => n.id)),
-          childNodes: nodes.slice(i * 10, (i + 1) * 10).map(n => n.id),
+          children: new Set(nodes.slice(i * 10, (i + 1) * 10).map((n) => n.id)),
+          childNodes: nodes.slice(i * 10, (i + 1) * 10).map((n) => n.id),
           childContainers: [],
         });
       }
 
       // Test performance with large dataset
       const startTime = Date.now();
-      
-      const result = await asyncCoordinator.collapseAllContainers(visualizationState, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+
+      const result = await asyncCoordinator.collapseAllContainers(
+        visualizationState,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -342,7 +387,7 @@ describe("Final Integration and Acceptance Testing", () => {
         createTestNode("n2", "Node 2"),
       ];
 
-      nodes.forEach(node => visualizationState.addNode(node));
+      nodes.forEach((node) => visualizationState.addNode(node));
 
       visualizationState.addContainer({
         id: "c1",
@@ -359,22 +404,22 @@ describe("Final Integration and Acceptance Testing", () => {
       const operations = [
         asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
           relayoutEntities: undefined,
-          fitView: false
+          fitView: false,
         }),
         asyncCoordinator.expandContainer("c1", visualizationState, {
           relayoutEntities: ["c1"],
-          fitView: false
+          fitView: false,
         }),
         asyncCoordinator.updateSearchResults("Node", visualizationState, {
           expandContainers: false,
-          fitView: false
+          fitView: false,
         }),
       ];
 
       // All operations should complete successfully
       const results = await Promise.all(operations);
-      
-      results.forEach(result => {
+
+      results.forEach((result) => {
         expect(result).toBeDefined();
         expect(result.nodes).toBeDefined();
         expect(result.edges).toBeDefined();
@@ -388,11 +433,11 @@ describe("Final Integration and Acceptance Testing", () => {
       expect(visualizationState.addNode).toBeDefined();
       expect(visualizationState.addEdge).toBeDefined();
       expect(visualizationState.addContainer).toBeDefined();
-      
+
       expect(asyncCoordinator.executeLayoutAndRenderPipeline).toBeDefined();
       expect(asyncCoordinator.expandContainer).toBeDefined();
       expect(asyncCoordinator.collapseContainer).toBeDefined();
-      
+
       expect(reactFlowBridge.toReactFlowData).toBeDefined();
       expect(elkBridge.layout).toBeDefined();
     });
@@ -402,7 +447,7 @@ describe("Final Integration and Acceptance Testing", () => {
       try {
         await asyncCoordinator.executeLayoutAndRenderPipeline(null as any, {
           relayoutEntities: undefined,
-          fitView: false
+          fitView: false,
         });
       } catch (error) {
         expect(error).toBeDefined();
@@ -411,11 +456,14 @@ describe("Final Integration and Acceptance Testing", () => {
       // System should still be functional after error
       const node = createTestNode("test", "Test Node");
       visualizationState.addNode(node);
-      
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        visualizationState,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -442,11 +490,11 @@ describe("Final Integration and Acceptance Testing", () => {
       // Complete workflow test
       const node1 = createTestNode("n1", "Node 1");
       const node2 = createTestNode("n2", "Node 2");
-      
+
       // Add data
       visualizationState.addNode(node1);
       visualizationState.addNode(node2);
-      
+
       visualizationState.addEdge({
         id: "e1",
         source: "n1",
@@ -469,25 +517,37 @@ describe("Final Integration and Acceptance Testing", () => {
       });
 
       // Execute complete workflow
-      const layoutResult = await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+      const layoutResult =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          {
+            relayoutEntities: undefined,
+            fitView: false,
+          },
+        );
 
       expect(layoutResult).toBeDefined();
       expect(layoutResult.nodes.length).toBeGreaterThan(0);
 
-      const expandResult = await asyncCoordinator.expandContainer("c1", visualizationState, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const expandResult = await asyncCoordinator.expandContainer(
+        "c1",
+        visualizationState,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(expandResult).toBeDefined();
 
-      const searchResult = await asyncCoordinator.updateSearchResults("Node", visualizationState, {
-        expandContainers: false,
-        fitView: false
-      });
+      const searchResult = await asyncCoordinator.updateSearchResults(
+        "Node",
+        visualizationState,
+        {
+          expandContainers: false,
+          fitView: false,
+        },
+      );
 
       expect(searchResult).toBeDefined();
     });
@@ -495,23 +555,23 @@ describe("Final Integration and Acceptance Testing", () => {
     it("should validate system stability under stress", async () => {
       // Stress test with rapid operations
       const operations = [];
-      
+
       for (let i = 0; i < 10; i++) {
         const node = createTestNode(`stress_${i}`, `Stress Node ${i}`);
         visualizationState.addNode(node);
-        
+
         operations.push(
           asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
             relayoutEntities: undefined,
-            fitView: false
-          })
+            fitView: false,
+          }),
         );
       }
 
       // All operations should complete
       const results = await Promise.all(operations);
-      
-      results.forEach(result => {
+
+      results.forEach((result) => {
         expect(result).toBeDefined();
       });
     });

@@ -24,7 +24,7 @@ describe("AsyncCoordinator - Basic API", () => {
       direction: "DOWN",
     });
     reactFlowBridge = new ReactFlowBridge({});
-    
+
     // Set bridge instances for the new architecture
     coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
 
@@ -93,7 +93,8 @@ describe("AsyncCoordinator - Basic API", () => {
 
   describe("Layout and Render Pipeline", () => {
     it("should execute layout and render pipeline", async () => {
-      const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state);
+      const reactFlowData =
+        await coordinator.executeLayoutAndRenderPipeline(state);
 
       // Verify pipeline returned ReactFlow data
       expect(reactFlowData).toBeDefined();
@@ -121,7 +122,10 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should expand all containers", async () => {
-      const reactFlowData = await coordinator.expandAllContainers(state, elkBridge);
+      const reactFlowData = await coordinator.expandAllContainers(
+        state,
+        elkBridge,
+      );
 
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.nodes).toBeDefined();
@@ -129,7 +133,10 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should collapse all containers", async () => {
-      const reactFlowData = await coordinator.collapseAllContainers(state, elkBridge);
+      const reactFlowData = await coordinator.collapseAllContainers(
+        state,
+        elkBridge,
+      );
 
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.nodes).toBeDefined();
@@ -137,7 +144,11 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should expand specific container", async () => {
-      const reactFlowData = await coordinator.expandContainer("container1", state, elkBridge);
+      const reactFlowData = await coordinator.expandContainer(
+        "container1",
+        state,
+        elkBridge,
+      );
 
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.nodes).toBeDefined();
@@ -145,7 +156,11 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should collapse specific container", async () => {
-      const reactFlowData = await coordinator.collapseContainer("container1", state, elkBridge);
+      const reactFlowData = await coordinator.collapseContainer(
+        "container1",
+        state,
+        elkBridge,
+      );
 
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.nodes).toBeDefined();
@@ -164,13 +179,13 @@ describe("AsyncCoordinator - Basic API", () => {
         size: { width: 100, height: 100 },
         children: new Set(),
         childNodes: [],
-        childContainers: []
+        childContainers: [],
       });
 
       // Use new synchronous container method with correct parameters
       const result = await coordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Test that the operation completed successfully
@@ -183,7 +198,7 @@ describe("AsyncCoordinator - Basic API", () => {
       // Use new synchronous search method instead of deprecated processApplicationEventAndWait
       const result = await coordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       // Test that the operation completed successfully

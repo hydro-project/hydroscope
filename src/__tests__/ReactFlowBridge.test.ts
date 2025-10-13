@@ -40,7 +40,8 @@ describe("ReactFlowBridge", () => {
       containerStyles: {
         collapsed: {
           backgroundColor: "#fff3e0",
-          border: "3px solid #ff9800",
+          borderColor: "#ff9800",
+          borderWidth: 3,
         },
         expanded: {
           backgroundColor: "rgba(255, 243, 224, 0.3)",

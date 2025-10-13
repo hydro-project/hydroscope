@@ -2,31 +2,31 @@
  * Test suite for edge style changes triggering autofit
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AsyncCoordinator } from '../core/AsyncCoordinator.js';
-import { VisualizationState } from '../core/VisualizationState.js';
-import { JSONParser } from '../utils/JSONParser.js';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { VisualizationState } from "../core/VisualizationState.js";
+import { JSONParser } from "../utils/JSONParser.js";
 
 // Helper function to create valid test data
 function createTestData(nodeCount = 2) {
   const nodes = [];
   const edges = [];
-  
+
   for (let i = 1; i <= nodeCount; i++) {
     nodes.push({ id: `n${i}`, label: `Node ${i}` });
     if (i > 1) {
-      edges.push({ id: `e${i-1}`, source: `n${i-1}`, target: `n${i}` });
+      edges.push({ id: `e${i - 1}`, source: `n${i - 1}`, target: `n${i}` });
     }
   }
-  
+
   return {
     nodes,
     edges,
-    hierarchyChoices: []
+    hierarchyChoices: [],
   };
 }
 
-describe('Edge Style Autofit', () => {
+describe("Edge Style Autofit", () => {
   let asyncCoordinator: AsyncCoordinator;
   let visualizationState: VisualizationState;
   let mockReactFlowInstance: any;
@@ -35,40 +35,38 @@ describe('Edge Style Autofit', () => {
   beforeEach(() => {
     asyncCoordinator = new AsyncCoordinator();
     visualizationState = new VisualizationState();
-    
+
     // Mock ReactFlow instance with fitView method
     mockReactFlowInstance = {
       fitView: vi.fn(),
     };
-    
+
     // Mock React state setter
     mockSetReactState = vi.fn();
-    
+
     // Set up AsyncCoordinator with mocks
     asyncCoordinator.setReactFlowInstance(mockReactFlowInstance);
     asyncCoordinator.setReactStateSetter(mockSetReactState);
-    
+
     // Mock bridge instances
     const mockReactFlowBridge = {
       toReactFlowData: vi.fn().mockReturnValue({
         nodes: [
-          { id: 'n1', type: 'standard', position: { x: 0, y: 0 } },
-          { id: 'n2', type: 'standard', position: { x: 100, y: 100 } }
+          { id: "n1", type: "standard", position: { x: 0, y: 0 } },
+          { id: "n2", type: "standard", position: { x: 100, y: 100 } },
         ],
-        edges: [
-          { id: 'e1', source: 'n1', target: 'n2' }
-        ]
-      })
+        edges: [{ id: "e1", source: "n1", target: "n2" }],
+      }),
     };
-    
+
     const mockELKBridge = {
-      layout: vi.fn().mockResolvedValue(undefined)
+      layout: vi.fn().mockResolvedValue(undefined),
     };
-    
+
     asyncCoordinator.setBridgeInstances(mockReactFlowBridge, mockELKBridge);
   });
 
-  it('should trigger fitView when edge style changes', async () => {
+  it("should trigger fitView when edge style changes", async () => {
     // Setup initial data
     const testData = createTestData(2);
 
@@ -78,8 +76,8 @@ describe('Edge Style Autofit', () => {
     // Change edge style with fitView enabled
     await asyncCoordinator.updateRenderConfig(
       visualizationState,
-      { edgeStyle: 'straight' },
-      { fitView: true }
+      { edgeStyle: "straight" },
+      { fitView: true },
     );
 
     // Verify that React state was updated
@@ -96,7 +94,7 @@ describe('Edge Style Autofit', () => {
     });
   });
 
-  it('should trigger fitView with custom options for edge style changes', async () => {
+  it("should trigger fitView with custom options for edge style changes", async () => {
     // Setup initial data
     const testData = createTestData(2);
 
@@ -106,11 +104,11 @@ describe('Edge Style Autofit', () => {
     // Change edge style with custom fitView options
     await asyncCoordinator.updateRenderConfig(
       visualizationState,
-      { edgeStyle: 'bezier' },
-      { 
+      { edgeStyle: "bezier" },
+      {
         fitView: true,
-        fitViewOptions: { padding: 0.2, duration: 500 }
-      }
+        fitViewOptions: { padding: 0.2, duration: 500 },
+      },
     );
 
     // Verify that React state was updated
@@ -127,7 +125,7 @@ describe('Edge Style Autofit', () => {
     });
   });
 
-  it('should not trigger fitView when autoFit is globally disabled', async () => {
+  it("should not trigger fitView when autoFit is globally disabled", async () => {
     // Setup initial data
     const testData = createTestData(2);
 
@@ -138,8 +136,8 @@ describe('Edge Style Autofit', () => {
     // This would normally be handled by HydroscopeCore using the autoFit utility
     await asyncCoordinator.updateRenderConfig(
       visualizationState,
-      { edgeStyle: 'smoothstep' },
-      { fitView: false } // This simulates the autoFit utility returning false
+      { edgeStyle: "smoothstep" },
+      { fitView: false }, // This simulates the autoFit utility returning false
     );
 
     // Verify that React state was updated
@@ -152,14 +150,14 @@ describe('Edge Style Autofit', () => {
     expect(mockReactFlowInstance.fitView).not.toHaveBeenCalled();
   });
 
-  it('should handle multiple edge style changes correctly', async () => {
+  it("should handle multiple edge style changes correctly", async () => {
     // Setup initial data
     const testData = createTestData(3);
 
     const parser = new JSONParser();
     await parser.parseData(testData, visualizationState);
 
-    const edgeStyles = ['straight', 'bezier', 'smoothstep'];
+    const edgeStyles = ["straight", "bezier", "smoothstep"];
 
     for (const edgeStyle of edgeStyles) {
       // Reset mock
@@ -169,7 +167,7 @@ describe('Edge Style Autofit', () => {
       await asyncCoordinator.updateRenderConfig(
         visualizationState,
         { edgeStyle },
-        { fitView: true }
+        { fitView: true },
       );
 
       // Simulate React render completion
@@ -180,24 +178,28 @@ describe('Edge Style Autofit', () => {
     }
   });
 
-  it('should integrate correctly with autoFit utility patterns', async () => {
+  it("should integrate correctly with autoFit utility patterns", async () => {
     // This test simulates how HydroscopeCore would use the autoFit utility
     const testData = createTestData(2);
     const parser = new JSONParser();
     await parser.parseData(testData, visualizationState);
 
     // Import the utility (in real usage, HydroscopeCore would do this)
-    const { createAutoFitOptions, createFitViewOptions, AutoFitScenarios } = await import('../utils/autoFitUtils.js');
+    const { createAutoFitOptions, createFitViewOptions, AutoFitScenarios } =
+      await import("../utils/autoFitUtils.js");
 
     // Test with autoFit enabled (user has autoFit button ON)
     const autoFitEnabled = true;
-    const autoFitOptions = createAutoFitOptions(AutoFitScenarios.STYLE_CHANGE, autoFitEnabled);
+    const autoFitOptions = createAutoFitOptions(
+      AutoFitScenarios.STYLE_CHANGE,
+      autoFitEnabled,
+    );
     const fitViewOptions = createFitViewOptions(autoFitOptions);
 
     await asyncCoordinator.updateRenderConfig(
       visualizationState,
-      { edgeStyle: 'bezier' },
-      fitViewOptions
+      { edgeStyle: "bezier" },
+      fitViewOptions,
     );
 
     asyncCoordinator.notifyRenderComplete();
@@ -205,15 +207,18 @@ describe('Edge Style Autofit', () => {
 
     // Reset and test with autoFit disabled (user has autoFit button OFF)
     mockReactFlowInstance.fitView.mockClear();
-    
+
     const autoFitDisabled = false;
-    const disabledAutoFitOptions = createAutoFitOptions(AutoFitScenarios.STYLE_CHANGE, autoFitDisabled);
+    const disabledAutoFitOptions = createAutoFitOptions(
+      AutoFitScenarios.STYLE_CHANGE,
+      autoFitDisabled,
+    );
     const disabledFitViewOptions = createFitViewOptions(disabledAutoFitOptions);
 
     await asyncCoordinator.updateRenderConfig(
       visualizationState,
-      { edgeStyle: 'straight' },
-      disabledFitViewOptions
+      { edgeStyle: "straight" },
+      disabledFitViewOptions,
     );
 
     asyncCoordinator.notifyRenderComplete();

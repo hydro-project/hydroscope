@@ -27,10 +27,10 @@ import {
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
 import { clearSearchPanelImperatively } from "../../utils/searchClearUtils.js";
-import { 
+import {
   togglePanelImperatively,
   batchPanelOperationsImperatively,
-  type InfoPanelSection 
+  type InfoPanelSection,
 } from "../../utils/panelOperationUtils.js";
 export interface InfoPanelRef {
   focusSearch: () => void;
@@ -90,15 +90,17 @@ const InfoPanelInternal = forwardRef<
     // ResizeObserver error suppression during panel operations
     useEffect(() => {
       let suppressionTimer: NodeJS.Timeout | null = null;
-      
+
       const suppressResizeObserverErrors = () => {
         const originalError = window.console.error;
         const suppressedError = (...args: any[]) => {
-          const message = args[0]?.toString() || '';
-          if (message.includes('ResizeObserver loop limit exceeded')) {
+          const message = args[0]?.toString() || "";
+          if (message.includes("ResizeObserver loop limit exceeded")) {
             // Suppress ResizeObserver loop errors during panel operations
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[InfoPanel] Suppressed ResizeObserver error during panel operation');
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                "[InfoPanel] Suppressed ResizeObserver error during panel operation",
+              );
             }
             return;
           }
@@ -106,12 +108,12 @@ const InfoPanelInternal = forwardRef<
         };
 
         window.console.error = suppressedError;
-        
+
         // Clear any existing timer
         if (suppressionTimer) {
           clearTimeout(suppressionTimer);
         }
-        
+
         // Restore original error handler after panel operations settle
         suppressionTimer = setTimeout(() => {
           window.console.error = originalError;
@@ -248,38 +250,38 @@ const InfoPanelInternal = forwardRef<
         setSearchQuery,
         setSearchMatches,
         setCurrentSearchMatch,
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
 
     // Imperative panel section toggle handlers
     const handleLegendToggle = () => {
       togglePanelImperatively({
-        panelId: 'legend',
+        panelId: "legend",
         setState: setLegendCollapsed,
         currentState: legendCollapsed,
         debounce: true,
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
 
     const handleGroupingToggle = () => {
       togglePanelImperatively({
-        panelId: 'grouping',
+        panelId: "grouping",
         setState: setGroupingCollapsed,
         currentState: groupingCollapsed,
         debounce: true,
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
 
     const handleEdgeStyleToggle = () => {
       togglePanelImperatively({
-        panelId: 'edgeStyles',
+        panelId: "edgeStyles",
         setState: setEdgeStyleCollapsed,
         currentState: edgeStyleCollapsed,
         debounce: true,
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
 
@@ -288,25 +290,25 @@ const InfoPanelInternal = forwardRef<
       batchPanelOperationsImperatively({
         operations: [
           {
-            panelId: 'legend',
-            operation: 'expand',
+            panelId: "legend",
+            operation: "expand",
             setState: setLegendCollapsed,
-            currentState: legendCollapsed
+            currentState: legendCollapsed,
           },
           {
-            panelId: 'grouping',
-            operation: 'expand',
+            panelId: "grouping",
+            operation: "expand",
             setState: setGroupingCollapsed,
-            currentState: groupingCollapsed
+            currentState: groupingCollapsed,
           },
           {
-            panelId: 'edgeStyles',
-            operation: 'expand',
+            panelId: "edgeStyles",
+            operation: "expand",
             setState: setEdgeStyleCollapsed,
-            currentState: edgeStyleCollapsed
-          }
+            currentState: edgeStyleCollapsed,
+          },
         ],
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
 
@@ -314,25 +316,25 @@ const InfoPanelInternal = forwardRef<
       batchPanelOperationsImperatively({
         operations: [
           {
-            panelId: 'legend',
-            operation: 'collapse',
+            panelId: "legend",
+            operation: "collapse",
             setState: setLegendCollapsed,
-            currentState: legendCollapsed
+            currentState: legendCollapsed,
           },
           {
-            panelId: 'grouping',
-            operation: 'collapse',
+            panelId: "grouping",
+            operation: "collapse",
             setState: setGroupingCollapsed,
-            currentState: groupingCollapsed
+            currentState: groupingCollapsed,
           },
           {
-            panelId: 'edgeStyles',
-            operation: 'collapse',
+            panelId: "edgeStyles",
+            operation: "collapse",
             setState: setEdgeStyleCollapsed,
-            currentState: edgeStyleCollapsed
-          }
+            currentState: edgeStyleCollapsed,
+          },
         ],
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
     const handleSearchNavigate = (
@@ -536,11 +538,11 @@ export type { InfoPanelProps, LegendData } from "../types";
 export type { SearchMatch } from "../SearchControls";
 
 // Export imperative operation functions for external use
-export { 
+export {
   togglePanelImperatively,
   batchPanelOperationsImperatively,
   expandPanelImperatively,
-  collapsePanelImperatively 
+  collapsePanelImperatively,
 } from "../../utils/panelOperationUtils.js";
 // Additional type exports for compatibility
 export type LegendItem = {

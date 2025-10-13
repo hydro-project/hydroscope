@@ -23,7 +23,7 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
 
@@ -108,7 +108,7 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // Test expand operation
       const expandResult = await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       expect(expandResult).toBeDefined();
@@ -120,10 +120,14 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       expect(container?.collapsed).toBe(false);
 
       // Test collapse operation
-      const collapseResult = await asyncCoordinator.collapseContainer("c1", state, {
-        relayoutEntities: ["c1"],
-        fitView: false
-      });
+      const collapseResult = await asyncCoordinator.collapseContainer(
+        "c1",
+        state,
+        {
+          relayoutEntities: ["c1"],
+          fitView: false,
+        },
+      );
 
       expect(collapseResult).toBeDefined();
       expect(collapseResult.nodes).toBeDefined();
@@ -138,7 +142,7 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // Expand container
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Check that edges are properly handled
@@ -149,7 +153,7 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // Collapse container
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Check that edges are still properly handled
@@ -162,10 +166,14 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // Perform multiple cycles
       for (let i = 0; i < 3; i++) {
         // Expand
-        const expandResult = await asyncCoordinator.expandContainer("c1", state, {
-          relayoutEntities: ["c1"],
-          fitView: false
-        });
+        const expandResult = await asyncCoordinator.expandContainer(
+          "c1",
+          state,
+          {
+            relayoutEntities: ["c1"],
+            fitView: false,
+          },
+        );
         expect(expandResult).toBeDefined();
 
         // Verify expanded
@@ -173,10 +181,14 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
         expect(expandedContainer?.collapsed).toBe(false);
 
         // Collapse
-        const collapseResult = await asyncCoordinator.collapseContainer("c1", state, {
-          relayoutEntities: ["c1"],
-          fitView: false
-        });
+        const collapseResult = await asyncCoordinator.collapseContainer(
+          "c1",
+          state,
+          {
+            relayoutEntities: ["c1"],
+            fitView: false,
+          },
+        );
         expect(collapseResult).toBeDefined();
 
         // Verify collapsed
@@ -191,11 +203,11 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // Expand both containers first
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
       await asyncCoordinator.expandContainer("c2", state, {
         relayoutEntities: ["c2"],
-        fitView: false
+        fitView: false,
       });
 
       // Get ReactFlow data with expanded containers
@@ -205,11 +217,11 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // Collapse containers
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
       await asyncCoordinator.collapseContainer("c2", state, {
         relayoutEntities: ["c2"],
-        fitView: false
+        fitView: false,
       });
 
       // Get ReactFlow data with collapsed containers
@@ -226,7 +238,7 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
     it("should handle expand all containers", async () => {
       const result = await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined, // Full layout
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -244,13 +256,13 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       // First expand all
       await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       // Then collapse all
       const result = await asyncCoordinator.collapseAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -269,10 +281,14 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
     it("should handle operations on non-existent containers gracefully", async () => {
       // The AsyncCoordinator handles non-existent containers gracefully by returning a result
       // rather than throwing, which is the expected behavior
-      const result = await asyncCoordinator.expandContainer("nonexistent", state, {
-        relayoutEntities: ["nonexistent"],
-        fitView: false
-      });
+      const result = await asyncCoordinator.expandContainer(
+        "nonexistent",
+        state,
+        {
+          relayoutEntities: ["nonexistent"],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -284,8 +300,8 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
       await expect(
         asyncCoordinator.expandContainer("c1", null as any, {
           relayoutEntities: ["c1"],
-          fitView: false
-        })
+          fitView: false,
+        }),
       ).rejects.toThrow();
     });
   });

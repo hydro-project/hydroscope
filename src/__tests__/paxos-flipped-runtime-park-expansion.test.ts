@@ -40,7 +40,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
   describe("Runtime/Park.rs Container Expansion", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -414,7 +416,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
   describe("Edge Validation During Expansion", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -474,11 +478,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Ensure container is collapsed
       if (!runtimeParkContainer!.collapsed) {
-        await coordinator.collapseContainer(
-          containerId,
-          visualizationState,
-          { fitView: false }
-        );
+        await coordinator.collapseContainer(containerId, visualizationState, {
+          fitView: false,
+        });
       }
 
       // Capture console errors to detect invalid edge errors
@@ -499,7 +501,7 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
         const elkBridge = new ELKBridge();
         await coordinator.executeLayoutAndRenderPipeline(visualizationState, {
           relayoutEntities: undefined, // Full layout
-          fitView: false
+          fitView: false,
         });
 
         // Convert to ReactFlow data to trigger edge validation
@@ -547,11 +549,9 @@ describe("Paxos-Flipped runtime/park.rs Container Expansion", () => {
 
       // Start with container collapsed to test aggregation
       if (!runtimeParkContainer!.collapsed) {
-        await coordinator.collapseContainer(
-          containerId,
-          visualizationState,
-          { fitView: false }
-        );
+        await coordinator.collapseContainer(containerId, visualizationState, {
+          fitView: false,
+        });
       }
 
       // Get initial edge counts

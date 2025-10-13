@@ -1,11 +1,11 @@
 /**
  * @fileoverview Tests for Style Operation Utilities
- * 
+ *
  * Tests the imperative style operation functions that avoid React re-render cascades
  * and ResizeObserver loops.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   changeLayoutImperatively,
   changeColorPaletteImperatively,
@@ -13,8 +13,8 @@ import {
   resetStylesImperatively,
   batchStyleOperationsImperatively,
   clearStyleOperationDebouncing,
-  type EdgeStyleKind
-} from '../styleOperationUtils.js';
+  type EdgeStyleKind,
+} from "../styleOperationUtils.js";
 
 // Mock requestAnimationFrame
 global.requestAnimationFrame = vi.fn((cb) => {
@@ -22,7 +22,7 @@ global.requestAnimationFrame = vi.fn((cb) => {
   return 1;
 });
 
-describe('styleOperationUtils', () => {
+describe("styleOperationUtils", () => {
   let mockOnLayoutChange: ReturnType<typeof vi.fn>;
   let mockOnPaletteChange: ReturnType<typeof vi.fn>;
   let mockOnEdgeStyleChange: ReturnType<typeof vi.fn>;
@@ -44,37 +44,39 @@ describe('styleOperationUtils', () => {
     console.error = originalConsoleError;
   });
 
-  describe('changeLayoutImperatively', () => {
-    it('should change layout algorithm successfully', async () => {
+  describe("changeLayoutImperatively", () => {
+    it("should change layout algorithm successfully", async () => {
       const result = changeLayoutImperatively({
-        algorithm: 'layered',
+        algorithm: "layered",
         onLayoutChange: mockOnLayoutChange,
-        debug: true
+        debug: true,
       });
 
       expect(result).toBe(true);
-      
+
       // Wait for requestAnimationFrame
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
-      expect(mockOnLayoutChange).toHaveBeenCalledWith('layered');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(mockOnLayoutChange).toHaveBeenCalledWith("layered");
     });
 
-    it('should return false for empty algorithm', () => {
+    it("should return false for empty algorithm", () => {
       const result = changeLayoutImperatively({
-        algorithm: '',
-        onLayoutChange: mockOnLayoutChange
+        algorithm: "",
+        onLayoutChange: mockOnLayoutChange,
       });
 
       expect(result).toBe(false);
-      expect(console.error).toHaveBeenCalledWith('[StyleOperationUtils] Algorithm is required');
+      expect(console.error).toHaveBeenCalledWith(
+        "[StyleOperationUtils] Algorithm is required",
+      );
     });
 
-    it('should handle debounced operations', () => {
+    it("should handle debounced operations", () => {
       const result = changeLayoutImperatively({
-        algorithm: 'force',
+        algorithm: "force",
         onLayoutChange: mockOnLayoutChange,
-        debounce: true
+        debounce: true,
       });
 
       expect(result).toBe(true);
@@ -82,56 +84,60 @@ describe('styleOperationUtils', () => {
       expect(mockOnLayoutChange).not.toHaveBeenCalled();
     });
 
-    it('should suppress ResizeObserver errors when enabled', async () => {
-      const mockError = vi.fn();
-      window.console.error = mockError;
-
-      changeLayoutImperatively({
-        algorithm: 'stress',
-        onLayoutChange: mockOnLayoutChange,
-        suppressResizeObserver: true,
-        debug: true
+    it("should suppress ResizeObserver errors when enabled", async () => {
+      // Mock the operation to throw a ResizeObserver error
+      const mockOnLayoutChangeWithError = vi.fn(() => {
+        throw new Error("ResizeObserver loop limit exceeded");
       });
 
-      // Simulate ResizeObserver error
-      window.console.error('ResizeObserver loop limit exceeded');
-      
-      // Should not call the original error handler for ResizeObserver errors
-      expect(mockError).not.toHaveBeenCalledWith('ResizeObserver loop limit exceeded');
+      // This should not throw because ResizeObserver errors are suppressed
+      expect(() => {
+        changeLayoutImperatively({
+          algorithm: "stress",
+          onLayoutChange: mockOnLayoutChangeWithError,
+          suppressResizeObserver: true,
+          debug: true,
+        });
+      }).not.toThrow();
+
+      // The callback should have been called (but error was suppressed)
+      expect(mockOnLayoutChangeWithError).toHaveBeenCalled();
     });
   });
 
-  describe('changeColorPaletteImperatively', () => {
-    it('should change color palette successfully', async () => {
+  describe("changeColorPaletteImperatively", () => {
+    it("should change color palette successfully", async () => {
       const result = changeColorPaletteImperatively({
-        palette: 'Set3',
+        palette: "Set3",
         onPaletteChange: mockOnPaletteChange,
-        debug: true
+        debug: true,
       });
 
       expect(result).toBe(true);
-      
+
       // Wait for requestAnimationFrame
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
-      expect(mockOnPaletteChange).toHaveBeenCalledWith('Set3');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(mockOnPaletteChange).toHaveBeenCalledWith("Set3");
     });
 
-    it('should return false for empty palette', () => {
+    it("should return false for empty palette", () => {
       const result = changeColorPaletteImperatively({
-        palette: '',
-        onPaletteChange: mockOnPaletteChange
+        palette: "",
+        onPaletteChange: mockOnPaletteChange,
       });
 
       expect(result).toBe(false);
-      expect(console.error).toHaveBeenCalledWith('[StyleOperationUtils] Palette is required');
+      expect(console.error).toHaveBeenCalledWith(
+        "[StyleOperationUtils] Palette is required",
+      );
     });
 
-    it('should handle debounced operations', () => {
+    it("should handle debounced operations", () => {
       const result = changeColorPaletteImperatively({
-        palette: 'Dark2',
+        palette: "Dark2",
         onPaletteChange: mockOnPaletteChange,
-        debounce: true
+        debounce: true,
       });
 
       expect(result).toBe(true);
@@ -140,105 +146,107 @@ describe('styleOperationUtils', () => {
     });
   });
 
-  describe('changeEdgeStyleImperatively', () => {
-    it('should change edge style successfully', async () => {
-      const edgeStyle: EdgeStyleKind = 'bezier';
+  describe("changeEdgeStyleImperatively", () => {
+    it("should change edge style successfully", async () => {
+      const edgeStyle: EdgeStyleKind = "bezier";
       const result = changeEdgeStyleImperatively({
         edgeStyle,
         onEdgeStyleChange: mockOnEdgeStyleChange,
-        debug: true
+        debug: true,
       });
 
       expect(result).toBe(true);
-      
+
       // Wait for requestAnimationFrame
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
-      expect(mockOnEdgeStyleChange).toHaveBeenCalledWith('bezier');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(mockOnEdgeStyleChange).toHaveBeenCalledWith("bezier");
     });
 
-    it('should return false for empty edge style', () => {
+    it("should return false for empty edge style", () => {
       const result = changeEdgeStyleImperatively({
-        edgeStyle: '' as EdgeStyleKind,
-        onEdgeStyleChange: mockOnEdgeStyleChange
+        edgeStyle: "" as EdgeStyleKind,
+        onEdgeStyleChange: mockOnEdgeStyleChange,
       });
 
       expect(result).toBe(false);
-      expect(console.error).toHaveBeenCalledWith('[StyleOperationUtils] Edge style is required');
+      expect(console.error).toHaveBeenCalledWith(
+        "[StyleOperationUtils] Edge style is required",
+      );
     });
 
-    it('should handle all edge style types', async () => {
-      const edgeStyles: EdgeStyleKind[] = ['bezier', 'straight', 'smoothstep'];
-      
+    it("should handle all edge style types", async () => {
+      const edgeStyles: EdgeStyleKind[] = ["bezier", "straight", "smoothstep"];
+
       for (const style of edgeStyles) {
         mockOnEdgeStyleChange.mockClear();
-        
+
         const result = changeEdgeStyleImperatively({
           edgeStyle: style,
-          onEdgeStyleChange: mockOnEdgeStyleChange
+          onEdgeStyleChange: mockOnEdgeStyleChange,
         });
 
         expect(result).toBe(true);
-        
+
         // Wait for requestAnimationFrame
-        await new Promise(resolve => setTimeout(resolve, 10));
-        
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
         expect(mockOnEdgeStyleChange).toHaveBeenCalledWith(style);
       }
     });
   });
 
-  describe('resetStylesImperatively', () => {
-    it('should reset styles successfully', async () => {
+  describe("resetStylesImperatively", () => {
+    it("should reset styles successfully", async () => {
       const result = resetStylesImperatively({
         onResetToDefaults: mockOnResetToDefaults,
-        debug: true
+        debug: true,
       });
 
       expect(result).toBe(true);
-      
+
       // Wait for requestAnimationFrame
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       expect(mockOnResetToDefaults).toHaveBeenCalled();
     });
 
-    it('should work without callback', () => {
+    it("should work without callback", () => {
       const result = resetStylesImperatively({
-        debug: true
+        debug: true,
       });
 
       expect(result).toBe(true);
     });
   });
 
-  describe('batchStyleOperationsImperatively', () => {
-    it('should execute multiple operations successfully', async () => {
+  describe("batchStyleOperationsImperatively", () => {
+    it("should execute multiple operations successfully", async () => {
       const operations = [
         {
-          type: 'layout' as const,
-          value: 'layered',
-          callback: mockOnLayoutChange
+          type: "layout" as const,
+          value: "layered",
+          callback: mockOnLayoutChange,
         },
         {
-          type: 'colorPalette' as const,
-          value: 'Set3',
-          callback: mockOnPaletteChange
+          type: "colorPalette" as const,
+          value: "Set3",
+          callback: mockOnPaletteChange,
         },
         {
-          type: 'edgeStyle' as const,
-          value: 'bezier' as EdgeStyleKind,
-          callback: mockOnEdgeStyleChange
+          type: "edgeStyle" as const,
+          value: "bezier" as EdgeStyleKind,
+          callback: mockOnEdgeStyleChange,
         },
         {
-          type: 'reset' as const,
-          callback: mockOnResetToDefaults
-        }
+          type: "reset" as const,
+          callback: mockOnResetToDefaults,
+        },
       ];
 
       const result = batchStyleOperationsImperatively({
         operations,
-        debug: true
+        debug: true,
       });
 
       expect(result.success).toBe(4);
@@ -246,29 +254,29 @@ describe('styleOperationUtils', () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should handle unknown operation types', () => {
+    it("should handle unknown operation types", () => {
       const operations = [
         {
-          type: 'unknown' as any,
-          value: 'test',
-          callback: vi.fn()
-        }
+          type: "unknown" as any,
+          value: "test",
+          callback: vi.fn(),
+        },
       ];
 
       const result = batchStyleOperationsImperatively({
         operations,
-        debug: true
+        debug: true,
       });
 
       expect(result.success).toBe(0);
       expect(result.failed).toBe(1);
-      expect(result.errors).toContain('Unknown operation type: unknown');
+      expect(result.errors).toContain("Unknown operation type: unknown");
     });
 
-    it('should handle empty operations array', () => {
+    it("should handle empty operations array", () => {
       const result = batchStyleOperationsImperatively({
         operations: [],
-        debug: true
+        debug: true,
       });
 
       expect(result.success).toBe(0);
@@ -277,19 +285,19 @@ describe('styleOperationUtils', () => {
     });
   });
 
-  describe('clearStyleOperationDebouncing', () => {
-    it('should clear all debounced operations', () => {
+  describe("clearStyleOperationDebouncing", () => {
+    it("should clear all debounced operations", () => {
       // Start some debounced operations
       changeLayoutImperatively({
-        algorithm: 'layered',
+        algorithm: "layered",
         onLayoutChange: mockOnLayoutChange,
-        debounce: true
+        debounce: true,
       });
 
       changeColorPaletteImperatively({
-        palette: 'Set3',
+        palette: "Set3",
         onPaletteChange: mockOnPaletteChange,
-        debounce: true
+        debounce: true,
       });
 
       // Clear all debouncing
@@ -302,22 +310,22 @@ describe('styleOperationUtils', () => {
       }, 200);
     });
 
-    it('should clear specific operation type debouncing', () => {
+    it("should clear specific operation type debouncing", () => {
       // Start debounced operations
       changeLayoutImperatively({
-        algorithm: 'layered',
+        algorithm: "layered",
         onLayoutChange: mockOnLayoutChange,
-        debounce: true
+        debounce: true,
       });
 
       changeColorPaletteImperatively({
-        palette: 'Set3',
+        palette: "Set3",
         onPaletteChange: mockOnPaletteChange,
-        debounce: true
+        debounce: true,
       });
 
       // Clear only layout debouncing
-      clearStyleOperationDebouncing('layout');
+      clearStyleOperationDebouncing("layout");
 
       // Layout should be cleared, palette should still be debounced
       setTimeout(() => {
@@ -328,47 +336,45 @@ describe('styleOperationUtils', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('should handle callback errors gracefully', async () => {
+  describe("error handling", () => {
+    it("should handle callback errors gracefully", async () => {
       const errorCallback = vi.fn(() => {
-        throw new Error('Test error');
+        throw new Error("Test error");
       });
 
       const result = changeLayoutImperatively({
-        algorithm: 'layered',
+        algorithm: "layered",
         onLayoutChange: errorCallback,
-        debug: true
+        debug: true,
       });
 
       expect(result).toBe(true);
-      
+
       // Wait for requestAnimationFrame
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       expect(errorCallback).toHaveBeenCalled();
       // Error should be logged but not thrown
     });
 
-    it('should suppress ResizeObserver errors during operations', () => {
-      const mockError = vi.fn();
-      const originalError = window.console.error;
-      window.console.error = mockError;
-
-      changeLayoutImperatively({
-        algorithm: 'layered',
-        onLayoutChange: mockOnLayoutChange,
-        suppressResizeObserver: true,
-        debug: true
+    it("should suppress ResizeObserver errors during operations", () => {
+      // Mock the operation to throw a ResizeObserver error
+      const mockOnLayoutChangeWithError = vi.fn(() => {
+        throw new Error("ResizeObserver loop limit exceeded");
       });
 
-      // Simulate ResizeObserver error
-      window.console.error('ResizeObserver loop limit exceeded');
-      
-      // Should not propagate ResizeObserver errors
-      expect(mockError).not.toHaveBeenCalledWith('ResizeObserver loop limit exceeded');
-      
-      // Restore original error handler
-      window.console.error = originalError;
+      // This should not throw because ResizeObserver errors are suppressed
+      expect(() => {
+        changeLayoutImperatively({
+          algorithm: "layered",
+          onLayoutChange: mockOnLayoutChangeWithError,
+          suppressResizeObserver: true,
+          debug: true,
+        });
+      }).not.toThrow();
+
+      // The callback should have been called (but error was suppressed)
+      expect(mockOnLayoutChangeWithError).toHaveBeenCalled();
     });
   });
 });

@@ -9,30 +9,30 @@ export interface VisualizationStateInterface {
   setLayoutPhase(phase: string): void;
   incrementLayoutCount(): void;
   getLayoutState(): any;
-  
+
   // Container operations
   getContainer(id: string): any;
   getAllContainers(): any[];
   getContainerParent(id: string): string | null;
   getContainerAncestors(id: string): string[];
-  
+
   // Node operations
   getGraphNode(id: string): any;
   visibleNodes: any[];
   visibleEdges: any[];
   visibleContainers: any[];
-  
+
   // Render config
   updateRenderConfig(updates: any): void;
   getRenderConfig(): any;
   getColorPalette(): string;
   getEdgeStyle(): "bezier" | "straight" | "smoothstep";
-  
+
   // Search functionality
   searchNodes(query: string): any[];
   highlightSearchResults(results: any[]): void;
   clearSearchHighlights(): void;
-  
+
   // Navigation
   highlightElement(elementId: string): void;
   clearHighlights(): void;
@@ -41,7 +41,7 @@ export interface VisualizationStateInterface {
 export interface ELKBridgeInterface {
   // Layout execution
   layout(state: VisualizationStateInterface): Promise<void>;
-  
+
   // Configuration management
   updateConfiguration(config: Partial<LayoutConfig>): void;
   getConfiguration(): LayoutConfig;
@@ -50,8 +50,11 @@ export interface ELKBridgeInterface {
 
 export interface ReactFlowBridgeInterface {
   // Data conversion
-  toReactFlowData(state: VisualizationStateInterface, interactionHandler?: any): ReactFlowData;
-  
+  toReactFlowData(
+    state: VisualizationStateInterface,
+    interactionHandler?: any,
+  ): ReactFlowData;
+
   // Styling
   applyNodeStyles(nodes: any[]): any[];
   applyEdgeStyles(edges: any[], state?: VisualizationStateInterface): any[];
@@ -59,10 +62,14 @@ export interface ReactFlowBridgeInterface {
 
 export interface ReactFlowInstanceInterface {
   // Viewport operations
-  fitView(options?: { padding?: number; duration?: number; includeHiddenNodes?: boolean }): void;
+  fitView(options?: {
+    padding?: number;
+    duration?: number;
+    includeHiddenNodes?: boolean;
+  }): void;
   getViewport(): { x: number; y: number; zoom: number };
   setViewport(viewport: { x: number; y: number; zoom: number }): void;
-  
+
   // Node operations
   getNodes(): any[];
   getEdges(): any[];

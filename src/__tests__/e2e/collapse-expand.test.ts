@@ -101,7 +101,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
   describe("Single Container Collapse", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -181,7 +183,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
   describe("Bulk Container Operations", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -255,7 +259,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
   describe("Layout Integration", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -427,7 +433,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
   describe("Error Handling", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -487,7 +495,9 @@ describe("Container Collapse/Expand E2E Tests", () => {
   describe("Visual Consistency", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });

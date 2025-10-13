@@ -24,7 +24,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
   });
@@ -71,7 +71,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User expands a container
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Smart collapse should be disabled after user operation
@@ -94,7 +94,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User collapses a container
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Smart collapse should be disabled after user operation
@@ -109,7 +109,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
         createTestContainer("c3", "Container 3"),
       ];
 
-      containers.forEach(container => {
+      containers.forEach((container) => {
         container.collapsed = true;
         state.addContainer(container);
       });
@@ -120,7 +120,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User performs bulk expand operation
       await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       // Smart collapse should be disabled after bulk operation
@@ -129,9 +129,15 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
     it("should handle mixed container states", async () => {
       // Create containers with mixed states
-      const expandedContainer = createTestContainer("expanded", "Expanded Container");
+      const expandedContainer = createTestContainer(
+        "expanded",
+        "Expanded Container",
+      );
       expandedContainer.collapsed = false;
-      const collapsedContainer = createTestContainer("collapsed", "Collapsed Container");
+      const collapsedContainer = createTestContainer(
+        "collapsed",
+        "Collapsed Container",
+      );
       collapsedContainer.collapsed = true;
 
       state.addContainer(expandedContainer);
@@ -143,7 +149,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User operation on any container should disable smart collapse
       await asyncCoordinator.expandContainer("collapsed", state, {
         relayoutEntities: ["collapsed"],
-        fitView: false
+        fitView: false,
       });
 
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -164,7 +170,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       container.childNodes = ["n1", "n2", "n3"];
       container.collapsed = false;
 
-      nodes.forEach(node => state.addNode(node));
+      nodes.forEach((node) => state.addNode(node));
       state.addContainer(container);
 
       // Verify initial state
@@ -173,7 +179,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User collapses container
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Smart collapse should be disabled
@@ -181,7 +187,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       // Verify container is collapsed
       const visibleContainers = state.visibleContainers;
-      const collapsedContainer = visibleContainers.find(c => c.id === "c1");
+      const collapsedContainer = visibleContainers.find((c) => c.id === "c1");
       expect(collapsedContainer?.collapsed).toBe(true);
     });
 
@@ -201,7 +207,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // User operation should disable smart collapse
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       expect(state.shouldRunSmartCollapse()).toBe(false);
@@ -219,7 +225,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
         return container;
       });
 
-      containers.forEach(container => state.addContainer(container));
+      containers.forEach((container) => state.addContainer(container));
 
       // Initially should run smart collapse
       expect(state.shouldRunSmartCollapse()).toBe(true);
@@ -227,12 +233,12 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // Rapid user operations
       await asyncCoordinator.expandContainer("c0", state, {
         relayoutEntities: ["c0"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Smart collapse should remain disabled
@@ -274,12 +280,12 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // Multiple operations
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Should remain disabled
@@ -296,7 +302,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       try {
         await asyncCoordinator.expandContainer("nonexistent", state, {
           relayoutEntities: ["nonexistent"],
-          fitView: false
+          fitView: false,
         });
       } catch (error) {
         // Expected to handle gracefully
@@ -314,12 +320,12 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       // Bulk operations on empty set
       await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       // Should handle gracefully
@@ -332,7 +338,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
         createTestContainer("c2", "Container 2"),
       ];
 
-      containers.forEach(container => {
+      containers.forEach((container) => {
         container.collapsed = true;
         state.addContainer(container);
       });
@@ -344,11 +350,11 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       const operations = [
         asyncCoordinator.expandContainer("c1", state, {
           relayoutEntities: ["c1"],
-          fitView: false
+          fitView: false,
         }),
         asyncCoordinator.expandContainer("c2", state, {
           relayoutEntities: ["c2"],
-          fitView: false
+          fitView: false,
         }),
       ];
 
@@ -369,7 +375,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
         return container;
       });
 
-      containers.forEach(container => state.addContainer(container));
+      containers.forEach((container) => state.addContainer(container));
 
       // Initial state
       expect(state.shouldRunSmartCollapse()).toBe(true);
@@ -378,7 +384,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       const startTime = Date.now();
       await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
       const endTime = Date.now();
 
@@ -397,7 +403,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       }
 
       const endTime = Date.now();
-      
+
       // Should be very fast for simple boolean checks
       expect(endTime - startTime).toBeLessThan(100);
     });

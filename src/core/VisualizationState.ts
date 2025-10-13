@@ -122,7 +122,7 @@ export class VisualizationState {
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
   // Data Management
-  
+
   /**
    * Clear all data from the VisualizationState
    */
@@ -1521,7 +1521,9 @@ export class VisualizationState {
     this._layoutState.lastUpdate = Date.now();
   }
   resetLayoutState(): void {
-    console.log(`🔄 RESET LAYOUT STATE: Before reset - layoutCount=${this._layoutState.layoutCount}`);
+    console.log(
+      `🔄 RESET LAYOUT STATE: Before reset - layoutCount=${this._layoutState.layoutCount}`,
+    );
     this._layoutState = {
       phase: "initial",
       layoutCount: 0,
@@ -1529,7 +1531,9 @@ export class VisualizationState {
     };
     // CRITICAL FIX: Reset smart collapse state for new data
     this.resetSmartCollapseState();
-    console.log(`🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}, smartCollapseEnabled=${this._smartCollapseEnabled}`);
+    console.log(
+      `🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}, smartCollapseEnabled=${this._smartCollapseEnabled}`,
+    );
   }
   // Smart Collapse Management
   private _smartCollapseEnabled = true;
@@ -1537,13 +1541,15 @@ export class VisualizationState {
   shouldRunSmartCollapse(): boolean {
     if (this._smartCollapseOverride) {
       this._smartCollapseOverride = false; // Reset after checking
-      console.log('🎯 SMART COLLAPSE: Override enabled, returning true');
+      console.log("🎯 SMART COLLAPSE: Override enabled, returning true");
       return true;
     }
     const enabled = this._smartCollapseEnabled;
     const isFirst = this.isFirstLayout();
     const result = enabled && isFirst;
-    console.log(`🎯 SMART COLLAPSE CHECK: enabled=${enabled}, isFirstLayout=${isFirst}, layoutCount=${this._layoutState.layoutCount}, result=${result}`);
+    console.log(
+      `🎯 SMART COLLAPSE CHECK: enabled=${enabled}, isFirstLayout=${isFirst}, layoutCount=${this._layoutState.layoutCount}, result=${result}`,
+    );
     return result;
   }
   enableSmartCollapseForNextLayout(): void {

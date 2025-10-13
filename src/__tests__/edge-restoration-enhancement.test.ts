@@ -18,7 +18,9 @@ describe("Enhanced Edge Restoration", () => {
   describe("Pre-restoration Validation", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -253,7 +255,9 @@ describe("Enhanced Edge Restoration", () => {
   describe("Post-expansion Validation", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -321,7 +325,9 @@ describe("Enhanced Edge Restoration", () => {
   describe("Integration with Existing Functionality", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });

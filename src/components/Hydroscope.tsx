@@ -989,9 +989,12 @@ export const Hydroscope = memo<HydroscopeProps>(
                 {
                   relayoutEntities: [node.id], // Only re-layout this specific node
                   fitView: false, // Don't change viewport on label toggle
-                }
+                },
               );
-              console.log("[Hydroscope] Layout update triggered successfully for node:", node.id);
+              console.log(
+                "[Hydroscope] Layout update triggered successfully for node:",
+                node.id,
+              );
             } else {
               console.warn(
                 "[Hydroscope] AsyncCoordinator not available for layout update",
@@ -1260,7 +1263,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                     }
                     edgeStyleConfig={state.data?.edgeStyleConfig}
                     nodeTypeConfig={state.data?.nodeTypeConfig}
-                    asyncCoordinator={hydroscopeCoreRef.current?.getAsyncCoordinator() || null}
+                    asyncCoordinator={
+                      hydroscopeCoreRef.current?.getAsyncCoordinator() || null
+                    }
                   />
                 )}
 

@@ -1,39 +1,39 @@
 /**
  * @fileoverview Panel Operation Utilities
- * 
+ *
  * Provides imperative panel operation functions that avoid React re-render cascades
  * and ResizeObserver loops by using direct state manipulation and minimal
  * coordination system usage.
- * 
+ *
  * This follows the same pattern established in searchClearUtils.ts and containerOperationUtils.ts
  * for avoiding ResizeObserver loops and coordination cascades.
  */
 
 import type { VisualizationState } from "../core/VisualizationState.js";
-import { 
-  globalOperationMonitor, 
+import {
+  globalOperationMonitor,
   recordDOMUpdate,
-  type OperationType 
+  type OperationType,
 } from "./operationPerformanceMonitor.js";
 import {
   withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression
+  withAsyncResizeObserverErrorSuppression,
 } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Panel operation types supported by the utilities
  */
-export type PanelOperation = 'expand' | 'collapse' | 'toggle';
+export type PanelOperation = "expand" | "collapse" | "toggle";
 
 /**
  * Panel section identifiers for InfoPanel
  */
-export type InfoPanelSection = 'legend' | 'grouping' | 'edgeStyles';
+export type InfoPanelSection = "legend" | "grouping" | "edgeStyles";
 
 /**
  * Style operation types for StyleTuner
  */
-export type StyleOperation = 'layout' | 'colorPalette' | 'edgeStyle' | 'reset';
+export type StyleOperation = "layout" | "colorPalette" | "edgeStyle" | "reset";
 
 /**
  * Debounce utility for rapid panel operations
@@ -75,7 +75,7 @@ class PanelOperationDebouncer {
       }
     } else {
       // Clear all timers
-      this.timers.forEach(timer => clearTimeout(timer));
+      this.timers.forEach((timer) => clearTimeout(timer));
       this.timers.clear();
     }
   }
@@ -86,7 +86,7 @@ const panelDebouncer = new PanelOperationDebouncer();
 
 /**
  * Toggle panel imperatively without triggering coordination cascades
- * 
+ *
  * This utility implements the pattern for avoiding ResizeObserver loops:
  * 1. Manipulate panel state directly (imperative)
  * 2. Avoid callbacks that trigger coordination systems
@@ -105,56 +105,57 @@ export function togglePanelImperatively(options: {
 }): boolean {
   const {
     panelId,
-    operation = 'toggle',
+    operation = "toggle",
     setState,
     currentState = false,
     debounce = false,
     debounceKey,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const monitoringOperation: OperationType = `panel_${operation}` as OperationType;
+  const monitoringOperation: OperationType =
+    `panel_${operation}` as OperationType;
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(monitoringOperation, { 
-      panelId, 
-      operation, 
-      currentState, 
-      debounce 
+    globalOperationMonitor.startOperation(monitoringOperation, {
+      panelId,
+      operation,
+      currentState,
+      debounce,
     });
   }
 
   if (debug) {
-    console.log('[PanelOperationUtils] Starting imperative panel toggle', {
+    console.log("[PanelOperationUtils] Starting imperative panel toggle", {
       panelId,
       operation,
       currentState,
-      debounce
+      debounce,
     });
   }
 
   // Validate inputs
   if (!panelId) {
-    console.error('[PanelOperationUtils] Panel ID is required');
+    console.error("[PanelOperationUtils] Panel ID is required");
     return false;
   }
 
   if (!setState) {
-    console.error('[PanelOperationUtils] setState function is required');
+    console.error("[PanelOperationUtils] setState function is required");
     return false;
   }
 
   // Determine target state
   let targetCollapsed: boolean;
   switch (operation) {
-    case 'expand':
+    case "expand":
       targetCollapsed = false;
       break;
-    case 'collapse':
+    case "collapse":
       targetCollapsed = true;
       break;
-    case 'toggle':
+    case "toggle":
     default:
       targetCollapsed = !currentState;
       break;
@@ -163,7 +164,9 @@ export function togglePanelImperatively(options: {
   // Skip if already in target state
   if (currentState === targetCollapsed) {
     if (debug) {
-      console.log(`[PanelOperationUtils] Panel ${panelId} already in target state`);
+      console.log(
+        `[PanelOperationUtils] Panel ${panelId} already in target state`,
+      );
     }
     return true;
   }
@@ -179,22 +182,27 @@ export function togglePanelImperatively(options: {
         }
         setState(targetCollapsed);
         if (debug) {
-          console.log(`[PanelOperationUtils] Panel ${panelId} ${targetCollapsed ? 'collapsed' : 'expanded'} imperatively`);
+          console.log(
+            `[PanelOperationUtils] Panel ${panelId} ${targetCollapsed ? "collapsed" : "expanded"} imperatively`,
+          );
         }
         // End performance monitoring on success
         if (enablePerformanceMonitoring) {
-          globalOperationMonitor.endOperation(monitoringOperation, { 
-            success: true, 
-            targetCollapsed 
+          globalOperationMonitor.endOperation(monitoringOperation, {
+            success: true,
+            targetCollapsed,
           });
         }
       });
       return true;
     } catch (error) {
-      console.error(`[PanelOperationUtils] Error toggling panel ${panelId}:`, error);
+      console.error(
+        `[PanelOperationUtils] Error toggling panel ${panelId}:`,
+        error,
+      );
       if (enablePerformanceMonitoring) {
-        globalOperationMonitor.endOperation(monitoringOperation, { 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        globalOperationMonitor.endOperation(monitoringOperation, {
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
       return false;
@@ -207,7 +215,9 @@ export function togglePanelImperatively(options: {
     panelDebouncer.debounce(key, performOperation);
     // For debounced operations, end monitoring immediately with debounce flag
     if (enablePerformanceMonitoring) {
-      globalOperationMonitor.endOperation(monitoringOperation, { debounced: true });
+      globalOperationMonitor.endOperation(monitoringOperation, {
+        debounced: true,
+      });
     }
     return true; // Assume success for debounced operations
   } else {
@@ -228,7 +238,7 @@ export function expandPanelImperatively(options: {
 }): boolean {
   return togglePanelImperatively({
     ...options,
-    operation: 'expand'
+    operation: "expand",
   });
 }
 
@@ -245,13 +255,13 @@ export function collapsePanelImperatively(options: {
 }): boolean {
   return togglePanelImperatively({
     ...options,
-    operation: 'collapse'
+    operation: "collapse",
   });
 }
 
 /**
  * Batch panel operations imperatively
- * 
+ *
  * Useful for coordinating multiple panel state changes
  */
 export function batchPanelOperationsImperatively(options: {
@@ -264,17 +274,17 @@ export function batchPanelOperationsImperatively(options: {
   debug?: boolean;
 }): { success: number; failed: number; errors: string[] } {
   const { operations, debug = false } = options;
-  
+
   if (debug) {
-    console.log('[PanelOperationUtils] Starting batch panel operations', {
-      operationCount: operations.length
+    console.log("[PanelOperationUtils] Starting batch panel operations", {
+      operationCount: operations.length,
     });
   }
 
   const results = {
     success: 0,
     failed: 0,
-    errors: [] as string[]
+    errors: [] as string[],
   };
 
   // Use requestAnimationFrame to batch all operations
@@ -286,7 +296,7 @@ export function batchPanelOperationsImperatively(options: {
           operation,
           setState,
           currentState,
-          debug
+          debug,
         });
 
         if (success) {
@@ -302,7 +312,7 @@ export function batchPanelOperationsImperatively(options: {
     }
 
     if (debug) {
-      console.log('[PanelOperationUtils] Batch operations completed', results);
+      console.log("[PanelOperationUtils] Batch operations completed", results);
     }
   });
 
@@ -311,7 +321,7 @@ export function batchPanelOperationsImperatively(options: {
 
 /**
  * Handle style changes imperatively without coordination cascades
- * 
+ *
  * This utility avoids triggering AsyncCoordinator cascades during style operations
  */
 export function changeStyleImperatively(options: {
@@ -328,14 +338,14 @@ export function changeStyleImperatively(options: {
     visualizationState,
     onStyleChange,
     suppressResizeObserver = true,
-    debug = false
+    debug = false,
   } = options;
 
   if (debug) {
-    console.log('[PanelOperationUtils] Starting imperative style change', {
+    console.log("[PanelOperationUtils] Starting imperative style change", {
       styleType,
       value,
-      suppressResizeObserver
+      suppressResizeObserver,
     });
   }
 
@@ -347,12 +357,17 @@ export function changeStyleImperatively(options: {
         if (onStyleChange) {
           onStyleChange(styleType, value);
         }
-        
+
         if (debug) {
-          console.log(`[PanelOperationUtils] Style ${styleType} changed to ${value} imperatively`);
+          console.log(
+            `[PanelOperationUtils] Style ${styleType} changed to ${value} imperatively`,
+          );
         }
       } catch (error) {
-        console.error(`[PanelOperationUtils] Error changing style ${styleType}:`, error);
+        console.error(
+          `[PanelOperationUtils] Error changing style ${styleType}:`,
+          error,
+        );
       }
     });
     // Always return true since errors are handled asynchronously in requestAnimationFrame
@@ -377,11 +392,11 @@ export function changeLayoutImperatively(options: {
   debug?: boolean;
 }): boolean {
   return changeStyleImperatively({
-    styleType: 'layout',
+    styleType: "layout",
     value: options.algorithm,
     visualizationState: options.visualizationState,
     onStyleChange: (_, value) => options.onLayoutChange?.(value as string),
-    debug: options.debug
+    debug: options.debug,
   });
 }
 
@@ -395,11 +410,11 @@ export function changeColorPaletteImperatively(options: {
   debug?: boolean;
 }): boolean {
   return changeStyleImperatively({
-    styleType: 'colorPalette',
+    styleType: "colorPalette",
     value: options.palette,
     visualizationState: options.visualizationState,
     onStyleChange: (_, value) => options.onPaletteChange?.(value as string),
-    debug: options.debug
+    debug: options.debug,
   });
 }
 
@@ -407,23 +422,26 @@ export function changeColorPaletteImperatively(options: {
  * Handle edge style changes imperatively
  */
 export function changeEdgeStyleImperatively(options: {
-  edgeStyle: 'bezier' | 'straight' | 'smoothstep';
+  edgeStyle: "bezier" | "straight" | "smoothstep";
   visualizationState?: VisualizationState;
-  onEdgeStyleChange?: (edgeStyle: 'bezier' | 'straight' | 'smoothstep') => void;
+  onEdgeStyleChange?: (edgeStyle: "bezier" | "straight" | "smoothstep") => void;
   debug?: boolean;
 }): boolean {
   return changeStyleImperatively({
-    styleType: 'edgeStyle',
+    styleType: "edgeStyle",
     value: options.edgeStyle,
     visualizationState: options.visualizationState,
-    onStyleChange: (_, value) => options.onEdgeStyleChange?.(value as 'bezier' | 'straight' | 'smoothstep'),
-    debug: options.debug
+    onStyleChange: (_, value) =>
+      options.onEdgeStyleChange?.(
+        value as "bezier" | "straight" | "smoothstep",
+      ),
+    debug: options.debug,
   });
 }
 
 /**
  * Clear all debounced panel operations
- * 
+ *
  * Useful for cleanup or when you need immediate execution
  */
 export function clearPanelOperationDebouncing(panelId?: string): void {
@@ -432,7 +450,7 @@ export function clearPanelOperationDebouncing(panelId?: string): void {
 
 /**
  * Pattern for avoiding ResizeObserver loops in panel operations
- * 
+ *
  * Key principles:
  * 1. Use imperative operations for panel state manipulation
  * 2. Avoid AsyncCoordinator calls during UI interactions
@@ -446,15 +464,15 @@ export const PANEL_OPERATION_PATTERN = {
     "Batch operations with requestAnimationFrame to avoid ResizeObserver loops",
     "Use debouncing for rapid panel toggle operations",
     "Suppress ResizeObserver errors during style changes",
-    "Use synchronous operations for UI interactions"
+    "Use synchronous operations for UI interactions",
   ],
   DONT: [
     "Call AsyncCoordinator during panel toggle operations",
     "Trigger layout operations during rapid interactions",
     "Use async/await for simple panel state changes",
     "Create cascading panel operation chains",
-    "Allow ResizeObserver errors to propagate during style changes"
-  ]
+    "Allow ResizeObserver errors to propagate during style changes",
+  ],
 } as const;
 
 // Export performance monitoring utilities for panel operations
@@ -464,5 +482,5 @@ export {
   monitorOperation,
   measureOperationPerformance,
   type OperationType,
-  type OperationMetrics
+  type OperationMetrics,
 } from "./operationPerformanceMonitor.js";

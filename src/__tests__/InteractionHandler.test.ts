@@ -29,10 +29,10 @@ describe("InteractionHandler Click Event Processing", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
-    
+
     // Disable debouncing by default for most tests
     handler = new InteractionHandler(state, asyncCoordinator, {
       enableClickDebouncing: false,
@@ -53,7 +53,7 @@ describe("InteractionHandler Click Event Processing", () => {
       handler.handleNodeClick("node1");
 
       const visibleNodes = state.visibleNodes;
-      const toggledNode = visibleNodes.find(n => n.id === "node1");
+      const toggledNode = visibleNodes.find((n) => n.id === "node1");
       expect(toggledNode?.showingLongLabel).toBe(true);
     });
 
@@ -72,7 +72,7 @@ describe("InteractionHandler Click Event Processing", () => {
 
       // Should handle click without errors
       const visibleNodes = state.visibleNodes;
-      const clickedNode = visibleNodes.find(n => n.id === "node1");
+      const clickedNode = visibleNodes.find((n) => n.id === "node1");
       expect(clickedNode).toBeDefined();
     });
 
@@ -84,11 +84,15 @@ describe("InteractionHandler Click Event Processing", () => {
 
     it("should trigger layout update for significant label changes", () => {
       const node = createTestNode("node1", "Short");
-      node.longLabel = "This is a very long label that should trigger layout update";
+      node.longLabel =
+        "This is a very long label that should trigger layout update";
       state.addNode(node);
 
       // Spy on the AsyncCoordinator's layout method
-      const layoutSpy = vi.spyOn(asyncCoordinator, 'executeLayoutAndRenderPipeline');
+      const layoutSpy = vi.spyOn(
+        asyncCoordinator,
+        "executeLayoutAndRenderPipeline",
+      );
 
       handler.handleNodeClick("node1");
 
@@ -101,7 +105,10 @@ describe("InteractionHandler Click Event Processing", () => {
       node.longLabel = "Short2"; // Minor change
       state.addNode(node);
 
-      const layoutSpy = vi.spyOn(asyncCoordinator, 'executeLayoutAndRenderPipeline');
+      const layoutSpy = vi.spyOn(
+        asyncCoordinator,
+        "executeLayoutAndRenderPipeline",
+      );
 
       handler.handleNodeClick("node1");
 
@@ -121,7 +128,7 @@ describe("InteractionHandler Click Event Processing", () => {
       state.addContainer(container);
 
       // Mock the container operation
-      const collapseSpy = vi.spyOn(asyncCoordinator, 'collapseContainer');
+      const collapseSpy = vi.spyOn(asyncCoordinator, "collapseContainer");
 
       handler.handleContainerClick("container1");
 
@@ -134,7 +141,7 @@ describe("InteractionHandler Click Event Processing", () => {
       container.collapsed = true;
       state.addContainer(container);
 
-      const expandSpy = vi.spyOn(asyncCoordinator, 'expandContainer');
+      const expandSpy = vi.spyOn(asyncCoordinator, "expandContainer");
 
       handler.handleContainerClick("container1");
 
@@ -146,7 +153,10 @@ describe("InteractionHandler Click Event Processing", () => {
       container.collapsed = false;
       state.addContainer(container);
 
-      const layoutSpy = vi.spyOn(asyncCoordinator, 'executeLayoutAndRenderPipeline');
+      const layoutSpy = vi.spyOn(
+        asyncCoordinator,
+        "executeLayoutAndRenderPipeline",
+      );
 
       handler.handleContainerClick("container1");
 
@@ -179,7 +189,7 @@ describe("InteractionHandler Click Event Processing", () => {
 
       // Should handle debouncing gracefully
       const visibleNodes = state.visibleNodes;
-      const clickedNode = visibleNodes.find(n => n.id === "node1");
+      const clickedNode = visibleNodes.find((n) => n.id === "node1");
       expect(clickedNode).toBeDefined();
 
       debouncedHandler.cleanup();
@@ -195,7 +205,7 @@ describe("InteractionHandler Click Event Processing", () => {
 
       // Should handle all clicks
       const visibleNodes = state.visibleNodes;
-      const clickedNode = visibleNodes.find(n => n.id === "node1");
+      const clickedNode = visibleNodes.find((n) => n.id === "node1");
       expect(clickedNode).toBeDefined();
     });
 
@@ -208,7 +218,7 @@ describe("InteractionHandler Click Event Processing", () => {
 
       // Should process immediately
       const visibleNodes = state.visibleNodes;
-      const clickedNode = visibleNodes.find(n => n.id === "node1");
+      const clickedNode = visibleNodes.find((n) => n.id === "node1");
       expect(clickedNode).toBeDefined();
     });
 
@@ -257,14 +267,17 @@ describe("InteractionHandler Click Event Processing", () => {
       state.addNode(node1);
       state.addNode(node2);
 
-      const layoutSpy = vi.spyOn(asyncCoordinator, 'executeLayoutAndRenderPipeline');
+      const layoutSpy = vi.spyOn(
+        asyncCoordinator,
+        "executeLayoutAndRenderPipeline",
+      );
 
       handler.handleBulkNodeLabelToggle(["node1", "node2"], true);
 
       const visibleNodes = state.visibleNodes;
-      const toggledNode1 = visibleNodes.find(n => n.id === "node1");
-      const toggledNode2 = visibleNodes.find(n => n.id === "node2");
-      
+      const toggledNode1 = visibleNodes.find((n) => n.id === "node1");
+      const toggledNode2 = visibleNodes.find((n) => n.id === "node2");
+
       expect(toggledNode1?.showingLongLabel).toBe(true);
       expect(toggledNode2?.showingLongLabel).toBe(true);
       expect(layoutSpy).toHaveBeenCalledTimes(1); // Bulk operations trigger layout
@@ -279,14 +292,21 @@ describe("InteractionHandler Click Event Processing", () => {
       state.addContainer(container1);
       state.addContainer(container2);
 
-      const layoutSpy = vi.spyOn(asyncCoordinator, 'executeLayoutAndRenderPipeline');
+      const layoutSpy = vi.spyOn(
+        asyncCoordinator,
+        "executeLayoutAndRenderPipeline",
+      );
 
       handler.handleBulkContainerToggle(["container1", "container2"], true);
 
       const visibleContainers = state.visibleContainers;
-      const toggledContainer1 = visibleContainers.find(c => c.id === "container1");
-      const toggledContainer2 = visibleContainers.find(c => c.id === "container2");
-      
+      const toggledContainer1 = visibleContainers.find(
+        (c) => c.id === "container1",
+      );
+      const toggledContainer2 = visibleContainers.find(
+        (c) => c.id === "container2",
+      );
+
       expect(toggledContainer1?.collapsed).toBe(true);
       expect(toggledContainer2?.collapsed).toBe(true);
       expect(layoutSpy).toHaveBeenCalledTimes(1); // Bulk operations trigger layout
@@ -302,7 +322,7 @@ describe("InteractionHandler Click Event Processing", () => {
       handler.handleNodeClick("node1");
 
       const visibleNodes = state.visibleNodes;
-      const clickedNode = visibleNodes.find(n => n.id === "node1");
+      const clickedNode = visibleNodes.find((n) => n.id === "node1");
       expect(clickedNode).toBeDefined();
     });
 
@@ -316,7 +336,7 @@ describe("InteractionHandler Click Event Processing", () => {
       syncHandler.handleNodeClick("node1");
 
       const visibleNodes = state.visibleNodes;
-      const clickedNode = visibleNodes.find(n => n.id === "node1");
+      const clickedNode = visibleNodes.find((n) => n.id === "node1");
       expect(clickedNode).toBeDefined();
 
       syncHandler.cleanup();
@@ -329,13 +349,15 @@ describe("InteractionHandler Click Event Processing", () => {
       container.collapsed = true;
       state.addContainer(container);
 
-      const expandSpy = vi.spyOn(asyncCoordinator, 'expandContainer');
+      const expandSpy = vi.spyOn(asyncCoordinator, "expandContainer");
 
       // Simulate search result click that should expand container
       handler.handleSearchResultClick("container1", "container");
 
       const visibleContainers = state.visibleContainers;
-      const expandedContainer = visibleContainers.find(c => c.id === "container1");
+      const expandedContainer = visibleContainers.find(
+        (c) => c.id === "container1",
+      );
       expect(expandedContainer?.collapsed).toBe(false);
       expect(expandSpy).toHaveBeenCalledTimes(1); // Search result clicks trigger expand
     });
@@ -348,7 +370,7 @@ describe("InteractionHandler Click Event Processing", () => {
       handler.handleSearchResultClick("node1", "node");
 
       const visibleNodes = state.visibleNodes;
-      const searchNode = visibleNodes.find(n => n.id === "node1");
+      const searchNode = visibleNodes.find((n) => n.id === "node1");
       expect(searchNode?.showingLongLabel).toBe(true);
     });
   });
@@ -357,7 +379,7 @@ describe("InteractionHandler Click Event Processing", () => {
     it("should handle errors gracefully during click processing", () => {
       // Create a scenario that might cause errors
       const invalidNode = createTestNode("", "Invalid Node"); // Empty ID
-      
+
       expect(() => {
         handler.handleNodeClick("");
       }).not.toThrow();
@@ -383,9 +405,9 @@ describe("InteractionHandler Click Event Processing", () => {
       state.addNode(node);
 
       const initialCount = handler.getRecentClicksCount();
-      
+
       handler.handleNodeClick("node1");
-      
+
       const afterClickCount = handler.getRecentClicksCount();
       expect(afterClickCount).toBeGreaterThanOrEqual(initialCount);
     });
@@ -404,11 +426,11 @@ describe("InteractionHandler Click Event Processing", () => {
       state.addNode(node);
 
       handler.handleNodeClick("node1");
-      
+
       const beforeCleanup = handler.getPendingOperationsCount();
-      
+
       handler.cleanup();
-      
+
       const afterCleanup = handler.getPendingOperationsCount();
       expect(afterCleanup).toBe(0);
     });

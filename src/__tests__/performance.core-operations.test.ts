@@ -60,7 +60,7 @@ describe("Core Operations Performance", () => {
     state.addNode(n1);
     state.addNode(n2);
     state.addNode(n3);
-    
+
     // Then add collapsed container
     const container = createTestContainer("c1", ["n1", "n2", "n3"]);
     container.collapsed = true;
@@ -180,7 +180,7 @@ describe("Core Operations Performance", () => {
 
     for (const size of sizes) {
       const testState = new VisualizationState();
-      
+
       // Add nodes
       for (let i = 0; i < size; i++) {
         testState.addNode(createTestNode(`n${i}`, `Node ${i}`));

@@ -28,7 +28,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
   });
@@ -57,16 +57,16 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // Collapse container to trigger aggregation
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify aggregation through visible edges
       const visibleEdges = state.visibleEdges;
       expect(Array.isArray(visibleEdges)).toBe(true);
-      
+
       // Should have aggregated edges when container is collapsed
-      const aggregatedEdges = visibleEdges.filter(edge => 
-        'aggregated' in edge && edge.aggregated === true
+      const aggregatedEdges = visibleEdges.filter(
+        (edge) => "aggregated" in edge && edge.aggregated === true,
       );
       expect(aggregatedEdges.length).toBeGreaterThanOrEqual(0);
     });
@@ -81,7 +81,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       const node1 = createTestNode("node1", "Node 1");
       const node2 = createTestNode("node2", "Node 2");
       const externalNode = createTestNode("external", "External Node");
-      
+
       // Bidirectional edges
       const edge1 = createTestEdge("edge1", "node1", "external");
       const edge2 = createTestEdge("edge2", "external", "node2");
@@ -96,7 +96,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // Collapse container
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify bidirectional aggregation
@@ -114,7 +114,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       const node1 = createTestNode("node1", "Node 1");
       const node2 = createTestNode("node2", "Node 2");
       const externalNode = createTestNode("external", "External Node");
-      
+
       const edge1 = createTestEdge("edge1", "node1", "external");
       edge1.semanticTags = ["dataflow", "critical"];
       const edge2 = createTestEdge("edge2", "node2", "external");
@@ -130,19 +130,19 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // Collapse container
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify semantic preservation
       const visibleEdges = state.visibleEdges;
       expect(Array.isArray(visibleEdges)).toBe(true);
-      
+
       // Aggregated edges should preserve or merge semantic information
-      const aggregatedEdges = visibleEdges.filter(edge => 
-        'aggregated' in edge && edge.aggregated === true
+      const aggregatedEdges = visibleEdges.filter(
+        (edge) => "aggregated" in edge && edge.aggregated === true,
       );
-      
-      aggregatedEdges.forEach(edge => {
+
+      aggregatedEdges.forEach((edge) => {
         expect(Array.isArray(edge.semanticTags)).toBe(true);
       });
     });
@@ -172,13 +172,13 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // First collapse the container
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Expand container to trigger restoration
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify restoration
@@ -187,8 +187,8 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(visibleEdges.length).toBeGreaterThanOrEqual(2);
 
       // Original edges should be restored
-      const originalEdges = visibleEdges.filter(edge => 
-        edge.id === "edge1" || edge.id === "edge2"
+      const originalEdges = visibleEdges.filter(
+        (edge) => edge.id === "edge1" || edge.id === "edge2",
       );
       expect(originalEdges.length).toBe(2);
     });
@@ -212,18 +212,20 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // First collapse the container
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Expand container
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify internal edge restoration
       const visibleEdges = state.visibleEdges;
-      const restoredInternalEdge = visibleEdges.find(edge => edge.id === "internal");
+      const restoredInternalEdge = visibleEdges.find(
+        (edge) => edge.id === "internal",
+      );
       expect(restoredInternalEdge).toBeDefined();
     });
 
@@ -260,28 +262,28 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // First collapse both containers
       await asyncCoordinator.collapseContainer("inner", state, {
         relayoutEntities: ["inner"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("outer", state, {
         relayoutEntities: ["outer"],
-        fitView: false
+        fitView: false,
       });
 
       // Expand outer container (inner remains collapsed)
       await asyncCoordinator.expandContainer("outer", state, {
         relayoutEntities: ["outer"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify partial restoration
       const visibleEdges = state.visibleEdges;
       expect(Array.isArray(visibleEdges)).toBe(true);
-      
+
       // Should have some edges visible but not all (due to inner container still collapsed)
       const visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "node3")).toBeDefined();
-      expect(visibleNodes.find(n => n.id === "node1")).toBeUndefined(); // Still in collapsed inner
+      expect(visibleNodes.find((n) => n.id === "node3")).toBeDefined();
+      expect(visibleNodes.find((n) => n.id === "node1")).toBeUndefined(); // Still in collapsed inner
     });
   });
 
@@ -313,14 +315,14 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // Collapse and expand cycle
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const collapsedEdges = state.visibleEdges;
-      
+
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const restoredEdges = state.visibleEdges;
@@ -329,7 +331,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(Array.isArray(initialEdges)).toBe(true);
       expect(Array.isArray(collapsedEdges)).toBe(true);
       expect(Array.isArray(restoredEdges)).toBe(true);
-      
+
       // After restoration, should have original edges back
       expect(restoredEdges.length).toBe(initialCount);
     });
@@ -363,32 +365,32 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
       state.addContainer(container1);
       state.addContainer(container2);
-      nodes.forEach(node => state.addNode(node));
-      edges.forEach(edge => state.addEdge(edge));
+      nodes.forEach((node) => state.addNode(node));
+      edges.forEach((edge) => state.addEdge(edge));
 
       // Complex collapse/expand operations
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("c2", state, {
         relayoutEntities: ["c2"],
-        fitView: false
+        fitView: false,
       });
 
       const bothCollapsedEdges = state.visibleEdges;
 
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       const oneExpandedEdges = state.visibleEdges;
 
       await asyncCoordinator.expandContainer("c2", state, {
         relayoutEntities: ["c2"],
-        fitView: false
+        fitView: false,
       });
 
       const bothExpandedEdges = state.visibleEdges;
@@ -397,7 +399,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       expect(Array.isArray(bothCollapsedEdges)).toBe(true);
       expect(Array.isArray(oneExpandedEdges)).toBe(true);
       expect(Array.isArray(bothExpandedEdges)).toBe(true);
-      
+
       // Final state should have all original edges
       expect(bothExpandedEdges.length).toBe(4);
     });
@@ -425,34 +427,34 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // First collapse cycle
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const firstCollapseEdges = state.visibleEdges;
       const firstAggregatedIds = firstCollapseEdges
-        .filter(edge => 'aggregated' in edge && edge.aggregated)
-        .map(edge => edge.id);
+        .filter((edge) => "aggregated" in edge && edge.aggregated)
+        .map((edge) => edge.id);
 
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Second collapse cycle
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const secondCollapseEdges = state.visibleEdges;
       const secondAggregatedIds = secondCollapseEdges
-        .filter(edge => 'aggregated' in edge && edge.aggregated)
-        .map(edge => edge.id);
+        .filter((edge) => "aggregated" in edge && edge.aggregated)
+        .map((edge) => edge.id);
 
       // Verify ID consistency
       expect(Array.isArray(firstAggregatedIds)).toBe(true);
       expect(Array.isArray(secondAggregatedIds)).toBe(true);
-      
+
       // IDs should be consistent across cycles
       if (firstAggregatedIds.length > 0 && secondAggregatedIds.length > 0) {
         expect(firstAggregatedIds).toEqual(secondAggregatedIds);
@@ -466,36 +468,36 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       const container = createTestContainer("container1", "Container 1");
       const nodeCount = 20;
       const nodeIds = Array.from({ length: nodeCount }, (_, i) => `node${i}`);
-      
+
       container.children = new Set(nodeIds);
       container.childNodes = nodeIds;
       container.collapsed = false;
 
       // Create nodes
-      const nodes = nodeIds.map(id => createTestNode(id, `Node ${id}`));
+      const nodes = nodeIds.map((id) => createTestNode(id, `Node ${id}`));
       const externalNode = createTestNode("external", "External Node");
 
       // Create many edges to external node
-      const edges = nodeIds.map(id => 
-        createTestEdge(`edge_${id}`, id, "external")
+      const edges = nodeIds.map((id) =>
+        createTestEdge(`edge_${id}`, id, "external"),
       );
 
       state.addContainer(container);
-      nodes.forEach(node => state.addNode(node));
+      nodes.forEach((node) => state.addNode(node));
       state.addNode(externalNode);
-      edges.forEach(edge => state.addEdge(edge));
+      edges.forEach((edge) => state.addEdge(edge));
 
       // Performance test
       const startTime = Date.now();
-      
+
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const endTime = Date.now();
@@ -503,7 +505,7 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
 
       // Should complete in reasonable time
       expect(duration).toBeLessThan(5000);
-      
+
       // Verify correctness
       const finalEdges = state.visibleEdges;
       expect(finalEdges.length).toBe(nodeCount); // All original edges restored
@@ -521,12 +523,12 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // Operations on empty container should not crash
       await asyncCoordinator.collapseContainer("empty", state, {
         relayoutEntities: ["empty"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandContainer("empty", state, {
         relayoutEntities: ["empty"],
-        fitView: false
+        fitView: false,
       });
 
       // Should handle gracefully
@@ -551,12 +553,12 @@ describe("VisualizationState Edge Aggregation and Restoration Algorithms", () =>
       // Should handle self-referencing edges
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const edges = state.visibleEdges;

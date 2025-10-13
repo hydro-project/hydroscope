@@ -25,14 +25,16 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
   });
 
   it("should have executeLayoutAndRenderPipeline method (replacement for deprecated queueLayoutAndRenderPipeline)", () => {
     expect(asyncCoordinator.executeLayoutAndRenderPipeline).toBeDefined();
-    expect(typeof asyncCoordinator.executeLayoutAndRenderPipeline).toBe("function");
+    expect(typeof asyncCoordinator.executeLayoutAndRenderPipeline).toBe(
+      "function",
+    );
   });
 
   it("should execute complete layout and render pipeline", async () => {
@@ -44,11 +46,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     state.addNode(node2);
 
     // Execute complete pipeline using new method - should not throw
-    const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, { 
-      relayoutEntities: undefined, // Full layout
-      fitView: false,
-      timeout: 5000 
-    });
+    const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+      state,
+      {
+        relayoutEntities: undefined, // Full layout
+        fitView: false,
+        timeout: 5000,
+      },
+    );
 
     // Verify result is returned
     expect(result).toBeDefined();
@@ -60,10 +65,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
     const node1 = createTestNode("n1", "Node 1");
     state.addNode(node1);
 
-    const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-      relayoutEntities: undefined,
-      fitView: false
-    });
+    const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+      state,
+      {
+        relayoutEntities: undefined,
+        fitView: false,
+      },
+    );
 
     expect(result).toBeDefined();
     expect(result.nodes).toBeDefined();
@@ -79,10 +87,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Node 1");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: undefined, // Full layout
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: undefined, // Full layout
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -93,10 +104,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Node 1");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: [], // No layout
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: [], // No layout
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -111,10 +125,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const mockFitView = vi.fn();
       asyncCoordinator.setReactFlowInstance({ fitView: mockFitView });
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: [],
-        fitView: true
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: [],
+          fitView: true,
+        },
+      );
 
       expect(result).toBeDefined();
       // Note: FitView is called internally, we just verify the pipeline completes
@@ -124,10 +141,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Node 1");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: [],
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: [],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -136,10 +156,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Node 1");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -158,7 +181,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -179,12 +202,12 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
         size: { width: 100, height: 100 },
         children: new Set(),
         childNodes: [],
-        childContainers: []
+        childContainers: [],
       });
 
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: true,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -198,7 +221,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: true
+        fitView: true,
       });
 
       expect(result).toBeDefined();
@@ -210,7 +233,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -222,7 +245,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -236,7 +259,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
       const result = await asyncCoordinator.updateSearchResults("", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -248,7 +271,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       // Create a state that might cause search issues
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       // Should not throw, should return valid result
@@ -267,7 +290,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const mockELKBridge = {
         layout: () => {
           throw new Error("ELK layout failed");
-        }
+        },
       };
 
       // Set the failing bridge instance
@@ -276,8 +299,8 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       await expect(
         asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: undefined,
-          fitView: false
-        })
+          fitView: false,
+        }),
       ).rejects.toThrow("ELK layout failed");
     });
 
@@ -289,7 +312,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const mockReactFlowBridge = {
         toReactFlowData: () => {
           throw new Error("ReactFlow bridge failed");
-        }
+        },
       };
 
       // Set the failing bridge instance
@@ -298,8 +321,8 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       await expect(
         asyncCoordinator.executeLayoutAndRenderPipeline(state, {
           relayoutEntities: [],
-          fitView: false
-        })
+          fitView: false,
+        }),
       ).rejects.toThrow("ReactFlow bridge failed");
     });
 
@@ -311,15 +334,18 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const mockReactFlowInstance = {
         fitView: () => {
           throw new Error("FitView callback failed");
-        }
+        },
       };
       asyncCoordinator.setReactFlowInstance(mockReactFlowInstance);
 
       // This should not throw because fitView errors are handled gracefully
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: [],
-        fitView: true
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: [],
+          fitView: true,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -328,10 +354,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -343,10 +372,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node1);
 
       // This should complete successfully with proper logging
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: undefined,
-        fitView: false
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: undefined,
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -361,14 +393,18 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
         size: { width: 100, height: 100 },
         children: new Set(),
         childNodes: [],
-        childContainers: []
+        childContainers: [],
       });
 
       // This should complete successfully
-      const result = await asyncCoordinator.expandContainer("container1", state, {
-        relayoutEntities: ["container1"],
-        fitView: false
-      });
+      const result = await asyncCoordinator.expandContainer(
+        "container1",
+        state,
+        {
+          relayoutEntities: ["container1"],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -383,14 +419,18 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
         size: { width: 100, height: 100 },
         children: new Set(),
         childNodes: [],
-        childContainers: []
+        childContainers: [],
       });
 
       // This should complete successfully
-      const result = await asyncCoordinator.collapseContainer("container1", state, {
-        relayoutEntities: ["container1"],
-        fitView: false
-      });
+      const result = await asyncCoordinator.collapseContainer(
+        "container1",
+        state,
+        {
+          relayoutEntities: ["container1"],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -402,7 +442,7 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       // This should complete successfully
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: true,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();
@@ -413,8 +453,8 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       await expect(
         asyncCoordinator.executeLayoutAndRenderPipeline(null as any, {
           relayoutEntities: undefined,
-          fitView: false
-        })
+          fitView: false,
+        }),
       ).rejects.toThrow();
     });
   });

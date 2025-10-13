@@ -230,17 +230,28 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             if (asyncCoordinator && visualizationState) {
               try {
                 // Use AsyncCoordinator for coordinated clear (async but don't await to prevent blocking)
-                asyncCoordinator.clearSearch(visualizationState, {
-                  fitView: false,
-                }).catch((error: any) => {
-                  console.error('[SearchControls] Coordinated search clear failed in debounced effect:', error);
-                });
+                asyncCoordinator
+                  .clearSearch(visualizationState, {
+                    fitView: false,
+                  })
+                  .catch((error: any) => {
+                    console.error(
+                      "[SearchControls] Coordinated search clear failed in debounced effect:",
+                      error,
+                    );
+                  });
               } catch (error) {
-                console.error('[SearchControls] AsyncCoordinator clear failed:', error);
+                console.error(
+                  "[SearchControls] AsyncCoordinator clear failed:",
+                  error,
+                );
               }
             } else {
               // Fallback to direct VisualizationState clear
-              if (visualizationState && visualizationState.clearSearchEnhanced) {
+              if (
+                visualizationState &&
+                visualizationState.clearSearchEnhanced
+              ) {
                 try {
                   visualizationState.clearSearchEnhanced();
                   // ReactFlow regeneration will be handled by Hydroscope component
@@ -249,7 +260,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 }
               }
             }
-            
+
             setMatches([]);
             setCurrentIndex(0);
             // Apply clear operation synchronously to prevent race conditions
@@ -373,7 +384,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             timerRef.current = null;
           }
         },
-        debug: process.env.NODE_ENV === 'development'
+        debug: process.env.NODE_ENV === "development",
       });
     };
     // Cleanup effect to clear timers on unmount

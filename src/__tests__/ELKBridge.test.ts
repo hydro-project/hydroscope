@@ -33,7 +33,9 @@ describe("ELKBridge", () => {
     let coordinator: AsyncCoordinator;
 
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });

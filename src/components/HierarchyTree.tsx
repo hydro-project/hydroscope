@@ -26,9 +26,9 @@ import type { VisualizationState } from "../core/VisualizationState";
 // import type { AsyncCoordinator } from "../core/AsyncCoordinator";
 import type { Container } from "../shared/types";
 import type { GraphNode, SearchResult } from "../types/core";
-import { 
+import {
   toggleContainerImperatively,
-  clearContainerOperationDebouncing 
+  clearContainerOperationDebouncing,
 } from "../utils/containerOperationUtils.js";
 // ============ TREE DATA FORMATTING UTILITIES ============
 /**
@@ -544,9 +544,9 @@ export function HierarchyTree({
               visualizationState,
               forceExpanded: true, // Search expansion always expands
               debounce: false, // Don't debounce search expansion
-              debug: false
+              debug: false,
             });
-            
+
             // Final fallback to onToggleContainer if imperative operation fails
             if (!success && onToggleContainer) {
               onToggleContainer(containerId);
@@ -589,11 +589,13 @@ export function HierarchyTree({
               containerId,
               visualizationState,
               debounce: false, // Don't debounce sync operations
-              debug: false
+              debug: false,
             });
-            
+
             if (!success) {
-              console.warn(`[HierarchyTree] Failed to toggle container ${containerId} imperatively`);
+              console.warn(
+                `[HierarchyTree] Failed to toggle container ${containerId} imperatively`,
+              );
             }
           }
         } else {
@@ -603,9 +605,9 @@ export function HierarchyTree({
               containerId,
               visualizationState,
               debounce: false, // Don't debounce sync operations
-              debug: false
+              debug: false,
             });
-            
+
             // Final fallback to onToggleContainer if imperative operation fails
             if (!success) {
               onToggleContainer?.(containerId);
@@ -666,9 +668,9 @@ export function HierarchyTree({
           visualizationState,
           forceExpanded: isNowExpanded,
           debounce: true, // Enable debouncing for rapid tree interactions
-          debug: false
+          debug: false,
         });
-        
+
         // Fallback to onToggleContainer if imperative operation fails
         if (!success && onToggleContainer) {
           onToggleContainer(nodeKey);

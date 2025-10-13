@@ -1,23 +1,23 @@
 /**
  * @fileoverview Container Operation Utilities
- * 
+ *
  * Provides imperative container operation functions that avoid React re-render cascades
  * and ResizeObserver loops by using direct VisualizationState manipulation and minimal
  * coordination system usage.
- * 
+ *
  * This follows the same pattern established in searchClearUtils.ts for avoiding
  * ResizeObserver loops and coordination cascades.
  */
 
 import type { VisualizationState } from "../core/VisualizationState.js";
-import { 
-  globalOperationMonitor, 
+import {
+  globalOperationMonitor,
   recordCoordinatorCall,
-  type OperationType 
+  type OperationType,
 } from "./operationPerformanceMonitor.js";
 import {
   withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression
+  withAsyncResizeObserverErrorSuppression,
 } from "./ResizeObserverErrorSuppression.js";
 
 /**
@@ -60,7 +60,7 @@ class ContainerOperationDebouncer {
       }
     } else {
       // Clear all timers
-      this.timers.forEach(timer => clearTimeout(timer));
+      this.timers.forEach((timer) => clearTimeout(timer));
       this.timers.clear();
     }
   }
@@ -71,7 +71,7 @@ const containerDebouncer = new ContainerOperationDebouncer();
 
 /**
  * Toggle container imperatively without triggering AsyncCoordinator cascades
- * 
+ *
  * This utility implements the pattern for avoiding ResizeObserver loops:
  * 1. Manipulate VisualizationState directly (imperative)
  * 2. Avoid callbacks that trigger coordination systems
@@ -98,44 +98,49 @@ export function toggleContainerImperatively(options: {
     debounceKey,
     suppressResizeObserver = true,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'container_toggle';
+  const operation: OperationType = "container_toggle";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
-      containerId, 
-      forceExpanded, 
-      forceCollapsed, 
-      debounce 
+    globalOperationMonitor.startOperation(operation, {
+      containerId,
+      forceExpanded,
+      forceCollapsed,
+      debounce,
     });
   }
 
   if (debug) {
-    console.log('[ContainerOperationUtils] Starting imperative container toggle', {
-      containerId,
-      forceExpanded,
-      forceCollapsed,
-      debounce
-    });
+    console.log(
+      "[ContainerOperationUtils] Starting imperative container toggle",
+      {
+        containerId,
+        forceExpanded,
+        forceCollapsed,
+        debounce,
+      },
+    );
   }
 
   // Validate inputs
   if (!containerId) {
-    console.error('[ContainerOperationUtils] Container ID is required');
+    console.error("[ContainerOperationUtils] Container ID is required");
     return false;
   }
 
   if (!visualizationState) {
-    console.error('[ContainerOperationUtils] VisualizationState is required');
+    console.error("[ContainerOperationUtils] VisualizationState is required");
     return false;
   }
 
   // Get container
   const container = visualizationState.getContainer(containerId);
   if (!container) {
-    console.warn(`[ContainerOperationUtils] Container ${containerId} not found`);
+    console.warn(
+      `[ContainerOperationUtils] Container ${containerId} not found`,
+    );
     return false;
   }
 
@@ -153,7 +158,9 @@ export function toggleContainerImperatively(options: {
   // Skip if already in target state
   if (container.collapsed === targetCollapsed) {
     if (debug) {
-      console.log(`[ContainerOperationUtils] Container ${containerId} already in target state`);
+      console.log(
+        `[ContainerOperationUtils] Container ${containerId} already in target state`,
+      );
     }
     return true;
   }
@@ -171,12 +178,18 @@ export function toggleContainerImperatively(options: {
             }
             visualizationState._collapseContainerForCoordinator(containerId);
             if (debug) {
-              console.log(`[ContainerOperationUtils] Container ${containerId} collapsed imperatively`);
+              console.log(
+                `[ContainerOperationUtils] Container ${containerId} collapsed imperatively`,
+              );
             }
           } else {
-            console.error('[ContainerOperationUtils] _collapseContainerForCoordinator method not available');
+            console.error(
+              "[ContainerOperationUtils] _collapseContainerForCoordinator method not available",
+            );
             if (enablePerformanceMonitoring) {
-              globalOperationMonitor.endOperation(operation, { error: '_collapseContainerForCoordinator not available' });
+              globalOperationMonitor.endOperation(operation, {
+                error: "_collapseContainerForCoordinator not available",
+              });
             }
             return false;
           }
@@ -189,27 +202,39 @@ export function toggleContainerImperatively(options: {
             }
             visualizationState._expandContainerForCoordinator(containerId);
             if (debug) {
-              console.log(`[ContainerOperationUtils] Container ${containerId} expanded imperatively`);
+              console.log(
+                `[ContainerOperationUtils] Container ${containerId} expanded imperatively`,
+              );
             }
           } else {
-            console.error('[ContainerOperationUtils] _expandContainerForCoordinator method not available');
+            console.error(
+              "[ContainerOperationUtils] _expandContainerForCoordinator method not available",
+            );
             if (enablePerformanceMonitoring) {
-              globalOperationMonitor.endOperation(operation, { error: '_expandContainerForCoordinator not available' });
+              globalOperationMonitor.endOperation(operation, {
+                error: "_expandContainerForCoordinator not available",
+              });
             }
             return false;
           }
         }
-        
+
         // End performance monitoring on success
         if (enablePerformanceMonitoring) {
-          globalOperationMonitor.endOperation(operation, { success: true, targetCollapsed });
+          globalOperationMonitor.endOperation(operation, {
+            success: true,
+            targetCollapsed,
+          });
         }
         return true;
       } catch (error) {
-        console.error(`[ContainerOperationUtils] Error toggling container ${containerId}:`, error);
+        console.error(
+          `[ContainerOperationUtils] Error toggling container ${containerId}:`,
+          error,
+        );
         if (enablePerformanceMonitoring) {
-          globalOperationMonitor.endOperation(operation, { 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+          globalOperationMonitor.endOperation(operation, {
+            error: error instanceof Error ? error.message : "Unknown error",
           });
         }
         return false;
@@ -252,7 +277,7 @@ export function expandContainerImperatively(options: {
 }): boolean {
   return toggleContainerImperatively({
     ...options,
-    forceExpanded: true
+    forceExpanded: true,
   });
 }
 
@@ -270,50 +295,59 @@ export function collapseContainerImperatively(options: {
 }): boolean {
   return toggleContainerImperatively({
     ...options,
-    forceCollapsed: true
+    forceCollapsed: true,
   });
 }
 
 /**
  * Batch container operations imperatively
- * 
+ *
  * Useful for bulk operations like expand all / collapse all
  */
 export function batchContainerOperationsImperatively(options: {
   operations: Array<{
     containerId: string;
-    operation: 'expand' | 'collapse' | 'toggle';
+    operation: "expand" | "collapse" | "toggle";
   }>;
   visualizationState?: VisualizationState;
   suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): { success: number; failed: number; errors: string[] } {
-  const { operations, visualizationState, suppressResizeObserver = true, debug = false, enablePerformanceMonitoring = true } = options;
+  const {
+    operations,
+    visualizationState,
+    suppressResizeObserver = true,
+    debug = false,
+    enablePerformanceMonitoring = true,
+  } = options;
 
   // Start performance monitoring for batch operation
-  const batchOperation: OperationType = 'container_batch';
+  const batchOperation: OperationType = "container_batch";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(batchOperation, { 
+    globalOperationMonitor.startOperation(batchOperation, {
       operationCount: operations.length,
-      operationTypes: operations.map(op => op.operation)
+      operationTypes: operations.map((op) => op.operation),
     });
   }
-  
+
   if (debug) {
-    console.log('[ContainerOperationUtils] Starting batch container operations', {
-      operationCount: operations.length
-    });
+    console.log(
+      "[ContainerOperationUtils] Starting batch container operations",
+      {
+        operationCount: operations.length,
+      },
+    );
   }
 
   const results = {
     success: 0,
     failed: 0,
-    errors: [] as string[]
+    errors: [] as string[],
   };
 
   if (!visualizationState) {
-    results.errors.push('VisualizationState is required');
+    results.errors.push("VisualizationState is required");
     results.failed = operations.length;
     return results;
   }
@@ -323,37 +357,39 @@ export function batchContainerOperationsImperatively(options: {
     for (const { containerId, operation } of operations) {
       try {
         let success = false;
-        
+
         switch (operation) {
-          case 'expand':
+          case "expand":
             success = expandContainerImperatively({
               containerId,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
-          case 'collapse':
+          case "collapse":
             success = collapseContainerImperatively({
               containerId,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
-          case 'toggle':
+          case "toggle":
             success = toggleContainerImperatively({
               containerId,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
           default:
-            results.errors.push(`Unknown operation: ${operation} for container ${containerId}`);
+            results.errors.push(
+              `Unknown operation: ${operation} for container ${containerId}`,
+            );
             results.failed++;
             continue;
         }
@@ -362,11 +398,15 @@ export function batchContainerOperationsImperatively(options: {
           results.success++;
         } else {
           results.failed++;
-          results.errors.push(`Failed to ${operation} container ${containerId}`);
+          results.errors.push(
+            `Failed to ${operation} container ${containerId}`,
+          );
         }
       } catch (error) {
         results.failed++;
-        results.errors.push(`Error ${operation} container ${containerId}: ${error}`);
+        results.errors.push(
+          `Error ${operation} container ${containerId}: ${error}`,
+        );
       }
     }
   };
@@ -379,15 +419,18 @@ export function batchContainerOperationsImperatively(options: {
   }
 
   if (debug) {
-    console.log('[ContainerOperationUtils] Batch operations completed', results);
+    console.log(
+      "[ContainerOperationUtils] Batch operations completed",
+      results,
+    );
   }
 
   // End performance monitoring for batch operation
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.endOperation(batchOperation, { 
+    globalOperationMonitor.endOperation(batchOperation, {
       success: results.success,
       failed: results.failed,
-      totalOperations: operations.length
+      totalOperations: operations.length,
     });
   }
 
@@ -396,7 +439,7 @@ export function batchContainerOperationsImperatively(options: {
 
 /**
  * Clear all debounced container operations
- * 
+ *
  * Useful for cleanup or when you need immediate execution
  */
 export function clearContainerOperationDebouncing(containerId?: string): void {
@@ -405,7 +448,7 @@ export function clearContainerOperationDebouncing(containerId?: string): void {
 
 /**
  * Pattern for avoiding ResizeObserver loops in container operations
- * 
+ *
  * Key principles:
  * 1. Use imperative operations for VisualizationState manipulation
  * 2. Avoid AsyncCoordinator calls during UI interactions
@@ -417,14 +460,14 @@ export const CONTAINER_OPERATION_PATTERN = {
     "Use _expandContainerForCoordinator() and _collapseContainerForCoordinator() for direct state changes",
     "Debounce rapid container toggle operations",
     "Use synchronous operations for UI interactions",
-    "Batch multiple operations when possible"
+    "Batch multiple operations when possible",
   ],
   DONT: [
     "Call AsyncCoordinator.expandContainer() or AsyncCoordinator.collapseContainer() during UI interactions",
     "Trigger layout operations during rapid interactions",
     "Use async/await for simple container state changes",
-    "Create cascading container operation chains"
-  ]
+    "Create cascading container operation chains",
+  ],
 } as const;
 
 // Export performance monitoring utilities for container operations
@@ -434,5 +477,5 @@ export {
   monitorOperation,
   measureOperationPerformance,
   type OperationType,
-  type OperationMetrics
+  type OperationMetrics,
 } from "./operationPerformanceMonitor.js";

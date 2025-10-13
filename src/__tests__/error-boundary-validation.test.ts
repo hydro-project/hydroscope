@@ -133,7 +133,10 @@ describe("Error Boundary Validation", () => {
       const invalidElkBridge = null;
 
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, invalidElkBridge)
+        asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          invalidElkBridge,
+        ),
       ).rejects.toThrow("ELK bridge is not available");
 
       // Coordinator should remain functional after error
@@ -158,7 +161,10 @@ describe("Error Boundary Validation", () => {
       const invalidElkBridge = { layout: "not a function" };
 
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, invalidElkBridge)
+        asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          invalidElkBridge,
+        ),
       ).rejects.toThrow("ELK bridge is not available");
 
       // State should remain intact after error
@@ -175,7 +181,7 @@ describe("Error Boundary Validation", () => {
       });
       const reactFlowBridge = new ReactFlowBridge({});
       asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
-      
+
       const visualizationState = new VisualizationState();
 
       // Add test data
@@ -190,13 +196,14 @@ describe("Error Boundary Validation", () => {
       });
 
       // Test pipeline with proper API
-      const reactFlowData = await asyncCoordinator.executeLayoutAndRenderPipeline(
-        visualizationState, 
-        {
-          relayoutEntities: undefined,
-          fitView: false
-        }
-      );
+      const reactFlowData =
+        await asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          {
+            relayoutEntities: undefined,
+            fitView: false,
+          },
+        );
 
       // Should complete successfully
       expect(reactFlowData).toBeDefined();

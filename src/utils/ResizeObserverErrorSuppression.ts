@@ -277,9 +277,9 @@ export function withDOMResizeObserverErrorSuppression<
   return ((...args: any[]) => {
     try {
       const result = operation(...args);
-      
+
       // If the operation returns a promise, handle async errors
-      if (result && typeof result.then === 'function') {
+      if (result && typeof result.then === "function") {
         return result.catch((error: Error) => {
           if (shouldSuppressError(error)) {
             logSuppressedError(error, context || "DOM operation");
@@ -288,7 +288,7 @@ export function withDOMResizeObserverErrorSuppression<
           throw error;
         });
       }
-      
+
       return result;
     } catch (error) {
       if (shouldSuppressError(error as Error)) {
@@ -324,7 +324,10 @@ export function withStyleResizeObserverErrorSuppression<
 export function withContainerResizeObserverErrorSuppression<
   T extends (...args: any[]) => any,
 >(operation: T): T {
-  return withDOMResizeObserverErrorSuppression(operation, "container operation");
+  return withDOMResizeObserverErrorSuppression(
+    operation,
+    "container operation",
+  );
 }
 
 /**
@@ -341,16 +344,18 @@ export function withSearchResizeObserverErrorSuppression<
  */
 export function withBatchResizeObserverErrorSuppression<T>(
   operations: Array<() => T>,
-  context?: string
+  context?: string,
 ): T[] {
   const results: T[] = [];
-  
+
   for (let i = 0; i < operations.length; i++) {
     const operation = operations[i];
     try {
       const result = withDOMResizeObserverErrorSuppression(
-        operation, 
-        context ? `${context} (batch ${i + 1}/${operations.length})` : `batch operation ${i + 1}/${operations.length}`
+        operation,
+        context
+          ? `${context} (batch ${i + 1}/${operations.length})`
+          : `batch operation ${i + 1}/${operations.length}`,
       )();
       results.push(result);
     } catch (error) {
@@ -360,6 +365,6 @@ export function withBatchResizeObserverErrorSuppression<T>(
       results.push(undefined as T);
     }
   }
-  
+
   return results;
 }

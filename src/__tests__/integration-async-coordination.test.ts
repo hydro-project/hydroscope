@@ -254,10 +254,14 @@ describe("Async Boundary Integration Tests", () => {
         operations.push(
           (async () => {
             // Use new synchronous search method instead of deprecated queueApplicationEvent
-            await coordinator.updateSearchResults(event.payload.query, event.payload.state, {
-              expandContainers: event.payload.expandContainers,
-              fitView: false
-            });
+            await coordinator.updateSearchResults(
+              event.payload.query,
+              event.payload.state,
+              {
+                expandContainers: event.payload.expandContainers,
+                fitView: false,
+              },
+            );
           })(),
         );
       }
@@ -347,7 +351,9 @@ describe("Async Boundary Integration Tests", () => {
   describe("11.2 Test async boundary coordination", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });

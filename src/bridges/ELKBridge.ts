@@ -19,10 +19,7 @@ import {
   DEFAULT_ELK_ALGORITHM,
   DEFAULT_LAYOUT_CONFIG,
 } from "../shared/config.js";
-import {
-  withAsyncResizeObserverErrorSuppression,
-  withLayoutResizeObserverErrorSuppression,
-} from "../utils/ResizeObserverErrorSuppression.js";
+import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 export class ELKBridge implements IELKBridge {
   private performanceHints?: PerformanceHints;
   private elk: any;
@@ -281,48 +278,29 @@ export class ELKBridge implements IELKBridge {
     return this.deepCloneELKNode(elkNode);
   }
 
-
-
   private deepCloneELKNode(node: ELKNode): ELKNode {
     return JSON.parse(JSON.stringify(node));
-  }
-  /**
-   * Recursively log ELK hierarchy structure for debugging
-   */
-  private logELKHierarchyRecursively(
-    elkChildren: ELKNode[],
-    depth: number,
-    includePositions: boolean = false,
-  ): void {
-    const _indent = "  ".repeat(depth);
-    for (const child of elkChildren) {
-      const _positionInfo =
-        includePositions && child.x !== undefined && child.y !== undefined
-          ? `, position=(${child.x}, ${child.y})`
-          : "";
-      if (child.children && child.children.length > 0) {
-        this.logELKHierarchyRecursively(
-          child.children,
-          depth + 1,
-          includePositions,
-        );
-      } else {
-      }
-    }
   }
   /**
    * Calculate and apply ELK layout to VisualizationState
    * This is the main method to use - it runs the ELK algorithm and applies results
    */
-  async layout(state: VisualizationState, constrainedEntities?: string[]): Promise<void> {
+  async layout(
+    state: VisualizationState,
+    _constrainedEntities?: string[],
+  ): Promise<void> {
     try {
       // Run smart collapse before layout if enabled
       if (state.shouldRunSmartCollapse()) {
-        console.log('🎯 SMART COLLAPSE CALLED - running smart collapse before layout');
+        console.log(
+          "🎯 SMART COLLAPSE CALLED - running smart collapse before layout",
+        );
         state.performSmartCollapse();
-        console.log('✅ SMART COLLAPSE COMPLETED');
+        console.log("✅ SMART COLLAPSE COMPLETED");
       } else {
-        console.log('❌ SMART COLLAPSE SKIPPED - shouldRunSmartCollapse() returned false');
+        console.log(
+          "❌ SMART COLLAPSE SKIPPED - shouldRunSmartCollapse() returned false",
+        );
       }
       
       // Convert VisualizationState to ELK format
@@ -333,7 +311,7 @@ export class ELKBridge implements IELKBridge {
       try {
         // Wrap ELK layout operation with ResizeObserver error suppression
         layoutResult = await withAsyncResizeObserverErrorSuppression(
-          async () => await this.elk.layout(elkGraph)
+          async () => await this.elk.layout(elkGraph),
         )();
       } catch (error) {
         const errorMessage =
@@ -356,7 +334,7 @@ export class ELKBridge implements IELKBridge {
           try {
             // Wrap fallback ELK layout operation with ResizeObserver error suppression
             layoutResult = await withAsyncResizeObserverErrorSuppression(
-              async () => await this.elk.layout(fallbackElkGraph)
+              async () => await this.elk.layout(fallbackElkGraph),
             )();
           } catch (fallbackError) {
             console.error(
@@ -638,7 +616,7 @@ export class ELKBridge implements IELKBridge {
     return options;
   }
   private calculateOptimalNodeSize(
-    node: GraphNode,
+    _node: GraphNode,
     config: LayoutConfig,
   ): {
     width: number;
@@ -652,33 +630,6 @@ export class ELKBridge implements IELKBridge {
       width: baseSize.width,
       height: baseSize.height,
     };
-
-  }
-  private calculateOptimalContainerSize(
-    container: Container,
-    config: LayoutConfig,
-    collapsed: boolean,
-    childCount: number = 0,
-  ): {
-    width: number;
-    height: number;
-  } {
-    if (collapsed) {
-      // Use consistent collapsed container dimensions from config
-      return {
-        width: 200, // COLLAPSED_CONTAINER_WIDTH from config
-        height: 150, // COLLAPSED_CONTAINER_HEIGHT from config
-      };
-    } else {
-      // Expanded container size based on children and padding
-      const padding = config.containerPadding ?? 20;
-      const baseWidth = 200 + childCount * 30;
-      const baseHeight = 150 + childCount * 20;
-      return {
-        width: baseWidth + padding * 2,
-        height: baseHeight + padding * 2,
-      };
-    }
   }
   private getNodeLayoutOptions(
     node: GraphNode,
@@ -695,7 +646,7 @@ export class ELKBridge implements IELKBridge {
     return options;
   }
   private getContainerLayoutOptions(
-    container: Container,
+    _container: Container,
     config: LayoutConfig,
   ): Record<string, any> {
     const options: Record<string, any> = {};

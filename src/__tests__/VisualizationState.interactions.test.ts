@@ -28,7 +28,7 @@ describe("VisualizationState Interaction State Management", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
   });
@@ -41,7 +41,7 @@ describe("VisualizationState Interaction State Management", () => {
       state.addNode(node);
 
       const visibleNodes = state.visibleNodes;
-      const retrievedNode = visibleNodes.find(n => n.id === "node1");
+      const retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBeFalsy();
     });
 
@@ -54,7 +54,7 @@ describe("VisualizationState Interaction State Management", () => {
       state.toggleNodeLabel("node1");
 
       const visibleNodes = state.visibleNodes;
-      const retrievedNode = visibleNodes.find(n => n.id === "node1");
+      const retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBe(true);
     });
 
@@ -67,13 +67,13 @@ describe("VisualizationState Interaction State Management", () => {
       // Toggle to long
       state.toggleNodeLabel("node1");
       let visibleNodes = state.visibleNodes;
-      let retrievedNode = visibleNodes.find(n => n.id === "node1");
+      let retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBe(true);
 
       // Toggle back to short
       state.toggleNodeLabel("node1");
       visibleNodes = state.visibleNodes;
-      retrievedNode = visibleNodes.find(n => n.id === "node1");
+      retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBe(false);
     });
 
@@ -97,9 +97,9 @@ describe("VisualizationState Interaction State Management", () => {
       state.toggleNodeLabel("node1");
 
       const visibleNodes = state.visibleNodes;
-      const retrievedNode1 = visibleNodes.find(n => n.id === "node1");
-      const retrievedNode2 = visibleNodes.find(n => n.id === "node2");
-      
+      const retrievedNode1 = visibleNodes.find((n) => n.id === "node1");
+      const retrievedNode2 = visibleNodes.find((n) => n.id === "node2");
+
       expect(retrievedNode1?.showingLongLabel).toBe(true);
       expect(retrievedNode2?.showingLongLabel).toBeFalsy();
     });
@@ -115,11 +115,13 @@ describe("VisualizationState Interaction State Management", () => {
       // Expand container
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const visibleContainers = state.visibleContainers;
-      const retrievedContainer = visibleContainers.find(c => c.id === "container1");
+      const retrievedContainer = visibleContainers.find(
+        (c) => c.id === "container1",
+      );
       expect(retrievedContainer?.collapsed).toBe(false);
     });
 
@@ -132,11 +134,13 @@ describe("VisualizationState Interaction State Management", () => {
       // Collapse container
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       const visibleContainers = state.visibleContainers;
-      const retrievedContainer = visibleContainers.find(c => c.id === "container1");
+      const retrievedContainer = visibleContainers.find(
+        (c) => c.id === "container1",
+      );
       expect(retrievedContainer?.collapsed).toBe(true);
     });
 
@@ -149,13 +153,15 @@ describe("VisualizationState Interaction State Management", () => {
       // User toggles container (should disable smart collapse)
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Smart collapse should be disabled after user interaction
       // This is handled internally by the VisualizationState
       const visibleContainers = state.visibleContainers;
-      const retrievedContainer = visibleContainers.find(c => c.id === "container1");
+      const retrievedContainer = visibleContainers.find(
+        (c) => c.id === "container1",
+      );
       expect(retrievedContainer?.collapsed).toBe(true);
     });
   });
@@ -182,19 +188,19 @@ describe("VisualizationState Interaction State Management", () => {
       // Collapse and expand container
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Node label states should persist
       const visibleNodes = state.visibleNodes;
-      const retrievedNode1 = visibleNodes.find(n => n.id === "node1");
-      const retrievedNode2 = visibleNodes.find(n => n.id === "node2");
-      
+      const retrievedNode1 = visibleNodes.find((n) => n.id === "node1");
+      const retrievedNode2 = visibleNodes.find((n) => n.id === "node2");
+
       expect(retrievedNode1?.showingLongLabel).toBe(true);
       expect(retrievedNode2?.showingLongLabel).toBeFalsy();
     });
@@ -208,16 +214,20 @@ describe("VisualizationState Interaction State Management", () => {
 
       // Verify initial state
       let visibleNodes = state.visibleNodes;
-      let retrievedNode = visibleNodes.find(n => n.id === "node1");
+      let retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBe(true);
 
       // Update node data while preserving interaction state
-      const updatedNode = { ...node, label: "Updated Short", showingLongLabel: true };
+      const updatedNode = {
+        ...node,
+        label: "Updated Short",
+        showingLongLabel: true,
+      };
       state.updateNode("node1", updatedNode);
 
       // Label state should persist
       visibleNodes = state.visibleNodes;
-      retrievedNode = visibleNodes.find(n => n.id === "node1");
+      retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBe(true);
     });
   });
@@ -243,13 +253,13 @@ describe("VisualizationState Interaction State Management", () => {
       state.toggleNodeLabel("node1");
       await asyncCoordinator.collapseContainer("container1", state, {
         relayoutEntities: ["container1"],
-        fitView: false
+        fitView: false,
       });
 
       // Check state summary
       const visibleNodes = state.visibleNodes;
       const visibleContainers = state.visibleContainers;
-      
+
       expect(visibleNodes.length).toBeGreaterThanOrEqual(0);
       expect(visibleContainers.length).toBeGreaterThanOrEqual(0);
     });
@@ -267,7 +277,7 @@ describe("VisualizationState Interaction State Management", () => {
 
       // Should handle multiple interactions gracefully
       const visibleNodes = state.visibleNodes;
-      const retrievedNode = visibleNodes.find(n => n.id === "node1");
+      const retrievedNode = visibleNodes.find((n) => n.id === "node1");
       expect(retrievedNode?.showingLongLabel).toBe(true);
     });
   });
@@ -306,37 +316,37 @@ describe("VisualizationState Interaction State Management", () => {
       // Complex container operations
       await asyncCoordinator.collapseContainer("inner", state, {
         relayoutEntities: ["inner"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("outer", state, {
         relayoutEntities: ["outer"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandContainer("outer", state, {
         relayoutEntities: ["outer"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandContainer("inner", state, {
         relayoutEntities: ["inner"],
-        fitView: false
+        fitView: false,
       });
 
       // Interaction states should be preserved
       const visibleNodes = state.visibleNodes;
-      const retrievedNode1 = visibleNodes.find(n => n.id === "node1");
-      const retrievedNode2 = visibleNodes.find(n => n.id === "node2");
-      const retrievedNode3 = visibleNodes.find(n => n.id === "node3");
-      
+      const retrievedNode1 = visibleNodes.find((n) => n.id === "node1");
+      const retrievedNode2 = visibleNodes.find((n) => n.id === "node2");
+      const retrievedNode3 = visibleNodes.find((n) => n.id === "node3");
+
       expect(retrievedNode1?.showingLongLabel).toBe(true);
       expect(retrievedNode2?.showingLongLabel).toBeFalsy();
       expect(retrievedNode3?.showingLongLabel).toBe(true);
     });
 
     it("should handle interaction state during bulk operations", async () => {
-      const nodes = ["n1", "n2", "n3", "n4"].map(id => {
+      const nodes = ["n1", "n2", "n3", "n4"].map((id) => {
         const node = createTestNode(id, `Short ${id}`);
         node.longLabel = `Long Label ${id}`;
         return node;
@@ -352,8 +362,8 @@ describe("VisualizationState Interaction State Management", () => {
       containers[1].children = new Set(["n3", "n4"]);
       containers[1].childNodes = ["n3", "n4"];
 
-      nodes.forEach(node => state.addNode(node));
-      containers.forEach(container => state.addContainer(container));
+      nodes.forEach((node) => state.addNode(node));
+      containers.forEach((container) => state.addContainer(container));
 
       // Set some interaction states
       state.toggleNodeLabel("n1");
@@ -362,21 +372,21 @@ describe("VisualizationState Interaction State Management", () => {
       // Bulk operations
       await asyncCoordinator.collapseAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined,
-        fitView: false
+        fitView: false,
       });
 
       // Interaction states should be preserved
       const visibleNodes = state.visibleNodes;
-      const node1 = visibleNodes.find(n => n.id === "n1");
-      const node2 = visibleNodes.find(n => n.id === "n2");
-      const node3 = visibleNodes.find(n => n.id === "n3");
-      const node4 = visibleNodes.find(n => n.id === "n4");
-      
+      const node1 = visibleNodes.find((n) => n.id === "n1");
+      const node2 = visibleNodes.find((n) => n.id === "n2");
+      const node3 = visibleNodes.find((n) => n.id === "n3");
+      const node4 = visibleNodes.find((n) => n.id === "n4");
+
       expect(node1?.showingLongLabel).toBe(true);
       expect(node2?.showingLongLabel).toBeFalsy();
       expect(node3?.showingLongLabel).toBe(true);
@@ -394,9 +404,9 @@ describe("VisualizationState Interaction State Management", () => {
     it("should handle malformed interaction data gracefully", () => {
       const node = createTestNode("node1", "Short");
       // Intentionally missing longLabel
-      
+
       state.addNode(node);
-      
+
       expect(() => {
         state.toggleNodeLabel("node1");
       }).not.toThrow();

@@ -30,7 +30,7 @@ import {
   changeColorPaletteImperatively,
   changeEdgeStyleImperatively,
   resetStylesImperatively,
-  type EdgeStyleKind
+  type EdgeStyleKind,
 } from "../../utils/styleOperationUtils.js";
 // EdgeStyleKind is now imported from styleOperationUtils
 export interface StyleConfig {
@@ -200,7 +200,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                 onLayoutChange,
                 visualizationState: _visualizationState || undefined,
                 suppressResizeObserver: true,
-                debug: false
+                debug: false,
               });
             }}
           >
@@ -221,14 +221,14 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
               const newEdgeStyle = e.target.value as EdgeStyleKind;
               const next = { ...local, edgeStyle: newEdgeStyle };
               setLocal(next);
-              
+
               // Use imperative utility to avoid coordination cascades and ResizeObserver loops
               changeEdgeStyleImperatively({
                 edgeStyle: newEdgeStyle,
                 onEdgeStyleChange: onEdgeStyleChange || (() => onChange(next)),
                 visualizationState: _visualizationState || undefined,
                 suppressResizeObserver: true,
-                debug: false
+                debug: false,
               });
             }}
           >
@@ -249,7 +249,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                 onPaletteChange,
                 visualizationState: _visualizationState || undefined,
                 suppressResizeObserver: true,
-                debug: false
+                debug: false,
               });
             }}
             style={inputStyle}
@@ -272,7 +272,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
               onResetToDefaults,
               visualizationState: _visualizationState || undefined,
               suppressResizeObserver: true,
-              debug: false
+              debug: false,
             });
           }}
           block

@@ -89,13 +89,7 @@ describe("Performance Regression Tests", () => {
   });
 
   describe("Core Component Performance", () => {
-    let coordinator: AsyncCoordinator;
-
-    beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
-      const testSetup = await createTestAsyncCoordinator();
-      coordinator = testSetup.asyncCoordinator;
-    });
+    // Tests use their own coordinators inline
 
     it("should maintain JSON parsing performance", async () => {
       const testResult = await batchTester.runTest(
@@ -222,45 +216,51 @@ describe("Performance Regression Tests", () => {
   describe("Stress Testing", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
 
-    it("should handle container operation stress test", { timeout: 15000 }, async () => {
-      const parser = JSONParser.createPaxosParser({ debug: false });
-      const parseResult = await parser.parseData(paxosData);
+    it(
+      "should handle container operation stress test",
+      { timeout: 15000 },
+      async () => {
+        const parser = JSONParser.createPaxosParser({ debug: false });
+        const parseResult = await parser.parseData(paxosData);
 
-      const testResult = await batchTester.runTest(
-        "container-stress",
-        async () => {
-          const state = parseResult.visualizationState;
+        const testResult = await batchTester.runTest(
+          "container-stress",
+          async () => {
+            const state = parseResult.visualizationState;
 
-          // Rapid container operations (reduced iterations for performance)
-          for (let i = 0; i < 3; i++) {
-            await coordinator.expandAllContainers(state, {
-              fitView: false,
-            });
-            await coordinator.collapseAllContainers(state, {
-              fitView: false,
-            });
-          }
+            // Rapid container operations (reduced iterations for performance)
+            for (let i = 0; i < 3; i++) {
+              await coordinator.expandAllContainers(state, {
+                fitView: false,
+              });
+              await coordinator.collapseAllContainers(state, {
+                fitView: false,
+              });
+            }
 
-          return state;
-        },
-        5,
-        2,
-      );
+            return state;
+          },
+          5,
+          2,
+        );
 
-      // Should complete within reasonable time even with many operations
-      expect(testResult.average.duration).toBeLessThan(
-        DEFAULT_PERFORMANCE_THRESHOLDS.containerOperations * 20,
-      );
+        // Should complete within reasonable time even with many operations
+        expect(testResult.average.duration).toBeLessThan(
+          DEFAULT_PERFORMANCE_THRESHOLDS.containerOperations * 20,
+        );
 
-      console.log(
-        createPerformanceReport("Container Stress Test", testResult.average),
-      );
-    });
+        console.log(
+          createPerformanceReport("Container Stress Test", testResult.average),
+        );
+      },
+    );
 
     it("should handle search operation stress test", async () => {
       const parser = JSONParser.createPaxosParser({ debug: false });
@@ -300,7 +300,7 @@ describe("Performance Regression Tests", () => {
       const parseResult = await parser.parseData(paxosData);
       const nodeCount = parseResult.visualizationState.visibleNodes.length;
 
-      const { _result, metrics } = measureSync(() => {
+      const { metrics } = measureSync(() => {
         const elkBridge = new ELKBridge();
         return elkBridge.toELKGraph(parseResult.visualizationState);
       });
@@ -322,7 +322,7 @@ describe("Performance Regression Tests", () => {
       const state = parseResult.visualizationState;
 
       const searchCount = 50;
-      const { _result, metrics } = measureSync(() => {
+      const { metrics } = measureSync(() => {
         for (let i = 0; i < searchCount; i++) {
           const query = getRandomQuery();
           state.search(query);
@@ -381,7 +381,7 @@ describe("Performance Regression Tests", () => {
       ];
 
       for (const operation of operations) {
-        const { _result, metrics } = measureSync(operation.fn);
+        const { metrics } = measureSync(operation.fn as () => any);
         const baselineResult = performanceBaseline.results[operation.name];
 
         if (baselineResult) {

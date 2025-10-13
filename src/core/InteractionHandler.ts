@@ -66,7 +66,7 @@ export class InteractionHandler {
       timestamp: Date.now(),
       position: position || { x: 0, y: 0 },
     };
-    
+
     // CRITICAL FIX: Disable debouncing for container clicks to prevent double-click issues
     // Container operations are already atomic through AsyncCoordinator
     this._executeClickEvent(clickEvent);
@@ -128,42 +128,47 @@ export class InteractionHandler {
     const containerBefore = this._visualizationState.getContainer(
       event.elementId,
     );
-    
+
     if (!containerBefore) {
-      console.warn(`[InteractionHandler] Container ${event.elementId} not found`);
+      console.warn(
+        `[InteractionHandler] Container ${event.elementId} not found`,
+      );
       return;
     }
 
     // Use AsyncCoordinator methods if available for proper pipeline execution
-    if (this._asyncCoordinator && 
-        this._asyncCoordinator.expandContainer && 
-        this._asyncCoordinator.collapseContainer) {
-      
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.expandContainer &&
+      this._asyncCoordinator.collapseContainer
+    ) {
       const wasCollapsed = containerBefore.collapsed;
-      
+
       // Use AsyncCoordinator's container methods for proper pipeline execution
       if (wasCollapsed) {
-        this._asyncCoordinator.expandContainer(
-          event.elementId,
-          this._visualizationState,
-          {
+        this._asyncCoordinator
+          .expandContainer(event.elementId, this._visualizationState, {
             relayoutEntities: [event.elementId], // Only re-layout this container
             fitView: false, // Don't auto-fit on manual interactions
-          }
-        ).catch((error: Error) => {
-          console.error('[InteractionHandler] Container expand failed:', error);
-        });
+          })
+          .catch((error: Error) => {
+            console.error(
+              "[InteractionHandler] Container expand failed:",
+              error,
+            );
+          });
       } else {
-        this._asyncCoordinator.collapseContainer(
-          event.elementId,
-          this._visualizationState,
-          {
+        this._asyncCoordinator
+          .collapseContainer(event.elementId, this._visualizationState, {
             relayoutEntities: [event.elementId], // Only re-layout this container
             fitView: false, // Don't auto-fit on manual interactions
-          }
-        ).catch((error: Error) => {
-          console.error('[InteractionHandler] Container collapse failed:', error);
-        });
+          })
+          .catch((error: Error) => {
+            console.error(
+              "[InteractionHandler] Container collapse failed:",
+              error,
+            );
+          });
       }
     } else {
       // Fallback to direct VisualizationState methods (legacy behavior)
@@ -182,46 +187,67 @@ export class InteractionHandler {
     }
   }
   private _triggerLayoutUpdate(): void {
-    if (this._asyncCoordinator && this._asyncCoordinator.executeLayoutAndRenderPipeline) {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.executeLayoutAndRenderPipeline
+    ) {
       // Use the new AsyncCoordinator pipeline method
       // Note: This is async but we don't await it to maintain the synchronous interface
-      this._asyncCoordinator.executeLayoutAndRenderPipeline(this._visualizationState, {
-        relayoutEntities: undefined, // Full layout
-        fitView: false, // Don't auto-fit on manual interactions
-      }).catch((error: Error) => {
-        console.error('[InteractionHandler] Layout update failed:', error);
-      });
+      this._asyncCoordinator
+        .executeLayoutAndRenderPipeline(this._visualizationState, {
+          relayoutEntities: undefined, // Full layout
+          fitView: false, // Don't auto-fit on manual interactions
+        })
+        .catch((error: Error) => {
+          console.error("[InteractionHandler] Layout update failed:", error);
+        });
     }
   }
 
   private _triggerConstrainedLayoutUpdate(entityIds: string[]): void {
-    if (this._asyncCoordinator && this._asyncCoordinator.executeLayoutAndRenderPipeline) {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.executeLayoutAndRenderPipeline
+    ) {
       // Use constrained layout to only re-layout specific entities
       // Note: This is async but we don't await it to maintain the synchronous interface
-      this._asyncCoordinator.executeLayoutAndRenderPipeline(this._visualizationState, {
-        relayoutEntities: entityIds, // Only re-layout specified entities
-        fitView: false, // Don't auto-fit on manual interactions
-      }).catch((error: Error) => {
-        console.error('[InteractionHandler] Constrained layout update failed:', error);
-      });
+      this._asyncCoordinator
+        .executeLayoutAndRenderPipeline(this._visualizationState, {
+          relayoutEntities: entityIds, // Only re-layout specified entities
+          fitView: false, // Don't auto-fit on manual interactions
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Constrained layout update failed:",
+            error,
+          );
+        });
     }
   }
 
   private _triggerLayoutUpdateWithAutofit(): void {
-    if (this._asyncCoordinator && this._asyncCoordinator.executeLayoutAndRenderPipeline) {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.executeLayoutAndRenderPipeline
+    ) {
       // Use the new AsyncCoordinator pipeline method with autofit for search expansions
       // Note: This is async but we don't await it to maintain the synchronous interface
-      this._asyncCoordinator.executeLayoutAndRenderPipeline(this._visualizationState, {
-        relayoutEntities: undefined, // Full layout
-        fitView: true, // Enable auto-fit for search result expansions
-        fitViewOptions: { 
-          padding: 0.3, // Use relative padding (30% of viewport) for better scaling
-          duration: 500, // Slower animation for better user experience
-          includeHiddenNodes: false // Don't include hidden nodes in fit calculation
-        }
-      }).catch((error: Error) => {
-        console.error('[InteractionHandler] Layout update with autofit failed:', error);
-      });
+      this._asyncCoordinator
+        .executeLayoutAndRenderPipeline(this._visualizationState, {
+          relayoutEntities: undefined, // Full layout
+          fitView: true, // Enable auto-fit for search result expansions
+          fitViewOptions: {
+            padding: 0.3, // Use relative padding (30% of viewport) for better scaling
+            duration: 500, // Slower animation for better user experience
+            includeHiddenNodes: false, // Don't include hidden nodes in fit calculation
+          },
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Layout update with autofit failed:",
+            error,
+          );
+        });
     }
   }
   // Bulk operations
@@ -305,16 +331,21 @@ export class InteractionHandler {
     if (elementType === "container") {
       // Search result clicks should expand containers using AsyncCoordinator
       if (this._asyncCoordinator && this._asyncCoordinator.expandContainer) {
-        this._asyncCoordinator.expandContainer(elementId, this._visualizationState, {
-          fitView: true, // Auto-fit for search results
-          fitViewOptions: { 
-            padding: 0.3,
-            duration: 500,
-            includeHiddenNodes: false
-          }
-        }).catch((error: Error) => {
-          console.error('[InteractionHandler] Search result container expansion failed:', error);
-        });
+        this._asyncCoordinator
+          .expandContainer(elementId, this._visualizationState, {
+            fitView: true, // Auto-fit for search results
+            fitViewOptions: {
+              padding: 0.3,
+              duration: 500,
+              includeHiddenNodes: false,
+            },
+          })
+          .catch((error: Error) => {
+            console.error(
+              "[InteractionHandler] Search result container expansion failed:",
+              error,
+            );
+          });
       } else {
         // Fallback to direct method
         this._visualizationState.expandContainerForSearch(elementId);

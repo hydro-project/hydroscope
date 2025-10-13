@@ -24,7 +24,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
   });
@@ -56,24 +56,24 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
 
       // Initially expanded - children should be visible
       const visibleNodesBefore = state.visibleNodes;
-      expect(visibleNodesBefore.find(n => n.id === "n1")).toBeDefined();
-      expect(visibleNodesBefore.find(n => n.id === "n2")).toBeDefined();
+      expect(visibleNodesBefore.find((n) => n.id === "n1")).toBeDefined();
+      expect(visibleNodesBefore.find((n) => n.id === "n2")).toBeDefined();
 
       // Collapse container
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify container is collapsed
       const visibleContainers = state.visibleContainers;
-      const collapsedContainer = visibleContainers.find(c => c.id === "c1");
+      const collapsedContainer = visibleContainers.find((c) => c.id === "c1");
       expect(collapsedContainer?.collapsed).toBe(true);
 
       // Children should not be in visible nodes when container is collapsed
       const visibleNodesAfter = state.visibleNodes;
-      expect(visibleNodesAfter.find(n => n.id === "n1")).toBeUndefined();
-      expect(visibleNodesAfter.find(n => n.id === "n2")).toBeUndefined();
+      expect(visibleNodesAfter.find((n) => n.id === "n1")).toBeUndefined();
+      expect(visibleNodesAfter.find((n) => n.id === "n2")).toBeUndefined();
     });
 
     it("should expand container and show children", async () => {
@@ -102,24 +102,24 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
 
       // Initially collapsed - children should not be visible
       const visibleNodesBefore = state.visibleNodes;
-      expect(visibleNodesBefore.find(n => n.id === "n1")).toBeUndefined();
-      expect(visibleNodesBefore.find(n => n.id === "n2")).toBeUndefined();
+      expect(visibleNodesBefore.find((n) => n.id === "n1")).toBeUndefined();
+      expect(visibleNodesBefore.find((n) => n.id === "n2")).toBeUndefined();
 
       // Expand container
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Verify container is expanded
       const visibleContainers = state.visibleContainers;
-      const expandedContainer = visibleContainers.find(c => c.id === "c1");
+      const expandedContainer = visibleContainers.find((c) => c.id === "c1");
       expect(expandedContainer?.collapsed).toBe(false);
 
       // Children should now be visible
       const visibleNodesAfter = state.visibleNodes;
-      expect(visibleNodesAfter.find(n => n.id === "n1")).toBeDefined();
-      expect(visibleNodesAfter.find(n => n.id === "n2")).toBeDefined();
+      expect(visibleNodesAfter.find((n) => n.id === "n1")).toBeDefined();
+      expect(visibleNodesAfter.find((n) => n.id === "n2")).toBeDefined();
     });
 
     it("should handle nested container collapse/expand", async () => {
@@ -161,19 +161,21 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Collapse outer container
       await asyncCoordinator.collapseContainer("outer", state, {
         relayoutEntities: ["outer"],
-        fitView: false
+        fitView: false,
       });
 
       // All nested content should be hidden
       const visibleNodes = state.visibleNodes;
       const visibleContainers = state.visibleContainers;
-      
-      expect(visibleNodes.find(n => n.id === "n1")).toBeUndefined();
-      expect(visibleNodes.find(n => n.id === "n2")).toBeUndefined();
-      expect(visibleNodes.find(n => n.id === "n3")).toBeUndefined();
-      expect(visibleContainers.find(c => c.id === "inner")).toBeUndefined();
-      
-      const outerContainerVisible = visibleContainers.find(c => c.id === "outer");
+
+      expect(visibleNodes.find((n) => n.id === "n1")).toBeUndefined();
+      expect(visibleNodes.find((n) => n.id === "n2")).toBeUndefined();
+      expect(visibleNodes.find((n) => n.id === "n3")).toBeUndefined();
+      expect(visibleContainers.find((c) => c.id === "inner")).toBeUndefined();
+
+      const outerContainerVisible = visibleContainers.find(
+        (c) => c.id === "outer",
+      );
       expect(outerContainerVisible?.collapsed).toBe(true);
     });
   });
@@ -226,7 +228,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Collapse container to trigger edge aggregation
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Check that edges are handled (aggregated or preserved)
@@ -282,7 +284,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Expand container to restore edges
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Check that edges are restored
@@ -350,12 +352,12 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Collapse both containers
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("c2", state, {
         relayoutEntities: ["c2"],
-        fitView: false
+        fitView: false,
       });
 
       // Check that inter-container edges are handled
@@ -404,23 +406,23 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Expand all containers
       await asyncCoordinator.expandAllContainers(state, {
         relayoutEntities: undefined, // Full layout
-        fitView: false
+        fitView: false,
       });
 
       // All containers should be expanded
       const visibleContainers = state.visibleContainers;
-      const container1 = visibleContainers.find(c => c.id === "c1");
-      const container2 = visibleContainers.find(c => c.id === "c2");
-      
+      const container1 = visibleContainers.find((c) => c.id === "c1");
+      const container2 = visibleContainers.find((c) => c.id === "c2");
+
       expect(container1?.collapsed).toBe(false);
       expect(container2?.collapsed).toBe(false);
 
       // All nodes should be visible
       const visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "n1")).toBeDefined();
-      expect(visibleNodes.find(n => n.id === "n2")).toBeDefined();
-      expect(visibleNodes.find(n => n.id === "n3")).toBeDefined();
-      expect(visibleNodes.find(n => n.id === "n4")).toBeDefined();
+      expect(visibleNodes.find((n) => n.id === "n1")).toBeDefined();
+      expect(visibleNodes.find((n) => n.id === "n2")).toBeDefined();
+      expect(visibleNodes.find((n) => n.id === "n3")).toBeDefined();
+      expect(visibleNodes.find((n) => n.id === "n4")).toBeDefined();
     });
 
     it("should collapse all containers atomically", async () => {
@@ -462,23 +464,23 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Collapse all containers
       await asyncCoordinator.collapseAllContainers(state, {
         relayoutEntities: undefined, // Full layout
-        fitView: false
+        fitView: false,
       });
 
       // All containers should be collapsed
       const visibleContainers = state.visibleContainers;
-      const container1 = visibleContainers.find(c => c.id === "c1");
-      const container2 = visibleContainers.find(c => c.id === "c2");
-      
+      const container1 = visibleContainers.find((c) => c.id === "c1");
+      const container2 = visibleContainers.find((c) => c.id === "c2");
+
       expect(container1?.collapsed).toBe(true);
       expect(container2?.collapsed).toBe(true);
 
       // Child nodes should not be visible
       const visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "n1")).toBeUndefined();
-      expect(visibleNodes.find(n => n.id === "n2")).toBeUndefined();
-      expect(visibleNodes.find(n => n.id === "n3")).toBeUndefined();
-      expect(visibleNodes.find(n => n.id === "n4")).toBeUndefined();
+      expect(visibleNodes.find((n) => n.id === "n1")).toBeUndefined();
+      expect(visibleNodes.find((n) => n.id === "n2")).toBeUndefined();
+      expect(visibleNodes.find((n) => n.id === "n3")).toBeUndefined();
+      expect(visibleNodes.find((n) => n.id === "n4")).toBeUndefined();
     });
   });
 
@@ -550,7 +552,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Collapse first container
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Check edge aggregation
@@ -625,7 +627,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       // Collapse outer container
       await asyncCoordinator.collapseContainer("outer", state, {
         relayoutEntities: ["outer"],
-        fitView: false
+        fitView: false,
       });
 
       // Check that nested edge aggregation works

@@ -27,7 +27,7 @@ describe("Search Navigation Workflow Integration", () => {
     const { createTestAsyncCoordinator } = await import("../utils/testData.js");
     const testSetup = await createTestAsyncCoordinator();
     coordinator = testSetup.asyncCoordinator;
-    
+
     // Load the actual chat.json file
     const chatPath = path.join(process.cwd(), "test-data", "chat.json");
 
@@ -149,7 +149,9 @@ describe("Search Navigation Workflow Integration", () => {
   describe("Tree Click → Graph Navigation → Viewport Focus Flow", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });
@@ -299,7 +301,9 @@ describe("Search Navigation Workflow Integration", () => {
   describe("Rapid Search Changes and Race Condition Handling", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });

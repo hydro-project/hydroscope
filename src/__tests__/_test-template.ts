@@ -25,7 +25,7 @@ describe("Test Suite Name", () => {
     });
     reactFlowBridge = new ReactFlowBridge({});
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // CRITICAL: Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
 
@@ -39,11 +39,14 @@ describe("Test Suite Name", () => {
   describe("Test Group", () => {
     it("should test basic functionality", async () => {
       // Example: Execute layout and render pipeline
-      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: undefined, // Full layout
-        fitView: false,
-        timeout: 5000
-      });
+      const result = await asyncCoordinator.executeLayoutAndRenderPipeline(
+        state,
+        {
+          relayoutEntities: undefined, // Full layout
+          fitView: false,
+          timeout: 5000,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -60,14 +63,18 @@ describe("Test Suite Name", () => {
         size: { width: 100, height: 100 },
         children: new Set(),
         childNodes: [],
-        childContainers: []
+        childContainers: [],
       });
 
       // Test expand container
-      const result = await asyncCoordinator.expandContainer("container1", state, {
-        relayoutEntities: ["container1"],
-        fitView: false
-      });
+      const result = await asyncCoordinator.expandContainer(
+        "container1",
+        state,
+        {
+          relayoutEntities: ["container1"],
+          fitView: false,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(result.nodes).toBeDefined();
@@ -78,7 +85,7 @@ describe("Test Suite Name", () => {
       // Test search
       const result = await asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
-        fitView: false
+        fitView: false,
       });
 
       expect(result).toBeDefined();

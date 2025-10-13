@@ -1,7 +1,7 @@
 /**
  * ContainerControls - React components for container expand/collapse operations
  * Provides UI controls with proper state management and error handling
- * 
+ *
  * Updated to use imperative container operations to avoid ResizeObserver loops
  * and coordination system cascades as per ui-operation-stability spec.
  */
@@ -11,7 +11,7 @@ import type { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import type { Container } from "../types/core.js";
 import {
   batchContainerOperationsImperatively,
-  toggleContainerImperatively
+  toggleContainerImperatively,
 } from "../utils/containerOperationUtils.js";
 export interface ContainerControlsProps {
   /** VisualizationState instance */
@@ -67,66 +67,70 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
     return () => clearInterval(interval);
   }, [asyncCoordinator]);
 
-
-
   // Expand all containers
   const handleExpandAll = useCallback(async () => {
     if (disabled || state.isExpanding) return;
-    
+
     setState((prevState) => ({
       ...prevState,
       isExpanding: true,
       operationCount: prevState.operationCount + 1,
     }));
-      // Get all collapsed containers
-      if (!visualizationState?.visibleContainers) {
-        setState((prevState) => ({ ...prevState, isExpanding: false }));
-        return;
-      }
-      const collapsedContainers = visualizationState.visibleContainers.filter(
-        (container) => container.collapsed,
-      );
-      if (collapsedContainers.length === 0) {
-        setState((prevState) => ({ ...prevState, isExpanding: false }));
-        return;
-      }
-      // Track which containers are being expanded
-      const expandingIds = new Set(collapsedContainers.map((c) => c.id));
-      setState((prevState) => ({
-        ...prevState,
-        expandingContainers: expandingIds,
-      }));
-      
-      // Use imperative batch operations to avoid coordination cascades
-      const operations = collapsedContainers.map((container) => ({
-        containerId: container.id,
-        operation: 'expand' as const,
-      }));
+    // Get all collapsed containers
+    if (!visualizationState?.visibleContainers) {
+      setState((prevState) => ({ ...prevState, isExpanding: false }));
+      return;
+    }
+    const collapsedContainers = visualizationState.visibleContainers.filter(
+      (container) => container.collapsed,
+    );
+    if (collapsedContainers.length === 0) {
+      setState((prevState) => ({ ...prevState, isExpanding: false }));
+      return;
+    }
+    // Track which containers are being expanded
+    const expandingIds = new Set(collapsedContainers.map((c) => c.id));
+    setState((prevState) => ({
+      ...prevState,
+      expandingContainers: expandingIds,
+    }));
 
-      batchContainerOperationsImperatively({
-        operations,
-        visualizationState,
-        debug: false,
-      });
+    // Use imperative batch operations to avoid coordination cascades
+    const operations = collapsedContainers.map((container) => ({
+      containerId: container.id,
+      operation: "expand" as const,
+    }));
 
-      // Trigger layout update if needed
-      if (collapsedContainers.length > 0) {
-        try {
-          await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-            relayoutEntities: collapsedContainers.map(c => c.id),
+    batchContainerOperationsImperatively({
+      operations,
+      visualizationState,
+      debug: false,
+    });
+
+    // Trigger layout update if needed
+    if (collapsedContainers.length > 0) {
+      try {
+        await asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          {
+            relayoutEntities: collapsedContainers.map((c) => c.id),
             fitView: false,
-          });
-        } catch (layoutError) {
-          console.warn('[ContainerControls] Layout update failed after expand all:', layoutError);
-        }
+          },
+        );
+      } catch (layoutError) {
+        console.warn(
+          "[ContainerControls] Layout update failed after expand all:",
+          layoutError,
+        );
       }
+    }
 
     setState((prevState) => ({
       ...prevState,
       isExpanding: false,
       expandingContainers: new Set(),
     }));
-    
+
     if (onOperationComplete) {
       onOperationComplete("expand");
     }
@@ -140,59 +144,65 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
   // Collapse all containers
   const handleCollapseAll = useCallback(async () => {
     if (disabled || state.isCollapsing) return;
-    
+
     setState((prevState) => ({
       ...prevState,
       isCollapsing: true,
       operationCount: prevState.operationCount + 1,
     }));
-      // Get all expanded containers
-      if (!visualizationState?.visibleContainers) {
-        setState((prevState) => ({ ...prevState, isCollapsing: false }));
-        return;
-      }
-      const expandedContainers = visualizationState.visibleContainers.filter(
-        (container) => !container.collapsed,
-      );
-      if (expandedContainers.length === 0) {
-        setState((prevState) => ({ ...prevState, isCollapsing: false }));
-        return;
-      }
-      // Track which containers are being collapsed
-      const collapsingIds = new Set(expandedContainers.map((c) => c.id));
-      setState((prevState) => ({
-        ...prevState,
-        collapsingContainers: collapsingIds,
-      }));
-      // Use imperative batch operations to avoid coordination cascades
-      const operations = expandedContainers.map((container) => ({
-        containerId: container.id,
-        operation: 'collapse' as const,
-      }));
+    // Get all expanded containers
+    if (!visualizationState?.visibleContainers) {
+      setState((prevState) => ({ ...prevState, isCollapsing: false }));
+      return;
+    }
+    const expandedContainers = visualizationState.visibleContainers.filter(
+      (container) => !container.collapsed,
+    );
+    if (expandedContainers.length === 0) {
+      setState((prevState) => ({ ...prevState, isCollapsing: false }));
+      return;
+    }
+    // Track which containers are being collapsed
+    const collapsingIds = new Set(expandedContainers.map((c) => c.id));
+    setState((prevState) => ({
+      ...prevState,
+      collapsingContainers: collapsingIds,
+    }));
+    // Use imperative batch operations to avoid coordination cascades
+    const operations = expandedContainers.map((container) => ({
+      containerId: container.id,
+      operation: "collapse" as const,
+    }));
 
-      batchContainerOperationsImperatively({
-        operations,
-        visualizationState,
-        debug: false,
-      });
+    batchContainerOperationsImperatively({
+      operations,
+      visualizationState,
+      debug: false,
+    });
 
-      // Trigger layout update if needed
-      if (expandedContainers.length > 0) {
-        try {
-          await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-            relayoutEntities: expandedContainers.map(c => c.id),
+    // Trigger layout update if needed
+    if (expandedContainers.length > 0) {
+      try {
+        await asyncCoordinator.executeLayoutAndRenderPipeline(
+          visualizationState,
+          {
+            relayoutEntities: expandedContainers.map((c) => c.id),
             fitView: false,
-          });
-        } catch (layoutError) {
-          console.warn('[ContainerControls] Layout update failed after collapse all:', layoutError);
-        }
+          },
+        );
+      } catch (layoutError) {
+        console.warn(
+          "[ContainerControls] Layout update failed after collapse all:",
+          layoutError,
+        );
       }
+    }
     setState((prevState) => ({
       ...prevState,
       isCollapsing: false,
       collapsingContainers: new Set(),
     }));
-    
+
     if (onOperationComplete) {
       onOperationComplete("collapse");
     }
@@ -218,8 +228,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
       expanded,
     };
   }, [visualizationState?.visibleContainers]);
-
-
 
   return (
     <div className={`hydroscope-container-controls ${className}`}>
@@ -290,8 +298,6 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
             </div>
           )}
 
-
-
           {/* Operation Counter */}
           {state.operationCount > 0 && (
             <div className="operation-counter">
@@ -338,35 +344,41 @@ export const IndividualContainerControl: React.FC<
   showLoading = true,
 }) => {
   const [isOperating, setIsOperating] = useState(false);
-  
+
   const handleToggle = useCallback(async () => {
     if (disabled || isOperating) return;
-    
-    setIsOperating(true);
-      
-      // Use imperative operation to avoid coordination cascades
-      toggleContainerImperatively({
-        containerId: container.id,
-        visualizationState,
-        debounce: true, // Enable debouncing for individual controls
-        debug: false,
-      });
 
-      // Trigger layout update separately if needed
-      try {
-        await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
+    setIsOperating(true);
+
+    // Use imperative operation to avoid coordination cascades
+    toggleContainerImperatively({
+      containerId: container.id,
+      visualizationState,
+      debounce: true, // Enable debouncing for individual controls
+      debug: false,
+    });
+
+    // Trigger layout update separately if needed
+    try {
+      await asyncCoordinator.executeLayoutAndRenderPipeline(
+        visualizationState,
+        {
           relayoutEntities: [container.id],
           fitView: false,
-        });
-      } catch (layoutError) {
-        console.warn(`[IndividualContainerControl] Layout update failed for container ${container.id}:`, layoutError);
-      }
+        },
+      );
+    } catch (layoutError) {
+      console.warn(
+        `[IndividualContainerControl] Layout update failed for container ${container.id}:`,
+        layoutError,
+      );
+    }
 
     if (onOperationComplete) {
       const operation = container.collapsed ? "expand" : "collapse";
       onOperationComplete(operation, container.id);
     }
-    
+
     setIsOperating(false);
   }, [
     disabled,
@@ -392,8 +404,6 @@ export const IndividualContainerControl: React.FC<
         </span>
         <span className="child-count">({container.children.size})</span>
       </button>
-
-
     </div>
   );
 };
@@ -409,14 +419,15 @@ export const useContainerControls = (
   );
   const expandAll = useCallback(async () => {
     if (isExpanding) return;
-    
+
     setIsExpanding(true);
-    
+
     try {
       // Get all collapsed containers
-      const collapsedContainers = visualizationState.visibleContainers?.filter(
-        (container) => container.collapsed,
-      ) || [];
+      const collapsedContainers =
+        visualizationState.visibleContainers?.filter(
+          (container) => container.collapsed,
+        ) || [];
 
       if (collapsedContainers.length === 0) {
         return;
@@ -425,7 +436,7 @@ export const useContainerControls = (
       // Use imperative batch operations
       const operations = collapsedContainers.map((container) => ({
         containerId: container.id,
-        operation: 'expand' as const,
+        operation: "expand" as const,
       }));
 
       batchContainerOperationsImperatively({
@@ -437,12 +448,18 @@ export const useContainerControls = (
       // Trigger layout update if needed
       if (collapsedContainers.length > 0) {
         try {
-          await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-            relayoutEntities: collapsedContainers.map(c => c.id),
-            fitView: false,
-          });
+          await asyncCoordinator.executeLayoutAndRenderPipeline(
+            visualizationState,
+            {
+              relayoutEntities: collapsedContainers.map((c) => c.id),
+              fitView: false,
+            },
+          );
         } catch (layoutError) {
-          console.warn('[useContainerControls] Layout update failed after expand all:', layoutError);
+          console.warn(
+            "[useContainerControls] Layout update failed after expand all:",
+            layoutError,
+          );
         }
       }
     } finally {
@@ -451,14 +468,15 @@ export const useContainerControls = (
   }, [isExpanding, asyncCoordinator, visualizationState]);
   const collapseAll = useCallback(async () => {
     if (isCollapsing) return;
-    
+
     setIsCollapsing(true);
-    
+
     try {
       // Get all expanded containers
-      const expandedContainers = visualizationState.visibleContainers?.filter(
-        (container) => !container.collapsed,
-      ) || [];
+      const expandedContainers =
+        visualizationState.visibleContainers?.filter(
+          (container) => !container.collapsed,
+        ) || [];
 
       if (expandedContainers.length === 0) {
         return;
@@ -467,7 +485,7 @@ export const useContainerControls = (
       // Use imperative batch operations
       const operations = expandedContainers.map((container) => ({
         containerId: container.id,
-        operation: 'collapse' as const,
+        operation: "collapse" as const,
       }));
 
       batchContainerOperationsImperatively({
@@ -479,12 +497,18 @@ export const useContainerControls = (
       // Trigger layout update if needed
       if (expandedContainers.length > 0) {
         try {
-          await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-            relayoutEntities: expandedContainers.map(c => c.id),
-            fitView: false,
-          });
+          await asyncCoordinator.executeLayoutAndRenderPipeline(
+            visualizationState,
+            {
+              relayoutEntities: expandedContainers.map((c) => c.id),
+              fitView: false,
+            },
+          );
         } catch (layoutError) {
-          console.warn('[useContainerControls] Layout update failed after collapse all:', layoutError);
+          console.warn(
+            "[useContainerControls] Layout update failed after collapse all:",
+            layoutError,
+          );
         }
       }
     } finally {
@@ -494,9 +518,9 @@ export const useContainerControls = (
   const toggleContainer = useCallback(
     async (containerId: string) => {
       if (operatingContainers.has(containerId)) return;
-      
+
       setOperatingContainers((prev) => new Set([...prev, containerId]));
-      
+
       try {
         // Use imperative operation to avoid coordination cascades
         toggleContainerImperatively({
@@ -508,12 +532,18 @@ export const useContainerControls = (
 
         // Trigger layout update separately if needed
         try {
-          await asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
-            relayoutEntities: [containerId],
-            fitView: false,
-          });
+          await asyncCoordinator.executeLayoutAndRenderPipeline(
+            visualizationState,
+            {
+              relayoutEntities: [containerId],
+              fitView: false,
+            },
+          );
         } catch (layoutError) {
-          console.warn(`[useContainerControls] Layout update failed for container ${containerId}:`, layoutError);
+          console.warn(
+            `[useContainerControls] Layout update failed for container ${containerId}:`,
+            layoutError,
+          );
         }
       } finally {
         setOperatingContainers((prev) => {

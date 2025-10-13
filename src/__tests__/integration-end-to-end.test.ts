@@ -251,7 +251,9 @@ describe("End-to-End Integration: Complete Data Flow", () => {
     let coordinator: AsyncCoordinator;
 
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
       // Set up test data with containers
@@ -468,7 +470,9 @@ describe("End-to-End Integration: Complete Data Flow", () => {
     let coordinator: AsyncCoordinator;
 
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
       // Set up searchable test data
@@ -660,7 +664,9 @@ describe("End-to-End Integration: Complete Data Flow", () => {
   describe("Performance Validation", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
-      const { createTestAsyncCoordinator } = await import("../utils/testData.js");
+      const { createTestAsyncCoordinator } = await import(
+        "../utils/testData.js"
+      );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
     });

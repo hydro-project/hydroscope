@@ -161,10 +161,13 @@ describe("AsyncCoordinator Debug", () => {
       console.log("[AsyncDebug] 🚀 Starting ReactFlow render test");
 
       try {
-        const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(state, {
-          relayoutEntities: [], // No layout, just render
-          fitView: false
-        });
+        const reactFlowData = await coordinator.executeLayoutAndRenderPipeline(
+          state,
+          {
+            relayoutEntities: [], // No layout, just render
+            fitView: false,
+          },
+        );
         expect(reactFlowData).toBeDefined();
         console.log(
           "[AsyncDebug] ✅ ReactFlow render test completed successfully",

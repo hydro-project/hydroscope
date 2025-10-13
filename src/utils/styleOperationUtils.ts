@@ -1,34 +1,38 @@
 /**
  * @fileoverview Style Operation Utilities
- * 
+ *
  * Provides imperative style operation functions that avoid React re-render cascades
  * and ResizeObserver loops by using direct state manipulation and minimal
  * coordination system usage.
- * 
+ *
  * This follows the same pattern established in searchClearUtils.ts, containerOperationUtils.ts,
  * and panelOperationUtils.ts for avoiding ResizeObserver loops and coordination cascades.
  */
 
 import type { VisualizationState } from "../core/VisualizationState.js";
-import { 
-  globalOperationMonitor, 
+import {
+  globalOperationMonitor,
   recordDOMUpdate,
-  type OperationType 
+  type OperationType,
 } from "./operationPerformanceMonitor.js";
 import {
   withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression
+  withAsyncResizeObserverErrorSuppression,
 } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Style operation types supported by the utilities
  */
-export type StyleOperationType = 'layout' | 'colorPalette' | 'edgeStyle' | 'reset';
+export type StyleOperationType =
+  | "layout"
+  | "colorPalette"
+  | "edgeStyle"
+  | "reset";
 
 /**
  * Edge style types
  */
-export type EdgeStyleKind = 'bezier' | 'straight' | 'smoothstep';
+export type EdgeStyleKind = "bezier" | "straight" | "smoothstep";
 
 /**
  * Style change options
@@ -81,7 +85,7 @@ class StyleOperationDebouncer {
       }
     } else {
       // Clear all timers
-      this.timers.forEach(timer => clearTimeout(timer));
+      this.timers.forEach((timer) => clearTimeout(timer));
       this.timers.clear();
     }
   }
@@ -92,13 +96,13 @@ const styleDebouncer = new StyleOperationDebouncer();
 
 /**
  * ResizeObserver error suppression utility (deprecated - use centralized utilities)
- * 
+ *
  * @deprecated Use withResizeObserverErrorSuppression from ResizeObserverErrorSuppression.ts instead
  */
 function withResizeObserverSuppressionLegacy<T>(
   operation: () => T,
   duration: number = 200,
-  debug: boolean = false
+  debug: boolean = false,
 ): T {
   // Use centralized suppression utility
   return withResizeObserverErrorSuppression(operation)();
@@ -106,7 +110,7 @@ function withResizeObserverSuppressionLegacy<T>(
 
 /**
  * Change layout algorithm imperatively without coordination cascades
- * 
+ *
  * This utility implements the pattern for avoiding ResizeObserver loops:
  * 1. Use requestAnimationFrame for batching DOM updates
  * 2. Suppress ResizeObserver errors during layout changes
@@ -129,30 +133,30 @@ export function changeLayoutImperatively(options: {
     suppressResizeObserver = true,
     debounce = false,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'style_layout';
+  const operation: OperationType = "style_layout";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
-      algorithm, 
-      suppressResizeObserver, 
-      debounce 
+    globalOperationMonitor.startOperation(operation, {
+      algorithm,
+      suppressResizeObserver,
+      debounce,
     });
   }
 
   if (debug) {
-    console.log('[StyleOperationUtils] Starting imperative layout change', {
+    console.log("[StyleOperationUtils] Starting imperative layout change", {
       algorithm,
       suppressResizeObserver,
-      debounce
+      debounce,
     });
   }
 
   // Validate inputs
   if (!algorithm) {
-    console.error('[StyleOperationUtils] Algorithm is required');
+    console.error("[StyleOperationUtils] Algorithm is required");
     return false;
   }
 
@@ -168,30 +172,35 @@ export function changeLayoutImperatively(options: {
           if (onLayoutChange) {
             onLayoutChange(algorithm);
           }
-          
+
           if (debug) {
-            console.log(`[StyleOperationUtils] Layout algorithm changed to ${algorithm} imperatively`);
+            console.log(
+              `[StyleOperationUtils] Layout algorithm changed to ${algorithm} imperatively`,
+            );
           }
-          
+
           // End performance monitoring on success
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              success: true, 
-              algorithm 
+            globalOperationMonitor.endOperation(operation, {
+              success: true,
+              algorithm,
             });
           }
         } catch (error) {
-          console.error(`[StyleOperationUtils] Error changing layout algorithm to ${algorithm}:`, error);
+          console.error(
+            `[StyleOperationUtils] Error changing layout algorithm to ${algorithm}:`,
+            error,
+          );
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              error: error instanceof Error ? error.message : 'Unknown error' 
+            globalOperationMonitor.endOperation(operation, {
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
       };
 
       // In test environment, execute synchronously for predictable testing
-      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
         executeCallback();
       } else {
         // Use requestAnimationFrame to batch DOM updates and avoid ResizeObserver loops
@@ -205,13 +214,13 @@ export function changeLayoutImperatively(options: {
     } else {
       layoutOperation();
     }
-    
+
     return true;
   };
 
   // Execute with or without debouncing
   if (debounce) {
-    styleDebouncer.debounce('layout', performOperation);
+    styleDebouncer.debounce("layout", performOperation);
     // For debounced operations, end monitoring immediately with debounce flag
     if (enablePerformanceMonitoring) {
       globalOperationMonitor.endOperation(operation, { debounced: true });
@@ -241,30 +250,33 @@ export function changeColorPaletteImperatively(options: {
     suppressResizeObserver = true,
     debounce = false,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'style_color_palette';
+  const operation: OperationType = "style_color_palette";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
-      palette, 
-      suppressResizeObserver, 
-      debounce 
+    globalOperationMonitor.startOperation(operation, {
+      palette,
+      suppressResizeObserver,
+      debounce,
     });
   }
 
   if (debug) {
-    console.log('[StyleOperationUtils] Starting imperative color palette change', {
-      palette,
-      suppressResizeObserver,
-      debounce
-    });
+    console.log(
+      "[StyleOperationUtils] Starting imperative color palette change",
+      {
+        palette,
+        suppressResizeObserver,
+        debounce,
+      },
+    );
   }
 
   // Validate inputs
   if (!palette) {
-    console.error('[StyleOperationUtils] Palette is required');
+    console.error("[StyleOperationUtils] Palette is required");
     return false;
   }
 
@@ -280,30 +292,35 @@ export function changeColorPaletteImperatively(options: {
           if (onPaletteChange) {
             onPaletteChange(palette);
           }
-          
+
           if (debug) {
-            console.log(`[StyleOperationUtils] Color palette changed to ${palette} imperatively`);
+            console.log(
+              `[StyleOperationUtils] Color palette changed to ${palette} imperatively`,
+            );
           }
-          
+
           // End performance monitoring on success
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              success: true, 
-              palette 
+            globalOperationMonitor.endOperation(operation, {
+              success: true,
+              palette,
             });
           }
         } catch (error) {
-          console.error(`[StyleOperationUtils] Error changing color palette to ${palette}:`, error);
+          console.error(
+            `[StyleOperationUtils] Error changing color palette to ${palette}:`,
+            error,
+          );
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              error: error instanceof Error ? error.message : 'Unknown error' 
+            globalOperationMonitor.endOperation(operation, {
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
       };
 
       // In test environment, execute synchronously for predictable testing
-      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
         executeCallback();
       } else {
         // Use requestAnimationFrame to batch DOM updates and avoid ResizeObserver loops
@@ -317,13 +334,13 @@ export function changeColorPaletteImperatively(options: {
     } else {
       paletteOperation();
     }
-    
+
     return true;
   };
 
   // Execute with or without debouncing
   if (debounce) {
-    styleDebouncer.debounce('colorPalette', performOperation);
+    styleDebouncer.debounce("colorPalette", performOperation);
     // For debounced operations, end monitoring immediately with debounce flag
     if (enablePerformanceMonitoring) {
       globalOperationMonitor.endOperation(operation, { debounced: true });
@@ -353,30 +370,30 @@ export function changeEdgeStyleImperatively(options: {
     suppressResizeObserver = true,
     debounce = false,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'style_edge_style';
+  const operation: OperationType = "style_edge_style";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
-      edgeStyle, 
-      suppressResizeObserver, 
-      debounce 
+    globalOperationMonitor.startOperation(operation, {
+      edgeStyle,
+      suppressResizeObserver,
+      debounce,
     });
   }
 
   if (debug) {
-    console.log('[StyleOperationUtils] Starting imperative edge style change', {
+    console.log("[StyleOperationUtils] Starting imperative edge style change", {
       edgeStyle,
       suppressResizeObserver,
-      debounce
+      debounce,
     });
   }
 
   // Validate inputs
   if (!edgeStyle) {
-    console.error('[StyleOperationUtils] Edge style is required');
+    console.error("[StyleOperationUtils] Edge style is required");
     return false;
   }
 
@@ -392,30 +409,35 @@ export function changeEdgeStyleImperatively(options: {
           if (onEdgeStyleChange) {
             onEdgeStyleChange(edgeStyle);
           }
-          
+
           if (debug) {
-            console.log(`[StyleOperationUtils] Edge style changed to ${edgeStyle} imperatively`);
+            console.log(
+              `[StyleOperationUtils] Edge style changed to ${edgeStyle} imperatively`,
+            );
           }
-          
+
           // End performance monitoring on success
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              success: true, 
-              edgeStyle 
+            globalOperationMonitor.endOperation(operation, {
+              success: true,
+              edgeStyle,
             });
           }
         } catch (error) {
-          console.error(`[StyleOperationUtils] Error changing edge style to ${edgeStyle}:`, error);
+          console.error(
+            `[StyleOperationUtils] Error changing edge style to ${edgeStyle}:`,
+            error,
+          );
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              error: error instanceof Error ? error.message : 'Unknown error' 
+            globalOperationMonitor.endOperation(operation, {
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
       };
 
       // In test environment, execute synchronously for predictable testing
-      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
         executeCallback();
       } else {
         // Use requestAnimationFrame to batch DOM updates and avoid ResizeObserver loops
@@ -429,13 +451,13 @@ export function changeEdgeStyleImperatively(options: {
     } else {
       edgeStyleOperation();
     }
-    
+
     return true;
   };
 
   // Execute with or without debouncing
   if (debounce) {
-    styleDebouncer.debounce('edgeStyle', performOperation);
+    styleDebouncer.debounce("edgeStyle", performOperation);
     // For debounced operations, end monitoring immediately with debounce flag
     if (enablePerformanceMonitoring) {
       globalOperationMonitor.endOperation(operation, { debounced: true });
@@ -461,20 +483,20 @@ export function resetStylesImperatively(options: {
     visualizationState,
     suppressResizeObserver = true,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'style_reset';
+  const operation: OperationType = "style_reset";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
-      suppressResizeObserver 
+    globalOperationMonitor.startOperation(operation, {
+      suppressResizeObserver,
     });
   }
 
   if (debug) {
-    console.log('[StyleOperationUtils] Starting imperative style reset', {
-      suppressResizeObserver
+    console.log("[StyleOperationUtils] Starting imperative style reset", {
+      suppressResizeObserver,
     });
   }
 
@@ -490,29 +512,34 @@ export function resetStylesImperatively(options: {
           if (onResetToDefaults) {
             onResetToDefaults();
           }
-          
+
           if (debug) {
-            console.log('[StyleOperationUtils] Styles reset to defaults imperatively');
+            console.log(
+              "[StyleOperationUtils] Styles reset to defaults imperatively",
+            );
           }
-          
+
           // End performance monitoring on success
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              success: true 
+            globalOperationMonitor.endOperation(operation, {
+              success: true,
             });
           }
         } catch (error) {
-          console.error('[StyleOperationUtils] Error resetting styles to defaults:', error);
+          console.error(
+            "[StyleOperationUtils] Error resetting styles to defaults:",
+            error,
+          );
           if (enablePerformanceMonitoring) {
-            globalOperationMonitor.endOperation(operation, { 
-              error: error instanceof Error ? error.message : 'Unknown error' 
+            globalOperationMonitor.endOperation(operation, {
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
       };
 
       // In test environment, execute synchronously for predictable testing
-      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
         executeCallback();
       } else {
         // Use requestAnimationFrame to batch DOM updates and avoid ResizeObserver loops
@@ -526,7 +553,7 @@ export function resetStylesImperatively(options: {
     } else {
       resetOperation();
     }
-    
+
     return true;
   };
 
@@ -535,12 +562,12 @@ export function resetStylesImperatively(options: {
 
 /**
  * Batch style operations imperatively
- * 
+ *
  * Useful for coordinating multiple style changes
  */
 export function batchStyleOperationsImperatively(options: {
   operations: Array<{
-    type: 'layout' | 'colorPalette' | 'edgeStyle' | 'reset';
+    type: "layout" | "colorPalette" | "edgeStyle" | "reset";
     value?: string | EdgeStyleKind;
     callback?: (value?: any) => void;
   }>;
@@ -549,29 +576,35 @@ export function batchStyleOperationsImperatively(options: {
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;
 }): { success: number; failed: number; errors: string[] } {
-  const { operations, visualizationState, suppressResizeObserver = true, debug = false, enablePerformanceMonitoring = true } = options;
+  const {
+    operations,
+    visualizationState,
+    suppressResizeObserver = true,
+    debug = false,
+    enablePerformanceMonitoring = true,
+  } = options;
 
   // Start performance monitoring for batch operation
-  const batchOperation: OperationType = 'style_batch';
+  const batchOperation: OperationType = "style_batch";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(batchOperation, { 
+    globalOperationMonitor.startOperation(batchOperation, {
       operationCount: operations.length,
-      operationTypes: operations.map(op => op.type),
-      suppressResizeObserver
+      operationTypes: operations.map((op) => op.type),
+      suppressResizeObserver,
     });
   }
-  
+
   if (debug) {
-    console.log('[StyleOperationUtils] Starting batch style operations', {
+    console.log("[StyleOperationUtils] Starting batch style operations", {
       operationCount: operations.length,
-      suppressResizeObserver
+      suppressResizeObserver,
     });
   }
 
   const results = {
     success: 0,
     failed: 0,
-    errors: [] as string[]
+    errors: [] as string[],
   };
 
   // Define the batch operation function
@@ -580,45 +613,45 @@ export function batchStyleOperationsImperatively(options: {
     for (const { type, value, callback } of operations) {
       try {
         let success = false;
-        
+
         switch (type) {
-          case 'layout':
+          case "layout":
             success = changeLayoutImperatively({
               algorithm: value as string,
               onLayoutChange: callback,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
-          case 'colorPalette':
+          case "colorPalette":
             success = changeColorPaletteImperatively({
               palette: value as string,
               onPaletteChange: callback,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
-          case 'edgeStyle':
+          case "edgeStyle":
             success = changeEdgeStyleImperatively({
               edgeStyle: value as EdgeStyleKind,
               onEdgeStyleChange: callback,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
-          case 'reset':
+          case "reset":
             success = resetStylesImperatively({
               onResetToDefaults: callback,
               visualizationState,
               suppressResizeObserver: false, // Already handled at batch level
               debug,
-              enablePerformanceMonitoring: false // Disable individual monitoring in batch
+              enablePerformanceMonitoring: false, // Disable individual monitoring in batch
             });
             break;
           default:
@@ -640,15 +673,15 @@ export function batchStyleOperationsImperatively(options: {
     }
 
     if (debug) {
-      console.log('[StyleOperationUtils] Batch operations completed', results);
+      console.log("[StyleOperationUtils] Batch operations completed", results);
     }
 
     // End performance monitoring for batch operation
     if (enablePerformanceMonitoring) {
-      globalOperationMonitor.endOperation(batchOperation, { 
+      globalOperationMonitor.endOperation(batchOperation, {
         success: results.success,
         failed: results.failed,
-        totalOperations: operations.length
+        totalOperations: operations.length,
       });
     }
   };
@@ -664,7 +697,7 @@ export function batchStyleOperationsImperatively(options: {
 
 /**
  * Clear all debounced style operations
- * 
+ *
  * Useful for cleanup or when you need immediate execution
  */
 export function clearStyleOperationDebouncing(operationType?: string): void {
@@ -673,7 +706,7 @@ export function clearStyleOperationDebouncing(operationType?: string): void {
 
 /**
  * Pattern for avoiding ResizeObserver loops in style operations
- * 
+ *
  * Key principles:
  * 1. Use imperative operations for style changes
  * 2. Avoid AsyncCoordinator calls during UI interactions
@@ -687,15 +720,15 @@ export const STYLE_OPERATION_PATTERN = {
     "Suppress ResizeObserver errors during layout algorithm changes",
     "Use debouncing for rapid style toggle operations",
     "Call style change callbacks directly without coordination",
-    "Use synchronous operations for UI interactions"
+    "Use synchronous operations for UI interactions",
   ],
   DONT: [
     "Call AsyncCoordinator during style change operations",
     "Trigger layout operations during rapid interactions",
     "Use async/await for simple style changes",
     "Create cascading style operation chains",
-    "Allow ResizeObserver errors to propagate during style changes"
-  ]
+    "Allow ResizeObserver errors to propagate during style changes",
+  ],
 } as const;
 
 // Export performance monitoring utilities for style operations
@@ -705,5 +738,5 @@ export {
   monitorOperation,
   measureOperationPerformance,
   type OperationType,
-  type OperationMetrics
+  type OperationMetrics,
 } from "./operationPerformanceMonitor.js";

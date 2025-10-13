@@ -169,8 +169,6 @@ describe("ContainerControls Component", () => {
       );
     });
 
-
-
     it("should not expand when no collapsed containers exist", async () => {
       const allExpandedState = new VisualizationState();
       // Add expanded containers
@@ -253,11 +251,7 @@ describe("ContainerControls Component", () => {
         { timeout: 100 },
       );
     });
-
-
   });
-
-
 
   describe("Feedback Display", () => {
     it("should show operation counter when operations are performed", async () => {

@@ -1,26 +1,26 @@
 /**
  * @fileoverview Search Clear Utilities
- * 
+ *
  * Provides imperative search clearing operations that avoid React re-render cascades
  * and ResizeObserver loops by using direct DOM manipulation and minimal state updates.
  */
 
-import { 
-  globalOperationMonitor, 
+import {
+  globalOperationMonitor,
   recordDOMUpdate,
-  type OperationType 
+  type OperationType,
 } from "./operationPerformanceMonitor.js";
 import {
   withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression
+  withAsyncResizeObserverErrorSuppression,
 } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Clear search imperatively without triggering AsyncCoordinator cascades
- * 
+ *
  * This utility implements the pattern we discovered for avoiding ResizeObserver loops:
  * 1. Clear VisualizationState directly (imperative)
- * 2. Clear DOM input directly (imperative) 
+ * 2. Clear DOM input directly (imperative)
  * 3. Update React state minimally (batched)
  * 4. Avoid callbacks that trigger coordination systems
  */
@@ -44,21 +44,21 @@ export function clearSearchImperatively(options: {
     clearTimer,
     suppressResizeObserver = true,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'search_clear';
+  const operation: OperationType = "search_clear";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
+    globalOperationMonitor.startOperation(operation, {
       hasVisualizationState: !!visualizationState,
       hasInputRef: !!inputRef,
-      hasSetters: !!(setQuery && setMatches && setCurrentIndex)
+      hasSetters: !!(setQuery && setMatches && setCurrentIndex),
     });
   }
 
   if (debug) {
-    console.log('[SearchClearUtils] Starting imperative search clear');
+    console.log("[SearchClearUtils] Starting imperative search clear");
   }
 
   // Define the search clear operation
@@ -73,10 +73,15 @@ export function clearSearchImperatively(options: {
       try {
         visualizationState.clearSearchEnhanced();
         if (debug) {
-          console.log('[SearchClearUtils] VisualizationState cleared imperatively');
+          console.log(
+            "[SearchClearUtils] VisualizationState cleared imperatively",
+          );
         }
       } catch (error) {
-        console.error('[SearchClearUtils] VisualizationState clear failed:', error);
+        console.error(
+          "[SearchClearUtils] VisualizationState clear failed:",
+          error,
+        );
       }
     }
 
@@ -88,7 +93,7 @@ export function clearSearchImperatively(options: {
       }
       inputRef.current.value = "";
       if (debug) {
-        console.log('[SearchClearUtils] Input cleared imperatively');
+        console.log("[SearchClearUtils] Input cleared imperatively");
       }
     }
 
@@ -98,16 +103,16 @@ export function clearSearchImperatively(options: {
     if (setCurrentIndex) setCurrentIndex(0);
 
     if (debug) {
-      console.log('[SearchClearUtils] React state cleared imperatively');
+      console.log("[SearchClearUtils] React state cleared imperatively");
     }
 
     // End performance monitoring
     if (enablePerformanceMonitoring) {
-      globalOperationMonitor.endOperation(operation, { 
+      globalOperationMonitor.endOperation(operation, {
         success: true,
         clearedVisualizationState: !!visualizationState,
         clearedDOM: !!inputRef?.current,
-        clearedReactState: !!(setQuery && setMatches && setCurrentIndex)
+        clearedReactState: !!(setQuery && setMatches && setCurrentIndex),
       });
     }
   };
@@ -122,7 +127,7 @@ export function clearSearchImperatively(options: {
 
 /**
  * Clear search panel state imperatively
- * 
+ *
  * For use in parent components like InfoPanel
  */
 export function clearSearchPanelImperatively(options: {
@@ -139,19 +144,23 @@ export function clearSearchPanelImperatively(options: {
     setCurrentSearchMatch,
     suppressResizeObserver = true,
     debug = false,
-    enablePerformanceMonitoring = true
+    enablePerformanceMonitoring = true,
   } = options;
 
   // Start performance monitoring
-  const operation: OperationType = 'search_panel_clear';
+  const operation: OperationType = "search_panel_clear";
   if (enablePerformanceMonitoring) {
-    globalOperationMonitor.startOperation(operation, { 
-      hasSetters: !!(setSearchQuery && setSearchMatches && setCurrentSearchMatch)
+    globalOperationMonitor.startOperation(operation, {
+      hasSetters: !!(
+        setSearchQuery &&
+        setSearchMatches &&
+        setCurrentSearchMatch
+      ),
     });
   }
 
   if (debug) {
-    console.log('[SearchClearUtils] Starting imperative panel clear');
+    console.log("[SearchClearUtils] Starting imperative panel clear");
   }
 
   // Define the panel clear operation
@@ -162,14 +171,18 @@ export function clearSearchPanelImperatively(options: {
     if (setCurrentSearchMatch) setCurrentSearchMatch(undefined);
 
     if (debug) {
-      console.log('[SearchClearUtils] Panel state cleared imperatively');
+      console.log("[SearchClearUtils] Panel state cleared imperatively");
     }
 
     // End performance monitoring
     if (enablePerformanceMonitoring) {
-      globalOperationMonitor.endOperation(operation, { 
+      globalOperationMonitor.endOperation(operation, {
         success: true,
-        clearedReactState: !!(setSearchQuery && setSearchMatches && setCurrentSearchMatch)
+        clearedReactState: !!(
+          setSearchQuery &&
+          setSearchMatches &&
+          setCurrentSearchMatch
+        ),
       });
     }
   };
@@ -184,7 +197,7 @@ export function clearSearchPanelImperatively(options: {
 
 /**
  * Pattern for avoiding ResizeObserver loops in UI operations
- * 
+ *
  * Key principles:
  * 1. Use imperative operations for external state (VisualizationState, DOM)
  * 2. Minimize React state updates (let React batch them)
@@ -196,14 +209,14 @@ export const SEARCH_CLEAR_PATTERN = {
     "Clear external state imperatively (VisualizationState.clearSearchEnhanced())",
     "Clear DOM directly (inputRef.current.value = '')",
     "Update React state minimally (let React batch setState calls)",
-    "Use synchronous operations"
+    "Use synchronous operations",
   ],
   DONT: [
     "Call AsyncCoordinator during UI operations",
     "Trigger parent callbacks (onClear, onSearch, onSearchUpdate)",
     "Use async/await for simple UI state changes",
-    "Create cascading state update chains"
-  ]
+    "Create cascading state update chains",
+  ],
 } as const;
 
 // Export performance monitoring utilities for search operations
@@ -213,5 +226,5 @@ export {
   monitorOperation,
   measureOperationPerformance,
   type OperationType,
-  type OperationMetrics
+  type OperationMetrics,
 } from "./operationPerformanceMonitor.js";

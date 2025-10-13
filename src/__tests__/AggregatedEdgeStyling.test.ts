@@ -64,7 +64,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       direction: "DOWN",
     });
     asyncCoordinator = new AsyncCoordinator();
-    
+
     // Set bridge instances for the new architecture
     asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge);
 
@@ -156,21 +156,21 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       // Collapse the container to trigger edge aggregation
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       // Get ReactFlow data to see aggregated edges
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
-      
+
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.edges).toBeDefined();
       expect(Array.isArray(reactFlowData.edges)).toBe(true);
 
       // Check for aggregated edges
-      const aggregatedEdges = reactFlowData.edges.filter(edge => 
-        edge.type === "aggregated" || edge.data?.aggregated
+      const aggregatedEdges = reactFlowData.edges.filter(
+        (edge) => edge.type === "aggregated" || edge.data?.aggregated,
       );
-      
+
       expect(aggregatedEdges.length).toBeGreaterThan(0);
     });
 
@@ -192,7 +192,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       // Collapse to trigger aggregation
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -239,7 +239,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -286,7 +286,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
@@ -310,7 +310,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       const result = processAggregatedSemanticTags(
         originalEdges,
-        styleConfig.semanticMappings || {}
+        styleConfig.semanticMappings || {},
       );
 
       expect(result).toBeDefined();
@@ -332,7 +332,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       const result = processAggregatedSemanticTags(
         originalEdges,
-        styleConfig.semanticMappings || {}
+        styleConfig.semanticMappings || {},
       );
 
       expect(result).toBeDefined();
@@ -343,7 +343,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
     it("should handle empty original edges", () => {
       const result = processAggregatedSemanticTags(
         [],
-        styleConfig.semanticMappings || {}
+        styleConfig.semanticMappings || {},
       );
 
       expect(result).toBeDefined();
@@ -366,7 +366,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
 
       const result = processAggregatedSemanticTags(
         originalEdges,
-        styleConfig.semanticMappings || {}
+        styleConfig.semanticMappings || {},
       );
 
       expect(result).toBeDefined();
@@ -446,17 +446,17 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       // Collapse both containers
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       await asyncCoordinator.collapseContainer("c2", state, {
         relayoutEntities: ["c2"],
-        fitView: false
+        fitView: false,
       });
 
       // Get final ReactFlow data
       const reactFlowData = reactFlowBridge.toReactFlowData(state);
-      
+
       expect(reactFlowData).toBeDefined();
       expect(reactFlowData.nodes).toBeDefined();
       expect(reactFlowData.edges).toBeDefined();
@@ -482,7 +482,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       // Collapse
       await asyncCoordinator.collapseContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       const collapsedData = reactFlowBridge.toReactFlowData(state);
@@ -490,7 +490,7 @@ describe("Aggregated Edge Styling with Conflict Resolution", () => {
       // Expand
       await asyncCoordinator.expandContainer("c1", state, {
         relayoutEntities: ["c1"],
-        fitView: false
+        fitView: false,
       });
 
       const expandedData = reactFlowBridge.toReactFlowData(state);

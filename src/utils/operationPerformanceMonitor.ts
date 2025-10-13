@@ -1,50 +1,50 @@
 /**
  * @fileoverview Operation Performance Monitor
- * 
+ *
  * Extends the existing PerformanceMonitor, PerformanceProfiler, and PerformanceUtils
  * to provide specialized monitoring for imperative UI operations. This utility helps
  * track performance metrics and detect coordination cascades in container, panel,
  * style, and search operations.
- * 
+ *
  * Requirements: 8.1, 8.2, 8.3, 8.4
  */
 
-import { 
-  globalPerformanceMonitor, 
+import {
+  globalPerformanceMonitor,
   recordPerformanceMetric,
-  type PerformanceAlert 
+  type PerformanceAlert,
 } from "./PerformanceMonitor.js";
-import { 
+import {
   globalProfiler,
   profileFunction,
   profileAsyncFunction,
-  type PerformanceMetrics as ProfilerMetrics
+  type PerformanceMetrics as ProfilerMetrics,
 } from "./PerformanceProfiler.js";
-import { 
+import {
   measureSync,
   measureAsync,
-  type PerformanceMetrics as UtilsMetrics
+  type PerformanceMetrics as UtilsMetrics,
 } from "./PerformanceUtils.js";
 
 /**
  * Operation types for performance monitoring
  */
-export type OperationType = 
-  | 'container_toggle'
-  | 'container_expand' 
-  | 'container_collapse'
-  | 'container_batch'
-  | 'panel_toggle'
-  | 'panel_expand'
-  | 'panel_collapse'
-  | 'panel_batch'
-  | 'style_layout'
-  | 'style_color_palette'
-  | 'style_edge_style'
-  | 'style_reset'
-  | 'style_batch'
-  | 'search_clear'
-  | 'search_panel_clear';
+export type OperationType =
+  | "container_toggle"
+  | "container_expand"
+  | "container_collapse"
+  | "container_batch"
+  | "panel_toggle"
+  | "panel_expand"
+  | "panel_collapse"
+  | "panel_batch"
+  | "style_layout"
+  | "style_color_palette"
+  | "style_edge_style"
+  | "style_reset"
+  | "style_batch"
+  | "search_clear"
+  | "search_panel_clear";
 
 /**
  * Cascade detection result
@@ -71,7 +71,7 @@ export interface OperationMetrics {
     after: number;
     growth: number;
   };
-  cascadeRisk: 'low' | 'medium' | 'high';
+  cascadeRisk: "low" | "medium" | "high";
   coordinatorCalls: number;
   domUpdates: number;
   timestamp: number;
@@ -99,7 +99,7 @@ export interface OperationMonitoringConfig {
 
 /**
  * Operation Performance Monitor
- * 
+ *
  * Specialized monitoring for imperative UI operations with cascade detection
  */
 export class OperationPerformanceMonitor {
@@ -115,28 +115,92 @@ export class OperationPerformanceMonitor {
 
   constructor(config: Partial<OperationMonitoringConfig> = {}) {
     this.config = {
-      enabled: typeof process !== 'undefined' ? process.env.NODE_ENV !== 'test' : true,
+      enabled:
+        typeof process !== "undefined" ? process.env.NODE_ENV !== "test" : true,
       trackCascades: true,
       cascadeDetectionWindow: 1000, // 1 second
       maxCascadeOperations: 5,
-      debugLogging: typeof process !== 'undefined' ? process.env.NODE_ENV === 'development' : false,
+      debugLogging:
+        typeof process !== "undefined"
+          ? process.env.NODE_ENV === "development"
+          : false,
       alertOnCascades: true,
       thresholds: {
-        container_toggle: { maxDuration: 50, maxMemoryGrowth: 5, maxCoordinatorCalls: 1 },
-        container_expand: { maxDuration: 50, maxMemoryGrowth: 5, maxCoordinatorCalls: 1 },
-        container_collapse: { maxDuration: 50, maxMemoryGrowth: 5, maxCoordinatorCalls: 1 },
-        container_batch: { maxDuration: 200, maxMemoryGrowth: 20, maxCoordinatorCalls: 0 },
-        panel_toggle: { maxDuration: 30, maxMemoryGrowth: 2, maxCoordinatorCalls: 0 },
-        panel_expand: { maxDuration: 30, maxMemoryGrowth: 2, maxCoordinatorCalls: 0 },
-        panel_collapse: { maxDuration: 30, maxMemoryGrowth: 2, maxCoordinatorCalls: 0 },
-        panel_batch: { maxDuration: 100, maxMemoryGrowth: 10, maxCoordinatorCalls: 0 },
-        style_layout: { maxDuration: 100, maxMemoryGrowth: 5, maxCoordinatorCalls: 0 },
-        style_color_palette: { maxDuration: 50, maxMemoryGrowth: 2, maxCoordinatorCalls: 0 },
-        style_edge_style: { maxDuration: 50, maxMemoryGrowth: 2, maxCoordinatorCalls: 0 },
-        style_reset: { maxDuration: 100, maxMemoryGrowth: 5, maxCoordinatorCalls: 0 },
-        style_batch: { maxDuration: 200, maxMemoryGrowth: 15, maxCoordinatorCalls: 0 },
-        search_clear: { maxDuration: 30, maxMemoryGrowth: 1, maxCoordinatorCalls: 0 },
-        search_panel_clear: { maxDuration: 20, maxMemoryGrowth: 1, maxCoordinatorCalls: 0 },
+        container_toggle: {
+          maxDuration: 50,
+          maxMemoryGrowth: 5,
+          maxCoordinatorCalls: 1,
+        },
+        container_expand: {
+          maxDuration: 50,
+          maxMemoryGrowth: 5,
+          maxCoordinatorCalls: 1,
+        },
+        container_collapse: {
+          maxDuration: 50,
+          maxMemoryGrowth: 5,
+          maxCoordinatorCalls: 1,
+        },
+        container_batch: {
+          maxDuration: 200,
+          maxMemoryGrowth: 20,
+          maxCoordinatorCalls: 0,
+        },
+        panel_toggle: {
+          maxDuration: 30,
+          maxMemoryGrowth: 2,
+          maxCoordinatorCalls: 0,
+        },
+        panel_expand: {
+          maxDuration: 30,
+          maxMemoryGrowth: 2,
+          maxCoordinatorCalls: 0,
+        },
+        panel_collapse: {
+          maxDuration: 30,
+          maxMemoryGrowth: 2,
+          maxCoordinatorCalls: 0,
+        },
+        panel_batch: {
+          maxDuration: 100,
+          maxMemoryGrowth: 10,
+          maxCoordinatorCalls: 0,
+        },
+        style_layout: {
+          maxDuration: 100,
+          maxMemoryGrowth: 5,
+          maxCoordinatorCalls: 0,
+        },
+        style_color_palette: {
+          maxDuration: 50,
+          maxMemoryGrowth: 2,
+          maxCoordinatorCalls: 0,
+        },
+        style_edge_style: {
+          maxDuration: 50,
+          maxMemoryGrowth: 2,
+          maxCoordinatorCalls: 0,
+        },
+        style_reset: {
+          maxDuration: 100,
+          maxMemoryGrowth: 5,
+          maxCoordinatorCalls: 0,
+        },
+        style_batch: {
+          maxDuration: 200,
+          maxMemoryGrowth: 15,
+          maxCoordinatorCalls: 0,
+        },
+        search_clear: {
+          maxDuration: 30,
+          maxMemoryGrowth: 1,
+          maxCoordinatorCalls: 0,
+        },
+        search_panel_clear: {
+          maxDuration: 20,
+          maxMemoryGrowth: 1,
+          maxCoordinatorCalls: 0,
+        },
       },
       ...config,
     };
@@ -145,7 +209,10 @@ export class OperationPerformanceMonitor {
   /**
    * Start monitoring an operation
    */
-  startOperation(operation: OperationType, metadata?: Record<string, any>): void {
+  startOperation(
+    operation: OperationType,
+    metadata?: Record<string, any>,
+  ): void {
     if (!this.config.enabled) return;
 
     // Reset counters for this operation
@@ -156,14 +223,20 @@ export class OperationPerformanceMonitor {
     globalProfiler.startOperation(`operation_${operation}`, metadata);
 
     if (this.config.debugLogging) {
-      console.log(`[OperationPerformanceMonitor] Started monitoring: ${operation}`, metadata);
+      console.log(
+        `[OperationPerformanceMonitor] Started monitoring: ${operation}`,
+        metadata,
+      );
     }
   }
 
   /**
    * End monitoring an operation and record metrics
    */
-  endOperation(operation: OperationType, metadata?: Record<string, any>): OperationMetrics | null {
+  endOperation(
+    operation: OperationType,
+    metadata?: Record<string, any>,
+  ): OperationMetrics | null {
     if (!this.config.enabled) return null;
 
     // End profiling
@@ -191,7 +264,7 @@ export class OperationPerformanceMonitor {
 
     // Record in history
     this.operationHistory.push(operationMetrics);
-    
+
     // Keep only recent history (last 100 operations)
     if (this.operationHistory.length > 100) {
       this.operationHistory.shift();
@@ -203,9 +276,21 @@ export class OperationPerformanceMonitor {
     }
 
     // Record metrics in global performance monitor
-    recordPerformanceMetric('OperationMonitor', `${operation}_duration`, operationMetrics.duration);
-    recordPerformanceMetric('OperationMonitor', `${operation}_memory_growth`, operationMetrics.memoryUsage.growth);
-    recordPerformanceMetric('OperationMonitor', `${operation}_coordinator_calls`, operationMetrics.coordinatorCalls);
+    recordPerformanceMetric(
+      "OperationMonitor",
+      `${operation}_duration`,
+      operationMetrics.duration,
+    );
+    recordPerformanceMetric(
+      "OperationMonitor",
+      `${operation}_memory_growth`,
+      operationMetrics.memoryUsage.growth,
+    );
+    recordPerformanceMetric(
+      "OperationMonitor",
+      `${operation}_coordinator_calls`,
+      operationMetrics.coordinatorCalls,
+    );
 
     // Check thresholds and generate alerts
     this.checkOperationThresholds(operationMetrics);
@@ -219,12 +304,15 @@ export class OperationPerformanceMonitor {
     }
 
     if (this.config.debugLogging) {
-      console.log(`[OperationPerformanceMonitor] Completed monitoring: ${operation}`, {
-        duration: operationMetrics.duration.toFixed(2) + 'ms',
-        memoryGrowth: operationMetrics.memoryUsage.growth.toFixed(2) + 'MB',
-        cascadeRisk: operationMetrics.cascadeRisk,
-        coordinatorCalls: operationMetrics.coordinatorCalls,
-      });
+      console.log(
+        `[OperationPerformanceMonitor] Completed monitoring: ${operation}`,
+        {
+          duration: operationMetrics.duration.toFixed(2) + "ms",
+          memoryGrowth: operationMetrics.memoryUsage.growth.toFixed(2) + "MB",
+          cascadeRisk: operationMetrics.cascadeRisk,
+          coordinatorCalls: operationMetrics.coordinatorCalls,
+        },
+      );
     }
 
     return operationMetrics;
@@ -249,36 +337,41 @@ export class OperationPerformanceMonitor {
   /**
    * Calculate cascade risk based on operation type and context
    */
-  private calculateCascadeRisk(operation: OperationType): 'low' | 'medium' | 'high' {
+  private calculateCascadeRisk(
+    operation: OperationType,
+  ): "low" | "medium" | "high" {
     // Operations that directly manipulate AsyncCoordinator are high risk
-    if (operation.startsWith('container_') && this.coordinatorCallCount > 0) {
-      return 'high';
+    if (operation.startsWith("container_") && this.coordinatorCallCount > 0) {
+      return "high";
     }
 
     // Batch operations with multiple coordinator calls are high risk
-    if (operation.includes('batch') && this.coordinatorCallCount > 2) {
-      return 'high';
+    if (operation.includes("batch") && this.coordinatorCallCount > 2) {
+      return "high";
     }
 
     // Style operations that trigger layout are medium risk
-    if (operation === 'style_layout' || operation === 'style_reset') {
-      return 'medium';
+    if (operation === "style_layout" || operation === "style_reset") {
+      return "medium";
     }
 
     // Panel operations are generally low risk
-    if (operation.startsWith('panel_') || operation.startsWith('search_')) {
-      return 'low';
+    if (operation.startsWith("panel_") || operation.startsWith("search_")) {
+      return "low";
     }
 
-    return 'medium';
+    return "medium";
   }
 
   /**
    * Update cascade detection buffer
    */
-  private updateCascadeBuffer(operation: OperationType, duration: number): void {
+  private updateCascadeBuffer(
+    operation: OperationType,
+    duration: number,
+  ): void {
     const now = Date.now();
-    
+
     // Add current operation
     this.cascadeDetectionBuffer.push({
       operation,
@@ -289,7 +382,7 @@ export class OperationPerformanceMonitor {
     // Remove operations outside the detection window
     const windowStart = now - this.config.cascadeDetectionWindow;
     this.cascadeDetectionBuffer = this.cascadeDetectionBuffer.filter(
-      op => op.timestamp >= windowStart
+      (op) => op.timestamp >= windowStart,
     );
   }
 
@@ -303,17 +396,31 @@ export class OperationPerformanceMonitor {
 
     const recommendations: string[] = [];
     if (detected) {
-      recommendations.push('Consider batching multiple operations together');
-      recommendations.push('Use debouncing for rapid user interactions');
-      recommendations.push('Avoid triggering AsyncCoordinator during UI operations');
-      
+      recommendations.push("Consider batching multiple operations together");
+      recommendations.push("Use debouncing for rapid user interactions");
+      recommendations.push(
+        "Avoid triggering AsyncCoordinator during UI operations",
+      );
+
       // Specific recommendations based on operation types
-      const operationTypes = new Set(operations.map(op => op.operation));
-      if (operationTypes.has('container_toggle') || operationTypes.has('container_expand') || operationTypes.has('container_collapse')) {
-        recommendations.push('Use batchContainerOperationsImperatively() for multiple container operations');
+      const operationTypes = new Set(operations.map((op) => op.operation));
+      if (
+        operationTypes.has("container_toggle") ||
+        operationTypes.has("container_expand") ||
+        operationTypes.has("container_collapse")
+      ) {
+        recommendations.push(
+          "Use batchContainerOperationsImperatively() for multiple container operations",
+        );
       }
-      if (operationTypes.has('style_layout') || operationTypes.has('style_color_palette') || operationTypes.has('style_edge_style')) {
-        recommendations.push('Use batchStyleOperationsImperatively() for multiple style changes');
+      if (
+        operationTypes.has("style_layout") ||
+        operationTypes.has("style_color_palette") ||
+        operationTypes.has("style_edge_style")
+      ) {
+        recommendations.push(
+          "Use batchStyleOperationsImperatively() for multiple style changes",
+        );
       }
     }
 
@@ -335,22 +442,35 @@ export class OperationPerformanceMonitor {
     const violations: string[] = [];
 
     if (metrics.duration > thresholds.maxDuration) {
-      violations.push(`Duration ${metrics.duration.toFixed(2)}ms exceeds threshold ${thresholds.maxDuration}ms`);
+      violations.push(
+        `Duration ${metrics.duration.toFixed(2)}ms exceeds threshold ${thresholds.maxDuration}ms`,
+      );
     }
 
     if (metrics.memoryUsage.growth > thresholds.maxMemoryGrowth) {
-      violations.push(`Memory growth ${metrics.memoryUsage.growth.toFixed(2)}MB exceeds threshold ${thresholds.maxMemoryGrowth}MB`);
+      violations.push(
+        `Memory growth ${metrics.memoryUsage.growth.toFixed(2)}MB exceeds threshold ${thresholds.maxMemoryGrowth}MB`,
+      );
     }
 
     if (metrics.coordinatorCalls > thresholds.maxCoordinatorCalls) {
-      violations.push(`Coordinator calls ${metrics.coordinatorCalls} exceed threshold ${thresholds.maxCoordinatorCalls}`);
+      violations.push(
+        `Coordinator calls ${metrics.coordinatorCalls} exceed threshold ${thresholds.maxCoordinatorCalls}`,
+      );
     }
 
     if (violations.length > 0) {
-      console.warn(`🚨 Operation Performance Alert [${metrics.operation}]:`, violations);
-      
+      console.warn(
+        `🚨 Operation Performance Alert [${metrics.operation}]:`,
+        violations,
+      );
+
       // Record alert in global performance monitor
-      recordPerformanceMetric('OperationMonitor', `${metrics.operation}_threshold_violations`, violations.length);
+      recordPerformanceMetric(
+        "OperationMonitor",
+        `${metrics.operation}_threshold_violations`,
+        violations.length,
+      );
     }
   }
 
@@ -360,16 +480,23 @@ export class OperationPerformanceMonitor {
   private alertCascadeDetected(cascade: CascadeDetection): void {
     console.warn(`🚨 Coordination Cascade Detected:`, {
       operationCount: cascade.cascadeCount,
-      window: this.config.cascadeDetectionWindow + 'ms',
-      operations: cascade.operations.map(op => op.operation),
+      window: this.config.cascadeDetectionWindow + "ms",
+      operations: cascade.operations.map((op) => op.operation),
     });
 
     if (cascade.recommendations.length > 0) {
-      console.warn('💡 Cascade Prevention Recommendations:', cascade.recommendations);
+      console.warn(
+        "💡 Cascade Prevention Recommendations:",
+        cascade.recommendations,
+      );
     }
 
     // Record cascade in global performance monitor
-    recordPerformanceMetric('OperationMonitor', 'cascade_detected', cascade.cascadeCount);
+    recordPerformanceMetric(
+      "OperationMonitor",
+      "cascade_detected",
+      cascade.cascadeCount,
+    );
   }
 
   /**
@@ -377,7 +504,9 @@ export class OperationPerformanceMonitor {
    */
   getOperationHistory(operation?: OperationType): OperationMetrics[] {
     if (operation) {
-      return this.operationHistory.filter(metrics => metrics.operation === operation);
+      return this.operationHistory.filter(
+        (metrics) => metrics.operation === operation,
+      );
     }
     return [...this.operationHistory];
   }
@@ -404,11 +533,11 @@ export class OperationPerformanceMonitor {
     if (cascadeDetection.detected) {
       report += `⚠️ **Cascade Detected**: ${cascadeDetection.cascadeCount} operations in ${this.config.cascadeDetectionWindow}ms window\n\n`;
       report += "**Operations in cascade:**\n";
-      cascadeDetection.operations.forEach(op => {
+      cascadeDetection.operations.forEach((op) => {
         report += `- ${op.operation} (${op.duration.toFixed(2)}ms)\n`;
       });
       report += "\n**Recommendations:**\n";
-      cascadeDetection.recommendations.forEach(rec => {
+      cascadeDetection.recommendations.forEach((rec) => {
         report += `- ${rec}\n`;
       });
       report += "\n";
@@ -419,8 +548,13 @@ export class OperationPerformanceMonitor {
     // Recent operations
     report += "## Recent Operations\n\n";
     if (recentOperations.length > 0) {
-      recentOperations.forEach(metrics => {
-        const riskIcon = metrics.cascadeRisk === 'high' ? '🔴' : metrics.cascadeRisk === 'medium' ? '🟡' : '🟢';
+      recentOperations.forEach((metrics) => {
+        const riskIcon =
+          metrics.cascadeRisk === "high"
+            ? "🔴"
+            : metrics.cascadeRisk === "medium"
+              ? "🟡"
+              : "🟢";
         report += `- **${metrics.operation}** ${riskIcon}: ${metrics.duration.toFixed(2)}ms, ${metrics.memoryUsage.growth.toFixed(2)}MB growth, ${metrics.coordinatorCalls} coordinator calls\n`;
       });
     } else {
@@ -450,7 +584,7 @@ export const globalOperationMonitor = new OperationPerformanceMonitor();
 export function monitorOperation<T>(
   operation: OperationType,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): T {
   globalOperationMonitor.startOperation(operation, metadata);
   try {
@@ -458,9 +592,9 @@ export function monitorOperation<T>(
     globalOperationMonitor.endOperation(operation, metadata);
     return result;
   } catch (error) {
-    globalOperationMonitor.endOperation(operation, { 
-      ...metadata, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    globalOperationMonitor.endOperation(operation, {
+      ...metadata,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -472,7 +606,7 @@ export function monitorOperation<T>(
 export async function monitorAsyncOperation<T>(
   operation: OperationType,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): Promise<T> {
   globalOperationMonitor.startOperation(operation, metadata);
   try {
@@ -480,9 +614,9 @@ export async function monitorAsyncOperation<T>(
     globalOperationMonitor.endOperation(operation, metadata);
     return result;
   } catch (error) {
-    globalOperationMonitor.endOperation(operation, { 
-      ...metadata, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    globalOperationMonitor.endOperation(operation, {
+      ...metadata,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -491,7 +625,10 @@ export async function monitorAsyncOperation<T>(
 /**
  * Decorator for automatic operation performance monitoring
  */
-export function monitorOperationPerformance(operation: OperationType, metadata?: Record<string, any>) {
+export function monitorOperationPerformance(
+  operation: OperationType,
+  metadata?: Record<string, any>,
+) {
   return function (
     target: any,
     propertyKey: string,
@@ -500,7 +637,11 @@ export function monitorOperationPerformance(operation: OperationType, metadata?:
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
-      return monitorOperation(operation, () => originalMethod.apply(this, args), metadata);
+      return monitorOperation(
+        operation,
+        () => originalMethod.apply(this, args),
+        metadata,
+      );
     };
 
     return descriptor;
@@ -527,7 +668,7 @@ export function recordDOMUpdate(): void {
 export function measureOperationPerformance<T>(
   operation: OperationType,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): { result: T; metrics: OperationMetrics | null } {
   const result = monitorOperation(operation, fn, metadata);
   const history = globalOperationMonitor.getOperationHistory(operation);
@@ -541,7 +682,7 @@ export function measureOperationPerformance<T>(
 export async function measureAsyncOperationPerformance<T>(
   operation: OperationType,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): Promise<{ result: T; metrics: OperationMetrics | null }> {
   const result = await monitorAsyncOperation(operation, fn, metadata);
   const history = globalOperationMonitor.getOperationHistory(operation);
