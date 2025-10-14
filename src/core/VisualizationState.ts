@@ -2080,6 +2080,36 @@ export class VisualizationState {
   }
 
   /**
+   * Toggle a single node's label to show long label
+   */
+  expandNodeLabelToLong(nodeId: string): void {
+    const node = this._nodes.get(nodeId);
+    if (node) {
+      console.log(`🏷️ [VisualizationState] Expanding label for node ${nodeId}`);
+      node.showingLongLabel = true;
+    } else {
+      console.warn(
+        `[VisualizationState] Cannot expand label - node ${nodeId} not found`,
+      );
+    }
+  }
+
+  /**
+   * Toggle a single node's label to show short label
+   */
+  resetNodeLabelToShort(nodeId: string): void {
+    const node = this._nodes.get(nodeId);
+    if (node) {
+      console.log(`🏷️ [VisualizationState] Resetting label for node ${nodeId}`);
+      node.showingLongLabel = false;
+    } else {
+      console.warn(
+        `[VisualizationState] Cannot reset label - node ${nodeId} not found`,
+      );
+    }
+  }
+
+  /**
    * Update node dimensions for full labels mode
    * Calculates new dimensions based on each node's individual label length
    */
@@ -2145,7 +2175,78 @@ export class VisualizationState {
         };
       }
     }
+
+    // CRITICAL FIX: Invalidate caches to ensure ELKBridge sees the updated dimensions
+    // Without this, ELKBridge may read stale node references that don't have the new dimensions
+    this._invalidateVisibilityCache();
+    console.log(
+      "📏 [VisualizationState] Invalidated visibility cache after dimension update",
+    );
   }
+
+  /**
+   * Update dimensions for a single node based on its current label state
+   */
+  updateNodeDimensionsForLabel(nodeId: string): void {
+    const node = this._nodes.get(nodeId);
+    if (!node) {
+      console.warn(
+        `[VisualizationState] Cannot update dimensions - node ${nodeId} not found`,
+      );
+      return;
+    }
+
+    console.log(
+      `📏 [VisualizationState] Updating dimensions for node ${nodeId}, showingLongLabel: ${node.showingLongLabel}`,
+    );
+
+    if (node.showingLongLabel) {
+      // Calculate dimensions based on long label
+      const labelToMeasure = node.longLabel || node.label;
+      if (labelToMeasure) {
+        const charWidth = 6;
+        const padding = 32;
+        const baseWidth = 120;
+        const maxWidth = 400;
+
+        const calculatedWidth = Math.max(
+          baseWidth,
+          Math.min(labelToMeasure.length * charWidth + padding, maxWidth),
+        );
+
+        const maxCharsPerLine = Math.floor(
+          (calculatedWidth - padding) / charWidth,
+        );
+        const estimatedLines = Math.max(
+          1,
+          Math.ceil(labelToMeasure.length / maxCharsPerLine),
+        );
+        const lineHeight = 14;
+        const verticalPadding = 20;
+        const calculatedHeight = Math.max(
+          60,
+          estimatedLines * lineHeight + verticalPadding,
+        );
+
+        node.dimensions = {
+          width: calculatedWidth,
+          height: calculatedHeight,
+        };
+        console.log(
+          `📏 [VisualizationState] Node ${nodeId}: label="${labelToMeasure}" -> dimensions=${calculatedWidth}x${calculatedHeight}`,
+        );
+      } else {
+        node.dimensions = { width: 120, height: 60 };
+      }
+    } else {
+      // Reset to default dimensions
+      node.dimensions = { width: 120, height: 60 };
+      console.log(
+        `📏 [VisualizationState] Node ${nodeId}: reset to default dimensions 120x60`,
+      );
+    }
+  }
+
   validateInteractionState(): {
     isValid: boolean;
     errors: string[];

@@ -37,7 +37,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
   ): ReactFlowData {
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
-    console.log(`🌉 [ReactFlowBridge] isLargeGraph=${isLargeGraph}, nodeCount=${state.visibleNodes.length}, using ${isLargeGraph ? 'OPTIMIZED' : 'REGULAR'} conversion`);
+    console.log(
+      `🌉 [ReactFlowBridge] isLargeGraph=${isLargeGraph}, nodeCount=${state.visibleNodes.length}, using ${isLargeGraph ? "OPTIMIZED" : "REGULAR"} conversion`,
+    );
 
     // Convert with appropriate optimization strategy
     const nodeStartTime = performance.now();
@@ -293,11 +295,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
       // Get node dimensions from ELK to ensure rendered size matches layout
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
-      
-      console.log(`🌉 [ReactFlowBridge] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : 'undefined'} -> using ${width}x${height}`);
-      
+
+      console.log(
+        `🌉 [ReactFlowBridge] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : "undefined"} -> using ${width}x${height}`,
+      );
+
       if (node.dimensions) {
-        console.log(`🌉 [ReactFlowBridge] Node ${node.id}: passing dimensions ${width}x${height} to ReactFlow`);
+        console.log(
+          `🌉 [ReactFlowBridge] Node ${node.id}: passing dimensions ${width}x${height} to ReactFlow`,
+        );
       }
 
       nodes.push({
@@ -510,8 +516,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
       // CRITICAL FIX: Get node dimensions from ELK to ensure rendered size matches layout
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
-      
-      console.log(`🌉 [ReactFlowBridge-Optimized] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : 'undefined'} -> using ${width}x${height}`);
+
+      console.log(
+        `🌉 [ReactFlowBridge-Optimized] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : "undefined"} -> using ${width}x${height}`,
+      );
       const reactFlowNode: ReactFlowNode & { width: number; height: number } = {
         id: node.id,
         type: "standard",

@@ -18,9 +18,10 @@ describe("Full Node Labels Integration", () => {
     // Create nodes with different label lengths
     const shortNode = createTestNode("short", "Short");
     shortNode.longLabel = "Short Long";
-    
+
     const longNode = createTestNode("long", "L");
-    longNode.longLabel = "This is a very long label that should result in a wider node";
+    longNode.longLabel =
+      "This is a very long label that should result in a wider node";
 
     state.addNode(shortNode);
     state.addNode(longNode);
@@ -31,8 +32,8 @@ describe("Full Node Labels Integration", () => {
 
     // Get the nodes with updated dimensions
     const visibleNodes = state.visibleNodes;
-    const shortNodeResult = visibleNodes.find(n => n.id === "short");
-    const longNodeResult = visibleNodes.find(n => n.id === "long");
+    const shortNodeResult = visibleNodes.find((n) => n.id === "short");
+    const longNodeResult = visibleNodes.find((n) => n.id === "long");
 
     expect(shortNodeResult).toBeDefined();
     expect(longNodeResult).toBeDefined();
@@ -42,7 +43,9 @@ describe("Full Node Labels Integration", () => {
     expect(longNodeResult?.dimensions).toBeDefined();
 
     // The long node should be wider than the short node
-    expect(longNodeResult!.dimensions!.width).toBeGreaterThan(shortNodeResult!.dimensions!.width);
+    expect(longNodeResult!.dimensions!.width).toBeGreaterThan(
+      shortNodeResult!.dimensions!.width,
+    );
 
     // Both should be within reasonable bounds (120-400px as per implementation)
     expect(shortNodeResult!.dimensions!.width).toBeGreaterThanOrEqual(120);
@@ -62,16 +65,24 @@ describe("Full Node Labels Integration", () => {
 
     // Initially all nodes should show short labels
     let visibleNodes = state.visibleNodes;
-    expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBeFalsy();
-    expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBeFalsy();
+    expect(
+      visibleNodes.find((n) => n.id === "node1")?.showingLongLabel,
+    ).toBeFalsy();
+    expect(
+      visibleNodes.find((n) => n.id === "node2")?.showingLongLabel,
+    ).toBeFalsy();
 
     // Enable full node labels
     state.expandAllNodeLabelsToLong();
 
     // All nodes should now show long labels
     visibleNodes = state.visibleNodes;
-    expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBe(true);
-    expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBe(true);
+    expect(visibleNodes.find((n) => n.id === "node1")?.showingLongLabel).toBe(
+      true,
+    );
+    expect(visibleNodes.find((n) => n.id === "node2")?.showingLongLabel).toBe(
+      true,
+    );
   });
 
   it("should reset all node labels when resetAllNodeLabelsToShort is called", () => {
@@ -87,37 +98,46 @@ describe("Full Node Labels Integration", () => {
     // Enable full node labels first
     state.expandAllNodeLabelsToLong();
     let visibleNodes = state.visibleNodes;
-    expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBe(true);
-    expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBe(true);
+    expect(visibleNodes.find((n) => n.id === "node1")?.showingLongLabel).toBe(
+      true,
+    );
+    expect(visibleNodes.find((n) => n.id === "node2")?.showingLongLabel).toBe(
+      true,
+    );
 
     // Reset to short labels
     state.resetAllNodeLabelsToShort();
 
     // All nodes should now show short labels
     visibleNodes = state.visibleNodes;
-    expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBe(false);
-    expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBe(false);
+    expect(visibleNodes.find((n) => n.id === "node1")?.showingLongLabel).toBe(
+      false,
+    );
+    expect(visibleNodes.find((n) => n.id === "node2")?.showingLongLabel).toBe(
+      false,
+    );
   });
 
   it("should reset dimensions when full labels are disabled", () => {
     // Create a node with a long label
     const node = createTestNode("node1", "Short");
-    node.longLabel = "This is a very long label that should result in a wider node";
+    node.longLabel =
+      "This is a very long label that should result in a wider node";
 
     state.addNode(node);
 
     // Enable full labels and update dimensions
     state.updateNodeDimensionsForFullLabels(true);
     let visibleNodes = state.visibleNodes;
-    let nodeResult = visibleNodes.find(n => n.id === "node1");
+    let nodeResult = visibleNodes.find((n) => n.id === "node1");
     const fullLabelWidth = nodeResult?.dimensions?.width;
     expect(fullLabelWidth).toBeGreaterThan(120);
 
     // Disable full labels and reset dimensions
     state.updateNodeDimensionsForFullLabels(false);
     visibleNodes = state.visibleNodes;
-    nodeResult = visibleNodes.find(n => n.id === "node1");
-    
+    nodeResult = visibleNodes.find((n) => n.id === "node1");
+
     // Should reset to default dimensions
     expect(nodeResult?.dimensions?.width).toBe(120);
     expect(nodeResult?.dimensions?.height).toBe(60);
@@ -137,9 +157,9 @@ describe("Full Node Labels Integration", () => {
 
     // Should calculate dimensions based on the regular label
     const visibleNodes = state.visibleNodes;
-    const nodeResult = visibleNodes.find(n => n.id === "node1");
+    const nodeResult = visibleNodes.find((n) => n.id === "node1");
     expect(nodeResult?.dimensions).toBeDefined();
-    
+
     // Should have reasonable dimensions
     expect(nodeResult?.dimensions?.width).toBeGreaterThanOrEqual(120);
     expect(nodeResult?.dimensions?.height).toBeGreaterThanOrEqual(60);
@@ -153,7 +173,8 @@ describe("Full Node Labels Integration", () => {
     // 4. StandardNode uses data.width instead of calculating its own width
 
     const node = createTestNode("test", "Short");
-    node.longLabel = "This is a very long label that needs a wider node to display properly";
+    node.longLabel =
+      "This is a very long label that needs a wider node to display properly";
 
     state.addNode(node);
 
@@ -162,7 +183,7 @@ describe("Full Node Labels Integration", () => {
     state.updateNodeDimensionsForFullLabels(true);
 
     const visibleNodes = state.visibleNodes;
-    const nodeWithDimensions = visibleNodes.find(n => n.id === "test");
+    const nodeWithDimensions = visibleNodes.find((n) => n.id === "test");
 
     // Verify dimensions are calculated and stored
     expect(nodeWithDimensions?.dimensions).toBeDefined();
@@ -170,7 +191,10 @@ describe("Full Node Labels Integration", () => {
     expect(nodeWithDimensions?.showingLongLabel).toBe(true);
 
     // Step 2: Verify the dimensions are reasonable for the long label
-    const expectedWidth = Math.max(120, Math.min(node.longLabel!.length * 6 + 32, 400));
+    const expectedWidth = Math.max(
+      120,
+      Math.min(node.longLabel!.length * 6 + 32, 400),
+    );
     expect(nodeWithDimensions?.dimensions?.width).toBe(expectedWidth);
 
     // This demonstrates that our fix ensures:

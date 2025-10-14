@@ -118,6 +118,9 @@ export interface HydroscopeCoreHandle {
 
   /** Force ReactFlow component to remount (clears all internal state including edge handles) */
   forceReactFlowRemount: () => void;
+
+  /** Show popup for a specific node */
+  showNodePopup: (nodeId: string) => void;
 }
 
 /**
@@ -1385,8 +1388,17 @@ const HydroscopeCoreInternal = forwardRef<
         getAsyncCoordinator: () => state.asyncCoordinator,
         getVisualizationState: () => state.visualizationState,
         forceReactFlowRemount: () => {
-          console.log("🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key");
+          console.log(
+            "🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key",
+          );
           setReactFlowResetKey((prev) => prev + 1);
+        },
+        showNodePopup: (nodeId: string) => {
+          console.log(`ℹ️ [HydroscopeCore] Showing popup for node ${nodeId}`);
+          const node = state.reactFlowData.nodes.find((n) => n.id === nodeId);
+          if (node) {
+            handleNodePopupToggle(nodeId, node as Node);
+          }
         },
       }),
       [
@@ -1401,6 +1413,7 @@ const HydroscopeCoreInternal = forwardRef<
         reactFlowInstance,
         state.asyncCoordinator,
         state.visualizationState,
+        state.reactFlowData.nodes,
       ],
     );
 

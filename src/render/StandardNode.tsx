@@ -169,12 +169,16 @@ export function StandardNode({
   // FIXED: Use pre-calculated dimensions from VisualizationState when available
   // This ensures nodes are properly sized when "Show full node labels" is enabled
   const width = data.width || baseWidth;
-  const height = data.height || (isCollapsedContainer
-    ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
-    : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
-    
+  const height =
+    data.height ||
+    (isCollapsedContainer
+      ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
+      : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
+
   if (data.width && showFullLabels) {
-    console.log(`🎨 [StandardNode] Node ${id}: using width=${width} height=${height} from data (showFullLabels=${showFullLabels})`);
+    console.log(
+      `🎨 [StandardNode] Node ${id}: using width=${width} height=${height} from data (showFullLabels=${showFullLabels})`,
+    );
   }
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
@@ -397,6 +401,74 @@ export function StandardNode({
       >
         <HandlesRenderer />
         {String(displayLabel)}
+        {data.longLabel ? (
+          <div
+            className="node-info-button"
+            style={{
+              position: "absolute",
+              top: "2px",
+              right: "2px",
+              width: "18px",
+              height: "18px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              border: "1.5px solid rgba(59, 130, 246, 0.8)",
+              color: "rgba(59, 130, 246, 1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "11px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              zIndex: 10,
+              pointerEvents: "auto",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 1)";
+              e.currentTarget.style.color = "white";
+              e.currentTarget.style.transform = "scale(1.15)";
+              e.currentTarget.style.boxShadow =
+                "0 2px 6px rgba(59, 130, 246, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor =
+                "rgba(255, 255, 255, 0.95)";
+              e.currentTarget.style.color = "rgba(59, 130, 246, 1)";
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.12)";
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log(
+                `ℹ️ [StandardNode] Info button clicked for node ${id}`,
+              );
+              // Dispatch a custom event that Hydroscope can listen for
+              const customEvent = new CustomEvent("hydroscope:showPopup", {
+                detail: { nodeId: id },
+                bubbles: true,
+              });
+              window.dispatchEvent(customEvent);
+            }}
+            data-info-button="true"
+            title="Show popup with full details (click to open)"
+          >
+            ℹ
+          </div>
+        ) : null}
+
+        <style>
+          {`
+            .react-flow__node:hover .node-info-button {
+              opacity: 1;
+            }
+            .node-info-button:hover {
+              background-color: rgba(37, 99, 235, 1) !important;
+              transform: scale(1.1);
+            }
+          `}
+        </style>
       </div>
     </>
   );

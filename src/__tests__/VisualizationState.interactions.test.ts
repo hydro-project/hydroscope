@@ -405,18 +405,30 @@ describe("VisualizationState Interaction State Management", () => {
 
       // Initially all nodes should show short labels
       let visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBeFalsy();
-      expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBeFalsy();
-      expect(visibleNodes.find(n => n.id === "node3")?.showingLongLabel).toBeFalsy();
+      expect(
+        visibleNodes.find((n) => n.id === "node1")?.showingLongLabel,
+      ).toBeFalsy();
+      expect(
+        visibleNodes.find((n) => n.id === "node2")?.showingLongLabel,
+      ).toBeFalsy();
+      expect(
+        visibleNodes.find((n) => n.id === "node3")?.showingLongLabel,
+      ).toBeFalsy();
 
       // Enable full node labels
       state.expandAllNodeLabelsToLong();
 
       // All nodes should now show long labels (or short if no long label exists)
       visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBe(true);
-      expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBe(true);
-      expect(visibleNodes.find(n => n.id === "node3")?.showingLongLabel).toBe(true);
+      expect(visibleNodes.find((n) => n.id === "node1")?.showingLongLabel).toBe(
+        true,
+      );
+      expect(visibleNodes.find((n) => n.id === "node2")?.showingLongLabel).toBe(
+        true,
+      );
+      expect(visibleNodes.find((n) => n.id === "node3")?.showingLongLabel).toBe(
+        true,
+      );
     });
 
     it("should reset all node labels to short when disabled", () => {
@@ -431,27 +443,36 @@ describe("VisualizationState Interaction State Management", () => {
       // Enable full node labels first
       state.expandAllNodeLabelsToLong();
       let visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBe(true);
-      expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBe(true);
+      expect(visibleNodes.find((n) => n.id === "node1")?.showingLongLabel).toBe(
+        true,
+      );
+      expect(visibleNodes.find((n) => n.id === "node2")?.showingLongLabel).toBe(
+        true,
+      );
 
       // Reset to short labels
       state.resetAllNodeLabelsToShort();
 
       // All nodes should now show short labels
       visibleNodes = state.visibleNodes;
-      expect(visibleNodes.find(n => n.id === "node1")?.showingLongLabel).toBe(false);
-      expect(visibleNodes.find(n => n.id === "node2")?.showingLongLabel).toBe(false);
+      expect(visibleNodes.find((n) => n.id === "node1")?.showingLongLabel).toBe(
+        false,
+      );
+      expect(visibleNodes.find((n) => n.id === "node2")?.showingLongLabel).toBe(
+        false,
+      );
     });
 
     it("should calculate proper dimensions for full labels", () => {
       const shortNode = createTestNode("short", "Short");
       shortNode.longLabel = "Short Long";
-      
+
       const mediumNode = createTestNode("medium", "Med");
       mediumNode.longLabel = "This is a medium length label";
-      
+
       const longNode = createTestNode("long", "L");
-      longNode.longLabel = "This is a very long label that should result in a wider node with proper dimensions calculated";
+      longNode.longLabel =
+        "This is a very long label that should result in a wider node with proper dimensions calculated";
 
       state.addNode(shortNode);
       state.addNode(mediumNode);
@@ -461,9 +482,9 @@ describe("VisualizationState Interaction State Management", () => {
       state.updateNodeDimensionsForFullLabels(true);
 
       const visibleNodes = state.visibleNodes;
-      const shortNodeResult = visibleNodes.find(n => n.id === "short");
-      const mediumNodeResult = visibleNodes.find(n => n.id === "medium");
-      const longNodeResult = visibleNodes.find(n => n.id === "long");
+      const shortNodeResult = visibleNodes.find((n) => n.id === "short");
+      const mediumNodeResult = visibleNodes.find((n) => n.id === "medium");
+      const longNodeResult = visibleNodes.find((n) => n.id === "long");
 
       // All nodes should have dimensions calculated
       expect(shortNodeResult?.dimensions).toBeDefined();
@@ -471,8 +492,12 @@ describe("VisualizationState Interaction State Management", () => {
       expect(longNodeResult?.dimensions).toBeDefined();
 
       // Longer labels should result in wider nodes
-      expect(longNodeResult?.dimensions?.width).toBeGreaterThan(mediumNodeResult?.dimensions?.width || 0);
-      expect(mediumNodeResult?.dimensions?.width).toBeGreaterThan(shortNodeResult?.dimensions?.width || 0);
+      expect(longNodeResult?.dimensions?.width).toBeGreaterThan(
+        mediumNodeResult?.dimensions?.width || 0,
+      );
+      expect(mediumNodeResult?.dimensions?.width).toBeGreaterThan(
+        shortNodeResult?.dimensions?.width || 0,
+      );
 
       // All widths should be within reasonable bounds (120-400px as per implementation)
       expect(shortNodeResult?.dimensions?.width).toBeGreaterThanOrEqual(120);
@@ -483,22 +508,23 @@ describe("VisualizationState Interaction State Management", () => {
 
     it("should reset dimensions when full labels are disabled", () => {
       const node = createTestNode("node1", "Short");
-      node.longLabel = "This is a very long label that should result in a wider node";
+      node.longLabel =
+        "This is a very long label that should result in a wider node";
 
       state.addNode(node);
 
       // Enable full labels and update dimensions
       state.updateNodeDimensionsForFullLabels(true);
       let visibleNodes = state.visibleNodes;
-      let nodeResult = visibleNodes.find(n => n.id === "node1");
+      let nodeResult = visibleNodes.find((n) => n.id === "node1");
       const fullLabelWidth = nodeResult?.dimensions?.width;
       expect(fullLabelWidth).toBeGreaterThan(120);
 
       // Disable full labels and reset dimensions
       state.updateNodeDimensionsForFullLabels(false);
       visibleNodes = state.visibleNodes;
-      nodeResult = visibleNodes.find(n => n.id === "node1");
-      
+      nodeResult = visibleNodes.find((n) => n.id === "node1");
+
       // Should reset to default dimensions
       expect(nodeResult?.dimensions?.width).toBe(120);
       expect(nodeResult?.dimensions?.height).toBe(60);
@@ -517,9 +543,9 @@ describe("VisualizationState Interaction State Management", () => {
 
       // Should calculate dimensions based on the regular label
       const visibleNodes = state.visibleNodes;
-      const nodeResult = visibleNodes.find(n => n.id === "node1");
+      const nodeResult = visibleNodes.find((n) => n.id === "node1");
       expect(nodeResult?.dimensions).toBeDefined();
-      
+
       // Width should be calculated based on label length: "Short Label" = 11 chars
       // 11 * 6 + 32 = 98, but Math.max(120, 98) = 120, so minimum width
       // But let's be more flexible and just check it's reasonable
