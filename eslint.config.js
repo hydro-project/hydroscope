@@ -122,6 +122,8 @@ export default [
       "build/**",
       ".next/**",
       "out/**",
+      "**/*.d.ts",
+      "_DEPRECATED_alpha_do_not_use/**",
     ],
   },
 ];
