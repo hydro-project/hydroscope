@@ -1193,7 +1193,7 @@ export const Hydroscope = memo<HydroscopeProps>(
           },
         );
       },
-      [onNodeClick, reallocateBridges],
+      [onNodeClick],
     );
 
     // Container dimensions
