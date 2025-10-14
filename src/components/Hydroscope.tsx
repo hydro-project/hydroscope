@@ -92,6 +92,8 @@ export interface HydroscopeProps extends Omit<HydroscopeCoreProps, "data"> {
   onConfigChange?: (config: RenderConfig) => void;
   /** Generated file path to display for copying */
   generatedFilePath?: string;
+  /** Enable URL parameter parsing (default: true) */
+  enableUrlParsing?: boolean;
 }
 /**
  * Internal state interface for the Hydroscope component
@@ -495,6 +497,7 @@ export const Hydroscope = memo<HydroscopeProps>(
     className,
     style,
     generatedFilePath,
+    enableUrlParsing = true,
   }) => {
     // Load initial settings
     const [settings, setSettings] = useState<HydroscopeSettings>(() =>
@@ -506,10 +509,17 @@ export const Hydroscope = memo<HydroscopeProps>(
     const [urlFilePath, setUrlFilePath] = useState<string | null>(null);
     const [urlError, setUrlError] = useState<string | null>(null);
 
-    // Parse URL parameters on mount
+    // Parse URL parameters on mount (only if enabled and URL parameters exist)
     useEffect(() => {
       const parseUrlParams = async () => {
         try {
+          // Skip URL parsing if disabled or in unsuitable environment
+          if (!enableUrlParsing || 
+              typeof window === 'undefined' || 
+              typeof window.location === 'undefined') {
+            return;
+          }
+
           const urlParams = new URLSearchParams(window.location.search);
           const hashParams = new URLSearchParams(window.location.hash.slice(1));
 
@@ -518,6 +528,11 @@ export const Hydroscope = memo<HydroscopeProps>(
           const compressedParam =
             urlParams.get("compressed") || hashParams.get("compressed");
           const fileParam = urlParams.get("file") || hashParams.get("file");
+
+          // Only proceed if we actually have URL parameters to parse
+          if (!dataParam && !compressedParam && !fileParam) {
+            return;
+          }
 
           if (dataParam || compressedParam) {
             console.log("🔄 Parsing data from URL parameters...");
@@ -547,10 +562,10 @@ export const Hydroscope = memo<HydroscopeProps>(
       };
 
       parseUrlParams();
-    }, []);
+    }, [enableUrlParsing]);
     // Component state
     const [state, setState] = useState<HydroscopeState>({
-      data: urlData || data || null,
+      data: data || null,
       infoPanelOpen: settings.infoPanelOpen,
       stylePanelOpen: settings.stylePanelOpen,
       colorPalette: settings.colorPalette || initialColorPalette,
@@ -657,9 +672,9 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.renderConfig,
     ]);
 
-    // Update state when URL data is loaded
+    // Update state when URL data is loaded (only if we have URL data and no existing data)
     useEffect(() => {
-      if (urlData) {
+      if (urlData && !data) {
         setState((prev) => ({
           ...prev,
           data: urlData,
@@ -668,17 +683,17 @@ export const Hydroscope = memo<HydroscopeProps>(
           error: null,
         }));
       }
-    }, [urlData]);
+    }, [urlData, data]);
 
-    // Handle URL errors
+    // Handle URL errors (only if we don't have existing data)
     useEffect(() => {
-      if (urlError) {
+      if (urlError && !data) {
         setState((prev) => ({
           ...prev,
           error: new Error(`URL parsing error: ${urlError}`),
         }));
       }
-    }, [urlError]);
+    }, [urlError, data]);
     // Handle file upload
     const handleFileUpload = useCallback(
       (uploadedData: HydroscopeData, filename?: string) => {
