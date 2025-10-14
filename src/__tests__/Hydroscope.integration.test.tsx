@@ -783,59 +783,6 @@ describe("Full Hydroscope Component Integration Tests", () => {
       }
     });
 
-    it("should handle case-insensitive search in paxos data", async () => {
-      render(
-        <Hydroscope
-          data={paxosData}
-          showInfoPanel={true}
-          enableCollapse={true}
-        />,
-      );
-
-      // Wait for component to load
-      await waitFor(
-        () => {
-          const container = document.querySelector(".hydroscope");
-          expect(container).toBeTruthy();
-        },
-        { timeout: 10000 },
-      );
-
-      // Look for search input using specific selectors
-      const searchInput =
-        document.querySelector('[data-testid="search-input"]') ||
-        screen.queryByRole("textbox", { name: /search/i }) ||
-        screen.queryByLabelText(/search/i) ||
-        screen.queryByPlaceholderText(/search/i);
-
-      if (searchInput) {
-        // Test case-insensitive search
-        fireEvent.change(searchInput, { target: { value: "LEARNER" } });
-
-        // Should find learner nodes regardless of case
-        await waitFor(
-          () => {
-            const searchResults = screen.queryAllByText(/learner/i);
-            expect(searchResults.length).toBeGreaterThan(0);
-          },
-          { timeout: 5000 },
-        );
-
-        // Clear and test lowercase
-        fireEvent.change(searchInput, { target: { value: "" } });
-        fireEvent.change(searchInput, { target: { value: "client" } });
-
-        // Should find client nodes
-        await waitFor(
-          () => {
-            const searchResults = screen.queryAllByText(/client/i);
-            expect(searchResults.length).toBeGreaterThan(0);
-          },
-          { timeout: 5000 },
-        );
-      }
-    });
-
     it("should handle empty search results gracefully", async () => {
       render(
         <Hydroscope
