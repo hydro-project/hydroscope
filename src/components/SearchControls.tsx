@@ -203,7 +203,16 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       ],
     );
     useImperativeHandle(ref, () => ({
-      focus: () => inputRef.current?.focus(),
+      focus: () => {
+        // For React 19 compatibility, focus the AutoComplete component
+        // which will delegate to the internal Input
+        if (inputRef.current?.focus) {
+          inputRef.current.focus();
+        } else if (inputRef.current?.input?.focus) {
+          // Fallback for Ant Design's internal structure
+          inputRef.current.input.focus();
+        }
+      },
       clear: () => clearAll(),
       navigateToResult: navigateToResultIndex,
       announceResults: (count: number, current?: number) => {
@@ -496,6 +505,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           }}
         >
           <AutoComplete
+            ref={inputRef}
             value={query}
             onChange={(v) => {
               setQuery(v);
@@ -512,7 +522,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             style={{ flex: 1 }}
           >
             <Input
-              ref={inputRef}
               allowClear
               onClear={clearAll}
               data-testid="search-input"

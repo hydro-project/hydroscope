@@ -33,15 +33,19 @@ export class ReactFlowBridge implements IReactFlowBridge {
   toReactFlowData(
     state: VisualizationState,
     interactionHandler?: any,
+    options?: { showFullNodeLabels?: boolean },
   ): ReactFlowData {
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
+    console.log(
+      `🌉 [ReactFlowBridge] isLargeGraph=${isLargeGraph}, nodeCount=${state.visibleNodes.length}, using ${isLargeGraph ? "OPTIMIZED" : "REGULAR"} conversion`,
+    );
 
     // Convert with appropriate optimization strategy
     const nodeStartTime = performance.now();
     const nodes = isLargeGraph
-      ? this.convertNodesOptimized(state, interactionHandler)
-      : this.convertNodes(state, interactionHandler);
+      ? this.convertNodesOptimized(state, interactionHandler, options)
+      : this.convertNodes(state, interactionHandler, options);
     const nodeEndTime = performance.now();
     console.log(
       `[ReactFlowBridge] Node conversion took ${(nodeEndTime - nodeStartTime).toFixed(2)}ms`,
@@ -178,6 +182,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   private convertNodesOptimized(
     state: VisualizationState,
     _interactionHandler?: any,
+    options?: { showFullNodeLabels?: boolean },
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
 
@@ -291,6 +296,16 @@ export class ReactFlowBridge implements IReactFlowBridge {
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
 
+      console.log(
+        `🌉 [ReactFlowBridge] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : "undefined"} -> using ${width}x${height}`,
+      );
+
+      if (node.dimensions) {
+        console.log(
+          `🌉 [ReactFlowBridge] Node ${node.id}: passing dimensions ${width}x${height} to ReactFlow`,
+        );
+      }
+
       nodes.push({
         id: node.id,
         type: node.type || "default",
@@ -307,6 +322,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
           showingLongLabel: node.showingLongLabel,
+          showFullNodeLabels: options?.showFullNodeLabels || false,
+          // CRITICAL FIX: Pass dimensions in data for StandardNode to use
+          width,
+          height,
           // Add onClick handler if interaction handler is provided
           onClick: _interactionHandler
             ? (nodeId: string) => {
@@ -389,6 +408,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   private convertNodes(
     state: VisualizationState,
     _interactionHandler?: any,
+    options?: { showFullNodeLabels?: boolean },
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
     // Build parent mapping for nodes and containers
@@ -496,6 +516,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
       // CRITICAL FIX: Get node dimensions from ELK to ensure rendered size matches layout
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
+
+      console.log(
+        `🌉 [ReactFlowBridge-Optimized] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : "undefined"} -> using ${width}x${height}`,
+      );
       const reactFlowNode: ReactFlowNode & { width: number; height: number } = {
         id: node.id,
         type: "standard",
@@ -516,6 +540,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           width, // Pass ELK-calculated width to match layout
           height, // Pass ELK-calculated height to match layout
           showingLongLabel: node.showingLongLabel,
+          showFullNodeLabels: options?.showFullNodeLabels || false,
           // Add onClick handler if interaction handler is provided
           onClick: _interactionHandler
             ? (nodeId: string) => {

@@ -142,13 +142,24 @@ export class ELKBridge implements IELKBridge {
         const containerLayoutOptions = this.getContainerLayoutOptions(
           container,
           optimizedConfig,
+          true, // Fix container positions to prevent movement
         );
         // Let ELK compute the size based on content
         containerLayoutOptions["elk.nodeSize.constraints"] = "MINIMUM_SIZE";
         containerLayoutOptions["elk.nodeSize.options"] =
           "DEFAULT_MINIMUM_SIZE COMPUTE_PADDING";
+        console.log(
+          `🎯 [ELKBridge] Creating ELK node for expanded container ${container.id}:`,
+          {
+            currentPosition: container.position,
+            providingPosition: false,
+            childCount: elkChildren.length,
+          },
+        );
         return {
           id: container.id,
+          // Don't provide position for expanded containers - let ELK calculate based on content
+          // This allows ELK to reposition containers when their dimensions change significantly
           // Don't specify width/height - let ELK determine based on content
           children: elkChildren,
           layoutOptions: containerLayoutOptions,
@@ -287,8 +298,11 @@ export class ELKBridge implements IELKBridge {
    */
   async layout(
     state: VisualizationState,
-    _constrainedEntities?: string[],
+    constrainedEntities?: string[],
   ): Promise<void> {
+    // Determine if this is a constrained layout (only specific entities being re-laid out)
+    const isConstrainedLayout =
+      constrainedEntities !== undefined && constrainedEntities.length > 0;
     try {
       // Run smart collapse before layout if enabled
       if (state.shouldRunSmartCollapse()) {
@@ -349,7 +363,7 @@ export class ELKBridge implements IELKBridge {
         }
       }
       // Apply the calculated positions back to VisualizationState
-      this.applyELKResults(state, layoutResult);
+      this.applyELKResults(state, layoutResult, isConstrainedLayout);
       // Log state after layout
       // Increment layout count after successful layout
       state.incrementLayoutCount();
@@ -371,13 +385,21 @@ export class ELKBridge implements IELKBridge {
    * Apply pre-calculated ELK layout results to VisualizationState
    * Use this when you have ELK results from external calculation
    */
-  applyELKResults(state: VisualizationState, elkResult: ELKNode): void {
+  applyELKResults(
+    state: VisualizationState,
+    elkResult: ELKNode,
+    preserveContainerPositions: boolean = false,
+  ): void {
     if (!elkResult.children) return;
     try {
       // Validate ELK result structure
       this.validateELKResult(elkResult);
       // Apply positions to nodes and containers
-      this.applyPositionsToElements(state, elkResult.children);
+      this.applyPositionsToElements(
+        state,
+        elkResult.children,
+        preserveContainerPositions,
+      );
       // Update layout state to indicate successful layout application
       state.setLayoutPhase("ready");
     } catch (error) {
@@ -391,6 +413,7 @@ export class ELKBridge implements IELKBridge {
   private applyPositionsToElements(
     state: VisualizationState,
     elkChildren: ELKNode[],
+    preserveContainerPositions: boolean = false,
   ): void {
     for (const elkChild of elkChildren) {
       if (elkChild.x === undefined || elkChild.y === undefined) {
@@ -401,26 +424,56 @@ export class ELKBridge implements IELKBridge {
       if (node) {
         this.applyNodePosition(node, elkChild);
       } else if (container) {
-        this.applyContainerPosition(container, elkChild);
+        // Preserve container positions only during constrained layouts
+        this.applyContainerPosition(
+          container,
+          elkChild,
+          preserveContainerPositions,
+        );
       }
       // Silently ignore unknown IDs (they may be from previous state)
       // Handle nested children (for expanded containers)
       if (elkChild.children && elkChild.children.length > 0) {
-        this.applyPositionsToElements(state, elkChild.children);
+        this.applyPositionsToElements(
+          state,
+          elkChild.children,
+          preserveContainerPositions,
+        );
       }
     }
   }
   private applyNodePosition(node: GraphNode, elkChild: ELKNode): void {
     node.position = { x: elkChild.x!, y: elkChild.y! };
-    if (elkChild.width && elkChild.height) {
+
+    // FIXED: Only update dimensions if the node doesn't have custom dimensions
+    // This preserves custom dimensions set by "Show full node labels" feature
+    if (elkChild.width && elkChild.height && !node.dimensions) {
       node.dimensions = { width: elkChild.width, height: elkChild.height };
+    }
+
+    // If node has custom dimensions, preserve them but log for debugging
+    if (node.dimensions && elkChild.width && elkChild.height) {
+      console.log(
+        `🎯 [ELKBridge] Node ${node.id}: preserving custom dimensions ${node.dimensions.width}x${node.dimensions.height} (ELK calculated ${elkChild.width}x${elkChild.height})`,
+      );
     }
   }
   private applyContainerPosition(
     container: Container,
     elkChild: ELKNode,
+    preservePosition: boolean = false,
   ): void {
-    container.position = { x: elkChild.x!, y: elkChild.y! };
+    console.log(`🎯 [ELKBridge] applyContainerPosition for ${container.id}:`, {
+      preservePosition,
+      oldPosition: container.position,
+      newPosition: { x: elkChild.x, y: elkChild.y },
+      collapsed: container.collapsed,
+    });
+    // Only update position if not preserving
+    if (!preservePosition) {
+      container.position = { x: elkChild.x!, y: elkChild.y! };
+    }
+    // Always update dimensions to accommodate content changes
     if (elkChild.width && elkChild.height) {
       container.dimensions = { width: elkChild.width, height: elkChild.height };
     }
@@ -616,7 +669,7 @@ export class ELKBridge implements IELKBridge {
     return options;
   }
   private calculateOptimalNodeSize(
-    _node: GraphNode,
+    node: GraphNode,
     config: LayoutConfig,
   ): {
     width: number;
@@ -624,8 +677,19 @@ export class ELKBridge implements IELKBridge {
   } {
     const baseSize = config.nodeSize || { width: 120, height: 60 };
 
-    // Always use the same dimensions regardless of label state to avoid resizing
-    // The React component can handle text overflow/truncation
+    // FIXED: Use custom dimensions when available (for "Show full node labels" feature)
+    // This allows nodes to be properly sized based on their label length
+    if (node.dimensions) {
+      console.log(
+        `🎯 [ELKBridge] Node ${node.id}: using custom dimensions ${node.dimensions.width}x${node.dimensions.height}`,
+      );
+      return {
+        width: node.dimensions.width,
+        height: node.dimensions.height,
+      };
+    }
+
+    // Fallback to base size when no custom dimensions
     return {
       width: baseSize.width,
       height: baseSize.height,
@@ -648,6 +712,7 @@ export class ELKBridge implements IELKBridge {
   private getContainerLayoutOptions(
     _container: Container,
     config: LayoutConfig,
+    _fixPosition: boolean = false,
   ): Record<string, any> {
     const options: Record<string, any> = {};
     // Container-specific layout options
@@ -663,6 +728,8 @@ export class ELKBridge implements IELKBridge {
     if (config.hierarchicalLayout) {
       options["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
     }
+    // Note: Position fixing is handled by preserving positions in applyContainerPosition
+    // rather than through ELK layout options
     return options;
   }
   // Performance Analysis

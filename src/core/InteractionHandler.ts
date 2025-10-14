@@ -16,6 +16,7 @@ export interface InteractionConfig {
   debounceDelay: number;
   rapidClickThreshold: number;
   enableClickDebouncing: boolean;
+  disableNodeClicks?: boolean;
 }
 export class InteractionHandler {
   private _visualizationState: VisualizationState;
@@ -34,9 +35,11 @@ export class InteractionHandler {
       debounceDelay: 300, // 300ms debounce
       rapidClickThreshold: 500, // 500ms threshold for rapid clicks
       enableClickDebouncing: true,
+      disableNodeClicks: false,
       ...config,
     };
   }
+
   // Main click event processing
   handleNodeClick(
     nodeId: string,
@@ -121,6 +124,11 @@ export class InteractionHandler {
     }
   }
   private _handleNodeClickInternal(event: ClickEvent): void {
+    // Skip node clicks if disabled (e.g., when full node labels mode is active)
+    if (this._config.disableNodeClicks) {
+      return;
+    }
+
     // Toggle node label between short and long
     this._visualizationState.toggleNodeLabel(event.elementId);
   }
@@ -148,8 +156,9 @@ export class InteractionHandler {
       if (wasCollapsed) {
         this._asyncCoordinator
           .expandContainer(event.elementId, this._visualizationState, {
-            relayoutEntities: [event.elementId], // Only re-layout this container
-            fitView: false, // Don't auto-fit on manual interactions
+            relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+            fitView: true, // Auto-fit after container operations since positions change
+            fitViewOptions: { padding: 0.2, duration: 300 },
           })
           .catch((error: Error) => {
             console.error(
@@ -160,8 +169,9 @@ export class InteractionHandler {
       } else {
         this._asyncCoordinator
           .collapseContainer(event.elementId, this._visualizationState, {
-            relayoutEntities: [event.elementId], // Only re-layout this container
-            fitView: false, // Don't auto-fit on manual interactions
+            relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+            fitView: true, // Auto-fit after container operations since positions change
+            fitViewOptions: { padding: 0.2, duration: 300 },
           })
           .catch((error: Error) => {
             console.error(
