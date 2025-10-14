@@ -1,7 +1,35 @@
 /**
  * Lightweight category-based logger to reduce console noise.
- * Enable categories via (window as any).__HYDRO_LOGS = 'layout,lock,op,retry'; (comma separated)
- * or process.env.HYDRO_LOGS at build time. Unknown categories are ignored.
+ *
+ * ## Usage
+ * Instead of `console.log()`, use `hscopeLogger.log(category, ...args)`:
+ *
+ * ```typescript
+ * import { hscopeLogger } from './utils/logger';
+ *
+ * // Debug logging (suppressed by default)
+ * hscopeLogger.log('coordinator', 'Operation completed', { id, status });
+ *
+ * // Errors and warnings (use console.error/warn directly - these are never suppressed)
+ * console.error('[Component] Critical error:', error);
+ * console.warn('[Component] Unexpected state:', state);
+ * ```
+ *
+ * ## Enabling Logs
+ * By default, all debug logs are suppressed. To enable specific categories:
+ *
+ * - **Browser**: Set `(window as any).__HYDRO_LOGS = 'coordinator,bridge,op'`
+ * - **Node/Build**: Set `HYDRO_LOGS=coordinator,bridge,op` environment variable
+ * - **Tests**: Set `ENABLE_TEST_LOGS=true` to see test console output
+ *
+ * ## Available Categories
+ * - `coordinator` - AsyncCoordinator operations
+ * - `bridge` - ReactFlow/ELK bridge operations
+ * - `op` - General operations (VisualizationState, etc.)
+ * - `layout` - Layout calculations
+ * - `interaction` - User interactions
+ * - `debug` - General debugging
+ * - And more (see HydroLogCategory type)
  *
  * In production builds, all logs are suppressed unless explicitly enabled.
  * This provides a clean, quiet experience for end users while allowing
