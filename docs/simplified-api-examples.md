@@ -52,16 +52,19 @@ For power users who want standalone panels:
 
 ```tsx
 import { InfoPanel, StyleTuner } from '@hydro-project/hydroscope';
+import { useState } from 'react';
 
 function CustomLayout() {
+  const [styleConfig, setStyleConfig] = useState({});
+  
   return (
     <div style={{ display: 'flex' }}>
       <div style={{ flex: 1 }}>
-        <HydroscopeCore data={graphData} readOnly={true} />
+        <HydroscopeCore data={graphData} />
       </div>
       <div style={{ width: '300px' }}>
-        <InfoPanel visualizationState={state} />
-        <StyleTuner onConfigChange={handleStyleChange} />
+        <InfoPanel />
+        <StyleTuner value={styleConfig} onChange={setStyleConfig} />
       </div>
     </div>
   );
