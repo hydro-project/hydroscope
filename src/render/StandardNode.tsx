@@ -167,12 +167,6 @@ export function StandardNode({
     (isCollapsedContainer
       ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
       : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
-
-  if (data.width && showFullLabels) {
-    console.log(
-      `🎨 [StandardNode] Node ${id}: using width=${width} height=${height} from data (showFullLabels=${showFullLabels})`,
-    );
-  }
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
   // Dev-only: log computed color mapping to verify at runtime
@@ -443,9 +437,6 @@ export function StandardNode({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              console.log(
-                `ℹ️ [StandardNode] Info button clicked for node ${id}`,
-              );
               // Dispatch a custom event that Hydroscope can listen for
               const customEvent = new CustomEvent("hydroscope:showPopup", {
                 detail: { nodeId: id },

@@ -56,10 +56,8 @@ export function encodeDataForUrl(
 ): string {
   try {
     const jsonString = JSON.stringify(data);
-    if (compress) {
-      // For now, just use base64. In the future, could add compression
-      console.warn("Compression not implemented yet, using base64 encoding");
-    }
+    // Note: Compression not yet implemented, using base64 encoding
+    // The compress parameter is accepted for future compatibility
     return btoa(jsonString);
   } catch (error) {
     throw new Error(

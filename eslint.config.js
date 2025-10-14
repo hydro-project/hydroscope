@@ -93,9 +93,26 @@ export default [
       // Prettier integration
       "prettier/prettier": "error",
 
+      // Console logging - use hscopeLogger from utils/logger instead
+      "no-console": "warn",
+
       // Hydroscope architecture compliance rules
       "hydroscope-architecture/no-bridge-state": "error",
       "hydroscope-architecture/enforce-bridge-interfaces": "error",
+    },
+  },
+  {
+    // Allow console in test files for debugging
+    files: ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
+    // Allow console in example files for demonstration
+    files: ["**/examples/**/*.{ts,tsx}"],
+    rules: {
+      "no-console": "off",
     },
   },
   {
