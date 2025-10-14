@@ -92,7 +92,7 @@ export interface HydroscopeProps extends Omit<HydroscopeCoreProps, "data"> {
   onConfigChange?: (config: RenderConfig) => void;
   /** Generated file path to display for copying */
   generatedFilePath?: string;
-  /** Enable URL parameter parsing (default: true) */
+  /** Enable URL parameter parsing (default: true in production, false in tests) */
   enableUrlParsing?: boolean;
 }
 /**
@@ -497,7 +497,10 @@ export const Hydroscope = memo<HydroscopeProps>(
     className,
     style,
     generatedFilePath,
-    enableUrlParsing = true,
+    enableUrlParsing = typeof process !== "undefined" &&
+    process.env.NODE_ENV === "test"
+      ? false
+      : true,
   }) => {
     // Load initial settings
     const [settings, setSettings] = useState<HydroscopeSettings>(() =>
