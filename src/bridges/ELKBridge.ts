@@ -148,11 +148,18 @@ export class ELKBridge implements IELKBridge {
         containerLayoutOptions["elk.nodeSize.constraints"] = "MINIMUM_SIZE";
         containerLayoutOptions["elk.nodeSize.options"] =
           "DEFAULT_MINIMUM_SIZE COMPUTE_PADDING";
+        console.log(
+          `🎯 [ELKBridge] Creating ELK node for expanded container ${container.id}:`,
+          {
+            currentPosition: container.position,
+            providingPosition: false,
+            childCount: elkChildren.length,
+          },
+        );
         return {
           id: container.id,
-          // Provide current position to ELK (will be fixed in place)
-          x: container.position?.x ?? 0,
-          y: container.position?.y ?? 0,
+          // Don't provide position for expanded containers - let ELK calculate based on content
+          // This allows ELK to reposition containers when their dimensions change significantly
           // Don't specify width/height - let ELK determine based on content
           children: elkChildren,
           layoutOptions: containerLayoutOptions,
@@ -456,6 +463,12 @@ export class ELKBridge implements IELKBridge {
     elkChild: ELKNode,
     preservePosition: boolean = false,
   ): void {
+    console.log(`🎯 [ELKBridge] applyContainerPosition for ${container.id}:`, {
+      preservePosition,
+      oldPosition: container.position,
+      newPosition: { x: elkChild.x, y: elkChild.y },
+      collapsed: container.collapsed,
+    });
     // Only update position if not preserving
     if (!preservePosition) {
       container.position = { x: elkChild.x!, y: elkChild.y! };

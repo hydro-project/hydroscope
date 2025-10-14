@@ -1184,19 +1184,14 @@ export const Hydroscope = memo<HydroscopeProps>(
           `🎯 [Hydroscope] Constrained layout for node ${node.id} only (keeping containers fixed)`,
         );
 
-        // Reallocate bridges for clean state
-        const instances = reallocateBridges();
-        if (instances && instances.forceRemount) {
-          // Use AsyncCoordinator to manage the complete sequence with constrained layout
-          await asyncCoordinator.executeLayoutAndRenderWithRemount(
-            currentVisualizationState,
-            instances.forceRemount,
-            {
-              relayoutEntities, // Only re-layout the changed node and its parent containers
-              fitView: false, // Don't auto-fit on manual interactions
-            },
-          );
-        }
+        // Use AsyncCoordinator to manage the layout with constrained relayout
+        await asyncCoordinator.executeLayoutAndRenderPipeline(
+          currentVisualizationState,
+          {
+            relayoutEntities, // Only re-layout the changed node and its parent containers
+            fitView: false, // Don't auto-fit on manual interactions
+          },
+        );
       },
       [onNodeClick, reallocateBridges],
     );

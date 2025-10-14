@@ -307,6 +307,11 @@ export function StandardNode({
       : data.showingLongLabel && data.longLabel
         ? data.longLabel
         : data.label || data.shortLabel || id;
+
+  // Check if we're showing a long label (either globally or individually)
+  const isShowingLongLabel =
+    (showFullLabels && data.longLabel) ||
+    (data.showingLongLabel && data.longLabel);
   // Regular node styling
   return (
     <>
@@ -331,10 +336,10 @@ export function StandardNode({
           backgroundColor: colors.backgroundColor,
           border: `2px solid ${colors.borderColor}`,
           borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
-          fontSize: showFullLabels
+          fontSize: isShowingLongLabel
             ? `${PANEL_CONSTANTS.FONT_SIZE_POPUP}px`
             : `${styleCfg.nodeFontSize ?? 11}px`,
-          fontWeight: showFullLabels ? "500" : "normal",
+          fontWeight: isShowingLongLabel ? "500" : "normal",
           textAlign: "center",
           boxSizing: "border-box",
           position: "relative",

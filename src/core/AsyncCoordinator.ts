@@ -46,6 +46,10 @@ export class AsyncCoordinator {
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
   private lastRenderTimestamp: number = 0;
 
+  // Callbacks for tracking container expansion lifecycle
+  private onContainerExpansionStart?: (containerId: string) => void;
+  private onContainerExpansionComplete?: (containerId: string) => void;
+
   constructor(interactionHandler?: any) {
     this.interactionHandler = interactionHandler;
   }
@@ -84,6 +88,30 @@ export class AsyncCoordinator {
   setUpdateNodeInternals(updateNodeInternals: (nodeId: string) => void): void {
     this.updateNodeInternals = updateNodeInternals;
     console.log("🎯 AsyncCoordinator: updateNodeInternals callback set");
+  }
+
+  /**
+   * Set callbacks for tracking container expansion lifecycle
+   * Used to distinguish major container expansions from minor dimension changes
+   */
+  setContainerExpansionCallbacks(
+    onStart: (containerId: string) => void,
+    onComplete: (containerId: string) => void,
+  ): void {
+    this.onContainerExpansionStart = onStart;
+    this.onContainerExpansionComplete = onComplete;
+  }
+
+  /**
+   * Check if there are pending post-render callbacks (like fitView)
+   * Used to determine if notifyRenderComplete should be called
+   */
+  hasPendingCallbacks(): boolean {
+    const hasPending = this.postRenderCallbacks.length > 0;
+    console.log(
+      `[AsyncCoordinator] 🔍 hasPendingCallbacks: ${hasPending} (count: ${this.postRenderCallbacks.length})`,
+    );
+    return hasPending;
   }
 
   /**
@@ -597,7 +625,7 @@ export class AsyncCoordinator {
     newData: any, // HydroscopeData - using any to avoid circular dependency
     visualizationState: any, // VisualizationState - using any to avoid circular dependency
     jsonParser: any, // JSONParser - using any to avoid circular dependency
-    reason: "initial_load" | "file_load" | "hierarchy_change",
+    reason: "initial_load" | "file_load" | "hierarchy_change" | "remount",
     options: {
       fitView?: boolean;
       fitViewOptions?: { padding?: number; duration?: number };
@@ -1823,6 +1851,9 @@ export class AsyncCoordinator {
     // ReactFlowData
     const startTime = Date.now();
 
+    // Notify start of container expansion
+    this.onContainerExpansionStart?.(containerId);
+
     try {
       console.debug(
         "[AsyncCoordinator] 📦 Starting container expand operation",
@@ -1880,7 +1911,7 @@ export class AsyncCoordinator {
 
       // Use enhanced pipeline for layout and render with graceful error handling
       const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: options.relayoutEntities || [containerId],
+        relayoutEntities: options.relayoutEntities, // Pass through as-is (undefined = full layout)
         fitView: options.fitView,
         fitViewOptions: options.fitViewOptions,
         timeout: options.timeout,
@@ -1901,6 +1932,9 @@ export class AsyncCoordinator {
         },
       );
 
+      // Notify completion of container expansion
+      this.onContainerExpansionComplete?.(containerId);
+
       return reactFlowData;
     } catch (error) {
       const endTime = Date.now();
@@ -1917,6 +1951,9 @@ export class AsyncCoordinator {
           timestamp: endTime,
         },
       );
+
+      // Notify completion even on error to clean up tracking
+      this.onContainerExpansionComplete?.(containerId);
 
       throw error;
     }
@@ -1999,7 +2036,7 @@ export class AsyncCoordinator {
 
       // Use enhanced pipeline for layout and render with graceful error handling
       const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
-        relayoutEntities: options.relayoutEntities || [containerId],
+        relayoutEntities: options.relayoutEntities, // Pass through as-is (undefined = full layout)
         fitView: options.fitView,
         fitViewOptions: options.fitViewOptions,
         timeout: options.timeout,
