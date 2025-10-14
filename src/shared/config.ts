@@ -131,6 +131,7 @@ export const PANEL_CONSTANTS = {
   FONT_SIZE_TINY: 11, // pixels - for secondary text
   FONT_SIZE_SMALL: 12, // pixels
   FONT_SIZE_LABEL: 13, // pixels - for node/container labels
+  FONT_SIZE_POPUP: 10, // pixels - for popup node text (smaller to fit more content)
   FONT_SIZE_MEDIUM: 16, // pixels
   FONT_SIZE_LARGE: 18, // pixels
 } as const;

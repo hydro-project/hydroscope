@@ -289,14 +289,7 @@ export function StandardNode({
     );
   }
   // Determine which label to display for regular nodes
-  // Priority: data.label (if set by toggle) > data.shortLabel > id
   const displayLabel = data.label || data.shortLabel || id;
-  // Check if showing long label
-  const isShowingLongLabel =
-    data.label === data.fullLabel &&
-    data.fullLabel &&
-    data.shortLabel &&
-    data.fullLabel !== data.shortLabel;
   // Regular node styling
   return (
     <>
@@ -319,7 +312,7 @@ export function StandardNode({
           height: `${height}px`,
           padding: `${styleCfg.nodePadding ?? 8}px 16px`,
           backgroundColor: colors.backgroundColor,
-          border: `2px solid ${isShowingLongLabel ? "#2563eb" : colors.borderColor}`,
+          border: `2px solid ${colors.borderColor}`,
           borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
           fontSize: `${styleCfg.nodeFontSize ?? 11}px`,
           textAlign: "center",
@@ -364,14 +357,8 @@ export function StandardNode({
               return "0 2px 4px rgba(0, 0, 0, 0.05)";
             }
           })(),
-          // Z-index priority: clicked animation (20) > showing long label (10) > default (1)
-          zIndex: (data as any).searchHighlightStrong
-            ? 30
-            : isClicked
-              ? 20
-              : isShowingLongLabel
-                ? 10
-                : 1,
+          // Z-index priority: clicked animation (20) > default (1)
+          zIndex: (data as any).searchHighlightStrong ? 30 : isClicked ? 20 : 1,
           // Add prominent animation for search highlights
           animation: (data as any).searchHighlight
             ? (data as any).searchHighlightStrong
@@ -380,10 +367,8 @@ export function StandardNode({
             : undefined,
         }}
         title={
-          data.fullLabel &&
-          data.shortLabel &&
-          data.fullLabel !== data.shortLabel
-            ? `Click to toggle between:\n"${data.shortLabel || id}"\n"${data.fullLabel}"`
+          data.longLabel && data.longLabel !== displayLabel
+            ? `Click to show full label:\n"${data.longLabel}"`
             : undefined
         }
       >

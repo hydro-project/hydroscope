@@ -1028,81 +1028,9 @@ export const Hydroscope = memo<HydroscopeProps>(
           return;
         }
 
-        // Default behavior: toggle label for graph nodes with distinct labels
-        if (!visualizationState) {
-          console.warn(
-            "[Hydroscope] No visualization state available for node click",
-          );
-          return;
-        }
-
-        const graphNode = visualizationState.getGraphNode(node.id);
-        console.log("[Hydroscope] Node clicked:", {
-          nodeId: node.id,
-          graphNode,
-          hasGraphNode: !!graphNode,
-          label: graphNode?.label,
-          longLabel: graphNode?.longLabel,
-          showingLongLabel: graphNode?.showingLongLabel,
-        });
-
-        if (
-          graphNode &&
-          graphNode.longLabel &&
-          graphNode.label &&
-          graphNode.longLabel !== graphNode.label
-        ) {
-          console.log(
-            "[Hydroscope] Toggling label for node:",
-            node.id,
-            "from",
-            graphNode.showingLongLabel ? "long" : "short",
-            "to",
-            graphNode.showingLongLabel ? "short" : "long",
-          );
-
-          // Toggle the label using VisualizationState's toggleNodeLabel method
-          visualizationState.toggleNodeLabel(node.id);
-
-          // Re-fetch the node to verify the toggle worked
-          const updatedNode = visualizationState.getGraphNode(node.id);
-          console.log("[Hydroscope] After toggle:", {
-            showingLongLabel: updatedNode?.showingLongLabel,
-            willDisplay: updatedNode?.showingLongLabel
-              ? updatedNode?.longLabel
-              : updatedNode?.label,
-          });
-
-          // Trigger a layout update to accommodate node size changes
-          try {
-            const asyncCoordinator =
-              hydroscopeCoreRef.current?.getAsyncCoordinator();
-            if (asyncCoordinator) {
-              // Use executeLayoutAndRenderPipeline with constrained layout for the specific node
-              await asyncCoordinator.executeLayoutAndRenderPipeline(
-                visualizationState,
-                {
-                  relayoutEntities: [node.id], // Only re-layout this specific node
-                  fitView: false, // Don't change viewport on label toggle
-                },
-              );
-              console.log(
-                "[Hydroscope] Layout update triggered successfully for node:",
-                node.id,
-              );
-            } else {
-              console.warn(
-                "[Hydroscope] AsyncCoordinator not available for layout update",
-              );
-            }
-          } catch (err) {
-            console.error("❌ Error updating layout after label toggle:", err);
-          }
-        } else {
-          console.log(
-            "[Hydroscope] Node does not have distinct labels, skipping toggle",
-          );
-        }
+        // Default behavior: Let HydroscopeCore handle node interactions (including popups)
+        // No additional processing needed - HydroscopeCore handles popup functionality
+        console.log("[Hydroscope] Node click handled by HydroscopeCore (popup functionality)");
       },
       [onNodeClick],
     );

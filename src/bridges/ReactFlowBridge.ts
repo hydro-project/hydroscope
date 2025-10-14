@@ -244,13 +244,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           nodeType: "container",
           isExpanded: !container.collapsed,
           childCount: container.children.size,
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "container") {
-                  interactionHandler.handleContainerClick(elementId);
-                }
-              }
-            : undefined,
+          // onClick removed - handled at ReactFlow level in HydroscopeCore
         },
         style: {
           width: dimensions.width,
@@ -300,13 +294,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           label: node.label,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "node") {
-                  interactionHandler.handleNodeClick(elementId);
-                }
-              }
-            : undefined,
+          // onClick removed - handled at ReactFlow level in HydroscopeCore
         },
         parentId: parentId,
         extent: parentId ? "parent" : undefined,
@@ -433,13 +421,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           height,
           colorPalette: state.getColorPalette(),
           style: "default",
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "container") {
-                  interactionHandler.handleContainerClick(elementId);
-                }
-              }
-            : undefined,
+          // onClick removed - handled at ReactFlow level in HydroscopeCore
         },
         style: {
           width,
@@ -494,22 +476,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
         width,
         height,
         data: {
-          label: node.showingLongLabel ? node.longLabel : node.label,
+          label: node.label,
           longLabel: node.longLabel,
-          showingLongLabel: node.showingLongLabel,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
           colorPalette: state.getColorPalette(),
           style: node.type || "default",
           width, // Pass ELK-calculated width to match layout
           height, // Pass ELK-calculated height to match layout
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "node") {
-                  interactionHandler.handleNodeClick(elementId);
-                }
-              }
-            : undefined,
+          // onClick removed - handled at ReactFlow level in HydroscopeCore
         },
         parentId: parentId,
         parentNode: parentId, // React Flow uses parentNode
