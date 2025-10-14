@@ -514,9 +514,11 @@ export const Hydroscope = memo<HydroscopeProps>(
       const parseUrlParams = async () => {
         try {
           // Skip URL parsing if disabled or in unsuitable environment
-          if (!enableUrlParsing || 
-              typeof window === 'undefined' || 
-              typeof window.location === 'undefined') {
+          if (
+            !enableUrlParsing ||
+            typeof window === "undefined" ||
+            typeof window.location === "undefined"
+          ) {
             return;
           }
 
