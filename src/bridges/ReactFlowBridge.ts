@@ -177,7 +177,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   // Optimized conversion for large graphs - use same logic as regular conversion
   private convertNodesOptimized(
     state: VisualizationState,
-    interactionHandler?: any,
+    _interactionHandler?: any,
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
 
@@ -244,10 +244,12 @@ export class ReactFlowBridge implements IReactFlowBridge {
           nodeType: "container",
           isExpanded: !container.collapsed,
           childCount: container.children.size,
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "container") {
-                  interactionHandler.handleContainerClick(elementId);
+          showingLongLabel: false, // Containers don't have long labels
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (containerId: string) => {
+                if (_interactionHandler.handleContainerClick) {
+                  _interactionHandler.handleContainerClick(containerId);
                 }
               }
             : undefined,
@@ -297,13 +299,19 @@ export class ReactFlowBridge implements IReactFlowBridge {
         width,
         height,
         data: {
-          label: node.label,
+          label:
+            node.showingLongLabel && node.longLabel
+              ? node.longLabel
+              : node.label,
+          longLabel: node.longLabel,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "node") {
-                  interactionHandler.handleNodeClick(elementId);
+          showingLongLabel: node.showingLongLabel,
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (nodeId: string) => {
+                if (_interactionHandler.handleNodeClick) {
+                  _interactionHandler.handleNodeClick(nodeId);
                 }
               }
             : undefined,
@@ -380,7 +388,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   }
   private convertNodes(
     state: VisualizationState,
-    interactionHandler?: any,
+    _interactionHandler?: any,
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
     // Build parent mapping for nodes and containers
@@ -433,10 +441,12 @@ export class ReactFlowBridge implements IReactFlowBridge {
           height,
           colorPalette: state.getColorPalette(),
           style: "default",
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "container") {
-                  interactionHandler.handleContainerClick(elementId);
+          showingLongLabel: false, // Containers don't have long labels
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (containerId: string) => {
+                if (_interactionHandler.handleContainerClick) {
+                  _interactionHandler.handleContainerClick(containerId);
                 }
               }
             : undefined,
@@ -494,19 +504,23 @@ export class ReactFlowBridge implements IReactFlowBridge {
         width,
         height,
         data: {
-          label: node.showingLongLabel ? node.longLabel : node.label,
+          label:
+            node.showingLongLabel && node.longLabel
+              ? node.longLabel
+              : node.label,
           longLabel: node.longLabel,
-          showingLongLabel: node.showingLongLabel,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
           colorPalette: state.getColorPalette(),
           style: node.type || "default",
           width, // Pass ELK-calculated width to match layout
           height, // Pass ELK-calculated height to match layout
-          onClick: interactionHandler
-            ? (elementId: string, elementType: "node" | "container") => {
-                if (elementType === "node") {
-                  interactionHandler.handleNodeClick(elementId);
+          showingLongLabel: node.showingLongLabel,
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (nodeId: string) => {
+                if (_interactionHandler.handleNodeClick) {
+                  _interactionHandler.handleNodeClick(nodeId);
                 }
               }
             : undefined,
