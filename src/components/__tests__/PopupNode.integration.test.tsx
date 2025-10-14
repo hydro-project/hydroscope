@@ -2,7 +2,7 @@
  * @fileoverview Integration tests for NodePopup with HydroscopeCore
  */
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { HydroscopeCore } from "../HydroscopeCore";
 import type { HydroscopeData } from "../../types/core";

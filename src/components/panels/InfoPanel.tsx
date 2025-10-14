@@ -28,6 +28,45 @@ import { EdgeStyleLegend } from "../EdgeStyleLegend";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
 import { clearSearchPanelImperatively } from "../../utils/searchClearUtils.js";
 import { togglePanelImperatively } from "../../utils/panelOperationUtils.js";
+
+/**
+ * Link icon component - shows a chain link when sync is enabled
+ */
+const LinkIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    style={{ display: "block" }}
+  >
+    <path d="M6.879 9.934a.81.81 0 0 1-.575-.238 3.818 3.818 0 0 1 0-5.392l3-3C10.024.584 10.982.187 12 .187s1.976.397 2.696 1.117a3.818 3.818 0 0 1 0 5.392l-1.371 1.371a.813.813 0 0 1-1.149-1.149l1.371-1.371A2.19 2.19 0 0 0 12 1.812c-.584 0-1.133.228-1.547.641l-3 3a2.19 2.19 0 0 0 0 3.094.813.813 0 0 1-.575 1.387z" />
+    <path d="M4 15.813a3.789 3.789 0 0 1-2.696-1.117 3.818 3.818 0 0 1 0-5.392l1.371-1.371a.813.813 0 0 1 1.149 1.149l-1.371 1.371A2.19 2.19 0 0 0 4 14.187c.584 0 1.133-.228 1.547-.641l3-3a2.19 2.19 0 0 0 0-3.094.813.813 0 0 1 1.149-1.149 3.818 3.818 0 0 1 0 5.392l-3 3A3.789 3.789 0 0 1 4 15.813z" />
+  </svg>
+);
+
+/**
+ * Broken link icon component - shows a broken chain link when sync is disabled
+ */
+const BrokenLinkIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    style={{ display: "block" }}
+  >
+    <path d="M13.547 2.453a3.789 3.789 0 0 0-2.696-1.117h-.038a.813.813 0 0 0 0 1.625h.038c.584 0 1.133.228 1.547.641a2.19 2.19 0 0 1 0 3.094l-1.371 1.371a.813.813 0 0 0 1.149 1.149l1.371-1.371a3.818 3.818 0 0 0 0-5.392z" />
+    <path d="M4 15.813a3.789 3.789 0 0 1-2.696-1.117 3.818 3.818 0 0 1 0-5.392l1.371-1.371a.813.813 0 0 1 1.149 1.149l-1.371 1.371A2.19 2.19 0 0 0 4 14.187c.584 0 1.133-.228 1.547-.641l3-3a2.19 2.19 0 0 0 0-3.094.813.813 0 0 1 1.149-1.149 3.818 3.818 0 0 1 0 5.392l-3 3A3.789 3.789 0 0 1 4 15.813z" />
+    <path
+      d="M3.5 4.5L5 6M11 10l1.5 1.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 export interface InfoPanelRef {
   focusSearch: () => void;
   clearSearch: () => void;
@@ -42,6 +81,8 @@ const InfoPanelInternal = forwardRef<
       matches: SearchMatch[],
       current?: SearchMatch,
     ) => void;
+    syncTreeAndGraph?: boolean;
+    onSyncTreeAndGraphChange?: (enabled: boolean) => void;
   }
 >(
   (
@@ -65,6 +106,8 @@ const InfoPanelInternal = forwardRef<
       open = true,
       onOpenChange,
       onSearchUpdate,
+      syncTreeAndGraph = true,
+      onSyncTreeAndGraphChange,
     },
     ref,
   ) => {
@@ -405,6 +448,55 @@ const InfoPanelInternal = forwardRef<
               {/* Search + Hierarchy Tree */}
               {visualizationState && (
                 <div>
+                  {/* Sync Control Button */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "8px",
+                      padding: "4px 8px",
+                      backgroundColor: syncTreeAndGraph
+                        ? "rgba(59, 130, 246, 0.05)"
+                        : "rgba(128, 128, 128, 0.05)",
+                      borderRadius: "4px",
+                      border: `1px solid ${syncTreeAndGraph ? "rgba(59, 130, 246, 0.2)" : "rgba(128, 128, 128, 0.2)"}`,
+                    }}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      onClick={() =>
+                        onSyncTreeAndGraphChange?.(!syncTreeAndGraph)
+                      }
+                      title={
+                        syncTreeAndGraph
+                          ? "Tree and graph are synced - click to unlink"
+                          : "Tree and graph are independent - click to link"
+                      }
+                      style={{
+                        padding: "2px 6px",
+                        height: "auto",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: syncTreeAndGraph ? "#3b82f6" : "#888",
+                      }}
+                    >
+                      {syncTreeAndGraph ? <LinkIcon /> : <BrokenLinkIcon />}
+                    </Button>
+                    <span
+                      style={{
+                        fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
+                        color: syncTreeAndGraph ? "#3b82f6" : "#888",
+                        fontWeight: syncTreeAndGraph ? 500 : 400,
+                      }}
+                    >
+                      {syncTreeAndGraph
+                        ? "Tree and graph linked"
+                        : "Tree and graph independent"}
+                    </span>
+                  </div>
                   <SearchControls
                     ref={searchControlsRef}
                     searchableItems={searchableItems}
@@ -420,8 +512,8 @@ const InfoPanelInternal = forwardRef<
                     collapsedContainers={collapsedContainers}
                     visualizationState={visualizationState}
                     onToggleContainer={(containerId) => {
-                      // Ensure both tree and graph stay in sync
-                      if (onToggleContainer) {
+                      // Only sync when enabled
+                      if (syncTreeAndGraph && onToggleContainer) {
                         onToggleContainer(containerId);
                       }
                     }}
@@ -435,6 +527,7 @@ const InfoPanelInternal = forwardRef<
                     searchQuery={searchQuery}
                     searchResults={searchMatches}
                     currentSearchResult={currentSearchMatch}
+                    syncEnabled={syncTreeAndGraph}
                   />
                 </div>
               )}

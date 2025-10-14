@@ -107,6 +107,8 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   searchResults?: SearchResult[];
   currentSearchResult?: SearchResult;
   onTreeExpansion?: (containerIds: string[]) => Promise<void>;
+  // Sync control
+  syncEnabled?: boolean; // When false, tree expansion/collapse is independent of ReactFlow graph
   // Display
   title?: string;
   showNodeCounts?: boolean;

@@ -109,6 +109,8 @@ interface HydroscopeState {
   layoutAlgorithm: string;
   renderConfig: RenderConfig;
   autoFitEnabled: boolean;
+  /** Sync tree and graph state */
+  syncTreeAndGraph: boolean;
   /** Search state */
   searchQuery: string;
   searchMatches: SearchMatch[];
@@ -131,6 +133,7 @@ interface HydroscopeSettings {
   infoPanelOpen: boolean;
   stylePanelOpen: boolean;
   autoFitEnabled: boolean;
+  syncTreeAndGraph: boolean;
   colorPalette: string;
   layoutAlgorithm: string;
   renderConfig: RenderConfig;
@@ -154,6 +157,7 @@ const DEFAULT_SETTINGS: HydroscopeSettings = {
   infoPanelOpen: true,
   stylePanelOpen: false,
   autoFitEnabled: true,
+  syncTreeAndGraph: true,
   colorPalette: DEFAULT_COLOR_PALETTE,
   layoutAlgorithm: DEFAULT_ELK_ALGORITHM,
   renderConfig: DEFAULT_RENDER_CONFIG,
@@ -577,6 +581,7 @@ export const Hydroscope = memo<HydroscopeProps>(
       layoutAlgorithm: settings.layoutAlgorithm || initialLayoutAlgorithm,
       renderConfig: settings.renderConfig,
       autoFitEnabled: true, // Always start with autoFit enabled, regardless of saved settings
+      syncTreeAndGraph: settings.syncTreeAndGraph ?? true, // Default to true (linked)
       searchQuery: "",
       searchMatches: [],
       currentSearchMatch: undefined,
@@ -624,6 +629,7 @@ export const Hydroscope = memo<HydroscopeProps>(
         infoPanelOpen: state.infoPanelOpen,
         stylePanelOpen: state.stylePanelOpen,
         autoFitEnabled: state.autoFitEnabled,
+        syncTreeAndGraph: state.syncTreeAndGraph,
         colorPalette: state.colorPalette,
         layoutAlgorithm: state.layoutAlgorithm,
         renderConfig: state.renderConfig,
@@ -633,6 +639,7 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.infoPanelOpen,
       state.stylePanelOpen,
       state.autoFitEnabled,
+      state.syncTreeAndGraph,
       state.colorPalette,
       state.layoutAlgorithm,
       state.renderConfig,
@@ -662,6 +669,7 @@ export const Hydroscope = memo<HydroscopeProps>(
         infoPanelOpen: state.infoPanelOpen,
         stylePanelOpen: state.stylePanelOpen,
         autoFitEnabled: state.autoFitEnabled,
+        syncTreeAndGraph: state.syncTreeAndGraph,
         colorPalette: state.colorPalette,
         layoutAlgorithm: state.layoutAlgorithm,
         renderConfig: state.renderConfig,
@@ -672,6 +680,7 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.infoPanelOpen,
       state.stylePanelOpen,
       state.autoFitEnabled,
+      state.syncTreeAndGraph,
       state.colorPalette,
       state.layoutAlgorithm,
       state.renderConfig,
@@ -882,6 +891,15 @@ export const Hydroscope = memo<HydroscopeProps>(
 
       debouncedExpandAll();
     }, [onError]);
+    // Handle sync tree and graph toggle
+    const handleSyncTreeAndGraphToggle = useCallback((enabled: boolean) => {
+      setState((prev) => ({
+        ...prev,
+        syncTreeAndGraph: enabled,
+      }));
+      // When enabling sync, sync the tree to match the graph (preserve ReactFlow state)
+      // This is handled automatically by the tree component responding to collapsedContainers prop
+    }, []);
     // Handle auto-fit toggle
     const handleAutoFitToggle = useCallback(() => {
       setState((prev) => {
@@ -1284,6 +1302,8 @@ export const Hydroscope = memo<HydroscopeProps>(
                     asyncCoordinator={
                       hydroscopeCoreRef.current?.getAsyncCoordinator() || null
                     }
+                    syncTreeAndGraph={state.syncTreeAndGraph}
+                    onSyncTreeAndGraphChange={handleSyncTreeAndGraphToggle}
                   />
                 )}
 

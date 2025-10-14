@@ -386,6 +386,7 @@ export function HierarchyTree({
   searchResults,
   currentSearchResult,
   onTreeExpansion: _onTreeExpansion,
+  syncEnabled = true,
 }: HierarchyTreeProps) {
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
@@ -560,12 +561,13 @@ export function HierarchyTree({
         !searchQuery.trim() ||
         !searchResults ||
         !searchResults.length) &&
-      onToggleContainer
+      onToggleContainer &&
+      syncEnabled
     ) {
       // Clear the search expansion ref when search is cleared
       lastSearchExpansionRef.current = "";
       searchExpansionInProgressRef.current = false;
-      // When not searching, sync normally
+      // When not searching and sync is enabled, sync normally
       const shouldBeExpanded = new Set(
         derivedExpandedKeys.map((k: string) => String(k)),
       );
@@ -625,6 +627,7 @@ export function HierarchyTree({
     layoutOrchestrator,
     visualizationState,
     asyncCoordinator,
+    syncEnabled,
   ]);
   const treeData = useMemo(() => {
     if (!visualizationState) return [];
