@@ -16,8 +16,6 @@ import {
   measureOperationPerformance,
   measureAsyncOperationPerformance,
   type OperationType,
-  type OperationMetrics,
-  type CascadeDetection,
 } from "../operationPerformanceMonitor.js";
 
 describe("OperationPerformanceMonitor", () => {

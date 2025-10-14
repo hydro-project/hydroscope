@@ -80,7 +80,7 @@ export class PerformanceProfiler {
     if (typeof process !== "undefined" && process.memoryUsage) {
       try {
         return process.memoryUsage().heapUsed;
-      } catch (error) {
+      } catch (_error) {
         // Fall through to browser API
       }
     }
@@ -93,7 +93,7 @@ export class PerformanceProfiler {
     ) {
       try {
         return (window as any).performance.memory.usedJSHeapSize;
-      } catch (error) {
+      } catch (_error) {
         // Fall through to default
       }
     }

@@ -255,7 +255,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 try {
                   visualizationState.clearSearchEnhanced();
                   // ReactFlow regeneration will be handled by Hydroscope component
-                } catch (error) {
+                } catch (_error) {
                   // Silently handle clear errors
                 }
               }
@@ -281,7 +281,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               }));
               // ReactFlow regeneration will be handled by Hydroscope component
               // after onSearch callback is executed
-            } catch (error) {
+            } catch (_error) {
               // Fallback to local search
               next = searchableItems
                 .filter((i) => rx.test(i.label))

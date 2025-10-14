@@ -235,7 +235,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         console.log(
           `  - Memory increase: ${(conversionMemoryIncrease / 1024 / 1024).toFixed(2)} MB`,
         );
-      } catch (error) {
+      } catch (_error) {
         console.log(
           `  ❌ ReactFlow conversion failed, memory measurement incomplete`,
         );
@@ -513,7 +513,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         // Try ReactFlow conversion to trigger edge validation
         const reactFlowBridge = new ReactFlowBridge({});
         reactFlowBridge.toReactFlowData(visualizationState);
-      } catch (error) {
+      } catch (_error) {
         // Expected to fail due to current bugs
       } finally {
         // Restore original console methods

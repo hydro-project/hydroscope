@@ -2186,7 +2186,7 @@ export class VisualizationState {
     const indices: number[][] = [];
     // Exact substring match
     let startIndex = 0;
-    // eslint-disable-next-line no-constant-condition
+
     while (true) {
       const index = textLower.indexOf(query, startIndex);
       if (index === -1) break;

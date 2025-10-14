@@ -956,7 +956,6 @@ const HydroscopeCoreInternal = forwardRef<
           );
           handleError(error as Error, "bulk collapse operation");
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
       [
         state.visualizationState,
@@ -1021,7 +1020,6 @@ const HydroscopeCoreInternal = forwardRef<
           );
           handleError(error as Error, "bulk expand operation");
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
       [
         state.visualizationState,

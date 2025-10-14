@@ -248,7 +248,7 @@ export class PerformanceMonitor {
           "heap_total",
           memUsage.heapTotal / 1024 / 1024,
         ); // MB
-      } catch (error) {
+      } catch (_error) {
         // Silently ignore memory sampling errors in browser environment
       }
     } else if (
@@ -269,7 +269,7 @@ export class PerformanceMonitor {
           "heap_total",
           memInfo.totalJSHeapSize / 1024 / 1024,
         ); // MB
-      } catch (error) {
+      } catch (_error) {
         // Silently ignore memory sampling errors
       }
     }

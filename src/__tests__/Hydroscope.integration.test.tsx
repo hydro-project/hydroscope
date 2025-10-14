@@ -1321,7 +1321,7 @@ describe("Full Hydroscope Component Integration Tests", () => {
       buttons.forEach((button) => {
         try {
           fireEvent.click(button);
-        } catch (error) {
+        } catch (_error) {
           // Ignore click errors for this test
         }
       });

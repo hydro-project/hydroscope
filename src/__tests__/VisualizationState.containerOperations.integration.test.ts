@@ -262,7 +262,7 @@ describe("VisualizationState Container Operations Integration", () => {
 
         state._expandContainerForCoordinator("container2");
         operationsCompleted++;
-      } catch (error) {
+      } catch (_error) {
         // Document that operations may fail due to existing bugs
         console.log(
           `Operations completed before failure: ${operationsCompleted}/4`,
@@ -549,7 +549,7 @@ describe("VisualizationState Container Operations Integration", () => {
         state._expandContainerForCoordinator("container1");
         state.collapseContainerSystemOperation("container1");
         state._expandContainerForCoordinator("container1");
-      } catch (error) {
+      } catch (_error) {
         // Even if operations fail, state should be consistent
       }
 

@@ -842,7 +842,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                   // Search with results - use expandAll (needed for highlighting to work)
                   try {
                     await hydroscopeCore.expandAll();
-                  } catch (error) {
+                  } catch (_error) {
                     // Fallback to ReactFlow render using new pipeline method
                     if (asyncCoordinator.executeLayoutAndRenderPipeline) {
                       asyncCoordinator.executeLayoutAndRenderPipeline(
@@ -879,7 +879,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                 }
               }
             }
-          } catch (error) {
+          } catch (_error) {
             // Handle search errors silently
           }
         }

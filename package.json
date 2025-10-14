@@ -64,7 +64,6 @@
     "posttest": "npm run test:reminder",
     "test:watch": "vitest --reporter=verbose",
     "test:performance": "node scripts/performance-test.js",
-
     "lint": "npm run lint:prod && npm run lint:tests",
     "lint:prod": "eslint 'src/**/*.{js,ts,tsx}' --ignore-pattern 'src/**/__tests__/**' --max-warnings 0",
     "lint:tests": "eslint 'src/__tests__/**/*.{js,ts,tsx}' --max-warnings 0",
@@ -87,21 +86,19 @@
     "elkjs": "^0.10.0"
   },
   "devDependencies": {
-    "@line/ts-remove-unused": "^0.10.1",
-
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-typescript": "^11.0.0",
     "@testing-library/dom": "^10.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^24.5.2",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
-    "@types/testing-library__jest-dom": "^6.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^3.2.4",
-    "eslint": "^8.57.1",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",

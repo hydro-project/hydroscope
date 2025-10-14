@@ -304,7 +304,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
           relayoutEntities: ["nonexistent"],
           fitView: false,
         });
-      } catch (error) {
+      } catch (_error) {
         // Expected to handle gracefully
       }
 
