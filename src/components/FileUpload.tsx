@@ -3,6 +3,7 @@
  * Supports drag-and-drop and file selection with comprehensive validation
  */
 import React, { useCallback, useState, useRef, useEffect } from "react";
+import { hscopeLogger } from "../utils/logger.js";
 import type {
   HydroscopeData,
   ParseError,
@@ -72,7 +73,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const debugLog = useCallback(
     (message: string, data?: any) => {
       if (debug) {
-        console.log(`[FileUpload] ${message}`, data);
+        hscopeLogger.log("debug", `[FileUpload] ${message}`, data);
       }
     },
     [debug],

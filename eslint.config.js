@@ -94,7 +94,8 @@ export default [
       "prettier/prettier": "error",
 
       // Console logging - use hscopeLogger from utils/logger instead
-      "no-console": "warn",
+      // Allow console.error and console.warn for critical issues
+      "no-console": ["warn", { allow: ["error", "warn"] }],
 
       // Hydroscope architecture compliance rules
       "hydroscope-architecture/no-bridge-state": "error",

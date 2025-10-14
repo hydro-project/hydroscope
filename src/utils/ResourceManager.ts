@@ -230,7 +230,8 @@ export class ResourceManager {
     this.resources.clear();
     this.isDestroyed = true;
     if (resourceCount > 0) {
-      console.debug(
+      hscopeLogger.log(
+        "debug",
         `ResourceManager destroyed, cleaned up ${resourceCount} resources`,
       );
     }
@@ -313,5 +314,6 @@ export function createSafeInterval(
   }, delay);
 }
 // Import React for the hook
+import { hscopeLogger } from "./logger.js";
 import React from "react";
 export default ResourceManager;

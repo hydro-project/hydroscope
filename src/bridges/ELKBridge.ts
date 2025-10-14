@@ -3,6 +3,7 @@
  * Architectural constraints: Stateless, React-free, synchronous conversions
  */
 import ELK from "elkjs";
+import { hscopeLogger } from "../utils/logger.js";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import type {
   LayoutConfig,
@@ -148,7 +149,8 @@ export class ELKBridge implements IELKBridge {
         containerLayoutOptions["elk.nodeSize.constraints"] = "MINIMUM_SIZE";
         containerLayoutOptions["elk.nodeSize.options"] =
           "DEFAULT_MINIMUM_SIZE COMPUTE_PADDING";
-        console.log(
+        hscopeLogger.log(
+          "bridge",
           `🎯 [ELKBridge] Creating ELK node for expanded container ${container.id}:`,
           {
             currentPosition: container.position,
@@ -306,13 +308,15 @@ export class ELKBridge implements IELKBridge {
     try {
       // Run smart collapse before layout if enabled
       if (state.shouldRunSmartCollapse()) {
-        console.log(
+        hscopeLogger.log(
+          "bridge",
           "🎯 SMART COLLAPSE CALLED - running smart collapse before layout",
         );
         state.performSmartCollapse();
-        console.log("✅ SMART COLLAPSE COMPLETED");
+        hscopeLogger.log("bridge", "✅ SMART COLLAPSE COMPLETED");
       } else {
-        console.log(
+        hscopeLogger.log(
+          "bridge",
           "❌ SMART COLLAPSE SKIPPED - shouldRunSmartCollapse() returned false",
         );
       }
@@ -453,7 +457,8 @@ export class ELKBridge implements IELKBridge {
 
     // If node has custom dimensions, preserve them but log for debugging
     if (node.dimensions && elkChild.width && elkChild.height) {
-      console.log(
+      hscopeLogger.log(
+        "bridge",
         `🎯 [ELKBridge] Node ${node.id}: preserving custom dimensions ${node.dimensions.width}x${node.dimensions.height} (ELK calculated ${elkChild.width}x${elkChild.height})`,
       );
     }
@@ -463,12 +468,16 @@ export class ELKBridge implements IELKBridge {
     elkChild: ELKNode,
     preservePosition: boolean = false,
   ): void {
-    console.log(`🎯 [ELKBridge] applyContainerPosition for ${container.id}:`, {
-      preservePosition,
-      oldPosition: container.position,
-      newPosition: { x: elkChild.x, y: elkChild.y },
-      collapsed: container.collapsed,
-    });
+    hscopeLogger.log(
+      "bridge",
+      `🎯 [ELKBridge] applyContainerPosition for ${container.id}:`,
+      {
+        preservePosition,
+        oldPosition: container.position,
+        newPosition: { x: elkChild.x, y: elkChild.y },
+        collapsed: container.collapsed,
+      },
+    );
     // Only update position if not preserving
     if (!preservePosition) {
       container.position = { x: elkChild.x!, y: elkChild.y! };
@@ -680,7 +689,8 @@ export class ELKBridge implements IELKBridge {
     // FIXED: Use custom dimensions when available (for "Show full node labels" feature)
     // This allows nodes to be properly sized based on their label length
     if (node.dimensions) {
-      console.log(
+      hscopeLogger.log(
+        "bridge",
         `🎯 [ELKBridge] Node ${node.id}: using custom dimensions ${node.dimensions.width}x${node.dimensions.height}`,
       );
       return {

@@ -13,6 +13,7 @@ import React, {
   memo,
   useEffect,
 } from "react";
+import { hscopeLogger } from "../../utils/logger.js";
 import { Button } from "antd";
 import { InfoPanelProps, LegendData } from "../types";
 import { CollapsibleSection } from "../CollapsibleSection";
@@ -94,7 +95,8 @@ const InfoPanelInternal = forwardRef<
           if (message.includes("ResizeObserver loop limit exceeded")) {
             // Suppress ResizeObserver loop errors during panel operations
             if (process.env.NODE_ENV === "development") {
-              console.log(
+              hscopeLogger.log(
+                "debug",
                 "[InfoPanel] Suppressed ResizeObserver error during panel operation",
               );
             }

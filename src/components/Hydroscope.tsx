@@ -30,6 +30,7 @@ import {
   type StyleConfig as StyleTunerConfig,
 } from "./panels/StyleTuner.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
+import { hscopeLogger } from "../utils/logger.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
@@ -544,19 +545,29 @@ export const Hydroscope = memo<HydroscopeProps>(
           }
 
           if (dataParam || compressedParam) {
-            console.log("🔄 Parsing data from URL parameters...");
+            hscopeLogger.log(
+              "orchestrator",
+              "🔄 Parsing data from URL parameters...",
+            );
             const parsedData = await parseDataFromUrl(
               dataParam,
               compressedParam,
             );
             if (parsedData) {
-              console.log("✅ Successfully parsed data from URL");
+              hscopeLogger.log(
+                "orchestrator",
+                "✅ Successfully parsed data from URL",
+              );
               setUrlData(parsedData);
               setUrlError(null);
             }
           } else if (fileParam) {
             // Handle file path parameter
-            console.log("📄 File path detected in URL:", fileParam);
+            hscopeLogger.log(
+              "orchestrator",
+              "📄 File path detected in URL:",
+              fileParam,
+            );
             setUrlFilePath(decodeURIComponent(fileParam));
             setUrlError(null);
           }
@@ -646,7 +657,8 @@ export const Hydroscope = memo<HydroscopeProps>(
       const handleShowPopup = (e: Event) => {
         const customEvent = e as CustomEvent<{ nodeId: string }>;
         const nodeId = customEvent.detail.nodeId;
-        console.log(
+        hscopeLogger.log(
+          "orchestrator",
           `ℹ️ [Hydroscope] Received showPopup event for node ${nodeId}`,
         );
         if (hydroscopeCoreRef.current?.showNodePopup) {
@@ -1026,7 +1038,8 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
-        console.log(
+        hscopeLogger.log(
+          "orchestrator",
           "🔄 [Hydroscope] handleVisualizationStateChange called, visualizationState:",
           !!visualizationState,
         );
@@ -1043,7 +1056,8 @@ export const Hydroscope = memo<HydroscopeProps>(
       const visualizationState =
         hydroscopeCoreRef.current?.getVisualizationState?.();
       if (visualizationState && state.renderConfig.showFullNodeLabels) {
-        console.log(
+        hscopeLogger.log(
+          "orchestrator",
           "🔄 [Hydroscope] Applying persisted showFullNodeLabels=true to VisualizationState",
         );
         visualizationState.expandAllNodeLabelsToLong();
@@ -1073,7 +1087,10 @@ export const Hydroscope = memo<HydroscopeProps>(
 
     // Reallocate bridges and instances for hard reset
     const reallocateBridges = useCallback(() => {
-      console.log("🔄 [Hydroscope] Reallocating bridges for hard reset");
+      hscopeLogger.log(
+        "orchestrator",
+        "🔄 [Hydroscope] Reallocating bridges for hard reset",
+      );
 
       // Get AsyncCoordinator
       const asyncCoordinator =
@@ -1098,7 +1115,10 @@ export const Hydroscope = memo<HydroscopeProps>(
       });
 
       if (result) {
-        console.log("✅ [Hydroscope] Bridge reallocation complete");
+        hscopeLogger.log(
+          "orchestrator",
+          "✅ [Hydroscope] Bridge reallocation complete",
+        );
         return {
           asyncCoordinator: result.asyncCoordinator,
           visualizationState: result.visualizationState,
@@ -1144,7 +1164,8 @@ export const Hydroscope = memo<HydroscopeProps>(
           return;
         }
 
-        console.log(
+        hscopeLogger.log(
+          "orchestrator",
           `🏷️ [Hydroscope] Toggling label for node ${node.id}, current state: ${graphNode.showingLongLabel}`,
         );
 
@@ -1180,7 +1201,8 @@ export const Hydroscope = memo<HydroscopeProps>(
         // This keeps container positions fixed and prevents the graph from moving around
         const relayoutEntities: string[] = [node.id];
 
-        console.log(
+        hscopeLogger.log(
+          "orchestrator",
           `🎯 [Hydroscope] Constrained layout for node ${node.id} only (keeping containers fixed)`,
         );
 

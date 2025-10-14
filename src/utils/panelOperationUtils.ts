@@ -9,6 +9,7 @@
  * for avoiding ResizeObserver loops and coordination cascades.
  */
 
+import { hscopeLogger } from "./logger.js";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import {
   globalOperationMonitor,
@@ -124,12 +125,16 @@ export function togglePanelImperatively(options: {
   }
 
   if (debug) {
-    console.log("[PanelOperationUtils] Starting imperative panel toggle", {
-      panelId,
-      operation,
-      currentState,
-      debounce,
-    });
+    hscopeLogger.log(
+      "op",
+      "[PanelOperationUtils] Starting imperative panel toggle",
+      {
+        panelId,
+        operation,
+        currentState,
+        debounce,
+      },
+    );
   }
 
   // Validate inputs
@@ -161,7 +166,8 @@ export function togglePanelImperatively(options: {
   // Skip if already in target state
   if (currentState === targetCollapsed) {
     if (debug) {
-      console.log(
+      hscopeLogger.log(
+        "op",
         `[PanelOperationUtils] Panel ${panelId} already in target state`,
       );
     }
@@ -179,7 +185,8 @@ export function togglePanelImperatively(options: {
         }
         setState(targetCollapsed);
         if (debug) {
-          console.log(
+          hscopeLogger.log(
+            "op",
             `[PanelOperationUtils] Panel ${panelId} ${targetCollapsed ? "collapsed" : "expanded"} imperatively`,
           );
         }
@@ -273,9 +280,13 @@ export function batchPanelOperationsImperatively(options: {
   const { operations, debug = false } = options;
 
   if (debug) {
-    console.log("[PanelOperationUtils] Starting batch panel operations", {
-      operationCount: operations.length,
-    });
+    hscopeLogger.log(
+      "op",
+      "[PanelOperationUtils] Starting batch panel operations",
+      {
+        operationCount: operations.length,
+      },
+    );
   }
 
   const results = {
@@ -309,7 +320,11 @@ export function batchPanelOperationsImperatively(options: {
     }
 
     if (debug) {
-      console.log("[PanelOperationUtils] Batch operations completed", results);
+      hscopeLogger.log(
+        "op",
+        "[PanelOperationUtils] Batch operations completed",
+        results,
+      );
     }
   });
 
@@ -339,11 +354,15 @@ export function changeStyleImperatively(options: {
   } = options;
 
   if (debug) {
-    console.log("[PanelOperationUtils] Starting imperative style change", {
-      styleType,
-      value,
-      suppressResizeObserver,
-    });
+    hscopeLogger.log(
+      "op",
+      "[PanelOperationUtils] Starting imperative style change",
+      {
+        styleType,
+        value,
+        suppressResizeObserver,
+      },
+    );
   }
 
   // Define the operation function
@@ -356,7 +375,8 @@ export function changeStyleImperatively(options: {
         }
 
         if (debug) {
-          console.log(
+          hscopeLogger.log(
+            "op",
             `[PanelOperationUtils] Style ${styleType} changed to ${value} imperatively`,
           );
         }

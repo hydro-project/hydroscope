@@ -8,7 +8,11 @@ export {
 } from "./JSONParser.js";
 
 // Logger utility for conditional logging
-export { hscopeLogger, refreshLoggerConfig, type HydroLogCategory } from "./logger.js";
+export {
+  hscopeLogger,
+  refreshLoggerConfig,
+  type HydroLogCategory,
+} from "./logger.js";
 export {
   processSemanticTags,
   validateSemanticMappings,

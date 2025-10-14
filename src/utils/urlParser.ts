@@ -52,12 +52,12 @@ export async function parseDataFromUrl(
  */
 export function encodeDataForUrl(
   data: HydroscopeData,
-  compress: boolean = false,
+  _compress: boolean = false,
 ): string {
   try {
     const jsonString = JSON.stringify(data);
     // Note: Compression not yet implemented, using base64 encoding
-    // The compress parameter is accepted for future compatibility
+    // The _compress parameter is accepted for future compatibility but not yet used
     return btoa(jsonString);
   } catch (error) {
     throw new Error(

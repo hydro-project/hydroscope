@@ -61,6 +61,7 @@ import {
   AutoFitScenarios,
 } from "../utils/autoFitUtils.js";
 import { ErrorBoundary } from "./ErrorBoundary.js";
+import { hscopeLogger } from "../utils/logger.js";
 import type { RenderConfig } from "./Hydroscope.js";
 import {
   DEFAULT_COLOR_PALETTE,
@@ -688,7 +689,8 @@ const HydroscopeCoreInternal = forwardRef<
               // - ReactFlow data generated and updated
               // - FitView triggered (if enabled)
 
-              console.debug(
+              hscopeLogger.log(
+                "orchestrator",
                 `[HydroscopeCore] Container ${wasCollapsed ? "expand" : "collapse"} operation completed`,
                 { containerId, reactFlowData },
               );
@@ -1010,9 +1012,13 @@ const HydroscopeCoreInternal = forwardRef<
           // Call success callback
           onCollapseAll?.(state.visualizationState);
 
-          console.debug("[HydroscopeCore] Collapse all operation completed", {
-            reactFlowData,
-          });
+          hscopeLogger.log(
+            "orchestrator",
+            "[HydroscopeCore] Collapse all operation completed",
+            {
+              reactFlowData,
+            },
+          );
         } catch (error) {
           console.error(
             "[HydroscopeCore] Error in collapseAll operation:",
@@ -1074,9 +1080,13 @@ const HydroscopeCoreInternal = forwardRef<
           // Call success callback
           onExpandAll?.(state.visualizationState);
 
-          console.debug("[HydroscopeCore] Expand all operation completed", {
-            reactFlowData,
-          });
+          hscopeLogger.log(
+            "orchestrator",
+            "[HydroscopeCore] Expand all operation completed",
+            {
+              reactFlowData,
+            },
+          );
         } catch (error) {
           console.error(
             "[HydroscopeCore] Error in expandAll operation:",
@@ -1154,7 +1164,8 @@ const HydroscopeCoreInternal = forwardRef<
           // Call success callback
           onContainerCollapse?.(containerId, state.visualizationState);
 
-          console.debug(
+          hscopeLogger.log(
+            "orchestrator",
             `[HydroscopeCore] Container collapse operation completed`,
             { containerId, reactFlowData },
           );
@@ -1234,7 +1245,8 @@ const HydroscopeCoreInternal = forwardRef<
           // Call success callback
           onContainerExpand?.(containerId, state.visualizationState);
 
-          console.debug(
+          hscopeLogger.log(
+            "orchestrator",
             `[HydroscopeCore] Container expand operation completed`,
             { containerId, reactFlowData },
           );
@@ -1415,15 +1427,20 @@ const HydroscopeCoreInternal = forwardRef<
           const newActivePopups = new Map(prev.activePopups);
           const existingPopupId = newActivePopups.get(nodeId);
 
-          console.log("[HydroscopeCore] Popup toggle state:", {
-            existingPopupId,
-            currentNodes: prev.reactFlowData.nodes.length,
-          });
+          hscopeLogger.log(
+            "orchestrator",
+            "[HydroscopeCore] Popup toggle state:",
+            {
+              existingPopupId,
+              currentNodes: prev.reactFlowData.nodes.length,
+            },
+          );
 
           let updatedNodes = [...prev.reactFlowData.nodes];
 
           if (existingPopupId) {
-            console.log(
+            hscopeLogger.log(
+              "orchestrator",
               "[HydroscopeCore] Removing existing popup:",
               existingPopupId,
             );
@@ -1433,7 +1450,11 @@ const HydroscopeCoreInternal = forwardRef<
           } else {
             // Add new popup
             const popupId = `popup-${nodeId}`;
-            console.log("[HydroscopeCore] Creating new popup:", popupId);
+            hscopeLogger.log(
+              "orchestrator",
+              "[HydroscopeCore] Creating new popup:",
+              popupId,
+            );
 
             const popupNode = {
               id: popupId,
@@ -1462,7 +1483,7 @@ const HydroscopeCoreInternal = forwardRef<
             newActivePopups.set(nodeId, popupId);
           }
 
-          console.log("[HydroscopeCore] Updated state:", {
+          hscopeLogger.log("orchestrator", "[HydroscopeCore] Updated state:", {
             newActivePopupsSize: newActivePopups.size,
             updatedNodesLength: updatedNodes.length,
             popupNodes: updatedNodes
@@ -1532,13 +1553,17 @@ const HydroscopeCoreInternal = forwardRef<
         getAsyncCoordinator: () => state.asyncCoordinator,
         getVisualizationState: () => state.visualizationState,
         forceReactFlowRemount: () => {
-          console.log(
+          hscopeLogger.log(
+            "orchestrator",
             "🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key",
           );
           setReactFlowResetKey((prev) => prev + 1);
         },
         showNodePopup: (nodeId: string) => {
-          console.log(`ℹ️ [HydroscopeCore] Showing popup for node ${nodeId}`);
+          hscopeLogger.log(
+            "orchestrator",
+            `ℹ️ [HydroscopeCore] Showing popup for node ${nodeId}`,
+          );
           const node = state.reactFlowData.nodes.find((n) => n.id === nodeId);
           if (node) {
             handleNodePopupToggle(nodeId, node as Node);
@@ -1675,7 +1700,8 @@ const HydroscopeCoreInternal = forwardRef<
             !savedViewportRef.current
           ) {
             savedViewportRef.current = reactFlowInstance.getViewport();
-            console.log(
+            hscopeLogger.log(
+              "orchestrator",
               "[HydroscopeCore] 💾 Saved viewport before dimension changes:",
               savedViewportRef.current,
             );
@@ -1704,7 +1730,8 @@ const HydroscopeCoreInternal = forwardRef<
           );
 
           if (dimensionChanges.length > 0) {
-            console.log(
+            hscopeLogger.log(
+              "orchestrator",
               `[HydroscopeCore] 📏 Dimension changes detected for ${dimensionChanges.length} nodes`,
               dimensionChanges.map((c) => c.id),
             );
@@ -1715,19 +1742,22 @@ const HydroscopeCoreInternal = forwardRef<
             const hasPendingCallbacks =
               state.asyncCoordinator?.hasPendingCallbacks() || false;
 
-            console.log(
+            hscopeLogger.log(
+              "orchestrator",
               `[HydroscopeCore] 📏 Checking pending callbacks: ${hasPendingCallbacks}`,
             );
 
             if (hasPendingCallbacks) {
               // Major change: initial load or container expansion - trigger fitView
-              console.log(
+              hscopeLogger.log(
+                "orchestrator",
                 "[HydroscopeCore] 📏 Major change detected (pending callbacks) - calling notifyRenderComplete",
               );
               state.asyncCoordinator?.notifyRenderComplete();
             } else {
               // Minor change: node label expansion - preserve viewport
-              console.log(
+              hscopeLogger.log(
+                "orchestrator",
                 "[HydroscopeCore] 📏 Minor change detected (no pending callbacks) - preserving viewport",
               );
               // Debounce dimension resets to prevent ResizeObserver loops
@@ -1747,7 +1777,8 @@ const HydroscopeCoreInternal = forwardRef<
                   if (reactFlowInstance) {
                     // Capture viewport before remount
                     const viewport = reactFlowInstance.getViewport();
-                    console.log(
+                    hscopeLogger.log(
+                      "orchestrator",
                       "[HydroscopeCore] 📸 Captured viewport before remount:",
                       viewport,
                     );
@@ -1768,7 +1799,8 @@ const HydroscopeCoreInternal = forwardRef<
                       requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
                           requestAnimationFrame(() => {
-                            console.log(
+                            hscopeLogger.log(
+                              "orchestrator",
                               "[HydroscopeCore] 📸 Restoring viewport after remount:",
                               viewport,
                             );
@@ -1788,7 +1820,8 @@ const HydroscopeCoreInternal = forwardRef<
                   }
                 }, 100) as unknown as number; // 100ms debounce to prevent loops
               } else {
-                console.log(
+                hscopeLogger.log(
+                  "orchestrator",
                   `[HydroscopeCore] 📏 Skipping reset - too soon (${timeSinceLastReset}ms since last reset)`,
                 );
               }

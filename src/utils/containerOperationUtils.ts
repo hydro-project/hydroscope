@@ -9,6 +9,7 @@
  * ResizeObserver loops and coordination cascades.
  */
 
+import { hscopeLogger } from "./logger.js";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import {
   globalOperationMonitor,
@@ -110,7 +111,8 @@ export function toggleContainerImperatively(options: {
   }
 
   if (debug) {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "[ContainerOperationUtils] Starting imperative container toggle",
       {
         containerId,
@@ -155,7 +157,8 @@ export function toggleContainerImperatively(options: {
   // Skip if already in target state
   if (container.collapsed === targetCollapsed) {
     if (debug) {
-      console.log(
+      hscopeLogger.log(
+        "op",
         `[ContainerOperationUtils] Container ${containerId} already in target state`,
       );
     }
@@ -175,7 +178,8 @@ export function toggleContainerImperatively(options: {
             }
             visualizationState._collapseContainerForCoordinator(containerId);
             if (debug) {
-              console.log(
+              hscopeLogger.log(
+                "op",
                 `[ContainerOperationUtils] Container ${containerId} collapsed imperatively`,
               );
             }
@@ -199,7 +203,8 @@ export function toggleContainerImperatively(options: {
             }
             visualizationState._expandContainerForCoordinator(containerId);
             if (debug) {
-              console.log(
+              hscopeLogger.log(
+                "op",
                 `[ContainerOperationUtils] Container ${containerId} expanded imperatively`,
               );
             }
@@ -329,7 +334,8 @@ export function batchContainerOperationsImperatively(options: {
   }
 
   if (debug) {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "[ContainerOperationUtils] Starting batch container operations",
       {
         operationCount: operations.length,
@@ -416,7 +422,8 @@ export function batchContainerOperationsImperatively(options: {
   }
 
   if (debug) {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "[ContainerOperationUtils] Batch operations completed",
       results,
     );

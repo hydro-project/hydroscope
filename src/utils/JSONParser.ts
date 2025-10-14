@@ -53,7 +53,7 @@ export class JSONParser {
   // Debug logging helper
   private debugLog(message: string, data?: any): void {
     if (this.debug) {
-      hscopeLogger.log('debug', `[JSONParser] ${message}`, data);
+      hscopeLogger.log("debug", `[JSONParser] ${message}`, data);
     }
   }
 
