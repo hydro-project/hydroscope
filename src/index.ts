@@ -21,6 +21,7 @@ export type {
 } from "./components/panels/index.js";
 // 🛠️ UTILITIES (for advanced use cases)
 export { parseDataFromUrl } from "./utils/urlParser.js";
+export { decompressData } from "./utils/compression.js";
 export {
   enableResizeObserverErrorSuppression,
   disableResizeObserverErrorSuppression,

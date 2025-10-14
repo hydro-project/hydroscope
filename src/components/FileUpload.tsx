@@ -25,6 +25,8 @@ export interface FileUploadProps {
   customValidator?: (data: any) => ValidationResult[];
   /** Show detailed error messages */
   showDetailedErrors?: boolean;
+  /** Generated file path to display for copying */
+  generatedFilePath?: string;
 }
 export interface FileUploadState {
   isDragOver: boolean;
@@ -42,6 +44,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   debug = false,
   customValidator,
   showDetailedErrors: _showDetailedErrors = false,
+  generatedFilePath,
 }) => {
   const [state, setState] = useState<FileUploadState>({
     isDragOver: false,
@@ -558,6 +561,44 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
+      {/* Generated file path display */}
+      {generatedFilePath && (
+        <div className="file-path-display">
+          <p className="file-path-label">📄 Generated file ready to load:</p>
+          <div className="file-path-container">
+            <code className="file-path-code">{generatedFilePath}</code>
+            <button
+              className="copy-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard
+                  .writeText(generatedFilePath)
+                  .then(() => {
+                    const btn = e.target as HTMLButtonElement;
+                    const originalText = btn.textContent;
+                    btn.textContent = "✓";
+                    btn.style.background = "#4caf50";
+                    setTimeout(() => {
+                      btn.textContent = originalText;
+                      btn.style.background = "#007acc";
+                    }, 1000);
+                  })
+                  .catch((err) => {
+                    console.error("Failed to copy to clipboard:", err);
+                    alert("Failed to copy to clipboard");
+                  });
+              }}
+              title="Copy path to clipboard"
+            >
+              ⧉
+            </button>
+          </div>
+          <p className="file-path-hint">
+            💡 Drag and drop this file here, or click to browse for it
+          </p>
+        </div>
+      )}
+
       <style>{`
         .hydroscope-file-upload {
           width: 100%;
@@ -679,6 +720,64 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
         .status-text {
           flex: 1;
+        }
+
+        .file-path-display {
+          margin-top: 1.5rem;
+          padding: 1rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          background: #f7fafc;
+        }
+
+        .file-path-label {
+          margin: 0 0 0.75rem 0;
+          font-weight: 600;
+          color: #2d3748;
+          font-size: 0.875rem;
+        }
+
+        .file-path-container {
+          position: relative;
+          margin-bottom: 0.75rem;
+        }
+
+        .file-path-code {
+          display: block;
+          background: #e8f5e8;
+          padding: 0.75rem 3rem 0.75rem 0.75rem;
+          border-radius: 4px;
+          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+          color: #2e7d32;
+          font-size: 0.8125rem;
+          word-break: break-all;
+          border: 1px solid #c8e6c9;
+        }
+
+        .copy-button {
+          position: absolute;
+          top: 50%;
+          right: 0.5rem;
+          transform: translateY(-50%);
+          background: #007acc;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: background 0.2s ease;
+        }
+
+        .copy-button:hover {
+          background: #005999;
+        }
+
+        .file-path-hint {
+          margin: 0;
+          font-size: 0.75rem;
+          color: #718096;
+          font-style: italic;
         }
       `}</style>
     </div>

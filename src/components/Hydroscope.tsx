@@ -44,6 +44,7 @@ import {
   DebouncedOperationManager,
   withAsyncResizeObserverErrorSuppression,
 } from "../utils/ResizeObserverErrorSuppression.js";
+import { parseDataFromUrl } from "../utils/urlParser.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -89,6 +90,8 @@ export interface HydroscopeProps extends Omit<HydroscopeCoreProps, "data"> {
   onFileUpload?: (data: HydroscopeData, filename?: string) => void;
   /** Callback when configuration changes */
   onConfigChange?: (config: RenderConfig) => void;
+  /** Generated file path to display for copying */
+  generatedFilePath?: string;
 }
 /**
  * Internal state interface for the Hydroscope component
@@ -491,14 +494,63 @@ export const Hydroscope = memo<HydroscopeProps>(
     onError,
     className,
     style,
+    generatedFilePath,
   }) => {
     // Load initial settings
     const [settings, setSettings] = useState<HydroscopeSettings>(() =>
       loadSettings(),
     );
+
+    // URL parameter handling
+    const [urlData, setUrlData] = useState<HydroscopeData | null>(null);
+    const [urlFilePath, setUrlFilePath] = useState<string | null>(null);
+    const [urlError, setUrlError] = useState<string | null>(null);
+
+    // Parse URL parameters on mount
+    useEffect(() => {
+      const parseUrlParams = async () => {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const hashParams = new URLSearchParams(window.location.hash.slice(1));
+
+          // Check for data parameters (both in search and hash)
+          const dataParam = urlParams.get("data") || hashParams.get("data");
+          const compressedParam =
+            urlParams.get("compressed") || hashParams.get("compressed");
+          const fileParam = urlParams.get("file") || hashParams.get("file");
+
+          if (dataParam || compressedParam) {
+            console.log("🔄 Parsing data from URL parameters...");
+            const parsedData = await parseDataFromUrl(
+              dataParam,
+              compressedParam,
+            );
+            if (parsedData) {
+              console.log("✅ Successfully parsed data from URL");
+              setUrlData(parsedData);
+              setUrlError(null);
+            }
+          } else if (fileParam) {
+            // Handle file path parameter
+            console.log("📄 File path detected in URL:", fileParam);
+            setUrlFilePath(decodeURIComponent(fileParam));
+            setUrlError(null);
+          }
+        } catch (error) {
+          console.error("❌ Error parsing URL parameters:", error);
+          setUrlError(
+            error instanceof Error
+              ? error.message
+              : "Unknown error parsing URL",
+          );
+        }
+      };
+
+      parseUrlParams();
+    }, []);
     // Component state
     const [state, setState] = useState<HydroscopeState>({
-      data: data || null,
+      data: urlData || data || null,
       infoPanelOpen: settings.infoPanelOpen,
       stylePanelOpen: settings.stylePanelOpen,
       colorPalette: settings.colorPalette || initialColorPalette,
@@ -604,6 +656,29 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.layoutAlgorithm,
       state.renderConfig,
     ]);
+
+    // Update state when URL data is loaded
+    useEffect(() => {
+      if (urlData) {
+        setState((prev) => ({
+          ...prev,
+          data: urlData,
+          uploadedData: urlData,
+          uploadedFilename: "URL Data",
+          error: null,
+        }));
+      }
+    }, [urlData]);
+
+    // Handle URL errors
+    useEffect(() => {
+      if (urlError) {
+        setState((prev) => ({
+          ...prev,
+          error: new Error(`URL parsing error: ${urlError}`),
+        }));
+      }
+    }, [urlError]);
     // Handle file upload
     const handleFileUpload = useCallback(
       (uploadedData: HydroscopeData, filename?: string) => {
@@ -1101,6 +1176,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     error: new Error(`Validation errors in ${filename}`),
                   }));
                 }}
+                generatedFilePath={urlFilePath || generatedFilePath}
               />
             </div>
           ) : (

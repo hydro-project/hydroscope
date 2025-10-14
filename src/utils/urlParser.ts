@@ -5,6 +5,8 @@
  * sharing visualizations via URLs.
  */
 import type { HydroscopeData } from "../types/core.js";
+import { decompressData } from "./compression.js";
+
 /**
  * Parse graph data from URL parameters
  *
@@ -20,19 +22,19 @@ export async function parseDataFromUrl(
   compressedParam?: string | null,
 ): Promise<HydroscopeData | null> {
   try {
-    // Handle compressed data first (if available)
+    let jsonString: string;
+
     if (compressedParam) {
-      // For now, treat compressed the same as uncompressed
-      // In the future, this could use a compression library
-      const decodedData = atob(compressedParam);
-      return JSON.parse(decodedData) as HydroscopeData;
+      // Use proper decompression for compressed data
+      jsonString = await decompressData(compressedParam);
+    } else if (dataParam) {
+      // Handle uncompressed data
+      jsonString = atob(dataParam);
+    } else {
+      return null;
     }
-    // Handle uncompressed data
-    if (dataParam) {
-      const decodedData = atob(dataParam);
-      return JSON.parse(decodedData) as HydroscopeData;
-    }
-    return null;
+
+    return JSON.parse(jsonString) as HydroscopeData;
   } catch (error) {
     throw new Error(
       `Failed to parse data from URL: ${error instanceof Error ? error.message : "Unknown error"}`,
