@@ -1017,11 +1017,6 @@ export const Hydroscope = memo<HydroscopeProps>(
         node: any,
         visualizationState?: VisualizationState,
       ) => {
-        console.log("[Hydroscope] handleNodeClick called!", {
-          nodeId: node?.id,
-          hasOnNodeClick: !!onNodeClick,
-        });
-
         // If user provided a custom handler, use that instead
         if (onNodeClick) {
           onNodeClick(event, node, visualizationState);
@@ -1030,7 +1025,6 @@ export const Hydroscope = memo<HydroscopeProps>(
 
         // Default behavior: Let HydroscopeCore handle node interactions (including popups)
         // No additional processing needed - HydroscopeCore handles popup functionality
-        console.log("[Hydroscope] Node click handled by HydroscopeCore (popup functionality)");
       },
       [onNodeClick],
     );

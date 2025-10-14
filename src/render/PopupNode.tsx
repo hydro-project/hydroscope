@@ -9,22 +9,6 @@ import React from "react";
 import { type NodeProps } from "@xyflow/react";
 import { generateNodeColors, getContrastColor } from "../shared/colorUtils";
 import { DEFAULT_COLOR_PALETTE, PANEL_CONSTANTS } from "../shared/config";
-import { useStyleConfig } from "./StyleConfigContext";
-
-/**
- * Convert hex color to rgba with specified opacity
- */
-function hexToRgba(hex: string, opacity: number): string {
-  // Remove # if present
-  const cleanHex = hex.replace("#", "");
-
-  // Parse hex values
-  const r = parseInt(cleanHex.substring(0, 2), 16);
-  const g = parseInt(cleanHex.substring(2, 4), 16);
-  const b = parseInt(cleanHex.substring(4, 6), 16);
-
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-}
 
 /**
  * Darken a hex color and return as rgba with opacity
@@ -54,8 +38,6 @@ export function PopupNode({
 }: NodeProps & {
   style?: React.CSSProperties;
 }) {
-  const styleCfg = useStyleConfig();
-
   // Get the long label to display
   const longLabel = String(data.longLabel || data.label || id);
   const originalNodeType = String(data.originalNodeType || "default");
@@ -75,8 +57,8 @@ export function PopupNode({
     width: "max-content", // Let content determine width within constraints
     // Clean dark background with transparency
     backgroundColor: darkenColor(colors.primary, 0.9), // Much darker version of node color
-    border: `1px solid rgba(0, 0, 0, 0.8)`, // Thin black border
-    borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
+    border: `3px solid rgba(0, 0, 0, 0.8)`, // Thick black border ibility
+    borderRadius: "12px", // Fixed border radius for popups
     padding: `${padding}px`,
     // Simple shadow for depth
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
@@ -108,7 +90,7 @@ export function PopupNode({
     width: "24px",
     height: "24px",
     borderRadius: "50%",
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    backgroundColor: "rgba(188, 187, 187, 0.9)",
     border: "none",
     cursor: "pointer",
     display: "flex",
@@ -149,11 +131,11 @@ export function PopupNode({
           onClick={handleCloseClick}
           onMouseEnter={(e) => {
             (e.target as HTMLElement).style.backgroundColor =
-              "rgba(0, 0, 0, 0.2)";
+              "rgba(188, 187, 187, 0.5)";
           }}
           onMouseLeave={(e) => {
             (e.target as HTMLElement).style.backgroundColor =
-              "rgba(0, 0, 0, 0.1)";
+              "rgba(188, 187, 187, 0.9)";
           }}
           aria-label="Close popup"
         >

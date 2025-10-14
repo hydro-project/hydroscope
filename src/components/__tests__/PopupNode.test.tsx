@@ -9,13 +9,15 @@ import type { NodeProps } from "@xyflow/react";
 
 describe("PopupNode", () => {
   const mockOnClose = vi.fn();
-  
+
   const defaultProps: NodeProps = {
     id: "popup-test-node",
     type: "popup",
     data: {
-      label: "This is a much longer label that should be displayed in the popup",
-      longLabel: "This is a much longer label that should be displayed in the popup",
+      label:
+        "This is a much longer label that should be displayed in the popup",
+      longLabel:
+        "This is a much longer label that should be displayed in the popup",
       originalNodeType: "standard",
       onClose: mockOnClose,
     },
@@ -117,11 +119,11 @@ describe("PopupNode", () => {
 
   it("should stop propagation when close button is clicked", () => {
     const mockParentClick = vi.fn();
-    
+
     render(
       <div onClick={mockParentClick}>
         <PopupNode {...defaultProps} />
-      </div>
+      </div>,
     );
 
     const closeButton = screen.getByRole("button", { name: "Close popup" });

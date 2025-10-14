@@ -3,7 +3,6 @@
  *
  * This example demonstrates how nodes with longLabel show popups when clicked.
  */
-import React from "react";
 import { HydroscopeCore } from "../components/HydroscopeCore";
 import type { HydroscopeData } from "../types/core";
 
@@ -64,16 +63,18 @@ export function NodePopupDemo() {
       <p>Click on nodes with long labels to see popups. Try clicking:</p>
       <ul>
         <li>
-          <strong>"Short"</strong> - Shows popup with long label
+          <strong>&quot;Short&quot;</strong> - Shows popup with long label
         </li>
         <li>
-          <strong>"Medium Label"</strong> - Shows popup with long label
+          <strong>&quot;Medium Label&quot;</strong> - Shows popup with long
+          label
         </li>
         <li>
-          <strong>"Regular Node"</strong> - No popup (no longLabel)
+          <strong>&quot;Regular Node&quot;</strong> - No popup (no longLabel)
         </li>
         <li>
-          <strong>"Same Label"</strong> - No popup (longLabel same as label)
+          <strong>&quot;Same Label&quot;</strong> - No popup (longLabel same as
+          label)
         </li>
       </ul>
 
@@ -93,7 +94,7 @@ export function NodePopupDemo() {
           showControls={true}
           showMiniMap={true}
           showBackground={true}
-          onNodeClick={(event, node) => {
+          onNodeClick={(_event, node) => {
             console.log("Node clicked:", node.id, node.data);
           }}
         />
@@ -103,7 +104,9 @@ export function NodePopupDemo() {
         <h3>Features:</h3>
         <ul>
           <li>✅ Popup appears centered on and occludes the original node</li>
-          <li>✅ Popup is a proper ReactFlow node that follows container movement</li>
+          <li>
+            ✅ Popup is a proper ReactFlow node that follows container movement
+          </li>
           <li>✅ Popup has floating shadow effect</li>
           <li>✅ Popup uses same colors as original node</li>
           <li>✅ Close button (×) in top-right corner</li>

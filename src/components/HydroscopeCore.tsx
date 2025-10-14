@@ -405,18 +405,11 @@ const HydroscopeCoreInternal = forwardRef<
 
             setState((prev) => {
               // Preserve existing popup nodes when updating ReactFlow data
-              const existingPopupNodes = prev.reactFlowData.nodes.filter(n => n.type === "popup");
+              const existingPopupNodes = prev.reactFlowData.nodes.filter(
+                (n) => n.type === "popup",
+              );
               const newNodes = [...reactFlowData.nodes, ...existingPopupNodes];
-              
-              console.log("[HydroscopeCore] AsyncCoordinator updating ReactFlow data:", {
-                incomingNodes: reactFlowData.nodes.length,
-                existingPopupNodes: existingPopupNodes.length,
-                finalNodes: newNodes.length,
-                popupNodes: existingPopupNodes.map(n => ({ id: n.id, type: n.type })),
-              });
-              
 
-              
               return {
                 ...prev,
                 reactFlowData: {
@@ -1404,77 +1397,6 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
-    // Handle node clicks
-    const handleNodeClick = useCallback(
-      (event: React.MouseEvent, node: Node) => {
-        console.log("[HydroscopeCore] Node clicked:", {
-          nodeId: node.id,
-          nodeType: node.data?.nodeType,
-          label: node.data?.label,
-          longLabel: node.data?.longLabel,
-          readOnly,
-          hasInteractionHandler: !!interactionHandlerRef.current,
-        });
-
-        try {
-          // Validate node data
-          if (!node || !node.id) {
-            console.warn("[HydroscopeCore] Invalid node clicked:", node);
-            return;
-          }
-
-          // Check if this is a container node
-          if (node.data && node.data.nodeType === "container") {
-            console.log("[HydroscopeCore] Handling container click:", node.id);
-            // Handle container clicks directly through InteractionHandler
-            if (!readOnly && interactionHandlerRef.current) {
-              interactionHandlerRef.current.handleContainerClick(node.id);
-            }
-          } else {
-            // Handle regular node clicks - show popup if node has longLabel
-            const shouldShowPopup = !readOnly &&
-              node.data &&
-              node.data.longLabel &&
-              node.data.longLabel !== node.data.label;
-            
-            console.log("[HydroscopeCore] Regular node click:", {
-              shouldShowPopup,
-              longLabel: node.data?.longLabel,
-              label: node.data?.label,
-              activePopups: state.activePopups.size,
-            });
-
-            if (shouldShowPopup) {
-              console.log("[HydroscopeCore] Calling handleNodePopupToggle for:", node.id);
-              handleNodePopupToggle(node.id, node);
-            }
-          }
-
-          // Always call the general node click callback
-          if (onNodeClick) {
-            onNodeClick(
-              event,
-              {
-                id: node.id,
-                data: node.data,
-                position: node.position,
-              },
-              state.visualizationState || undefined,
-            );
-          }
-        } catch (error) {
-          console.error("[HydroscopeCore] Error handling node click:", error);
-          console.error("[HydroscopeCore] Error handling node click:", error);
-          setState((prev) => ({
-            ...prev,
-            error: error as Error,
-            isLoading: false,
-          }));
-        }
-      },
-      [onNodeClick, readOnly, state.visualizationState],
-    );
-
     // Handle popup close
     const handlePopupClose = useCallback((nodeId: string) => {
       setState((prev) => {
@@ -1502,78 +1424,133 @@ const HydroscopeCoreInternal = forwardRef<
     }, []);
 
     // Handle popup toggle for nodes
-    const handleNodePopupToggle = useCallback((nodeId: string, node: Node) => {
-      console.log("[HydroscopeCore] handleNodePopupToggle called:", {
-        nodeId,
-        currentActivePopups: state.activePopups.size,
-        nodePosition: node.position,
-        nodeData: node.data,
-      });
+    const handleNodePopupToggle = useCallback(
+      (nodeId: string, node: Node) => {
+        setState((prev) => {
+          const newActivePopups = new Map(prev.activePopups);
+          const existingPopupId = newActivePopups.get(nodeId);
 
-      setState((prev) => {
-        const newActivePopups = new Map(prev.activePopups);
-        const existingPopupId = newActivePopups.get(nodeId);
-        
-        console.log("[HydroscopeCore] Popup toggle state:", {
-          existingPopupId,
-          currentNodes: prev.reactFlowData.nodes.length,
-        });
+          console.log("[HydroscopeCore] Popup toggle state:", {
+            existingPopupId,
+            currentNodes: prev.reactFlowData.nodes.length,
+          });
 
-        let updatedNodes = [...prev.reactFlowData.nodes];
+          let updatedNodes = [...prev.reactFlowData.nodes];
 
-        if (existingPopupId) {
-          console.log("[HydroscopeCore] Removing existing popup:", existingPopupId);
-          // Remove existing popup
-          updatedNodes = updatedNodes.filter((n) => n.id !== existingPopupId);
-          newActivePopups.delete(nodeId);
-        } else {
-          // Add new popup
-          const popupId = `popup-${nodeId}`;
-          console.log("[HydroscopeCore] Creating new popup:", popupId);
-          
-          const popupNode = {
-            id: popupId,
-            type: "popup",
-            position: { ...node.position }, // Same position as original node
-            data: {
-              label: String(node.data.longLabel || node.data.label || nodeId),
-              longLabel: String(node.data.longLabel || ""),
-              nodeType: "popup",
-              originalNodeType: String(node.data.nodeType || node.type || "default"),
-              colorPalette: String(node.data.colorPalette || DEFAULT_COLOR_PALETTE),
-              onClose: (popupNodeId: string) => handlePopupClose(nodeId),
+          if (existingPopupId) {
+            console.log(
+              "[HydroscopeCore] Removing existing popup:",
+              existingPopupId,
+            );
+            // Remove existing popup
+            updatedNodes = updatedNodes.filter((n) => n.id !== existingPopupId);
+            newActivePopups.delete(nodeId);
+          } else {
+            // Add new popup
+            const popupId = `popup-${nodeId}`;
+            console.log("[HydroscopeCore] Creating new popup:", popupId);
+
+            const popupNode = {
+              id: popupId,
+              type: "popup",
+              position: { ...node.position }, // Same position as original node
+              data: {
+                label: String(node.data.longLabel || node.data.label || nodeId),
+                longLabel: String(node.data.longLabel || ""),
+                nodeType: "popup",
+                originalNodeType: String(
+                  node.data.nodeType || node.type || "default",
+                ),
+                colorPalette: String(
+                  node.data.colorPalette || DEFAULT_COLOR_PALETTE,
+                ),
+                onClose: (_popupNodeId: string) => handlePopupClose(nodeId),
+              },
+              // Set parent to same container as original node
+              parentId: node.parentId,
+              extent: node.extent || undefined,
+              // Higher z-index to appear above original node
+              zIndex: 1000,
+            };
+
+            updatedNodes.push(popupNode);
+            newActivePopups.set(nodeId, popupId);
+          }
+
+          console.log("[HydroscopeCore] Updated state:", {
+            newActivePopupsSize: newActivePopups.size,
+            updatedNodesLength: updatedNodes.length,
+            popupNodes: updatedNodes
+              .filter((n) => n.type === "popup")
+              .map((n) => ({ id: n.id, type: n.type })),
+          });
+
+          return {
+            ...prev,
+            activePopups: newActivePopups,
+            reactFlowData: {
+              ...prev.reactFlowData,
+              nodes: updatedNodes,
             },
-            // Set parent to same container as original node
-            parentId: node.parentId,
-            extent: node.extent || undefined,
-            // Higher z-index to appear above original node
-            zIndex: 1000,
           };
-
-          console.log("[HydroscopeCore] Popup node created:", popupNode);
-          
-          updatedNodes.push(popupNode);
-          newActivePopups.set(nodeId, popupId);
-        }
-
-        console.log("[HydroscopeCore] Updated state:", {
-          newActivePopupsSize: newActivePopups.size,
-          updatedNodesLength: updatedNodes.length,
-          popupNodes: updatedNodes.filter(n => n.type === "popup").map(n => ({ id: n.id, type: n.type })),
         });
+      },
+      [handlePopupClose],
+    );
 
-        return {
-          ...prev,
-          activePopups: newActivePopups,
-          reactFlowData: {
-            ...prev.reactFlowData,
-            nodes: updatedNodes,
-          },
-        };
-      });
-    }, [handlePopupClose, state.activePopups.size]);
+    // Handle node clicks
+    const handleNodeClick = useCallback(
+      (event: React.MouseEvent, node: Node) => {
+        try {
+          // Validate node data
+          if (!node || !node.id) {
+            console.warn("[HydroscopeCore] Invalid node clicked:", node);
+            return;
+          }
 
+          // Check if this is a container node
+          if (node.data && node.data.nodeType === "container") {
+            // Handle container clicks directly through InteractionHandler
+            if (!readOnly && interactionHandlerRef.current) {
+              interactionHandlerRef.current.handleContainerClick(node.id);
+            }
+          } else {
+            // Handle regular node clicks - show popup if node has longLabel
+            const shouldShowPopup =
+              !readOnly &&
+              node.data &&
+              node.data.longLabel &&
+              node.data.longLabel !== node.data.label;
 
+            if (shouldShowPopup) {
+              handleNodePopupToggle(node.id, node);
+            }
+          }
+
+          // Always call the general node click callback
+          if (onNodeClick) {
+            onNodeClick(
+              event,
+              {
+                id: node.id,
+                data: node.data,
+                position: node.position,
+              },
+              state.visualizationState || undefined,
+            );
+          }
+        } catch (error) {
+          console.error("[HydroscopeCore] Error handling node click:", error);
+          console.error("[HydroscopeCore] Error handling node click:", error);
+          setState((prev) => ({
+            ...prev,
+            error: error as Error,
+            isLoading: false,
+          }));
+        }
+      },
+      [handleNodePopupToggle, onNodeClick, readOnly, state.visualizationState],
+    );
 
     // Close popups when containers are collapsed (original nodes might be hidden)
     useEffect(() => {
@@ -1584,7 +1561,7 @@ const HydroscopeCoreInternal = forwardRef<
               .filter((n) => n.type !== "popup")
               .map((n) => n.id),
           );
-          
+
           const newActivePopups = new Map();
           let updatedNodes = [...prev.reactFlowData.nodes];
           let hasChanges = false;

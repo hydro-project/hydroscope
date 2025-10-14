@@ -177,7 +177,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   // Optimized conversion for large graphs - use same logic as regular conversion
   private convertNodesOptimized(
     state: VisualizationState,
-    interactionHandler?: any,
+    _interactionHandler?: any,
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
 
@@ -244,7 +244,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
           nodeType: "container",
           isExpanded: !container.collapsed,
           childCount: container.children.size,
-          // onClick removed - handled at ReactFlow level in HydroscopeCore
+          showingLongLabel: false, // Containers don't have long labels
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (containerId: string) => {
+                if (_interactionHandler.handleContainerClick) {
+                  _interactionHandler.handleContainerClick(containerId);
+                }
+              }
+            : undefined,
         },
         style: {
           width: dimensions.width,
@@ -291,10 +299,22 @@ export class ReactFlowBridge implements IReactFlowBridge {
         width,
         height,
         data: {
-          label: node.label,
+          label:
+            node.showingLongLabel && node.longLabel
+              ? node.longLabel
+              : node.label,
+          longLabel: node.longLabel,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
-          // onClick removed - handled at ReactFlow level in HydroscopeCore
+          showingLongLabel: node.showingLongLabel,
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (nodeId: string) => {
+                if (_interactionHandler.handleNodeClick) {
+                  _interactionHandler.handleNodeClick(nodeId);
+                }
+              }
+            : undefined,
         },
         parentId: parentId,
         extent: parentId ? "parent" : undefined,
@@ -368,7 +388,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
   }
   private convertNodes(
     state: VisualizationState,
-    interactionHandler?: any,
+    _interactionHandler?: any,
   ): ReactFlowNode[] {
     const nodes: ReactFlowNode[] = [];
     // Build parent mapping for nodes and containers
@@ -421,7 +441,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
           height,
           colorPalette: state.getColorPalette(),
           style: "default",
-          // onClick removed - handled at ReactFlow level in HydroscopeCore
+          showingLongLabel: false, // Containers don't have long labels
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (containerId: string) => {
+                if (_interactionHandler.handleContainerClick) {
+                  _interactionHandler.handleContainerClick(containerId);
+                }
+              }
+            : undefined,
         },
         style: {
           width,
@@ -476,7 +504,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
         width,
         height,
         data: {
-          label: node.label,
+          label:
+            node.showingLongLabel && node.longLabel
+              ? node.longLabel
+              : node.label,
           longLabel: node.longLabel,
           nodeType: node.type,
           semanticTags: node.semanticTags || [],
@@ -484,7 +515,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
           style: node.type || "default",
           width, // Pass ELK-calculated width to match layout
           height, // Pass ELK-calculated height to match layout
-          // onClick removed - handled at ReactFlow level in HydroscopeCore
+          showingLongLabel: node.showingLongLabel,
+          // Add onClick handler if interaction handler is provided
+          onClick: _interactionHandler
+            ? (nodeId: string) => {
+                if (_interactionHandler.handleNodeClick) {
+                  _interactionHandler.handleNodeClick(nodeId);
+                }
+              }
+            : undefined,
         },
         parentId: parentId,
         parentNode: parentId, // React Flow uses parentNode
