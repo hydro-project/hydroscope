@@ -72,7 +72,6 @@
     "format:check": "prettier --check 'src/**/*.{js,ts,tsx}'",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "typecheck:strict": "tsc -p tsconfig.strict.json --noEmit",
-    "docs:sync": "node docs/syncSchema.cjs && node docs/validateExample.cjs",
     "dev-reports": "bash dev_reports/refresh.sh",
     "prepublishOnly": "npm run build:clean"
   },
