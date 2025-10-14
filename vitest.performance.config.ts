@@ -7,8 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     pool: 'forks',
     setupFiles: ['src/__tests__/setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/performance/**'],
+    include: ['src/__tests__/performance/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
     onConsoleLog(log, type) {
       if (process.env.ENABLE_TEST_LOGS === 'true') {
         return;
@@ -23,7 +23,9 @@ export default defineConfig({
     },
     watch: false,
     // Allow running individual tests with better output
-    reporter: process.env.CI ? 'default' : 'verbose'
+    reporter: process.env.CI ? 'default' : 'verbose',
+    // Performance tests may take longer
+    testTimeout: 30000
   },
   resolve: {
     alias: {

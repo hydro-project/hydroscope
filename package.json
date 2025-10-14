@@ -63,7 +63,7 @@
     "test:reminder": "node -e \"if (process.env.ENABLE_TEST_LOGS !== 'true') console.log('\\n💡 Tip: To see console.log output in tests, run with ENABLE_TEST_LOGS=true\\n   Example: ENABLE_TEST_LOGS=true npm test')\"",
     "posttest": "npm run test:reminder",
     "test:watch": "vitest --reporter=verbose",
-    "test:performance": "node scripts/performance-test.js",
+    "test:performance": "vitest run --config vitest.performance.config.ts",
     "lint": "npm run lint:prod && npm run lint:tests",
     "lint:prod": "eslint 'src/**/*.{js,ts,tsx}' --ignore-pattern 'src/**/__tests__/**' --max-warnings 0",
     "lint:tests": "eslint 'src/__tests__/**/*.{js,ts,tsx}' --max-warnings 0",

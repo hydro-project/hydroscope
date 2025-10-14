@@ -4,17 +4,17 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { ELKBridge } from "../bridges/ELKBridge.js";
-import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import { JSONParser } from "../utils/JSONParser.js";
+import { ELKBridge } from "../../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
+import { JSONParser } from "../../utils/JSONParser.js";
 import {
   globalPerformanceMonitor,
   recordPerformanceMetric,
   PerformanceMonitor,
-} from "../utils/PerformanceMonitor.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+} from "../../utils/PerformanceMonitor.js";
+import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
 // globalProfiler import removed - not used in active tests
-import { measureSync, measureAsync } from "../utils/PerformanceUtils.js";
+import { measureSync, measureAsync } from "../../utils/PerformanceUtils.js";
 import fs from "fs";
 import path from "path";
 // VisualizationState import removed - not directly used in tests

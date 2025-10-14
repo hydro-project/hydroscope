@@ -4,23 +4,23 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { ELKBridge } from "../bridges/ELKBridge.js";
-import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import { JSONParser } from "../utils/JSONParser.js";
+import { ELKBridge } from "../../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
+import { JSONParser } from "../../utils/JSONParser.js";
 import {
   PerformanceAnalyzer,
   BatchPerformanceTester,
   measureSync,
   createPerformanceReport,
-} from "../utils/PerformanceUtils.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+} from "../../utils/PerformanceUtils.js";
+import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
 import {
   DEFAULT_PERFORMANCE_THRESHOLDS,
   getRandomQuery,
   createPerformanceBaseline,
   type PerformanceBaseline,
 } from "./performance.config.js";
-import type { HydroscopeData } from "../types/core.js";
+import type { HydroscopeData } from "../../types/core.js";
 import fs from "fs";
 import path from "path";
 
@@ -217,7 +217,7 @@ describe("Performance Regression Tests", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
       const { createTestAsyncCoordinator } = await import(
-        "../utils/testData.js"
+        "../../utils/testData.js"
       );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;

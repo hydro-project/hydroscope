@@ -8,11 +8,11 @@
 import fs from "fs";
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
 
-import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import { JSONParser } from "../utils/JSONParser.js";
-import type { HydroscopeData } from "../types/core.js";
+import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
+import { JSONParser } from "../../utils/JSONParser.js";
+import type { HydroscopeData } from "../../types/core.js";
 
 describe("Paxos-Flipped Performance and Stability Validation", () => {
   let paxosFlippedData: HydroscopeData;
@@ -32,7 +32,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
     let coordinator: AsyncCoordinator;
     beforeEach(async () => {
       const { createTestAsyncCoordinator } = await import(
-        "../utils/testData.js"
+        "../../utils/testData.js"
       );
       const testSetup = await createTestAsyncCoordinator();
       coordinator = testSetup.asyncCoordinator;
@@ -563,6 +563,87 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       expect(errorMessages.length + warnMessages.length).toBeGreaterThanOrEqual(
         0,
       );
+    });
+
+    it("should handle multiple expansion/collapse cycles without errors", async () => {
+      console.log("🔄 Testing multiple expansion/collapse cycles...");
+
+      const parser = JSONParser.createPaxosParser({ debug: false });
+      const parseResult = await parser.parseData(paxosFlippedData);
+      const visualizationState = parseResult.visualizationState;
+
+      // Set up coordinator with proper bridge instances
+      const { createTestAsyncCoordinator } = await import(
+        "../../utils/testData.js"
+      );
+      const testSetup = await createTestAsyncCoordinator();
+      const coordinator = testSetup.asyncCoordinator;
+
+      // Find the runtime/park.rs container
+      const containers = visualizationState.visibleContainers;
+      const runtimeParkContainer = containers.find(
+        (container) =>
+          container.id.includes("runtime/park.rs") ||
+          container.label.includes("runtime/park.rs") ||
+          container.id.includes("park.rs") ||
+          container.label.includes("park.rs"),
+      );
+
+      expect(runtimeParkContainer).toBeDefined();
+      const containerId = runtimeParkContainer!.id;
+
+      // Perform multiple expansion/collapse cycles
+      for (let cycle = 1; cycle <= 3; cycle++) {
+        // Check initial state before collapse
+        const preCollapseContainer =
+          visualizationState.getContainer(containerId);
+        console.log(
+          `🔄 Cycle ${cycle}: Container state before collapse: collapsed=${preCollapseContainer?.collapsed}, hidden=${preCollapseContainer?.hidden}`,
+        );
+
+        // Only collapse if not already collapsed
+        if (!preCollapseContainer?.collapsed) {
+          console.log(`🔄 Cycle ${cycle}: Collapsing container...`);
+          await coordinator.collapseContainer(containerId, visualizationState, {
+            fitView: false,
+          });
+        } else {
+          console.log(
+            `🔄 Cycle ${cycle}: Container already collapsed, skipping collapse`,
+          );
+        }
+
+        // Get fresh container reference after collapse
+        const collapsedContainer = visualizationState.getContainer(containerId);
+        console.log(
+          `🔄 Cycle ${cycle}: Container state after collapse: collapsed=${collapsedContainer?.collapsed}`,
+        );
+        expect(collapsedContainer?.collapsed).toBe(true);
+
+        console.log(`🔄 Cycle ${cycle}: Expanding container...`);
+
+        // Expand
+        await coordinator.expandContainer(containerId, visualizationState, {
+          fitView: false,
+        });
+
+        // Get fresh container reference after expand
+        const expandedContainer = visualizationState.getContainer(containerId);
+        console.log(
+          `🔄 Cycle ${cycle}: Container state after expand: collapsed=${expandedContainer?.collapsed}`,
+        );
+        expect(expandedContainer?.collapsed).toBe(false);
+
+        // Verify ReactFlow rendering still works
+        const reactFlowBridge = new ReactFlowBridge({});
+        expect(() => {
+          reactFlowBridge.toReactFlowData(visualizationState);
+        }).not.toThrow();
+
+        console.log(`✅ Cycle ${cycle} completed successfully`);
+      }
+
+      console.log("✅ All expansion/collapse cycles completed without errors");
     });
   });
 });

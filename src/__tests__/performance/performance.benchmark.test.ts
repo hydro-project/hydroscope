@@ -11,12 +11,12 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { ELKBridge } from "../bridges/ELKBridge.js";
-import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import { JSONParser } from "../utils/JSONParser.js";
-import { measureSync, measureAsync } from "../utils/PerformanceUtils.js";
+import { ELKBridge } from "../../bridges/ELKBridge.js";
+import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
+import { JSONParser } from "../../utils/JSONParser.js";
+import { measureSync, measureAsync } from "../../utils/PerformanceUtils.js";
 import { generateSyntheticGraphData } from "./performance.config.js";
-import type { HydroscopeData } from "../types/core.js";
+import type { HydroscopeData } from "../../types/core.js";
 import fs from "fs";
 import path from "path";
 

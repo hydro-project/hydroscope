@@ -4,13 +4,13 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { VisualizationState } from "../core/VisualizationState.js";
+import { VisualizationState } from "../../core/VisualizationState.js";
 import {
   createTestNode,
   createTestContainer,
   createTestAsyncCoordinator,
-} from "../utils/testData.js";
-import type { AsyncCoordinator } from "../core/AsyncCoordinator.js";
+} from "../../utils/testData.js";
+import type { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
 
 describe("Core Operations Performance", () => {
   let state: VisualizationState;
