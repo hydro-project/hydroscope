@@ -155,13 +155,6 @@ export function StandardNode({
   // For collapsed containers, get the same variables as ContainerNode
   // Calculate width based on label length when in full labels mode
   const showFullLabels = (data as any).showFullNodeLabels;
-  const labelToMeasure =
-    showFullLabels && data.longLabel
-      ? data.longLabel
-      : data.showingLongLabel && data.longLabel
-        ? data.longLabel
-        : data.label || data.shortLabel || id;
-
   const baseWidth = isCollapsedContainer
     ? UI_CONSTANTS.NODE_WIDTH_CONTAINER
     : UI_CONSTANTS.NODE_WIDTH_DEFAULT;

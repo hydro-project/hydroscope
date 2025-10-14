@@ -1339,84 +1339,6 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
-    // Expose bulk operations through imperative handle
-    useImperativeHandle(
-      ref,
-      () => ({
-        collapseAll: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] collapseAll disabled in readOnly mode",
-              )
-          : handleCollapseAll,
-        expandAll: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] expandAll disabled in readOnly mode",
-              )
-          : handleExpandAll,
-        collapse: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] collapse disabled in readOnly mode",
-              )
-          : handleCollapse,
-        expand: readOnly
-          ? async () =>
-              console.warn("[HydroscopeCore] expand disabled in readOnly mode")
-          : handleExpand,
-        toggle: readOnly
-          ? async () =>
-              console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
-          : handleToggle,
-        fitView: () => {
-          if (reactFlowInstance) {
-            reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
-          } else {
-            console.warn(
-              "[HydroscopeCore] ReactFlow instance not available for fitView",
-            );
-          }
-        },
-        navigateToElement: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] navigateToElement disabled in readOnly mode",
-              )
-          : handleNavigateToElement,
-        updateRenderConfig: handleRenderConfigUpdate,
-        getAsyncCoordinator: () => state.asyncCoordinator,
-        getVisualizationState: () => state.visualizationState,
-        forceReactFlowRemount: () => {
-          console.log(
-            "🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key",
-          );
-          setReactFlowResetKey((prev) => prev + 1);
-        },
-        showNodePopup: (nodeId: string) => {
-          console.log(`ℹ️ [HydroscopeCore] Showing popup for node ${nodeId}`);
-          const node = state.reactFlowData.nodes.find((n) => n.id === nodeId);
-          if (node) {
-            handleNodePopupToggle(nodeId, node as Node);
-          }
-        },
-      }),
-      [
-        readOnly,
-        handleCollapseAll,
-        handleExpandAll,
-        handleCollapse,
-        handleExpand,
-        handleToggle,
-        handleNavigateToElement,
-        handleRenderConfigUpdate,
-        reactFlowInstance,
-        state.asyncCoordinator,
-        state.visualizationState,
-        state.reactFlowData.nodes,
-      ],
-    );
-
     // Handle popup close
     const handlePopupClose = useCallback((nodeId: string) => {
       setState((prev) => {
@@ -1516,6 +1438,85 @@ const HydroscopeCoreInternal = forwardRef<
         });
       },
       [handlePopupClose],
+    );
+
+    // Expose bulk operations through imperative handle
+    useImperativeHandle(
+      ref,
+      () => ({
+        collapseAll: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] collapseAll disabled in readOnly mode",
+              )
+          : handleCollapseAll,
+        expandAll: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] expandAll disabled in readOnly mode",
+              )
+          : handleExpandAll,
+        collapse: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] collapse disabled in readOnly mode",
+              )
+          : handleCollapse,
+        expand: readOnly
+          ? async () =>
+              console.warn("[HydroscopeCore] expand disabled in readOnly mode")
+          : handleExpand,
+        toggle: readOnly
+          ? async () =>
+              console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
+          : handleToggle,
+        fitView: () => {
+          if (reactFlowInstance) {
+            reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
+          } else {
+            console.warn(
+              "[HydroscopeCore] ReactFlow instance not available for fitView",
+            );
+          }
+        },
+        navigateToElement: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] navigateToElement disabled in readOnly mode",
+              )
+          : handleNavigateToElement,
+        updateRenderConfig: handleRenderConfigUpdate,
+        getAsyncCoordinator: () => state.asyncCoordinator,
+        getVisualizationState: () => state.visualizationState,
+        forceReactFlowRemount: () => {
+          console.log(
+            "🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key",
+          );
+          setReactFlowResetKey((prev) => prev + 1);
+        },
+        showNodePopup: (nodeId: string) => {
+          console.log(`ℹ️ [HydroscopeCore] Showing popup for node ${nodeId}`);
+          const node = state.reactFlowData.nodes.find((n) => n.id === nodeId);
+          if (node) {
+            handleNodePopupToggle(nodeId, node as Node);
+          }
+        },
+      }),
+      [
+        readOnly,
+        handleCollapseAll,
+        handleExpandAll,
+        handleCollapse,
+        handleExpand,
+        handleToggle,
+        handleNavigateToElement,
+        handleRenderConfigUpdate,
+        reactFlowInstance,
+        state.asyncCoordinator,
+        state.visualizationState,
+        state.reactFlowData.nodes,
+        handleNodePopupToggle,
+      ],
     );
 
     // Handle node clicks

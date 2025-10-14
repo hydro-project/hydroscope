@@ -390,8 +390,12 @@ describe("StyleTuner Component", () => {
 
     it("should update AsyncCoordinator render options when toggled", () => {
       const mockSetRenderOptions = vi.fn();
+      const mockExecuteLayoutAndRenderPipeline = vi
+        .fn()
+        .mockResolvedValue(undefined);
       const mockAsyncCoordinator = {
         setRenderOptions: mockSetRenderOptions,
+        executeLayoutAndRenderPipeline: mockExecuteLayoutAndRenderPipeline,
       };
 
       const propsWithCoordinator = {

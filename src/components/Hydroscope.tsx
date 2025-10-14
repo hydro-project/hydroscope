@@ -646,7 +646,9 @@ export const Hydroscope = memo<HydroscopeProps>(
       const handleShowPopup = (e: Event) => {
         const customEvent = e as CustomEvent<{ nodeId: string }>;
         const nodeId = customEvent.detail.nodeId;
-        console.log(`ℹ️ [Hydroscope] Received showPopup event for node ${nodeId}`);
+        console.log(
+          `ℹ️ [Hydroscope] Received showPopup event for node ${nodeId}`,
+        );
         if (hydroscopeCoreRef.current?.showNodePopup) {
           hydroscopeCoreRef.current.showNodePopup(nodeId);
         }
@@ -1174,20 +1176,12 @@ export const Hydroscope = memo<HydroscopeProps>(
         // Update dimensions for this specific node
         currentVisualizationState.updateNodeDimensionsForLabel(node.id);
 
-        // Build list of entities that need re-layout: the node and all its parent containers
+        // Only relayout the specific node, not its parent containers
+        // This keeps container positions fixed and prevents the graph from moving around
         const relayoutEntities: string[] = [node.id];
 
-        // Add all parent containers up the hierarchy
-        let currentParent = currentVisualizationState.getNodeContainer(node.id);
-        while (currentParent) {
-          relayoutEntities.push(currentParent);
-          currentParent =
-            currentVisualizationState.getContainerParent(currentParent);
-        }
-
         console.log(
-          `🎯 [Hydroscope] Constrained layout for node ${node.id} and ${relayoutEntities.length - 1} parent containers:`,
-          relayoutEntities,
+          `🎯 [Hydroscope] Constrained layout for node ${node.id} only (keeping containers fixed)`,
         );
 
         // Reallocate bridges for clean state
