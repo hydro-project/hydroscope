@@ -16,6 +16,7 @@ export interface InteractionConfig {
   debounceDelay: number;
   rapidClickThreshold: number;
   enableClickDebouncing: boolean;
+  disableNodeClicks?: boolean;
 }
 export class InteractionHandler {
   private _visualizationState: VisualizationState;
@@ -34,9 +35,11 @@ export class InteractionHandler {
       debounceDelay: 300, // 300ms debounce
       rapidClickThreshold: 500, // 500ms threshold for rapid clicks
       enableClickDebouncing: true,
+      disableNodeClicks: false,
       ...config,
     };
   }
+
   // Main click event processing
   handleNodeClick(
     nodeId: string,
@@ -121,6 +124,11 @@ export class InteractionHandler {
     }
   }
   private _handleNodeClickInternal(event: ClickEvent): void {
+    // Skip node clicks if disabled (e.g., when full node labels mode is active)
+    if (this._config.disableNodeClicks) {
+      return;
+    }
+
     // Toggle node label between short and long
     this._visualizationState.toggleNodeLabel(event.elementId);
   }

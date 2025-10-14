@@ -115,6 +115,9 @@ export interface HydroscopeCoreHandle {
 
   /** Get the current VisualizationState instance */
   getVisualizationState: () => VisualizationState | null;
+
+  /** Force ReactFlow component to remount (clears all internal state including edge handles) */
+  forceReactFlowRemount: () => void;
 }
 
 /**
@@ -1381,6 +1384,10 @@ const HydroscopeCoreInternal = forwardRef<
         updateRenderConfig: handleRenderConfigUpdate,
         getAsyncCoordinator: () => state.asyncCoordinator,
         getVisualizationState: () => state.visualizationState,
+        forceReactFlowRemount: () => {
+          console.log("🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key");
+          setReactFlowResetKey((prev) => prev + 1);
+        },
       }),
       [
         readOnly,

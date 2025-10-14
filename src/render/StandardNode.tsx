@@ -153,16 +153,29 @@ export function StandardNode({
       }
     : { ...baseColors, textColor: undefined };
   // For collapsed containers, get the same variables as ContainerNode
-  const width =
-    data.width ||
-    (isCollapsedContainer
-      ? UI_CONSTANTS.NODE_WIDTH_CONTAINER
-      : UI_CONSTANTS.NODE_WIDTH_DEFAULT);
-  const height =
-    data.height ||
-    (isCollapsedContainer
-      ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
-      : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
+  // Calculate width based on label length when in full labels mode
+  const showFullLabels = (data as any).showFullNodeLabels;
+  const labelToMeasure =
+    showFullLabels && data.longLabel
+      ? data.longLabel
+      : data.showingLongLabel && data.longLabel
+        ? data.longLabel
+        : data.label || data.shortLabel || id;
+
+  const baseWidth = isCollapsedContainer
+    ? UI_CONSTANTS.NODE_WIDTH_CONTAINER
+    : UI_CONSTANTS.NODE_WIDTH_DEFAULT;
+
+  // FIXED: Use pre-calculated dimensions from VisualizationState when available
+  // This ensures nodes are properly sized when "Show full node labels" is enabled
+  const width = data.width || baseWidth;
+  const height = data.height || (isCollapsedContainer
+    ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
+    : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
+    
+  if (data.width && showFullLabels) {
+    console.log(`🎨 [StandardNode] Node ${id}: using width=${width} height=${height} from data (showFullLabels=${showFullLabels})`);
+  }
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
   // Dev-only: log computed color mapping to verify at runtime
@@ -289,7 +302,14 @@ export function StandardNode({
     );
   }
   // Determine which label to display for regular nodes
-  const displayLabel = data.label || data.shortLabel || id;
+  // In full labels mode, always show long label if available
+  // Reuse the showFullLabels variable already declared above
+  const displayLabel =
+    showFullLabels && data.longLabel
+      ? data.longLabel
+      : data.showingLongLabel && data.longLabel
+        ? data.longLabel
+        : data.label || data.shortLabel || id;
   // Regular node styling
   return (
     <>
@@ -314,7 +334,10 @@ export function StandardNode({
           backgroundColor: colors.backgroundColor,
           border: `2px solid ${colors.borderColor}`,
           borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
-          fontSize: `${styleCfg.nodeFontSize ?? 11}px`,
+          fontSize: showFullLabels
+            ? `${PANEL_CONSTANTS.FONT_SIZE_POPUP}px`
+            : `${styleCfg.nodeFontSize ?? 11}px`,
+          fontWeight: showFullLabels ? "500" : "normal",
           textAlign: "center",
           boxSizing: "border-box",
           position: "relative",

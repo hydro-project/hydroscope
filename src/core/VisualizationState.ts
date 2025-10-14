@@ -47,6 +47,7 @@ export class VisualizationState {
     colorPalette: DEFAULT_COLOR_PALETTE,
     layoutAlgorithm: DEFAULT_ELK_ALGORITHM,
     fitView: true,
+    showFullNodeLabels: false,
   };
   private _searchResults: SearchResult[] = [];
   private _searchQuery: string = "";
@@ -2060,13 +2061,89 @@ export class VisualizationState {
     };
   }
   resetAllNodeLabelsToShort(): void {
+    console.log(
+      "🏷️ [VisualizationState] resetAllNodeLabelsToShort called, node count:",
+      this._nodes.size,
+    );
     for (const node of this._nodes.values()) {
       node.showingLongLabel = false;
     }
   }
   expandAllNodeLabelsToLong(): void {
+    console.log(
+      "🏷️ [VisualizationState] expandAllNodeLabelsToLong called, node count:",
+      this._nodes.size,
+    );
     for (const node of this._nodes.values()) {
       node.showingLongLabel = true;
+    }
+  }
+
+  /**
+   * Update node dimensions for full labels mode
+   * Calculates new dimensions based on each node's individual label length
+   */
+  updateNodeDimensionsForFullLabels(enabled: boolean): void {
+    console.log(
+      "📏 [VisualizationState] updateNodeDimensionsForFullLabels called, enabled:",
+      enabled,
+      "node count:",
+      this._nodes.size,
+    );
+    for (const node of this._nodes.values()) {
+      if (enabled) {
+        // Calculate dimensions based on this specific node's long label length
+        const labelToMeasure = node.longLabel || node.label;
+        if (labelToMeasure) {
+          // Use font size 10px (FONT_SIZE_POPUP) for calculation
+          // More accurate character width estimation for smaller font
+          const charWidth = 6; // Approximate width per character at 10px font
+          const padding = 32; // Total horizontal padding
+          const baseWidth = 120; // Minimum node width
+          const maxWidth = 400; // Maximum node width
+
+          // Calculate width based on label length
+          const calculatedWidth = Math.max(
+            baseWidth,
+            Math.min(labelToMeasure.length * charWidth + padding, maxWidth),
+          );
+
+          // Calculate height - allow for text wrapping in very long labels
+          const maxCharsPerLine = Math.floor(
+            (calculatedWidth - padding) / charWidth,
+          );
+          const estimatedLines = Math.max(
+            1,
+            Math.ceil(labelToMeasure.length / maxCharsPerLine),
+          );
+          const lineHeight = 14; // Line height for 10px font
+          const verticalPadding = 20; // Top and bottom padding
+          const calculatedHeight = Math.max(
+            60,
+            estimatedLines * lineHeight + verticalPadding,
+          );
+
+          node.dimensions = {
+            width: calculatedWidth,
+            height: calculatedHeight,
+          };
+          console.log(
+            `📏 [VisualizationState] Node ${node.id}: label="${labelToMeasure}" -> dimensions=${calculatedWidth}x${calculatedHeight}`,
+          );
+        } else {
+          // No label, use default dimensions
+          node.dimensions = {
+            width: 120,
+            height: 60,
+          };
+        }
+      } else {
+        // Reset to default dimensions
+        node.dimensions = {
+          width: 120,
+          height: 60,
+        };
+      }
     }
   }
   validateInteractionState(): {

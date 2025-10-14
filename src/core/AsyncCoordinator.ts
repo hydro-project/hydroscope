@@ -39,6 +39,9 @@ export class AsyncCoordinator {
   private reactFlowBridge?: any;
   private elkBridge?: any;
 
+  // Configuration for rendering options
+  private renderOptions: { showFullNodeLabels?: boolean } = {};
+
   // Post-render callback queue - executed after React renders new nodes
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
   private lastRenderTimestamp: number = 0;
@@ -55,6 +58,20 @@ export class AsyncCoordinator {
   }
 
   /**
+   * Update render options (e.g., showFullNodeLabels)
+   */
+  setRenderOptions(options: { showFullNodeLabels?: boolean }): void {
+    this.renderOptions = { ...this.renderOptions, ...options };
+
+    // Update InteractionHandler configuration to disable node clicks when full labels are shown
+    if (this.interactionHandler && this.interactionHandler.updateConfig) {
+      this.interactionHandler.updateConfig({
+        disableNodeClicks: options.showFullNodeLabels || false,
+      });
+    }
+  }
+
+  /**
    * Set the ReactFlow instance reference for direct fitView operations
    */
   setReactFlowInstance(reactFlowInstance: any): void {
@@ -67,6 +84,40 @@ export class AsyncCoordinator {
   setUpdateNodeInternals(updateNodeInternals: (nodeId: string) => void): void {
     this.updateNodeInternals = updateNodeInternals;
     console.log("🎯 AsyncCoordinator: updateNodeInternals callback set");
+  }
+
+  /**
+   * Force ReactFlow to recalculate edge handles for all nodes
+   * This is necessary when node dimensions change without node IDs changing
+   */
+  updateAllNodeInternals(visualizationState: any): void {
+    if (!this.updateNodeInternals) {
+      console.warn(
+        "[AsyncCoordinator] updateNodeInternals not available - edge handles may not update correctly",
+      );
+      return;
+    }
+
+    console.log(
+      "🔄 [AsyncCoordinator] Updating node internals for all visible nodes",
+    );
+
+    // Update internals for all visible nodes
+    const nodeIds: string[] = [];
+    for (const node of visualizationState.visibleNodes) {
+      nodeIds.push(node.id);
+      this.updateNodeInternals(node.id);
+    }
+
+    // Also update internals for all visible containers
+    for (const container of visualizationState.visibleContainers) {
+      nodeIds.push(container.id);
+      this.updateNodeInternals(container.id);
+    }
+
+    console.log(
+      `✅ [AsyncCoordinator] Updated node internals for ${nodeIds.length} nodes`,
+    );
   }
 
   /**
@@ -112,6 +163,18 @@ export class AsyncCoordinator {
     callback: () => void | Promise<void>,
   ): void {
     this.postRenderCallbacks.push(callback);
+  }
+
+  /**
+   * Returns a promise that resolves after the next React render completes
+   * Use this to sequence operations that need to wait for React state updates
+   */
+  private waitForNextRender(): Promise<void> {
+    return new Promise((resolve) => {
+      this.enqueuePostRenderCallback(() => {
+        resolve();
+      });
+    });
   }
 
   /**
@@ -480,6 +543,7 @@ export class AsyncCoordinator {
       const reactFlowData = reactFlowBridge.toReactFlowData(
         state,
         this.interactionHandler,
+        this.renderOptions,
       );
 
       // Set layout phase to displayed
@@ -662,6 +726,114 @@ export class AsyncCoordinator {
 
       throw error;
     }
+  }
+
+  /**
+   * Process dimension changes that require ReactFlow remount
+   *
+   * This handles the complete sequence for operations like "Show full node labels":
+   * 1. Execute layout and render pipeline with new dimensions
+   * 2. Wait for React to render the new data
+   * 3. Trigger ReactFlow remount callback to clear internal state
+   *
+   * @param visualizationState - The VisualizationState with updated dimensions
+   * @param onRemount - Callback to trigger ReactFlow remount (e.g., forceReactFlowRemount)
+   * @param options - Pipeline execution options
+   * @returns Promise that resolves after remount is triggered
+   */
+  async processDimensionChangeWithRemount(
+    visualizationState: any,
+    onRemount: () => void,
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+    } = {},
+  ): Promise<void> {
+    const startTime = Date.now();
+    console.log(
+      "🔄 [AsyncCoordinator] Starting dimension change with remount sequence",
+    );
+
+    try {
+      // Step 1: Execute layout and render pipeline with new dimensions
+      console.log("  1️⃣ Executing layout and render pipeline");
+      await this.executeLayoutAndRenderPipeline(visualizationState, {
+        relayoutEntities: undefined, // Full layout
+        fitView: options.fitView ?? false,
+        fitViewOptions: options.fitViewOptions,
+      });
+
+      // Step 2: Wait for React to render the new data
+      console.log("  2️⃣ Waiting for React render to complete");
+      await this.waitForNextRender();
+
+      // Step 3: Trigger ReactFlow remount
+      console.log("  3️⃣ Triggering ReactFlow remount");
+      onRemount();
+
+      const duration = Date.now() - startTime;
+      console.log(
+        `✅ [AsyncCoordinator] Dimension change with remount completed in ${duration}ms`,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(
+        `❌ [AsyncCoordinator] Dimension change with remount failed after ${duration}ms:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Execute layout and render pipeline with ReactFlow remount after render completes
+   *
+   * This method handles the complete sequence for operations that change node dimensions
+   * (like toggling "Show full node labels"):
+   * 1. Execute layout and render pipeline with new bridges
+   * 2. Wait for React to render the new data
+   * 3. Force ReactFlow to remount with fresh data
+   *
+   * @param visualizationState - VisualizationState instance
+   * @param forceRemountCallback - Callback to force ReactFlow remount
+   * @param options - Pipeline execution options
+   * @returns Promise that resolves after ReactFlow remount
+   */
+  async executeLayoutAndRenderWithRemount(
+    visualizationState: any,
+    forceRemountCallback: () => void,
+    options: {
+      relayoutEntities?: string[];
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+    } = {},
+  ): Promise<void> {
+    console.log(
+      "🔄 [AsyncCoordinator] Starting layout and render pipeline with remount",
+    );
+
+    // Step 1: Execute layout and render pipeline
+    await this.executeLayoutAndRenderPipeline(visualizationState, {
+      relayoutEntities: options.relayoutEntities,
+      fitView: options.fitView ?? false,
+      fitViewOptions: options.fitViewOptions,
+    });
+
+    console.log(
+      "✅ [AsyncCoordinator] Pipeline complete, waiting for React render",
+    );
+
+    // Step 2: Wait for React to complete rendering the new data
+    await this.waitForNextRender();
+
+    console.log(
+      "🔄 [AsyncCoordinator] React render complete, forcing ReactFlow remount",
+    );
+
+    // Step 3: Force ReactFlow to remount with fresh data
+    forceRemountCallback();
+
+    console.log("✅ [AsyncCoordinator] ReactFlow remount complete");
   }
 
   // REMOVED: Deprecated queueLayoutAndRenderPipeline method
@@ -1042,6 +1214,7 @@ export class AsyncCoordinator {
       const reactFlowData = reactFlowBridge.toReactFlowData(
         state as any,
         this.interactionHandler,
+        this.renderOptions,
       );
 
       // Validate generated data structure
@@ -1170,6 +1343,7 @@ export class AsyncCoordinator {
           const reactFlowData = reactFlowBridge.toReactFlowData(
             state,
             this.interactionHandler,
+            this.renderOptions,
           );
           resolve(reactFlowData);
           return reactFlowData;

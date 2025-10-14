@@ -45,6 +45,7 @@ import {
   withAsyncResizeObserverErrorSuppression,
 } from "../utils/ResizeObserverErrorSuppression.js";
 import { parseDataFromUrl } from "../utils/urlParser.js";
+import { resetAllBridges } from "../utils/bridgeResetUtils.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -69,6 +70,8 @@ export interface RenderConfig {
   colorPalette?: string;
   /** Whether to automatically fit view after layout changes */
   fitView?: boolean;
+  /** Whether to show full node labels for all nodes */
+  showFullNodeLabels?: boolean;
 }
 /**
  * Props interface for the Hydroscope component
@@ -149,6 +152,7 @@ const DEFAULT_RENDER_CONFIG: Required<RenderConfig> = {
   containerBorderWidth: 2,
   colorPalette: DEFAULT_COLOR_PALETTE,
   fitView: true,
+  showFullNodeLabels: false,
 };
 const DEFAULT_SETTINGS: HydroscopeSettings = {
   infoPanelOpen: true,
@@ -759,6 +763,7 @@ export const Hydroscope = memo<HydroscopeProps>(
           containerBorderWidth: styleConfig.containerBorderWidth,
           colorPalette: state.colorPalette,
           fitView: state.autoFitEnabled,
+          showFullNodeLabels: styleConfig.showFullNodeLabels,
         };
         handleConfigChange(renderConfig);
       },
@@ -1002,6 +1007,10 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
+        console.log(
+          "🔄 [Hydroscope] handleVisualizationStateChange called, visualizationState:",
+          !!visualizationState,
+        );
         setState((prev) => ({
           ...prev,
           currentVisualizationState: visualizationState,
@@ -1009,6 +1018,77 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [],
     );
+
+    // Apply persisted showFullNodeLabels setting when VisualizationState becomes available
+    useEffect(() => {
+      const visualizationState =
+        hydroscopeCoreRef.current?.getVisualizationState?.();
+      if (visualizationState && state.renderConfig.showFullNodeLabels) {
+        console.log(
+          "🔄 [Hydroscope] Applying persisted showFullNodeLabels=true to VisualizationState",
+        );
+        visualizationState.expandAllNodeLabelsToLong();
+        visualizationState.updateNodeDimensionsForFullLabels(true);
+
+        // Trigger a re-layout to apply the new dimensions
+        const asyncCoordinator =
+          hydroscopeCoreRef.current?.getAsyncCoordinator?.();
+        if (asyncCoordinator) {
+          asyncCoordinator
+            .executeLayoutAndRenderPipeline(visualizationState, {
+              relayoutEntities: undefined, // Full layout
+              fitView: false,
+            })
+            .catch((error: Error) => {
+              console.error(
+                "[Hydroscope] Failed to apply persisted showFullNodeLabels:",
+                error,
+              );
+            });
+        }
+      }
+    }, [
+      state.renderConfig.showFullNodeLabels,
+      state.currentVisualizationState,
+    ]);
+
+    // Reallocate bridges and instances for hard reset
+    const reallocateBridges = useCallback(() => {
+      console.log("🔄 [Hydroscope] Reallocating bridges for hard reset");
+
+      // Get AsyncCoordinator
+      const asyncCoordinator =
+        hydroscopeCoreRef.current?.getAsyncCoordinator?.();
+      if (!asyncCoordinator) {
+        console.error("❌ [Hydroscope] AsyncCoordinator not available");
+        return null;
+      }
+
+      // Use utility function to reset all bridges and components
+      // This performs a complete reallocation of:
+      // 1. ELK bridge → creates new ELK instance
+      // 2. ReactFlow bridge
+      // 3. ELK instance (inside ELK bridge)
+      // 4. ReactFlow component (via remount)
+      const result = resetAllBridges({
+        algorithm: state.layoutAlgorithm,
+        asyncCoordinator,
+        elkBridgeRef,
+        reactFlowBridgeRef: { current: null }, // Not tracked in Hydroscope, only in HydroscopeCore
+        hydroscopeCoreRef,
+      });
+
+      if (result) {
+        console.log("✅ [Hydroscope] Bridge reallocation complete");
+        return {
+          asyncCoordinator: result.asyncCoordinator,
+          visualizationState: result.visualizationState,
+          forceRemount: result.forceRemount,
+        };
+      }
+
+      return null;
+    }, [state.layoutAlgorithm]);
 
     // Handle node clicks - default behavior is to toggle label, but allow override
     const handleNodeClick = useCallback(
@@ -1329,6 +1409,18 @@ export const Hydroscope = memo<HydroscopeProps>(
                     onOpenChange={(open) =>
                       setState((prev) => ({ ...prev, stylePanelOpen: open }))
                     }
+                    visualizationState={
+                      hydroscopeCoreRef.current?.getVisualizationState?.() ||
+                      null
+                    }
+                    asyncCoordinator={
+                      hydroscopeCoreRef.current?.getAsyncCoordinator?.() || null
+                    }
+                    onFullNodeLabelsChange={(_enabled) => {
+                      // The StyleTuner handles the implementation through AsyncCoordinator and VisualizationState
+                      // This callback is mainly for external integrations if needed
+                    }}
+                    onReallocateBridges={reallocateBridges}
                   />
                 )}
 

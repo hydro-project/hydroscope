@@ -412,8 +412,16 @@ export class ELKBridge implements IELKBridge {
   }
   private applyNodePosition(node: GraphNode, elkChild: ELKNode): void {
     node.position = { x: elkChild.x!, y: elkChild.y! };
-    if (elkChild.width && elkChild.height) {
+    
+    // FIXED: Only update dimensions if the node doesn't have custom dimensions
+    // This preserves custom dimensions set by "Show full node labels" feature
+    if (elkChild.width && elkChild.height && !node.dimensions) {
       node.dimensions = { width: elkChild.width, height: elkChild.height };
+    }
+    
+    // If node has custom dimensions, preserve them but log for debugging
+    if (node.dimensions && elkChild.width && elkChild.height) {
+      console.log(`🎯 [ELKBridge] Node ${node.id}: preserving custom dimensions ${node.dimensions.width}x${node.dimensions.height} (ELK calculated ${elkChild.width}x${elkChild.height})`);
     }
   }
   private applyContainerPosition(
@@ -616,7 +624,7 @@ export class ELKBridge implements IELKBridge {
     return options;
   }
   private calculateOptimalNodeSize(
-    _node: GraphNode,
+    node: GraphNode,
     config: LayoutConfig,
   ): {
     width: number;
@@ -624,8 +632,17 @@ export class ELKBridge implements IELKBridge {
   } {
     const baseSize = config.nodeSize || { width: 120, height: 60 };
 
-    // Always use the same dimensions regardless of label state to avoid resizing
-    // The React component can handle text overflow/truncation
+    // FIXED: Use custom dimensions when available (for "Show full node labels" feature)
+    // This allows nodes to be properly sized based on their label length
+    if (node.dimensions) {
+      console.log(`🎯 [ELKBridge] Node ${node.id}: using custom dimensions ${node.dimensions.width}x${node.dimensions.height}`);
+      return {
+        width: node.dimensions.width,
+        height: node.dimensions.height,
+      };
+    }
+
+    // Fallback to base size when no custom dimensions
     return {
       width: baseSize.width,
       height: baseSize.height,
