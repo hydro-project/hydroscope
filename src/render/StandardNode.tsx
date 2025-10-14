@@ -406,38 +406,42 @@ export function StandardNode({
             className="node-info-button"
             style={{
               position: "absolute",
-              top: "2px",
-              right: "2px",
-              width: "18px",
-              height: "18px",
+              top: "3px",
+              right: "3px",
+              width: "16px",
+              height: "16px",
               borderRadius: "50%",
-              backgroundColor: "rgba(255, 255, 255, 0.95)",
-              border: "1.5px solid rgba(59, 130, 246, 0.8)",
-              color: "rgba(59, 130, 246, 1)",
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              border: "1px solid rgba(100, 116, 139, 0.3)",
+              color: "rgba(100, 116, 139, 0.4)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "11px",
-              fontWeight: "600",
+              fontSize: "10px",
+              fontWeight: "500",
               cursor: "pointer",
-              transition: "all 0.15s ease",
+              transition: "all 0.2s ease",
               zIndex: 10,
               pointerEvents: "auto",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
+              boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+              backdropFilter: "blur(4px)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 1)";
+              e.currentTarget.style.backgroundColor =
+                "rgba(59, 130, 246, 0.95)";
+              e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.8)";
               e.currentTarget.style.color = "white";
-              e.currentTarget.style.transform = "scale(1.15)";
+              e.currentTarget.style.transform = "scale(1.1)";
               e.currentTarget.style.boxShadow =
-                "0 2px 6px rgba(59, 130, 246, 0.4)";
+                "0 2px 8px rgba(59, 130, 246, 0.25)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor =
-                "rgba(255, 255, 255, 0.95)";
-              e.currentTarget.style.color = "rgba(59, 130, 246, 1)";
+                "rgba(255, 255, 255, 0.7)";
+              e.currentTarget.style.borderColor = "rgba(100, 116, 139, 0.3)";
+              e.currentTarget.style.color = "rgba(100, 116, 139, 0.7)";
               e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.12)";
+              e.currentTarget.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -460,12 +464,11 @@ export function StandardNode({
 
         <style>
           {`
+            .node-info-button {
+              opacity: 0;
+            }
             .react-flow__node:hover .node-info-button {
               opacity: 1;
-            }
-            .node-info-button:hover {
-              background-color: rgba(37, 99, 235, 1) !important;
-              transform: scale(1.1);
             }
           `}
         </style>
