@@ -14,6 +14,7 @@
  */
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { Tree, Spin } from "antd";
+import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
 import {
@@ -36,7 +37,9 @@ import { clearContainerOperationDebouncing } from "../utils/containerOperationUt
 function buildHierarchyTreeFromState(
   visualizationState: VisualizationState,
 ): HierarchyTreeNode[] {
-  if (!visualizationState || visualizationState.visibleContainers.length === 0)
+  // Use allContainers instead of visibleContainers to show hidden items with closed eye icons
+  const allContainers = visualizationState.allContainers;
+  if (!visualizationState || allContainers.length === 0)
     return [];
   const buildNode = (containerId: string): HierarchyTreeNode => {
     // Use efficient O(1) lookups instead of scanning
@@ -51,8 +54,8 @@ function buildHierarchyTreeFromState(
       visualizationState.hasTemporaryHighlight(containerId);
     return { id: containerId, children, hasTemporaryHighlight };
   };
-  // Get top-level containers (those without parents)
-  const rootContainers = visualizationState.visibleContainers.filter(
+  // Get top-level containers (those without parents) - include all containers, not just visible ones
+  const rootContainers = allContainers.filter(
     (container) => !visualizationState.getContainerParent(container.id),
   );
   return rootContainers.map((container: Container) => buildNode(container.id));
@@ -82,25 +85,13 @@ function createSearchHighlightDiv(
   baseStyle: React.CSSProperties,
   hasTemporaryHighlight: boolean = false,
   palette: string = "Set3",
+  isManuallyHidden: boolean = false,
+  onToggleVisibility?: (e: React.MouseEvent) => void,
 ): React.ReactNode {
   let style: React.CSSProperties = baseStyle;
 
-  if (hasTemporaryHighlight) {
-    // Temporary glow effect after click - synced with graph glow
-    // Use palette-aware contrasting color
-    const highlightColor = getHighlightColor(palette);
-    style = {
-      backgroundColor: highlightColor.background,
-      borderRadius: 4,
-      padding: "2px 4px",
-      margin: "-1px -2px",
-      fontWeight: "600",
-      border: `2px solid ${highlightColor.border}`,
-      boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
-      animation: "treeGlowPulse 2s ease-in-out",
-      ...baseStyle,
-    };
-  } else if (match) {
+  // Start with search match background if applicable
+  if (match) {
     style = {
       backgroundColor: isCurrent
         ? SEARCH_CURRENT_COLORS.backgroundColor
@@ -114,8 +105,71 @@ function createSearchHighlightDiv(
       ...baseStyle,
     };
   }
+  
+  // Layer temporary highlight glow on top (if present)
+  if (hasTemporaryHighlight) {
+    // Temporary glow effect after click - synced with graph glow
+    // Use palette-aware contrasting color
+    const highlightColor = getHighlightColor(palette);
+    style = {
+      ...style, // Keep existing background (search highlight)
+      borderRadius: 4,
+      padding: "2px 4px",
+      margin: "-1px -2px",
+      fontWeight: "600",
+      border: `2px solid ${highlightColor.border}`,
+      boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
+      animation: "treeGlowPulse 2s ease-in-out",
+      ...baseStyle,
+    };
+  }
 
-  return <div style={style}>{text}</div>;
+  return (
+    <div
+      style={{ ...style, display: "flex", alignItems: "center", gap: "6px" }}
+    >
+      {/* Eye icon toggle */}
+      {onToggleVisibility && (
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleVisibility(e);
+          }}
+          style={{
+            cursor: "pointer",
+            fontSize: "13px",
+            opacity: 0.7,
+            userSelect: "none",
+            transition: "opacity 0.15s",
+            display: "flex",
+            alignItems: "center",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "0.7";
+          }}
+          title={
+            isManuallyHidden
+              ? "Show in graph (currently hidden)"
+              : "Hide from graph (Shift+click to hide all others)"
+          }
+        >
+          {isManuallyHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+        </span>
+      )}
+      <span
+        style={{
+          opacity: isManuallyHidden ? 0.4 : 1,
+          color: isManuallyHidden ? "#999" : "inherit",
+          pointerEvents: isManuallyHidden ? "none" : "auto",
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
 }
 /**
  * Helper function to check if a container has matching descendants in search results
@@ -160,28 +214,16 @@ function createContainerDisplayTitle(
   hasCollapsedMatchingDescendants: boolean = false,
   hasTemporaryHighlight: boolean = false,
   palette: string = "Set3",
+  isManuallyHidden: boolean = false,
+  onToggleVisibility?: (e: React.MouseEvent) => void,
 ): React.ReactNode {
   const countText =
     showNodeCounts && hasLeafChildren ? ` (${leafChildrenCount})` : "";
   // Determine highlight style based on match type
   let highlightStyle: React.CSSProperties = {};
 
-  if (hasTemporaryHighlight) {
-    // Temporary glow effect after click - synced with graph glow
-    // Use palette-aware contrasting color
-    const highlightColor = getHighlightColor(palette);
-    highlightStyle = {
-      backgroundColor: highlightColor.background,
-      borderRadius: 4,
-      padding: "2px 4px",
-      margin: "-1px -2px",
-      fontWeight: "600",
-      border: `2px solid ${highlightColor.border}`,
-      boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
-      animation: "treeGlowPulse 2s ease-in-out",
-    };
-  } else if (match) {
-    // Direct match - use full highlight
+  // Start with search match background if applicable
+  if (match) {
     highlightStyle = {
       backgroundColor: isCurrent
         ? SEARCH_CURRENT_COLORS.backgroundColor
@@ -203,8 +245,61 @@ function createContainerDisplayTitle(
       border: `1px solid ${SEARCH_HIGHLIGHT_COLORS.border}40`, // 40% opacity
     };
   }
+  
+  // Layer temporary highlight glow on top (if present)
+  if (hasTemporaryHighlight) {
+    // Temporary glow effect after click - synced with graph glow
+    // Use palette-aware contrasting color
+    const highlightColor = getHighlightColor(palette);
+    highlightStyle = {
+      ...highlightStyle, // Keep existing background (search highlight)
+      fontWeight: "600",
+      border: `2px solid ${highlightColor.border}`,
+      boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
+      animation: "treeGlowPulse 2s ease-in-out",
+    };
+  }
+  
   return (
-    <div style={highlightStyle}>
+    <div
+      style={{
+        ...highlightStyle,
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      {/* Eye icon toggle */}
+      {onToggleVisibility && (
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleVisibility(e);
+          }}
+          style={{
+            cursor: "pointer",
+            fontSize: "14px",
+            opacity: 0.7,
+            userSelect: "none",
+            transition: "opacity 0.15s",
+            display: "flex",
+            alignItems: "center",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "0.7";
+          }}
+          title={
+            isManuallyHidden
+              ? "Show in graph (currently hidden)"
+              : "Hide from graph (Shift+click to hide all others)"
+          }
+        >
+          {isManuallyHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+        </span>
+      )}
       <span
         style={{
           fontWeight:
@@ -215,6 +310,9 @@ function createContainerDisplayTitle(
               : hasCollapsedMatchingDescendants
                 ? 500
                 : 400,
+          opacity: isManuallyHidden ? 0.4 : 1,
+          color: isManuallyHidden ? "#999" : "inherit",
+          pointerEvents: isManuallyHidden ? "none" : "auto",
         }}
       >
         {truncatedLabel}
@@ -239,6 +337,11 @@ function getTreeDataStructure(
   truncateLabels: boolean = true,
   maxLabelLength: number = 20,
   showNodeCounts: boolean = true,
+  onToggleNodeVisibility?: (nodeId: string, shiftKey?: boolean) => void,
+  onToggleContainerVisibility?: (
+    containerId: string,
+    shiftKey?: boolean,
+  ) => void,
 ): TreeDataNode[] {
   // Build hierarchy tree structure from VisualizationState
   // Get the current color palette for highlight colors
@@ -283,6 +386,8 @@ function getTreeDataStructure(
             const isCurrent = !!(
               currentSearchResult && currentSearchResult.id === leafNode.id
             );
+            const isManuallyHidden =
+              visualizationState?.isNodeManuallyHidden(leafNode.id) ?? false;
             return {
               key: leafNode.id,
               title: createSearchHighlightDiv(
@@ -298,6 +403,11 @@ function getTreeDataStructure(
                 { fontSize: "11px", opacity: 0.8 },
                 visualizationState?.hasTemporaryHighlight(leafNode.id) ?? false,
                 palette,
+                isManuallyHidden,
+                onToggleNodeVisibility
+                  ? (e: React.MouseEvent) =>
+                      onToggleNodeVisibility(leafNode.id, e.shiftKey)
+                  : undefined,
               ),
               isLeaf: true,
               data: {
@@ -332,6 +442,8 @@ function getTreeDataStructure(
             const isCurrent = !!(
               currentSearchResult && currentSearchResult.id === leafNode.id
             );
+            const isManuallyHidden =
+              visualizationState?.isNodeManuallyHidden(leafNode.id) ?? false;
             return {
               key: leafNode.id,
               title: createSearchHighlightDiv(
@@ -347,6 +459,11 @@ function getTreeDataStructure(
                 { fontSize: "11px", opacity: 0.8 },
                 visualizationState?.hasTemporaryHighlight(leafNode.id) ?? false,
                 palette,
+                isManuallyHidden,
+                onToggleNodeVisibility
+                  ? (e: React.MouseEvent) =>
+                      onToggleNodeVisibility(leafNode.id, e.shiftKey)
+                  : undefined,
               ),
               isLeaf: true,
               data: {
@@ -374,6 +491,8 @@ function getTreeDataStructure(
       const hasTemporaryHighlight = visualizationState.hasTemporaryHighlight(
         node.id,
       );
+      const isContainerManuallyHidden =
+        visualizationState?.isContainerManuallyHidden(node.id) ?? false;
       const displayTitle = createContainerDisplayTitle(
         truncatedLabel,
         hasChildren,
@@ -386,6 +505,11 @@ function getTreeDataStructure(
         hasCollapsedMatchingDescendants,
         hasTemporaryHighlight,
         palette,
+        isContainerManuallyHidden,
+        onToggleContainerVisibility
+          ? (e: React.MouseEvent) =>
+              onToggleContainerVisibility(node.id, e.shiftKey)
+          : undefined,
       );
       return {
         key: node.id,
@@ -414,6 +538,8 @@ function getTreeDataStructure(
 export function HierarchyTree({
   collapsedContainers = new Set(),
   onToggleContainer,
+  onToggleNodeVisibility,
+  onToggleContainerVisibility,
   onElementNavigation,
   layoutOrchestrator,
   asyncCoordinator,
@@ -461,7 +587,8 @@ export function HierarchyTree({
     // When search is cleared, calculate expanded containers from collapsedContainers prop
     if (!searchResults || searchResults.length === 0) {
       // Return containers that are NOT in the collapsedContainers set
-      const allContainerIds = visualizationState.visibleContainers.map(
+      // Use allContainers to include manually hidden containers in the tree
+      const allContainerIds = visualizationState.allContainers.map(
         (container) => container.id,
       );
       const currentlyExpanded = allContainerIds.filter(
@@ -584,6 +711,63 @@ export function HierarchyTree({
           }
         });
       }
+      // CRITICAL: Make hidden containers and nodes visible before expanding
+      // Search matches should always be visible in the graph
+      if (visualizationState && searchResults) {
+        // First, show all hidden containers that need to be expanded or contain matches
+        const containersToShow: string[] = [];
+        
+        // Collect all containers that need to be visible
+        for (const result of searchResults) {
+          if (result.type === "container") {
+            // If the match is a container, show it
+            if (visualizationState.isContainerManuallyHidden(result.id)) {
+              containersToShow.push(result.id);
+            }
+            // Show all its ancestors
+            const ancestors = visualizationState.getContainerAncestors(
+              result.id,
+            );
+            for (const ancestorId of ancestors) {
+              if (visualizationState.isContainerManuallyHidden(ancestorId)) {
+                containersToShow.push(ancestorId);
+              }
+            }
+          } else if (result.type === "node") {
+            // If the match is a node, show it
+            if (visualizationState.isNodeManuallyHidden(result.id)) {
+              visualizationState.toggleNodeVisibility(result.id);
+            }
+            // Show its container and all ancestors
+            const containerId = visualizationState.getNodeContainer(result.id);
+            if (containerId) {
+              if (visualizationState.isContainerManuallyHidden(containerId)) {
+                containersToShow.push(containerId);
+              }
+              const ancestors =
+                visualizationState.getContainerAncestors(containerId);
+              for (const ancestorId of ancestors) {
+                if (visualizationState.isContainerManuallyHidden(ancestorId)) {
+                  containersToShow.push(ancestorId);
+                }
+              }
+            }
+          }
+        }
+        
+        // Show containers from root to leaf (ancestors first)
+        const uniqueContainers = Array.from(new Set(containersToShow));
+        uniqueContainers.sort((a, b) => {
+          const depthA = visualizationState.getContainerAncestors(a).length;
+          const depthB = visualizationState.getContainerAncestors(b).length;
+          return depthB - depthA; // Root first (fewer ancestors)
+        });
+        
+        for (const containerId of uniqueContainers) {
+          visualizationState.toggleContainerVisibility(containerId);
+        }
+      }
+
       // CRITICAL FIX: Sort containers by hierarchy depth to expand parents before children
       // This prevents validation infinite loops caused by expanding children before parents
       containersToToggle.sort((a, b) => {
@@ -693,6 +877,11 @@ export function HierarchyTree({
     asyncCoordinator,
     syncEnabled,
   ]);
+
+  // Extract cacheVersion for dependency tracking
+  // This ensures tree re-renders when visibility toggles change internal state
+  const cacheVersion = visualizationState?.cacheVersion ?? 0;
+
   const treeData = useMemo(() => {
     if (!visualizationState) return [];
     return getTreeDataStructure(
@@ -703,15 +892,21 @@ export function HierarchyTree({
       truncateLabels,
       maxLabelLength,
       showNodeCounts,
+      onToggleNodeVisibility,
+      onToggleContainerVisibility,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     visualizationState,
+    cacheVersion, // Re-compute when visibility state changes
     collapsedContainers,
     searchResults,
     currentSearchResult,
     truncateLabels,
     maxLabelLength,
     showNodeCounts,
+    onToggleNodeVisibility,
+    onToggleContainerVisibility,
   ]);
 
   // Clear loading state when collapsedContainers changes (signaling state update complete)
@@ -762,14 +957,27 @@ export function HierarchyTree({
   ) => {
     if (info.node) {
       const nodeKey = info.node.key as string;
+      
       // Check if this is a graph node (leaf) or container
       const isGraphNode = (info.node as any).data?.isGraphNode;
+      
+      // Check if the element is manually hidden - if so, ignore clicks
       if (isGraphNode) {
+        const isHidden = visualizationState?.isNodeManuallyHidden(nodeKey);
+        if (isHidden) {
+          return; // Don't navigate to hidden nodes
+        }
+        
         // This is a leaf node - trigger navigation if callback is provided
         if (onElementNavigation) {
           onElementNavigation(nodeKey, "node");
         }
       } else {
+        const isHidden = visualizationState?.isContainerManuallyHidden(nodeKey);
+        if (isHidden) {
+          return; // Don't navigate to hidden containers
+        }
+        
         // This is a container - trigger navigation if callback is provided
         if (onElementNavigation) {
           onElementNavigation(nodeKey, "container");
@@ -779,11 +987,8 @@ export function HierarchyTree({
       }
     }
   };
-  // Check if we have any containers to display
-  if (
-    !visualizationState ||
-    visualizationState.visibleContainers.length === 0
-  ) {
+  // Check if we have any containers to display (including hidden ones)
+  if (!visualizationState || visualizationState.allContainers.length === 0) {
     return (
       <div className={`hierarchy-tree-empty ${className}`} style={style}>
         <span

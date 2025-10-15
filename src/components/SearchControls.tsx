@@ -109,6 +109,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     const resultsListRef = useRef<HTMLDivElement>(null);
     const ariaLiveRef = useRef<HTMLDivElement>(null);
     const lastProcessedQuery = useRef<string>("");
+    const isNavigatingRef = useRef(false); // Track if user is actively navigating
     // Error handling is done through console logging
     // Load search history from localStorage on mount
     useEffect(() => {
@@ -363,23 +364,41 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       if (currentIndex >= matches.length && matches.length) setCurrentIndex(0);
       // eslint-disable-next-line react-hooks/exhaustive-deps -- currentIndex dependency would create infinite loop since effect calls setCurrentIndex
     }, [matches]);
-    // Sync with external currentSearchIndex prop
+    // Sync with external currentSearchIndex prop (but not when user is navigating)
     useEffect(() => {
       if (
+        !isNavigatingRef.current &&
         currentSearchIndex !== currentIndex &&
         currentSearchIndex < matches.length
       ) {
         setCurrentIndex(currentSearchIndex);
       }
     }, [currentSearchIndex, matches.length, currentIndex]);
-    const navigate = (dir: "prev" | "next") => {
-      if (!matches.length) return;
-      const idx =
-        dir === "next"
-          ? (currentIndex + 1) % matches.length
-          : (currentIndex - 1 + matches.length) % matches.length;
-      navigateToResultIndex(idx, dir);
-    };
+    
+    const navigate = useCallback(
+      (dir: "prev" | "next") => {
+        if (!matches.length) return;
+        // Set flag to prevent external sync from interfering
+        isNavigatingRef.current = true;
+        // Use functional setState to get the truly current value
+        setCurrentIndex((prevIndex) => {
+          const idx =
+            dir === "next"
+              ? (prevIndex + 1) % matches.length
+              : (prevIndex - 1 + matches.length) % matches.length;
+          // Navigate to the new result (do this in a microtask to ensure state is updated)
+          Promise.resolve().then(() => {
+            navigateToResultIndex(idx, dir);
+            // Clear flag after navigation completes
+            setTimeout(() => {
+              isNavigatingRef.current = false;
+            }, 100);
+          });
+          return idx;
+        });
+      },
+      [matches, navigateToResultIndex],
+    );
     const clearAll = () => {
       clearSearchImperatively({
         visualizationState,

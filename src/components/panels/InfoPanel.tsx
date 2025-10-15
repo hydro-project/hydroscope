@@ -15,6 +15,7 @@ import React, {
 } from "react";
 import { hscopeLogger } from "../../utils/logger.js";
 import { Button } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
 import { InfoPanelProps, LegendData } from "../types";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { GroupingControls } from "../GroupingControls";
@@ -116,6 +117,8 @@ const InfoPanelInternal = forwardRef<
     const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
     const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
     const [groupingCollapsed, setGroupingCollapsed] = useState(false);
+    // Track update counter to force re-renders when visibility changes
+    const [updateCounter, setUpdateCounter] = useState(0);
     // Search state (containers-only to start)
     const [searchQuery, setSearchQuery] = useState("");
     const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
@@ -334,7 +337,12 @@ const InfoPanelInternal = forwardRef<
       current: SearchMatch,
     ) => {
       setCurrentSearchMatch(current);
-      onSearchUpdate?.(searchQuery, searchMatches, current);
+      // Don't call onSearchUpdate for navigation - it triggers expandAll which does fitView
+      // onSearchUpdate is for when the query changes, not for navigating results
+      // onSearchUpdate?.(searchQuery, searchMatches, current);
+      
+      // Trigger navigation to highlight the element in the graph
+      onElementNavigation?.(current.id, current.type);
     };
     // Panel style with ResizeObserver loop prevention
     const panelStyle: React.CSSProperties = {
@@ -451,21 +459,15 @@ const InfoPanelInternal = forwardRef<
               {/* Search + Hierarchy Tree */}
               {visualizationState && (
                 <div>
-                  {/* Sync Control Button */}
+                  {/* Control Buttons Row */}
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
                       gap: "8px",
                       marginBottom: "8px",
-                      padding: "4px 8px",
-                      backgroundColor: syncTreeAndGraph
-                        ? "rgba(59, 130, 246, 0.05)"
-                        : "rgba(128, 128, 128, 0.05)",
-                      borderRadius: "4px",
-                      border: `1px solid ${syncTreeAndGraph ? "rgba(59, 130, 246, 0.2)" : "rgba(128, 128, 128, 0.2)"}`,
                     }}
                   >
+                    {/* Sync Control Button */}
                     <Button
                       type="text"
                       size="small"
@@ -478,28 +480,110 @@ const InfoPanelInternal = forwardRef<
                           : "Tree and graph are independent - click to link"
                       }
                       style={{
-                        padding: "2px 6px",
+                        flex: 1,
+                        padding: "4px 8px",
                         height: "auto",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        gap: "6px",
+                        backgroundColor: syncTreeAndGraph
+                          ? "rgba(59, 130, 246, 0.05)"
+                          : "rgba(128, 128, 128, 0.05)",
+                        borderRadius: "4px",
+                        border: `1px solid ${syncTreeAndGraph ? "rgba(59, 130, 246, 0.2)" : "rgba(128, 128, 128, 0.2)"}`,
                         color: syncTreeAndGraph ? "#3b82f6" : "#888",
                       }}
                     >
                       {syncTreeAndGraph ? <LinkIcon /> : <BrokenLinkIcon />}
+                      <span
+                        style={{
+                          fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
+                          fontWeight: syncTreeAndGraph ? 500 : 400,
+                        }}
+                      >
+                        {syncTreeAndGraph ? "Linked" : "Unlinked"}
+                      </span>
                     </Button>
-                    <span
+
+                    {/* Show All Button */}
+                    <Button
+                      type="text"
+                      size="small"
+                      onClick={async () => {
+                        if (!visualizationState || !asyncCoordinator) return;
+
+                        // Show all manually hidden nodes
+                        const hiddenNodes = visualizationState.allNodes.filter(
+                          (node) =>
+                            visualizationState.isNodeManuallyHidden(node.id),
+                        );
+
+                        // Show all manually hidden containers
+                        const hiddenContainers =
+                          visualizationState.allContainers.filter((container) =>
+                            visualizationState.isContainerManuallyHidden(
+                              container.id,
+                            ),
+                          );
+
+                        // Toggle visibility for all hidden items
+                        for (const node of hiddenNodes) {
+                          visualizationState.toggleNodeVisibility(node.id);
+                        }
+
+                        for (const container of hiddenContainers) {
+                          visualizationState.toggleContainerVisibility(
+                            container.id,
+                          );
+                        }
+
+                        // Force re-render
+                        setUpdateCounter((c) => c + 1);
+
+                        // Trigger layout update
+                        try {
+                          await asyncCoordinator.executeLayoutAndRenderPipeline(
+                            visualizationState,
+                            {
+                              relayoutEntities: undefined, // Full layout
+                              fitView: false,
+                            },
+                          );
+                        } catch (error) {
+                          console.warn(
+                            "[InfoPanel] Layout update failed for show all:",
+                            error,
+                          );
+                        }
+                      }}
+                      title="Show all hidden nodes and containers"
                       style={{
-                        fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
-                        color: syncTreeAndGraph ? "#3b82f6" : "#888",
-                        fontWeight: syncTreeAndGraph ? 500 : 400,
+                        flex: 1,
+                        padding: "4px 8px",
+                        height: "auto",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        backgroundColor: "rgba(34, 197, 94, 0.05)",
+                        borderRadius: "4px",
+                        border: "1px solid rgba(34, 197, 94, 0.2)",
+                        color: "#22c55e",
                       }}
                     >
-                      {syncTreeAndGraph
-                        ? "Tree and graph linked"
-                        : "Tree and graph independent"}
-                    </span>
+                      <EyeOutlined style={{ fontSize: "14px" }} />
+                      <span
+                        style={{
+                          fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Show All
+                      </span>
+                    </Button>
                   </div>
+
                   <SearchControls
                     ref={searchControlsRef}
                     searchableItems={searchableItems}
@@ -518,6 +602,167 @@ const InfoPanelInternal = forwardRef<
                       // Only sync when enabled
                       if (syncTreeAndGraph && onToggleContainer) {
                         onToggleContainer(containerId);
+                      }
+                    }}
+                    onToggleNodeVisibility={async (nodeId) => {
+                      // Toggle node visibility in VisualizationState
+                      visualizationState?.toggleNodeVisibility(nodeId);
+                      
+                      // Force re-render to show updated icon
+                      setUpdateCounter((c) => c + 1);
+
+                      // Trigger layout update to reflect the change
+                      if (visualizationState && asyncCoordinator) {
+                        try {
+                          await asyncCoordinator.executeLayoutAndRenderPipeline(
+                            visualizationState,
+                            {
+                              relayoutEntities: [nodeId],
+                              fitView: false,
+                            },
+                          );
+                        } catch (error) {
+                          console.warn(
+                            `[InfoPanel] Layout update failed for node ${nodeId}:`,
+                            error,
+                          );
+                        }
+                      }
+                    }}
+                    onToggleContainerVisibility={async (
+                      containerId,
+                      shiftKey,
+                    ) => {
+                      if (!visualizationState || !asyncCoordinator) return;
+
+                      // Check if the container is currently visible (not manually hidden)
+                      const isCurrentlyHidden =
+                        visualizationState.isContainerManuallyHidden(
+                          containerId,
+                        );
+
+                      // When showing a hidden container, ensure all ancestors are visible and expanded
+                      if (isCurrentlyHidden) {
+                        // Get all ancestors (returns [parent, grandparent, ..., root])
+                        const ancestors =
+                          visualizationState.getContainerAncestors(containerId);
+
+                        // CRITICAL: First, make sure all hidden ancestors are visible
+                        // Parents must be visible in ReactFlow before children can be added
+                        const hiddenAncestors = ancestors.filter((id) =>
+                          visualizationState.isContainerManuallyHidden(id),
+                        );
+
+                        // Show hidden ancestors from root to leaf
+                        for (const ancestorId of hiddenAncestors.reverse()) {
+                          visualizationState.toggleContainerVisibility(
+                            ancestorId,
+                          );
+                        }
+
+                        // Check if the container itself is collapsed
+                        const container =
+                          visualizationState.getContainer(containerId);
+                        const isCollapsed = container && container.collapsed;
+
+                        // Collect containers that need to be expanded
+                        // Filter ancestors to only collapsed ones
+                        const collapsedAncestors = ancestors.filter((id) => {
+                          const c = visualizationState.getContainer(id);
+                          return c && c.collapsed;
+                        });
+
+                        // Reverse to get root-to-leaf order [root, ..., grandparent, parent]
+                        // This respects the invariant that parents must be expanded before children
+                        const containersToExpand = collapsedAncestors.reverse();
+
+                        // Add the container itself at the end if it's collapsed
+                        if (isCollapsed) {
+                          containersToExpand.push(containerId);
+                        }
+
+                        // Expand collapsed containers if any exist
+                        if (containersToExpand.length > 0) {
+                          try {
+                            await asyncCoordinator.expandContainers(
+                              visualizationState,
+                              containersToExpand,
+                              {
+                                relayoutEntities: undefined, // Full layout
+                                fitView: false,
+                              },
+                            );
+                          } catch (error) {
+                            console.warn(
+                              `[InfoPanel] Failed to expand containers for ${containerId}:`,
+                              error,
+                            );
+                          }
+                        }
+
+                        // Now toggle visibility to show the container
+                        visualizationState.toggleContainerVisibility(
+                          containerId,
+                        );
+                      } else if (shiftKey) {
+                        // Shift-click on an open eye (visible container) hides all others
+                        // Get ancestors and descendants of this container
+                        const ancestors =
+                          visualizationState.getContainerAncestors(containerId);
+                        const descendants =
+                          visualizationState.getContainerDescendants(
+                            containerId,
+                          );
+                        const related = new Set([
+                          containerId,
+                          ...ancestors,
+                          ...descendants,
+                        ]);
+
+                        // Hide all other containers
+                        const allContainers =
+                          visualizationState.visibleContainers;
+                        const containersToHide = allContainers.filter(
+                          (c) => !related.has(c.id),
+                        );
+
+                        for (const container of containersToHide) {
+                          if (
+                            !visualizationState.isContainerManuallyHidden(
+                              container.id,
+                            )
+                          ) {
+                            visualizationState.toggleContainerVisibility(
+                              container.id,
+                            );
+                          }
+                        }
+                      } else {
+                        // Normal click - just toggle this container
+                        visualizationState.toggleContainerVisibility(
+                          containerId,
+                        );
+                      }
+
+                      // Force re-render to show updated icons
+                      setUpdateCounter((c) => c + 1);
+
+                      // Trigger layout update to reflect the changes
+                      if (asyncCoordinator) {
+                        try {
+                          await asyncCoordinator.executeLayoutAndRenderPipeline(
+                            visualizationState,
+                            {
+                              relayoutEntities: [containerId],
+                              fitView: false,
+                            },
+                          );
+                        } catch (error) {
+                          console.warn(
+                            `[InfoPanel] Layout update failed for container ${containerId}:`,
+                            error,
+                          );
+                        }
                       }
                     }}
                     onTreeExpansion={onTreeExpansion}

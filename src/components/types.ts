@@ -97,6 +97,11 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   visualizationState?: VisualizationState; // Required for building tree structure
   // Interaction
   onToggleContainer?: (containerId: string) => void;
+  onToggleNodeVisibility?: (nodeId: string, shiftKey?: boolean) => void; // Toggle node visibility via eye icon
+  onToggleContainerVisibility?: (
+    containerId: string,
+    shiftKey?: boolean,
+  ) => void; // Toggle container visibility via eye icon (Shift-click to hide all others)
   layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated search expansion
   asyncCoordinator?: AsyncCoordinator | null; // v1.0.0 AsyncCoordinator for operation coordination
   // Navigation integration

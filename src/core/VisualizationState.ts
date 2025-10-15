@@ -122,6 +122,18 @@ export class VisualizationState {
   private _searchIndex = new Map<string, Set<string>>(); // word -> entity IDs
   private _searchIndexVersion = 0;
 
+  // Manual visibility control (separate from collapse/expand hidden property)
+  private _manuallyHiddenNodes = new Set<string>();
+  private _manuallyHiddenContainers = new Set<string>();
+  // Store the state snapshot when hiding, for restoration when showing
+  private _hiddenStateSnapshots = new Map<
+    string,
+    {
+      collapsed?: boolean; // For containers
+      childStates?: Map<string, { collapsed?: boolean; manuallyHidden?: boolean }>; // Recursive child states
+    }
+  >();
+
   // Performance optimization caches
   private _hierarchyPathCache = new Map<string, string[]>();
   private _hierarchyPathCacheTimestamp = 0;
@@ -161,6 +173,9 @@ export class VisualizationState {
     this._searchNavigationState.navigationSelection = null;
     this._searchNavigationState.shouldFocusViewport = false;
     this._searchIndex.clear();
+    this._manuallyHiddenNodes.clear();
+    this._manuallyHiddenContainers.clear();
+    this._hiddenStateSnapshots.clear();
     this._searchCache.clear();
     this._searchCacheTimestamps.clear();
     this._descendantCache.clear();
@@ -1337,8 +1352,20 @@ export class VisualizationState {
   }
   // Read-only Access
   get visibleNodes(): ReadonlyArray<GraphNode> {
+    return Array.from(this._nodes.values()).filter(
+      (node) => !node.hidden && !this._manuallyHiddenNodes.has(node.id),
+    );
+  }
+
+  /**
+   * Get all nodes regardless of manual visibility state
+   * (includes both visible and manually hidden nodes)
+   * Used by Show All button to find hidden nodes
+   */
+  get allNodes(): ReadonlyArray<GraphNode> {
     return Array.from(this._nodes.values()).filter((node) => !node.hidden);
   }
+
   get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge> {
     const regularEdges = Array.from(this._edges.values()).filter(
       (edge) => !edge.hidden,
@@ -1350,10 +1377,33 @@ export class VisualizationState {
   }
   get visibleContainers(): ReadonlyArray<Container> {
     return Array.from(this._containers.values()).filter(
+      (container) =>
+        !container.hidden && !this._manuallyHiddenContainers.has(container.id),
+    );
+  }
+
+  /**
+   * Get all containers regardless of visibility state
+   * (includes both visible and manually hidden containers)
+   * Used by hierarchy tree to show all containers with appropriate eye icons
+   */
+  get allContainers(): ReadonlyArray<Container> {
+    return Array.from(this._containers.values()).filter(
       (container) => !container.hidden,
     );
   }
+
   // Getters for validation and external access
+  
+  /**
+   * Get the current cache version - increments whenever internal state changes
+   * This can be used as a React dependency to trigger re-renders when the
+   * visualization state changes (e.g., visibility toggles, collapse/expand)
+   */
+  get cacheVersion(): number {
+    return this._cacheVersion;
+  }
+
   getGraphNode(id: string): GraphNode | undefined {
     return this._nodes.get(id);
   }
@@ -4055,5 +4105,250 @@ export class VisualizationState {
       invalidEdges: [],
       fixedEdges: [],
     };
+  }
+
+  // ============ MANUAL VISIBILITY CONTROL ============
+
+  /**
+   * Check if a node is manually hidden via eye toggle
+   */
+  isNodeManuallyHidden(nodeId: string): boolean {
+    return this._manuallyHiddenNodes.has(nodeId);
+  }
+
+  /**
+   * Check if a container is manually hidden via eye toggle
+   */
+  isContainerManuallyHidden(containerId: string): boolean {
+    return this._manuallyHiddenContainers.has(containerId);
+  }
+
+  /**
+   * Toggle visibility of a node via eye icon
+   * When hiding, node simply disappears from view
+   * When showing, node reappears (no state to restore for leaf nodes)
+   */
+  toggleNodeVisibility(nodeId: string): void {
+    const node = this._nodes.get(nodeId);
+    if (!node) {
+      console.warn(`[VisualizationState] Node ${nodeId} not found`);
+      return;
+    }
+
+    if (this._manuallyHiddenNodes.has(nodeId)) {
+      // Show the node
+      this._manuallyHiddenNodes.delete(nodeId);
+      this._hiddenStateSnapshots.delete(nodeId);
+      hscopeLogger.log("orchestrator", `👁️ Showing node ${nodeId}`);
+    } else {
+      // Hide the node
+      this._manuallyHiddenNodes.add(nodeId);
+      hscopeLogger.log("orchestrator", `🙈 Hiding node ${nodeId}`);
+    }
+
+    // Invalidate caches
+    this._invalidateAllCaches();
+  }
+
+  /**
+   * Toggle visibility of a container via eye icon
+   * When hiding: saves collapse/expand state of container and all descendants
+   * When showing: restores the saved collapse/expand state
+   */
+  toggleContainerVisibility(containerId: string): void {
+    const container = this._containers.get(containerId);
+    if (!container) {
+      console.warn(`[VisualizationState] Container ${containerId} not found`);
+      return;
+    }
+
+    if (this._manuallyHiddenContainers.has(containerId)) {
+      // Show the container and restore its state
+      this._showContainerAndRestoreState(containerId);
+    } else {
+      // Hide the container and save its state
+      this._hideContainerAndSaveState(containerId);
+    }
+
+    // Invalidate caches
+    this._invalidateAllCaches();
+  }
+
+  /**
+   * Hide a container and recursively save the collapse/expand state of it and all descendants
+   */
+  private _hideContainerAndSaveState(containerId: string): void {
+    const container = this._containers.get(containerId);
+    if (!container) return;
+
+    hscopeLogger.log("orchestrator", `🙈 Hiding container ${containerId}`);
+
+    // Capture current state of this container and all descendants
+    const snapshot = this._captureContainerStateRecursive(containerId);
+    this._hiddenStateSnapshots.set(containerId, snapshot);
+
+    // Mark as manually hidden
+    this._manuallyHiddenContainers.add(containerId);
+
+    // Also hide all descendant containers (they'll be restored when parent is shown)
+    this._hideAllDescendantContainers(containerId);
+  }
+
+  /**
+   * Show a container and recursively restore the collapse/expand state of it and all descendants
+   */
+  private _showContainerAndRestoreState(containerId: string): void {
+    const container = this._containers.get(containerId);
+    if (!container) return;
+
+    hscopeLogger.log("orchestrator", `👁️ Showing container ${containerId}`);
+
+    // Get the saved snapshot
+    const snapshot = this._hiddenStateSnapshots.get(containerId);
+
+    // Remove from manually hidden set
+    this._manuallyHiddenContainers.delete(containerId);
+    this._hiddenStateSnapshots.delete(containerId);
+
+    // Restore state if we have a snapshot
+    if (snapshot) {
+      this._restoreContainerStateRecursive(containerId, snapshot);
+    }
+
+    // Show all descendant containers that should be visible
+    this._showDescendantContainersBasedOnSnapshot(containerId, snapshot);
+  }
+
+  /**
+   * Recursively capture the state of a container and all its descendants
+   */
+  private _captureContainerStateRecursive(containerId: string): {
+    collapsed?: boolean;
+    childStates?: Map<string, { collapsed?: boolean; manuallyHidden?: boolean }>;
+  } {
+    const container = this._containers.get(containerId);
+    if (!container) return {};
+
+    const snapshot: {
+      collapsed?: boolean;
+      childStates?: Map<
+        string,
+        { collapsed?: boolean; manuallyHidden?: boolean }
+      >;
+    } = {
+      collapsed: container.collapsed,
+      childStates: new Map(),
+    };
+
+    // Capture state of all child containers recursively
+    for (const childId of container.children) {
+      const childContainer = this._containers.get(childId);
+      if (childContainer) {
+        const childSnapshot = this._captureContainerStateRecursive(childId);
+        snapshot.childStates!.set(childId, {
+          collapsed: childSnapshot.collapsed,
+          manuallyHidden: this._manuallyHiddenContainers.has(childId),
+        });
+      }
+    }
+
+    return snapshot;
+  }
+
+  /**
+   * Recursively restore the state of a container from a snapshot
+   */
+  private _restoreContainerStateRecursive(
+    containerId: string,
+    snapshot: {
+      collapsed?: boolean;
+      childStates?: Map<
+        string,
+        { collapsed?: boolean; manuallyHidden?: boolean }
+      >;
+    },
+  ): void {
+    const container = this._containers.get(containerId);
+    if (!container) return;
+
+    // Restore collapsed state of this container
+    if (snapshot.collapsed !== undefined) {
+      container.collapsed = snapshot.collapsed;
+      if (snapshot.collapsed) {
+        this._searchNavigationState.expandedGraphContainers.delete(containerId);
+      } else {
+        this._searchNavigationState.expandedGraphContainers.add(containerId);
+      }
+    }
+
+    // Restore child container states
+    if (snapshot.childStates) {
+      for (const [childId, childState] of snapshot.childStates) {
+        const childContainer = this._containers.get(childId);
+        if (childContainer && childState.collapsed !== undefined) {
+          childContainer.collapsed = childState.collapsed;
+          if (childState.collapsed) {
+            this._searchNavigationState.expandedGraphContainers.delete(childId);
+          } else {
+            this._searchNavigationState.expandedGraphContainers.add(childId);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Hide all descendant containers when parent is hidden
+   */
+  private _hideAllDescendantContainers(containerId: string): void {
+    const container = this._containers.get(containerId);
+    if (!container) return;
+
+    for (const childId of container.children) {
+      const childContainer = this._containers.get(childId);
+      if (childContainer) {
+        this._manuallyHiddenContainers.add(childId);
+        // Recursively hide descendants
+        this._hideAllDescendantContainers(childId);
+      }
+    }
+  }
+
+  /**
+   * Show descendant containers based on their saved manually hidden state
+   */
+  private _showDescendantContainersBasedOnSnapshot(
+    containerId: string,
+    snapshot?: {
+      collapsed?: boolean;
+      childStates?: Map<
+        string,
+        { collapsed?: boolean; manuallyHidden?: boolean }
+      >;
+    },
+  ): void {
+    const container = this._containers.get(containerId);
+    if (!container) return;
+
+    for (const childId of container.children) {
+      const childContainer = this._containers.get(childId);
+      if (childContainer) {
+        // Check if this child was manually hidden before parent was hidden
+        const wasManuallyHidden =
+          snapshot?.childStates?.get(childId)?.manuallyHidden;
+
+        if (!wasManuallyHidden) {
+          // Child was not manually hidden, so show it
+          this._manuallyHiddenContainers.delete(childId);
+        }
+        // Note: if it WAS manually hidden, leave it in the hidden set
+
+        // Recursively process descendants
+        const childSnapshot = snapshot?.childStates?.get(childId);
+        if (childSnapshot) {
+          this._showDescendantContainersBasedOnSnapshot(childId, childSnapshot);
+        }
+      }
+    }
   }
 }

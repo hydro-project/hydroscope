@@ -1413,26 +1413,15 @@ const HydroscopeCoreInternal = forwardRef<
           setTimeout(() => {
             // Set temporary highlight in VisualizationState (for tree)
             if (state.visualizationState) {
-              console.log(
-                "[HydroscopeCore] Setting temporary highlight for:",
-                elementId,
-              );
               state.visualizationState.setTemporaryHighlight(
                 elementId,
                 undefined, // use default duration
                 () => {
                   // Callback when highlight is cleared - trigger re-render
-                  console.log(
-                    "[HydroscopeCore] Temporary highlight cleared, triggering re-render",
-                  );
                   if (state.visualizationState) {
                     onVisualizationStateChange?.(state.visualizationState);
                   }
                 },
-              );
-              console.log(
-                "[HydroscopeCore] Has temporary highlight?",
-                state.visualizationState.hasTemporaryHighlight(elementId),
               );
               // Trigger tree re-render to show highlight
               if (state.visualizationState) {
@@ -1457,12 +1446,6 @@ const HydroscopeCoreInternal = forwardRef<
                 const screenY = rect.top - containerRect.top + rect.height / 2;
                 const screenWidth = rect.width;
                 const screenHeight = rect.height;
-
-                console.log("[HydroscopeCore] Spotlight DOM position:", {
-                  rect,
-                  containerRect,
-                  screen: { screenX, screenY },
-                });
 
                 // Add new spotlight to array (allows concurrent glows)
                 const spotlightId = `spotlight-${Date.now()}-${visibleElementId}`;
