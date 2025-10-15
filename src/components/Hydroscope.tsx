@@ -45,6 +45,7 @@ import {
   withAsyncResizeObserverErrorSuppression,
 } from "../utils/ResizeObserverErrorSuppression.js";
 import { parseDataFromUrl } from "../utils/urlParser.js";
+import { assertCollapsedSetConsistent } from "../core/invariantChecks.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -1017,6 +1018,10 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [],
     );
+    // Track visualization state changes with a counter (since VisualizationState is mutable)
+    const [visualizationStateVersion, setVisualizationStateVersion] =
+      useState(0);
+
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
@@ -1024,6 +1029,83 @@ export const Hydroscope = memo<HydroscopeProps>(
           ...prev,
           currentVisualizationState: visualizationState,
         }));
+        // Increment version to trigger recalculation of derived state
+        setVisualizationStateVersion((v) => v + 1);
+      },
+      [],
+    );
+
+    // Derive collapsed containers from VisualizationState for InfoPanel
+    // Note: visualizationStateVersion is used as a trigger to recalculate when state changes
+    // (VisualizationState is mutable, so we need a separate trigger)
+    const collapsedContainers = useMemo(() => {
+      // Force recalculation when version changes (intentional dependency)
+      void visualizationStateVersion;
+
+      if (!state.currentVisualizationState) return new Set<string>();
+
+      const collapsed = new Set<string>();
+      const allContainers = state.currentVisualizationState.getAllContainers();
+
+      for (const container of allContainers) {
+        if (container.collapsed) {
+          collapsed.add(container.id);
+        }
+      }
+
+      return collapsed;
+    }, [state.currentVisualizationState, visualizationStateVersion]);
+
+    // DEV MODE: Validate sync invariant after deriving collapsedContainers
+    if (
+      process.env.NODE_ENV !== "production" &&
+      state.currentVisualizationState
+    ) {
+      try {
+        // Use aggressive invariant checking
+        assertCollapsedSetConsistent(collapsedContainers, () =>
+          state.currentVisualizationState!.getAllContainers(),
+        );
+      } catch (error) {
+        console.error("Error validating sync invariant:", error);
+      }
+    }
+
+    // Handle container toggle from InfoPanel (when sync is enabled)
+    const handleToggleContainerFromInfoPanel = useCallback(
+      async (containerId: string) => {
+        if (!hydroscopeCoreRef.current) {
+          console.warn("[Hydroscope] HydroscopeCore ref not available");
+          return;
+        }
+
+        // Use HydroscopeCore's imperative toggle method
+        // This will trigger the same logic as clicking a container in the graph
+        try {
+          await hydroscopeCoreRef.current.toggle(containerId);
+        } catch (error) {
+          console.error(
+            `[Hydroscope] Error toggling container ${containerId}:`,
+            error,
+          );
+        }
+      },
+      [],
+    );
+
+    // Handle batch container expansion (for search results)
+    const handleBatchExpandContainers = useCallback(
+      async (containerIds: string[]) => {
+        if (!hydroscopeCoreRef.current) {
+          console.warn("[Hydroscope] HydroscopeCore ref not available");
+          return;
+        }
+
+        try {
+          await hydroscopeCoreRef.current.expandAll(containerIds);
+        } catch (error) {
+          console.error(`[Hydroscope] Error expanding containers:`, error);
+        }
       },
       [],
     );
@@ -1283,10 +1365,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                         }
                       }
                     }}
-                    collapsedContainers={new Set()}
-                    onToggleContainer={(_containerId) => {
-                      // This will be handled by HydroscopeCore
-                    }}
+                    collapsedContainers={collapsedContainers}
+                    onToggleContainer={handleToggleContainerFromInfoPanel}
+                    onTreeExpansion={handleBatchExpandContainers}
                     onElementNavigation={handleElementNavigation}
                     colorPalette={state.colorPalette}
                     legendData={

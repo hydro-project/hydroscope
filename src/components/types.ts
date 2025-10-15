@@ -69,6 +69,7 @@ export interface InfoPanelProps extends BaseComponentProps {
   // Container Interaction
   collapsedContainers?: Set<string>;
   onToggleContainer?: (containerId: string) => void;
+  onTreeExpansion?: (containerIds: string[]) => Promise<void>; // Atomic batch expansion for search
   layoutOrchestrator?: LayoutOrchestrator | null; // LayoutOrchestrator for coordinated operations
   asyncCoordinator?: AsyncCoordinator | null; // v1.0.0 AsyncCoordinator for operation coordination
   // Navigation integration

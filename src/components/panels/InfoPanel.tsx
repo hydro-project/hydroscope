@@ -96,6 +96,7 @@ const InfoPanelInternal = forwardRef<
       onGroupingChange,
       collapsedContainers = new Set(),
       onToggleContainer,
+      onTreeExpansion,
       onElementNavigation,
       layoutOrchestrator,
       asyncCoordinator,
@@ -517,6 +518,7 @@ const InfoPanelInternal = forwardRef<
                         onToggleContainer(containerId);
                       }
                     }}
+                    onTreeExpansion={onTreeExpansion}
                     onElementNavigation={onElementNavigation}
                     layoutOrchestrator={layoutOrchestrator}
                     title={`${currentGroupingName} Hierarchy`}

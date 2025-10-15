@@ -13,7 +13,7 @@
 ): React.ReactNode {ew of container hierarchy for navigation using Ant Design Tree.
  */
 import React, { useMemo, useEffect, useState, useRef } from "react";
-import { Tree } from "antd";
+import { Tree, Spin } from "antd";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
 import {
@@ -26,10 +26,7 @@ import type { VisualizationState } from "../core/VisualizationState";
 // import type { AsyncCoordinator } from "../core/AsyncCoordinator";
 import type { Container } from "../shared/types";
 import type { GraphNode, SearchResult } from "../types/core";
-import {
-  toggleContainerImperatively,
-  clearContainerOperationDebouncing,
-} from "../utils/containerOperationUtils.js";
+import { clearContainerOperationDebouncing } from "../utils/containerOperationUtils.js";
 // ============ TREE DATA FORMATTING UTILITIES ============
 /**
  * Build hierarchy tree structure from VisualizationState
@@ -388,17 +385,42 @@ export function HierarchyTree({
   onTreeExpansion: _onTreeExpansion,
   syncEnabled = true,
 }: HierarchyTreeProps) {
+  // ============================================================================
+  // LOADING SPINNER STATE - CRITICAL BUG PREVENTION
+  // ============================================================================
+  // This state tracks when the tree is recalculating after a collapse/expand.
+  //
+  // ⚠️ CRITICAL BUG PREVENTED:
+  // The spinner was being rendered but hidden in the same React render cycle
+  // due to React's automatic state batching. Even though isRecalculating was
+  // set to true and the overlay was in the DOM, React would batch the state
+  // update from collapsedContainers changing and immediately hide the spinner
+  // before it could be seen visually.
+  //
+  // 💡 SOLUTION:
+  // Use setTimeout with a 300ms minimum duration in the useEffect that clears
+  // this state (see below). This ensures the spinner stays visible even when
+  // collapsedContainers updates immediately in the same render cycle.
+  //
+  // Without this, users see no feedback during noticeable delays when the graph
+  // recalculates layout after expand/collapse operations.
+  // ============================================================================
+  const [isRecalculating, setIsRecalculating] = useState(false);
+
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
     if (!visualizationState) {
       return [];
     }
-    // When search is cleared, preserve current expansion state instead of collapsing
+    // When search is cleared, calculate expanded containers from collapsedContainers prop
     if (!searchResults || searchResults.length === 0) {
-      // Return current expanded containers from VisualizationState
-      const currentlyExpanded = visualizationState.visibleContainers
-        .filter((container) => !container.collapsed)
-        .map((container) => container.id);
+      // Return containers that are NOT in the collapsedContainers set
+      const allContainerIds = visualizationState.visibleContainers.map(
+        (container) => container.id,
+      );
+      const currentlyExpanded = allContainerIds.filter(
+        (id) => !collapsedContainers.has(id),
+      );
       return currentlyExpanded;
     }
     // Enhanced search expansion logic for v1.0.0
@@ -424,7 +446,7 @@ export function HierarchyTree({
       }
     });
     return Array.from(expansionKeys);
-  }, [visualizationState, searchResults]);
+  }, [visualizationState, searchResults, collapsedContainers]);
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   // Track the last search expansion to prevent duplicate operations
@@ -483,7 +505,8 @@ export function HierarchyTree({
         searchQuery &&
         searchQuery.trim() &&
         searchResults &&
-        searchResults.length > 0
+        searchResults.length > 0 &&
+        visualizationState
       ) {
         shouldBeExpanded.forEach((containerId: string) => {
           if (
@@ -491,9 +514,26 @@ export function HierarchyTree({
             !containersToToggle.includes(containerId)
           ) {
             // Check if this container exists and is collapsed (but not tracked in currentlyCollapsed)
-            const container = visualizationState?.getContainer(containerId);
+            const container = visualizationState.getContainer(containerId);
             if (container && container.collapsed) {
-              containersToToggle.push(containerId);
+              // CRITICAL: Only add to toggle list if no ancestors are collapsed
+              // If any ancestor is collapsed, this container cannot be expanded yet
+              let hasCollapsedAncestor = false;
+              let currentAncestor =
+                visualizationState.getNodeContainer(containerId);
+              while (currentAncestor) {
+                const ancestorContainer =
+                  visualizationState.getContainer(currentAncestor);
+                if (ancestorContainer && ancestorContainer.collapsed) {
+                  hasCollapsedAncestor = true;
+                  break;
+                }
+                currentAncestor =
+                  visualizationState.getNodeContainer(currentAncestor);
+              }
+              if (!hasCollapsedAncestor) {
+                containersToToggle.push(containerId);
+              }
             }
           }
         });
@@ -538,22 +578,29 @@ export function HierarchyTree({
               searchExpansionInProgressRef.current = false;
             });
         } else {
-          // Fallback to imperative utilities if LayoutOrchestrator not available
-          containersToToggle.forEach((containerId) => {
-            const success = toggleContainerImperatively({
-              containerId,
-              visualizationState,
-              forceExpanded: true, // Search expansion always expands
-              debounce: false, // Don't debounce search expansion
-              debug: false,
-            });
-
-            // Final fallback to onToggleContainer if imperative operation fails
-            if (!success && onToggleContainer) {
+          // Fallback: Use onTreeExpansion for atomic batch expansion, or onToggleContainer
+          if (_onTreeExpansion) {
+            // PREFERRED: Atomic batch expansion through callback
+            _onTreeExpansion(containersToToggle)
+              .then(() => {
+                searchExpansionInProgressRef.current = false;
+              })
+              .catch((error: unknown) => {
+                console.warn(
+                  `[HierarchyTree] Batch tree expansion failed: ${error}`,
+                );
+                searchExpansionInProgressRef.current = false;
+              });
+          } else if (onToggleContainer) {
+            // FALLBACK: Individual toggles (may cause race conditions!)
+            console.warn(
+              "[HierarchyTree] Using individual toggles for search expansion - may cause race conditions. Consider using onTreeExpansion for atomic batch operations.",
+            );
+            containersToToggle.forEach((containerId) => {
               onToggleContainer(containerId);
-            }
-          });
-          searchExpansionInProgressRef.current = false;
+            });
+            searchExpansionInProgressRef.current = false;
+          }
         }
       }
     } else if (
@@ -581,40 +628,10 @@ export function HierarchyTree({
       });
       // Batch container toggle operations to prevent ResizeObserver loops
       if (containersToToggle.length > 0) {
-        // Use the same synchronous approach for consistency
-        const _operationId = `hierarchy-sync-${Date.now()}`;
-        // Use imperative operations to avoid coordination cascades
-        if (visualizationState) {
-          // Use imperative utilities for all container operations
-          for (const containerId of containersToToggle) {
-            const success = toggleContainerImperatively({
-              containerId,
-              visualizationState,
-              debounce: false, // Don't debounce sync operations
-              debug: false,
-            });
-
-            if (!success) {
-              console.warn(
-                `[HierarchyTree] Failed to toggle container ${containerId} imperatively`,
-              );
-            }
-          }
-        } else {
-          // Fallback to imperative operations
-          for (const containerId of containersToToggle) {
-            const success = toggleContainerImperatively({
-              containerId,
-              visualizationState,
-              debounce: false, // Don't debounce sync operations
-              debug: false,
-            });
-
-            // Final fallback to onToggleContainer if imperative operation fails
-            if (!success) {
-              onToggleContainer?.(containerId);
-            }
-          }
+        // Call onToggleContainer for each container that needs to be synced
+        // This goes through the AsyncCoordinator pipeline for proper updates
+        for (const containerId of containersToToggle) {
+          onToggleContainer(containerId);
         }
       }
     }
@@ -624,6 +641,7 @@ export function HierarchyTree({
     searchResults,
     collapsedContainers,
     onToggleContainer,
+    _onTreeExpansion,
     layoutOrchestrator,
     visualizationState,
     asyncCoordinator,
@@ -649,6 +667,21 @@ export function HierarchyTree({
     maxLabelLength,
     showNodeCounts,
   ]);
+
+  // Clear loading state when collapsedContainers changes (signaling state update complete)
+  // Add a minimum delay so the spinner is actually visible to the user
+  useEffect(() => {
+    if (isRecalculating) {
+      // Use setTimeout to ensure spinner shows for at least one frame
+      // This prevents React batching from hiding it instantly
+      const timer = setTimeout(() => {
+        setIsRecalculating(false);
+      }, 300); // 300ms minimum display time
+
+      return () => clearTimeout(timer);
+    }
+  }, [collapsedContainers, isRecalculating]);
+
   const handleExpand = (
     nextExpandedKeys: React.Key[],
     info: {
@@ -657,27 +690,21 @@ export function HierarchyTree({
   ) => {
     // Update UI immediately
     setExpandedKeys(nextExpandedKeys);
-    // Then toggle corresponding container in the visualization using imperative utilities
-    if (info.node && visualizationState) {
+
+    // Show loading indicator
+    setIsRecalculating(true);
+
+    // Then toggle corresponding container in the visualization
+    if (info.node && onToggleContainer) {
       const nodeKey = info.node.key as string;
       // Check if we're expanding or collapsing by comparing current state
       const wasExpanded = expandedKeys.includes(nodeKey);
       const isNowExpanded = nextExpandedKeys.includes(nodeKey);
       // Only toggle if the state actually changed
       if (wasExpanded !== isNowExpanded) {
-        // Use imperative container operations with debouncing for rapid interactions
-        const success = toggleContainerImperatively({
-          containerId: nodeKey,
-          visualizationState,
-          forceExpanded: isNowExpanded,
-          debounce: true, // Enable debouncing for rapid tree interactions
-          debug: false,
-        });
-
-        // Fallback to onToggleContainer if imperative operation fails
-        if (!success && onToggleContainer) {
-          onToggleContainer(nodeKey);
-        }
+        // Call the parent's toggle handler which goes through AsyncCoordinator
+        // This ensures proper layout recalculation and ReactFlow updates
+        onToggleContainer(nodeKey);
       }
     }
   };
@@ -763,37 +790,76 @@ export function HierarchyTree({
         `}
       </style>
 
-      <Tree
-        key={Array.from(collapsedContainers).sort().join(",")}
-        treeData={treeData}
-        expandedKeys={expandedKeys}
-        onExpand={handleExpand}
-        onSelect={handleSelect}
-        showLine={false}
-        showIcon={false}
-        blockNode
-        style={{
-          fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_NODE,
-          color: COMPONENT_COLORS.TEXT_PRIMARY,
-          backgroundColor: "transparent",
-          // Ensure proper rendering in Card layout
-          minHeight: "20px",
-          width: "100%",
-        }}
-        // Enhanced styling through CSS variables for better hierarchy
-        rootStyle={
-          {
-            "--antd-tree-node-hover-bg":
-              COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
-            "--antd-tree-node-selected-bg":
-              COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
-            "--antd-tree-indent-size": "16px", // Reduce indent for better space usage
-            "--antd-tree-node-padding": "2px 4px", // Better padding
+      <div style={{ position: "relative", minHeight: "100px" }}>
+        {isRecalculating && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              minHeight: "200px", // Ensure overlay has minimum height
+              backgroundColor: "rgba(255, 255, 255, 0.8)", // Semi-transparent white
+              display: "flex",
+              alignItems: "flex-start", // Align to top instead of center
+              justifyContent: "center",
+              paddingTop: "40px", // Add padding from top
+              zIndex: 9999,
+              pointerEvents: "auto", // Allow pointer events so spinner is visible
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "12px 20px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                border: "1px solid #e0e0e0",
+              }}
+            >
+              <Spin size="default" />
+              <span style={{ fontSize: "14px", color: "#333" }}>
+                Updating tree...
+              </span>
+            </div>
+          </div>
+        )}
+        <Tree
+          key={Array.from(collapsedContainers).sort().join(",")}
+          treeData={treeData}
+          expandedKeys={expandedKeys}
+          onExpand={handleExpand}
+          onSelect={handleSelect}
+          showLine={false}
+          showIcon={false}
+          blockNode
+          style={{
+            fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_NODE,
+            color: COMPONENT_COLORS.TEXT_PRIMARY,
+            backgroundColor: "transparent",
+            // Ensure proper rendering in Card layout
+            minHeight: "100px",
             width: "100%",
-            overflow: "visible",
-          } as React.CSSProperties
-        }
-      />
+          }}
+          // Enhanced styling through CSS variables for better hierarchy
+          rootStyle={
+            {
+              "--antd-tree-node-hover-bg":
+                COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
+              "--antd-tree-node-selected-bg":
+                COMPONENT_COLORS.BUTTON_HOVER_BACKGROUND,
+              "--antd-tree-indent-size": "16px", // Reduce indent for better space usage
+              "--antd-tree-node-padding": "2px 4px", // Better padding
+              width: "100%",
+              overflow: "visible",
+            } as React.CSSProperties
+          }
+        />
+      </div>
     </div>
   );
 }
