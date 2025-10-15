@@ -1098,19 +1098,22 @@ export const Hydroscope = memo<HydroscopeProps>(
     }, [state.currentVisualizationState, visualizationStateVersion]);
 
     // DEV MODE: Validate sync invariant after deriving collapsedContainers
-    if (
-      process.env.NODE_ENV !== "production" &&
-      state.currentVisualizationState
-    ) {
-      try {
-        // Use aggressive invariant checking
-        assertCollapsedSetConsistent(collapsedContainers, () =>
-          state.currentVisualizationState!.getAllContainers(),
-        );
-      } catch (error) {
-        console.error("Error validating sync invariant:", error);
+    // Run in useEffect to ensure state updates have settled (e.g., after async expandAll)
+    useEffect(() => {
+      if (
+        process.env.NODE_ENV !== "production" &&
+        state.currentVisualizationState
+      ) {
+        try {
+          // Use aggressive invariant checking
+          assertCollapsedSetConsistent(collapsedContainers, () =>
+            state.currentVisualizationState!.getAllContainers(),
+          );
+        } catch (error) {
+          console.error("Error validating sync invariant:", error);
+        }
       }
-    }
+    }, [collapsedContainers, state.currentVisualizationState]);
 
     // Handle container toggle from InfoPanel (when sync is enabled)
     const handleToggleContainerFromInfoPanel = useCallback(

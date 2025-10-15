@@ -338,7 +338,7 @@ describe("Application Integration: Complete Application with paxos.json", () => 
           expect(state.visibleContainers.length).toBeGreaterThan(0);
 
           // Test expand/collapse
-          await coordinator.expandAllContainers(state, {
+          await coordinator.expandContainers(state, {
             triggerLayout: false,
           });
           const expandedContainers = state.visibleContainers.filter(
@@ -346,7 +346,7 @@ describe("Application Integration: Complete Application with paxos.json", () => 
           );
           expect(expandedContainers.length).toBeGreaterThan(0);
 
-          await coordinator.collapseAllContainers(state, {
+          await coordinator.collapseContainers(state, {
             triggerLayout: false,
           });
           const collapsedContainers = state.visibleContainers.filter(

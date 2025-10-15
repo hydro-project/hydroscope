@@ -496,7 +496,7 @@ export class VisualizationState {
     }
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
-  _expandAllContainersForCoordinator(containerIds?: string[]): void {
+  _expandContainersForCoordinator(containerIds?: string[]): void {
     const _containersToExpand = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
@@ -535,7 +535,7 @@ export class VisualizationState {
       }
       if (iteration >= maxIterations) {
         console.warn(
-          `[VisualizationState] ⚠️ Reached maximum iterations (${maxIterations}) in expandAllContainers`,
+          `[VisualizationState] ⚠️ Reached maximum iterations (${maxIterations}) in expandContainers`,
         );
         break;
       }
@@ -544,7 +544,7 @@ export class VisualizationState {
     this.disableSmartCollapseForUserOperations();
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
-  _collapseAllContainersForCoordinator(containerIds?: string[]): void {
+  _collapseContainersForCoordinator(containerIds?: string[]): void {
     const containersToCollapse = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());

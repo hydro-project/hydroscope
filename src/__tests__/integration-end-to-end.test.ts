@@ -290,7 +290,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle container expand/collapse through complete pipeline", async () => {
       // Initial state - both containers expanded
-      await coordinator.expandAllContainers(state, { fitView: false });
+      await coordinator.expandContainers(state, { fitView: false });
 
       // Run through pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -318,7 +318,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       expect(originalEdges.length).toBe(2);
 
       // Collapse all containers
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Run through pipeline again
       elkGraph = elkBridge.toELKGraph(state);
@@ -349,7 +349,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle individual container toggle through pipeline", async () => {
       // Start with all expanded
-      await coordinator.expandAllContainers(state, { fitView: false });
+      await coordinator.expandContainers(state, { fitView: false });
 
       // Toggle one container
       await coordinator.collapseContainer("c1", state, {
@@ -398,7 +398,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       });
 
       // Start with expanded containers
-      await coordinator.expandAllContainers(state, { fitView: false });
+      await coordinator.expandContainers(state, { fitView: false });
 
       // Run initial pipeline
       let elkGraph = elkBridge.toELKGraph(state);
@@ -781,7 +781,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       const startTime = Date.now();
 
       // Expand all
-      await coordinator.expandAllContainers(state, { fitView: false });
+      await coordinator.expandContainers(state, { fitView: false });
       let elkGraph = elkBridge.toELKGraph(state);
       let elkResult = createMockELKResult(elkGraph);
       elkBridge.applyLayout(state, elkResult);
@@ -795,7 +795,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       );
 
       // Collapse all
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
       elkGraph = elkBridge.toELKGraph(state);
       elkResult = createMockELKResult(elkGraph);
       elkBridge.applyLayout(state, elkResult);

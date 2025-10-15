@@ -404,7 +404,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       containers.forEach((container) => state.addContainer(container));
 
       // Expand all containers
-      await asyncCoordinator.expandAllContainers(state, {
+      await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined, // Full layout
         fitView: false,
       });
@@ -462,7 +462,7 @@ describe("VisualizationState Container Visibility and Edge Aggregation", () => {
       containers.forEach((container) => state.addContainer(container));
 
       // Collapse all containers
-      await asyncCoordinator.collapseAllContainers(state, {
+      await asyncCoordinator.collapseContainers(state, {
         relayoutEntities: undefined, // Full layout
         fitView: false,
       });

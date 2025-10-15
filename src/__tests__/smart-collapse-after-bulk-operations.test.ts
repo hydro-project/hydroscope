@@ -109,7 +109,7 @@ describe("Smart Collapse After Bulk Operations Regression", () => {
     console.log("🔄 Step 2: User performs collapseAll operation");
 
     // This simulates the user clicking the collapseAll button
-    await asyncCoordinator.collapseAllContainers(state, {
+    await asyncCoordinator.collapseContainers(state, {
       fitView: false, // Don't trigger fitView for test
     });
 
@@ -245,7 +245,7 @@ describe("Smart Collapse After Bulk Operations Regression", () => {
     expect(state.shouldRunSmartCollapse()).toBe(false);
 
     // User performs bulk operation
-    await asyncCoordinator.expandAllContainers(state, { fitView: false });
+    await asyncCoordinator.expandContainers(state, { fitView: false });
     expect(state.shouldRunSmartCollapse()).toBe(false);
 
     // === File 2: Load new data ===

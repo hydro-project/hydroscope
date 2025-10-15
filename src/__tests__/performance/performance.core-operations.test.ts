@@ -109,8 +109,8 @@ describe("Core Operations Performance", () => {
 
     // Measure: Collapse all then expand all
     const start = performance.now();
-    await asyncCoordinator.collapseAllContainers(state, { fitView: false });
-    await asyncCoordinator.expandAllContainers(state, { fitView: false });
+    await asyncCoordinator.collapseContainers(state, { fitView: false });
+    await asyncCoordinator.expandContainers(state, { fitView: false });
     const duration = performance.now() - start;
 
     // Assert

@@ -368,7 +368,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       state.assignNodeToContainer("n3", "c2");
 
       // Expand all
-      state._expandAllContainersForCoordinator();
+      state._expandContainersForCoordinator();
       await elkBridge.layout(state);
       let reactFlowData = bridge.toReactFlowData(state);
 
@@ -378,7 +378,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       expect(expandedContainers.length).toBe(2);
 
       // Collapse all
-      state._collapseAllContainersForCoordinator();
+      state._collapseContainersForCoordinator();
       await elkBridge.layout(state);
       reactFlowData = bridge.toReactFlowData(state);
 

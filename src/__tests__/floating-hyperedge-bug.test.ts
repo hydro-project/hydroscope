@@ -213,7 +213,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] 🚀 Starting precise bug reproduction");
 
     // Step 1: Get initial state with all containers collapsed
-    await coordinator.collapseAllContainers(state, { fitView: false });
+    await coordinator.collapseContainers(state, { fitView: false });
     const initialData = reactFlowBridge.toReactFlowData(state);
 
     console.log(
@@ -329,7 +329,7 @@ describe("Floating HyperEdge Bug Reproduction", () => {
     console.log("[FloatingBug] 🚀 Starting multiple cycle reproduction");
 
     // Start with all collapsed
-    await coordinator.collapseAllContainers(state, { fitView: false });
+    await coordinator.collapseContainers(state, { fitView: false });
     const _initialData = reactFlowBridge.toReactFlowData(state);
 
     const collapsedContainers = state.visibleContainers.filter(

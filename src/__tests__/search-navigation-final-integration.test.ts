@@ -62,7 +62,7 @@ describe("Search Navigation Final Integration", () => {
     };
 
     // Initially collapse all containers to test expansion
-    await coordinator.collapseAllContainers(state, { fitView: false });
+    await coordinator.collapseContainers(state, { fitView: false });
   });
 
   afterEach(() => {

@@ -1674,14 +1674,14 @@ export class AsyncCoordinator {
     if (!state) {
       throw new Error("Container expand all event missing required payload");
     }
-    // Use VisualizationState's expandAllContainers method directly
+    // Use VisualizationState's expandContainers method directly
     // This ensures the iterative expansion logic is used for nested containers
     if (containerIds) {
       // For specified containers, use the internal coordinator method
-      (state as any)._expandAllContainersForCoordinator(containerIds);
+      (state as any)._expandContainersForCoordinator(containerIds);
     } else {
       // For all containers, use the internal coordinator method
-      (state as any)._expandAllContainersForCoordinator();
+      (state as any)._expandContainersForCoordinator();
     }
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations
@@ -1697,14 +1697,14 @@ export class AsyncCoordinator {
     if (!state) {
       throw new Error("Container expand all event missing required payload");
     }
-    // Use VisualizationState's expandAllContainers method directly
+    // Use VisualizationState's expandContainers method directly
     // This ensures the iterative expansion logic is used for nested containers
     if (containerIds) {
       // For specified containers, use the internal coordinator method
-      (state as any)._expandAllContainersForCoordinator(containerIds);
+      (state as any)._expandContainersForCoordinator(containerIds);
     } else {
       // For all containers, use the internal coordinator method
-      (state as any)._expandAllContainersForCoordinator();
+      (state as any)._expandContainersForCoordinator();
     }
     // Note: Layout triggering should be handled separately to avoid circular dependencies
     // The caller should trigger layout operations as needed after bulk operations
@@ -1898,8 +1898,56 @@ export class AsyncCoordinator {
   }
   // Container Operations Integration with Async Coordination
   /**
+   * Expand container along with all collapsed ancestors
+   * This prevents invariant violations when expanding nested containers
+   *
+   * Use this when expanding from UI interactions (tree, search, navigation)
+   * where you don't know if ancestors are collapsed.
+   */
+  async expandContainerWithAncestors(
+    containerId: string,
+    state: any, // VisualizationState
+    options: {
+      relayoutEntities?: string[]; // Layout control
+      fitView?: boolean; // FitView control
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      triggerLayout?: boolean; // Backward compatibility (ignored)
+    } = {},
+  ): Promise<any> {
+    // Get collapsed ancestors
+    const collapsedAncestors: string[] = [];
+    let currentId = state.getContainerParent?.(containerId);
+
+    while (currentId) {
+      const ancestorContainer = state.getContainer?.(currentId);
+      if (ancestorContainer?.collapsed) {
+        collapsedAncestors.unshift(currentId); // Add to front to maintain order
+      }
+      currentId = state.getContainerParent?.(currentId);
+    }
+
+    // If there are collapsed ancestors, use expandContainers
+    // which handles hierarchical ordering properly
+    if (collapsedAncestors.length > 0) {
+      return this.expandContainers(
+        state,
+        [...collapsedAncestors, containerId],
+        options,
+      );
+    } else {
+      // No collapsed ancestors, use single container expand
+      return this.expandContainer(containerId, state, options);
+    }
+  }
+
+  /**
    * Expand container using enhanced pipeline with synchronous state changes
    * Returns ReactFlowData when complete pipeline is finished
+   *
+   * NOTE: This assumes all ancestors are already expanded. If you're not sure,
+   * use expandContainerWithAncestors() instead to avoid invariant violations.
    */
   async expandContainer(
     containerId: string,
@@ -2152,7 +2200,7 @@ export class AsyncCoordinator {
    * Expand all containers using enhanced pipeline with synchronous state changes
    * Returns ReactFlowData when complete pipeline is finished
    */
-  async expandAllContainers(
+  async expandContainers(
     state: any, // VisualizationState
     containerIdsOrOptions?:
       | string[]
@@ -2302,7 +2350,7 @@ export class AsyncCoordinator {
    * Collapse all containers using enhanced pipeline with synchronous state changes
    * Returns ReactFlowData when complete pipeline is finished
    */
-  async collapseAllContainers(
+  async collapseContainers(
     state: any, // VisualizationState
     containerIdsOrOptions?:
       | string[]
@@ -2771,7 +2819,7 @@ export class AsyncCoordinator {
   /**
    * Execute batch container expansion with comprehensive error handling
    */
-  expandAllContainersWithErrorHandling(
+  expandContainersWithErrorHandling(
     state: any, // VisualizationState
     containerIdsOrOptions?:
       | string[]
@@ -2790,7 +2838,7 @@ export class AsyncCoordinator {
   ): ErrorRecoveryResult {
     try {
       // Execute synchronously (respecting core architecture)
-      this.expandAllContainers(state, containerIdsOrOptions, options);
+      this.expandContainers(state, containerIdsOrOptions, options);
       return {
         success: true,
         fallbackApplied: false,
@@ -2950,7 +2998,7 @@ export class AsyncCoordinator {
         );
         if (containerIds.length > 0) {
           try {
-            this.expandAllContainers(state, containerIds);
+            this.expandContainers(state, containerIds);
           } catch (expansionError) {
             console.warn(
               `[AsyncCoordinator] Container expansion failed during search:`,
@@ -3659,8 +3707,8 @@ export class AsyncCoordinator {
               `🔍 AsyncCoordinator: Expanding containers for search results`,
             );
 
-            // Use existing expandAllContainers method
-            await this.expandAllContainers(visualizationState, {
+            // Use existing expandContainers method
+            await this.expandContainers(visualizationState, {
               relayoutEntities: undefined, // Full layout after expansion
               fitView: false, // Don't fit view yet, do it after final render
             });

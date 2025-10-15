@@ -118,7 +118,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // User performs bulk expand operation
-      await asyncCoordinator.expandAllContainers(state, {
+      await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });
@@ -318,12 +318,12 @@ describe("VisualizationState Smart Collapse Prevention", () => {
       expect(state.shouldRunSmartCollapse()).toBe(true);
 
       // Bulk operations on empty set
-      await asyncCoordinator.expandAllContainers(state, {
+      await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });
 
-      await asyncCoordinator.collapseAllContainers(state, {
+      await asyncCoordinator.collapseContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });
@@ -382,7 +382,7 @@ describe("VisualizationState Smart Collapse Prevention", () => {
 
       // Bulk operation should complete efficiently
       const startTime = Date.now();
-      await asyncCoordinator.expandAllContainers(state, {
+      await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });

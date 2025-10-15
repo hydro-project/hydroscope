@@ -382,7 +382,7 @@ describe("Stateless Bridge Performance Regression Tests", () => {
       const elkBridge = new ELKBridge();
 
       // Create complex hierarchy by expanding all containers
-      await coordinator.expandAllContainers(parseResult.visualizationState, {
+      await coordinator.expandContainers(parseResult.visualizationState, {
         fitView: false,
       });
 
@@ -493,12 +493,12 @@ describe("Stateless Bridge Performance Regression Tests", () => {
 
             // Stress test: rapid state changes with conversions (reduced iterations)
             for (let i = 0; i < 3; i++) {
-              await coordinator.expandAllContainers(state, {
+              await coordinator.expandContainers(state, {
                 fitView: false,
               });
               elkBridge.toELKGraph(state);
 
-              await coordinator.collapseAllContainers(state, {
+              await coordinator.collapseContainers(state, {
                 fitView: false,
               });
               elkBridge.toELKGraph(state);

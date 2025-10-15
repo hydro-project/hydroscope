@@ -236,7 +236,7 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
 
   describe("Bulk Operations", () => {
     it("should handle expand all containers", async () => {
-      const result = await asyncCoordinator.expandAllContainers(state, {
+      const result = await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined, // Full layout
         fitView: false,
       });
@@ -254,13 +254,13 @@ describe("Direct Container Operations (Bypass AsyncCoordinator)", () => {
 
     it("should handle collapse all containers", async () => {
       // First expand all
-      await asyncCoordinator.expandAllContainers(state, {
+      await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });
 
       // Then collapse all
-      const result = await asyncCoordinator.collapseAllContainers(state, {
+      const result = await asyncCoordinator.collapseContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });

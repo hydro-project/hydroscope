@@ -379,7 +379,7 @@ describe("ELK Hitbox Debug", () => {
       // Test 1: Collapse all containers to simplify
       console.log("🧪 Test 1: Collapse all containers");
       try {
-        await coordinator.collapseAllContainers(
+        await coordinator.collapseContainers(
           coordinator,
           visualizationState,
           { fitView: false },

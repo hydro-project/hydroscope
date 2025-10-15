@@ -121,7 +121,7 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should expand all containers", async () => {
-      const reactFlowData = await coordinator.expandAllContainers(state, {
+      const reactFlowData = await coordinator.expandContainers(state, {
         relayoutEntities: [],
         fitView: false,
       });
@@ -132,7 +132,7 @@ describe("AsyncCoordinator - Basic API", () => {
     });
 
     it("should collapse all containers", async () => {
-      const reactFlowData = await coordinator.collapseAllContainers(
+      const reactFlowData = await coordinator.collapseContainers(
         state,
         elkBridge,
       );

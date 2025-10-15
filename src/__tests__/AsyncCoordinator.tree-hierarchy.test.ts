@@ -250,7 +250,7 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       coordinator.setBridgeInstances(reactFlowBridge, elkBridge);
     });
 
-    it("should support container ID list in expandAllContainers", async () => {
+    it("should support container ID list in expandContainers", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
       const node2 = createTestNode("node2", "Test Node 2");
@@ -267,10 +267,10 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       state.addContainer(container2);
 
       // Collapse both containers first
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Expand only container1 using new signature
-      await coordinator.expandAllContainers(state, ["container1"], {
+      await coordinator.expandContainers(state, ["container1"], {
         fitView: false,
       });
 
@@ -279,7 +279,7 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       expect(state.getContainer("container2")?.collapsed).toBe(true);
     });
 
-    it("should support container ID list in collapseAllContainers", async () => {
+    it("should support container ID list in collapseContainers", async () => {
       // Create test data
       const node1 = createTestNode("node1", "Test Node 1");
       const node2 = createTestNode("node2", "Test Node 2");
@@ -300,7 +300,7 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       expect(state.getContainer("container2")?.collapsed).toBe(false);
 
       // Collapse only container1 using new signature
-      await coordinator.collapseAllContainers(state, ["container1"], {
+      await coordinator.collapseContainers(state, ["container1"], {
         fitView: false,
       });
 
@@ -319,14 +319,14 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       state.addNode(node1);
       state.addContainer(container1);
 
-      // Test old signature for expandAllContainers
-      await coordinator.expandAllContainers(state, { fitView: false });
+      // Test old signature for expandContainers
+      await coordinator.expandContainers(state, { fitView: false });
 
       // Should work with old signature
       expect(state.getContainer("container1")?.collapsed).toBe(false);
 
-      // Test old signature for collapseAllContainers
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      // Test old signature for collapseContainers
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Should work with old signature
       expect(state.getContainer("container1")?.collapsed).toBe(true);

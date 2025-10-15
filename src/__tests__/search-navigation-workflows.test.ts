@@ -50,7 +50,7 @@ describe("Search Navigation Workflow Integration", () => {
     });
 
     // Initially collapse all containers to test expansion
-    await coordinator.collapseAllContainers(state, { fitView: false });
+    await coordinator.collapseContainers(state, { fitView: false });
   });
 
   describe("Search Query → Tree Expansion → Graph Update Flow", () => {
@@ -86,7 +86,7 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should update graph highlights for lowest visible ancestors", async () => {
       // Collapse containers so nodes are not directly visible in graph
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Perform search for network nodes
       state.performSearch("network");
@@ -183,7 +183,7 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should expand containers when navigating to hidden elements", async () => {
       // Ensure containers are collapsed
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Mock ReactFlow instance
       const mockReactFlowInstance = {
@@ -433,7 +433,7 @@ describe("Search Navigation Workflow Integration", () => {
       state.navigateToElement("6"); // flatmap node
 
       // Expand containers
-      await coordinator.expandAllContainers(state, { fitView: false });
+      await coordinator.expandContainers(state, { fitView: false });
 
       // Convert to ReactFlow data
       const reactFlowData = bridge.toReactFlowData(state);

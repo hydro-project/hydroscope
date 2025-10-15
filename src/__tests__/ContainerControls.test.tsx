@@ -123,7 +123,7 @@ describe("ContainerControls Component", () => {
   });
 
   describe("Expand All Functionality", () => {
-    it("should call expandAllContainers when expand all is clicked", async () => {
+    it("should call expandContainers when expand all is clicked", async () => {
       render(
         <ContainerControls
           visualizationState={visualizationState}
@@ -191,7 +191,7 @@ describe("ContainerControls Component", () => {
   });
 
   describe("Collapse All Functionality", () => {
-    it("should call collapseAllContainers when collapse all is clicked", async () => {
+    it("should call collapseContainers when collapse all is clicked", async () => {
       // Ensure we have expanded containers to collapse
       await coordinator.expandContainer("container1", visualizationState, {
         triggerLayout: false,

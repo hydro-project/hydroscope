@@ -196,7 +196,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       expect(state.getContainer("container2")?.collapsed).toBe(false);
 
       // Collapse all containers
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Verify all containers are collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);
@@ -223,14 +223,14 @@ describe("Container Collapse/Expand E2E Tests", () => {
 
     it("should expand all containers", async () => {
       // First collapse all containers
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Verify they're collapsed
       expect(state.getContainer("container1")?.collapsed).toBe(true);
       expect(state.getContainer("container2")?.collapsed).toBe(true);
 
       // Now expand all
-      await coordinator.expandAllContainers(state, { fitView: false });
+      await coordinator.expandContainers(state, { fitView: false });
 
       // Verify all containers are expanded
       expect(state.getContainer("container1")?.collapsed).toBe(false);
@@ -515,7 +515,7 @@ describe("Container Collapse/Expand E2E Tests", () => {
       });
 
       // Test collapsed state
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
       reactFlowData = reactFlowBridge.toReactFlowData(state);
       containerNodes = reactFlowData.nodes.filter(
         (n) => n.data.nodeType === "container",

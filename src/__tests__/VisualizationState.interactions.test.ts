@@ -366,12 +366,12 @@ describe("VisualizationState Interaction State Management", () => {
       state.toggleNodeLabel("n3");
 
       // Bulk operations
-      await asyncCoordinator.collapseAllContainers(state, {
+      await asyncCoordinator.collapseContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });
 
-      await asyncCoordinator.expandAllContainers(state, {
+      await asyncCoordinator.expandContainers(state, {
         relayoutEntities: undefined,
         fitView: false,
       });

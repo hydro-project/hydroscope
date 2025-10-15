@@ -219,10 +219,10 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse both
-      await coordinator.collapseAllContainers(state, { fitView: false });
+      await coordinator.collapseContainers(state, { fitView: false });
 
       // Expand only container1
-      await coordinator.expandAllContainers(state, ["container1"], {
+      await coordinator.expandContainers(state, ["container1"], {
         fitView: false,
       });
 
@@ -238,7 +238,7 @@ describe("Search and Navigation Infrastructure", () => {
       state.addContainer(container2);
 
       // Collapse only container1
-      await coordinator.collapseAllContainers(state, ["container1"], {
+      await coordinator.collapseContainers(state, ["container1"], {
         fitView: false,
       });
 

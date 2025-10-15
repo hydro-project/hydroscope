@@ -259,7 +259,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       state.assignNodeToContainer("n3", "c2");
 
       // Test expand all
-      state._expandAllContainersForCoordinator();
+      state._expandContainersForCoordinator();
       let elkGraph = bridge.toELKGraph(state);
 
       // All containers should be expanded
@@ -272,7 +272,7 @@ describe("VisualizationState + ELKBridge Integration", () => {
       }
 
       // Test collapse all
-      state._collapseAllContainersForCoordinator();
+      state._collapseContainersForCoordinator();
       elkGraph = bridge.toELKGraph(state);
 
       // All containers should be collapsed

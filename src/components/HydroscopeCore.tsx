@@ -645,21 +645,21 @@ const HydroscopeCoreInternal = forwardRef<
               let reactFlowData;
 
               if (wasCollapsed) {
-                // Synchronous expand - when it returns, the complete pipeline is done
-                // Container expansion tracking is handled by AsyncCoordinator callbacks
-                reactFlowData = await state.asyncCoordinator.expandContainer(
-                  containerId,
-                  currentVisualizationState,
-                  {
-                    relayoutEntities: undefined, // Full layout to let ELK recalculate positions
-                    ...createFitViewOptions(
-                      createAutoFitOptions(
-                        AutoFitScenarios.CONTAINER_OPERATION,
-                        state.autoFitEnabled,
+                // Use expandContainerWithAncestors for safety (though ancestors should already be expanded)
+                reactFlowData =
+                  await state.asyncCoordinator.expandContainerWithAncestors(
+                    containerId,
+                    currentVisualizationState,
+                    {
+                      relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+                      ...createFitViewOptions(
+                        createAutoFitOptions(
+                          AutoFitScenarios.CONTAINER_OPERATION,
+                          state.autoFitEnabled,
+                        ),
                       ),
-                    ),
-                  },
-                );
+                    },
+                  );
                 // Call callback after synchronous operation completes
                 onContainerExpand?.(containerId, currentVisualizationState);
               } else {
@@ -986,21 +986,20 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
-          // Use AsyncCoordinator's synchronous collapseAllContainers method
+          // Use AsyncCoordinator's synchronous collapseContainers method
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
-          const reactFlowData =
-            await state.asyncCoordinator.collapseAllContainers(
-              state.visualizationState,
-              {
-                relayoutEntities: undefined, // Full layout for collapse all
-                ...createFitViewOptions(
-                  createAutoFitOptions(
-                    AutoFitScenarios.CONTAINER_OPERATION,
-                    state.autoFitEnabled,
-                  ),
+          const reactFlowData = await state.asyncCoordinator.collapseContainers(
+            state.visualizationState,
+            {
+              relayoutEntities: undefined, // Full layout for collapse all
+              ...createFitViewOptions(
+                createAutoFitOptions(
+                  AutoFitScenarios.CONTAINER_OPERATION,
+                  state.autoFitEnabled,
                 ),
-              },
-            );
+              ),
+            },
+          );
 
           // At this point, the ENTIRE pipeline is complete:
           // - All containers collapsed
@@ -1059,23 +1058,22 @@ const HydroscopeCoreInternal = forwardRef<
           }
 
           try {
-            // Use AsyncCoordinator's synchronous expandAllContainers method
+            // Use AsyncCoordinator's synchronous expandContainers method
             // When it returns, the complete pipeline is done (state change + layout + render + fitView)
             // Can pass containerIds to expand only specific containers (e.g., for search)
-            const reactFlowData =
-              await state.asyncCoordinator.expandAllContainers(
-                state.visualizationState,
-                containerIds, // Pass container IDs if provided
-                {
-                  relayoutEntities: undefined, // Full layout for expand all
-                  ...createFitViewOptions(
-                    createAutoFitOptions(
-                      AutoFitScenarios.CONTAINER_OPERATION,
-                      state.autoFitEnabled,
-                    ),
+            const reactFlowData = await state.asyncCoordinator.expandContainers(
+              state.visualizationState,
+              containerIds, // Pass container IDs if provided
+              {
+                relayoutEntities: undefined, // Full layout for expand all
+                ...createFitViewOptions(
+                  createAutoFitOptions(
+                    AutoFitScenarios.CONTAINER_OPERATION,
+                    state.autoFitEnabled,
                   ),
-                },
-              );
+                ),
+              },
+            );
 
             // At this point, the ENTIRE pipeline is complete:
             // - All containers expanded
@@ -1227,22 +1225,22 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
-          // Use AsyncCoordinator's synchronous expandContainer method
-          // When it returns, the complete pipeline is done (state change + layout + render + fitView)
-          // Container expansion tracking is handled by AsyncCoordinator callbacks
-          const reactFlowData = await state.asyncCoordinator.expandContainer(
-            containerId,
-            state.visualizationState,
-            {
-              relayoutEntities: undefined, // Full layout to let ELK recalculate positions
-              ...createFitViewOptions(
-                createAutoFitOptions(
-                  AutoFitScenarios.CONTAINER_OPERATION,
-                  state.autoFitEnabled,
+          // Use expandContainerWithAncestors to handle collapsed ancestors automatically
+          // This prevents invariant violations when expanding containers via tree navigation
+          const reactFlowData =
+            await state.asyncCoordinator.expandContainerWithAncestors(
+              containerId,
+              state.visualizationState,
+              {
+                relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+                ...createFitViewOptions(
+                  createAutoFitOptions(
+                    AutoFitScenarios.CONTAINER_OPERATION,
+                    state.autoFitEnabled,
+                  ),
                 ),
-              ),
-            },
-          );
+              },
+            );
 
           // At this point, the ENTIRE pipeline is complete:
           // - Container expanded

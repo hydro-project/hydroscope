@@ -22,8 +22,8 @@ vi.mock("../core/VisualizationState", () => ({
 
 vi.mock("../core/AsyncCoordinator", () => ({
   AsyncCoordinator: class MockAsyncCoordinator {
-    collapseAllContainers = vi.fn();
-    expandAllContainers = vi.fn();
+    collapseContainers = vi.fn();
+    expandContainers = vi.fn();
   },
 }));
 

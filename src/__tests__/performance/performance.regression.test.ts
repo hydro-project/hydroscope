@@ -237,10 +237,10 @@ describe("Performance Regression Tests", () => {
 
             // Rapid container operations (reduced iterations for performance)
             for (let i = 0; i < 3; i++) {
-              await coordinator.expandAllContainers(state, {
+              await coordinator.expandContainers(state, {
                 fitView: false,
               });
-              await coordinator.collapseAllContainers(state, {
+              await coordinator.collapseContainers(state, {
                 fitView: false,
               });
             }

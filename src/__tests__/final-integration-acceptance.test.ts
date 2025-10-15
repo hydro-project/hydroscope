@@ -365,7 +365,7 @@ describe("Final Integration and Acceptance Testing", () => {
       // Test performance with large dataset
       const startTime = Date.now();
 
-      const result = await asyncCoordinator.collapseAllContainers(
+      const result = await asyncCoordinator.collapseContainers(
         visualizationState,
         {
           relayoutEntities: undefined,

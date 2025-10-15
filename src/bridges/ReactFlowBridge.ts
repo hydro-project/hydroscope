@@ -1342,7 +1342,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     // Check for circular references (source === target)
     // Self-loops (source === target) are valid in ReactFlow and expected in some graph structures
     // No need to log warnings for this normal case
-    
+
     // Validate handle names if present
     if (
       renderedEdge.sourceHandle &&
