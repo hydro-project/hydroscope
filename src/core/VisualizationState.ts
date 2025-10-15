@@ -26,8 +26,11 @@ import {
   assertDescendantsCollapsedAndHidden,
   logInvariantCheck,
 } from "./invariantChecks.js";
+import { SmartCollapseManager } from "./visualization-state/SmartCollapseManager.js";
 
 export class VisualizationState {
+  // Smart Collapse functionality - extracted to separate module
+  private _smartCollapseManager: SmartCollapseManager;
   private _nodes = new Map<string, GraphNode>();
   private _edges = new Map<string, GraphEdge>();
   private _containers = new Map<string, Container>();
@@ -133,6 +136,12 @@ export class VisualizationState {
   // State persistence
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
+
+  constructor() {
+    // Initialize extracted modules
+    this._smartCollapseManager = new SmartCollapseManager(this);
+  }
+
   // Data Management
 
   /**
@@ -1527,52 +1536,31 @@ export class VisualizationState {
     };
     // CRITICAL FIX: Reset smart collapse state for new data
     this.resetSmartCollapseState();
+    const status = this.getSmartCollapseStatus();
     hscopeLogger.log(
       "op",
-      `🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}, smartCollapseEnabled=${this._smartCollapseEnabled}`,
+      `🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}, smartCollapseEnabled=${status.enabled}`,
     );
   }
-  // Smart Collapse Management
-  private _smartCollapseEnabled = true;
-  private _smartCollapseOverride = false;
+  // Smart Collapse Management - Delegates to SmartCollapseManager
   shouldRunSmartCollapse(): boolean {
-    if (this._smartCollapseOverride) {
-      this._smartCollapseOverride = false; // Reset after checking
-      hscopeLogger.log(
-        "op",
-        "🎯 SMART COLLAPSE: Override enabled, returning true",
-      );
-      return true;
-    }
-    const enabled = this._smartCollapseEnabled;
-    const isFirst = this.isFirstLayout();
-    const result = enabled && isFirst;
-    hscopeLogger.log(
-      "op",
-      `🎯 SMART COLLAPSE CHECK: enabled=${enabled}, isFirstLayout=${isFirst}, layoutCount=${this._layoutState.layoutCount}, result=${result}`,
-    );
-    return result;
+    return this._smartCollapseManager.shouldRunSmartCollapse();
   }
   enableSmartCollapseForNextLayout(): void {
-    this._smartCollapseOverride = true;
+    this._smartCollapseManager.enableSmartCollapseForNextLayout();
   }
   disableSmartCollapseForUserOperations(): void {
-    this._smartCollapseEnabled = false;
+    this._smartCollapseManager.disableSmartCollapseForUserOperations();
   }
   resetSmartCollapseState(): void {
-    this._smartCollapseEnabled = true;
-    this._smartCollapseOverride = false;
+    this._smartCollapseManager.resetSmartCollapseState();
   }
   getSmartCollapseStatus(): {
     enabled: boolean;
     isFirstLayout: boolean;
     hasOverride: boolean;
   } {
-    return {
-      enabled: this._smartCollapseEnabled,
-      isFirstLayout: this.isFirstLayout(),
-      hasOverride: this._smartCollapseOverride,
-    };
+    return this._smartCollapseManager.getSmartCollapseStatus();
   }
   /**
    * Perform smart collapse operation - automatically collapse containers
@@ -1581,72 +1569,7 @@ export class VisualizationState {
    * @param budgetOverride - Optional budget override for testing purposes
    */
   performSmartCollapse(budgetOverride?: number): void {
-    if (!this.shouldRunSmartCollapse()) {
-      return;
-    }
-    // Step 1: Get all root containers and collapse them initially
-    const rootContainers = this.getRootContainers();
-    if (rootContainers.length === 0) {
-      return;
-    }
-    // Collapse all root containers initially
-    let _collapsedCount = 0;
-    for (const container of rootContainers) {
-      if (!container.collapsed) {
-        this.collapseContainerSystemOperation(container.id);
-        _collapsedCount++;
-      }
-    }
-    // Step 2: Create expansion candidates sorted by cost
-    interface ExpansionCandidate {
-      containerId: string;
-      cost: number;
-    }
-    const expansionCandidates: ExpansionCandidate[] = [];
-    // Add all collapsed root containers as initial candidates
-    for (const container of rootContainers) {
-      if (container.collapsed) {
-        const cost = this.calculateExpansionCost(container.id);
-        expansionCandidates.push({ containerId: container.id, cost });
-      }
-    }
-    // Sort candidates by cost (lowest first)
-    expansionCandidates.sort((a, b) => a.cost - b.cost);
-    // Step 3: Expand containers until budget is reached
-    const budget = budgetOverride ?? LAYOUT_CONSTANTS.SMART_COLLAPSE_BUDGET;
-    let currentCost = 0;
-    let _expandedCount = 0;
-    while (expansionCandidates.length > 0) {
-      // Get the lowest-cost candidate
-      const candidate = expansionCandidates.shift()!;
-      // Check if expanding this container would exceed the budget
-      if (currentCost + candidate.cost > budget) {
-        break;
-      }
-      this._expandContainerInternal(candidate.containerId);
-      currentCost += candidate.cost;
-      _expandedCount++;
-      // Step 4: Add child containers to expansion candidates
-      const expandedContainer = this._containers.get(candidate.containerId);
-      if (expandedContainer) {
-        const childContainers: ExpansionCandidate[] = [];
-        for (const childId of expandedContainer.children) {
-          const childContainer = this._containers.get(childId);
-          if (childContainer && childContainer.collapsed) {
-            const childCost = this.calculateExpansionCost(childId);
-            childContainers.push({ containerId: childId, cost: childCost });
-          }
-        }
-        // Add child containers to candidates and re-sort
-        expansionCandidates.push(...childContainers);
-        expansionCandidates.sort((a, b) => a.cost - b.cost);
-        if (childContainers.length > 0) {
-        }
-      }
-    }
-    for (const _container of this._containers.values()) {
-      // Container processing logic would go here if needed
-    }
+    this._smartCollapseManager.performSmartCollapse(budgetOverride);
   }
   /**
    * Calculate the expansion cost for a container as the net growth in screen area.
@@ -1657,34 +1580,7 @@ export class VisualizationState {
    * Cost = (expanded container size) - (original collapsed container size)
    */
   calculateExpansionCost(containerId: string): number {
-    const container = this._containers.get(containerId);
-    if (!container) {
-      return 0;
-    }
-    // Original footprint: collapsed container size
-    const collapsedArea =
-      SIZES.COLLAPSED_CONTAINER_WIDTH * SIZES.COLLAPSED_CONTAINER_HEIGHT;
-    // Calculate the area needed to contain all direct children
-    let childrenArea = 0;
-    for (const childId of container.children) {
-      const childContainer = this._containers.get(childId);
-      if (childContainer) {
-        // Child containers appear as collapsed units when parent expands
-        childrenArea +=
-          SIZES.COLLAPSED_CONTAINER_WIDTH * SIZES.COLLAPSED_CONTAINER_HEIGHT;
-      } else if (this._nodes.has(childId)) {
-        // Direct node children
-        childrenArea +=
-          LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH *
-          LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
-      }
-    }
-    // Expanded container needs to contain children plus border/padding
-    const borderPadding = 40; // Rough estimate for container borders and internal padding
-    const expandedArea = childrenArea + borderPadding;
-    // Net cost is the growth in footprint
-    const netCost = Math.max(0, expandedArea - collapsedArea);
-    return netCost;
+    return this._smartCollapseManager.calculateExpansionCost(containerId);
   }
   /**
    * Get root containers - containers that are not children of other containers
