@@ -2711,19 +2711,57 @@ export class AsyncCoordinator {
         });
 
         // Pan to the node with smooth animation
-        // Default zoom to 1.0 for native font size viewing
-        const x = absoluteX + (node.width || 100) / 2;
-        const y = absoluteY + (node.height || 50) / 2;
-        console.log("[AsyncCoordinator] Centering on:", {
+        // Calculate zoom level to fit the node on screen with padding
+        const nodeWidth = node.width || 100;
+        const nodeHeight = node.height || 50;
+        const x = absoluteX + nodeWidth / 2;
+        const y = absoluteY + nodeHeight / 2;
+
+        // Calculate zoom to fit with padding
+        // Use if options.zoom is explicitly provided, otherwise calculate zoom to fit
+        let targetZoom: number;
+        
+        if (options?.zoom !== undefined) {
+          // Explicit zoom provided - use it but cap at 1.0 maximum (can zoom out less)
+          targetZoom = Math.min(options.zoom, 1.0);
+        } else {
+          // Calculate zoom to fit the node with comfortable padding
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          const paddingFactor = 0.7; // Use 70% of viewport (30% padding total)
+          
+          // Node dimensions are in the graph coordinate space (unscaled)
+          // Calculate what zoom would fit the node in the viewport with padding
+          const zoomToFitWidth = (viewportWidth * paddingFactor) / nodeWidth;
+          const zoomToFitHeight = (viewportHeight * paddingFactor) / nodeHeight;
+          const zoomToFit = Math.min(zoomToFitWidth, zoomToFitHeight);
+          
+          // Only cap at 1.0 if zooming IN (zoomToFit > 1.0)
+          // Allow zooming OUT below 1.0 for large nodes
+          targetZoom = zoomToFit > 1.0 ? 1.0 : zoomToFit;
+        }
+        
+        console.warn("[AsyncCoordinator] Centering on element:", {
+          elementId,
           x,
           y,
-          zoom: options?.zoom ?? 1.0,
+          nodeWidth,
+          nodeHeight,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          zoomToFitWidth: (window.innerWidth * 0.7) / nodeWidth,
+          zoomToFitHeight: (window.innerHeight * 0.7) / nodeHeight,
+          targetZoom,
+          explicitZoom: options?.zoom,
         });
         reactFlowInstance.setCenter(x, y, {
-          zoom: options?.zoom ?? 1.0,
+          zoom: targetZoom,
           duration:
             options?.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
         });
+        console.warn(
+          `[AsyncCoordinator] Called setCenter with zoom: ${targetZoom}`,
+        );
       } else {
         console.warn(
           `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
@@ -2896,10 +2934,11 @@ export class AsyncCoordinator {
         throw new Error("navigateToElement method not available");
       }
 
-      // Center the viewport on the element with zoom to native size
+      // Center the viewport on the element
+      // Don't pass a default zoom - let focusViewportOnElement calculate the best fit
       if (reactFlowInstance) {
         this.focusViewportOnElement(elementId, reactFlowInstance, {
-          zoom: options.zoom ?? 1.0, // Default to 1.0 for native font size
+          zoom: options.zoom, // Only use explicit zoom if provided
           duration:
             options.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
           visualizationState: visualizationState,
