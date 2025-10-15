@@ -41,6 +41,7 @@ export interface StyleConfig {
   nodeFontSize?: number;
   containerBorderWidth?: number;
   containerShadow?: "none" | "light" | "medium" | "heavy";
+  showFullNodeLabels?: boolean;
 }
 // Layout algorithm options (matching ELK's available algorithms)
 const layoutOptions = {
@@ -73,6 +74,12 @@ export interface StyleTunerPanelProps {
   visualizationState?: VisualizationState | null;
   asyncCoordinator?: AsyncCoordinator | null;
   onError?: (error: Error) => void;
+  onFullNodeLabelsChange?: (enabled: boolean) => void;
+  onReallocateBridges?: () => {
+    asyncCoordinator: any;
+    visualizationState: any;
+    forceRemount: () => void;
+  } | null;
 }
 const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   value,
@@ -89,6 +96,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   visualizationState: _visualizationState,
   asyncCoordinator: _asyncCoordinator,
   onError: _onError,
+  onFullNodeLabelsChange,
+  onReallocateBridges,
 }: StyleTunerPanelProps) => {
   const [local, setLocal] = useState(value);
   useEffect(() => setLocal(value), [value]);
@@ -260,6 +269,154 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
               </option>
             ))}
           </select>
+        </div>
+
+        <div style={rowStyle}>
+          <label>Show full node labels</label>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(local.showFullNodeLabels)}
+              onChange={(e) => {
+                console.log(
+                  "🏷️ [StyleTuner] Checkbox clicked, current state:",
+                  local.showFullNodeLabels,
+                  "new state:",
+                  e.target.checked,
+                );
+                const enabled = e.target.checked;
+                const next = { ...local, showFullNodeLabels: enabled };
+                setLocal(next);
+                onChange(next);
+
+                // Handle full node labels mode change
+                if (onFullNodeLabelsChange) {
+                  onFullNodeLabelsChange(enabled);
+                }
+
+                // Update AsyncCoordinator render options
+                if (_asyncCoordinator && _asyncCoordinator.setRenderOptions) {
+                  _asyncCoordinator.setRenderOptions({
+                    showFullNodeLabels: enabled,
+                  });
+                }
+
+                // Apply all long labels or reset to short labels
+                console.log(
+                  "🔍 [StyleTuner] _visualizationState available:",
+                  !!_visualizationState,
+                  "enabled:",
+                  enabled,
+                );
+                if (_visualizationState) {
+                  if (enabled) {
+                    console.log(
+                      "🏷️ [StyleTuner] Calling expandAllNodeLabelsToLong",
+                    );
+                    _visualizationState.expandAllNodeLabelsToLong();
+                    if (
+                      typeof _visualizationState.updateNodeDimensionsForFullLabels ===
+                      "function"
+                    ) {
+                      console.log(
+                        "📏 [StyleTuner] Calling updateNodeDimensionsForFullLabels(true)",
+                      );
+                      _visualizationState.updateNodeDimensionsForFullLabels(
+                        true,
+                      );
+                    }
+                  } else {
+                    console.log(
+                      "🏷️ [StyleTuner] Calling resetAllNodeLabelsToShort",
+                    );
+                    _visualizationState.resetAllNodeLabelsToShort();
+                    if (
+                      typeof _visualizationState.updateNodeDimensionsForFullLabels ===
+                      "function"
+                    ) {
+                      console.log(
+                        "📏 [StyleTuner] Calling updateNodeDimensionsForFullLabels(false)",
+                      );
+                      _visualizationState.updateNodeDimensionsForFullLabels(
+                        false,
+                      );
+                    }
+                  }
+                } else {
+                  console.warn(
+                    "⚠️ [StyleTuner] _visualizationState is not available!",
+                  );
+                }
+
+                // BRIDGE REALLOCATION: Deallocate and reallocate fresh instances
+                // This prevents edge handle positioning issues when node dimensions change
+                if (onReallocateBridges) {
+                  console.log(
+                    "🔄 [StyleTuner] Performing bridge reallocation for full node labels toggle",
+                  );
+
+                  const instances = onReallocateBridges();
+                  if (
+                    instances &&
+                    instances.asyncCoordinator &&
+                    instances.visualizationState &&
+                    instances.forceRemount
+                  ) {
+                    // Use AsyncCoordinator to manage the complete sequence:
+                    // 1. Execute layout and render pipeline with new bridges
+                    // 2. Wait for React to render the new data
+                    // 3. Force ReactFlow to remount with fresh data
+                    instances.asyncCoordinator
+                      .executeLayoutAndRenderWithRemount(
+                        instances.visualizationState,
+                        instances.forceRemount,
+                        {
+                          relayoutEntities: undefined, // Full layout - all entities
+                          fitView: false, // Don't auto-fit on manual interactions
+                        },
+                      )
+                      .catch((error: Error) => {
+                        console.error(
+                          "[StyleTuner] Bridge reallocation with remount failed:",
+                          error,
+                        );
+                      });
+                  }
+                } else {
+                  console.warn(
+                    "⚠️ [StyleTuner] onReallocateBridges not available, falling back to regular reset",
+                  );
+
+                  // Fallback to regular reset if reallocation not available
+                  if (_visualizationState && _asyncCoordinator) {
+                    // DON'T reset layout state - preserve container expansion and positions
+                    _asyncCoordinator
+                      .executeLayoutAndRenderPipeline(_visualizationState, {
+                        relayoutEntities: undefined,
+                        fitView: false,
+                      })
+                      .catch((error: Error) => {
+                        console.error(
+                          "[StyleTuner] Fallback layout failed:",
+                          error,
+                        );
+                      });
+                  }
+                }
+              }}
+              style={{
+                marginRight: "8px",
+                transform: "scale(1.2)",
+              }}
+            />
+          </label>
         </div>
 
         <Divider style={{ margin: "16px 0 12px 0" }} />

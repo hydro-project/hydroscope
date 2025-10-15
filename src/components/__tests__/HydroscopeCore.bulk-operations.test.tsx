@@ -26,7 +26,7 @@ const mockSimpleData: HydroscopeData = {
 };
 
 // Test component that uses the imperative handle
-const TestComponent: React.FC<{
+const _TestComponent: React.FC<{
   onCollapseAll?: () => void;
   onExpandAll?: () => void;
   onError?: (error: Error) => void;

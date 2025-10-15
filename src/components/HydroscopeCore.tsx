@@ -115,6 +115,12 @@ export interface HydroscopeCoreHandle {
 
   /** Get the current VisualizationState instance */
   getVisualizationState: () => VisualizationState | null;
+
+  /** Force ReactFlow component to remount (clears all internal state including edge handles) */
+  forceReactFlowRemount: () => void;
+
+  /** Show popup for a specific node */
+  showNodePopup: (nodeId: string) => void;
 }
 
 /**
@@ -311,6 +317,7 @@ const HydroscopeCoreInternal = forwardRef<
 
     // EXPERIMENT: ReactFlow reset key to force re-render on container operations
     const [reactFlowResetKey, setReactFlowResetKey] = useState(0);
+    const [isRemountingReactFlow, setIsRemountingReactFlow] = useState(false);
 
     // Refs for core instances
     const reactFlowBridgeRef = useRef<ReactFlowBridge | null>(null);
@@ -319,14 +326,44 @@ const HydroscopeCoreInternal = forwardRef<
     const jsonParserRef = useRef<JSONParser | null>(null);
     const isDraggingRef = useRef<boolean>(false);
     const prevNodeCountRef = useRef<number>(0);
+    const dimensionResetTimeoutRef = useRef<number | null>(null);
+    const lastDimensionResetRef = useRef<number>(0);
+    const recentContainerExpansionsRef = useRef<Set<string>>(new Set());
+    const isRemountingRef = useRef<boolean>(false);
+    const savedViewportRef = useRef<{
+      x: number;
+      y: number;
+      zoom: number;
+    } | null>(null);
 
     // Set ReactFlow instance in AsyncCoordinator for direct fitView operations
     useEffect(() => {
       if (reactFlowInstance && state.asyncCoordinator) {
         state.asyncCoordinator.setReactFlowInstance(reactFlowInstance);
         state.asyncCoordinator.setUpdateNodeInternals(updateNodeInternals);
+
+        // Set up container expansion tracking callbacks
+        state.asyncCoordinator.setContainerExpansionCallbacks(
+          (containerId) => {
+            // Mark container as being expanded
+            recentContainerExpansionsRef.current.add(containerId);
+          },
+          (containerId) => {
+            // Clear the tracking after expansion completes
+            recentContainerExpansionsRef.current.delete(containerId);
+          },
+        );
       }
     }, [reactFlowInstance, updateNodeInternals, state.asyncCoordinator]);
+
+    // Cleanup dimension reset timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (dimensionResetTimeoutRef.current) {
+          clearTimeout(dimensionResetTimeoutRef.current);
+        }
+      };
+    }, []);
 
     // Error handling helper with recovery strategies
     const handleError = useCallback(
@@ -610,11 +647,12 @@ const HydroscopeCoreInternal = forwardRef<
 
               if (wasCollapsed) {
                 // Synchronous expand - when it returns, the complete pipeline is done
+                // Container expansion tracking is handled by AsyncCoordinator callbacks
                 reactFlowData = await state.asyncCoordinator.expandContainer(
                   containerId,
                   currentVisualizationState,
                   {
-                    relayoutEntities: [containerId], // Only re-layout this container
+                    relayoutEntities: undefined, // Full layout to let ELK recalculate positions
                     ...createFitViewOptions(
                       createAutoFitOptions(
                         AutoFitScenarios.CONTAINER_OPERATION,
@@ -631,7 +669,7 @@ const HydroscopeCoreInternal = forwardRef<
                   containerId,
                   currentVisualizationState,
                   {
-                    relayoutEntities: [containerId], // Only re-layout this container
+                    relayoutEntities: undefined, // Full layout to let ELK recalculate positions
                     ...createFitViewOptions(
                       createAutoFitOptions(
                         AutoFitScenarios.CONTAINER_OPERATION,
@@ -693,7 +731,7 @@ const HydroscopeCoreInternal = forwardRef<
     const processDataPipeline = useCallback(
       async (
         newData: HydroscopeData,
-        reason: "initial_load" | "file_load" | "hierarchy_change",
+        reason: "initial_load" | "file_load" | "hierarchy_change" | "remount",
       ) => {
         if (
           !state.visualizationState ||
@@ -743,7 +781,9 @@ const HydroscopeCoreInternal = forwardRef<
                 createAutoFitOptions(
                   reason === "initial_load"
                     ? AutoFitScenarios.INITIAL_LOAD
-                    : AutoFitScenarios.FILE_LOAD,
+                    : reason === "remount"
+                      ? AutoFitScenarios.STYLE_CHANGE // No fitView for remounts
+                      : AutoFitScenarios.FILE_LOAD,
                   state.autoFitEnabled,
                 ),
               ),
@@ -818,17 +858,25 @@ const HydroscopeCoreInternal = forwardRef<
       }
 
       // Determine the reason for data processing
+      const isRemounting = isRemountingRef.current;
       const isInitialLoad = processedDataRef.current === null;
       const isHierarchyChange =
         processedDataRef.current !== null &&
         processedDataRef.current !== data &&
         dataString !== lastDataString;
 
-      const reason = isInitialLoad
-        ? "initial_load"
-        : isHierarchyChange
-          ? "hierarchy_change"
-          : "file_load";
+      const reason = isRemounting
+        ? "remount"
+        : isInitialLoad
+          ? "initial_load"
+          : isHierarchyChange
+            ? "hierarchy_change"
+            : "file_load";
+
+      // Clear remounting flag after determining reason
+      if (isRemountingRef.current) {
+        isRemountingRef.current = false;
+      }
 
       // Use unified pipeline for ALL data processing - this includes smart collapse logic
       processDataPipeline(data, reason);
@@ -1097,7 +1145,7 @@ const HydroscopeCoreInternal = forwardRef<
             containerId,
             state.visualizationState,
             {
-              relayoutEntities: [containerId], // Only re-layout this container
+              relayoutEntities: undefined, // Full layout to let ELK recalculate positions
               ...createFitViewOptions(
                 createAutoFitOptions(
                   AutoFitScenarios.CONTAINER_OPERATION,
@@ -1172,11 +1220,12 @@ const HydroscopeCoreInternal = forwardRef<
         try {
           // Use AsyncCoordinator's synchronous expandContainer method
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
+          // Container expansion tracking is handled by AsyncCoordinator callbacks
           const reactFlowData = await state.asyncCoordinator.expandContainer(
             containerId,
             state.visualizationState,
             {
-              relayoutEntities: [containerId], // Only re-layout this container
+              relayoutEntities: undefined, // Full layout to let ELK recalculate positions
               ...createFitViewOptions(
                 createAutoFitOptions(
                   AutoFitScenarios.CONTAINER_OPERATION,
@@ -1349,70 +1398,6 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
-    // Expose bulk operations through imperative handle
-    useImperativeHandle(
-      ref,
-      () => ({
-        collapseAll: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] collapseAll disabled in readOnly mode",
-              )
-          : handleCollapseAll,
-        expandAll: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] expandAll disabled in readOnly mode",
-              )
-          : handleExpandAll,
-        collapse: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] collapse disabled in readOnly mode",
-              )
-          : handleCollapse,
-        expand: readOnly
-          ? async () =>
-              console.warn("[HydroscopeCore] expand disabled in readOnly mode")
-          : handleExpand,
-        toggle: readOnly
-          ? async () =>
-              console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
-          : handleToggle,
-        fitView: () => {
-          if (reactFlowInstance) {
-            reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
-          } else {
-            console.warn(
-              "[HydroscopeCore] ReactFlow instance not available for fitView",
-            );
-          }
-        },
-        navigateToElement: readOnly
-          ? async () =>
-              console.warn(
-                "[HydroscopeCore] navigateToElement disabled in readOnly mode",
-              )
-          : handleNavigateToElement,
-        updateRenderConfig: handleRenderConfigUpdate,
-        getAsyncCoordinator: () => state.asyncCoordinator,
-        getVisualizationState: () => state.visualizationState,
-      }),
-      [
-        readOnly,
-        handleCollapseAll,
-        handleExpandAll,
-        handleCollapse,
-        handleExpand,
-        handleToggle,
-        handleNavigateToElement,
-        handleRenderConfigUpdate,
-        reactFlowInstance,
-        state.asyncCoordinator,
-        state.visualizationState,
-      ],
-    );
-
     // Handle popup close
     const handlePopupClose = useCallback((nodeId: string) => {
       setState((prev) => {
@@ -1512,6 +1497,85 @@ const HydroscopeCoreInternal = forwardRef<
         });
       },
       [handlePopupClose],
+    );
+
+    // Expose bulk operations through imperative handle
+    useImperativeHandle(
+      ref,
+      () => ({
+        collapseAll: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] collapseAll disabled in readOnly mode",
+              )
+          : handleCollapseAll,
+        expandAll: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] expandAll disabled in readOnly mode",
+              )
+          : handleExpandAll,
+        collapse: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] collapse disabled in readOnly mode",
+              )
+          : handleCollapse,
+        expand: readOnly
+          ? async () =>
+              console.warn("[HydroscopeCore] expand disabled in readOnly mode")
+          : handleExpand,
+        toggle: readOnly
+          ? async () =>
+              console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
+          : handleToggle,
+        fitView: () => {
+          if (reactFlowInstance) {
+            reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
+          } else {
+            console.warn(
+              "[HydroscopeCore] ReactFlow instance not available for fitView",
+            );
+          }
+        },
+        navigateToElement: readOnly
+          ? async () =>
+              console.warn(
+                "[HydroscopeCore] navigateToElement disabled in readOnly mode",
+              )
+          : handleNavigateToElement,
+        updateRenderConfig: handleRenderConfigUpdate,
+        getAsyncCoordinator: () => state.asyncCoordinator,
+        getVisualizationState: () => state.visualizationState,
+        forceReactFlowRemount: () => {
+          console.log(
+            "🔄 [HydroscopeCore] Forcing ReactFlow remount by incrementing reset key",
+          );
+          setReactFlowResetKey((prev) => prev + 1);
+        },
+        showNodePopup: (nodeId: string) => {
+          console.log(`ℹ️ [HydroscopeCore] Showing popup for node ${nodeId}`);
+          const node = state.reactFlowData.nodes.find((n) => n.id === nodeId);
+          if (node) {
+            handleNodePopupToggle(nodeId, node as Node);
+          }
+        },
+      }),
+      [
+        readOnly,
+        handleCollapseAll,
+        handleExpandAll,
+        handleCollapse,
+        handleExpand,
+        handleToggle,
+        handleNavigateToElement,
+        handleRenderConfigUpdate,
+        reactFlowInstance,
+        state.asyncCoordinator,
+        state.visualizationState,
+        state.reactFlowData.nodes,
+        handleNodePopupToggle,
+      ],
     );
 
     // Handle node clicks
@@ -1617,6 +1681,22 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
+          // Check if this includes dimension changes - if so, save viewport BEFORE applying changes
+          const hasDimensionChanges = changes.some(
+            (change) => change.type === "dimensions",
+          );
+          if (
+            hasDimensionChanges &&
+            reactFlowInstance &&
+            !savedViewportRef.current
+          ) {
+            savedViewportRef.current = reactFlowInstance.getViewport();
+            console.log(
+              "[HydroscopeCore] 💾 Saved viewport before dimension changes:",
+              savedViewportRef.current,
+            );
+          }
+
           // Apply all changes using ReactFlow's built-in function
           // This ensures proper handling of dragging, selection, and other node states
           setState((prev) => {
@@ -1634,17 +1714,108 @@ const HydroscopeCoreInternal = forwardRef<
             };
           });
 
-          // Notify AsyncCoordinator that React has finished rendering
-          // This triggers any pending post-render callbacks (like fitView)
-          if (state.asyncCoordinator) {
-            state.asyncCoordinator.notifyRenderComplete();
+          // Check if this is a dimension change (node resize)
+          const dimensionChanges = changes.filter(
+            (change) => change.type === "dimensions",
+          );
+
+          if (dimensionChanges.length > 0) {
+            console.log(
+              `[HydroscopeCore] 📏 Dimension changes detected for ${dimensionChanges.length} nodes`,
+              dimensionChanges.map((c) => c.id),
+            );
+
+            // Deterministic logic: Check if there are pending callbacks (like fitView)
+            // If yes: this is a major change (initial load or container expansion) - trigger callbacks
+            // If no: this is a minor change (node label click) - preserve viewport
+            const hasPendingCallbacks =
+              state.asyncCoordinator?.hasPendingCallbacks() || false;
+
+            console.log(
+              `[HydroscopeCore] 📏 Checking pending callbacks: ${hasPendingCallbacks}`,
+            );
+
+            if (hasPendingCallbacks) {
+              // Major change: initial load or container expansion - trigger fitView
+              console.log(
+                "[HydroscopeCore] 📏 Major change detected (pending callbacks) - calling notifyRenderComplete",
+              );
+              state.asyncCoordinator?.notifyRenderComplete();
+            } else {
+              // Minor change: node label expansion - preserve viewport
+              console.log(
+                "[HydroscopeCore] 📏 Minor change detected (no pending callbacks) - preserving viewport",
+              );
+              // Debounce dimension resets to prevent ResizeObserver loops
+              const now = Date.now();
+              const timeSinceLastReset = now - lastDimensionResetRef.current;
+
+              // Only reset if it's been at least 200ms since the last reset
+              // This prevents ResizeObserver loops from rapid dimension changes
+              if (timeSinceLastReset > 200) {
+                // Clear any pending timeout
+                if (dimensionResetTimeoutRef.current) {
+                  clearTimeout(dimensionResetTimeoutRef.current);
+                }
+
+                // Schedule the reset with longer debounce
+                dimensionResetTimeoutRef.current = setTimeout(() => {
+                  if (reactFlowInstance) {
+                    // Capture viewport before remount
+                    const viewport = reactFlowInstance.getViewport();
+                    console.log(
+                      "[HydroscopeCore] 📸 Captured viewport before remount:",
+                      viewport,
+                    );
+
+                    // Reset ReactFlow to fix edge positions
+                    // Mark that we're remounting to prevent fitView on the subsequent data reload
+                    isRemountingRef.current = true;
+
+                    // Hide ReactFlow immediately before remount
+                    setIsRemountingReactFlow(true);
+
+                    // Wait a tick for opacity to apply, then remount
+                    requestAnimationFrame(() => {
+                      setReactFlowResetKey((prev) => prev + 1);
+
+                      // Restore viewport after remount completes
+                      // Use multiple RAF to ensure ReactFlow has fully rendered
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          requestAnimationFrame(() => {
+                            console.log(
+                              "[HydroscopeCore] 📸 Restoring viewport after remount:",
+                              viewport,
+                            );
+                            reactFlowInstance.setViewport(viewport, {
+                              duration: 0,
+                            });
+                            // Wait one more frame before showing to ensure viewport is applied
+                            requestAnimationFrame(() => {
+                              setIsRemountingReactFlow(false);
+                            });
+                          });
+                        });
+                      });
+                    });
+
+                    lastDimensionResetRef.current = Date.now();
+                  }
+                }, 100) as unknown as number; // 100ms debounce to prevent loops
+              } else {
+                console.log(
+                  `[HydroscopeCore] 📏 Skipping reset - too soon (${timeSinceLastReset}ms since last reset)`,
+                );
+              }
+            }
           }
         } catch (error) {
           console.error("[HydroscopeCore] Error handling node changes:", error);
           handleError(error as Error, "node changes");
         }
       },
-      [readOnly, handleError, state.asyncCoordinator],
+      [readOnly, reactFlowInstance, state.asyncCoordinator, handleError],
     );
 
     // Handle edge changes (required for ReactFlow controls to work properly)
@@ -1670,17 +1841,14 @@ const HydroscopeCoreInternal = forwardRef<
             };
           });
 
-          // Notify AsyncCoordinator that React has finished rendering
-          // This triggers any pending post-render callbacks (like fitView)
-          if (state.asyncCoordinator) {
-            state.asyncCoordinator.notifyRenderComplete();
-          }
+          // Note: We don't call notifyRenderComplete here because edge changes
+          // don't affect node dimensions, which is what fitView needs to wait for
         } catch (error) {
           console.error("[HydroscopeCore] Error handling edge changes:", error);
           handleError(error as Error, "edge changes");
         }
       },
-      [readOnly, handleError, state.asyncCoordinator],
+      [readOnly, handleError],
     );
 
     // Handle drag start
@@ -1911,7 +2079,15 @@ const HydroscopeCoreInternal = forwardRef<
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.01}
           maxZoom={3}
-          style={{ width: "100%", height: "100%", pointerEvents: "auto" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            pointerEvents: "auto",
+            opacity: isRemountingReactFlow ? 0 : 1,
+            transition: isRemountingReactFlow
+              ? "opacity 0.05s ease-out"
+              : "opacity 0.15s ease-in",
+          }}
         >
           {showBackground && <Background />}
           {showControls && (
