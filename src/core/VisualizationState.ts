@@ -8,6 +8,7 @@ import {
   SIZES,
   DEFAULT_COLOR_PALETTE,
   DEFAULT_ELK_ALGORITHM,
+  NAVIGATION_TIMING,
 } from "@/shared/config.js";
 import type { RenderConfig } from "@/components/Hydroscope.js";
 import type {
@@ -100,6 +101,9 @@ export class VisualizationState {
     navigationSelection: null,
     treeNavigationHighlights: new Set<string>(),
     graphNavigationHighlights: new Set<string>(),
+    // Temporary click feedback highlights
+    temporaryHighlights: new Set<string>(),
+    temporaryHighlightTimestamps: new Map<string, number>(),
     // Expansion state (persists through search operations)
     expandedTreeNodes: new Set<string>(),
     expandedGraphContainers: new Set<string>(),
@@ -2896,33 +2900,115 @@ export class VisualizationState {
   /**
    * Navigate to a specific element
    */
-  navigateToElement(elementId: string): void {
+  navigateToElement(
+    elementId: string,
+    options?: { skipTemporaryHighlight?: boolean },
+  ): void {
     this._searchNavigationState.navigationSelection = elementId;
     this._searchNavigationState.lastNavigationTarget = elementId;
     this._searchNavigationState.shouldFocusViewport = true;
-    // Update navigation highlights
+
+    // Clear any existing navigation highlights (tree clicks should only show temporary glow)
     this._searchNavigationState.treeNavigationHighlights.clear();
     this._searchNavigationState.graphNavigationHighlights.clear();
-    this._searchNavigationState.treeNavigationHighlights.add(elementId);
-    // For graph navigation, use lowest visible ancestor logic
-    const lowestVisibleAncestor =
-      this.getLowestVisibleAncestorInGraph(elementId);
-    if (lowestVisibleAncestor) {
-      this._searchNavigationState.graphNavigationHighlights.add(
-        lowestVisibleAncestor,
-      );
-    } else if (this._isElementVisibleInGraph(elementId)) {
-      this._searchNavigationState.graphNavigationHighlights.add(elementId);
+
+    // Set temporary highlight for visual feedback (glow effect) unless skipped
+    if (!options?.skipTemporaryHighlight) {
+      this.setTemporaryHighlight(elementId);
     }
   }
+
   /**
-   * Clear navigation selection
+   * Set temporary highlight for an element (glow effect after click)
+   * Adds a new highlight without clearing existing ones (allows concurrent glows)
    */
-  clearNavigation(): void {
-    this._searchNavigationState.navigationSelection = null;
-    this._searchNavigationState.treeNavigationHighlights.clear();
-    this._searchNavigationState.graphNavigationHighlights.clear();
-    this._searchNavigationState.shouldFocusViewport = false;
+  setTemporaryHighlight(
+    elementId: string,
+    durationMs: number = NAVIGATION_TIMING.HIGHLIGHT_DURATION,
+    onClear?: () => void,
+  ): void {
+    // Don't clear existing highlights - allow multiple concurrent glows
+    const timestamp = Date.now();
+    this._searchNavigationState.temporaryHighlights.add(elementId);
+    this._searchNavigationState.temporaryHighlightTimestamps.set(
+      elementId,
+      timestamp,
+    );
+
+    // Also highlight the visible ancestor in the graph if element is hidden
+    const lowestVisibleAncestor =
+      this.getLowestVisibleAncestorInGraph(elementId);
+    const highlightedElements = [elementId];
+    if (lowestVisibleAncestor && lowestVisibleAncestor !== elementId) {
+      this._searchNavigationState.temporaryHighlights.add(
+        lowestVisibleAncestor,
+      );
+      this._searchNavigationState.temporaryHighlightTimestamps.set(
+        lowestVisibleAncestor,
+        timestamp,
+      );
+      highlightedElements.push(lowestVisibleAncestor);
+    }
+
+    // Auto-clear only these specific highlights after duration
+    setTimeout(() => {
+      // Remove only the highlights we added
+      highlightedElements.forEach((id) => {
+        this.removeTemporaryHighlight(id);
+      });
+      // Notify callback that highlights were cleared so React can re-render
+      if (onClear) {
+        onClear();
+      }
+    }, durationMs);
+  }
+
+  /**
+   * Clear temporary highlights
+   */
+  clearTemporaryHighlights(): void {
+    this._searchNavigationState.temporaryHighlights.clear();
+    this._searchNavigationState.temporaryHighlightTimestamps.clear();
+  }
+
+  /**
+   * Check if an element has temporary highlight (glow effect)
+   */
+  hasTemporaryHighlight(elementId: string): boolean {
+    return this._searchNavigationState.temporaryHighlights.has(elementId);
+  }
+
+  /**
+   * Get temporary highlight timestamp for a specific element
+   * @param elementId - The element to get the timestamp for
+   * @returns The timestamp when the highlight was set, or null if not highlighted
+   */
+  getTemporaryHighlightTimestamp(elementId: string): number | null {
+    return (
+      this._searchNavigationState.temporaryHighlightTimestamps.get(elementId) ??
+      null
+    );
+  }
+
+  /**
+   * Add a temporary highlight to a node or container.
+   * @param id - The ID of the node or container to highlight.
+   */
+  addTemporaryHighlight(id: string): void {
+    this._searchNavigationState.temporaryHighlights.add(id);
+    this._searchNavigationState.temporaryHighlightTimestamps.set(
+      id,
+      Date.now(),
+    );
+  }
+
+  /**
+   * Remove a temporary highlight from a node or container.
+   * @param id - The ID of the node or container to remove the highlight from.
+   */
+  removeTemporaryHighlight(id: string): void {
+    this._searchNavigationState.temporaryHighlights.delete(id);
+    this._searchNavigationState.temporaryHighlightTimestamps.delete(id);
   }
   /**
    * Get highlight type for tree elements

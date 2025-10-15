@@ -107,3 +107,53 @@ export function generateNodeColors(
   });
   return colors;
 }
+
+/**
+ * Get a highlight color that contrasts well with the given color palette
+ * Returns a vibrant color that stands out from typical palette colors
+ */
+export function getHighlightColor(palette: string = "Set3"): {
+  primary: string;
+  border: string;
+  glow: string;
+  background: string;
+} {
+  // Choose a contrasting highlight color based on the palette
+  // For dark palettes, use bright cyan/electric blue
+  if (palette === "Dark2") {
+    return {
+      primary: "#06b6d4", // cyan-500
+      border: "#0891b2", // cyan-600
+      glow: "rgba(6, 182, 212, 0.8)", // cyan with opacity
+      background: "rgba(6, 182, 212, 0.1)",
+    };
+  }
+
+  // For pastel palettes, use vibrant magenta/fuchsia
+  if (palette === "Pastel1") {
+    return {
+      primary: "#d946ef", // fuchsia-500
+      border: "#c026d3", // fuchsia-600
+      glow: "rgba(217, 70, 239, 0.8)", // fuchsia with opacity
+      background: "rgba(217, 70, 239, 0.1)",
+    };
+  }
+
+  // For Set2, use vibrant purple
+  if (palette === "Set2") {
+    return {
+      primary: "#a855f7", // purple-500
+      border: "#9333ea", // purple-600
+      glow: "rgba(168, 85, 247, 0.8)", // purple with opacity
+      background: "rgba(168, 85, 247, 0.1)",
+    };
+  }
+
+  // Default for Set3 and others: vibrant electric blue
+  return {
+    primary: "#3b82f6", // blue-500
+    border: "#2563eb", // blue-600
+    glow: "rgba(59, 130, 246, 0.8)", // blue with opacity
+    background: "rgba(59, 130, 246, 0.1)",
+  };
+}

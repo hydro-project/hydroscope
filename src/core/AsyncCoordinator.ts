@@ -6,6 +6,7 @@ import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 // Removed BridgeFactory import - using direct bridge instances only
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 import { hscopeLogger } from "../utils/logger.js";
+import { NAVIGATION_TIMING } from "../shared/config.js";
 
 interface ErrorRecoveryResult {
   success: boolean;
@@ -2541,112 +2542,6 @@ export class AsyncCoordinator {
       throw error;
     }
   }
-  // Legacy methods for backward compatibility (deprecated - use enhanced pipeline methods)
-
-  // REMOVED: Deprecated methods queueELKLayout, queueReactFlowRender, queueApplicationEvent
-  // These methods encouraged manual orchestration patterns and have been replaced by:
-  // - executeLayoutAndRenderPipeline for complete pipeline operations
-  // - expandContainer/collapseContainer for container operations
-  // - updateSearchResults for search operations
-
-  // Tree hierarchy and navigation methods are implemented later in the file
-  // to avoid duplication with error handling methods
-  /**
-   * Handle container operation error recovery
-   */
-  async recoverFromContainerOperationError(
-    operationId: string,
-    _state: any, // VisualizationState
-    recoveryAction: "retry" | "rollback" | "skip" = "retry",
-  ): Promise<void> {
-    const failedOp = this.failedOperations.find((op) => op.id === operationId);
-    if (!failedOp) {
-      throw new Error(`Failed operation ${operationId} not found`);
-    }
-    switch (recoveryAction) {
-      case "retry":
-        // Re-queue the failed operation with increased retry count
-        const retryOperation = async () => {
-          return await failedOp.operation();
-        };
-        this.queueOperation(failedOp.type, retryOperation, {
-          timeout: failedOp.timeout,
-          maxRetries: (failedOp.maxRetries || 0) + 1,
-        });
-        await this.processQueue();
-        break;
-      case "rollback":
-        // Attempt to rollback the state change (implementation depends on the specific operation)
-        // This is a simplified implementation - in practice, we'd need operation-specific rollback logic
-        console.warn(`Rollback not implemented for operation ${operationId}`);
-        break;
-      case "skip":
-        // Simply remove the failed operation from the failed list and continue
-        this.failedOperations = this.failedOperations.filter(
-          (op) => op.id !== operationId,
-        );
-        break;
-      default:
-        throw new Error(`Unknown recovery action: ${recoveryAction}`);
-    }
-  }
-  /**
-   * Get container operation status and statistics
-   */
-  getContainerOperationStatus(): {
-    expandOperations: {
-      queued: number;
-      processing: boolean;
-      completed: number;
-      failed: number;
-    };
-    collapseOperations: {
-      queued: number;
-      processing: boolean;
-      completed: number;
-      failed: number;
-    };
-    bulkOperations: {
-      queued: number;
-      processing: boolean;
-      completed: number;
-      failed: number;
-    };
-    lastError?: Error;
-  } {
-    const lastError =
-      this.failedOperations.length > 0
-        ? this.failedOperations[this.failedOperations.length - 1].error
-        : undefined;
-    return {
-      expandOperations: {
-        queued: this.queue.filter((op) => op.type === "application_event")
-          .length,
-        processing: this.currentOperation?.type === "application_event",
-        completed: this.completedOperations.filter(
-          (op) => op.type === "application_event",
-        ).length,
-        failed: this.failedOperations.filter(
-          (op) => op.type === "application_event",
-        ).length,
-      },
-      collapseOperations: {
-        queued: 0, // Simplified
-        processing: false,
-        completed: 0,
-        failed: 0,
-      },
-      bulkOperations: {
-        queued: 0, // Simplified
-        processing: false,
-        completed: 0,
-        failed: 0,
-      },
-      lastError,
-    };
-  }
-
-  // Tree Hierarchy Operations (symmetric with graph operations)
   /**
    * Expand tree node using synchronous state changes
    */
@@ -2752,18 +2647,83 @@ export class AsyncCoordinator {
   async focusViewportOnElement(
     elementId: string,
     reactFlowInstance: any,
+    options?: {
+      zoom?: number;
+      duration?: number;
+      visualizationState?: any;
+    },
   ): Promise<void> {
     if (!reactFlowInstance) {
       throw new Error("ReactFlow instance is required for viewport focus");
     }
     try {
-      // Get the node/container position
-      const node = reactFlowInstance.getNode(elementId);
+      console.log(
+        "[AsyncCoordinator] focusViewportOnElement called with elementId:",
+        elementId,
+      );
+
+      // Try to get the node directly first
+      let node = reactFlowInstance.getNode(elementId);
+      let targetElementId = elementId;
+      console.log(
+        "[AsyncCoordinator] Direct node lookup:",
+        node ? "found" : "not found",
+      );
+
+      // If not found and we have visualizationState, find the visible ancestor
+      if (!node && options?.visualizationState) {
+        const visibleElementId =
+          options.visualizationState.getLowestVisibleAncestorInGraph?.(
+            elementId,
+          );
+        console.log("[AsyncCoordinator] Visible ancestor:", visibleElementId);
+        if (visibleElementId) {
+          node = reactFlowInstance.getNode(visibleElementId);
+          targetElementId = visibleElementId;
+          console.log(
+            "[AsyncCoordinator] Ancestor node lookup:",
+            node ? "found" : "not found",
+          );
+        }
+      }
+
       if (node) {
+        // Calculate absolute position by recursively walking up the entire parent chain
+        let absoluteX = node.position.x;
+        let absoluteY = node.position.y;
+
+        // Recursively add all ancestor positions to get absolute coordinates
+        let currentNode = node;
+        while (currentNode.parentNode) {
+          const parent = reactFlowInstance.getNode(currentNode.parentNode);
+          if (parent) {
+            absoluteX += parent.position.x;
+            absoluteY += parent.position.y;
+            currentNode = parent;
+          } else {
+            break;
+          }
+        }
+
+        console.log("[AsyncCoordinator] Node absolute position:", {
+          absoluteX,
+          absoluteY,
+        });
+
         // Pan to the node with smooth animation
-        const x = node.position.x + (node.width || 100) / 2;
-        const y = node.position.y + (node.height || 50) / 2;
-        reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
+        // Default zoom to 1.0 for native font size viewing
+        const x = absoluteX + (node.width || 100) / 2;
+        const y = absoluteY + (node.height || 50) / 2;
+        console.log("[AsyncCoordinator] Centering on:", {
+          x,
+          y,
+          zoom: options?.zoom ?? 1.0,
+        });
+        reactFlowInstance.setCenter(x, y, {
+          zoom: options?.zoom ?? 1.0,
+          duration:
+            options?.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
+        });
       } else {
         console.warn(
           `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
@@ -2917,19 +2877,38 @@ export class AsyncCoordinator {
   navigateToElementWithErrorHandling(
     elementId: string,
     visualizationState: any, // VisualizationState
-    _reactFlowInstance?: any, // ReactFlowInstance
-    _options: {
+    reactFlowInstance?: any, // ReactFlowInstance
+    options: {
       timeout?: number;
       maxRetries?: number;
+      zoom?: number;
+      duration?: number;
     } = {},
   ): ErrorRecoveryResult {
     try {
       // Execute synchronously (respecting core architecture)
+      // Skip temporary highlight here - will be set after viewport animation
       if (visualizationState.navigateToElement) {
-        visualizationState.navigateToElement(elementId);
+        visualizationState.navigateToElement(elementId, {
+          skipTemporaryHighlight: true,
+        });
       } else {
         throw new Error("navigateToElement method not available");
       }
+
+      // Center the viewport on the element with zoom to native size
+      if (reactFlowInstance) {
+        this.focusViewportOnElement(elementId, reactFlowInstance, {
+          zoom: options.zoom ?? 1.0, // Default to 1.0 for native font size
+          duration:
+            options.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
+          visualizationState: visualizationState,
+        });
+      }
+
+      // Don't trigger ReactFlow data updates for navigation
+      // Using spotlight overlay instead to avoid flicker
+
       return {
         success: true,
         fallbackApplied: false,

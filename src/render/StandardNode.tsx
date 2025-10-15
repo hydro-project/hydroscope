@@ -319,6 +319,14 @@ export function StandardNode({
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.08); }
           }
+          @keyframes glowEffect {
+            0%, 100% {
+              box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+            50% {
+              box-shadow: 0 0 20px rgba(255, 215, 0, 1);
+            }
+          }
         `}
       </style>
       <div
@@ -383,7 +391,9 @@ export function StandardNode({
             ? (data as any).searchHighlightStrong
               ? "searchPulseStrong 1.5s ease-in-out infinite"
               : "searchPulse 2s ease-in-out infinite"
-            : undefined,
+            : isClicked
+              ? "glowEffect 1.5s ease-in-out"
+              : undefined,
         }}
         title={
           data.longLabel && data.longLabel !== displayLabel

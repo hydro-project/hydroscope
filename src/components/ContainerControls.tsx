@@ -55,11 +55,11 @@ export const ContainerControls: React.FC<ContainerControlsProps> = ({
   // Monitor async coordinator status
   useEffect(() => {
     const checkAsyncStatus = () => {
-      const containerStatus = asyncCoordinator.getContainerOperationStatus();
+      const elkStatus = asyncCoordinator.getELKOperationStatus();
       setState((prevState) => ({
         ...prevState,
-        isExpanding: containerStatus.expandOperations.processing,
-        isCollapsing: containerStatus.collapseOperations.processing,
+        isExpanding: elkStatus.processing,
+        isCollapsing: elkStatus.processing,
       }));
     };
     // Check status periodically

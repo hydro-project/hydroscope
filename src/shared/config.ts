@@ -339,6 +339,12 @@ export const HIGHLIGHT_STYLING = {
   GLOW_OPACITY: "40", // 40% opacity for glow effects
   BORDER_WIDTH: "2px",
 } as const;
+
+// Navigation and animation timing
+export const NAVIGATION_TIMING = {
+  VIEWPORT_ANIMATION_DURATION: 800, // ms - duration for viewport pan/zoom animation
+  HIGHLIGHT_DURATION: 2000, // ms - duration for temporary highlight glow
+} as const;
 // Type exports
 export type NodeStyle = (typeof NODE_STYLES)[keyof typeof NODE_STYLES];
 export type EdgeStyle = (typeof EDGE_STYLES)[keyof typeof EDGE_STYLES];
