@@ -45,7 +45,7 @@ import {
   withAsyncResizeObserverErrorSuppression,
 } from "../utils/ResizeObserverErrorSuppression.js";
 import { parseDataFromUrl } from "../utils/urlParser.js";
-import { resetAllBridges } from "../utils/bridgeResetUtils.js";
+import { assertCollapsedSetConsistent } from "../core/invariantChecks.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -112,6 +112,8 @@ interface HydroscopeState {
   layoutAlgorithm: string;
   renderConfig: RenderConfig;
   autoFitEnabled: boolean;
+  /** Sync tree and graph state */
+  syncTreeAndGraph: boolean;
   /** Search state */
   searchQuery: string;
   searchMatches: SearchMatch[];
@@ -134,6 +136,7 @@ interface HydroscopeSettings {
   infoPanelOpen: boolean;
   stylePanelOpen: boolean;
   autoFitEnabled: boolean;
+  syncTreeAndGraph: boolean;
   colorPalette: string;
   layoutAlgorithm: string;
   renderConfig: RenderConfig;
@@ -158,6 +161,7 @@ const DEFAULT_SETTINGS: HydroscopeSettings = {
   infoPanelOpen: true,
   stylePanelOpen: false,
   autoFitEnabled: true,
+  syncTreeAndGraph: true,
   colorPalette: DEFAULT_COLOR_PALETTE,
   layoutAlgorithm: DEFAULT_ELK_ALGORITHM,
   renderConfig: DEFAULT_RENDER_CONFIG,
@@ -581,6 +585,7 @@ export const Hydroscope = memo<HydroscopeProps>(
       layoutAlgorithm: settings.layoutAlgorithm || initialLayoutAlgorithm,
       renderConfig: settings.renderConfig,
       autoFitEnabled: true, // Always start with autoFit enabled, regardless of saved settings
+      syncTreeAndGraph: settings.syncTreeAndGraph ?? true, // Default to true (linked)
       searchQuery: "",
       searchMatches: [],
       currentSearchMatch: undefined,
@@ -628,6 +633,7 @@ export const Hydroscope = memo<HydroscopeProps>(
         infoPanelOpen: state.infoPanelOpen,
         stylePanelOpen: state.stylePanelOpen,
         autoFitEnabled: state.autoFitEnabled,
+        syncTreeAndGraph: state.syncTreeAndGraph,
         colorPalette: state.colorPalette,
         layoutAlgorithm: state.layoutAlgorithm,
         renderConfig: state.renderConfig,
@@ -637,6 +643,7 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.infoPanelOpen,
       state.stylePanelOpen,
       state.autoFitEnabled,
+      state.syncTreeAndGraph,
       state.colorPalette,
       state.layoutAlgorithm,
       state.renderConfig,
@@ -685,6 +692,7 @@ export const Hydroscope = memo<HydroscopeProps>(
         infoPanelOpen: state.infoPanelOpen,
         stylePanelOpen: state.stylePanelOpen,
         autoFitEnabled: state.autoFitEnabled,
+        syncTreeAndGraph: state.syncTreeAndGraph,
         colorPalette: state.colorPalette,
         layoutAlgorithm: state.layoutAlgorithm,
         renderConfig: state.renderConfig,
@@ -695,6 +703,7 @@ export const Hydroscope = memo<HydroscopeProps>(
       state.infoPanelOpen,
       state.stylePanelOpen,
       state.autoFitEnabled,
+      state.syncTreeAndGraph,
       state.colorPalette,
       state.layoutAlgorithm,
       state.renderConfig,
@@ -906,6 +915,15 @@ export const Hydroscope = memo<HydroscopeProps>(
 
       debouncedExpandAll();
     }, [onError]);
+    // Handle sync tree and graph toggle
+    const handleSyncTreeAndGraphToggle = useCallback((enabled: boolean) => {
+      setState((prev) => ({
+        ...prev,
+        syncTreeAndGraph: enabled,
+      }));
+      // When enabling sync, sync the tree to match the graph (preserve ReactFlow state)
+      // This is handled automatically by the tree component responding to collapsedContainers prop
+    }, []);
     // Handle auto-fit toggle
     const handleAutoFitToggle = useCallback(() => {
       setState((prev) => {
@@ -1023,6 +1041,10 @@ export const Hydroscope = memo<HydroscopeProps>(
       },
       [],
     );
+    // Track visualization state changes with a counter (since VisualizationState is mutable)
+    const [visualizationStateVersion, setVisualizationStateVersion] =
+      useState(0);
+
     // Handle visualization state changes from HydroscopeCore
     const handleVisualizationStateChange = useCallback(
       (visualizationState: VisualizationState) => {
@@ -1034,6 +1056,83 @@ export const Hydroscope = memo<HydroscopeProps>(
           ...prev,
           currentVisualizationState: visualizationState,
         }));
+        // Increment version to trigger recalculation of derived state
+        setVisualizationStateVersion((v) => v + 1);
+      },
+      [],
+    );
+
+    // Derive collapsed containers from VisualizationState for InfoPanel
+    // Note: visualizationStateVersion is used as a trigger to recalculate when state changes
+    // (VisualizationState is mutable, so we need a separate trigger)
+    const collapsedContainers = useMemo(() => {
+      // Force recalculation when version changes (intentional dependency)
+      void visualizationStateVersion;
+
+      if (!state.currentVisualizationState) return new Set<string>();
+
+      const collapsed = new Set<string>();
+      const allContainers = state.currentVisualizationState.getAllContainers();
+
+      for (const container of allContainers) {
+        if (container.collapsed) {
+          collapsed.add(container.id);
+        }
+      }
+
+      return collapsed;
+    }, [state.currentVisualizationState, visualizationStateVersion]);
+
+    // DEV MODE: Validate sync invariant after deriving collapsedContainers
+    if (
+      process.env.NODE_ENV !== "production" &&
+      state.currentVisualizationState
+    ) {
+      try {
+        // Use aggressive invariant checking
+        assertCollapsedSetConsistent(collapsedContainers, () =>
+          state.currentVisualizationState!.getAllContainers(),
+        );
+      } catch (error) {
+        console.error("Error validating sync invariant:", error);
+      }
+    }
+
+    // Handle container toggle from InfoPanel (when sync is enabled)
+    const handleToggleContainerFromInfoPanel = useCallback(
+      async (containerId: string) => {
+        if (!hydroscopeCoreRef.current) {
+          console.warn("[Hydroscope] HydroscopeCore ref not available");
+          return;
+        }
+
+        // Use HydroscopeCore's imperative toggle method
+        // This will trigger the same logic as clicking a container in the graph
+        try {
+          await hydroscopeCoreRef.current.toggle(containerId);
+        } catch (error) {
+          console.error(
+            `[Hydroscope] Error toggling container ${containerId}:`,
+            error,
+          );
+        }
+      },
+      [],
+    );
+
+    // Handle batch container expansion (for search results)
+    const handleBatchExpandContainers = useCallback(
+      async (containerIds: string[]) => {
+        if (!hydroscopeCoreRef.current) {
+          console.warn("[Hydroscope] HydroscopeCore ref not available");
+          return;
+        }
+
+        try {
+          await hydroscopeCoreRef.current.expandAll(containerIds);
+        } catch (error) {
+          console.error(`[Hydroscope] Error expanding containers:`, error);
+        }
       },
       [],
     );
@@ -1432,10 +1531,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                         }
                       }
                     }}
-                    collapsedContainers={new Set()}
-                    onToggleContainer={(_containerId) => {
-                      // This will be handled by HydroscopeCore
-                    }}
+                    collapsedContainers={collapsedContainers}
+                    onToggleContainer={handleToggleContainerFromInfoPanel}
+                    onTreeExpansion={handleBatchExpandContainers}
                     onElementNavigation={handleElementNavigation}
                     colorPalette={state.colorPalette}
                     legendData={
@@ -1451,6 +1549,8 @@ export const Hydroscope = memo<HydroscopeProps>(
                     asyncCoordinator={
                       hydroscopeCoreRef.current?.getAsyncCoordinator() || null
                     }
+                    syncTreeAndGraph={state.syncTreeAndGraph}
+                    onSyncTreeAndGraphChange={handleSyncTreeAndGraphToggle}
                   />
                 )}
 

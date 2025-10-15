@@ -19,6 +19,12 @@ import type {
   InvariantViolation,
   SearchNavigationState,
 } from "../types/core.js";
+import {
+  assertAncestorsExpanded,
+  assertDescendantsCollapsedAndHidden,
+  logInvariantCheck,
+} from "./invariantChecks.js";
+
 export class VisualizationState {
   private _nodes = new Map<string, GraphNode>();
   private _edges = new Map<string, GraphEdge>();
@@ -440,6 +446,11 @@ export class VisualizationState {
       }
       if (childContainer) {
         childContainer.hidden = false;
+        // CRITICAL FIX: If the child container is still collapsed, ensure its descendants are properly hidden
+        // This maintains the invariant that collapsed containers have hidden descendants
+        if (childContainer.collapsed) {
+          this._hideAllDescendants(childId);
+        }
         // Don't automatically show contents of child containers - they keep their collapsed state
         // Child containers will only show their contents when explicitly expanded
       }
@@ -1722,12 +1733,23 @@ export class VisualizationState {
       );
       return;
     }
+
+    // Invariant check: All ancestors must be expanded before we expand this container
+    assertAncestorsExpanded(
+      id,
+      (cid: string) => this._containers.get(cid),
+      (cid: string) => this._containerParentMap.get(cid),
+      `_expandContainerInternal(${id})`,
+    );
+
     container.collapsed = false;
     container.hidden = false;
     // Track expanded graph containers
     this._searchNavigationState.expandedGraphContainers.add(id);
     this._showImmediateChildren(id);
     this.restoreEdgesForContainer(id);
+
+    logInvariantCheck(`_expandContainerInternal(${id})`, { containerId: id });
     this.validateInvariants();
   }
   private _collapseContainerInternal(id: string): void {
@@ -1750,6 +1772,15 @@ export class VisualizationState {
     this._searchNavigationState.expandedGraphContainers.delete(id);
     this._hideAllDescendants(id);
     this.aggregateEdgesForContainer(id);
+
+    // Invariant check: All descendants must be properly collapsed and hidden
+    assertDescendantsCollapsedAndHidden(
+      id,
+      (cid: string) => this._containers.get(cid),
+      (nid: string) => this._nodes.get(nid),
+    );
+
+    logInvariantCheck(`_collapseContainerInternal(${id})`, { containerId: id });
     this.validateInvariants();
   }
   /**

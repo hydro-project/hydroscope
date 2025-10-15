@@ -87,8 +87,8 @@ export interface HydroscopeCoreHandle {
   /** Collapse all containers atomically */
   collapseAll: () => Promise<void>;
 
-  /** Expand all containers atomically */
-  expandAll: () => Promise<void>;
+  /** Expand all containers atomically (or specific containers if IDs provided) */
+  expandAll: (containerIds?: string[]) => Promise<void>;
 
   /** Collapse a specific container */
   collapse: (containerId: string) => Promise<void>;
@@ -688,6 +688,9 @@ const HydroscopeCoreInternal = forwardRef<
               // - ReactFlow data generated and updated
               // - FitView triggered (if enabled)
 
+              // Notify parent component of visualization state change
+              onVisualizationStateChange?.(currentVisualizationState);
+
               console.debug(
                 `[HydroscopeCore] Container ${wasCollapsed ? "expand" : "collapse"} operation completed`,
                 { containerId, reactFlowData },
@@ -716,6 +719,7 @@ const HydroscopeCoreInternal = forwardRef<
         state.autoFitEnabled,
         onContainerExpand,
         onContainerCollapse,
+        onVisualizationStateChange,
         handleError,
       ],
     );
@@ -1004,11 +1008,15 @@ const HydroscopeCoreInternal = forwardRef<
           // - ReactFlow data generated and updated
           // - FitView triggered (if enabled)
 
-          // Notify parent component of visualization state change
-          onVisualizationStateChange?.(state.visualizationState);
+          // Notify parent component of visualization state change AFTER a short delay
+          // This ensures post-render callbacks (fitView) complete before triggering React re-renders
+          const currentState = state.visualizationState;
+          setTimeout(() => {
+            onVisualizationStateChange?.(currentState);
+          }, 0);
 
           // Call success callback
-          onCollapseAll?.(state.visualizationState);
+          onCollapseAll?.(currentState);
 
           console.debug("[HydroscopeCore] Collapse all operation completed", {
             reactFlowData,
@@ -1033,58 +1041,66 @@ const HydroscopeCoreInternal = forwardRef<
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleExpandAll = useCallback(
-      withAsyncResizeObserverErrorSuppression(async () => {
-        if (
-          !state.visualizationState ||
-          !state.asyncCoordinator ||
-          !elkBridgeRef.current
-        ) {
-          console.warn(
-            "[HydroscopeCore] Cannot expand all - missing dependencies",
-          );
-          return;
-        }
-
-        try {
-          // Use AsyncCoordinator's synchronous expandAllContainers method
-          // When it returns, the complete pipeline is done (state change + layout + render + fitView)
-          const reactFlowData =
-            await state.asyncCoordinator.expandAllContainers(
-              state.visualizationState,
-              {
-                relayoutEntities: undefined, // Full layout for expand all
-                ...createFitViewOptions(
-                  createAutoFitOptions(
-                    AutoFitScenarios.CONTAINER_OPERATION,
-                    state.autoFitEnabled,
-                  ),
-                ),
-              },
+      withAsyncResizeObserverErrorSuppression(
+        async (containerIds?: string[]) => {
+          if (
+            !state.visualizationState ||
+            !state.asyncCoordinator ||
+            !elkBridgeRef.current
+          ) {
+            console.warn(
+              "[HydroscopeCore] Cannot expand all - missing dependencies",
             );
+            return;
+          }
 
-          // At this point, the ENTIRE pipeline is complete:
-          // - All containers expanded
-          // - Layout calculated
-          // - ReactFlow data generated and updated
-          // - FitView triggered (if enabled)
+          try {
+            // Use AsyncCoordinator's synchronous expandAllContainers method
+            // When it returns, the complete pipeline is done (state change + layout + render + fitView)
+            // Can pass containerIds to expand only specific containers (e.g., for search)
+            const reactFlowData =
+              await state.asyncCoordinator.expandAllContainers(
+                state.visualizationState,
+                containerIds, // Pass container IDs if provided
+                {
+                  relayoutEntities: undefined, // Full layout for expand all
+                  ...createFitViewOptions(
+                    createAutoFitOptions(
+                      AutoFitScenarios.CONTAINER_OPERATION,
+                      state.autoFitEnabled,
+                    ),
+                  ),
+                },
+              );
 
-          // Notify parent component of visualization state change
-          onVisualizationStateChange?.(state.visualizationState);
+            // At this point, the ENTIRE pipeline is complete:
+            // - All containers expanded
+            // - Layout calculated
+            // - ReactFlow data generated and updated
+            // - FitView triggered (if enabled)
 
-          // Call success callback
-          onExpandAll?.(state.visualizationState);
+            // Notify parent component of visualization state change AFTER a short delay
+            // This ensures post-render callbacks (fitView) complete before triggering React re-renders
+            const currentState = state.visualizationState;
+            setTimeout(() => {
+              onVisualizationStateChange?.(currentState);
+            }, 0);
 
-          console.debug("[HydroscopeCore] Expand all operation completed", {
-            reactFlowData,
-          });
-        } catch (error) {
-          console.error(
-            "[HydroscopeCore] Error in expandAll operation:",
-            error,
-          );
-          handleError(error as Error, "bulk expand operation");
-        }
-      }),
+            // Call success callback
+            onExpandAll?.(currentState);
+
+            console.debug("[HydroscopeCore] Expand all operation completed", {
+              reactFlowData,
+            });
+          } catch (error) {
+            console.error(
+              "[HydroscopeCore] Error in expandAll operation:",
+              error,
+            );
+            handleError(error as Error, "bulk expand operation");
+          }
+        },
+      ),
       [
         state.visualizationState,
         state.asyncCoordinator,
