@@ -4,6 +4,7 @@
  * These checks can be enabled/disabled via DEBUG_INVARIANTS flag
  * When enabled, they will throw errors immediately when invariants are violated
  */
+import { hscopeLogger } from "../utils/logger.js";
 
 // Global debug flag - always enabled for now to catch bugs early
 // TODO: Make this configurable via import.meta.env or build flag
@@ -194,6 +195,7 @@ export function assertCollapsedSetConsistent(
 
 /**
  * Log an invariant check (useful for tracking what's being validated)
+ * Uses logger system so it's only shown when "debug" category is enabled
  */
 export function logInvariantCheck(
   operation: string,
@@ -201,5 +203,7 @@ export function logInvariantCheck(
 ): void {
   if (!DEBUG_INVARIANTS) return;
 
-  console.log(`🔍 Invariant check: ${operation}`, details || "");
+  // Use logger instead of console.log to avoid noise in production
+  // Enable with: (window as any).__HYDRO_LOGS = 'debug'
+  hscopeLogger.log("debug", `🔍 Invariant check: ${operation}`, details || "");
 }
