@@ -47,6 +47,7 @@ import {
 } from "../utils/ResizeObserverErrorSuppression.js";
 import { parseDataFromUrl } from "../utils/urlParser.js";
 import { assertCollapsedSetConsistent } from "../core/invariantChecks.js";
+import { resetAllBridges } from "../utils/bridgeResetUtils.js";
 
 // ============================================================================
 // TypeScript Interfaces
