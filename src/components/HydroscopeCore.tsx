@@ -66,7 +66,9 @@ import type { RenderConfig } from "./Hydroscope.js";
 import {
   DEFAULT_COLOR_PALETTE,
   DEFAULT_ELK_ALGORITHM,
+  NAVIGATION_TIMING,
 } from "../shared/config.js";
+import { getHighlightColor } from "../shared/colorUtils.js";
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 
 import type {
@@ -252,6 +254,15 @@ interface HydroscopeCoreState {
 
   /** Active popup nodes (nodeId -> popupNodeId mapping) */
   activePopups: Map<string, string>;
+
+  /** Spotlight effects for navigation highlighting (supports concurrent glows) */
+  spotlights: Array<{
+    id: string; // unique ID for this spotlight (timestamp-based)
+    elementId: string;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    timestamp: number; // when this spotlight was created
+  }>;
 }
 
 // ============================================================================
@@ -311,6 +322,7 @@ const HydroscopeCoreInternal = forwardRef<
       asyncCoordinator: null,
       reactFlowData: { nodes: [], edges: [] },
       error: null,
+      spotlights: [],
       isLoading: true,
       autoFitEnabled: autoFitEnabled,
       activePopups: new Map(),
@@ -1390,6 +1402,109 @@ const HydroscopeCoreInternal = forwardRef<
           if (!result.success) {
             throw new Error("Navigation failed with error handling");
           }
+
+          // Find the actual visible element in the graph (might be a parent container)
+          const visibleElementId =
+            state.visualizationState.getLowestVisibleAncestorInGraph(
+              elementId,
+            ) || elementId;
+
+          // Wait for viewport animation to complete before showing highlights
+          setTimeout(() => {
+            // Set temporary highlight in VisualizationState (for tree)
+            if (state.visualizationState) {
+              console.log(
+                "[HydroscopeCore] Setting temporary highlight for:",
+                elementId,
+              );
+              state.visualizationState.setTemporaryHighlight(
+                elementId,
+                undefined, // use default duration
+                () => {
+                  // Callback when highlight is cleared - trigger re-render
+                  console.log(
+                    "[HydroscopeCore] Temporary highlight cleared, triggering re-render",
+                  );
+                  if (state.visualizationState) {
+                    onVisualizationStateChange?.(state.visualizationState);
+                  }
+                },
+              );
+              console.log(
+                "[HydroscopeCore] Has temporary highlight?",
+                state.visualizationState.hasTemporaryHighlight(elementId),
+              );
+              // Trigger tree re-render to show highlight
+              if (state.visualizationState) {
+                onVisualizationStateChange?.(state.visualizationState);
+              }
+            }
+
+            // Get the actual DOM element to find its rendered position (for graph overlay)
+            const nodeElement = document.querySelector(
+              `[data-id="${visibleElementId}"]`,
+            );
+            if (nodeElement) {
+              const rect = nodeElement.getBoundingClientRect();
+              const container = document.querySelector(
+                '[data-testid="graph-container"]',
+              );
+              const containerRect = container?.getBoundingClientRect();
+
+              if (containerRect) {
+                // Calculate position relative to the graph container
+                const screenX = rect.left - containerRect.left + rect.width / 2;
+                const screenY = rect.top - containerRect.top + rect.height / 2;
+                const screenWidth = rect.width;
+                const screenHeight = rect.height;
+
+                console.log("[HydroscopeCore] Spotlight DOM position:", {
+                  rect,
+                  containerRect,
+                  screen: { screenX, screenY },
+                });
+
+                // Add new spotlight to array (allows concurrent glows)
+                const spotlightId = `spotlight-${Date.now()}-${visibleElementId}`;
+                const newSpotlight = {
+                  id: spotlightId,
+                  elementId: visibleElementId,
+                  position: {
+                    x: screenX - screenWidth / 2,
+                    y: screenY - screenHeight / 2,
+                  },
+                  size: {
+                    width: screenWidth,
+                    height: screenHeight,
+                  },
+                  timestamp: Date.now(),
+                };
+
+                setState((prev) => ({
+                  ...prev,
+                  spotlights: [...prev.spotlights, newSpotlight],
+                }));
+
+                // Remove this specific spotlight after duration
+                setTimeout(() => {
+                  setState((prev) => ({
+                    ...prev,
+                    spotlights: prev.spotlights.filter(
+                      (s) => s.id !== spotlightId,
+                    ),
+                  }));
+                }, NAVIGATION_TIMING.HIGHLIGHT_DURATION);
+              }
+            }
+          }, NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION);
+
+          // Notify parent component of visualization state change to trigger re-render
+          if (state.visualizationState) {
+            onVisualizationStateChange?.(state.visualizationState);
+
+            // Don't trigger another re-render after highlight clears
+            // The CSS animation will handle the fade-out smoothly
+          }
         } catch (error) {
           console.error(
             `[HydroscopeCore] Error navigating to element ${elementId}:`,
@@ -1403,6 +1518,7 @@ const HydroscopeCoreInternal = forwardRef<
         state.asyncCoordinator,
         reactFlowInstance,
         handleError,
+        onVisualizationStateChange,
       ],
     );
 
@@ -2068,93 +2184,146 @@ const HydroscopeCoreInternal = forwardRef<
     }
 
     return (
-      <div
-        className={className}
-        data-testid="graph-container"
-        style={{
-          ...containerStyle,
-          position: "relative",
-          pointerEvents: "auto",
-        }}
-        onClick={() => {
-          // Container div clicked
-        }}
-      >
-        <ReactFlow
-          key={reactFlowResetKey} // EXPERIMENT: Force ReactFlow reset on container operations
-          nodes={state.reactFlowData.nodes as Node[]}
-          edges={state.reactFlowData.edges as any[]}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onInit={() => {
-            // ReactFlow instance initialized
-          }}
-          onNodeClick={readOnly ? undefined : handleNodeClick}
-          onNodesChange={readOnly ? undefined : handleNodesChange}
-          onEdgesChange={readOnly ? undefined : handleEdgesChange}
-          onNodeDragStart={readOnly ? undefined : handleNodeDragStart}
-          onNodeDrag={readOnly ? undefined : handleNodeDrag}
-          onNodeDragStop={readOnly ? undefined : handleNodeDragStop}
-          onPaneClick={
-            readOnly
-              ? undefined
-              : () => {
-                  // Pane clicked
-                }
-          }
-          nodesDraggable={!readOnly}
-          nodesConnectable={!readOnly}
-          elementsSelectable={!readOnly}
-          fitViewOptions={{ padding: 0.2 }}
-          minZoom={0.01}
-          maxZoom={3}
-          style={{
-            width: "100%",
-            height: "100%",
-            pointerEvents: "auto",
-            opacity: isRemountingReactFlow ? 0 : 1,
-            transition: isRemountingReactFlow
-              ? "opacity 0.05s ease-out"
-              : "opacity 0.15s ease-in",
-          }}
-        >
-          {showBackground && <Background />}
-          {showControls && (
-            <>
-              {/* Standard ReactFlow controls with zoom and fit view */}
-              <Controls />
-            </>
-          )}
-          {showMiniMap && <MiniMap />}
-        </ReactFlow>
-
-        {/* Node count display for e2e testing */}
+      <>
+        <style>
+          {`
+            @keyframes glowPulse {
+              0% { 
+                opacity: 0;
+                transform: scale(0.95);
+              }
+              15% { 
+                opacity: 1;
+                transform: scale(1);
+              }
+              85% { 
+                opacity: 1;
+                transform: scale(1);
+              }
+              100% { 
+                opacity: 0;
+                transform: scale(1.02);
+              }
+            }
+          `}
+        </style>
         <div
-          data-testid="node-count"
+          className={className}
+          data-testid="graph-container"
           style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            background: "rgba(255, 255, 255, 0.9)",
-            padding: "4px 8px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            color: "#666",
-            pointerEvents: "none",
-            zIndex: 1000,
+            ...containerStyle,
+            position: "relative",
+            pointerEvents: "auto",
+          }}
+          onClick={() => {
+            // Container div clicked
           }}
         >
-          {state.reactFlowData.nodes.length}
-        </div>
+          <ReactFlow
+            key={reactFlowResetKey} // EXPERIMENT: Force ReactFlow reset on container operations
+            nodes={state.reactFlowData.nodes as Node[]}
+            edges={state.reactFlowData.edges as any[]}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onInit={() => {
+              // ReactFlow instance initialized
+            }}
+            onNodeClick={readOnly ? undefined : handleNodeClick}
+            onNodesChange={readOnly ? undefined : handleNodesChange}
+            onEdgesChange={readOnly ? undefined : handleEdgesChange}
+            onNodeDragStart={readOnly ? undefined : handleNodeDragStart}
+            onNodeDrag={readOnly ? undefined : handleNodeDrag}
+            onNodeDragStop={readOnly ? undefined : handleNodeDragStop}
+            onPaneClick={
+              readOnly
+                ? undefined
+                : () => {
+                    // Pane clicked
+                  }
+            }
+            nodesDraggable={!readOnly}
+            nodesConnectable={!readOnly}
+            elementsSelectable={!readOnly}
+            fitViewOptions={{ padding: 0.2 }}
+            minZoom={0.01}
+            maxZoom={3}
+            style={{
+              width: "100%",
+              height: "100%",
+              pointerEvents: "auto",
+              opacity: isRemountingReactFlow ? 0 : 1,
+              transition: isRemountingReactFlow
+                ? "opacity 0.05s ease-out"
+                : "opacity 0.15s ease-in",
+            }}
+          >
+            {showBackground && <Background />}
+            {showControls && (
+              <>
+                {/* Standard ReactFlow controls with zoom and fit view */}
+                <Controls />
+              </>
+            )}
+            {showMiniMap && <MiniMap />}
+          </ReactFlow>
 
-        {/* CSS for loading spinner animation */}
-        <style>{`
+          {/* Glow overlays for navigation highlighting (supports concurrent glows) */}
+          {state.spotlights.map((spotlight) => {
+            // Get palette-aware highlight colors
+            const palette =
+              state.visualizationState?.getColorPalette() ||
+              DEFAULT_COLOR_PALETTE;
+            const highlightColor = getHighlightColor(palette);
+
+            return (
+              <div
+                key={spotlight.id}
+                style={{
+                  position: "absolute",
+                  left: spotlight.position.x,
+                  top: spotlight.position.y,
+                  width: spotlight.size.width,
+                  height: spotlight.size.height,
+                  pointerEvents: "none",
+                  border: `3px solid ${highlightColor.border}`,
+                  borderRadius: "8px",
+                  boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
+                  backgroundColor: highlightColor.background,
+                  animation: "glowPulse 2s ease-in-out",
+                  zIndex: 1000,
+                }}
+              />
+            );
+          })}
+
+          {/* Node count display for e2e testing */}
+          <div
+            data-testid="node-count"
+            style={{
+              position: "absolute",
+              top: "10px",
+              right: "10px",
+              background: "rgba(255, 255, 255, 0.9)",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              fontSize: "12px",
+              color: "#666",
+              pointerEvents: "none",
+              zIndex: 1000,
+            }}
+          >
+            {state.reactFlowData.nodes.length}
+          </div>
+
+          {/* CSS for loading spinner animation */}
+          <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
       `}</style>
-      </div>
+        </div>
+      </>
     );
   },
 );

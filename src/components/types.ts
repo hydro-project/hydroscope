@@ -89,6 +89,7 @@ export interface InfoPanelProps extends BaseComponentProps {
 export interface HierarchyTreeNode {
   id: string;
   children: HierarchyTreeNode[];
+  hasTemporaryHighlight?: boolean; // Indicates if the node has a temporary highlight
 }
 export interface HierarchyTreeProps extends BaseComponentProps {
   // Data - hierarchyTree removed, built internally from visualizationState

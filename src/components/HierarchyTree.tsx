@@ -22,6 +22,7 @@ import {
   SEARCH_HIGHLIGHT_COLORS,
   SEARCH_CURRENT_COLORS,
 } from "../shared/config";
+import { getHighlightColor } from "../shared/colorUtils";
 import type { VisualizationState } from "../core/VisualizationState";
 // import type { AsyncCoordinator } from "../core/AsyncCoordinator";
 import type { Container } from "../shared/types";
@@ -46,7 +47,9 @@ function buildHierarchyTreeFromState(
       if (visualizationState.getContainer(childId)) childrenIds.push(childId);
     });
     const children: HierarchyTreeNode[] = childrenIds.map(buildNode);
-    return { id: containerId, children };
+    const hasTemporaryHighlight =
+      visualizationState.hasTemporaryHighlight(containerId);
+    return { id: containerId, children, hasTemporaryHighlight };
   };
   // Get top-level containers (those without parents)
   const rootContainers = visualizationState.visibleContainers.filter(
@@ -77,29 +80,42 @@ function createSearchHighlightDiv(
   match: boolean,
   isCurrent: boolean,
   baseStyle: React.CSSProperties,
+  hasTemporaryHighlight: boolean = false,
+  palette: string = "Set3",
 ): React.ReactNode {
-  return (
-    <div
-      style={
-        match
-          ? {
-              backgroundColor: isCurrent
-                ? SEARCH_CURRENT_COLORS.backgroundColor
-                : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
-              borderRadius: 4,
-              padding: "2px 4px",
-              margin: "-1px -2px",
-              fontWeight: isCurrent ? "600" : "500",
-              border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
-              color: isCurrent ? "#ffffff" : "#000000",
-              ...baseStyle,
-            }
-          : baseStyle
-      }
-    >
-      {text}
-    </div>
-  );
+  let style: React.CSSProperties = baseStyle;
+
+  if (hasTemporaryHighlight) {
+    // Temporary glow effect after click - synced with graph glow
+    // Use palette-aware contrasting color
+    const highlightColor = getHighlightColor(palette);
+    style = {
+      backgroundColor: highlightColor.background,
+      borderRadius: 4,
+      padding: "2px 4px",
+      margin: "-1px -2px",
+      fontWeight: "600",
+      border: `2px solid ${highlightColor.border}`,
+      boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
+      animation: "treeGlowPulse 2s ease-in-out",
+      ...baseStyle,
+    };
+  } else if (match) {
+    style = {
+      backgroundColor: isCurrent
+        ? SEARCH_CURRENT_COLORS.backgroundColor
+        : SEARCH_HIGHLIGHT_COLORS.backgroundColor,
+      borderRadius: 4,
+      padding: "2px 4px",
+      margin: "-1px -2px",
+      fontWeight: isCurrent ? "600" : "500",
+      border: `1px solid ${isCurrent ? SEARCH_CURRENT_COLORS.border : SEARCH_HIGHLIGHT_COLORS.border}`,
+      color: isCurrent ? "#ffffff" : "#000000",
+      ...baseStyle,
+    };
+  }
+
+  return <div style={style}>{text}</div>;
 }
 /**
  * Helper function to check if a container has matching descendants in search results
@@ -142,12 +158,29 @@ function createContainerDisplayTitle(
   isCurrent: boolean,
   showNodeCounts: boolean,
   hasCollapsedMatchingDescendants: boolean = false,
+  hasTemporaryHighlight: boolean = false,
+  palette: string = "Set3",
 ): React.ReactNode {
   const countText =
     showNodeCounts && hasLeafChildren ? ` (${leafChildrenCount})` : "";
   // Determine highlight style based on match type
   let highlightStyle: React.CSSProperties = {};
-  if (match) {
+
+  if (hasTemporaryHighlight) {
+    // Temporary glow effect after click - synced with graph glow
+    // Use palette-aware contrasting color
+    const highlightColor = getHighlightColor(palette);
+    highlightStyle = {
+      backgroundColor: highlightColor.background,
+      borderRadius: 4,
+      padding: "2px 4px",
+      margin: "-1px -2px",
+      fontWeight: "600",
+      border: `2px solid ${highlightColor.border}`,
+      boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
+      animation: "treeGlowPulse 2s ease-in-out",
+    };
+  } else if (match) {
     // Direct match - use full highlight
     highlightStyle = {
       backgroundColor: isCurrent
@@ -174,13 +207,14 @@ function createContainerDisplayTitle(
     <div style={highlightStyle}>
       <span
         style={{
-          fontWeight: match
-            ? isCurrent
-              ? 600
-              : 500
-            : hasCollapsedMatchingDescendants
-              ? 500
-              : 400,
+          fontWeight:
+            match || hasTemporaryHighlight
+              ? isCurrent
+                ? 600
+                : 500
+              : hasCollapsedMatchingDescendants
+                ? 500
+                : 400,
         }}
       >
         {truncatedLabel}
@@ -207,6 +241,8 @@ function getTreeDataStructure(
   showNodeCounts: boolean = true,
 ): TreeDataNode[] {
   // Build hierarchy tree structure from VisualizationState
+  // Get the current color palette for highlight colors
+  const palette = visualizationState.getColorPalette();
   const hierarchyTree = buildHierarchyTreeFromState(visualizationState);
   const convertToTreeData = (nodes: HierarchyTreeNode[]): TreeDataNode[] => {
     return nodes.map((node) => {
@@ -260,6 +296,8 @@ function getTreeDataStructure(
                 match,
                 isCurrent,
                 { fontSize: "11px", opacity: 0.8 },
+                visualizationState?.hasTemporaryHighlight(leafNode.id) ?? false,
+                palette,
               ),
               isLeaf: true,
               data: {
@@ -307,6 +345,8 @@ function getTreeDataStructure(
                 match,
                 isCurrent,
                 { fontSize: "11px", opacity: 0.8 },
+                visualizationState?.hasTemporaryHighlight(leafNode.id) ?? false,
+                palette,
               ),
               isLeaf: true,
               data: {
@@ -330,6 +370,10 @@ function getTreeDataStructure(
         isCollapsed && searchResults
           ? hasMatchingDescendants(node.id, searchResults, visualizationState)
           : false;
+      // Check for temporary highlight (glow effect)
+      const hasTemporaryHighlight = visualizationState.hasTemporaryHighlight(
+        node.id,
+      );
       const displayTitle = createContainerDisplayTitle(
         truncatedLabel,
         hasChildren,
@@ -340,6 +384,8 @@ function getTreeDataStructure(
         isCurrent,
         showNodeCounts,
         hasCollapsedMatchingDescendants,
+        hasTemporaryHighlight,
+        palette,
       );
       return {
         key: node.id,
@@ -786,6 +832,26 @@ export function HierarchyTree({
           .ant-tree-treenode .ant-tree-switcher.search-match-ancestor .ant-tree-switcher-icon {
             color: ${SEARCH_HIGHLIGHT_COLORS.border} !important;
             font-weight: bold;
+          }
+          
+          /* Glow pulse animation for tree highlights - synced with graph */
+          @keyframes treeGlowPulse {
+            0% { 
+              opacity: 0;
+              transform: scale(0.98);
+            }
+            15% { 
+              opacity: 1;
+              transform: scale(1);
+            }
+            85% { 
+              opacity: 1;
+              transform: scale(1);
+            }
+            100% { 
+              opacity: 0;
+              transform: scale(1.01);
+            }
           }
         `}
       </style>

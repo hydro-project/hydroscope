@@ -1496,6 +1496,18 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
       return elements.map((element) => {
         const highlightType = state.getGraphElementHighlightType(element.id);
+        const hasTemporaryHighlight = state.hasTemporaryHighlight?.(element.id);
+
+        // Check if element has temporary highlight (glow effect)
+        if (hasTemporaryHighlight) {
+          // Apply temporary highlight with stronger glow
+          return elementType === "node"
+            ? (this.applyTemporaryHighlightToElement(
+                element as ReactFlowNode,
+                state,
+              ) as T)
+            : element; // Edges don't get temporary highlights
+        }
 
         if (!highlightType) {
           // No highlights to apply, return as-is (don't clear non-existent highlights)
@@ -1572,9 +1584,24 @@ export class ReactFlowBridge implements IReactFlowBridge {
     _state: VisualizationState,
   ): React.CSSProperties {
     return {
-      backgroundColor: NAVIGATION_HIGHLIGHT_COLORS.backgroundColor,
+      backgroundColor: "rgba(59, 130, 246, 0.15)", // Blue with 15% opacity
       border: `${HIGHLIGHT_STYLING.BORDER_WIDTH} solid ${NAVIGATION_HIGHLIGHT_COLORS.border}`,
       boxShadow: `0 0 8px ${NAVIGATION_HIGHLIGHT_COLORS.border}${HIGHLIGHT_STYLING.GLOW_OPACITY}`, // Add glow effect
+    };
+  }
+  /**
+   * Get temporary highlight style for a node (stronger glow effect)
+   */
+  private getTemporaryHighlightStyle(
+    _node: ReactFlowNode,
+    _state: VisualizationState,
+  ): React.CSSProperties {
+    // Use green color to match tree temporary highlights
+    return {
+      backgroundColor: "rgba(76, 175, 80, 0.25)", // Green with opacity
+      border: "2px solid #4caf50",
+      boxShadow: "0 0 20px 4px rgba(76, 175, 80, 0.8)", // Strong green glow effect
+      transition: "all 0.3s ease-out", // Smooth transition for fade effect
     };
   }
   /**
@@ -1675,6 +1702,13 @@ export class ReactFlowBridge implements IReactFlowBridge {
   ): ReactFlowNode {
     const navigationStyle = this.getNavigationHighlightStyle(node, state);
     return this.createHighlightedNode(node, navigationStyle, "navigation");
+  }
+  private applyTemporaryHighlightToElement(
+    node: ReactFlowNode,
+    state: VisualizationState,
+  ): ReactFlowNode {
+    const temporaryStyle = this.getTemporaryHighlightStyle(node, state);
+    return this.createHighlightedNode(node, temporaryStyle, "navigation");
   }
 
   private applySearchHighlightToEdge(

@@ -93,6 +93,9 @@ export interface SearchNavigationState {
   navigationSelection: string | null; // Currently selected element
   treeNavigationHighlights: Set<string>; // Navigation highlights in tree hierarchy
   graphNavigationHighlights: Set<string>; // Navigation highlights in ReactFlow graph
+  // Temporary click feedback highlights (glow effect)
+  temporaryHighlights: Set<string>; // Elements that should glow briefly after click
+  temporaryHighlightTimestamps: Map<string, number>; // Per-element timestamps for independent animation timing
   // Expansion state (persists through search operations)
   expandedTreeNodes: Set<string>; // Currently expanded tree hierarchy nodes
   expandedGraphContainers: Set<string>; // Currently expanded ReactFlow graph containers
