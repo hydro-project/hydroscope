@@ -3,6 +3,7 @@
  * Architectural constraints: Stateless, synchronous conversions, immutable output
  */
 import React from "react";
+import { hscopeLogger } from "../utils/logger.js";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import type {
   StyleConfig,
@@ -37,7 +38,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
   ): ReactFlowData {
     // Detect large graphs for performance optimizations
     const isLargeGraph = this.isLargeGraph(state);
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `🌉 [ReactFlowBridge] isLargeGraph=${isLargeGraph}, nodeCount=${state.visibleNodes.length}, using ${isLargeGraph ? "OPTIMIZED" : "REGULAR"} conversion`,
     );
 
@@ -47,7 +49,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       ? this.convertNodesOptimized(state, interactionHandler, options)
       : this.convertNodes(state, interactionHandler, options);
     const nodeEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Node conversion took ${(nodeEndTime - nodeStartTime).toFixed(2)}ms`,
     );
 
@@ -56,7 +59,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       ? this.convertEdgesOptimized(state)
       : this.convertEdges(state);
     const edgeEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Edge conversion took ${(edgeEndTime - edgeStartTime).toFixed(2)}ms`,
     );
 
@@ -65,7 +69,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
     let styledNodes = this.applyNodeStyles(nodes);
     let styledEdges = this.applyEdgeStyles(edges, state);
     const styleEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Basic styling took ${(styleEndTime - styleStartTime).toFixed(2)}ms`,
     );
 
@@ -74,7 +79,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
     styledNodes = this.applyAllHighlights(styledNodes, state, "node");
     styledEdges = this.applyAllHighlights(styledEdges, state, "edge");
     const highlightEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Highlight application took ${(highlightEndTime - highlightStartTime).toFixed(2)}ms`,
     );
     // Create result with mutable arrays for ReactFlow compatibility
@@ -204,7 +210,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       }
     }
     const mappingEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Parent mapping took ${(mappingEndTime - mappingStartTime).toFixed(2)}ms`,
     );
 
@@ -224,7 +231,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       return aDepth - bDepth; // Parents (lower depth) come first
     });
     const depthEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Depth calculation and sorting took ${(depthEndTime - depthStartTime).toFixed(2)}ms`,
     );
 
@@ -296,12 +304,14 @@ export class ReactFlowBridge implements IReactFlowBridge {
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
 
-      console.log(
+      hscopeLogger.log(
+        "bridge",
         `🌉 [ReactFlowBridge] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : "undefined"} -> using ${width}x${height}`,
       );
 
       if (node.dimensions) {
-        console.log(
+        hscopeLogger.log(
+          "bridge",
           `🌉 [ReactFlowBridge] Node ${node.id}: passing dimensions ${width}x${height} to ReactFlow`,
         );
       }
@@ -350,10 +360,12 @@ export class ReactFlowBridge implements IReactFlowBridge {
     // Trust that VisualizationState provides clean, valid data
     const setupStartTime = performance.now();
     const setupEndTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] OPTIMIZED Edge setup took ${(setupEndTime - setupStartTime).toFixed(2)}ms`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] OPTIMIZED Validation skipped for performance (trusting VisualizationState data)`,
     );
 
@@ -390,16 +402,20 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     const renderEndTime = performance.now();
     const totalTime = renderEndTime - startTime;
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] OPTIMIZED Edge rendering took ${(renderEndTime - renderStartTime).toFixed(2)}ms`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] OPTIMIZED - Individual render time: ${totalRenderTime.toFixed(2)}ms`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] OPTIMIZED Total edge conversion took ${totalTime.toFixed(2)}ms for ${visibleEdges.length} edges`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] OPTIMIZED Edge stats: rendered=${_validEdges}, skipped=${_skippedEdges}`,
     );
 
@@ -517,7 +533,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
       const width = node.dimensions?.width || 120;
       const height = node.dimensions?.height || 60;
 
-      console.log(
+      hscopeLogger.log(
+        "bridge",
         `🌉 [ReactFlowBridge-Optimized] Node ${node.id}: dimensions=${node.dimensions ? `${node.dimensions.width}x${node.dimensions.height}` : "undefined"} -> using ${width}x${height}`,
       );
       const reactFlowNode: ReactFlowNode & { width: number; height: number } = {
@@ -583,7 +600,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     // ARCHITECTURAL PRINCIPLE: Trust VisualizationState to provide clean, valid data
     // Validation should happen at the data layer, not the presentation layer
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Converting ${state.visibleEdges.length} edges (trusting VisualizationState data)`,
     );
 
@@ -614,16 +632,20 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     const renderEndTime = performance.now();
     const totalTime = renderEndTime - startTime;
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Edge rendering took ${(renderEndTime - renderStartTime).toFixed(2)}ms`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] - Individual render time: ${totalRenderTime.toFixed(2)}ms`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Total edge conversion took ${totalTime.toFixed(2)}ms for ${state.visibleEdges.length} edges`,
     );
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Edge stats: rendered=${renderedEdgeCount}, skipped=${skippedEdgeCount}`,
     );
 
@@ -752,7 +774,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state?: VisualizationState,
   ): ReactFlowEdge[] {
     const startTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Starting edge styling for ${edges.length} edges`,
     );
 
@@ -818,7 +841,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
     const result = [...styledRegularEdges, ...styledAggregatedEdges];
 
     const endTime = performance.now();
-    console.log(
+    hscopeLogger.log(
+      "bridge",
       `[ReactFlowBridge] Edge styling completed in ${(endTime - startTime).toFixed(2)}ms`,
     );
     return result;

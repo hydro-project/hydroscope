@@ -12,6 +12,7 @@
  * 4. Update all references
  */
 
+import { hscopeLogger } from "./logger.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import type { AsyncCoordinator } from "../core/AsyncCoordinator.js";
@@ -79,22 +80,29 @@ export interface FullBridgeResetResult {
 export function resetELKBridge(options: ELKResetOptions): ELKBridge {
   const { algorithm, elkBridgeRef } = options;
 
-  console.log("🔄 [BridgeReset] Resetting ELK bridge and ELK instance");
+  hscopeLogger.log(
+    "op",
+    "🔄 [BridgeReset] Resetting ELK bridge and ELK instance",
+  );
 
   // Step 1: Deallocate old ELK bridge
   if (elkBridgeRef.current) {
-    console.log("  ✓ Deallocating old ELK bridge");
+    hscopeLogger.log("op", "  ✓ Deallocating old ELK bridge");
     elkBridgeRef.current = null;
   }
 
   // Step 2: Create new ELK bridge (this creates a fresh ELK instance internally)
-  console.log("  ✓ Creating new ELK bridge with algorithm:", algorithm);
+  hscopeLogger.log(
+    "op",
+    "  ✓ Creating new ELK bridge with algorithm:",
+    algorithm,
+  );
   const newELKBridge = new ELKBridge({ algorithm });
   elkBridgeRef.current = newELKBridge;
 
   // Note: Caller must update AsyncCoordinator with both bridges via setBridgeInstances
 
-  console.log("✅ [BridgeReset] ELK bridge reset complete");
+  hscopeLogger.log("op", "✅ [BridgeReset] ELK bridge reset complete");
   return newELKBridge;
 }
 
@@ -116,23 +124,23 @@ export function resetReactFlowBridge(
 ): ReactFlowBridge {
   const { reactFlowBridgeRef } = options;
 
-  console.log("🔄 [BridgeReset] Resetting ReactFlow bridge");
+  hscopeLogger.log("op", "🔄 [BridgeReset] Resetting ReactFlow bridge");
 
   // Step 1: Deallocate old ReactFlow bridge
   if (reactFlowBridgeRef.current) {
-    console.log("  ✓ Deallocating old ReactFlow bridge");
+    hscopeLogger.log("op", "  ✓ Deallocating old ReactFlow bridge");
     reactFlowBridgeRef.current = null;
   }
 
   // Step 2: Create new ReactFlow bridge
-  console.log("  ✓ Creating new ReactFlow bridge");
+  hscopeLogger.log("op", "  ✓ Creating new ReactFlow bridge");
   const newReactFlowBridge = new ReactFlowBridge({});
   reactFlowBridgeRef.current = newReactFlowBridge;
 
   // Note: Caller must update AsyncCoordinator with both bridges via setBridgeInstances
   // Note: Caller should force ReactFlow remount AFTER layout pipeline completes
 
-  console.log("✅ [BridgeReset] ReactFlow bridge reset complete");
+  hscopeLogger.log("op", "✅ [BridgeReset] ReactFlow bridge reset complete");
   return newReactFlowBridge;
 }
 
@@ -157,7 +165,8 @@ export function resetReactFlowBridge(
 export function resetAllBridges(
   options: FullBridgeResetOptions,
 ): (FullBridgeResetResult & { forceRemount: () => void }) | null {
-  console.log(
+  hscopeLogger.log(
+    "op",
     "🔄 [BridgeReset] Starting FULL bridge reset (ELK + ReactFlow bridges)",
   );
 
@@ -184,7 +193,10 @@ export function resetAllBridges(
   });
 
   // Update AsyncCoordinator with both new bridge instances
-  console.log("  ✓ Updating AsyncCoordinator with new bridge instances");
+  hscopeLogger.log(
+    "op",
+    "  ✓ Updating AsyncCoordinator with new bridge instances",
+  );
   asyncCoordinator.setBridgeInstances(newReactFlowBridge, newELKBridge);
 
   // Get current visualization state
@@ -193,7 +205,10 @@ export function resetAllBridges(
 
   // Create function to force ReactFlow remount (to be called AFTER pipeline completes)
   const forceRemount = () => {
-    console.log("🔄 [BridgeReset] Forcing ReactFlow component remount");
+    hscopeLogger.log(
+      "op",
+      "🔄 [BridgeReset] Forcing ReactFlow component remount",
+    );
     if (hydroscopeCoreRef.current?.forceReactFlowRemount) {
       hydroscopeCoreRef.current.forceReactFlowRemount();
     } else {
@@ -203,11 +218,17 @@ export function resetAllBridges(
     }
   };
 
-  console.log("✅ [BridgeReset] Bridge reset complete (remount pending)");
-  console.log("  ✓ New ELK bridge created");
-  console.log("  ✓ New ELK instance created");
-  console.log("  ✓ New ReactFlow bridge created");
-  console.log("  ⏳ ReactFlow remount will happen after pipeline completes");
+  hscopeLogger.log(
+    "op",
+    "✅ [BridgeReset] Bridge reset complete (remount pending)",
+  );
+  hscopeLogger.log("op", "  ✓ New ELK bridge created");
+  hscopeLogger.log("op", "  ✓ New ELK instance created");
+  hscopeLogger.log("op", "  ✓ New ReactFlow bridge created");
+  hscopeLogger.log(
+    "op",
+    "  ⏳ ReactFlow remount will happen after pipeline completes",
+  );
 
   return {
     asyncCoordinator,

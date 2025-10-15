@@ -2,6 +2,7 @@
  * VisualizationState - Central data model for Hydroscope
  * Architectural constraints: React-free, single source of truth, synchronous core
  */
+import { hscopeLogger } from "../utils/logger.js";
 import {
   LAYOUT_CONSTANTS,
   SIZES,
@@ -1511,7 +1512,8 @@ export class VisualizationState {
     this._layoutState.lastUpdate = Date.now();
   }
   resetLayoutState(): void {
-    console.log(
+    hscopeLogger.log(
+      "op",
       `🔄 RESET LAYOUT STATE: Before reset - layoutCount=${this._layoutState.layoutCount}`,
     );
     this._layoutState = {
@@ -1521,7 +1523,8 @@ export class VisualizationState {
     };
     // CRITICAL FIX: Reset smart collapse state for new data
     this.resetSmartCollapseState();
-    console.log(
+    hscopeLogger.log(
+      "op",
       `🔄 RESET LAYOUT STATE: After reset - layoutCount=${this._layoutState.layoutCount}, isFirstLayout=${this.isFirstLayout()}, smartCollapseEnabled=${this._smartCollapseEnabled}`,
     );
   }
@@ -1531,13 +1534,17 @@ export class VisualizationState {
   shouldRunSmartCollapse(): boolean {
     if (this._smartCollapseOverride) {
       this._smartCollapseOverride = false; // Reset after checking
-      console.log("🎯 SMART COLLAPSE: Override enabled, returning true");
+      hscopeLogger.log(
+        "op",
+        "🎯 SMART COLLAPSE: Override enabled, returning true",
+      );
       return true;
     }
     const enabled = this._smartCollapseEnabled;
     const isFirst = this.isFirstLayout();
     const result = enabled && isFirst;
-    console.log(
+    hscopeLogger.log(
+      "op",
       `🎯 SMART COLLAPSE CHECK: enabled=${enabled}, isFirstLayout=${isFirst}, layoutCount=${this._layoutState.layoutCount}, result=${result}`,
     );
     return result;
@@ -2092,7 +2099,8 @@ export class VisualizationState {
     };
   }
   resetAllNodeLabelsToShort(): void {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "🏷️ [VisualizationState] resetAllNodeLabelsToShort called, node count:",
       this._nodes.size,
     );
@@ -2101,7 +2109,8 @@ export class VisualizationState {
     }
   }
   expandAllNodeLabelsToLong(): void {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "🏷️ [VisualizationState] expandAllNodeLabelsToLong called, node count:",
       this._nodes.size,
     );
@@ -2116,7 +2125,10 @@ export class VisualizationState {
   expandNodeLabelToLong(nodeId: string): void {
     const node = this._nodes.get(nodeId);
     if (node) {
-      console.log(`🏷️ [VisualizationState] Expanding label for node ${nodeId}`);
+      hscopeLogger.log(
+        "op",
+        `🏷️ [VisualizationState] Expanding label for node ${nodeId}`,
+      );
       node.showingLongLabel = true;
     } else {
       console.warn(
@@ -2131,7 +2143,10 @@ export class VisualizationState {
   resetNodeLabelToShort(nodeId: string): void {
     const node = this._nodes.get(nodeId);
     if (node) {
-      console.log(`🏷️ [VisualizationState] Resetting label for node ${nodeId}`);
+      hscopeLogger.log(
+        "op",
+        `🏷️ [VisualizationState] Resetting label for node ${nodeId}`,
+      );
       node.showingLongLabel = false;
     } else {
       console.warn(
@@ -2145,7 +2160,8 @@ export class VisualizationState {
    * Calculates new dimensions based on each node's individual label length
    */
   updateNodeDimensionsForFullLabels(enabled: boolean): void {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "📏 [VisualizationState] updateNodeDimensionsForFullLabels called, enabled:",
       enabled,
       "node count:",
@@ -2188,7 +2204,8 @@ export class VisualizationState {
             width: calculatedWidth,
             height: calculatedHeight,
           };
-          console.log(
+          hscopeLogger.log(
+            "op",
             `📏 [VisualizationState] Node ${node.id}: label="${labelToMeasure}" -> dimensions=${calculatedWidth}x${calculatedHeight}`,
           );
         } else {
@@ -2210,7 +2227,8 @@ export class VisualizationState {
     // CRITICAL FIX: Invalidate caches to ensure ELKBridge sees the updated dimensions
     // Without this, ELKBridge may read stale node references that don't have the new dimensions
     this._invalidateVisibilityCache();
-    console.log(
+    hscopeLogger.log(
+      "op",
       "📏 [VisualizationState] Invalidated visibility cache after dimension update",
     );
   }
@@ -2227,7 +2245,8 @@ export class VisualizationState {
       return;
     }
 
-    console.log(
+    hscopeLogger.log(
+      "op",
       `📏 [VisualizationState] Updating dimensions for node ${nodeId}, showingLongLabel: ${node.showingLongLabel}`,
     );
 
@@ -2263,7 +2282,8 @@ export class VisualizationState {
           width: calculatedWidth,
           height: calculatedHeight,
         };
-        console.log(
+        hscopeLogger.log(
+          "op",
           `📏 [VisualizationState] Node ${nodeId}: label="${labelToMeasure}" -> dimensions=${calculatedWidth}x${calculatedHeight}`,
         );
       } else {
@@ -2272,7 +2292,8 @@ export class VisualizationState {
     } else {
       // Reset to default dimensions
       node.dimensions = { width: 120, height: 60 };
-      console.log(
+      hscopeLogger.log(
+        "op",
         `📏 [VisualizationState] Node ${nodeId}: reset to default dimensions 120x60`,
       );
     }

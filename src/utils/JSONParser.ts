@@ -3,6 +3,7 @@
  * Handles paxos.json format with hierarchyChoices and nodeAssignments
  */
 import { VisualizationState } from "../core/VisualizationState.js";
+import { hscopeLogger } from "./logger.js";
 import type {
   HydroscopeData,
   HierarchyChoice,
@@ -52,7 +53,7 @@ export class JSONParser {
   // Debug logging helper
   private debugLog(message: string, data?: any): void {
     if (this.debug) {
-      console.log(`[JSONParser] ${message}`, data);
+      hscopeLogger.log("debug", `[JSONParser] ${message}`, data);
     }
   }
 

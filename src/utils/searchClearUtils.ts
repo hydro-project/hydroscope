@@ -5,6 +5,7 @@
  * and ResizeObserver loops by using direct DOM manipulation and minimal state updates.
  */
 
+import { hscopeLogger } from "./logger.js";
 import {
   globalOperationMonitor,
   recordDOMUpdate,
@@ -55,7 +56,10 @@ export function clearSearchImperatively(options: {
   }
 
   if (debug) {
-    console.log("[SearchClearUtils] Starting imperative search clear");
+    hscopeLogger.log(
+      "op",
+      "[SearchClearUtils] Starting imperative search clear",
+    );
   }
 
   // Define the search clear operation
@@ -70,7 +74,8 @@ export function clearSearchImperatively(options: {
       try {
         visualizationState.clearSearchEnhanced();
         if (debug) {
-          console.log(
+          hscopeLogger.log(
+            "op",
             "[SearchClearUtils] VisualizationState cleared imperatively",
           );
         }
@@ -90,7 +95,7 @@ export function clearSearchImperatively(options: {
       }
       inputRef.current.value = "";
       if (debug) {
-        console.log("[SearchClearUtils] Input cleared imperatively");
+        hscopeLogger.log("op", "[SearchClearUtils] Input cleared imperatively");
       }
     }
 
@@ -100,7 +105,10 @@ export function clearSearchImperatively(options: {
     if (setCurrentIndex) setCurrentIndex(0);
 
     if (debug) {
-      console.log("[SearchClearUtils] React state cleared imperatively");
+      hscopeLogger.log(
+        "op",
+        "[SearchClearUtils] React state cleared imperatively",
+      );
     }
 
     // End performance monitoring
@@ -157,7 +165,10 @@ export function clearSearchPanelImperatively(options: {
   }
 
   if (debug) {
-    console.log("[SearchClearUtils] Starting imperative panel clear");
+    hscopeLogger.log(
+      "op",
+      "[SearchClearUtils] Starting imperative panel clear",
+    );
   }
 
   // Define the panel clear operation
@@ -168,7 +179,10 @@ export function clearSearchPanelImperatively(options: {
     if (setCurrentSearchMatch) setCurrentSearchMatch(undefined);
 
     if (debug) {
-      console.log("[SearchClearUtils] Panel state cleared imperatively");
+      hscopeLogger.log(
+        "op",
+        "[SearchClearUtils] Panel state cleared imperatively",
+      );
     }
 
     // End performance monitoring

@@ -9,6 +9,7 @@
  * and panelOperationUtils.ts for avoiding ResizeObserver loops and coordination cascades.
  */
 
+import { hscopeLogger } from "./logger.js";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import {
   globalOperationMonitor,
@@ -130,11 +131,15 @@ export function changeLayoutImperatively(options: {
   }
 
   if (debug) {
-    console.log("[StyleOperationUtils] Starting imperative layout change", {
-      algorithm,
-      suppressResizeObserver,
-      debounce,
-    });
+    hscopeLogger.log(
+      "op",
+      "[StyleOperationUtils] Starting imperative layout change",
+      {
+        algorithm,
+        suppressResizeObserver,
+        debounce,
+      },
+    );
   }
 
   // Validate inputs
@@ -157,7 +162,8 @@ export function changeLayoutImperatively(options: {
           }
 
           if (debug) {
-            console.log(
+            hscopeLogger.log(
+              "op",
               `[StyleOperationUtils] Layout algorithm changed to ${algorithm} imperatively`,
             );
           }
@@ -247,7 +253,8 @@ export function changeColorPaletteImperatively(options: {
   }
 
   if (debug) {
-    console.log(
+    hscopeLogger.log(
+      "op",
       "[StyleOperationUtils] Starting imperative color palette change",
       {
         palette,
@@ -277,7 +284,8 @@ export function changeColorPaletteImperatively(options: {
           }
 
           if (debug) {
-            console.log(
+            hscopeLogger.log(
+              "op",
               `[StyleOperationUtils] Color palette changed to ${palette} imperatively`,
             );
           }
@@ -367,11 +375,15 @@ export function changeEdgeStyleImperatively(options: {
   }
 
   if (debug) {
-    console.log("[StyleOperationUtils] Starting imperative edge style change", {
-      edgeStyle,
-      suppressResizeObserver,
-      debounce,
-    });
+    hscopeLogger.log(
+      "op",
+      "[StyleOperationUtils] Starting imperative edge style change",
+      {
+        edgeStyle,
+        suppressResizeObserver,
+        debounce,
+      },
+    );
   }
 
   // Validate inputs
@@ -394,7 +406,8 @@ export function changeEdgeStyleImperatively(options: {
           }
 
           if (debug) {
-            console.log(
+            hscopeLogger.log(
+              "op",
               `[StyleOperationUtils] Edge style changed to ${edgeStyle} imperatively`,
             );
           }
@@ -478,9 +491,13 @@ export function resetStylesImperatively(options: {
   }
 
   if (debug) {
-    console.log("[StyleOperationUtils] Starting imperative style reset", {
-      suppressResizeObserver,
-    });
+    hscopeLogger.log(
+      "op",
+      "[StyleOperationUtils] Starting imperative style reset",
+      {
+        suppressResizeObserver,
+      },
+    );
   }
 
   // Define the operation function
@@ -497,7 +514,8 @@ export function resetStylesImperatively(options: {
           }
 
           if (debug) {
-            console.log(
+            hscopeLogger.log(
+              "op",
               "[StyleOperationUtils] Styles reset to defaults imperatively",
             );
           }
@@ -578,10 +596,14 @@ export function batchStyleOperationsImperatively(options: {
   }
 
   if (debug) {
-    console.log("[StyleOperationUtils] Starting batch style operations", {
-      operationCount: operations.length,
-      suppressResizeObserver,
-    });
+    hscopeLogger.log(
+      "op",
+      "[StyleOperationUtils] Starting batch style operations",
+      {
+        operationCount: operations.length,
+        suppressResizeObserver,
+      },
+    );
   }
 
   const results = {
@@ -656,7 +678,11 @@ export function batchStyleOperationsImperatively(options: {
     }
 
     if (debug) {
-      console.log("[StyleOperationUtils] Batch operations completed", results);
+      hscopeLogger.log(
+        "op",
+        "[StyleOperationUtils] Batch operations completed",
+        results,
+      );
     }
 
     // End performance monitoring for batch operation

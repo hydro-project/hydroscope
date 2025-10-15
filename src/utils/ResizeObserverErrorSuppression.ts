@@ -10,6 +10,7 @@
  * 3. Error boundary integration for graceful recovery
  * 4. Development vs production error handling
  */
+import { hscopeLogger } from "./logger.js";
 
 // Global flag to track if error suppression is active
 let isErrorSuppressionActive = false;
@@ -44,7 +45,8 @@ function logSuppressedError(error: Error | string, context?: string): void {
   if (process.env.NODE_ENV === "development") {
     const errorMessage = typeof error === "string" ? error : error.message;
     const contextInfo = context ? ` (${context})` : "";
-    console.debug(
+    hscopeLogger.log(
+      "debug",
       `[Hydroscope] Suppressed ResizeObserver error${contextInfo}:`,
       errorMessage,
     );
@@ -113,7 +115,10 @@ export function enableResizeObserverErrorSuppression(): void {
   isErrorSuppressionActive = true;
 
   if (process.env.NODE_ENV === "development") {
-    console.debug("[Hydroscope] ResizeObserver error suppression enabled");
+    hscopeLogger.log(
+      "debug",
+      "[Hydroscope] ResizeObserver error suppression enabled",
+    );
   }
 }
 
@@ -146,7 +151,10 @@ export function disableResizeObserverErrorSuppression(): void {
   isErrorSuppressionActive = false;
 
   if (process.env.NODE_ENV === "development") {
-    console.debug("[Hydroscope] ResizeObserver error suppression disabled");
+    hscopeLogger.log(
+      "debug",
+      "[Hydroscope] ResizeObserver error suppression disabled",
+    );
   }
 }
 

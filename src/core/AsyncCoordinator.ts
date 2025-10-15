@@ -5,6 +5,7 @@
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 // Removed BridgeFactory import - using direct bridge instances only
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
+import { hscopeLogger } from "../utils/logger.js";
 
 interface ErrorRecoveryResult {
   success: boolean;
@@ -80,14 +81,18 @@ export class AsyncCoordinator {
    */
   setReactFlowInstance(reactFlowInstance: any): void {
     this.reactFlowInstance = reactFlowInstance;
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🎯 AsyncCoordinator: ReactFlow instance set for direct fitView operations",
     );
   }
 
   setUpdateNodeInternals(updateNodeInternals: (nodeId: string) => void): void {
     this.updateNodeInternals = updateNodeInternals;
-    console.log("🎯 AsyncCoordinator: updateNodeInternals callback set");
+    hscopeLogger.log(
+      "coordinator",
+      "🎯 AsyncCoordinator: updateNodeInternals callback set",
+    );
   }
 
   /**
@@ -108,7 +113,8 @@ export class AsyncCoordinator {
    */
   hasPendingCallbacks(): boolean {
     const hasPending = this.postRenderCallbacks.length > 0;
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       `[AsyncCoordinator] 🔍 hasPendingCallbacks: ${hasPending} (count: ${this.postRenderCallbacks.length})`,
     );
     return hasPending;
@@ -126,7 +132,8 @@ export class AsyncCoordinator {
       return;
     }
 
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🔄 [AsyncCoordinator] Updating node internals for all visible nodes",
     );
 
@@ -143,7 +150,8 @@ export class AsyncCoordinator {
       this.updateNodeInternals(container.id);
     }
 
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       `✅ [AsyncCoordinator] Updated node internals for ${nodeIds.length} nodes`,
     );
   }
@@ -163,7 +171,8 @@ export class AsyncCoordinator {
     const callbacks = [...this.postRenderCallbacks];
     this.postRenderCallbacks = [];
 
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       `[AsyncCoordinator] 🎯 Executing ${callbacks.length} post-render callbacks`,
     );
 
@@ -213,7 +222,8 @@ export class AsyncCoordinator {
     setReactState: (updater: (prev: any) => any) => void,
   ): void {
     this.setReactState = setReactState;
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🎯 AsyncCoordinator: React state setter configured for direct updates",
     );
   }
@@ -225,7 +235,8 @@ export class AsyncCoordinator {
   setBridgeInstances(reactFlowBridge: any, elkBridge: any): void {
     this.reactFlowBridge = reactFlowBridge;
     this.elkBridge = elkBridge;
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🎯 AsyncCoordinator: Bridge instances set for direct imperative operations",
     );
   }
@@ -549,7 +560,8 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 🎨 Starting imperative ReactFlow data generation",
       );
 
@@ -592,7 +604,8 @@ export class AsyncCoordinator {
       // Removed resize detection - just change text without resizing nodes
 
       const endTime = Date.now();
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         `[AsyncCoordinator] ✅ Imperative ReactFlow data generation completed in ${endTime - startTime}ms`,
       );
 
@@ -639,7 +652,8 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.log(
+      hscopeLogger.log(
+        "coordinator",
         `🚀 AsyncCoordinator: Starting unified data processing pipeline: ${reason}`,
       );
 
@@ -652,7 +666,8 @@ export class AsyncCoordinator {
       // This ensures smart collapse runs on first layout after any data change
       if (typeof visualizationState.resetLayoutState === "function") {
         visualizationState.resetLayoutState();
-        console.log(
+        hscopeLogger.log(
+          "coordinator",
           `🔄 AsyncCoordinator: Reset layout state for ${reason} - smart collapse will run on next layout`,
         );
       } else {
@@ -719,7 +734,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.log(
+      hscopeLogger.log(
+        "coordinator",
         `✅ AsyncCoordinator: Unified data processing pipeline completed successfully for ${reason}`,
         {
           duration: `${duration}ms`,
@@ -778,13 +794,17 @@ export class AsyncCoordinator {
     } = {},
   ): Promise<void> {
     const startTime = Date.now();
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🔄 [AsyncCoordinator] Starting dimension change with remount sequence",
     );
 
     try {
       // Step 1: Execute layout and render pipeline with new dimensions
-      console.log("  1️⃣ Executing layout and render pipeline");
+      hscopeLogger.log(
+        "coordinator",
+        "  1️⃣ Executing layout and render pipeline",
+      );
       await this.executeLayoutAndRenderPipeline(visualizationState, {
         relayoutEntities: undefined, // Full layout
         fitView: options.fitView ?? false,
@@ -792,15 +812,19 @@ export class AsyncCoordinator {
       });
 
       // Step 2: Wait for React to render the new data
-      console.log("  2️⃣ Waiting for React render to complete");
+      hscopeLogger.log(
+        "coordinator",
+        "  2️⃣ Waiting for React render to complete",
+      );
       await this.waitForNextRender();
 
       // Step 3: Trigger ReactFlow remount
-      console.log("  3️⃣ Triggering ReactFlow remount");
+      hscopeLogger.log("coordinator", "  3️⃣ Triggering ReactFlow remount");
       onRemount();
 
       const duration = Date.now() - startTime;
-      console.log(
+      hscopeLogger.log(
+        "coordinator",
         `✅ [AsyncCoordinator] Dimension change with remount completed in ${duration}ms`,
       );
     } catch (error) {
@@ -836,7 +860,8 @@ export class AsyncCoordinator {
       fitViewOptions?: { padding?: number; duration?: number };
     } = {},
   ): Promise<void> {
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🔄 [AsyncCoordinator] Starting layout and render pipeline with remount",
     );
 
@@ -847,21 +872,26 @@ export class AsyncCoordinator {
       fitViewOptions: options.fitViewOptions,
     });
 
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "✅ [AsyncCoordinator] Pipeline complete, waiting for React render",
     );
 
     // Step 2: Wait for React to complete rendering the new data
     await this.waitForNextRender();
 
-    console.log(
+    hscopeLogger.log(
+      "coordinator",
       "🔄 [AsyncCoordinator] React render complete, forcing ReactFlow remount",
     );
 
     // Step 3: Force ReactFlow to remount with fresh data
     forceRemountCallback();
 
-    console.log("✅ [AsyncCoordinator] ReactFlow remount complete");
+    hscopeLogger.log(
+      "coordinator",
+      "✅ [AsyncCoordinator] ReactFlow remount complete",
+    );
   }
 
   // REMOVED: Deprecated queueLayoutAndRenderPipeline method
@@ -923,7 +953,8 @@ export class AsyncCoordinator {
     const elkBridge = this.elkBridge;
 
     try {
-      console.log(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 🚀 Starting optimized synchronous layout and render pipeline",
         {
           relayoutEntities: options.relayoutEntities,
@@ -936,22 +967,31 @@ export class AsyncCoordinator {
 
       // PERFORMANCE OPTIMIZATION 1: State change detection using VisualizationState's cache invalidation
       const stateDetectionStart = Date.now();
-      console.log("🎯 Checking if layout should be skipped", {
-        relayoutEntities: options.relayoutEntities,
-        relayoutEntitiesType: typeof options.relayoutEntities,
-        relayoutEntitiesIsUndefined: options.relayoutEntities === undefined,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "🎯 Checking if layout should be skipped",
+        {
+          relayoutEntities: options.relayoutEntities,
+          relayoutEntitiesType: typeof options.relayoutEntities,
+          relayoutEntitiesIsUndefined: options.relayoutEntities === undefined,
+        },
+      );
       const shouldSkipLayout = this._shouldSkipLayoutBasedOnStateChanges(
         state,
         options.relayoutEntities,
       );
-      console.log("🎯 Layout skip decision:", shouldSkipLayout);
+      hscopeLogger.log(
+        "coordinator",
+        "🎯 Layout skip decision:",
+        shouldSkipLayout,
+      );
       performanceMetrics.stateChangeDetection =
         Date.now() - stateDetectionStart;
 
       if (shouldSkipLayout) {
         performanceMetrics.layoutSkipped = true;
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ⚡ Layout optimization: Skipping unnecessary layout based on state analysis",
           {
             stateChangeDetectionTime: `${performanceMetrics.stateChangeDetection}ms`,
@@ -966,13 +1006,15 @@ export class AsyncCoordinator {
         options.relayoutEntities.length === 0
       ) {
         // Skip layout - relayoutEntities is empty array
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ⏭️ Skipping ELK layout - no entities to re-layout",
         );
         performanceMetrics.layoutSkipped = true;
       } else if (shouldSkipLayout) {
         // Skip layout - state hasn't changed meaningfully
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ⚡ Skipping ELK layout - no meaningful state changes detected",
         );
         performanceMetrics.layoutSkipped = true;
@@ -981,7 +1023,7 @@ export class AsyncCoordinator {
         if (!this.elkBridge) {
           throw new Error("ELK bridge not available for layout execution");
         }
-        console.log("🎯 Calling executeELKLayoutAsync", {
+        hscopeLogger.log("coordinator", "🎯 Calling executeELKLayoutAsync", {
           elkBridge: !!elkBridge,
           elkBridgeType: typeof elkBridge,
           relayoutEntities: options.relayoutEntities,
@@ -992,7 +1034,8 @@ export class AsyncCoordinator {
           options.relayoutEntities,
         );
         performanceMetrics.layoutDuration = Date.now() - layoutStart;
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ ELK layout completed successfully",
           {
             layoutDuration: `${performanceMetrics.layoutDuration}ms`,
@@ -1005,7 +1048,8 @@ export class AsyncCoordinator {
       const reactFlowData = this.generateReactFlowDataImperative(state);
       performanceMetrics.renderDuration = Date.now() - renderStart;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ ReactFlow data generation completed successfully",
         {
           renderDuration: `${performanceMetrics.renderDuration}ms`,
@@ -1019,7 +1063,8 @@ export class AsyncCoordinator {
           ...prev,
           reactFlowData: reactFlowData,
         }));
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ ReactFlow data updated directly (imperative)",
         );
 
@@ -1045,26 +1090,36 @@ export class AsyncCoordinator {
                 includeHiddenNodes: false,
               };
 
-              console.log(
+              hscopeLogger.log(
+                "coordinator",
                 "[AsyncCoordinator] 🎯 Executing post-render fitView",
                 fitViewOptions,
               );
               this.reactFlowInstance.fitView(fitViewOptions);
-              console.log("[AsyncCoordinator] ✅ FitView completed");
+              hscopeLogger.log(
+                "coordinator",
+                "[AsyncCoordinator] ✅ FitView completed",
+              );
             });
-            console.debug(
+            hscopeLogger.log(
+              "coordinator",
               "[AsyncCoordinator] ✅ FitView enqueued for post-render execution",
             );
           } else {
-            console.debug("[AsyncCoordinator] ⏭️ Skipping FitView execution", {
-              reason: fitViewCheck.skipReason,
-            });
+            hscopeLogger.log(
+              "coordinator",
+              "[AsyncCoordinator] ⏭️ Skipping FitView execution",
+              {
+                reason: fitViewCheck.skipReason,
+              },
+            );
           }
         }
       } else if (this.onReactFlowDataUpdate) {
         // Fallback to callback for backward compatibility
         this.onReactFlowDataUpdate(reactFlowData);
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ ReactFlow data update callback completed successfully (fallback)",
         );
       }
@@ -1117,12 +1172,16 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.debug("[AsyncCoordinator] 🎯 Starting ELK layout execution", {
-        relayoutEntities,
-        elkBridgeAvailable: !!elkBridge,
-        stateAvailable: !!state,
-        timestamp: startTime,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] 🎯 Starting ELK layout execution",
+        {
+          relayoutEntities,
+          elkBridgeAvailable: !!elkBridge,
+          stateAvailable: !!state,
+          timestamp: startTime,
+        },
+      );
 
       // Set layout phase to indicate processing
       if (state && typeof state.setLayoutPhase === "function") {
@@ -1166,11 +1225,15 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug("[AsyncCoordinator] ✅ ELK layout completed successfully", {
-        duration: `${duration}ms`,
-        relayoutEntities,
-        timestamp: endTime,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ ELK layout completed successfully",
+        {
+          duration: `${duration}ms`,
+          relayoutEntities,
+          timestamp: endTime,
+        },
+      );
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -1202,7 +1265,8 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 🎨 Starting ReactFlow data generation",
         {
           stateAvailable: !!state,
@@ -1272,7 +1336,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ ReactFlow data generation completed successfully",
         {
           duration: `${duration}ms`,
@@ -1855,7 +1920,8 @@ export class AsyncCoordinator {
     this.onContainerExpansionStart?.(containerId);
 
     try {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 📦 Starting container expand operation",
         {
           containerId,
@@ -1894,7 +1960,8 @@ export class AsyncCoordinator {
         };
 
         this.processStateChange(event);
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ Container state change processed successfully",
           { containerId },
         );
@@ -1921,7 +1988,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ Container expand operation completed successfully",
         {
           containerId,
@@ -1978,7 +2046,8 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 📦 Starting container collapse operation",
         {
           containerId,
@@ -2019,7 +2088,8 @@ export class AsyncCoordinator {
         };
 
         this.processStateChange(event);
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ Container state change processed successfully",
           { containerId },
         );
@@ -2046,7 +2116,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ Container collapse operation completed successfully",
         {
           containerId,
@@ -2121,7 +2192,8 @@ export class AsyncCoordinator {
         }
       }
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 📦 Starting expand all containers operation",
         {
           containerIds,
@@ -2159,7 +2231,8 @@ export class AsyncCoordinator {
         };
 
         this.processStateChange(event);
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ Expand all containers state change processed successfully",
           {
             containerIds: containerIds?.length || "all",
@@ -2191,7 +2264,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ Expand all containers operation completed successfully",
         {
           containerIds: containerIds?.length || "all",
@@ -2268,7 +2342,8 @@ export class AsyncCoordinator {
         }
       }
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 📦 Starting collapse all containers operation",
         {
           containerIds,
@@ -2310,10 +2385,14 @@ export class AsyncCoordinator {
             ) || [];
         }
 
-        console.debug("[AsyncCoordinator] 📋 Found containers to collapse", {
-          totalContainers: containersToCollapse.length,
-          containerIds: containersToCollapse.map((c: any) => c.id),
-        });
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] 📋 Found containers to collapse",
+          {
+            totalContainers: containersToCollapse.length,
+            containerIds: containersToCollapse.map((c: any) => c.id),
+          },
+        );
       } catch (containerError) {
         console.error(
           "[AsyncCoordinator] ❌ Failed to identify containers to collapse:",
@@ -2356,12 +2435,16 @@ export class AsyncCoordinator {
         }
       }
 
-      console.debug("[AsyncCoordinator] ✅ Container state changes processed", {
-        totalRequested: containersToCollapse.length,
-        successfullyCollapsed: successfullyCollapsed.length,
-        failedContainers:
-          containersToCollapse.length - successfullyCollapsed.length,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ Container state changes processed",
+        {
+          totalRequested: containersToCollapse.length,
+          successfullyCollapsed: successfullyCollapsed.length,
+          failedContainers:
+            containersToCollapse.length - successfullyCollapsed.length,
+        },
+      );
 
       // Use enhanced pipeline for layout and render (full layout for collapse all)
       const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
@@ -2375,7 +2458,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ Collapse all containers operation completed successfully",
         {
           containerIds: containerIds?.length || "all",
@@ -2923,12 +3007,16 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.debug("[AsyncCoordinator] 🔍 Starting search update operation", {
-        query,
-        expandContainers: options.expandContainers,
-        fitView: options.fitView,
-        timestamp: startTime,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] 🔍 Starting search update operation",
+        {
+          query,
+          expandContainers: options.expandContainers,
+          fitView: options.fitView,
+          timestamp: startTime,
+        },
+      );
 
       // Validate inputs
       if (!state) {
@@ -2944,10 +3032,14 @@ export class AsyncCoordinator {
 
       // Step 1: Perform search in VisualizationState (synchronous) - FAIL FAST on errors
       const searchResults = state.search ? state.search(query) : [];
-      console.debug("[AsyncCoordinator] ✅ Search completed successfully", {
-        query,
-        resultsCount: searchResults.length,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ Search completed successfully",
+        {
+          query,
+          resultsCount: searchResults.length,
+        },
+      );
 
       // Step 2: Optionally expand containers containing search results
       if (options.expandContainers && searchResults.length > 0) {
@@ -2958,7 +3050,8 @@ export class AsyncCoordinator {
         );
 
         if (containerIds && containerIds.length > 0) {
-          console.debug(
+          hscopeLogger.log(
+            "coordinator",
             "[AsyncCoordinator] 📦 Expanding containers for search results",
             {
               containerIds,
@@ -2991,7 +3084,8 @@ export class AsyncCoordinator {
           const endTime = Date.now();
           const duration = endTime - startTime;
 
-          console.debug(
+          hscopeLogger.log(
+            "coordinator",
             "[AsyncCoordinator] ✅ Search update with container expansion completed successfully",
             {
               query,
@@ -3008,14 +3102,16 @@ export class AsyncCoordinator {
 
       // Step 3: If no container expansion needed, just update ReactFlow with search highlights - FAIL FAST
       const reactFlowData = this.generateReactFlowDataSync(state);
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ ReactFlow data generated for search highlighting",
       );
 
       // Step 4: Trigger FitView if enabled (for search results highlighting) - FAIL FAST
       if (options.fitView && this.onFitViewRequested) {
         this.onFitViewRequested(options.fitViewOptions);
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ FitView triggered for search results",
         );
       }
@@ -3023,7 +3119,8 @@ export class AsyncCoordinator {
       // Step 5: Update HydroscopeCore's React state if callback is available - FAIL FAST
       if (this.onReactFlowDataUpdate) {
         this.onReactFlowDataUpdate(reactFlowData);
-        console.debug(
+        hscopeLogger.log(
+          "coordinator",
           "[AsyncCoordinator] ✅ ReactFlow data update callback completed for search",
         );
       }
@@ -3031,7 +3128,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ Search update completed successfully",
         {
           query,
@@ -3082,10 +3180,14 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.debug("[AsyncCoordinator] 🧹 Starting search clear operation", {
-        fitView: options.fitView,
-        timestamp: startTime,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] 🧹 Starting search clear operation",
+        {
+          fitView: options.fitView,
+          timestamp: startTime,
+        },
+      );
 
       // Validate inputs
       if (!state) {
@@ -3097,10 +3199,16 @@ export class AsyncCoordinator {
       // Step 1: Clear search state in VisualizationState (synchronous)
       if (typeof state.clearSearchEnhanced === "function") {
         state.clearSearchEnhanced();
-        console.debug("[AsyncCoordinator] ✅ Search state cleared");
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] ✅ Search state cleared",
+        );
       } else if (typeof state.clearSearch === "function") {
         state.clearSearch();
-        console.debug("[AsyncCoordinator] ✅ Search state cleared (legacy)");
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] ✅ Search state cleared (legacy)",
+        );
       }
 
       // Step 2: Re-render to remove search highlights (no layout needed, just styling update)
@@ -3113,7 +3221,8 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ✅ Search clear completed successfully",
         {
           duration: `${duration}ms`,
@@ -3287,7 +3396,8 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.log(
+      hscopeLogger.log(
+        "coordinator",
         `🚀 AsyncCoordinator: Starting render config update pipeline`,
         configUpdates,
       );
@@ -3295,7 +3405,8 @@ export class AsyncCoordinator {
       // Apply configuration updates to VisualizationState
       if (typeof visualizationState.updateRenderConfig === "function") {
         visualizationState.updateRenderConfig(configUpdates);
-        console.log(
+        hscopeLogger.log(
+          "coordinator",
           `🔧 AsyncCoordinator: Applied render config updates to VisualizationState`,
         );
       } else {
@@ -3308,10 +3419,14 @@ export class AsyncCoordinator {
       const needsRelayout = this._configChangeRequiresRelayout(configUpdates);
 
       if (needsRelayout) {
-        console.log(`🔄 AsyncCoordinator: Config change requires re-layout`, {
-          layoutAlgorithm: configUpdates.layoutAlgorithm,
-          relayoutEntities: options.relayoutEntities,
-        });
+        hscopeLogger.log(
+          "coordinator",
+          `🔄 AsyncCoordinator: Config change requires re-layout`,
+          {
+            layoutAlgorithm: configUpdates.layoutAlgorithm,
+            relayoutEntities: options.relayoutEntities,
+          },
+        );
 
         // Execute complete pipeline: layout + render + fitView
         const reactFlowData = await this.executeLayoutAndRenderPipeline(
@@ -3326,7 +3441,8 @@ export class AsyncCoordinator {
         const endTime = Date.now();
         const duration = endTime - startTime;
 
-        console.log(
+        hscopeLogger.log(
+          "coordinator",
           `✅ AsyncCoordinator: Render config update pipeline completed with re-layout`,
           {
             duration: `${duration}ms`,
@@ -3338,7 +3454,8 @@ export class AsyncCoordinator {
 
         return reactFlowData;
       } else {
-        console.log(
+        hscopeLogger.log(
+          "coordinator",
           `🎨 AsyncCoordinator: Config change only requires re-render (no layout)`,
         );
 
@@ -3368,20 +3485,24 @@ export class AsyncCoordinator {
                 includeHiddenNodes: false,
               };
 
-              console.log(
+              hscopeLogger.log(
+                "coordinator",
                 "[AsyncCoordinator] 🎯 Executing post-render fitView for config change",
                 fitViewOptions,
               );
               this.reactFlowInstance.fitView(fitViewOptions);
-              console.log(
+              hscopeLogger.log(
+                "coordinator",
                 "[AsyncCoordinator] ✅ FitView completed for config change",
               );
             });
-            console.debug(
+            hscopeLogger.log(
+              "coordinator",
               "[AsyncCoordinator] ✅ FitView enqueued for post-render execution (config change)",
             );
           } else {
-            console.debug(
+            hscopeLogger.log(
+              "coordinator",
               "[AsyncCoordinator] ⏭️ Skipping FitView execution for config change",
               { reason: fitViewCheck.skipReason },
             );
@@ -3391,7 +3512,8 @@ export class AsyncCoordinator {
         const endTime = Date.now();
         const duration = endTime - startTime;
 
-        console.log(
+        hscopeLogger.log(
+          "coordinator",
           `✅ AsyncCoordinator: Render config update pipeline completed with re-render only`,
           {
             duration: `${duration}ms`,
@@ -3504,19 +3626,27 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.log(`🔍 AsyncCoordinator: Starting search pipeline`, {
-        searchQuery,
-        expandContainersOnSearch: options.expandContainersOnSearch,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        `🔍 AsyncCoordinator: Starting search pipeline`,
+        {
+          searchQuery,
+          expandContainersOnSearch: options.expandContainersOnSearch,
+        },
+      );
 
       if (searchQuery && searchQuery.trim()) {
         // Execute search
         if (typeof visualizationState.performSearch === "function") {
           const searchResults = visualizationState.performSearch(searchQuery);
-          console.log(`🔍 AsyncCoordinator: Search executed`, {
-            query: searchQuery,
-            resultCount: searchResults?.length || 0,
-          });
+          hscopeLogger.log(
+            "coordinator",
+            `🔍 AsyncCoordinator: Search executed`,
+            {
+              query: searchQuery,
+              resultCount: searchResults?.length || 0,
+            },
+          );
 
           // Expand containers if requested and search found results
           if (
@@ -3524,7 +3654,8 @@ export class AsyncCoordinator {
             searchResults &&
             searchResults.length > 0
           ) {
-            console.log(
+            hscopeLogger.log(
+              "coordinator",
               `🔍 AsyncCoordinator: Expanding containers for search results`,
             );
 
@@ -3543,7 +3674,10 @@ export class AsyncCoordinator {
         // Clear search
         if (typeof visualizationState.clearSearch === "function") {
           visualizationState.clearSearch();
-          console.log(`🔍 AsyncCoordinator: Search cleared`);
+          hscopeLogger.log(
+            "coordinator",
+            `🔍 AsyncCoordinator: Search cleared`,
+          );
         }
       }
 
@@ -3560,12 +3694,16 @@ export class AsyncCoordinator {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      console.log(`✅ AsyncCoordinator: Search pipeline completed`, {
-        duration: `${duration}ms`,
-        searchQuery,
-        nodeCount: reactFlowData?.nodes?.length || 0,
-        edgeCount: reactFlowData?.edges?.length || 0,
-      });
+      hscopeLogger.log(
+        "coordinator",
+        `✅ AsyncCoordinator: Search pipeline completed`,
+        {
+          duration: `${duration}ms`,
+          searchQuery,
+          nodeCount: reactFlowData?.nodes?.length || 0,
+          edgeCount: reactFlowData?.edges?.length || 0,
+        },
+      );
 
       return reactFlowData;
     } catch (error) {
@@ -3606,7 +3744,8 @@ export class AsyncCoordinator {
   ): boolean {
     // If full layout is requested (relayoutEntities is undefined), never skip
     if (relayoutEntities === undefined) {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ⚡ State analysis: Full layout requested, cannot skip",
       );
       return false;
@@ -3614,7 +3753,8 @@ export class AsyncCoordinator {
 
     // If specific entities are requested for layout, never skip
     if (relayoutEntities && relayoutEntities.length > 0) {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ⚡ State analysis: Specific entities requested for layout, cannot skip",
       );
       return false;
@@ -3631,7 +3771,8 @@ export class AsyncCoordinator {
     this._lastStateSnapshot = currentSnapshot;
 
     if (!hasSignificantChanges) {
-      console.debug(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ⚡ State analysis: No significant changes detected, layout can be skipped",
         {
           currentSnapshot: {
@@ -3645,7 +3786,8 @@ export class AsyncCoordinator {
       return true;
     }
 
-    console.debug(
+    hscopeLogger.log(
+      "coordinator",
       "[AsyncCoordinator] ⚡ State analysis: Significant changes detected, layout required",
       {
         currentSnapshot: {
@@ -3788,41 +3930,45 @@ export class AsyncCoordinator {
         : 0;
 
     // Log performance metrics
-    console.debug("[AsyncCoordinator] 📊 Pipeline Performance Metrics", {
-      totalDuration: `${totalDuration}ms`,
-      stateChangeDetection: `${performanceMetrics.stateChangeDetection}ms`,
-      layoutDuration: performanceMetrics.layoutSkipped
-        ? "skipped"
-        : `${performanceMetrics.layoutDuration}ms`,
-      renderDuration: `${performanceMetrics.renderDuration}ms`,
-      layoutEfficiency: `${layoutEfficiency.toFixed(1)}%`,
-      renderEfficiency: `${renderEfficiency.toFixed(1)}%`,
+    hscopeLogger.log(
+      "coordinator",
+      "[AsyncCoordinator] 📊 Pipeline Performance Metrics",
+      {
+        totalDuration: `${totalDuration}ms`,
+        stateChangeDetection: `${performanceMetrics.stateChangeDetection}ms`,
+        layoutDuration: performanceMetrics.layoutSkipped
+          ? "skipped"
+          : `${performanceMetrics.layoutDuration}ms`,
+        renderDuration: `${performanceMetrics.renderDuration}ms`,
+        layoutEfficiency: `${layoutEfficiency.toFixed(1)}%`,
+        renderEfficiency: `${renderEfficiency.toFixed(1)}%`,
 
-      // Optimization flags
-      layoutSkipped: performanceMetrics.layoutSkipped,
+        // Optimization flags
+        layoutSkipped: performanceMetrics.layoutSkipped,
 
-      // Data metrics
-      nodesCount: reactFlowData?.nodes?.length || 0,
-      edgesCount: reactFlowData?.edges?.length || 0,
+        // Data metrics
+        nodesCount: reactFlowData?.nodes?.length || 0,
+        edgesCount: reactFlowData?.edges?.length || 0,
 
-      // Configuration
-      relayoutEntities: options.relayoutEntities,
-      fitView: options.fitView,
+        // Configuration
+        relayoutEntities: options.relayoutEntities,
+        fitView: options.fitView,
 
-      // Performance classification
-      performanceClass:
-        totalDuration < 100
-          ? "excellent"
-          : totalDuration < 300
-            ? "good"
-            : totalDuration < 500
-              ? "acceptable"
-              : totalDuration < 1000
-                ? "slow"
-                : "very-slow",
+        // Performance classification
+        performanceClass:
+          totalDuration < 100
+            ? "excellent"
+            : totalDuration < 300
+              ? "good"
+              : totalDuration < 500
+                ? "acceptable"
+                : totalDuration < 1000
+                  ? "slow"
+                  : "very-slow",
 
-      timestamp: Date.now(),
-    });
+        timestamp: Date.now(),
+      },
+    );
 
     // Log performance warnings if needed
     if (totalDuration > 1000) {

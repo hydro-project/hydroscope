@@ -16,6 +16,7 @@
  * for stable UI operations without browser errors or performance issues.
  */
 import React, { useState, useEffect, memo } from "react";
+import { hscopeLogger } from "../../utils/logger.js";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
@@ -285,7 +286,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
               type="checkbox"
               checked={Boolean(local.showFullNodeLabels)}
               onChange={(e) => {
-                console.log(
+                hscopeLogger.log(
+                  "debug",
                   "🏷️ [StyleTuner] Checkbox clicked, current state:",
                   local.showFullNodeLabels,
                   "new state:",
@@ -309,7 +311,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                 }
 
                 // Apply all long labels or reset to short labels
-                console.log(
+                hscopeLogger.log(
+                  "debug",
                   "🔍 [StyleTuner] _visualizationState available:",
                   !!_visualizationState,
                   "enabled:",
@@ -317,7 +320,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                 );
                 if (_visualizationState) {
                   if (enabled) {
-                    console.log(
+                    hscopeLogger.log(
+                      "debug",
                       "🏷️ [StyleTuner] Calling expandAllNodeLabelsToLong",
                     );
                     _visualizationState.expandAllNodeLabelsToLong();
@@ -325,7 +329,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                       typeof _visualizationState.updateNodeDimensionsForFullLabels ===
                       "function"
                     ) {
-                      console.log(
+                      hscopeLogger.log(
+                        "debug",
                         "📏 [StyleTuner] Calling updateNodeDimensionsForFullLabels(true)",
                       );
                       _visualizationState.updateNodeDimensionsForFullLabels(
@@ -333,7 +338,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                       );
                     }
                   } else {
-                    console.log(
+                    hscopeLogger.log(
+                      "debug",
                       "🏷️ [StyleTuner] Calling resetAllNodeLabelsToShort",
                     );
                     _visualizationState.resetAllNodeLabelsToShort();
@@ -341,7 +347,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                       typeof _visualizationState.updateNodeDimensionsForFullLabels ===
                       "function"
                     ) {
-                      console.log(
+                      hscopeLogger.log(
+                        "debug",
                         "📏 [StyleTuner] Calling updateNodeDimensionsForFullLabels(false)",
                       );
                       _visualizationState.updateNodeDimensionsForFullLabels(
@@ -358,7 +365,8 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                 // BRIDGE REALLOCATION: Deallocate and reallocate fresh instances
                 // This prevents edge handle positioning issues when node dimensions change
                 if (onReallocateBridges) {
-                  console.log(
+                  hscopeLogger.log(
+                    "debug",
                     "🔄 [StyleTuner] Performing bridge reallocation for full node labels toggle",
                   );
 

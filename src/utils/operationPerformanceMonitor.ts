@@ -9,6 +9,7 @@
  * Requirements: 8.1, 8.2, 8.3, 8.4
  */
 
+import { hscopeLogger } from "./logger.js";
 import { recordPerformanceMetric } from "./PerformanceMonitor.js";
 import { globalProfiler } from "./PerformanceProfiler.js";
 
@@ -209,7 +210,8 @@ export class OperationPerformanceMonitor {
     globalProfiler.startOperation(`operation_${operation}`, metadata);
 
     if (this.config.debugLogging) {
-      console.log(
+      hscopeLogger.log(
+        "op",
         `[OperationPerformanceMonitor] Started monitoring: ${operation}`,
         metadata,
       );
@@ -290,7 +292,8 @@ export class OperationPerformanceMonitor {
     }
 
     if (this.config.debugLogging) {
-      console.log(
+      hscopeLogger.log(
+        "op",
         `[OperationPerformanceMonitor] Completed monitoring: ${operation}`,
         {
           duration: operationMetrics.duration.toFixed(2) + "ms",

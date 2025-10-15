@@ -53,9 +53,7 @@ export async function decompressData(compressedData: string): Promise<string> {
     jsonString = new TextDecoder().decode(decompressed);
   } else {
     // Fallback: assume uncompressed for older browsers
-    console.warn(
-      "Browser does not support compression streams, assuming uncompressed data",
-    );
+    // Note: DecompressionStream is not supported in this browser
     jsonString = new TextDecoder().decode(compressedBytes);
   }
 
