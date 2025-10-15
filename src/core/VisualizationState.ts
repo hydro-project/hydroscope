@@ -4,7 +4,6 @@
  */
 import { hscopeLogger } from "../utils/logger.js";
 import {
-  LAYOUT_CONSTANTS,
   SIZES,
   DEFAULT_COLOR_PALETTE,
   DEFAULT_ELK_ALGORITHM,

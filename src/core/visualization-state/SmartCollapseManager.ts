@@ -4,7 +4,6 @@
  */
 import { hscopeLogger } from "../../utils/logger.js";
 import { LAYOUT_CONSTANTS, SIZES } from "../../shared/config.js";
-import type { Container } from "../../types/core.js";
 import type { VisualizationState } from "../VisualizationState.js";
 
 export class SmartCollapseManager {
