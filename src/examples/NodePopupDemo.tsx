@@ -94,8 +94,9 @@ export function NodePopupDemo() {
           showControls={true}
           showMiniMap={true}
           showBackground={true}
-          onNodeClick={(_event, node) => {
-            console.log("Node clicked:", node.id, node.data);
+          onNodeClick={(_event, _node) => {
+            // Custom node click handler - could be used for popups, details panels, etc.
+            // Example: setSelectedNode(node);
           }}
         />
       </div>

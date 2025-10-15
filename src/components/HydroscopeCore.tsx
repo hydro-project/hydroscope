@@ -598,9 +598,7 @@ const HydroscopeCoreInternal = forwardRef<
           // CRITICAL FIX: Prevent double-click by checking if we're already processing this container
           const processingKey = `container-${containerId}`;
           if (interactionHandler._processingContainers?.has(processingKey)) {
-            console.warn(
-              `[HydroscopeCore] Container ${containerId} click ignored - already processing`,
-            );
+            // Silently ignore duplicate clicks while processing - this is expected behavior
             return;
           }
 

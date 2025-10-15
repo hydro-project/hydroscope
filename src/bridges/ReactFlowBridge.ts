@@ -1340,12 +1340,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
       return false;
     }
     // Check for circular references (source === target)
-    if (renderedEdge.source === renderedEdge.target) {
-      console.warn(
-        `[ReactFlowBridge] ⚠️ Self-loop edge detected: ${renderedEdge.id} (${renderedEdge.source})`,
-      );
-      // Self-loops are valid in ReactFlow, just log a warning
-    }
+    // Self-loops (source === target) are valid in ReactFlow and expected in some graph structures
+    // No need to log warnings for this normal case
+    
     // Validate handle names if present
     if (
       renderedEdge.sourceHandle &&

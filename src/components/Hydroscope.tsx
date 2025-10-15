@@ -1241,6 +1241,11 @@ export const Hydroscope = memo<HydroscopeProps>(
           return;
         }
 
+        // Skip label toggling for container nodes - they don't support label toggling
+        if (node.data?.nodeType === "container") {
+          return;
+        }
+
         // Default behavior: Toggle individual node label and adjust dimensions
         const currentVisualizationState =
           visualizationState ||
