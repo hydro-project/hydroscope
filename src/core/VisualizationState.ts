@@ -26,10 +26,13 @@ import {
   logInvariantCheck,
 } from "./invariantChecks.js";
 import { SmartCollapseManager } from "./visualization-state/SmartCollapseManager.js";
+import { ValidationManager } from "./visualization-state/ValidationManager.js";
 
 export class VisualizationState {
   // Smart Collapse functionality - extracted to separate module
   private _smartCollapseManager: SmartCollapseManager;
+  // Validation functionality - extracted to separate module
+  private _validationManager: ValidationManager;
   private _nodes = new Map<string, GraphNode>();
   private _edges = new Map<string, GraphEdge>();
   private _containers = new Map<string, Container>();
@@ -75,8 +78,7 @@ export class VisualizationState {
     lastSearchTime: 0,
     expandedContainers: new Set(),
   };
-  private _validationEnabled = true;
-  private _validationInProgress = false;
+
   private _performanceMetrics = {
     operationCounts: new Map<string, number>(),
     operationTimes: new Map<string, number[]>(),
@@ -139,6 +141,7 @@ export class VisualizationState {
   constructor() {
     // Initialize extracted modules
     this._smartCollapseManager = new SmartCollapseManager(this);
+    this._validationManager = new ValidationManager(this);
   }
 
   // Data Management
@@ -3396,221 +3399,27 @@ export class VisualizationState {
       recommendations,
     };
   }
-  // Validation - Extracted invariants from main branch
+  // Validation - Delegates to ValidationManager
   validateInvariants(): void {
-    if (!this._validationEnabled || this._validationInProgress) {
-      return;
-    }
-    this._validationInProgress = true;
-    try {
-      const violations: InvariantViolation[] = [];
-      // Container State Invariants
-      violations.push(...this.validateContainerStates());
-      violations.push(...this.validateContainerHierarchy());
-      // Node State Invariants
-      violations.push(...this.validateNodeContainerRelationships());
-      // Edge Invariants
-      violations.push(...this.validateEdgeNodeConsistency());
-      violations.push(...this.validateNoEdgesToHiddenEntities());
-      // Layout Invariants
-      violations.push(...this.validateCollapsedContainerDimensions());
-      this.reportViolations(violations);
-    } finally {
-      this._validationInProgress = false;
-    }
+    this._validationManager.validateInvariants();
   }
-  private validateContainerStates(): InvariantViolation[] {
-    const violations: InvariantViolation[] = [];
-    for (const [containerId, container] of this._containers) {
-      // Illegal Expanded/Hidden state
-      if (!container.collapsed && container.hidden) {
-        violations.push({
-          type: "ILLEGAL_CONTAINER_STATE",
-          message: `Container ${containerId} is in illegal Expanded/Hidden state`,
-          entityId: containerId,
-          severity: "error",
-        });
-      }
-    }
-    return violations;
+  validateContainerStates(): InvariantViolation[] {
+    return (this._validationManager as any).validateContainerStates();
   }
-  private validateContainerHierarchy(): InvariantViolation[] {
-    const violations: InvariantViolation[] = [];
-    for (const [containerId, container] of this._containers) {
-      if (container.collapsed) {
-        this.validateDescendantsCollapsed(containerId, violations);
-      }
-      if (!container.hidden) {
-        this.validateAncestorsVisible(containerId, violations);
-      }
-    }
-    return violations;
+  validateContainerHierarchy(): InvariantViolation[] {
+    return (this._validationManager as any).validateContainerHierarchy();
   }
-  private validateDescendantsCollapsed(
-    containerId: string,
-    violations: InvariantViolation[],
-  ): void {
-    const children = this.getContainerChildren(containerId);
-    for (const childId of children) {
-      const childContainer = this.getContainer(childId);
-      if (childContainer) {
-        if (!childContainer.collapsed) {
-          violations.push({
-            type: "DESCENDANT_NOT_COLLAPSED",
-            message: `Container ${childId} should be collapsed because ancestor ${containerId} is collapsed`,
-            entityId: childId,
-            severity: "error",
-          });
-        }
-        if (!childContainer.hidden) {
-          violations.push({
-            type: "DESCENDANT_NOT_HIDDEN",
-            message: `Container ${childId} should be hidden because ancestor ${containerId} is collapsed`,
-            entityId: childId,
-            severity: "error",
-          });
-        }
-      } else {
-        const childNode = this.getGraphNode(childId);
-        if (childNode && !childNode.hidden) {
-          violations.push({
-            type: "DESCENDANT_NODE_NOT_HIDDEN",
-            message: `Node ${childId} should be hidden because container ${containerId} is collapsed`,
-            entityId: childId,
-            severity: "error",
-          });
-        }
-      }
-    }
+  validateNodeContainerRelationships(): InvariantViolation[] {
+    return this._validationManager.validateNodeContainerRelationships();
   }
-  private validateAncestorsVisible(
-    containerId: string,
-    violations: InvariantViolation[],
-  ): void {
-    let current = this.getNodeContainer(containerId);
-    while (current) {
-      const ancestorContainer = this.getContainer(current);
-      if (ancestorContainer && ancestorContainer.hidden) {
-        violations.push({
-          type: "ANCESTOR_NOT_VISIBLE",
-          message: `Container ${containerId} is visible but ancestor ${current} is hidden`,
-          entityId: containerId,
-          severity: "error",
-        });
-      }
-      current = this.getNodeContainer(current);
-    }
+  validateEdgeNodeConsistency(): InvariantViolation[] {
+    return this._validationManager.validateEdgeNodeConsistency();
   }
-  private validateNodeContainerRelationships(): InvariantViolation[] {
-    const violations: InvariantViolation[] = [];
-    for (const [nodeId, node] of this._nodes) {
-      const containerName = this.getNodeContainer(nodeId);
-      if (containerName) {
-        const container = this.getContainer(containerName);
-        if (container && container.collapsed && !node.hidden) {
-          violations.push({
-            type: "NODE_NOT_HIDDEN_IN_COLLAPSED_CONTAINER",
-            message: `Node ${nodeId} should be hidden because it belongs to collapsed container ${containerName}`,
-            entityId: nodeId,
-            severity: "error",
-          });
-        }
-      }
-    }
-    return violations;
+  validateNoEdgesToHiddenEntities(): InvariantViolation[] {
+    return this._validationManager.validateNoEdgesToHiddenEntities();
   }
-  private validateEdgeNodeConsistency(): InvariantViolation[] {
-    const violations: InvariantViolation[] = [];
-    for (const [edgeId, edge] of this._edges) {
-      const sourceExists =
-        this.getGraphNode(edge.source) || this.getContainer(edge.source);
-      const targetExists =
-        this.getGraphNode(edge.target) || this.getContainer(edge.target);
-      if (!sourceExists) {
-        violations.push({
-          type: "EDGE_INVALID_SOURCE",
-          message: `Edge ${edgeId} references non-existent source ${edge.source}`,
-          entityId: edgeId,
-          severity: "error",
-        });
-      }
-      if (!targetExists) {
-        violations.push({
-          type: "EDGE_INVALID_TARGET",
-          message: `Edge ${edgeId} references non-existent target ${edge.target}`,
-          entityId: edgeId,
-          severity: "error",
-        });
-      }
-    }
-    return violations;
-  }
-  private validateNoEdgesToHiddenEntities(): InvariantViolation[] {
-    const violations: InvariantViolation[] = [];
-    for (const edge of this._edges.values()) {
-      if (edge.hidden) continue;
-      const sourceContainer = this.getContainer(edge.source);
-      const targetContainer = this.getContainer(edge.target);
-      const sourceNode = this.getGraphNode(edge.source);
-      const targetNode = this.getGraphNode(edge.target);
-      const sourceHidden = sourceContainer?.hidden || sourceNode?.hidden;
-      const targetHidden = targetContainer?.hidden || targetNode?.hidden;
-      if (sourceHidden) {
-        violations.push({
-          type: "EDGE_TO_HIDDEN_SOURCE",
-          message: `Visible edge ${edge.id} references hidden source ${edge.source}`,
-          entityId: edge.id,
-          severity: "error",
-        });
-      }
-      if (targetHidden) {
-        violations.push({
-          type: "EDGE_TO_HIDDEN_TARGET",
-          message: `Visible edge ${edge.id} references hidden target ${edge.target}`,
-          entityId: edge.id,
-          severity: "error",
-        });
-      }
-    }
-    return violations;
-  }
-  private validateCollapsedContainerDimensions(): InvariantViolation[] {
-    const violations: InvariantViolation[] = [];
-    for (const [containerId, container] of this._containers) {
-      if (!container.collapsed) continue;
-      // FIXED: Use the actual rendered dimensions for collapsed containers
-      // Collapsed containers always render with fixed dimensions from config
-      const actualWidth = SIZES.COLLAPSED_CONTAINER_WIDTH; // 200
-      const actualHeight = SIZES.COLLAPSED_CONTAINER_HEIGHT; // 150
-      // Only check if the actual rendered dimensions are problematic
-      const maxAllowedWidth = 300; // Reasonable threshold
-      const maxAllowedHeight = 300;
-      if (actualWidth > maxAllowedWidth || actualHeight > maxAllowedHeight) {
-        violations.push({
-          type: "COLLAPSED_CONTAINER_LARGE_DIMENSIONS",
-          message: `Collapsed container ${containerId} has large rendered dimensions (${actualWidth}x${actualHeight}) that may cause layout issues`,
-          entityId: containerId,
-          severity: "warning",
-        });
-      }
-    }
-    return violations;
-  }
-  private reportViolations(violations: InvariantViolation[]): void {
-    const errors = violations.filter((v) => v.severity === "error");
-    const warnings = violations.filter((v) => v.severity === "warning");
-    if (warnings.length > 0) {
-      console.warn("[VisualizationState] Invariant warnings:", warnings);
-    }
-    if (errors.length > 0) {
-      console.error(
-        "[VisualizationState] CRITICAL: Invariant violations:",
-        errors,
-      );
-      throw new Error(
-        `VisualizationState invariant violations: ${errors.map((e) => e.message).join("; ")}`,
-      );
-    }
+  validateCollapsedContainerDimensions(): InvariantViolation[] {
+    return this._validationManager.validateCollapsedContainerDimensions();
   }
   // State Persistence Methods
   /**
