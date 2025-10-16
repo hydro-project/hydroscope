@@ -87,11 +87,11 @@ import type {
  * Provides methods that can be called imperatively on the component instance.
  */
 export interface HydroscopeCoreHandle {
-  /** Collapse all containers atomically */
-  collapseAll: () => Promise<void>;
+  /** Collapse all containers atomically (or specific containers if IDs provided) */
+  collapseContainers: (containerIds?: string[]) => Promise<void>;
 
   /** Expand all containers atomically (or specific containers if IDs provided) */
-  expandAll: (containerIds?: string[]) => Promise<void>;
+  expandContainers: (containerIds?: string[]) => Promise<void>;
 
   /** Collapse a specific container */
   collapse: (containerId: string) => Promise<void>;
@@ -1038,7 +1038,7 @@ const HydroscopeCoreInternal = forwardRef<
           );
         } catch (error) {
           console.error(
-            "[HydroscopeCore] Error in collapseAll operation:",
+            "[HydroscopeCore] Error in collapseContainers operation:",
             error,
           );
           handleError(error as Error, "bulk collapse operation");
@@ -1112,7 +1112,7 @@ const HydroscopeCoreInternal = forwardRef<
             );
           } catch (error) {
             console.error(
-              "[HydroscopeCore] Error in expandAll operation:",
+              "[HydroscopeCore] Error in expandContainers operation:",
               error,
             );
             handleError(error as Error, "bulk expand operation");
@@ -1619,16 +1619,16 @@ const HydroscopeCoreInternal = forwardRef<
     useImperativeHandle(
       ref,
       () => ({
-        collapseAll: readOnly
+        collapseContainers: readOnly
           ? async () =>
               console.warn(
-                "[HydroscopeCore] collapseAll disabled in readOnly mode",
+                "[HydroscopeCore] collapseContainers disabled in readOnly mode",
               )
           : handleCollapseAll,
-        expandAll: readOnly
+        expandContainers: readOnly
           ? async () =>
               console.warn(
-                "[HydroscopeCore] expandAll disabled in readOnly mode",
+                "[HydroscopeCore] expandContainers disabled in readOnly mode",
               )
           : handleExpandAll,
         collapse: readOnly

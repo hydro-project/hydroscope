@@ -35,7 +35,7 @@ const _TestComponent: React.FC<{
 
   const handleCollapseAll = async () => {
     try {
-      await hydroscopeRef.current?.collapseAll();
+      await hydroscopeRef.current?.collapseContainers();
       onCollapseAll?.();
     } catch (error) {
       onError?.(error as Error);
@@ -44,7 +44,7 @@ const _TestComponent: React.FC<{
 
   const handleExpandAll = async () => {
     try {
-      await hydroscopeRef.current?.expandAll();
+      await hydroscopeRef.current?.expandContainers();
       onExpandAll?.();
     } catch (error) {
       onError?.(error as Error);
@@ -87,10 +87,14 @@ describe("HydroscopeCore Bulk Operations", () => {
       React.useEffect(() => {
         // Test the ref after component mounts
         if (hydroscopeRef.current) {
-          expect(hydroscopeRef.current.collapseAll).toBeDefined();
-          expect(hydroscopeRef.current.expandAll).toBeDefined();
-          expect(typeof hydroscopeRef.current.collapseAll).toBe("function");
-          expect(typeof hydroscopeRef.current.expandAll).toBe("function");
+          expect(hydroscopeRef.current.collapseContainers).toBeDefined();
+          expect(hydroscopeRef.current.expandContainers).toBeDefined();
+          expect(typeof hydroscopeRef.current.collapseContainers).toBe(
+            "function",
+          );
+          expect(typeof hydroscopeRef.current.expandContainers).toBe(
+            "function",
+          );
         }
       });
 
@@ -163,9 +167,9 @@ describe("HydroscopeCore Bulk Operations", () => {
       React.useEffect(() => {
         // TypeScript should allow these assignments without errors
         const collapseAllMethod: (() => Promise<void>) | undefined =
-          hydroscopeRef.current?.collapseAll;
+          hydroscopeRef.current?.collapseContainers;
         const expandAllMethod: (() => Promise<void>) | undefined =
-          hydroscopeRef.current?.expandAll;
+          hydroscopeRef.current?.expandContainers;
 
         // These should be functions when defined
         expect(
@@ -201,8 +205,8 @@ describe("HydroscopeCore Bulk Operations", () => {
           if (hydroscopeRef.current) {
             // Bulk operations should not throw errors even with no containers
             try {
-              await hydroscopeRef.current.collapseAll();
-              await hydroscopeRef.current.expandAll();
+              await hydroscopeRef.current.collapseContainers();
+              await hydroscopeRef.current.expandContainers();
               setTestComplete(true);
             } catch (error) {
               // Should not reach here

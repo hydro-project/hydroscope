@@ -45,7 +45,7 @@ export const BulkOperationsExample: React.FC = () => {
     setIsLoading(true);
     setMessage("Collapsing all containers...");
     try {
-      await hydroscopeRef.current.collapseAll();
+      await hydroscopeRef.current.collapseContainers();
       setMessage("All containers collapsed successfully!");
     } catch (error) {
       setMessage(`Error collapsing containers: ${(error as Error).message}`);
@@ -61,7 +61,7 @@ export const BulkOperationsExample: React.FC = () => {
     setIsLoading(true);
     setMessage("Expanding all containers...");
     try {
-      await hydroscopeRef.current.expandAll();
+      await hydroscopeRef.current.expandContainers();
       setMessage("All containers expanded successfully!");
     } catch (error) {
       setMessage(`Error expanding containers: ${(error as Error).message}`);

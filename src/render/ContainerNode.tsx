@@ -210,15 +210,6 @@ export function ContainerNode({
                 ? "searchPulseStrong 1.5s ease-in-out infinite"
                 : "searchPulse 2s ease-in-out infinite"
               : undefined,
-            // Apply search highlights based on data properties
-            ...((data as any)?.isHighlighted &&
-            (data as any)?.highlightType === "search"
-              ? {
-                  backgroundColor: "#fbbf24", // Amber-400
-                  border: "2px solid #f59e0b", // Amber-500
-                  boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
-                }
-              : {}),
             // Merge ReactFlow styles (for search highlights) - these take precedence
             ...style,
           }}
@@ -327,15 +318,6 @@ export function ContainerNode({
               ? "searchPulseStrong 1.5s ease-in-out infinite"
               : "searchPulse 2s ease-in-out infinite"
             : undefined,
-          // Apply search highlights based on data properties
-          ...((data as any)?.isHighlighted &&
-          (data as any)?.highlightType === "search"
-            ? {
-                backgroundColor: "#fbbf24", // Amber-400
-                border: "2px solid #f59e0b", // Amber-500
-                boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
-              }
-            : {}),
           // Merge ReactFlow styles (for search highlights) - these take precedence
           ...style,
         }}

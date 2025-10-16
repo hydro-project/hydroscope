@@ -2720,27 +2720,12 @@ export class AsyncCoordinator {
           targetZoom = zoomToFit > 1.0 ? 1.0 : zoomToFit;
         }
 
-        console.warn("[AsyncCoordinator] Centering on element:", {
-          elementId,
-          x,
-          y,
-          nodeWidth,
-          nodeHeight,
-          viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
-          zoomToFitWidth: (window.innerWidth * 0.7) / nodeWidth,
-          zoomToFitHeight: (window.innerHeight * 0.7) / nodeHeight,
-          targetZoom,
-          explicitZoom: options?.zoom,
-        });
+        // Center on element with calculated zoom
         reactFlowInstance.setCenter(x, y, {
           zoom: targetZoom,
           duration:
             options?.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
         });
-        console.warn(
-          `[AsyncCoordinator] Called setCenter with zoom: ${targetZoom}`,
-        );
       } else {
         console.warn(
           `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
@@ -2916,6 +2901,7 @@ export class AsyncCoordinator {
       }
 
       // Center the viewport on the element
+      // Navigation should ALWAYS pan/zoom regardless of autofit settings
       // Don't pass a default zoom - let focusViewportOnElement calculate the best fit
       if (reactFlowInstance) {
         this.focusViewportOnElement(elementId, reactFlowInstance, {
@@ -2923,10 +2909,18 @@ export class AsyncCoordinator {
           duration:
             options.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
           visualizationState: visualizationState,
-        }).catch((_error) => {
-          // Silently handle viewport focus errors (e.g., in test environments)
-          // These don't affect the core navigation functionality
+        }).catch((error) => {
+          // Log viewport focus errors for debugging
+          console.error(
+            `[AsyncCoordinator] Failed to focus viewport on element ${elementId}:`,
+            error,
+          );
+          // These don't block the core navigation functionality (highlight still works)
         });
+      } else {
+        console.warn(
+          `[AsyncCoordinator] Cannot focus viewport - reactFlowInstance not available`,
+        );
       }
 
       // Don't trigger ReactFlow data updates for navigation

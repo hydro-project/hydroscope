@@ -2851,42 +2851,12 @@ export class VisualizationState {
         this._searchHistory = this._searchHistory.slice(0, 10);
       }
     }
-    if (results.length > 0) {
-      // Get containers that should be expanded to show search matches
-      const containersToExpand = new Set<string>();
-      for (const result of results) {
-        const expansionPath = this.getTreeExpansionPath(result.id);
-        for (const containerId of expansionPath) {
-          containersToExpand.add(containerId);
-        }
-      }
-      // Step 1: Collapse all containers that don't contain search matches
-      const allContainers = Array.from(this._containers.values());
-      for (const container of allContainers) {
-        if (
-          container &&
-          !containersToExpand.has(container.id) &&
-          !container.collapsed
-        ) {
-          this._collapseContainerInternal(container.id);
-          this.aggregateEdgesForContainer(container.id);
-        }
-      }
-      // Step 2: Expand containers that contain search matches
-      for (const containerId of containersToExpand) {
-        const container = this._containers.get(containerId);
-        if (container && container.collapsed) {
-          this._expandContainerInternal(containerId);
-          container.position = { x: 0, y: 0 }; // Reset position to let ELK recalculate
-          container.dimensions = undefined; // Clear collapsed dimensions
-          container.width = undefined; // Clear collapsed width
-          container.height = undefined; // Clear collapsed height
-        }
-      }
-    } else {
-      // No search results - just update highlights (no container changes needed)
-      this.expandTreeToShowMatches(results);
-    }
+    // NOTE: We only update search highlights here, NOT container expansion state.
+    // Container expansion is handled by:
+    // 1. HierarchyTree component for tree view (via getTreeExpansionPath)
+    // 2. LayoutOrchestrator.expandForSearch for graph view (via async operations)
+    // This prevents unwanted side effects and double rendering.
+
     // Update highlights and cache results
     this.updateTreeSearchHighlights(results);
     this.updateGraphSearchHighlights(results);

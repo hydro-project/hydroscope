@@ -112,8 +112,8 @@ describe("HydroscopeCore Component", () => {
       });
 
       // Check that all container operation methods are available
-      expect(ref.current?.collapseAll).toBeDefined();
-      expect(ref.current?.expandAll).toBeDefined();
+      expect(ref.current?.collapseContainers).toBeDefined();
+      expect(ref.current?.expandContainers).toBeDefined();
       expect(ref.current?.collapse).toBeDefined();
       expect(ref.current?.expand).toBeDefined();
       expect(ref.current?.toggle).toBeDefined();
@@ -133,8 +133,8 @@ describe("HydroscopeCore Component", () => {
         expect(ref.current).toBeDefined();
       });
 
-      // Should not throw when calling collapseAll
-      await expect(ref.current?.collapseAll()).resolves.not.toThrow();
+      // Should not throw when calling collapseContainers
+      await expect(ref.current?.collapseContainers()).resolves.not.toThrow();
     });
 
     it("should handle expandAll operation", async () => {
@@ -151,8 +151,8 @@ describe("HydroscopeCore Component", () => {
         expect(ref.current).toBeDefined();
       });
 
-      // Should not throw when calling expandAll
-      await expect(ref.current?.expandAll()).resolves.not.toThrow();
+      // Should not throw when calling expandContainers
+      await expect(ref.current?.expandContainers()).resolves.not.toThrow();
     });
 
     it("should handle individual container operations", async () => {
@@ -185,8 +185,8 @@ describe("HydroscopeCore Component", () => {
       });
 
       // Operations should not throw in readOnly mode (they just log warnings)
-      await expect(ref.current?.collapseAll()).resolves.not.toThrow();
-      await expect(ref.current?.expandAll()).resolves.not.toThrow();
+      await expect(ref.current?.collapseContainers()).resolves.not.toThrow();
+      await expect(ref.current?.expandContainers()).resolves.not.toThrow();
     });
   });
 

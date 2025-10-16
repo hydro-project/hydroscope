@@ -853,10 +853,10 @@ export const Hydroscope = memo<HydroscopeProps>(
 
       const debouncedCollapseAll =
         debouncedOperationManagerRef.current.debounce(
-          "collapseAll",
+          "collapseContainers",
           withAsyncResizeObserverErrorSuppression(async () => {
             try {
-              await hydroscopeCoreRef.current?.collapseAll();
+              await hydroscopeCoreRef.current?.collapseContainers();
               // Update status message for e2e testing
               setState((prev) => ({
                 ...prev,
@@ -893,10 +893,10 @@ export const Hydroscope = memo<HydroscopeProps>(
       if (!debouncedOperationManagerRef.current) return;
 
       const debouncedExpandAll = debouncedOperationManagerRef.current.debounce(
-        "expandAll",
+        "expandContainers",
         withAsyncResizeObserverErrorSuppression(async () => {
           try {
-            await hydroscopeCoreRef.current?.expandAll();
+            await hydroscopeCoreRef.current?.expandContainers();
             // Update status message for e2e testing
             setState((prev) => ({
               ...prev,
@@ -955,12 +955,21 @@ export const Hydroscope = memo<HydroscopeProps>(
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
       async (query: string, matches: SearchMatch[], current?: SearchMatch) => {
-        setState((prev) => ({
-          ...prev,
-          searchQuery: query,
-          searchMatches: matches,
-          currentSearchMatch: current,
-        }));
+        setState((prev) => {
+          // When user initiates a search (non-empty query), disable autofit to prevent
+          // losing focus while navigating through search results
+          const shouldDisableAutoFit =
+            query.trim().length > 0 && prev.autoFitEnabled;
+
+          return {
+            ...prev,
+            searchQuery: query,
+            searchMatches: matches,
+            currentSearchMatch: current,
+            // Disable autofit when starting a search to maintain focus during navigation
+            autoFitEnabled: shouldDisableAutoFit ? false : prev.autoFitEnabled,
+          };
+        });
         // CRITICAL FIX: Perform search in VisualizationState to expand containers and set highlights
         if (hydroscopeCoreRef.current) {
           try {
@@ -989,9 +998,37 @@ export const Hydroscope = memo<HydroscopeProps>(
               const hydroscopeCore = hydroscopeCoreRef.current;
               if (hydroscopeCore) {
                 if (searchResults.length > 0) {
-                  // Search with results - use expandAll (needed for highlighting to work)
+                  // Search with results - expand only paths to search matches (not all containers)
                   try {
-                    await hydroscopeCore.expandAll();
+                    // Get containers that need to be expanded to show search results
+                    const containersToExpand = new Set<string>();
+                    for (const result of searchResults) {
+                      const expansionPath =
+                        currentVisualizationState.getTreeExpansionPath(
+                          result.id,
+                        );
+                      for (const containerId of expansionPath) {
+                        containersToExpand.add(containerId);
+                      }
+                    }
+
+                    if (containersToExpand.size > 0) {
+                      // Expand only the necessary containers
+                      await hydroscopeCore.expandContainers(
+                        Array.from(containersToExpand),
+                      );
+                    } else {
+                      // No expansion needed, just render highlights
+                      if (asyncCoordinator.executeLayoutAndRenderPipeline) {
+                        asyncCoordinator.executeLayoutAndRenderPipeline(
+                          currentVisualizationState,
+                          {
+                            relayoutEntities: [], // No layout, just render
+                            fitView: false,
+                          },
+                        );
+                      }
+                    }
                   } catch (_error) {
                     // Fallback to ReactFlow render using new pipeline method
                     if (asyncCoordinator.executeLayoutAndRenderPipeline) {
@@ -1146,7 +1183,7 @@ export const Hydroscope = memo<HydroscopeProps>(
         }
 
         try {
-          await hydroscopeCoreRef.current.expandAll(containerIds);
+          await hydroscopeCoreRef.current.expandContainers(containerIds);
         } catch (error) {
           console.error(`[Hydroscope] Error expanding containers:`, error);
         }

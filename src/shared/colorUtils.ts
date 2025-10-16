@@ -3,7 +3,11 @@
  *
  * Simple color utilities for the visualization system.
  */
-import { COLOR_PALETTES } from "./config";
+import {
+  COLOR_PALETTES,
+  SEARCH_HIGHLIGHT_COLORS,
+  SEARCH_CURRENT_COLORS,
+} from "./config";
 // Basic color utility functions
 export function hexToRgb(hex: string): {
   r: number;
@@ -31,20 +35,21 @@ export function getContrastColor(backgroundColor: string): string {
 }
 /**
  * Get bright contrasting colors for search highlighting that work well against any palette
+ * Uses constants from config.ts to ensure consistency across the codebase
  */
 export function getSearchHighlightColors() {
   return {
-    // Standard search match - bright yellow with high visibility
+    // Standard search match - softer yellow for gentler highlighting
     match: {
-      background: "#fbbf24", // amber-400 - brighter for better visibility
-      border: "#f59e0b", // amber-500 - contrasting border
-      text: "#000000", // black text for maximum contrast on yellow
+      background: SEARCH_HIGHLIGHT_COLORS.backgroundColor,
+      border: SEARCH_HIGHLIGHT_COLORS.border,
+      text: "#000000", // black text for maximum contrast
     },
-    // Current/strong search match - bright red-orange with maximum visibility
+    // Current/strong search match - amber for emphasis without being garish
     current: {
-      background: "#f97316", // orange-500 - brighter orange for better visibility
-      border: "#ea580c", // orange-600 - darker border for definition
-      text: "#ffffff", // white text for maximum contrast on orange
+      background: SEARCH_CURRENT_COLORS.backgroundColor,
+      border: SEARCH_CURRENT_COLORS.border,
+      text: "#000000", // black text for maximum contrast
     },
   };
 }

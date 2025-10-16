@@ -283,12 +283,22 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             try {
               // Use VisualizationState's search which handles graph highlighting
               const searchResults = visualizationState.performSearch(query);
-              next = searchResults.map((result: any) => ({
-                id: result.id,
-                label: result.label,
-                type: result.type,
-                matchIndices: result.matchIndices || [],
-              }));
+              const resultsById = new Map(
+                searchResults.map((r: any) => [r.id, r]),
+              );
+
+              // Re-sort results to match tree order by using searchableItems order
+              next = searchableItems
+                .filter((item) => resultsById.has(item.id))
+                .map((item) => {
+                  const result = resultsById.get(item.id) as any;
+                  return {
+                    id: result.id,
+                    label: result.label,
+                    type: result.type,
+                    matchIndices: result.matchIndices || [],
+                  };
+                });
               // ReactFlow regeneration will be handled by Hydroscope component
               // after onSearch callback is executed
             } catch (_error) {

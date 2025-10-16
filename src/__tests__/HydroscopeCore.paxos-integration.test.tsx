@@ -216,11 +216,13 @@ describe("HydroscopeCore Integration with Real Paxos Data", () => {
         { timeout: 5000 },
       );
 
-      // Test collapseAll operation
+      // Test collapseContainers operation
       if (hydroscopeHandle) {
         const startTime = Date.now();
 
-        await expect(hydroscopeHandle.collapseAll()).resolves.not.toThrow();
+        await expect(
+          hydroscopeHandle.collapseContainers(),
+        ).resolves.not.toThrow();
 
         const endTime = Date.now();
         const operationTime = endTime - startTime;
@@ -254,11 +256,13 @@ describe("HydroscopeCore Integration with Real Paxos Data", () => {
         { timeout: 5000 },
       );
 
-      // Test expandAll operation
+      // Test expandContainers operation
       if (hydroscopeHandle) {
         const startTime = Date.now();
 
-        await expect(hydroscopeHandle.expandAll()).resolves.not.toThrow();
+        await expect(
+          hydroscopeHandle.expandContainers(),
+        ).resolves.not.toThrow();
 
         const endTime = Date.now();
         const operationTime = endTime - startTime;
@@ -295,10 +299,10 @@ describe("HydroscopeCore Integration with Real Paxos Data", () => {
       // Test rapid operations
       if (hydroscopeHandle) {
         const operations = [
-          hydroscopeHandle.collapseAll(),
-          hydroscopeHandle.expandAll(),
-          hydroscopeHandle.collapseAll(),
-          hydroscopeHandle.expandAll(),
+          hydroscopeHandle.collapseContainers(),
+          hydroscopeHandle.expandContainers(),
+          hydroscopeHandle.collapseContainers(),
+          hydroscopeHandle.expandContainers(),
         ];
 
         // All operations should complete without errors

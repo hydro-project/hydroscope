@@ -317,13 +317,14 @@ export const DEFAULT_EDGE_STYLE = {
   DEFAULT_STROKE_COLOR: "#999999", // For edges with no properties
 } as const;
 // Search and Navigation Highlight Colors
+// Option B: Softer warm tones - less saturated, easier on eyes
 export const SEARCH_HIGHLIGHT_COLORS = {
-  backgroundColor: "#fbbf24", // Amber-400
-  border: "#f59e0b", // Amber-500
+  backgroundColor: "#fcd34d", // Yellow-300 - softer yellow for search matches
+  border: "#fbbf24", // Amber-400 - gentle border
 } as const;
 export const SEARCH_CURRENT_COLORS = {
-  backgroundColor: "#f97316", // Orange-500
-  border: "#ea580c", // Orange-600
+  backgroundColor: "#fbbf24", // Amber-400 - current search result (was match color)
+  border: "#f59e0b", // Amber-500 - slightly darker border
 } as const;
 export const NAVIGATION_HIGHLIGHT_COLORS = {
   backgroundColor: "#3b82f6", // Blue-500

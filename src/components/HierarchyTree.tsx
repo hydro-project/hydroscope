@@ -88,16 +88,6 @@ function createSearchHighlightDiv(
   onToggleVisibility?: (e: React.MouseEvent) => void,
   containerId?: string,
 ): React.ReactNode {
-  // Debug: log if containerId is passed
-  if (match || isCurrent) {
-    console.log("[createSearchHighlightDiv]", {
-      text: text.substring(0, 20),
-      containerId,
-      match,
-      isCurrent,
-    });
-  }
-
   let style: React.CSSProperties = baseStyle;
 
   // Start with search match background if applicable
@@ -338,6 +328,53 @@ function createContainerDisplayTitle(
     </div>
   );
 }
+
+/**
+ * Get searchable items in the same order as they appear in the tree hierarchy
+ * @internal
+ */
+export function getSearchableItemsInTreeOrder(
+  visualizationState: VisualizationState,
+): Array<{ id: string; label: string; type: "container" | "node" }> {
+  const items: Array<{
+    id: string;
+    label: string;
+    type: "container" | "node";
+  }> = [];
+  const hierarchyTree = buildHierarchyTreeFromState(visualizationState);
+
+  const traverse = (nodes: HierarchyTreeNode[], depth: number = 0) => {
+    for (const node of nodes) {
+      // Add the container first
+      const containerData = visualizationState.getContainer(node.id);
+      const containerLabel = containerData?.label || node.id;
+      items.push({ id: node.id, label: containerLabel, type: "container" });
+
+      // Recurse into child containers FIRST (matching tree render order)
+      if (node.children && node.children.length > 0) {
+        traverse(node.children, depth + 1);
+      }
+
+      // THEN add its leaf children (nodes) - these come after child containers in the tree
+      const containerNodes = visualizationState.getContainerNodes(node.id);
+      if (containerNodes && containerNodes.size > 0) {
+        const leafNodeIds = Array.from(containerNodes);
+        for (const leafId of leafNodeIds) {
+          const nodeData = visualizationState.getGraphNode(leafId);
+          const nodeLabel = nodeData?.label || leafId;
+          items.push({ id: leafId, label: nodeLabel, type: "node" });
+        }
+      }
+    }
+  };
+
+  if (hierarchyTree) {
+    traverse(hierarchyTree);
+  }
+
+  return items;
+}
+
 /**
  * Generate tree data structure optimized for HierarchyTree rendering
  * This function handles all UI formatting concerns for the Ant Design Tree
@@ -360,11 +397,16 @@ function getTreeDataStructure(
   // Get the current color palette for highlight colors
   const palette = visualizationState.getColorPalette();
   const hierarchyTree = buildHierarchyTreeFromState(visualizationState);
-  const convertToTreeData = (nodes: HierarchyTreeNode[]): TreeDataNode[] => {
+
+  const convertToTreeData = (
+    nodes: HierarchyTreeNode[],
+    depth: number = 0,
+  ): TreeDataNode[] => {
     return nodes.map((node) => {
       // Get container data using VisualizationState accessors
       const containerData = visualizationState?.getContainer(node.id);
       const containerLabel = containerData?.label || `Container ${node.id}`;
+
       // Get leaf node count using available v1.0.0 methods
       const containerNodes =
         visualizationState?.getContainerNodes(node.id) || new Set();
@@ -388,7 +430,7 @@ function getTreeDataStructure(
       let children: TreeDataNode[] | undefined = undefined;
       if (hasChildren) {
         // Container has child containers - recurse and add leaf nodes if expanded
-        children = convertToTreeData(node.children);
+        children = convertToTreeData(node.children, depth + 1);
         if (!isCollapsed && hasLeafChildren) {
           // Add actual leaf nodes when expanded
           const leafTreeNodes = leafNodes.map((leafNode: GraphNode) => {
@@ -549,6 +591,7 @@ function getTreeDataStructure(
       };
     });
   };
+
   return convertToTreeData(hierarchyTree || []);
 }
 export function HierarchyTree({
@@ -600,38 +643,19 @@ export function HierarchyTree({
 
   // Scroll to current search result when it changes
   useEffect(() => {
-    console.log("[HierarchyTree] Scroll effect triggered", {
-      currentSearchResult,
-      hasRef: !!treeContainerRef.current,
-    });
-
     if (!currentSearchResult || !treeContainerRef.current) return;
 
     // Wait a bit for the tree to render with the current result highlighted
     const scrollTimer = setTimeout(() => {
       // Ant Design Tree uses virtualization, so we need to find visible nodes only
       // Look for the title element that contains our search highlight
-      const allTitles = treeContainerRef.current?.querySelectorAll(
-        ".ant-tree-title",
-      );
+      const allTitles =
+        treeContainerRef.current?.querySelectorAll(".ant-tree-title");
 
       let targetNode: Element | null = null;
 
       // Find the title that contains a search highlight div with our container ID
       if (allTitles) {
-        // Debug: check first few titles
-        const firstFewDivs = Array.from(allTitles)
-          .slice(0, 3)
-          .map((title) => {
-            const div = title.querySelector("div");
-            return {
-              hasDiv: !!div,
-              containerId: div?.getAttribute("data-container-id"),
-              innerHTML: title.innerHTML.substring(0, 100),
-            };
-          });
-        console.log("[HierarchyTree] Sample titles:", firstFewDivs);
-
         for (const title of Array.from(allTitles)) {
           // Look for the search highlight div inside this title
           const highlightDiv = title.querySelector(
@@ -645,16 +669,10 @@ export function HierarchyTree({
         }
       }
 
-      console.log("[HierarchyTree] Scroll search", {
-        searchingFor: currentSearchResult.id,
-        totalTitles: allTitles?.length,
-        foundNode: !!targetNode,
-      });
-
       if (targetNode && treeContainerRef.current) {
         // treeContainerRef is now the scrollable div with maxHeight and overflowY
         const scrollContainer = treeContainerRef.current;
-        
+
         // Get positions
         const containerRect = scrollContainer.getBoundingClientRect();
         const targetRect = targetNode.getBoundingClientRect();

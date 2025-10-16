@@ -360,24 +360,17 @@ export function StandardNode({
           transform: isClicked
             ? "scale(1.05) translateY(-2px)"
             : "scale(1) translateY(0px)",
-          // Apply search highlights based on data properties
-          ...((data as any)?.isHighlighted &&
-          (data as any)?.highlightType === "search"
-            ? {
-                backgroundColor: "#fbbf24", // Amber-400
-                border: "2px solid #f59e0b", // Amber-500
-                boxShadow: "0 0 8px #f59e0b40", // Add glow effect with 40% opacity
-              }
-            : {}),
           // Merge ReactFlow styles (for search highlights) - these take precedence
           ...style,
           boxShadow: (() => {
             const searchHighlight = (data as any).searchHighlight;
             const searchHighlightStrong = (data as any).searchHighlightStrong;
             if (searchHighlightStrong) {
-              return "0 0 0 4px rgba(249, 115, 22, 0.5), 0 8px 20px rgba(0,0,0,0.15)";
+              // Current search result - amber-400: #fbbf24 = rgb(251, 191, 36)
+              return "0 0 0 4px rgba(251, 191, 36, 0.5), 0 8px 20px rgba(0,0,0,0.15)";
             } else if (searchHighlight) {
-              return "0 0 0 3px rgba(251, 191, 36, 0.4), 0 2px 6px rgba(0,0,0,0.1)";
+              // Search match - yellow-300: #fcd34d = rgb(252, 211, 77)
+              return "0 0 0 3px rgba(252, 211, 77, 0.4), 0 2px 6px rgba(0,0,0,0.1)";
             } else if (isClicked) {
               return "0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1)";
             } else {

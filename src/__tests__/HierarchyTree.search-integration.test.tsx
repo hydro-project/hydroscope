@@ -110,7 +110,7 @@ describe("HierarchyTree Search Integration", () => {
     // Container 2 should be highlighted as a direct match
     const container2Element = screen.getByText("Container 2");
     expect(container2Element.closest("div")).toHaveStyle({
-      backgroundColor: expect.stringContaining("#fbbf24"), // SEARCH_HIGHLIGHT_COLORS.backgroundColor
+      backgroundColor: expect.stringContaining("#fcd34d"), // SEARCH_HIGHLIGHT_COLORS.backgroundColor (yellow-300)
     });
   });
 

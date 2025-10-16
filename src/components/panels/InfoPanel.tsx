@@ -19,7 +19,7 @@ import { EyeOutlined } from "@ant-design/icons";
 import { InfoPanelProps, LegendData } from "../types";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { GroupingControls } from "../GroupingControls";
-import { HierarchyTree } from "../HierarchyTree";
+import { HierarchyTree, getSearchableItemsInTreeOrder } from "../HierarchyTree";
 import { Legend } from "../Legend";
 import {
   SearchControls,
@@ -261,27 +261,11 @@ const InfoPanelInternal = forwardRef<
         ?.name || "Container";
     // Build searchable items from hierarchy (containers) and visible nodes
     const searchableItems = useMemo(() => {
-      const items: Array<{
-        id: string;
-        label: string;
-        type: "container" | "node";
-      }> = [];
-      // Containers from visualizationState
+      // Get items in tree hierarchy order so search navigation scrolls in the right direction
       if (visualizationState) {
-        visualizationState.visibleContainers?.forEach((container) => {
-          const label =
-            (container as any)?.data?.label || container?.label || container.id;
-          items.push({ id: container.id, label, type: "container" });
-        });
-        // Use visible nodes since allNodes doesn't exist in v1.0.0
-        const visibleNodes = visualizationState.visibleNodes || [];
-        visibleNodes.forEach((node) => {
-          const label =
-            (node as any)?.data?.label || (node as any)?.label || node.id;
-          items.push({ id: node.id, label, type: "node" });
-        });
+        return getSearchableItemsInTreeOrder(visualizationState);
       }
-      return items;
+      return [];
     }, [visualizationState]);
     // Handlers from SearchControls
     const handleSearch = (query: string, matches: SearchMatch[]) => {

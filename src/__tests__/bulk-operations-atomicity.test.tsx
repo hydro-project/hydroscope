@@ -140,12 +140,12 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle) {
         // Verify collapseAll method exists and is callable
-        expect(hydroscopeHandle.collapseAll).toBeDefined();
-        expect(typeof hydroscopeHandle.collapseAll).toBe("function");
+        expect(hydroscopeHandle.collapseContainers).toBeDefined();
+        expect(typeof hydroscopeHandle.collapseContainers).toBe("function");
 
         // Perform collapseAll operation with full ELK layout
         const startTime = Date.now();
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
         const endTime = Date.now();
 
         // Verify operation completed (atomicity timing)
@@ -193,7 +193,7 @@ describe("Bulk Operations Atomicity Tests", () => {
           visualizationState.visibleContainers.length;
 
         // Perform collapseAll
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
 
         // Verify data consistency is maintained
         expect(visualizationState.visibleNodes.length).toBe(initialNodeCount);
@@ -242,7 +242,7 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle) {
         // Should complete successfully when no containers exist
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
 
         // Should not have errors for empty container case
         expect(onError).not.toHaveBeenCalled();
@@ -276,11 +276,11 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle) {
         // First collapse all containers
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
 
         // Perform expandAll operation
         const startTime = Date.now();
-        await hydroscopeHandle.expandAll();
+        await hydroscopeHandle.expandContainers();
         const endTime = Date.now();
 
         // Verify operation completed (atomicity timing)
@@ -322,7 +322,7 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle && visualizationState) {
         // Collapse first
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
 
         // Record state before expand
         const beforeNodeCount = visualizationState.visibleNodes.length;
@@ -331,7 +331,7 @@ describe("Bulk Operations Atomicity Tests", () => {
           visualizationState.visibleContainers.length;
 
         // Perform expandAll
-        await hydroscopeHandle.expandAll();
+        await hydroscopeHandle.expandContainers();
 
         // Verify data consistency is maintained
         expect(visualizationState.visibleNodes.length).toBe(beforeNodeCount);
@@ -374,9 +374,9 @@ describe("Bulk Operations Atomicity Tests", () => {
         const startTime = Date.now();
 
         // Perform sequence of operations
-        await hydroscopeHandle.collapseAll();
-        await hydroscopeHandle.expandAll();
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
+        await hydroscopeHandle.expandContainers();
+        await hydroscopeHandle.collapseContainers();
 
         const endTime = Date.now();
 
@@ -420,9 +420,9 @@ describe("Bulk Operations Atomicity Tests", () => {
       if (hydroscopeHandle && visualizationState) {
         // Start multiple operations concurrently
         const operations = [
-          hydroscopeHandle.collapseAll(),
-          hydroscopeHandle.expandAll(),
-          hydroscopeHandle.collapseAll(),
+          hydroscopeHandle.collapseContainers(),
+          hydroscopeHandle.expandContainers(),
+          hydroscopeHandle.collapseContainers(),
         ];
 
         // All operations should complete without throwing
@@ -460,8 +460,8 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle) {
         // Test bulk operations
-        await hydroscopeHandle.collapseAll();
-        await hydroscopeHandle.expandAll();
+        await hydroscopeHandle.collapseContainers();
+        await hydroscopeHandle.expandContainers();
 
         // Test individual operations (should not throw even if containers don't exist)
         await hydroscopeHandle.collapse("container_1");
@@ -498,9 +498,9 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle) {
         // Mixed operations
-        await hydroscopeHandle.collapseAll(); // Bulk collapse
+        await hydroscopeHandle.collapseContainers(); // Bulk collapse
         await hydroscopeHandle.expand("container_1"); // Individual expand
-        await hydroscopeHandle.expandAll(); // Bulk expand
+        await hydroscopeHandle.expandContainers(); // Bulk expand
         await hydroscopeHandle.collapse("container_2"); // Individual collapse
 
         // Should complete mixed operations without errors
@@ -541,14 +541,20 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle && visualizationState) {
         // Bulk operations should work even if some containers don't exist
-        await expect(hydroscopeHandle.collapseAll()).resolves.not.toThrow();
-        await expect(hydroscopeHandle.expandAll()).resolves.not.toThrow();
+        await expect(
+          hydroscopeHandle.collapseContainers(),
+        ).resolves.not.toThrow();
+        await expect(
+          hydroscopeHandle.expandContainers(),
+        ).resolves.not.toThrow();
 
         // Individual operations with invalid IDs should not crash bulk operations
         await expect(
           hydroscopeHandle.collapse("nonexistent_container"),
         ).resolves.not.toThrow();
-        await expect(hydroscopeHandle.collapseAll()).resolves.not.toThrow();
+        await expect(
+          hydroscopeHandle.collapseContainers(),
+        ).resolves.not.toThrow();
 
         // System should remain consistent
         expect(() => visualizationState.validateInvariants()).not.toThrow();
@@ -580,7 +586,7 @@ describe("Bulk Operations Atomicity Tests", () => {
 
       if (hydroscopeHandle) {
         // Perform bulk operation
-        await hydroscopeHandle.collapseAll();
+        await hydroscopeHandle.collapseContainers();
 
         // Should maintain consistency throughout operation
         expect(onError).not.toHaveBeenCalled();
