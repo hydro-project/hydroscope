@@ -2964,7 +2964,7 @@ export class VisualizationState {
     // Clear any existing navigation highlights and set the new one
     this._searchNavigationState.treeNavigationHighlights.clear();
     this._searchNavigationState.graphNavigationHighlights.clear();
-    
+
     // Add the element to navigation highlights
     this._searchNavigationState.treeNavigationHighlights.add(elementId);
     this._searchNavigationState.graphNavigationHighlights.add(elementId);
