@@ -69,7 +69,7 @@ import {
   DEFAULT_ELK_ALGORITHM,
   NAVIGATION_TIMING,
 } from "../shared/config.js";
-import { getHighlightColor } from "../shared/colorUtils.js";
+import { getHighlightColor, generateNodeColors } from "../shared/colorUtils.js";
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 
 import type {
@@ -229,6 +229,21 @@ export interface HydroscopeCoreProps {
 }
 
 /**
+ * Data for an active popup node
+ */
+interface PopupData {
+  nodeId: string;
+  position: { x: number; y: number };
+  width?: number;
+  height?: number;
+  label: string;
+  longLabel: string;
+  originalNodeType: string;
+  colorPalette: string;
+  parentId?: string;
+}
+
+/**
  * Internal state interface for the HydroscopeCore component
  *
  * Manages all component state including data, UI state, and coordination
@@ -253,8 +268,8 @@ interface HydroscopeCoreState {
   /** Whether to enable auto-fit (disabled during drag operations) */
   autoFitEnabled: boolean;
 
-  /** Active popup nodes (nodeId -> popupNodeId mapping) */
-  activePopups: Map<string, string>;
+  /** Active popup nodes (nodeId -> popup data) */
+  activePopups: Map<string, PopupData>;
 
   /** Spotlight effects for navigation highlighting (supports concurrent glows) */
   spotlights: Array<{
@@ -1514,126 +1529,72 @@ const HydroscopeCoreInternal = forwardRef<
       ],
     );
 
-    // Handle popup close
-    const handlePopupClose = useCallback((nodeId: string) => {
-      setState((prev) => {
-        const newActivePopups = new Map(prev.activePopups);
-        const popupId = newActivePopups.get(nodeId);
+    // Handle popup toggle for nodes
+    // CRITICAL FIX: Store popup data separately to avoid modifying ReactFlow nodes array
+    // This prevents ReactFlow from re-rendering and causing flicker
+    const handleNodePopupToggle = useCallback(
+      (nodeId: string, node: Node) => {
+        setState((prev) => {
+          const newActivePopups = new Map(prev.activePopups);
+          const existingPopup = newActivePopups.get(nodeId);
 
-        if (popupId) {
-          const updatedNodes = prev.reactFlowData.nodes.filter(
-            (n) => n.id !== popupId,
-          );
-          newActivePopups.delete(nodeId);
+          if (existingPopup) {
+            // Close popup
+            newActivePopups.delete(nodeId);
+          } else {
+            // Calculate absolute position by walking up parent chain
+            // In ReactFlow, child nodes have positions relative to their parent
+            const calculateAbsolutePosition = (
+              targetNode: Node,
+            ): { x: number; y: number } => {
+              let absX = targetNode.position.x;
+              let absY = targetNode.position.y;
+              let currentParentId = targetNode.parentId;
+
+              // Walk up the parent chain, accumulating positions
+              while (currentParentId) {
+                const parentNode = prev.reactFlowData.nodes.find(
+                  (n) => n.id === currentParentId,
+                );
+                if (!parentNode) break;
+
+                absX += parentNode.position.x;
+                absY += parentNode.position.y;
+                currentParentId = parentNode.parentId;
+              }
+
+              return { x: absX, y: absY };
+            };
+
+            const absolutePosition = calculateAbsolutePosition(node);
+
+            // Open popup - store the data needed to render it
+            const popupData = {
+              nodeId,
+              position: absolutePosition,
+              width: node.width,
+              height: node.height,
+              label: String(node.data.longLabel || node.data.label || nodeId),
+              longLabel: String(node.data.longLabel || ""),
+              originalNodeType: String(
+                node.data.nodeType || node.type || "default",
+              ),
+              colorPalette: String(
+                node.data.colorPalette || DEFAULT_COLOR_PALETTE,
+              ),
+              // Store parent info for calculating absolute position
+              parentId: node.parentId,
+            };
+            newActivePopups.set(nodeId, popupData);
+          }
 
           return {
             ...prev,
             activePopups: newActivePopups,
-            reactFlowData: {
-              ...prev.reactFlowData,
-              nodes: updatedNodes,
-            },
           };
-        }
-
-        return prev;
-      });
-    }, []);
-
-    // Handle popup toggle for nodes
-    const handleNodePopupToggle = useCallback(
-      (nodeId: string, node: Node) => {
-        // Use flushSync to batch the state update and minimize flicker
-        // This ensures the DOM update happens synchronously in a single frame
-        ReactDOM.flushSync(() => {
-          setState((prev) => {
-            const newActivePopups = new Map(prev.activePopups);
-            const existingPopupId = newActivePopups.get(nodeId);
-
-            hscopeLogger.log(
-              "orchestrator",
-              "[HydroscopeCore] Popup toggle state:",
-              {
-                existingPopupId,
-                currentNodes: prev.reactFlowData.nodes.length,
-              },
-            );
-
-            let updatedNodes = [...prev.reactFlowData.nodes];
-
-            if (existingPopupId) {
-              hscopeLogger.log(
-                "orchestrator",
-                "[HydroscopeCore] Removing existing popup:",
-                existingPopupId,
-              );
-              // Remove existing popup
-              updatedNodes = updatedNodes.filter(
-                (n) => n.id !== existingPopupId,
-              );
-              newActivePopups.delete(nodeId);
-            } else {
-              // Add new popup
-              const popupId = `popup-${nodeId}`;
-              hscopeLogger.log(
-                "orchestrator",
-                "[HydroscopeCore] Creating new popup:",
-                popupId,
-              );
-
-              const popupNode = {
-                id: popupId,
-                type: "popup",
-                position: { ...node.position }, // Same position as original node
-                data: {
-                  label: String(
-                    node.data.longLabel || node.data.label || nodeId,
-                  ),
-                  longLabel: String(node.data.longLabel || ""),
-                  nodeType: "popup",
-                  originalNodeType: String(
-                    node.data.nodeType || node.type || "default",
-                  ),
-                  colorPalette: String(
-                    node.data.colorPalette || DEFAULT_COLOR_PALETTE,
-                  ),
-                  onClose: (_popupNodeId: string) => handlePopupClose(nodeId),
-                },
-                // Set parent to same container as original node
-                parentId: node.parentId,
-                extent: node.extent || undefined,
-                // Higher z-index to appear above original node
-                zIndex: 1000,
-              };
-
-              updatedNodes.push(popupNode);
-              newActivePopups.set(nodeId, popupId);
-            }
-
-            hscopeLogger.log(
-              "orchestrator",
-              "[HydroscopeCore] Updated state:",
-              {
-                newActivePopupsSize: newActivePopups.size,
-                updatedNodesLength: updatedNodes.length,
-                popupNodes: updatedNodes
-                  .filter((n) => n.type === "popup")
-                  .map((n) => ({ id: n.id, type: n.type })),
-              },
-            );
-
-            return {
-              ...prev,
-              activePopups: newActivePopups,
-              reactFlowData: {
-                ...prev.reactFlowData,
-                nodes: updatedNodes,
-              },
-            };
-          });
         });
       },
-      [handlePopupClose],
+      [],
     );
 
     // Expose bulk operations through imperative handle
@@ -1778,34 +1739,23 @@ const HydroscopeCoreInternal = forwardRef<
       if (state.activePopups.size > 0) {
         setState((prev) => {
           const visibleNodeIds = new Set(
-            prev.reactFlowData.nodes
-              .filter((n) => n.type !== "popup")
-              .map((n) => n.id),
+            prev.reactFlowData.nodes.map((n) => n.id),
           );
 
-          const newActivePopups = new Map();
-          let updatedNodes = [...prev.reactFlowData.nodes];
-          let hasChanges = false;
+          const newActivePopups = new Map<string, PopupData>();
 
-          // Remove popups for nodes that are no longer visible
-          for (const [nodeId, popupId] of prev.activePopups) {
+          // Keep only popups for nodes that are still visible
+          for (const [nodeId, popupData] of prev.activePopups) {
             if (visibleNodeIds.has(nodeId)) {
-              newActivePopups.set(nodeId, popupId);
-            } else {
-              // Remove popup node
-              updatedNodes = updatedNodes.filter((n) => n.id !== popupId);
-              hasChanges = true;
+              newActivePopups.set(nodeId, popupData);
             }
           }
 
-          if (hasChanges) {
+          // Only update if there were changes
+          if (newActivePopups.size !== prev.activePopups.size) {
             return {
               ...prev,
               activePopups: newActivePopups,
-              reactFlowData: {
-                ...prev.reactFlowData,
-                nodes: updatedNodes,
-              },
             };
           }
 
@@ -2238,6 +2188,13 @@ const HydroscopeCoreInternal = forwardRef<
             onNodeDragStart={readOnly ? undefined : handleNodeDragStart}
             onNodeDrag={readOnly ? undefined : handleNodeDrag}
             onNodeDragStop={readOnly ? undefined : handleNodeDragStop}
+            onMove={() => {
+              // Close all popups when canvas is panned or zoomed
+              setState((prev) => ({
+                ...prev,
+                activePopups: new Map(),
+              }));
+            }}
             onPaneClick={
               readOnly
                 ? undefined
@@ -2300,6 +2257,118 @@ const HydroscopeCoreInternal = forwardRef<
             );
           })}
 
+          {/* Popup overlays for node labels (rendered outside ReactFlow to avoid flicker) */}
+          {Array.from(state.activePopups.entries()).map(
+            ([nodeId, popupData]) => {
+              const colors = generateNodeColors(
+                [popupData.originalNodeType],
+                popupData.colorPalette,
+              );
+
+              // Darken the color for popup background
+              const darkenColor = (hex: string, opacity: number): string => {
+                const cleanHex = hex.replace("#", "");
+                const r = parseInt(cleanHex.substring(0, 2), 16);
+                const g = parseInt(cleanHex.substring(2, 4), 16);
+                const b = parseInt(cleanHex.substring(4, 6), 16);
+                const darkenFactor = 0.5;
+                const darkR = Math.floor(r * darkenFactor);
+                const darkG = Math.floor(g * darkenFactor);
+                const darkB = Math.floor(b * darkenFactor);
+                return `rgba(${darkR}, ${darkG}, ${darkB}, ${opacity})`;
+              };
+
+              // Calculate popup position: northeast of the container
+              // Offset by container width + a bit of spacing (20px)
+              const offsetX = (popupData.width || 150) + 20;
+              const offsetY = -20; // Slight upward offset
+              const popupX = popupData.position.x + offsetX;
+              const popupY = popupData.position.y + offsetY;
+
+              return (
+                <div
+                  key={`popup-${nodeId}`}
+                  style={{
+                    position: "absolute",
+                    left: popupX,
+                    top: popupY,
+                    minWidth: "120px",
+                    maxWidth: "400px",
+                    width: "max-content",
+                    backgroundColor: darkenColor(colors.primary, 0.9),
+                    border: "3px solid rgba(0, 0, 0, 0.8)",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    textAlign: "center",
+                    wordWrap: "break-word",
+                    cursor: "default",
+                    transform: "translateZ(0)",
+                    animation: "popupFadeIn 0.4s ease-out",
+                    zIndex: 1001,
+                  }}
+                >
+                <button
+                  style={{
+                    position: "absolute",
+                    top: "8px",
+                    right: "8px",
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(188, 187, 187, 0.9)",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "16px",
+                    color: "#000",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setState((prev) => {
+                      const newActivePopups = new Map(prev.activePopups);
+                      newActivePopups.delete(nodeId);
+                      return { ...prev, activePopups: newActivePopups };
+                    });
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLElement).style.backgroundColor =
+                      "rgba(188, 187, 187, 0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.backgroundColor =
+                      "rgba(188, 187, 187, 0.9)";
+                  }}
+                  aria-label="Close popup"
+                >
+                  ×
+                </button>
+                <div
+                  style={{
+                    paddingRight: "32px",
+                    lineHeight: "1.4",
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
+                    hyphens: "auto",
+                  }}
+                >
+                  {popupData.label}
+                </div>
+              </div>
+            );
+          },
+          )}
+
           {/* Node count display for e2e testing */}
           <div
             data-testid="node-count"
@@ -2324,6 +2393,16 @@ const HydroscopeCoreInternal = forwardRef<
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @keyframes popupFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateZ(0);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateZ(0);
+          }
         }
       `}</style>
         </div>
