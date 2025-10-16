@@ -9,22 +9,24 @@
  */
 export async function decompressData(compressedData: string): Promise<string> {
   // Convert URL-safe base64 to standard base64
-  let standardBase64 = compressedData.replace(/-/g, '+').replace(/_/g, '/');
+  let standardBase64 = compressedData.replace(/-/g, "+").replace(/_/g, "/");
 
   // Add padding if needed
   while (standardBase64.length % 4) {
-    standardBase64 += '=';
+    standardBase64 += "=";
   }
 
   // Decode base64 and decompress
-  const compressedBytes = Uint8Array.from(atob(standardBase64), c => c.charCodeAt(0));
+  const compressedBytes = Uint8Array.from(atob(standardBase64), (c) =>
+    c.charCodeAt(0),
+  );
 
   // Use browser's built-in decompression (if available) or fallback
   let jsonString: string;
 
-  if (typeof DecompressionStream !== 'undefined') {
+  if (typeof DecompressionStream !== "undefined") {
     // Modern browser with Compression Streams API
-    const stream = new DecompressionStream('gzip');
+    const stream = new DecompressionStream("gzip");
     const writer = stream.writable.getWriter();
     const reader = stream.readable.getReader();
 
@@ -39,7 +41,9 @@ export async function decompressData(compressedData: string): Promise<string> {
       if (value) chunks.push(value);
     }
 
-    const decompressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+    const decompressed = new Uint8Array(
+      chunks.reduce((acc, chunk) => acc + chunk.length, 0),
+    );
     let offset = 0;
     for (const chunk of chunks) {
       decompressed.set(chunk, offset);
@@ -49,7 +53,7 @@ export async function decompressData(compressedData: string): Promise<string> {
     jsonString = new TextDecoder().decode(decompressed);
   } else {
     // Fallback: assume uncompressed for older browsers
-    console.warn('Browser does not support compression streams, assuming uncompressed data');
+    // Note: DecompressionStream is not supported in this browser
     jsonString = new TextDecoder().decode(compressedBytes);
   }
 
@@ -64,7 +68,7 @@ export async function decompressData(compressedData: string): Promise<string> {
  */
 export async function parseDataFromUrl(
   dataParam?: string | null,
-  compressedParam?: string | null
+  compressedParam?: string | null,
 ): Promise<any> {
   let jsonString: string;
 
@@ -73,7 +77,7 @@ export async function parseDataFromUrl(
   } else if (dataParam) {
     jsonString = atob(dataParam);
   } else {
-    throw new Error('No data parameter provided');
+    throw new Error("No data parameter provided");
   }
 
   return JSON.parse(jsonString);

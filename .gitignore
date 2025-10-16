@@ -99,10 +99,7 @@ debug_*.js
 test-results.xml
 /test-results/
 
-# Playwright
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+
 
 # Vitest
 /coverage/

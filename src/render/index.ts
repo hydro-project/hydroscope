@@ -1,26 +1,23 @@
 /**
- * @fileoverview Bridge-Based Render Module Exports
+ * @fileoverview Render Module Exports
  *
- * Complete replacement for alpha render module using our bridge architecture.
- * Maintains identical API for seamless migration.
+ * Essential render components for the v1.0.0 branch.
  */
-
-// Main components
-export { FlowGraph } from './FlowGraph';
-
-// Node and edge components for compatibility
-export { StandardNode as GraphStandardNode, ContainerNode as GraphContainerNode } from './nodes';
-export { StandardEdge as GraphStandardEdge, HyperEdge as GraphHyperEdge } from './edges';
-
-// Event handlers (deprecated but for compatibility)
+// Node components and types
 export {
-  createNodeEventHandlers,
-  createEdgeEventHandlers,
-  createContainerEventHandlers,
-} from './eventHandlers';
-
-// Configuration
-export { DEFAULT_RENDER_CONFIG } from '../shared/config';
-
-// Re-export our own types
-export type { RenderConfig, FlowGraphEventHandlers } from '../core/types';
+  StandardNode,
+  MemoStandardNode,
+  ContainerNode,
+  MemoContainerNode,
+  nodeTypes,
+} from "./nodes";
+// Edge components and types
+export {
+  AggregatedEdge,
+  DefaultEdge,
+  MemoAggregatedEdge,
+  MemoDefaultEdge,
+  edgeTypes,
+} from "./edges";
+// Style configuration
+export { StyleConfigProvider } from "./StyleConfigContext";

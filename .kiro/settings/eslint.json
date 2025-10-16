@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "configFile": "eslint.config.js",
+  "workingDirectory": ".",
+  "validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "run": "onType"
+}

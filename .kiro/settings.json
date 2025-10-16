@@ -1,0 +1,18 @@
+{
+  "eslint": {
+    "enable": true,
+    "packageManager": "npm",
+    "run": "onType",
+    "validate": [
+      "javascript",
+      "javascriptreact", 
+      "typescript",
+      "typescriptreact"
+    ]
+  },
+  "typescript": {
+    "preferences": {
+      "includePackageJsonAutoImports": "auto"
+    }
+  }
+}

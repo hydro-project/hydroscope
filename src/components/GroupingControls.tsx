@@ -3,12 +3,10 @@
  *
  * Provides controls for selecting different hierarchical groupings.
  */
-
-import React from 'react';
-import { Select } from 'antd';
-import { GroupingOption } from './types';
-import { COMPONENT_COLORS, TYPOGRAPHY } from '../shared/config';
-
+import React from "react";
+import { Select } from "antd";
+import { GroupingOption } from "./types";
+import { COMPONENT_COLORS, TYPOGRAPHY } from "../shared/config";
 export interface GroupingControlsProps {
   hierarchyChoices?: GroupingOption[];
   currentGrouping?: string | null;
@@ -18,14 +16,13 @@ export interface GroupingControlsProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
 export function GroupingControls({
   hierarchyChoices = [],
   currentGrouping,
   onGroupingChange,
   compact = false,
   disabled = false,
-  className = '',
+  className = "",
   style,
 }: GroupingControlsProps) {
   if (!hierarchyChoices || hierarchyChoices.length === 0) {
@@ -35,7 +32,7 @@ export function GroupingControls({
           style={{
             color: COMPONENT_COLORS.TEXT_DISABLED,
             fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-            fontStyle: 'italic',
+            fontStyle: "italic",
           }}
         >
           No grouping options available
@@ -43,7 +40,6 @@ export function GroupingControls({
       </div>
     );
   }
-
   if (hierarchyChoices.length === 1) {
     return (
       <div className={`grouping-controls-single ${className}`} style={style}>
@@ -51,7 +47,7 @@ export function GroupingControls({
           style={{
             color: COMPONENT_COLORS.TEXT_PRIMARY,
             fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-            fontWeight: 'bold',
+            fontWeight: "bold",
           }}
         >
           Grouping: {hierarchyChoices[0].name}
@@ -59,47 +55,45 @@ export function GroupingControls({
       </div>
     );
   }
-
   const handleChange = (value: string) => {
     if (!disabled && onGroupingChange && value) {
       onGroupingChange(value);
     }
   };
-
   const selectStyle: React.CSSProperties = {
     fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-    width: '100%',
-    maxWidth: compact ? '120px' : '180px',
+    width: "100%",
+    maxWidth: compact ? "120px" : "180px",
   };
-
   const labelStyle: React.CSSProperties = {
     fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COMPONENT_COLORS.TEXT_PRIMARY,
-    marginBottom: '4px',
-    display: 'block',
+    marginBottom: "4px",
+    display: "block",
   };
-
   // Create options for Ant Design Select
-  const selectOptions = hierarchyChoices.map(choice => ({
+  const selectOptions = hierarchyChoices.map((choice) => ({
     value: choice.id,
     label: choice.name,
   }));
-
   return (
     <div className={`grouping-controls ${className}`} style={style}>
       {!compact && <label style={labelStyle}>Grouping:</label>}
 
       <Select
-        value={currentGrouping || undefined}
-        onChange={handleChange}
+        value={currentGrouping}
+        onChange={(value) => {
+          // Always call handleChange, even if the value seems the same
+          handleChange(value);
+        }}
         disabled={disabled}
         placeholder="Select grouping..."
         options={selectOptions}
         size="small"
         style={selectStyle}
         popupMatchSelectWidth={true}
-        getPopupContainer={triggerNode => triggerNode.parentNode}
+        getPopupContainer={(triggerNode) => triggerNode.parentNode}
       />
     </div>
   );
