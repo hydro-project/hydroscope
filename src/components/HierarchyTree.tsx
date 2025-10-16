@@ -86,7 +86,18 @@ function createSearchHighlightDiv(
   palette: string = "Set3",
   isManuallyHidden: boolean = false,
   onToggleVisibility?: (e: React.MouseEvent) => void,
+  containerId?: string,
 ): React.ReactNode {
+  // Debug: log if containerId is passed
+  if (match || isCurrent) {
+    console.log("[createSearchHighlightDiv]", {
+      text: text.substring(0, 20),
+      containerId,
+      match,
+      isCurrent,
+    });
+  }
+
   let style: React.CSSProperties = baseStyle;
 
   // Start with search match background if applicable
@@ -126,6 +137,7 @@ function createSearchHighlightDiv(
   return (
     <div
       style={{ ...style, display: "flex", alignItems: "center", gap: "6px" }}
+      data-container-id={containerId}
     >
       {/* Eye icon toggle */}
       {onToggleVisibility && (
@@ -215,6 +227,7 @@ function createContainerDisplayTitle(
   palette: string = "Set3",
   isManuallyHidden: boolean = false,
   onToggleVisibility?: (e: React.MouseEvent) => void,
+  containerId?: string,
 ): React.ReactNode {
   const countText =
     showNodeCounts && hasLeafChildren ? ` (${leafChildrenCount})` : "";
@@ -267,6 +280,7 @@ function createContainerDisplayTitle(
         alignItems: "center",
         gap: "6px",
       }}
+      data-container-id={containerId}
     >
       {/* Eye icon toggle */}
       {onToggleVisibility && (
@@ -407,6 +421,7 @@ function getTreeDataStructure(
                   ? (e: React.MouseEvent) =>
                       onToggleNodeVisibility(leafNode.id, e.shiftKey)
                   : undefined,
+                leafNode.id, // Add containerId for scroll targeting
               ),
               isLeaf: true,
               data: {
@@ -463,6 +478,7 @@ function getTreeDataStructure(
                   ? (e: React.MouseEvent) =>
                       onToggleNodeVisibility(leafNode.id, e.shiftKey)
                   : undefined,
+                leafNode.id, // Add containerId for scroll targeting
               ),
               isLeaf: true,
               data: {
@@ -509,6 +525,7 @@ function getTreeDataStructure(
           ? (e: React.MouseEvent) =>
               onToggleContainerVisibility(node.id, e.shiftKey)
           : undefined,
+        node.id, // Add containerId for scroll targeting
       );
       return {
         key: node.id,
@@ -577,6 +594,92 @@ export function HierarchyTree({
   // recalculates layout after expand/collapse operations.
   // ============================================================================
   const [isRecalculating, setIsRecalculating] = useState(false);
+
+  // Ref to the tree container for scrolling
+  const treeContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to current search result when it changes
+  useEffect(() => {
+    console.log("[HierarchyTree] Scroll effect triggered", {
+      currentSearchResult,
+      hasRef: !!treeContainerRef.current,
+    });
+
+    if (!currentSearchResult || !treeContainerRef.current) return;
+
+    // Wait a bit for the tree to render with the current result highlighted
+    const scrollTimer = setTimeout(() => {
+      // Ant Design Tree uses virtualization, so we need to find visible nodes only
+      // Look for the title element that contains our search highlight
+      const allTitles = treeContainerRef.current?.querySelectorAll(
+        ".ant-tree-title",
+      );
+
+      let targetNode: Element | null = null;
+
+      // Find the title that contains a search highlight div with our container ID
+      if (allTitles) {
+        // Debug: check first few titles
+        const firstFewDivs = Array.from(allTitles)
+          .slice(0, 3)
+          .map((title) => {
+            const div = title.querySelector("div");
+            return {
+              hasDiv: !!div,
+              containerId: div?.getAttribute("data-container-id"),
+              innerHTML: title.innerHTML.substring(0, 100),
+            };
+          });
+        console.log("[HierarchyTree] Sample titles:", firstFewDivs);
+
+        for (const title of Array.from(allTitles)) {
+          // Look for the search highlight div inside this title
+          const highlightDiv = title.querySelector(
+            `div[data-container-id="${currentSearchResult.id}"]`,
+          );
+          if (highlightDiv) {
+            // Found it! Get the tree node ancestor
+            targetNode = title.closest(".ant-tree-treenode");
+            break;
+          }
+        }
+      }
+
+      console.log("[HierarchyTree] Scroll search", {
+        searchingFor: currentSearchResult.id,
+        totalTitles: allTitles?.length,
+        foundNode: !!targetNode,
+      });
+
+      if (targetNode && treeContainerRef.current) {
+        // treeContainerRef is now the scrollable div with maxHeight and overflowY
+        const scrollContainer = treeContainerRef.current;
+        
+        // Get positions
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const targetRect = targetNode.getBoundingClientRect();
+
+        // Calculate scroll to center the target in the container
+        const currentScroll = scrollContainer.scrollTop;
+        const targetOffsetFromContainer = targetRect.top - containerRect.top;
+        const containerHeight = containerRect.height;
+        const targetHeight = targetRect.height;
+
+        const newScroll =
+          currentScroll +
+          targetOffsetFromContainer -
+          containerHeight / 2 +
+          targetHeight / 2;
+
+        scrollContainer.scrollTo({
+          top: newScroll,
+          behavior: "smooth",
+        });
+      }
+    }, 100); // Small delay to ensure DOM is updated
+
+    return () => clearTimeout(scrollTimer);
+  }, [currentSearchResult]);
 
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
   const derivedExpandedKeys = useMemo(() => {
@@ -1060,7 +1163,16 @@ export function HierarchyTree({
         `}
       </style>
 
-      <div style={{ position: "relative", minHeight: "100px" }}>
+      {/* Scrollable container for the tree */}
+      <div
+        ref={treeContainerRef}
+        style={{
+          maxHeight: "500px",
+          overflowY: "auto",
+          position: "relative",
+          minHeight: "100px",
+        }}
+      >
         {isRecalculating && (
           <div
             style={{
