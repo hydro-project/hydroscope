@@ -103,12 +103,6 @@ export function StandardNode({
 }: NodeProps & {
   style?: React.CSSProperties;
 }) {
-  // Test if React is detecting changes by logging render count
-  const renderCount = React.useRef(0);
-  // Debug logging for search highlights - expanded to network nodes
-  if (id === "0" || id === "8" || id === "2" || id === "7") {
-    renderCount.current++;
-  }
   const styleCfg = useStyleConfig();
   // Use isClicked from data prop (set by parent handler)
   const isClicked = data.isClicked || false;
@@ -168,16 +162,9 @@ export function StandardNode({
       ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
       : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
   const nodeCount = Number(data.nodeCount || 0);
-  const containerLabel = String(data.label || id);
-  // Dev-only: log computed color mapping to verify at runtime
-  if (process.env.NODE_ENV !== "production") {
-    // Only log a small sample to avoid noise
-    if ((window as any).__hydroColorLogCount__ === undefined)
-      (window as any).__hydroColorLogCount__ = 0;
-    if ((window as any).__hydroColorLogCount__ < 8) {
-      (window as any).__hydroColorLogCount__++;
-    }
-  }
+  const containerLabel = String(
+    data.longLabel || data.label || id || "Unknown Container",
+  );
   // Different styling for collapsed containers vs regular nodes
   if (isCollapsedContainer) {
     const containerColors = generateContainerColors(id, colorPalette);
@@ -288,6 +275,59 @@ export function StandardNode({
           >
             {nodeCount} node{nodeCount !== 1 ? "s" : ""}
           </div>
+
+          {/* Info button for collapsed containers */}
+          <div
+            style={{
+              position: "absolute",
+              top: "4px",
+              right: "4px",
+              width: "18px",
+              height: "18px",
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "rgba(59, 130, 246, 0.85)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "11px",
+              fontWeight: "700",
+              cursor: "pointer",
+              zIndex: 100,
+              border: "1px solid rgba(100, 116, 139, 0.3)",
+              borderRadius: "50%",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
+              transition: "all 0.2s ease",
+              opacity: 0.7,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.backgroundColor =
+                "rgba(59, 130, 246, 0.95)";
+              e.currentTarget.style.color = "white";
+              e.currentTarget.style.transform = "scale(1.1)";
+              e.currentTarget.style.boxShadow =
+                "0 2px 8px rgba(59, 130, 246, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.backgroundColor =
+                "rgba(255, 255, 255, 0.9)";
+              e.currentTarget.style.color = "rgba(59, 130, 246, 0.85)";
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.12)";
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const customEvent = new CustomEvent("hydroscope:showPopup", {
+                detail: { nodeId: id },
+                bubbles: true,
+              });
+              window.dispatchEvent(customEvent);
+            }}
+            title={`Show details for ${containerLabel}`}
+          >
+            ℹ
+          </div>
         </div>
       </>
     );
@@ -300,7 +340,7 @@ export function StandardNode({
       ? data.longLabel
       : data.showingLongLabel && data.longLabel
         ? data.longLabel
-        : data.label || data.shortLabel || id;
+        : data.label || id || "Unknown Node";
 
   // Check if we're showing a long label (either globally or individually)
   const isShowingLongLabel =

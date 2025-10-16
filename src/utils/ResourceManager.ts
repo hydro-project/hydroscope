@@ -269,21 +269,19 @@ export class ResourceManager {
  * React hook for using ResourceManager
  */
 export function useResourceManager(): ResourceManager {
-  const managerRef = React.useRef<ResourceManager | null>(null);
-  // Create manager on first use
-  if (!managerRef.current) {
-    managerRef.current = new ResourceManager();
-  }
+  // Use lazy initialization with useState to avoid ref access during render
+  const [manager] = React.useState(() => new ResourceManager());
+
   // Clean up on unmount
   React.useEffect(() => {
-    const manager = managerRef.current;
     return () => {
       if (manager && !manager.destroyed) {
         manager.destroy();
       }
     };
-  }, []);
-  return managerRef.current;
+  }, [manager]);
+
+  return manager;
 }
 /**
  * Utility function to create a safe timeout that won't execute after component unmount

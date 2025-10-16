@@ -87,6 +87,7 @@ function createSearchHighlightDiv(
   isManuallyHidden: boolean = false,
   onToggleVisibility?: (e: React.MouseEvent) => void,
   containerId?: string,
+  longLabel?: string,
 ): React.ReactNode {
   let style: React.CSSProperties = baseStyle;
 
@@ -166,6 +167,7 @@ function createSearchHighlightDiv(
           color: isManuallyHidden ? "#999" : "inherit",
           pointerEvents: isManuallyHidden ? "none" : "auto",
         }}
+        title={longLabel || text}
       >
         {text}
       </span>
@@ -218,6 +220,7 @@ function createContainerDisplayTitle(
   isManuallyHidden: boolean = false,
   onToggleVisibility?: (e: React.MouseEvent) => void,
   containerId?: string,
+  longLabel?: string,
 ): React.ReactNode {
   const countText =
     showNodeCounts && hasLeafChildren ? ` (${leafChildrenCount})` : "";
@@ -317,6 +320,7 @@ function createContainerDisplayTitle(
           color: isManuallyHidden ? "#999" : "inherit",
           pointerEvents: isManuallyHidden ? "none" : "auto",
         }}
+        title={longLabel || truncatedLabel}
       >
         {truncatedLabel}
         {countText && (
@@ -464,6 +468,7 @@ function getTreeDataStructure(
                       onToggleNodeVisibility(leafNode.id, e.shiftKey)
                   : undefined,
                 leafNode.id, // Add containerId for scroll targeting
+                leafNode.longLabel, // Show full label on hover
               ),
               isLeaf: true,
               data: {
@@ -521,6 +526,7 @@ function getTreeDataStructure(
                       onToggleNodeVisibility(leafNode.id, e.shiftKey)
                   : undefined,
                 leafNode.id, // Add containerId for scroll targeting
+                leafNode.longLabel, // Show full label on hover
               ),
               isLeaf: true,
               data: {
@@ -568,6 +574,7 @@ function getTreeDataStructure(
               onToggleContainerVisibility(node.id, e.shiftKey)
           : undefined,
         node.id, // Add containerId for scroll targeting
+        containerData?.longLabel || containerLabel, // Show full label on hover
       );
       return {
         key: node.id,

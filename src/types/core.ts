@@ -2,6 +2,16 @@
  * Core data types for Hydroscope rewrite
  * Enforces architectural constraints: React-free, stateless bridges
  */
+/**
+ * GraphNode represents a node in the visualization graph.
+ *
+ * Label handling:
+ * - label: Short display label (mapped from JSON's shortLabel or label field)
+ * - longLabel: Full descriptive label (mapped from JSON's fullLabel or longLabel field)
+ *
+ * The JSONParser automatically maps various JSON field names to these properties,
+ * providing flexibility in the input format while maintaining a consistent internal API.
+ */
 export interface GraphNode {
   id: string;
   label: string;

@@ -289,6 +289,7 @@ export class JSONParser {
         const container: Container = {
           id: hierarchyNode.id,
           label: hierarchyNode.name,
+          longLabel: hierarchyNode.name, // Use name as longLabel (no longer description available)
           children: childrenIds,
           collapsed: false, // Start expanded by default to avoid invariant violations
           hidden: false,

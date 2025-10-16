@@ -31,6 +31,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
+import ReactDOM from "react-dom";
 import {
   ReactFlow,
   Background,
@@ -1542,82 +1543,94 @@ const HydroscopeCoreInternal = forwardRef<
     // Handle popup toggle for nodes
     const handleNodePopupToggle = useCallback(
       (nodeId: string, node: Node) => {
-        setState((prev) => {
-          const newActivePopups = new Map(prev.activePopups);
-          const existingPopupId = newActivePopups.get(nodeId);
+        // Use flushSync to batch the state update and minimize flicker
+        // This ensures the DOM update happens synchronously in a single frame
+        ReactDOM.flushSync(() => {
+          setState((prev) => {
+            const newActivePopups = new Map(prev.activePopups);
+            const existingPopupId = newActivePopups.get(nodeId);
 
-          hscopeLogger.log(
-            "orchestrator",
-            "[HydroscopeCore] Popup toggle state:",
-            {
-              existingPopupId,
-              currentNodes: prev.reactFlowData.nodes.length,
-            },
-          );
-
-          let updatedNodes = [...prev.reactFlowData.nodes];
-
-          if (existingPopupId) {
             hscopeLogger.log(
               "orchestrator",
-              "[HydroscopeCore] Removing existing popup:",
-              existingPopupId,
-            );
-            // Remove existing popup
-            updatedNodes = updatedNodes.filter((n) => n.id !== existingPopupId);
-            newActivePopups.delete(nodeId);
-          } else {
-            // Add new popup
-            const popupId = `popup-${nodeId}`;
-            hscopeLogger.log(
-              "orchestrator",
-              "[HydroscopeCore] Creating new popup:",
-              popupId,
-            );
-
-            const popupNode = {
-              id: popupId,
-              type: "popup",
-              position: { ...node.position }, // Same position as original node
-              data: {
-                label: String(node.data.longLabel || node.data.label || nodeId),
-                longLabel: String(node.data.longLabel || ""),
-                nodeType: "popup",
-                originalNodeType: String(
-                  node.data.nodeType || node.type || "default",
-                ),
-                colorPalette: String(
-                  node.data.colorPalette || DEFAULT_COLOR_PALETTE,
-                ),
-                onClose: (_popupNodeId: string) => handlePopupClose(nodeId),
+              "[HydroscopeCore] Popup toggle state:",
+              {
+                existingPopupId,
+                currentNodes: prev.reactFlowData.nodes.length,
               },
-              // Set parent to same container as original node
-              parentId: node.parentId,
-              extent: node.extent || undefined,
-              // Higher z-index to appear above original node
-              zIndex: 1000,
+            );
+
+            let updatedNodes = [...prev.reactFlowData.nodes];
+
+            if (existingPopupId) {
+              hscopeLogger.log(
+                "orchestrator",
+                "[HydroscopeCore] Removing existing popup:",
+                existingPopupId,
+              );
+              // Remove existing popup
+              updatedNodes = updatedNodes.filter(
+                (n) => n.id !== existingPopupId,
+              );
+              newActivePopups.delete(nodeId);
+            } else {
+              // Add new popup
+              const popupId = `popup-${nodeId}`;
+              hscopeLogger.log(
+                "orchestrator",
+                "[HydroscopeCore] Creating new popup:",
+                popupId,
+              );
+
+              const popupNode = {
+                id: popupId,
+                type: "popup",
+                position: { ...node.position }, // Same position as original node
+                data: {
+                  label: String(
+                    node.data.longLabel || node.data.label || nodeId,
+                  ),
+                  longLabel: String(node.data.longLabel || ""),
+                  nodeType: "popup",
+                  originalNodeType: String(
+                    node.data.nodeType || node.type || "default",
+                  ),
+                  colorPalette: String(
+                    node.data.colorPalette || DEFAULT_COLOR_PALETTE,
+                  ),
+                  onClose: (_popupNodeId: string) => handlePopupClose(nodeId),
+                },
+                // Set parent to same container as original node
+                parentId: node.parentId,
+                extent: node.extent || undefined,
+                // Higher z-index to appear above original node
+                zIndex: 1000,
+              };
+
+              updatedNodes.push(popupNode);
+              newActivePopups.set(nodeId, popupId);
+            }
+
+            hscopeLogger.log(
+              "orchestrator",
+              "[HydroscopeCore] Updated state:",
+              {
+                newActivePopupsSize: newActivePopups.size,
+                updatedNodesLength: updatedNodes.length,
+                popupNodes: updatedNodes
+                  .filter((n) => n.type === "popup")
+                  .map((n) => ({ id: n.id, type: n.type })),
+              },
+            );
+
+            return {
+              ...prev,
+              activePopups: newActivePopups,
+              reactFlowData: {
+                ...prev.reactFlowData,
+                nodes: updatedNodes,
+              },
             };
-
-            updatedNodes.push(popupNode);
-            newActivePopups.set(nodeId, popupId);
-          }
-
-          hscopeLogger.log("orchestrator", "[HydroscopeCore] Updated state:", {
-            newActivePopupsSize: newActivePopups.size,
-            updatedNodesLength: updatedNodes.length,
-            popupNodes: updatedNodes
-              .filter((n) => n.type === "popup")
-              .map((n) => ({ id: n.id, type: n.type })),
           });
-
-          return {
-            ...prev,
-            activePopups: newActivePopups,
-            reactFlowData: {
-              ...prev.reactFlowData,
-              nodes: updatedNodes,
-            },
-          };
         });
       },
       [handlePopupClose],

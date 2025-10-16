@@ -25,54 +25,54 @@ const mockSimpleData: HydroscopeData = {
   nodeAssignments: {},
 };
 
-// Test component that uses the imperative handle
-const _TestComponent: React.FC<{
-  onCollapseAll?: () => void;
-  onExpandAll?: () => void;
-  onError?: (error: Error) => void;
-}> = ({ onCollapseAll, onExpandAll, onError }) => {
-  const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
-
-  const handleCollapseAll = async () => {
-    try {
-      await hydroscopeRef.current?.collapseContainers();
-      onCollapseAll?.();
-    } catch (error) {
-      onError?.(error as Error);
-    }
-  };
-
-  const handleExpandAll = async () => {
-    try {
-      await hydroscopeRef.current?.expandContainers();
-      onExpandAll?.();
-    } catch (error) {
-      onError?.(error as Error);
-    }
-  };
-
-  return (
-    <div>
-      <HydroscopeCore
-        ref={hydroscopeRef}
-        data={mockSimpleData}
-        height="400px"
-        width="600px"
-        showControls={true}
-        showMiniMap={false}
-        showBackground={false}
-        enableCollapse={true}
-        onError={onError}
-      />
-      <button onClick={handleCollapseAll} data-testid="collapse-all-btn">
-        Collapse All
-      </button>
-      <button onClick={handleExpandAll} data-testid="expand-all-btn">
-        Expand All
-      </button>
-    </div>
-  );
-};
+// Unused test component kept for reference - could be used for manual testing
+// const UnusedTestComponent: React.FC<{
+//   onCollapseAll?: () => void;
+//   onExpandAll?: () => void;
+//   onError?: (error: Error) => void;
+// }> = ({ onCollapseAll, onExpandAll, onError }) => {
+//   const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
+//
+//   const handleCollapseAll = async () => {
+//     try {
+//       await hydroscopeRef.current?.collapseContainers();
+//       onCollapseAll?.();
+//     } catch (error) {
+//       onError?.(error as Error);
+//     }
+//   };
+//
+//   const handleExpandAll = async () => {
+//     try {
+//       await hydroscopeRef.current?.expandContainers();
+//       onExpandAll?.();
+//     } catch (error) {
+//       onError?.(error as Error);
+//     }
+//   };
+//
+//   return (
+//     <div>
+//       <HydroscopeCore
+//         ref={hydroscopeRef}
+//         data={mockSimpleData}
+//         height="400px"
+//         width="600px"
+//         showControls={true}
+//         showMiniMap={false}
+//         showBackground={false}
+//         enableCollapse={true}
+//         onError={onError}
+//       />
+//       <button onClick={handleCollapseAll} data-testid="collapse-all-btn">
+//         Collapse All
+//       </button>
+//       <button onClick={handleExpandAll} data-testid="expand-all-btn">
+//         Expand All
+//       </button>
+//     </div>
+//   );
+// };
 
 describe("HydroscopeCore Bulk Operations", () => {
   beforeEach(() => {

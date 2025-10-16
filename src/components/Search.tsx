@@ -2,7 +2,7 @@
  * Search Component
  * Integrated search component with input and results display
  */
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { SearchInput } from "./SearchInput.js";
 import { SearchResults } from "./SearchResults.js";
 import type { SearchResult } from "../types/core.js";
@@ -30,11 +30,20 @@ export const Search: React.FC<SearchProps> = ({
   groupByType = false,
   showResultsPanel = true,
 }) => {
+  // Track search results length to detect changes
+  const searchResultsLength = searchResults?.length || 0;
+  // Initialize with -1 and derive from searchResultsLength to reset automatically
   const [currentResultIndex, setCurrentResultIndex] = useState(-1);
+  // Use a ref to track previous length
+  const prevLengthRef = React.useRef(searchResultsLength);
+
   // Reset navigation when search results change
-  useEffect(() => {
-    setCurrentResultIndex(-1);
-  }, [searchResults]);
+  if (prevLengthRef.current !== searchResultsLength) {
+    prevLengthRef.current = searchResultsLength;
+    if (currentResultIndex !== -1) {
+      setCurrentResultIndex(-1);
+    }
+  }
   // Navigation handlers
   const handleNavigateNext = useCallback(() => {
     if (!searchResults || searchResults.length === 0) return;
@@ -42,14 +51,14 @@ export const Search: React.FC<SearchProps> = ({
       if (prevIndex < 0) return 0;
       return (prevIndex + 1) % searchResults.length;
     });
-  }, [searchResults?.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchResults]);
   const handleNavigatePrevious = useCallback(() => {
     if (!searchResults || searchResults.length === 0) return;
     setCurrentResultIndex((prevIndex) => {
       if (prevIndex <= 0) return searchResults.length - 1;
       return prevIndex - 1;
     });
-  }, [searchResults?.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchResults]);
   // Result selection handlers
   const handleResultClick = useCallback(
     (result: SearchResult, index: number) => {

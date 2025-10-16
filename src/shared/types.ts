@@ -63,6 +63,7 @@ export interface Container {
   expandedDimensions?: Dimensions;
   layout?: LayoutState; // Layout-related properties
   label?: string;
+  longLabel?: string;
   x?: number;
   y?: number;
   style?: ContainerStyle | string;

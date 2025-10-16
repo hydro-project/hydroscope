@@ -10,6 +10,7 @@ import type {
   ReactFlowData,
   ReactFlowNode,
   ReactFlowEdge,
+  Container,
 } from "../types/core.js";
 import type { IReactFlowBridge } from "../types/bridges.js";
 import {
@@ -185,6 +186,76 @@ export class ReactFlowBridge implements IReactFlowBridge {
     return clonedResult;
   }
   // Optimized conversion for large graphs - use same logic as regular conversion
+  /**
+   * Helper to create container node data - DRY principle
+   */
+  /**
+   * Helper to create container node data consistently across both conversion methods.
+   * Eliminates duplication and ensures isExpanded is always set correctly.
+   */
+  private createContainerNodeData(
+    container: Container,
+    parentId: string | undefined,
+    state: VisualizationState,
+    _interactionHandler?: any,
+  ): ReactFlowNode & { width: number; height: number } {
+    const position = container.position || { x: 0, y: 0 };
+    const dimensions = {
+      width: container.dimensions?.width || container.width || 200,
+      height: container.dimensions?.height || container.height || 150,
+    };
+
+    // Calculate node count for collapsed containers (shows "X nodes" in UI)
+    const nodeCount = container.collapsed
+      ? this.countContainerNodes(container, state)
+      : 0;
+
+    return {
+      id: container.id,
+      type: container.collapsed ? "standard" : "container", // Collapsed containers use 'standard' type for edge connections
+      position,
+      width: dimensions.width,
+      height: dimensions.height,
+      data: {
+        label: container.label,
+        longLabel: container.longLabel || container.label, // Use label as fallback for longLabel
+        nodeType: "container",
+        collapsed: container.collapsed, // For backward compatibility with tests
+        isExpanded: !container.collapsed, // CRITICAL: ContainerNode checks isExpanded
+        childCount: container.children.size,
+        containerChildren: container.children.size, // Alias for backward compatibility
+        nodeCount, // Display "X nodes" in collapsed containers
+        width: dimensions.width, // Needed for ContainerNode rendering
+        height: dimensions.height, // Needed for ContainerNode rendering
+        colorPalette: state.getColorPalette(), // CRITICAL: Needed for color changes
+        style: "default" as const, // Default style
+        showingLongLabel: false,
+        onClick: _interactionHandler
+          ? (containerId: string) => {
+              if (_interactionHandler.handleContainerClick) {
+                _interactionHandler.handleContainerClick(containerId);
+              }
+            }
+          : undefined,
+      },
+      style: {
+        width: dimensions.width,
+        height: dimensions.height,
+        border: container.collapsed ? "2px dashed #ccc" : "2px solid #333",
+        backgroundColor: container.collapsed
+          ? "rgba(240, 240, 240, 0.8)"
+          : "rgba(255, 255, 255, 0.9)",
+        borderRadius: "8px",
+        ...(container.collapsed
+          ? this.styleConfig.containerStyles?.collapsed
+          : this.styleConfig.containerStyles?.expanded),
+      },
+      parentId: parentId,
+      parentNode: parentId, // React Flow uses parentNode for hierarchical positioning
+      extent: parentId ? "parent" : undefined,
+    };
+  }
+
   private convertNodesOptimized(
     state: VisualizationState,
     _interactionHandler?: any,
@@ -239,52 +310,14 @@ export class ReactFlowBridge implements IReactFlowBridge {
     // Add containers first (parents before children)
     for (const container of sortedContainers) {
       const parentId = containerParentMap.get(container.id);
-      // Get position and dimensions from ELK layout
-      const position = container.position || { x: 0, y: 0 };
-      const dimensions = {
-        width: container.dimensions?.width || container.width || 200,
-        height: container.dimensions?.height || container.height || 150,
-      };
-      nodes.push({
-        id: container.id,
-        type: "container",
-        position,
-        // CRITICAL FIX: Set width and height directly on the ReactFlow node for fitView calculations
-        width: dimensions.width,
-        height: dimensions.height,
-        data: {
-          label: container.label,
-          longLabel: container.longLabel, // Support long labels for containers
-          nodeType: "container",
-          isExpanded: !container.collapsed,
-          childCount: container.children.size,
-          showingLongLabel: false, // Containers show popup on info button click
-          // Add onClick handler if interaction handler is provided
-          onClick: _interactionHandler
-            ? (containerId: string) => {
-                if (_interactionHandler.handleContainerClick) {
-                  _interactionHandler.handleContainerClick(containerId);
-                }
-              }
-            : undefined,
-        },
-        style: {
-          width: dimensions.width,
-          height: dimensions.height,
-          // Default styles
-          border: container.collapsed ? "2px dashed #ccc" : "2px solid #333",
-          backgroundColor: container.collapsed
-            ? "rgba(240, 240, 240, 0.8)"
-            : "rgba(255, 255, 255, 0.9)",
-          borderRadius: "8px",
-          // Apply configured container styles (overrides defaults)
-          ...(container.collapsed
-            ? this.styleConfig.containerStyles?.collapsed
-            : this.styleConfig.containerStyles?.expanded),
-        },
-        parentId: parentId,
-        extent: parentId ? "parent" : undefined,
-      } as ReactFlowNode & { width: number; height: number });
+      nodes.push(
+        this.createContainerNodeData(
+          container,
+          parentId,
+          state,
+          _interactionHandler,
+        ),
+      );
     }
     // Add regular nodes with proper parent relationships
     for (const node of state.visibleNodes) {
@@ -454,57 +487,14 @@ export class ReactFlowBridge implements IReactFlowBridge {
     // Add containers first (parents before children)
     for (const container of sortedContainers) {
       const parentId = containerParentMap.get(container.id);
-      // Get position and dimensions from ELK layout
-      const position = container.position || { x: 0, y: 0 };
-      const width = container.dimensions?.width || container.width || 200;
-      const height = container.dimensions?.height || container.height || 150;
-      const nodeCount = container.collapsed
-        ? this.countContainerNodes(container, state)
-        : 0;
-      const containerNode: ReactFlowNode & { width: number; height: number } = {
-        id: container.id,
-        type: container.collapsed ? "standard" : "container", // Collapsed containers use 'standard' type for edge connections
-        position,
-        // CRITICAL FIX: Set width and height directly on the ReactFlow node for fitView calculations
-        width,
-        height,
-        data: {
-          label: container.label || container.id,
-          longLabel: container.longLabel, // Support long labels for containers
-          nodeType: "container",
-          collapsed: container.collapsed,
-          containerChildren: container.children.size,
-          nodeCount,
-          width,
-          height,
-          colorPalette: state.getColorPalette(),
-          style: "default",
-          showingLongLabel: false, // Containers show popup on info button click
-          // Add onClick handler if interaction handler is provided
-          onClick: _interactionHandler
-            ? (containerId: string) => {
-                if (_interactionHandler.handleContainerClick) {
-                  _interactionHandler.handleContainerClick(containerId);
-                }
-              }
-            : undefined,
-        },
-        style: {
-          width,
-          height,
-          ...(this.styleConfig?.containerStyles
-            ? container.collapsed
-              ? this.styleConfig.containerStyles.collapsed
-              : this.styleConfig.containerStyles.expanded
-            : {}),
-        },
-        parentId: parentId,
-        parentNode: parentId, // React Flow uses parentNode
-        // FIXED: Containers that are children of other containers should be constrained
-        // to prevent dragging outside their parent container boundaries
-        extent: parentId ? "parent" : undefined,
-      };
-      nodes.push(containerNode);
+      nodes.push(
+        this.createContainerNodeData(
+          container,
+          parentId,
+          state,
+          _interactionHandler,
+        ),
+      );
     }
     // Add regular nodes with proper parent relationships
     for (const node of state.visibleNodes) {
@@ -580,8 +570,13 @@ export class ReactFlowBridge implements IReactFlowBridge {
     }
     return nodes;
   }
+
+  /**
+   * Recursively counts all nodes within a container and its nested containers.
+   * Used to display "X nodes" in collapsed containers.
+   */
   private countContainerNodes(
-    container: any,
+    container: Container,
     state: VisualizationState,
   ): number {
     let count = 0;
@@ -596,6 +591,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     }
     return count;
   }
+
   private convertEdges(state: VisualizationState): ReactFlowEdge[] {
     const startTime = performance.now();
     const edges: ReactFlowEdge[] = [];

@@ -25,14 +25,18 @@ export function ContainerNode({
   const styleCfg = useStyleConfig();
   // Use dimensions from ReactFlow data (calculated by ELK) with proper fallbacks from config
   const width = Number(data.width) || SIZES.COLLAPSED_CONTAINER_WIDTH;
+  const isCollapsed = !data.isExpanded; // ReactFlowBridge sets isExpanded, not collapsed
   const height =
     Number(data.height) ||
-    (data.collapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
+    (isCollapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
+  
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
   const colorPalette = String(data.colorPalette || DEFAULT_COLOR_PALETTE);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
+  const containerLongLabel = String(data.longLabel || data.label || id);
+  
   const generateContainerColors = (containerId: string, palette: string) => {
     const hash = containerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
     const colorPalettes: Record<string, string[]> = {
@@ -117,7 +121,7 @@ export function ContainerNode({
       text: darken(baseColor, 0.4),
     };
   };
-  if (data.collapsed) {
+  if (isCollapsed) {
     const baseContainerColors = generateContainerColors(id, colorPalette);
     const searchColors = getSearchHighlightColors();
     // Apply search highlight colors if needed
@@ -178,7 +182,7 @@ export function ContainerNode({
               }
             })(),
             borderRadius: `${styleCfg.containerBorderRadius ?? 8}px`,
-            position: "relative",
+            position: "relative", // CRITICAL: Required for absolute positioning of info button
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
@@ -246,76 +250,58 @@ export function ContainerNode({
             {nodeCount} node{nodeCount !== 1 ? "s" : ""}
           </div>
 
-          {/* Info button - show if container has longLabel that differs from label */}
-          {data.longLabel && data.longLabel !== containerLabel ? (
-            <div
-              className="container-info-button"
-              style={{
-                position: "absolute",
-                top: "3px",
-                right: "3px",
-                width: "16px",
-                height: "16px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(255, 255, 255, 0.7)",
-                border: "1px solid rgba(100, 116, 139, 0.3)",
-                color: "rgba(100, 116, 139, 0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "10px",
-                fontWeight: "500",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                zIndex: 10,
-                pointerEvents: "auto",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-                backdropFilter: "blur(4px)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  "rgba(59, 130, 246, 0.95)";
-                e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.8)";
-                e.currentTarget.style.color = "white";
-                e.currentTarget.style.transform = "scale(1.1)";
-                e.currentTarget.style.boxShadow =
-                  "0 2px 8px rgba(59, 130, 246, 0.25)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  "rgba(255, 255, 255, 0.7)";
-                e.currentTarget.style.borderColor = "rgba(100, 116, 139, 0.3)";
-                e.currentTarget.style.color = "rgba(100, 116, 139, 0.7)";
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow =
-                  "0 1px 2px rgba(0, 0, 0, 0.05)";
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                // Dispatch a custom event that Hydroscope can listen for
-                const customEvent = new CustomEvent("hydroscope:showPopup", {
-                  detail: { nodeId: id },
-                  bubbles: true,
-                });
-                window.dispatchEvent(customEvent);
-              }}
-              data-info-button="true"
-              title="Show popup with full details (click to open)"
-            >
-              ℹ
-            </div>
-          ) : null}
-
-          <style>
-            {`
-              .container-info-button {
-                opacity: 0;
-              }
-              .react-flow__node:hover .container-info-button {
-                opacity: 1;
-              }
-            `}
-          </style>
+          {/* Info button for collapsed containers */}
+          <div
+            style={{
+              position: "absolute",
+              top: "4px",
+              right: "4px",
+              width: "18px",
+              height: "18px",
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "rgba(59, 130, 246, 0.85)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "11px",
+              fontWeight: "700",
+              cursor: "pointer",
+              zIndex: 100,
+              border: "1px solid rgba(100, 116, 139, 0.3)",
+              borderRadius: "50%",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
+              transition: "all 0.2s ease",
+              opacity: 0.7,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.backgroundColor =
+                "rgba(59, 130, 246, 0.95)";
+              e.currentTarget.style.color = "white";
+              e.currentTarget.style.transform = "scale(1.1)";
+              e.currentTarget.style.boxShadow =
+                "0 2px 8px rgba(59, 130, 246, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.backgroundColor =
+                "rgba(255, 255, 255, 0.9)";
+              e.currentTarget.style.color = "rgba(59, 130, 246, 0.85)";
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.12)";
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const customEvent = new CustomEvent("hydroscope:showPopup", {
+                detail: { nodeId: id },
+                bubbles: true,
+              });
+              window.dispatchEvent(customEvent);
+            }}
+            title={`Show details for ${containerLabel}`}
+          >
+            ℹ
+          </div>
         </div>
       </>
     );
@@ -418,7 +404,7 @@ export function ContainerNode({
             filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))",
           }}
         >
-          {truncateLabel(containerLabel, {
+          {truncateLabel(containerLongLabel, {
             maxLength: Math.floor((Number(width) - 36) / 8),
             preferDelimiters: true,
             leftTruncate: false,

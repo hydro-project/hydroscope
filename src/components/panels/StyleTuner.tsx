@@ -15,7 +15,7 @@
  * This follows the established pattern from containerOperationUtils and panelOperationUtils
  * for stable UI operations without browser errors or performance issues.
  */
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, memo } from "react";
 import { hscopeLogger } from "../../utils/logger.js";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
@@ -100,8 +100,15 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   onFullNodeLabelsChange,
   onReallocateBridges,
 }: StyleTunerPanelProps) => {
+  // Use getDerivedStateFromProps pattern - store prev value in state
   const [local, setLocal] = useState(value);
-  useEffect(() => setLocal(value), [value]);
+  const [prevValue, setPrevValue] = useState(value);
+
+  // Sync when external value changes (React 18+ pattern)
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setLocal(value);
+  }
   // Removed unused _update function - using direct state updates instead
   const inputStyle: React.CSSProperties = {
     padding: "4px 8px",
