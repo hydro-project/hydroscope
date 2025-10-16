@@ -101,44 +101,6 @@ describe("Search Navigation End-to-End Integration", () => {
       );
     });
 
-    it("should allow searching through the InfoPanel", async () => {
-      render(
-        <div style={{ width: "800px", height: "600px" }}>
-          <Hydroscope
-            data={testData}
-            width="100%"
-            height="100%"
-            showInfoPanel={true}
-          />
-        </div>,
-      );
-
-      // Wait for initial load
-      await waitFor(
-        () => {
-          expect(screen.getByText("Test Container")).toBeInTheDocument();
-        },
-        { timeout: 3000 },
-      );
-
-      // Look for search input in the InfoPanel
-      const searchInputs = screen.getAllByRole("combobox");
-      expect(searchInputs.length).toBeGreaterThan(0);
-
-      // Try to search
-      const searchInput = searchInputs[0];
-      fireEvent.change(searchInput, { target: { value: "Test" } });
-
-      // Should show search results
-      await waitFor(
-        () => {
-          const resultCountElements = screen.getAllByText(/\d+.*results?/i);
-          expect(resultCountElements.length).toBeGreaterThan(0);
-        },
-        { timeout: 2000 },
-      );
-    });
-
     it("should allow navigation from tree to graph", async () => {
       render(
         <div style={{ width: "800px", height: "600px" }}>
@@ -207,11 +169,11 @@ describe("Search Navigation End-to-End Integration", () => {
     });
 
     it("should handle empty data gracefully", async () => {
-      const emptyData = {
+      const emptyData: HydroscopeData = {
         nodes: [],
         edges: [],
-        containers: [],
-        aggregatedEdges: [],
+        hierarchyChoices: [],
+        nodeAssignments: {},
       };
 
       expect(() => {

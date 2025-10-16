@@ -12,12 +12,12 @@ import fs from "fs";
 import path from "path";
 import { describe, it, expect, beforeEach } from "vitest";
 
-import { VisualizationState } from "../core/VisualizationState.js";
-import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
-import { ELKBridge } from "../bridges/ELKBridge.js";
-import { JSONParser } from "../utils/JSONParser.js";
-import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
-import type { HydroscopeData } from "../types/core.js";
+import { VisualizationState } from "../../core/VisualizationState.js";
+import { ReactFlowBridge } from "../../bridges/ReactFlowBridge.js";
+import { ELKBridge } from "../../bridges/ELKBridge.js";
+import { JSONParser } from "../../utils/JSONParser.js";
+import { AsyncCoordinator } from "../../core/AsyncCoordinator.js";
+import type { HydroscopeData } from "../../types/core.js";
 
 describe("Paxos-Flipped Nested Container Hierarchy", () => {
   let paxosFlippedData: HydroscopeData;
