@@ -110,10 +110,12 @@ describe("SearchControls Enhanced Features", () => {
       const nextButton = screen.getByLabelText("Next search result");
       fireEvent.click(nextButton);
 
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
-        "next",
-        expect.objectContaining({ id: "container1" }),
-      );
+      await waitFor(() => {
+        expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+          "next",
+          expect.objectContaining({ id: "container1" }),
+        );
+      });
     });
 
     it("should call onResultNavigation when navigating", async () => {
@@ -129,12 +131,14 @@ describe("SearchControls Enhanced Features", () => {
       const nextButton = screen.getByLabelText("Next search result");
       fireEvent.click(nextButton);
 
-      expect(defaultProps.onResultNavigation).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: "node1",
-          type: "node",
-        }),
-      );
+      await waitFor(() => {
+        expect(defaultProps.onResultNavigation).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: "node1",
+            type: "node",
+          }),
+        );
+      });
     });
   });
 
@@ -150,10 +154,12 @@ describe("SearchControls Enhanced Features", () => {
       });
 
       fireEvent.keyDown(input, { key: "Enter" });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
-        "next",
-        expect.any(Object),
-      );
+      await waitFor(() => {
+        expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+          "next",
+          expect.any(Object),
+        );
+      });
     });
 
     it("should navigate with Shift+Enter", async () => {
@@ -167,10 +173,12 @@ describe("SearchControls Enhanced Features", () => {
       });
 
       fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
-        "prev",
-        expect.any(Object),
-      );
+      await waitFor(() => {
+        expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+          "prev",
+          expect.any(Object),
+        );
+      });
     });
 
     it("should clear search with Escape key", async () => {
