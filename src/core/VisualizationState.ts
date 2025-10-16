@@ -3029,6 +3029,7 @@ export class VisualizationState {
     this._searchNavigationState.lastNavigationTarget = null;
     this._searchNavigationState.treeNavigationHighlights.clear();
     this._searchNavigationState.graphNavigationHighlights.clear();
+    this._searchNavigationState.shouldFocusViewport = false;
     // Don't clear temporary highlights - they have their own lifecycle
   }
 
