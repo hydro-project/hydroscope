@@ -30,6 +30,7 @@ export interface GraphEdge {
 export interface Container {
   id: string;
   label: string;
+  longLabel?: string; // Optional long label for detailed container descriptions
   children: Set<string>;
   collapsed: boolean;
   hidden: boolean;

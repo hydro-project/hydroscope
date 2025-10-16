@@ -900,6 +900,14 @@ const HydroscopeCoreInternal = forwardRef<
       setState((prev) => ({ ...prev, autoFitEnabled: autoFitEnabled }));
     }, [autoFitEnabled]); // Remove state.autoFitEnabled from deps to avoid infinite loops
 
+    // Re-apply container click override when autoFitEnabled changes
+    // This ensures that container clicks respect the current autoFit setting
+    useEffect(() => {
+      if (interactionHandlerRef.current) {
+        applyContainerClickOverride(interactionHandlerRef.current);
+      }
+    }, [state.autoFitEnabled, applyContainerClickOverride]);
+
     // Manual ReactFlow data update method removed - replaced by AsyncCoordinator.executeLayoutAndRenderPipeline
     // All data updates now go through the unified orchestration pipeline for consistency
 

@@ -245,6 +245,77 @@ export function ContainerNode({
           >
             {nodeCount} node{nodeCount !== 1 ? "s" : ""}
           </div>
+
+          {/* Info button - show if container has longLabel that differs from label */}
+          {data.longLabel && data.longLabel !== containerLabel ? (
+            <div
+              className="container-info-button"
+              style={{
+                position: "absolute",
+                top: "3px",
+                right: "3px",
+                width: "16px",
+                height: "16px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                border: "1px solid rgba(100, 116, 139, 0.3)",
+                color: "rgba(100, 116, 139, 0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "10px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                zIndex: 10,
+                pointerEvents: "auto",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                backdropFilter: "blur(4px)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  "rgba(59, 130, 246, 0.95)";
+                e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.8)";
+                e.currentTarget.style.color = "white";
+                e.currentTarget.style.transform = "scale(1.1)";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 8px rgba(59, 130, 246, 0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  "rgba(255, 255, 255, 0.7)";
+                e.currentTarget.style.borderColor = "rgba(100, 116, 139, 0.3)";
+                e.currentTarget.style.color = "rgba(100, 116, 139, 0.7)";
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 1px 2px rgba(0, 0, 0, 0.05)";
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Dispatch a custom event that Hydroscope can listen for
+                const customEvent = new CustomEvent("hydroscope:showPopup", {
+                  detail: { nodeId: id },
+                  bubbles: true,
+                });
+                window.dispatchEvent(customEvent);
+              }}
+              data-info-button="true"
+              title="Show popup with full details (click to open)"
+            >
+              ℹ
+            </div>
+          ) : null}
+
+          <style>
+            {`
+              .container-info-button {
+                opacity: 0;
+              }
+              .react-flow__node:hover .container-info-button {
+                opacity: 1;
+              }
+            `}
+          </style>
         </div>
       </>
     );

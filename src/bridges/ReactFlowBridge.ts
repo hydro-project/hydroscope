@@ -254,10 +254,11 @@ export class ReactFlowBridge implements IReactFlowBridge {
         height: dimensions.height,
         data: {
           label: container.label,
+          longLabel: container.longLabel, // Support long labels for containers
           nodeType: "container",
           isExpanded: !container.collapsed,
           childCount: container.children.size,
-          showingLongLabel: false, // Containers don't have long labels
+          showingLongLabel: false, // Containers show popup on info button click
           // Add onClick handler if interaction handler is provided
           onClick: _interactionHandler
             ? (containerId: string) => {
@@ -469,6 +470,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         height,
         data: {
           label: container.label || container.id,
+          longLabel: container.longLabel, // Support long labels for containers
           nodeType: "container",
           collapsed: container.collapsed,
           containerChildren: container.children.size,
@@ -477,7 +479,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           height,
           colorPalette: state.getColorPalette(),
           style: "default",
-          showingLongLabel: false, // Containers don't have long labels
+          showingLongLabel: false, // Containers show popup on info button click
           // Add onClick handler if interaction handler is provided
           onClick: _interactionHandler
             ? (containerId: string) => {
