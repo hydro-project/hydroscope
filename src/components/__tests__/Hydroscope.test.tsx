@@ -123,8 +123,13 @@ describe("Hydroscope Component", () => {
       />,
     );
 
-    const hydroscopeElement = container.firstChild as HTMLElement;
+    // Find the div with the hydroscope class
+    const hydroscopeElement = container.querySelector(
+      ".hydroscope",
+    ) as HTMLElement;
     expect(hydroscopeElement).toHaveClass("custom-hydroscope");
-    expect(hydroscopeElement).toHaveStyle("border: 1px solid red");
+    expect(hydroscopeElement).toHaveClass("hydroscope");
+    // Check that custom style is applied (border should be present in style attribute)
+    expect(hydroscopeElement.style.border).toBe("1px solid red");
   });
 });

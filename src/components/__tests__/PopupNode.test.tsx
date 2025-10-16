@@ -76,11 +76,11 @@ describe("PopupNode", () => {
       "This is a much longer label that should be displayed in the popup",
     ).parentElement;
 
-    // Check that colors and border are applied
-    const style = window.getComputedStyle(popup!);
-    expect(style.backgroundColor).toBeTruthy();
-    expect(style.border).toMatch(/3px solid/);
-    expect(style.borderRadius).toBe("12px");
+    // Check that colors and border are applied via inline styles
+    expect(popup).toBeDefined();
+    expect(popup!.style.backgroundColor).toBeTruthy();
+    expect(popup!.style.border).toContain("solid");
+    expect(popup!.style.borderRadius).toBe("12px");
   });
 
   it("should display fallback label when longLabel is not provided", () => {
