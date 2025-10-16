@@ -163,9 +163,17 @@ describe("Search Navigation End-to-End Integration", () => {
       const containerElement = screen.getByText("Test Container");
       fireEvent.click(containerElement);
 
-      // The navigation should not crash the component
-      // (We can't easily test the actual graph highlighting without a full ReactFlow setup)
-      expect(containerElement).toBeInTheDocument();
+      // Wait for navigation to settle (even if ReactFlow isn't fully available)
+      await waitFor(
+        () => {
+          // The navigation should not crash the component
+          expect(containerElement).toBeInTheDocument();
+        },
+        { timeout: 500 },
+      );
+
+      // Give any async callbacks time to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
     });
   });
 

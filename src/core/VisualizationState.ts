@@ -2908,14 +2908,31 @@ export class VisualizationState {
     this._searchNavigationState.lastNavigationTarget = elementId;
     this._searchNavigationState.shouldFocusViewport = true;
 
-    // Clear any existing navigation highlights (tree clicks should only show temporary glow)
+    // Clear any existing navigation highlights before adding new ones
     this._searchNavigationState.treeNavigationHighlights.clear();
     this._searchNavigationState.graphNavigationHighlights.clear();
+
+    // Add the element to navigation highlights
+    this._searchNavigationState.treeNavigationHighlights.add(elementId);
+    this._searchNavigationState.graphNavigationHighlights.add(elementId);
 
     // Set temporary highlight for visual feedback (glow effect) unless skipped
     if (!options?.skipTemporaryHighlight) {
       this.setTemporaryHighlight(elementId);
     }
+  }
+
+  /**
+   * Clear navigation state (selection and highlights)
+   * This clears navigation without affecting search highlights
+   */
+  clearNavigation(): void {
+    this._searchNavigationState.navigationSelection = null;
+    this._searchNavigationState.lastNavigationTarget = null;
+    this._searchNavigationState.treeNavigationHighlights.clear();
+    this._searchNavigationState.graphNavigationHighlights.clear();
+    this._searchNavigationState.shouldFocusViewport = false;
+    // Don't clear temporary highlights - they have their own lifecycle
   }
 
   /**
