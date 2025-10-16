@@ -1020,7 +1020,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     } else {
                       // No expansion needed, just render highlights
                       if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                        asyncCoordinator.executeLayoutAndRenderPipeline(
+                        await asyncCoordinator.executeLayoutAndRenderPipeline(
                           currentVisualizationState,
                           {
                             relayoutEntities: [], // No layout, just render
@@ -1032,7 +1032,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                   } catch (_error) {
                     // Fallback to ReactFlow render using new pipeline method
                     if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                      asyncCoordinator.executeLayoutAndRenderPipeline(
+                      await asyncCoordinator.executeLayoutAndRenderPipeline(
                         currentVisualizationState,
                         {
                           relayoutEntities: [], // No layout, just render
@@ -1044,7 +1044,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                 } else {
                   // Search cleared - use ReactFlow render only
                   if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                    asyncCoordinator.executeLayoutAndRenderPipeline(
+                    await asyncCoordinator.executeLayoutAndRenderPipeline(
                       currentVisualizationState,
                       {
                         relayoutEntities: [], // No layout, just render
@@ -1056,7 +1056,7 @@ export const Hydroscope = memo<HydroscopeProps>(
               } else {
                 // No HydroscopeCore, just queue ReactFlow render
                 if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                  asyncCoordinator.executeLayoutAndRenderPipeline(
+                  await asyncCoordinator.executeLayoutAndRenderPipeline(
                     currentVisualizationState,
                     {
                       relayoutEntities: [], // No layout, just render

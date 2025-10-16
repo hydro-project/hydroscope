@@ -29,14 +29,14 @@ export function ContainerNode({
   const height =
     Number(data.height) ||
     (isCollapsed ? SIZES.COLLAPSED_CONTAINER_HEIGHT : 180);
-  
+
   const searchHighlight = (data as any).searchHighlight;
   const searchHighlightStrong = (data as any).searchHighlightStrong;
   const colorPalette = String(data.colorPalette || DEFAULT_COLOR_PALETTE);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(data.label || id);
   const containerLongLabel = String(data.longLabel || data.label || id);
-  
+
   const generateContainerColors = (containerId: string, palette: string) => {
     const hash = containerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
     const colorPalettes: Record<string, string[]> = {

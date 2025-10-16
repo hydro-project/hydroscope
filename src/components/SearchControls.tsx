@@ -323,7 +323,21 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           setCurrentIndex(0);
           // Apply search results synchronously to prevent race conditions with layout operations
           // The async batching was causing visibility state inconsistency during search
-          onSearch(query, next);
+          const onSearchResult = onSearch(query, next);
+
+          // Navigate to first result automatically if results found
+          // Wait for onSearch to complete (it may be async with AsyncCoordinator operations)
+          if (next.length > 0) {
+            // If onSearch returns a promise, wait for it to complete before navigating
+            // This ensures AsyncCoordinator has finished layout/render operations
+            Promise.resolve(onSearchResult).then(() => {
+              onNavigate("next", next[0]);
+              // Enhanced navigation with SearchResult if available
+              if (onResultNavigation && searchResults && searchResults[0]) {
+                onResultNavigation(searchResults[0]);
+              }
+            });
+          }
           // Add to history when we get results
           if (next.length > 0) {
             addToHistory(query);
@@ -367,6 +381,9 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       announceToScreenReader,
       addToHistory,
       onSearch,
+      onNavigate,
+      onResultNavigation,
+      searchResults,
     ]);
     // Keep index in range and sync with external currentSearchIndex
     useEffect(() => {
