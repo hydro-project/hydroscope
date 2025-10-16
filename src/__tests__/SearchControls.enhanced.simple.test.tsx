@@ -72,7 +72,9 @@ describe("SearchControls Enhanced Features - Core", () => {
       const nextButton = screen.getByLabelText("Next search result");
       fireEvent.click(nextButton);
 
-      expect(defaultProps.onResultNavigation).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(defaultProps.onResultNavigation).toHaveBeenCalled();
+      });
     });
 
     it("should show toggle button when searchResults are provided", () => {
@@ -128,10 +130,12 @@ describe("SearchControls Enhanced Features - Core", () => {
       });
 
       fireEvent.keyDown(input, { key: "Enter" });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
-        "next",
-        expect.any(Object),
-      );
+      await waitFor(() => {
+        expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+          "next",
+          expect.any(Object),
+        );
+      });
     });
 
     it("should navigate with Shift+Enter", async () => {
@@ -145,10 +149,12 @@ describe("SearchControls Enhanced Features - Core", () => {
       });
 
       fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
-      expect(defaultProps.onNavigate).toHaveBeenCalledWith(
-        "prev",
-        expect.any(Object),
-      );
+      await waitFor(() => {
+        expect(defaultProps.onNavigate).toHaveBeenCalledWith(
+          "prev",
+          expect.any(Object),
+        );
+      });
     });
 
     it("should clear search with Escape key", () => {

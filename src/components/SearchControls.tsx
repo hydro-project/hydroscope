@@ -386,13 +386,13 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             dir === "next"
               ? (prevIndex + 1) % matches.length
               : (prevIndex - 1 + matches.length) % matches.length;
-          // Navigate to the new result (do this in a microtask to ensure state is updated)
-          Promise.resolve().then(() => {
+          // Navigate to the new result immediately
+          // Call navigateToResultIndex with the new index
+          // This needs to happen after the state update, so use queueMicrotask
+          queueMicrotask(() => {
             navigateToResultIndex(idx, dir);
             // Clear flag after navigation completes
-            setTimeout(() => {
-              isNavigatingRef.current = false;
-            }, 100);
+            isNavigatingRef.current = false;
           });
           return idx;
         });
