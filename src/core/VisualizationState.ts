@@ -2961,7 +2961,7 @@ export class VisualizationState {
     this._searchNavigationState.lastNavigationTarget = elementId;
     this._searchNavigationState.shouldFocusViewport = true;
 
-    // Clear any existing navigation highlights and set the new one
+    // Clear any existing navigation highlights before adding new ones
     this._searchNavigationState.treeNavigationHighlights.clear();
     this._searchNavigationState.graphNavigationHighlights.clear();
 
@@ -2973,6 +2973,19 @@ export class VisualizationState {
     if (!options?.skipTemporaryHighlight) {
       this.setTemporaryHighlight(elementId);
     }
+  }
+
+  /**
+   * Clear navigation state (selection and highlights)
+   * This clears navigation without affecting search highlights
+   */
+  clearNavigation(): void {
+    this._searchNavigationState.navigationSelection = null;
+    this._searchNavigationState.lastNavigationTarget = null;
+    this._searchNavigationState.treeNavigationHighlights.clear();
+    this._searchNavigationState.graphNavigationHighlights.clear();
+    this._searchNavigationState.shouldFocusViewport = false;
+    // Don't clear temporary highlights - they have their own lifecycle
   }
 
   /**
@@ -3018,19 +3031,6 @@ export class VisualizationState {
         onClear();
       }
     }, durationMs);
-  }
-
-  /**
-   * Clear navigation state (selection and highlights)
-   * This clears navigation without affecting search highlights
-   */
-  clearNavigation(): void {
-    this._searchNavigationState.navigationSelection = null;
-    this._searchNavigationState.lastNavigationTarget = null;
-    this._searchNavigationState.treeNavigationHighlights.clear();
-    this._searchNavigationState.graphNavigationHighlights.clear();
-    this._searchNavigationState.shouldFocusViewport = false;
-    // Don't clear temporary highlights - they have their own lifecycle
   }
 
   /**
