@@ -68,6 +68,7 @@ import {
   DEFAULT_COLOR_PALETTE,
   DEFAULT_ELK_ALGORITHM,
   NAVIGATION_TIMING,
+  PANEL_CONSTANTS,
 } from "../shared/config.js";
 import { getHighlightColor, generateNodeColors } from "../shared/colorUtils.js";
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
@@ -1542,38 +1543,37 @@ const HydroscopeCoreInternal = forwardRef<
             // Close popup
             newActivePopups.delete(nodeId);
           } else {
-            // Calculate absolute position by walking up parent chain
-            // In ReactFlow, child nodes have positions relative to their parent
-            const calculateAbsolutePosition = (
-              targetNode: Node,
-            ): { x: number; y: number } => {
-              let absX = targetNode.position.x;
-              let absY = targetNode.position.y;
-              let currentParentId = targetNode.parentId;
+            // Get the actual DOM element to find its rendered position
+            const nodeElement = document.querySelector(
+              `[data-id="${nodeId}"]`,
+            );
+            const container = document.querySelector(
+              '[data-testid="graph-container"]',
+            );
 
-              // Walk up the parent chain, accumulating positions
-              while (currentParentId) {
-                const parentNode = prev.reactFlowData.nodes.find(
-                  (n) => n.id === currentParentId,
-                );
-                if (!parentNode) break;
+            let position = { x: 0, y: 0 };
+            let width = 150;
+            let height = 100;
 
-                absX += parentNode.position.x;
-                absY += parentNode.position.y;
-                currentParentId = parentNode.parentId;
-              }
+            if (nodeElement && container) {
+              const rect = nodeElement.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
 
-              return { x: absX, y: absY };
-            };
-
-            const absolutePosition = calculateAbsolutePosition(node);
+              // Calculate position relative to the graph container
+              position = {
+                x: rect.left - containerRect.left,
+                y: rect.top - containerRect.top,
+              };
+              width = rect.width;
+              height = rect.height;
+            }
 
             // Open popup - store the data needed to render it
             const popupData = {
               nodeId,
-              position: absolutePosition,
-              width: node.width,
-              height: node.height,
+              position,
+              width,
+              height,
               label: String(node.data.longLabel || node.data.label || nodeId),
               longLabel: String(node.data.longLabel || ""),
               originalNodeType: String(
@@ -1582,7 +1582,6 @@ const HydroscopeCoreInternal = forwardRef<
               colorPalette: String(
                 node.data.colorPalette || DEFAULT_COLOR_PALETTE,
               ),
-              // Store parent info for calculating absolute position
               parentId: node.parentId,
             };
             newActivePopups.set(nodeId, popupData);
@@ -2278,12 +2277,14 @@ const HydroscopeCoreInternal = forwardRef<
                 return `rgba(${darkR}, ${darkG}, ${darkB}, ${opacity})`;
               };
 
-              // Calculate popup position: northeast of the container
-              // Offset by container width + a bit of spacing (20px)
-              const offsetX = (popupData.width || 150) + 20;
-              const offsetY = -20; // Slight upward offset
-              const popupX = popupData.position.x + offsetX;
-              const popupY = popupData.position.y + offsetY;
+              // Calculate popup position: slightly northeast of container center
+              // This makes it occlude the container with a subtle offset
+              const containerCenterX = popupData.position.x + (popupData.width || 0) / 2;
+              const containerCenterY = popupData.position.y + (popupData.height || 0) / 2;
+              const offsetX = 10; // Small offset to the right
+              const offsetY = -10; // Small offset upward
+              const popupX = containerCenterX + offsetX;
+              const popupY = containerCenterY + offsetY;
 
               return (
                 <div
@@ -2305,7 +2306,7 @@ const HydroscopeCoreInternal = forwardRef<
                     alignItems: "center",
                     justifyContent: "center",
                     color: "white",
-                    fontSize: "14px",
+                    fontSize: `${PANEL_CONSTANTS.FONT_SIZE_POPUP}px`,
                     fontWeight: "500",
                     textAlign: "center",
                     wordWrap: "break-word",
