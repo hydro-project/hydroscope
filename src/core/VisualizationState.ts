@@ -85,10 +85,10 @@ export class VisualizationState {
   private _rootContainersCache: Container[] | null = null;
   private _descendantCache = new Map<string, Set<string>>();
   private _ancestorCache = new Map<string, string[]>();
-  private _collapsedContainersCache: Container[] | null = null;
-  private _visibleNodesCache: GraphNode[] | null = null;
-  private _visibleContainersCache: Container[] | null = null;
-  private _visibleEdgesCache: (GraphEdge | AggregatedEdge)[] | null = null;
+  private __collapsedContainersCache: Container[] | null = null;
+  private __visibleNodesCache: GraphNode[] | null = null;
+  private __visibleContainersCache: Container[] | null = null;
+  private __visibleEdgesCache: (GraphEdge | AggregatedEdge)[] | null = null;
   private _cacheVersion = 0;
   // Search and Navigation State
   private _searchNavigationState: SearchNavigationState = {
@@ -130,18 +130,21 @@ export class VisualizationState {
     string,
     {
       collapsed?: boolean; // For containers
-      childStates?: Map<string, { collapsed?: boolean; manuallyHidden?: boolean }>; // Recursive child states
+      childStates?: Map<
+        string,
+        { collapsed?: boolean; manuallyHidden?: boolean }
+      >; // Recursive child states
     }
   >();
 
   // Performance optimization caches
-  private _hierarchyPathCache = new Map<string, string[]>();
-  private _hierarchyPathCacheTimestamp = 0;
-  private _visibilityCache = new Map<string, boolean>();
-  private _visibilityCacheTimestamp = 0;
-  private _aggregationCache = new Map<string, Map<string, any>>();
-  private _aggregationCacheTimestamp = 0;
-  private _cacheInvalidationThreshold = 100; // Invalidate caches after 100ms
+  private __hierarchyPathCache = new Map<string, string[]>();
+  private __hierarchyPathCacheTimestamp = 0;
+  private __visibilityCache = new Map<string, boolean>();
+  private __visibilityCacheTimestamp = 0;
+  private __aggregationCache = new Map<string, Map<string, any>>();
+  private __aggregationCacheTimestamp = 0;
+  private __cacheInvalidationThreshold = 100; // Invalidate caches after 100ms
   // State persistence
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
@@ -181,9 +184,9 @@ export class VisualizationState {
     this._descendantCache.clear();
     this._ancestorCache.clear();
     this._rootContainersCache = null;
-    this._collapsedContainersCache = null;
-    this._visibleNodesCache = null;
-    this._visibleContainersCache = null;
+    this.__collapsedContainersCache = null;
+    this.__visibleNodesCache = null;
+    this.__visibleContainersCache = null;
     this._invalidateAllCaches();
   }
 
@@ -516,7 +519,7 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _expandContainersForCoordinator(containerIds?: string[]): void {
-    const _containersToExpand = containerIds
+    const __containersToExpand = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
     // CRITICAL FIX: Expand containers in hierarchical order (parents before children)
@@ -1200,7 +1203,7 @@ export class VisualizationState {
     // Always use lexicographically smaller ID first for consistency
     return source < target ? `${source}-${target}` : `${target}-${source}`;
   }
-  private _getOrCreateAggregatedEdge(
+  private __getOrCreateAggregatedEdge(
     source: string,
     target: string,
     originalEdge: GraphEdge,
@@ -1394,7 +1397,7 @@ export class VisualizationState {
   }
 
   // Getters for validation and external access
-  
+
   /**
    * Get the current cache version - increments whenever internal state changes
    * This can be used as a React dependency to trigger re-renders when the
@@ -3432,10 +3435,10 @@ export class VisualizationState {
     this._rootContainersCache = null;
     this._descendantCache.clear();
     this._ancestorCache.clear();
-    this._collapsedContainersCache = null;
-    this._visibleNodesCache = null;
-    this._visibleContainersCache = null;
-    this._visibleEdgesCache = null;
+    this.__collapsedContainersCache = null;
+    this.__visibleNodesCache = null;
+    this.__visibleContainersCache = null;
+    this.__visibleEdgesCache = null;
     this._invalidateSearchIndex();
   }
 
@@ -3443,13 +3446,13 @@ export class VisualizationState {
     this._rootContainersCache = null;
     this._descendantCache.clear();
     this._ancestorCache.clear();
-    this._collapsedContainersCache = null;
+    this.__collapsedContainersCache = null;
   }
 
   private _invalidateVisibilityCache(): void {
-    this._visibleNodesCache = null;
-    this._visibleContainersCache = null;
-    this._visibleEdgesCache = null;
+    this.__visibleNodesCache = null;
+    this.__visibleContainersCache = null;
+    this.__visibleEdgesCache = null;
   }
 
   private _invalidateSearchIndex(): void {
@@ -4224,7 +4227,10 @@ export class VisualizationState {
    */
   private _captureContainerStateRecursive(containerId: string): {
     collapsed?: boolean;
-    childStates?: Map<string, { collapsed?: boolean; manuallyHidden?: boolean }>;
+    childStates?: Map<
+      string,
+      { collapsed?: boolean; manuallyHidden?: boolean }
+    >;
   } {
     const container = this._containers.get(containerId);
     if (!container) return {};

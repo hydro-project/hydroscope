@@ -118,7 +118,7 @@ const InfoPanelInternal = forwardRef<
     const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
     const [groupingCollapsed, setGroupingCollapsed] = useState(false);
     // Track update counter to force re-renders when visibility changes
-    const [updateCounter, setUpdateCounter] = useState(0);
+    const [_updateCounter, setUpdateCounter] = useState(0);
     // Search state (containers-only to start)
     const [searchQuery, setSearchQuery] = useState("");
     const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
@@ -340,7 +340,7 @@ const InfoPanelInternal = forwardRef<
       // Don't call onSearchUpdate for navigation - it triggers expandAll which does fitView
       // onSearchUpdate is for when the query changes, not for navigating results
       // onSearchUpdate?.(searchQuery, searchMatches, current);
-      
+
       // Trigger navigation to highlight the element in the graph
       onElementNavigation?.(current.id, current.type);
     };
@@ -607,7 +607,7 @@ const InfoPanelInternal = forwardRef<
                     onToggleNodeVisibility={async (nodeId) => {
                       // Toggle node visibility in VisualizationState
                       visualizationState?.toggleNodeVisibility(nodeId);
-                      
+
                       // Force re-render to show updated icon
                       setUpdateCounter((c) => c + 1);
 

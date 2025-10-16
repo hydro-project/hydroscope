@@ -374,7 +374,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         setCurrentIndex(currentSearchIndex);
       }
     }, [currentSearchIndex, matches.length, currentIndex]);
-    
+
     const navigate = useCallback(
       (dir: "prev" | "next") => {
         if (!matches.length) return;

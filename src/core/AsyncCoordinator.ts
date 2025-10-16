@@ -46,7 +46,7 @@ export class AsyncCoordinator {
 
   // Post-render callback queue - executed after React renders new nodes
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
-  private lastRenderTimestamp: number = 0;
+  private _lastRenderTimestamp: number = 0;
 
   // Callbacks for tracking container expansion lifecycle
   private onContainerExpansionStart?: (containerId: string) => void;
@@ -162,7 +162,7 @@ export class AsyncCoordinator {
    * This is the deterministic trigger to execute post-render callbacks (like fitView)
    */
   notifyRenderComplete(): void {
-    this.lastRenderTimestamp = Date.now();
+    this._lastRenderTimestamp = Date.now();
 
     if (this.postRenderCallbacks.length === 0) {
       return;
@@ -445,7 +445,7 @@ export class AsyncCoordinator {
    * Execute ELK layout operation synchronously (private method)
    * This method ensures ELK layout results update VisualizationState before any ReactFlow render
    */
-  private async executeELKLayout(
+  private async _executeELKLayout(
     state: any, // VisualizationState - using any to avoid circular dependency
     elkBridge: any, // ELKBridge instance
     options: QueueOptions = {},
@@ -1504,7 +1504,7 @@ export class AsyncCoordinator {
   /**
    * Process individual application event (legacy async version)
    */
-  private async processApplicationEvent(
+  private async _processApplicationEvent(
     event: ApplicationEvent,
   ): Promise<void> {
     switch (event.type) {
@@ -1799,7 +1799,7 @@ export class AsyncCoordinator {
   /**
    * Get event priority for queue ordering
    */
-  private getEventPriority(
+  private _getEventPriority(
     eventType: ApplicationEvent["type"],
   ): "high" | "normal" | "low" {
     switch (eventType) {
@@ -1817,7 +1817,7 @@ export class AsyncCoordinator {
   /**
    * Move operation to front of queue for high priority
    */
-  private prioritizeOperation(operationId: string): void {
+  private _prioritizeOperation(operationId: string): void {
     const index = this.queue.findIndex((op) => op.id === operationId);
     if (index > 0) {
       const operation = this.queue.splice(index, 1)[0];
@@ -2657,18 +2657,8 @@ export class AsyncCoordinator {
       throw new Error("ReactFlow instance is required for viewport focus");
     }
     try {
-      console.log(
-        "[AsyncCoordinator] focusViewportOnElement called with elementId:",
-        elementId,
-      );
-
       // Try to get the node directly first
       let node = reactFlowInstance.getNode(elementId);
-      let targetElementId = elementId;
-      console.log(
-        "[AsyncCoordinator] Direct node lookup:",
-        node ? "found" : "not found",
-      );
 
       // If not found and we have visualizationState, find the visible ancestor
       if (!node && options?.visualizationState) {
@@ -2676,14 +2666,8 @@ export class AsyncCoordinator {
           options.visualizationState.getLowestVisibleAncestorInGraph?.(
             elementId,
           );
-        console.log("[AsyncCoordinator] Visible ancestor:", visibleElementId);
         if (visibleElementId) {
           node = reactFlowInstance.getNode(visibleElementId);
-          targetElementId = visibleElementId;
-          console.log(
-            "[AsyncCoordinator] Ancestor node lookup:",
-            node ? "found" : "not found",
-          );
         }
       }
 
@@ -2705,11 +2689,6 @@ export class AsyncCoordinator {
           }
         }
 
-        console.log("[AsyncCoordinator] Node absolute position:", {
-          absoluteX,
-          absoluteY,
-        });
-
         // Pan to the node with smooth animation
         // Calculate zoom level to fit the node on screen with padding
         const nodeWidth = node.width || 100;
@@ -2720,7 +2699,7 @@ export class AsyncCoordinator {
         // Calculate zoom to fit with padding
         // Use if options.zoom is explicitly provided, otherwise calculate zoom to fit
         let targetZoom: number;
-        
+
         if (options?.zoom !== undefined) {
           // Explicit zoom provided - use it but cap at 1.0 maximum (can zoom out less)
           targetZoom = Math.min(options.zoom, 1.0);
@@ -2729,18 +2708,18 @@ export class AsyncCoordinator {
           const viewportWidth = window.innerWidth;
           const viewportHeight = window.innerHeight;
           const paddingFactor = 0.7; // Use 70% of viewport (30% padding total)
-          
+
           // Node dimensions are in the graph coordinate space (unscaled)
           // Calculate what zoom would fit the node in the viewport with padding
           const zoomToFitWidth = (viewportWidth * paddingFactor) / nodeWidth;
           const zoomToFitHeight = (viewportHeight * paddingFactor) / nodeHeight;
           const zoomToFit = Math.min(zoomToFitWidth, zoomToFitHeight);
-          
+
           // Only cap at 1.0 if zooming IN (zoomToFit > 1.0)
           // Allow zooming OUT below 1.0 for large nodes
           targetZoom = zoomToFit > 1.0 ? 1.0 : zoomToFit;
         }
-        
+
         console.warn("[AsyncCoordinator] Centering on element:", {
           elementId,
           x,
@@ -3939,7 +3918,7 @@ export class AsyncCoordinator {
    * Deterministic FitView execution check - no optimizations that could cause zoom issues
    */
   private _shouldExecuteFitView(
-    fitViewOptions?: { padding?: number; duration?: number },
+    _fitViewOptions?: { padding?: number; duration?: number },
     reactFlowData?: any,
   ): {
     shouldExecute: boolean;

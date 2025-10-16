@@ -39,8 +39,7 @@ function buildHierarchyTreeFromState(
 ): HierarchyTreeNode[] {
   // Use allContainers instead of visibleContainers to show hidden items with closed eye icons
   const allContainers = visualizationState.allContainers;
-  if (!visualizationState || allContainers.length === 0)
-    return [];
+  if (!visualizationState || allContainers.length === 0) return [];
   const buildNode = (containerId: string): HierarchyTreeNode => {
     // Use efficient O(1) lookups instead of scanning
     const childrenIds: string[] = [];
@@ -105,7 +104,7 @@ function createSearchHighlightDiv(
       ...baseStyle,
     };
   }
-  
+
   // Layer temporary highlight glow on top (if present)
   if (hasTemporaryHighlight) {
     // Temporary glow effect after click - synced with graph glow
@@ -245,7 +244,7 @@ function createContainerDisplayTitle(
       border: `1px solid ${SEARCH_HIGHLIGHT_COLORS.border}40`, // 40% opacity
     };
   }
-  
+
   // Layer temporary highlight glow on top (if present)
   if (hasTemporaryHighlight) {
     // Temporary glow effect after click - synced with graph glow
@@ -259,7 +258,7 @@ function createContainerDisplayTitle(
       animation: "treeGlowPulse 2s ease-in-out",
     };
   }
-  
+
   return (
     <div
       style={{
@@ -716,7 +715,7 @@ export function HierarchyTree({
       if (visualizationState && searchResults) {
         // First, show all hidden containers that need to be expanded or contain matches
         const containersToShow: string[] = [];
-        
+
         // Collect all containers that need to be visible
         for (const result of searchResults) {
           if (result.type === "container") {
@@ -754,7 +753,7 @@ export function HierarchyTree({
             }
           }
         }
-        
+
         // Show containers from root to leaf (ancestors first)
         const uniqueContainers = Array.from(new Set(containersToShow));
         uniqueContainers.sort((a, b) => {
@@ -762,7 +761,7 @@ export function HierarchyTree({
           const depthB = visualizationState.getContainerAncestors(b).length;
           return depthB - depthA; // Root first (fewer ancestors)
         });
-        
+
         for (const containerId of uniqueContainers) {
           visualizationState.toggleContainerVisibility(containerId);
         }
@@ -957,17 +956,17 @@ export function HierarchyTree({
   ) => {
     if (info.node) {
       const nodeKey = info.node.key as string;
-      
+
       // Check if this is a graph node (leaf) or container
       const isGraphNode = (info.node as any).data?.isGraphNode;
-      
+
       // Check if the element is manually hidden - if so, ignore clicks
       if (isGraphNode) {
         const isHidden = visualizationState?.isNodeManuallyHidden(nodeKey);
         if (isHidden) {
           return; // Don't navigate to hidden nodes
         }
-        
+
         // This is a leaf node - trigger navigation if callback is provided
         if (onElementNavigation) {
           onElementNavigation(nodeKey, "node");
@@ -977,7 +976,7 @@ export function HierarchyTree({
         if (isHidden) {
           return; // Don't navigate to hidden containers
         }
-        
+
         // This is a container - trigger navigation if callback is provided
         if (onElementNavigation) {
           onElementNavigation(nodeKey, "container");
