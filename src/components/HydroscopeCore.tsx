@@ -31,7 +31,6 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import ReactDOM from "react-dom";
 import {
   ReactFlow,
   Background,
@@ -1533,68 +1532,63 @@ const HydroscopeCoreInternal = forwardRef<
     // Handle popup toggle for nodes
     // CRITICAL FIX: Store popup data separately to avoid modifying ReactFlow nodes array
     // This prevents ReactFlow from re-rendering and causing flicker
-    const handleNodePopupToggle = useCallback(
-      (nodeId: string, node: Node) => {
-        setState((prev) => {
-          const newActivePopups = new Map(prev.activePopups);
-          const existingPopup = newActivePopups.get(nodeId);
+    const handleNodePopupToggle = useCallback((nodeId: string, node: Node) => {
+      setState((prev) => {
+        const newActivePopups = new Map(prev.activePopups);
+        const existingPopup = newActivePopups.get(nodeId);
 
-          if (existingPopup) {
-            // Close popup
-            newActivePopups.delete(nodeId);
-          } else {
-            // Get the actual DOM element to find its rendered position
-            const nodeElement = document.querySelector(
-              `[data-id="${nodeId}"]`,
-            );
-            const container = document.querySelector(
-              '[data-testid="graph-container"]',
-            );
+        if (existingPopup) {
+          // Close popup
+          newActivePopups.delete(nodeId);
+        } else {
+          // Get the actual DOM element to find its rendered position
+          const nodeElement = document.querySelector(`[data-id="${nodeId}"]`);
+          const container = document.querySelector(
+            '[data-testid="graph-container"]',
+          );
 
-            let position = { x: 0, y: 0 };
-            let width = 150;
-            let height = 100;
+          let position = { x: 0, y: 0 };
+          let width = 150;
+          let height = 100;
 
-            if (nodeElement && container) {
-              const rect = nodeElement.getBoundingClientRect();
-              const containerRect = container.getBoundingClientRect();
+          if (nodeElement && container) {
+            const rect = nodeElement.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
 
-              // Calculate position relative to the graph container
-              position = {
-                x: rect.left - containerRect.left,
-                y: rect.top - containerRect.top,
-              };
-              width = rect.width;
-              height = rect.height;
-            }
-
-            // Open popup - store the data needed to render it
-            const popupData = {
-              nodeId,
-              position,
-              width,
-              height,
-              label: String(node.data.longLabel || node.data.label || nodeId),
-              longLabel: String(node.data.longLabel || ""),
-              originalNodeType: String(
-                node.data.nodeType || node.type || "default",
-              ),
-              colorPalette: String(
-                node.data.colorPalette || DEFAULT_COLOR_PALETTE,
-              ),
-              parentId: node.parentId,
+            // Calculate position relative to the graph container
+            position = {
+              x: rect.left - containerRect.left,
+              y: rect.top - containerRect.top,
             };
-            newActivePopups.set(nodeId, popupData);
+            width = rect.width;
+            height = rect.height;
           }
 
-          return {
-            ...prev,
-            activePopups: newActivePopups,
+          // Open popup - store the data needed to render it
+          const popupData = {
+            nodeId,
+            position,
+            width,
+            height,
+            label: String(node.data.longLabel || node.data.label || nodeId),
+            longLabel: String(node.data.longLabel || ""),
+            originalNodeType: String(
+              node.data.nodeType || node.type || "default",
+            ),
+            colorPalette: String(
+              node.data.colorPalette || DEFAULT_COLOR_PALETTE,
+            ),
+            parentId: node.parentId,
           };
-        });
-      },
-      [],
-    );
+          newActivePopups.set(nodeId, popupData);
+        }
+
+        return {
+          ...prev,
+          activePopups: newActivePopups,
+        };
+      });
+    }, []);
 
     // Expose bulk operations through imperative handle
     useImperativeHandle(
@@ -2279,8 +2273,10 @@ const HydroscopeCoreInternal = forwardRef<
 
               // Calculate popup position: slightly northeast of container center
               // This makes it occlude the container with a subtle offset
-              const containerCenterX = popupData.position.x + (popupData.width || 0) / 2;
-              const containerCenterY = popupData.position.y + (popupData.height || 0) / 2;
+              const containerCenterX =
+                popupData.position.x + (popupData.width || 0) / 2;
+              const containerCenterY =
+                popupData.position.y + (popupData.height || 0) / 2;
               const offsetX = 10; // Small offset to the right
               const offsetY = -10; // Small offset upward
               const popupX = containerCenterX + offsetX;
@@ -2316,58 +2312,58 @@ const HydroscopeCoreInternal = forwardRef<
                     zIndex: 1001,
                   }}
                 >
-                <button
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    right: "8px",
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "50%",
-                    backgroundColor: "rgba(188, 187, 187, 0.9)",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "16px",
-                    color: "#000",
-                    transition: "background-color 0.2s ease",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setState((prev) => {
-                      const newActivePopups = new Map(prev.activePopups);
-                      newActivePopups.delete(nodeId);
-                      return { ...prev, activePopups: newActivePopups };
-                    });
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.target as HTMLElement).style.backgroundColor =
-                      "rgba(188, 187, 187, 0.5)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.target as HTMLElement).style.backgroundColor =
-                      "rgba(188, 187, 187, 0.9)";
-                  }}
-                  aria-label="Close popup"
-                >
-                  ×
-                </button>
-                <div
-                  style={{
-                    paddingRight: "32px",
-                    lineHeight: "1.4",
-                    wordWrap: "break-word",
-                    overflowWrap: "break-word",
-                    hyphens: "auto",
-                  }}
-                >
-                  {popupData.label}
+                  <button
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(188, 187, 187, 0.9)",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "16px",
+                      color: "#000",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setState((prev) => {
+                        const newActivePopups = new Map(prev.activePopups);
+                        newActivePopups.delete(nodeId);
+                        return { ...prev, activePopups: newActivePopups };
+                      });
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLElement).style.backgroundColor =
+                        "rgba(188, 187, 187, 0.5)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.backgroundColor =
+                        "rgba(188, 187, 187, 0.9)";
+                    }}
+                    aria-label="Close popup"
+                  >
+                    ×
+                  </button>
+                  <div
+                    style={{
+                      paddingRight: "32px",
+                      lineHeight: "1.4",
+                      wordWrap: "break-word",
+                      overflowWrap: "break-word",
+                      hyphens: "auto",
+                    }}
+                  >
+                    {popupData.label}
+                  </div>
                 </div>
-              </div>
-            );
-          },
+              );
+            },
           )}
 
           {/* Node count display for e2e testing */}
