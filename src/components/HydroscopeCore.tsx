@@ -507,7 +507,8 @@ const HydroscopeCoreInternal = forwardRef<
         );
 
         // CRITICAL FIX: Set React state setter for direct imperative updates
-        asyncCoordinator.setReactStateSetter(setState);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        asyncCoordinator.setReactStateSetter(setState as any);
 
         // Create InteractionHandler
         interactionHandlerRef.current = new InteractionHandler(

@@ -3,8 +3,17 @@
  * These interfaces ensure bridges remain stateless and follow architectural constraints
  */
 import type { VisualizationState } from "../core/VisualizationState.js";
-import type { ReactFlowData, ELKNode, LayoutConfig } from "./core.js";
+import type { ReactFlowData, ReactFlowNode, ReactFlowEdge, ELKNode, LayoutConfig } from "./core.js";
 import type { ImmutableBridgeMethod } from "./architecture-constraints.js";
+
+// Type for interaction handler
+export interface InteractionHandler {
+  onNodeClick?: (nodeId: string) => void;
+  onEdgeClick?: (edgeId: string) => void;
+  onContainerClick?: (containerId: string) => void;
+  updateConfig?: (config: { disableNodeClicks?: boolean }) => void;
+  [key: string]: unknown;
+}
 /**
  * Base interface for all stateless bridges
  * Enforces architectural constraint: No private state allowed
@@ -25,7 +34,7 @@ export interface IReactFlowBridge extends StatelessBridge {
    * @returns Immutable ReactFlow data structure
    */
   toReactFlowData: ImmutableBridgeMethod<
-    [VisualizationState, any?],
+    [VisualizationState, InteractionHandler?],
     ReactFlowData
   >;
   /**
@@ -35,7 +44,7 @@ export interface IReactFlowBridge extends StatelessBridge {
    * @param nodes - Array of ReactFlow nodes to style
    * @returns New array with styled nodes (immutable)
    */
-  applyNodeStyles: ImmutableBridgeMethod<[any[]], any[]>;
+  applyNodeStyles: ImmutableBridgeMethod<[ReactFlowNode[]], ReactFlowNode[]>;
   /**
    * Apply styling to edges - pure function
    * MUST NOT cache results internally
@@ -44,7 +53,7 @@ export interface IReactFlowBridge extends StatelessBridge {
    * @param state - Current visualization state for context
    * @returns New array with styled edges (immutable)
    */
-  applyEdgeStyles: ImmutableBridgeMethod<[any[], VisualizationState], any[]>;
+  applyEdgeStyles: ImmutableBridgeMethod<[ReactFlowEdge[], VisualizationState], ReactFlowEdge[]>;
 }
 /**
  * Interface for ELK bridge - enforces stateless behavior
@@ -129,7 +138,7 @@ export type ValidateStatelessBridge<T> =
  * Runtime validation function to check bridge instances
  * Can be used in tests to ensure bridges don't have prohibited properties
  */
-export function validateStatelessBridge(bridge: any, bridgeName: string): void {
+export function validateStatelessBridge(bridge: object, bridgeName: string): void {
   const prohibitedPatterns = [
     /.*[Cc]ache.*/,
     /.*lastState.*/,

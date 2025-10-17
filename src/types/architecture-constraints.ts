@@ -57,8 +57,8 @@ export type EnforceStateless<T> =
  * Interface constraint for bridge constructors
  * Ensures bridge constructors only accept configuration, not state
  */
-export interface StatelessBridgeConstructor<TConfig = any> {
-  new (config: TConfig): any;
+export interface StatelessBridgeConstructor<TConfig = unknown> {
+  new (config: TConfig): object;
 }
 /**
  * Type guard to ensure bridge methods are pure functions
@@ -73,12 +73,14 @@ export type PureFunction<TArgs extends readonly unknown[], TReturn> = (
  */
 export interface PureBridgeMethods {
   // All methods must be pure functions that don't rely on internal state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [methodName: string]: PureFunction<any[], any>;
 }
 /**
  * Constraint for bridge classes to ensure they only have pure methods
  */
 export type OnlyPureMethods<T> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [K in keyof T]: T[K] extends (...args: any[]) => any
     ? T[K]
     : K extends
@@ -104,10 +106,12 @@ export type BridgeConfig<T> =
  * Runtime validation decorator for bridge classes
  * Can be used to validate bridge instances at runtime
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function StatelessBridgeDecorator<T extends new (...args: any[]) => any>(
   constructor: T,
 ): T {
   return class extends constructor {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
       super(...args);
       // Validate that instance doesn't have prohibited properties
@@ -118,7 +122,7 @@ export function StatelessBridgeDecorator<T extends new (...args: any[]) => any>(
 /**
  * Runtime validation function for bridge instances
  */
-function validateBridgeInstance(instance: any, className: string): void {
+function validateBridgeInstance(instance: object, className: string): void {
   const prohibitedPatterns = [
     /.*[Cc]ache.*/,
     /.*lastState.*/,

@@ -6,6 +6,7 @@ import {
   getStraightPath,
   getSmoothStepPath,
   type EdgeProps,
+  type Position,
 } from "@xyflow/react";
 // Helper function to get the appropriate path based on edge style type
 const getEdgePath = (
@@ -13,10 +14,10 @@ const getEdgePath = (
   pathParams: {
     sourceX: number;
     sourceY: number;
-    sourcePosition: any;
+    sourcePosition: Position;
     targetX: number;
     targetY: number;
-    targetPosition: any;
+    targetPosition: Position;
   },
 ) => {
   switch (edgeStyleType) {

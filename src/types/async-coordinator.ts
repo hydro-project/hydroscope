@@ -3,34 +3,45 @@
  * and eliminate unsafe `any` types
  */
 
+import type {
+  GraphNode,
+  Container,
+  GraphEdge,
+  LayoutState,
+  SearchResult,
+  ReactFlowData,
+  ReactFlowNode,
+  ReactFlowEdge,
+} from "./core.js";
+
 // Core interfaces that AsyncCoordinator needs
 export interface VisualizationStateInterface {
   // Layout state management
   setLayoutPhase(phase: string): void;
   incrementLayoutCount(): void;
-  getLayoutState(): any;
+  getLayoutState(): LayoutState;
 
   // Container operations
-  getContainer(id: string): any;
-  getAllContainers(): any[];
+  getContainer(id: string): Container | undefined;
+  getAllContainers(): Container[];
   getContainerParent(id: string): string | null;
   getContainerAncestors(id: string): string[];
 
   // Node operations
-  getGraphNode(id: string): any;
-  visibleNodes: any[];
-  visibleEdges: any[];
-  visibleContainers: any[];
+  getGraphNode(id: string): GraphNode | undefined;
+  visibleNodes: GraphNode[];
+  visibleEdges: GraphEdge[];
+  visibleContainers: Container[];
 
   // Render config
-  updateRenderConfig(updates: any): void;
-  getRenderConfig(): any;
+  updateRenderConfig(updates: Partial<RenderConfig>): void;
+  getRenderConfig(): RenderConfig;
   getColorPalette(): string;
   getEdgeStyle(): "bezier" | "straight" | "smoothstep";
 
   // Search functionality
-  searchNodes(query: string): any[];
-  highlightSearchResults(results: any[]): void;
+  searchNodes(query: string): SearchResult[];
+  highlightSearchResults(results: SearchResult[]): void;
   clearSearchHighlights(): void;
 
   // Navigation
@@ -52,12 +63,12 @@ export interface ReactFlowBridgeInterface {
   // Data conversion
   toReactFlowData(
     state: VisualizationStateInterface,
-    interactionHandler?: any,
+    interactionHandler?: InteractionHandler,
   ): ReactFlowData;
 
   // Styling
-  applyNodeStyles(nodes: any[]): any[];
-  applyEdgeStyles(edges: any[], state?: VisualizationStateInterface): any[];
+  applyNodeStyles(nodes: ReactFlowNode[]): ReactFlowNode[];
+  applyEdgeStyles(edges: ReactFlowEdge[], state?: VisualizationStateInterface): ReactFlowEdge[];
 }
 
 export interface ReactFlowInstanceInterface {
@@ -71,8 +82,8 @@ export interface ReactFlowInstanceInterface {
   setViewport(viewport: { x: number; y: number; zoom: number }): void;
 
   // Node operations
-  getNodes(): any[];
-  getEdges(): any[];
+  getNodes(): ReactFlowNode[];
+  getEdges(): ReactFlowEdge[];
 }
 
 // Configuration interfaces
@@ -88,12 +99,8 @@ export interface LayoutConfig {
   mergeHierarchyEdges?: boolean;
 }
 
-export interface ReactFlowData {
-  nodes: any[];
-  edges: any[];
-  _timestamp?: number;
-  _changeId?: string;
-}
+// Re-export ReactFlowData and related types from core
+export type { ReactFlowData, ReactFlowNode, ReactFlowEdge } from "./core.js";
 
 // Note: QueueOptions is imported from "../types/core" to avoid duplication
 
@@ -111,4 +118,23 @@ export interface ContainerOperationOptions {
   fitViewOptions?: { padding?: number; duration?: number };
   timeout?: number;
   maxRetries?: number;
+}
+
+// Render config interface
+export interface RenderConfig {
+  colorPalette: string;
+  edgeStyle: "bezier" | "straight" | "smoothstep";
+  showNodeLabels?: boolean;
+  showEdgeLabels?: boolean;
+  theme?: "light" | "dark";
+  [key: string]: unknown; // Allow additional config properties
+}
+
+// Interaction handler interface
+export interface InteractionHandler {
+  onNodeClick?: (nodeId: string) => void;
+  onEdgeClick?: (edgeId: string) => void;
+  onContainerClick?: (containerId: string) => void;
+  updateConfig?: (config: { disableNodeClicks?: boolean }) => void;
+  [key: string]: unknown; // Allow additional handler methods
 }
