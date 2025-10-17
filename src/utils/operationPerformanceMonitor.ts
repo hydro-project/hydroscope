@@ -616,15 +616,18 @@ export async function monitorAsyncOperation<T>(
  */
 export function monitorOperationPerformance(
   operation: OperationType,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return function (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     _target: any,
     _propertyKey: string,
     descriptor: PropertyDescriptor,
   ) {
     const originalMethod = descriptor.value;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     descriptor.value = function (...args: any[]) {
       return monitorOperation(
         operation,

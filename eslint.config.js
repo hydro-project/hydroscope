@@ -69,7 +69,7 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
-      "@typescript-eslint/no-explicit-any": "off", // Allow any - this codebase uses it extensively for bridges/tests
+      "@typescript-eslint/no-explicit-any": "warn", // Warn on any usage - gradually migrating to proper types
       "@typescript-eslint/no-require-imports": "off", // Allow require in tests
       "@typescript-eslint/no-empty-object-type": "off", // Allow empty interfaces for extensibility
       "no-empty": "off",

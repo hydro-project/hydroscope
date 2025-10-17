@@ -570,7 +570,7 @@ export function batchStyleOperationsImperatively(options: {
   operations: Array<{
     type: "layout" | "colorPalette" | "edgeStyle" | "reset";
     value?: string | EdgeStyleKind;
-    callback?: (value?: any) => void;
+    callback?: (value?: string | EdgeStyleKind) => void;
   }>;
   visualizationState?: VisualizationState;
   suppressResizeObserver?: boolean;

@@ -14,7 +14,7 @@ export type ResourceType =
 interface ManagedResource {
   id: string;
   type: ResourceType;
-  resource: any;
+  resource: unknown;
   cleanup: CleanupFunction;
   createdAt: number;
 }
@@ -117,7 +117,7 @@ export class ResourceManager {
   /**
    * Add a custom resource with cleanup function
    */
-  addCustomResource(resource: any, cleanup: CleanupFunction): string {
+  addCustomResource(resource: unknown, cleanup: CleanupFunction): string {
     if (this.isDestroyed) {
       throw new Error("ResourceManager has been destroyed");
     }

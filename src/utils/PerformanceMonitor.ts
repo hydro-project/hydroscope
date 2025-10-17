@@ -353,13 +353,16 @@ export function recordPerformanceMetric(
 }
 // Decorator for automatic performance monitoring
 export function monitorPerformance(component: string, metric?: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return function (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     target: any,
     propertyKey: string,
     descriptor: PropertyDescriptor,
   ) {
     const originalMethod = descriptor.value;
     const metricName = metric || propertyKey;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     descriptor.value = function (...args: any[]) {
       const startTime = performance.now();
       try {

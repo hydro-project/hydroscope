@@ -93,16 +93,17 @@ export function refreshLoggerConfig() {
 function base(
   category: HydroLogCategory,
   level: "log" | "warn" | "error" | "info",
-  args: any[],
+  args: unknown[],
 ) {
   if (!enabled.has(category)) return;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (console as any)[level](`[${category}]`, ...args);
 }
 
 export const hscopeLogger = {
-  log: (cat: HydroLogCategory, ...args: any[]) => base(cat, "log", args),
-  info: (cat: HydroLogCategory, ...args: any[]) => base(cat, "info", args),
-  warn: (cat: HydroLogCategory, ...args: any[]) => base(cat, "warn", args),
-  error: (cat: HydroLogCategory, ...args: any[]) => base(cat, "error", args),
+  log: (cat: HydroLogCategory, ...args: unknown[]) => base(cat, "log", args),
+  info: (cat: HydroLogCategory, ...args: unknown[]) => base(cat, "info", args),
+  warn: (cat: HydroLogCategory, ...args: unknown[]) => base(cat, "warn", args),
+  error: (cat: HydroLogCategory, ...args: unknown[]) => base(cat, "error", args),
 };

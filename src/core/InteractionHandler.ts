@@ -3,6 +3,7 @@
  * Architectural constraints: Coordinates between VisualizationState and AsyncCoordinator
  */
 import type { VisualizationState } from "./VisualizationState.js";
+import type { AsyncCoordinator } from "./AsyncCoordinator.js";
 export interface ClickEvent {
   elementId: string;
   elementType: "node" | "container";
@@ -20,13 +21,13 @@ export interface InteractionConfig {
 }
 export class InteractionHandler {
   private _visualizationState: VisualizationState;
-  private _asyncCoordinator?: any; // Will be typed properly when AsyncCoordinator is implemented
+  private _asyncCoordinator?: AsyncCoordinator;
   private _config: InteractionConfig;
   private _recentClicks = new Map<string, number>();
   private _pendingOperations = new Map<string, NodeJS.Timeout>();
   constructor(
     visualizationState: VisualizationState,
-    asyncCoordinator?: any,
+    asyncCoordinator?: AsyncCoordinator,
     config?: Partial<InteractionConfig>,
   ) {
     this._visualizationState = visualizationState;

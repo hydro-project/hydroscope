@@ -2,11 +2,34 @@
  * AsyncCoordinator - Sequential queue system for async operations
  * Manages async boundaries with FIFO queues and error handling
  */
-import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
+import { QueuedOperation, QueueStatus, ApplicationEvent, ReactFlowData } from "../types/core";
+import type { InteractionHandler } from "./InteractionHandler.js";
+import type { VisualizationState } from "./VisualizationState.js";
+import type { ELKBridge } from "../bridges/ELKBridge.js";
+import type { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 // Removed BridgeFactory import - using direct bridge instances only
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 import { hscopeLogger } from "../utils/logger.js";
 import { NAVIGATION_TIMING } from "../shared/config.js";
+
+// Type for ReactFlow instance - avoiding full import
+interface ReactFlowInstance {
+  fitView: (options?: FitViewOptions) => void;
+  getViewport: () => { x: number; y: number; zoom: number };
+  setViewport: (viewport: { x: number; y: number; zoom: number }) => void;
+  getNodes: () => unknown[];
+  getEdges: () => unknown[];
+}
+
+// Type for React setState - using unknown for maximum compatibility with React's types
+type ReactStateSetter = (updater: (prev: unknown) => unknown) => void;
+
+// Type for fitView options
+interface FitViewOptions {
+  padding?: number;
+  duration?: number;
+  includeHiddenNodes?: boolean;
+}
 
 interface ErrorRecoveryResult {
   success: boolean;
@@ -25,21 +48,21 @@ export class AsyncCoordinator {
   private processingTimes: number[] = [];
   private currentOperation?: QueuedOperation;
   private operationIdCounter = 0;
-  private interactionHandler?: any;
+  private interactionHandler?: InteractionHandler;
 
   // DEPRECATED: Callback to update HydroscopeCore's React state when ReactFlow data changes (replaced by direct state updates)
-  public onReactFlowDataUpdate?: (reactFlowData: any) => void;
+  public onReactFlowDataUpdate?: (reactFlowData: ReactFlowData) => void;
 
   // Direct ReactFlow instance reference for fitView operations
-  private reactFlowInstance?: any;
+  private reactFlowInstance?: ReactFlowInstance;
   private updateNodeInternals?: (nodeId: string) => void;
 
   // Direct React state setter for imperative updates
-  private setReactState?: (updater: (prev: any) => any) => void;
+  private setReactState?: ReactStateSetter;
 
   // Direct bridge instances for imperative operations
-  private reactFlowBridge?: any;
-  private elkBridge?: any;
+  private reactFlowBridge?: ReactFlowBridge;
+  private elkBridge?: ELKBridge;
 
   // Configuration for rendering options
   private renderOptions: { showFullNodeLabels?: boolean } = {};
@@ -52,14 +75,14 @@ export class AsyncCoordinator {
   private onContainerExpansionStart?: (containerId: string) => void;
   private onContainerExpansionComplete?: (containerId: string) => void;
 
-  constructor(interactionHandler?: any) {
+  constructor(interactionHandler?: InteractionHandler) {
     this.interactionHandler = interactionHandler;
   }
 
   /**
    * Set the InteractionHandler reference after construction
    */
-  setInteractionHandler(interactionHandler: any): void {
+  setInteractionHandler(interactionHandler: InteractionHandler): void {
     this.interactionHandler = interactionHandler;
   }
 
@@ -80,7 +103,7 @@ export class AsyncCoordinator {
   /**
    * Set the ReactFlow instance reference for direct fitView operations
    */
-  setReactFlowInstance(reactFlowInstance: any): void {
+  setReactFlowInstance(reactFlowInstance: ReactFlowInstance): void {
     this.reactFlowInstance = reactFlowInstance;
     hscopeLogger.log(
       "coordinator",
@@ -125,7 +148,7 @@ export class AsyncCoordinator {
    * Force ReactFlow to recalculate edge handles for all nodes
    * This is necessary when node dimensions change without node IDs changing
    */
-  updateAllNodeInternals(visualizationState: any): void {
+  updateAllNodeInternals(visualizationState: VisualizationState): void {
     if (!this.updateNodeInternals) {
       console.warn(
         "[AsyncCoordinator] updateNodeInternals not available - edge handles may not update correctly",
@@ -219,9 +242,7 @@ export class AsyncCoordinator {
    * Set the React state setter for direct imperative state updates
    * This enables AsyncCoordinator to update React state directly instead of using callbacks
    */
-  setReactStateSetter(
-    setReactState: (updater: (prev: any) => any) => void,
-  ): void {
+  setReactStateSetter(setReactState: ReactStateSetter): void {
     this.setReactState = setReactState;
     hscopeLogger.log(
       "coordinator",
@@ -233,7 +254,7 @@ export class AsyncCoordinator {
    * Set bridge instances for direct imperative operations
    * This eliminates the need for bridge factory imports and makes operations more sequential
    */
-  setBridgeInstances(reactFlowBridge: any, elkBridge: any): void {
+  setBridgeInstances(reactFlowBridge: ReactFlowBridge, elkBridge: ELKBridge): void {
     this.reactFlowBridge = reactFlowBridge;
     this.elkBridge = elkBridge;
     hscopeLogger.log(
@@ -594,8 +615,8 @@ export class AsyncCoordinator {
 
       // Update React state directly (imperative approach)
       if (this.setReactState) {
-        this.setReactState((prev: any) => ({
-          ...prev,
+        this.setReactState((prev: unknown) => ({
+          ...(prev as Record<string, unknown>),
           reactFlowData: reactFlowData,
         }));
       } else if (this.onReactFlowDataUpdate) {
@@ -642,7 +663,7 @@ export class AsyncCoordinator {
     reason: "initial_load" | "file_load" | "hierarchy_change" | "remount",
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       validateData?: (data: any) => void;
@@ -791,7 +812,7 @@ export class AsyncCoordinator {
     onRemount: () => void,
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
     } = {},
   ): Promise<void> {
     const startTime = Date.now();
@@ -858,7 +879,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[];
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
     } = {},
   ): Promise<void> {
     hscopeLogger.log(
@@ -922,7 +943,7 @@ export class AsyncCoordinator {
 
       // FitView control - handled internally, no callbacks needed
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
 
       // Standard options
       timeout?: number;
@@ -1060,8 +1081,8 @@ export class AsyncCoordinator {
       // Step 4: Update HydroscopeCore's React state directly (imperative approach)
       if (this.setReactState) {
         // Update React state with new nodes/edges
-        this.setReactState((prev: any) => ({
-          ...prev,
+        this.setReactState((prev: unknown) => ({
+          ...(prev as Record<string, unknown>),
           reactFlowData: reactFlowData,
         }));
         hscopeLogger.log(
@@ -1911,7 +1932,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -1956,7 +1977,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2085,7 +2106,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2208,7 +2229,7 @@ export class AsyncCoordinator {
       | {
           relayoutEntities?: string[]; // Layout control
           fitView?: boolean; // FitView control
-          fitViewOptions?: { padding?: number; duration?: number };
+          fitViewOptions?: FitViewOptions;
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2216,7 +2237,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2358,7 +2379,7 @@ export class AsyncCoordinator {
       | {
           relayoutEntities?: string[]; // Layout control
           fitView?: boolean; // FitView control
-          fitViewOptions?: { padding?: number; duration?: number };
+          fitViewOptions?: FitViewOptions;
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2366,7 +2387,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -3040,7 +3061,7 @@ export class AsyncCoordinator {
 
       // FitView control - handled internally, no callbacks needed
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
 
       // Standard options
       timeout?: number;
@@ -3216,7 +3237,7 @@ export class AsyncCoordinator {
     state: any, // VisualizationState
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -3430,7 +3451,7 @@ export class AsyncCoordinator {
     },
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       relayoutEntities?: string[]; // For targeted re-layout
       timeout?: number;
       maxRetries?: number;
@@ -3661,7 +3682,7 @@ export class AsyncCoordinator {
     options: {
       expandContainersOnSearch?: boolean;
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -3917,7 +3938,7 @@ export class AsyncCoordinator {
    * Deterministic FitView execution check - no optimizations that could cause zoom issues
    */
   private _shouldExecuteFitView(
-    _fitViewOptions?: { padding?: number; duration?: number },
+    _fitViewOptions?: FitViewOptions,
     reactFlowData?: any,
   ): {
     shouldExecute: boolean;

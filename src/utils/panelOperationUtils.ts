@@ -340,7 +340,7 @@ export function changeStyleImperatively(options: {
   styleType: StyleOperation;
   value: string | number | boolean;
   visualizationState?: VisualizationState;
-  onStyleChange?: (styleType: StyleOperation, value: any) => void;
+  onStyleChange?: (styleType: StyleOperation, value: string | number | boolean) => void;
   suppressResizeObserver?: boolean;
   debug?: boolean;
 }): boolean {
