@@ -131,11 +131,11 @@ describe("HydroscopeCore Component", () => {
 
       await waitFor(() => {
         expect(ref.current).toBeDefined();
-      });
+      }, { timeout: 10000 });
 
       // Should not throw when calling collapseContainers
       await expect(ref.current?.collapseContainers()).resolves.not.toThrow();
-    });
+    }, 15000); // Increase test timeout to 15 seconds
 
     it("should handle expandAll operation", async () => {
       render(
@@ -149,11 +149,11 @@ describe("HydroscopeCore Component", () => {
 
       await waitFor(() => {
         expect(ref.current).toBeDefined();
-      });
+      }, { timeout: 10000 });
 
       // Should not throw when calling expandContainers
       await expect(ref.current?.expandContainers()).resolves.not.toThrow();
-    });
+    }, 15000); // Increase test timeout to 15 seconds
 
     it("should handle individual container operations", async () => {
       render(

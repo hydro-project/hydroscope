@@ -307,7 +307,26 @@ export interface QueuedOperation<T = any> {
     | "collapse-all-tree-nodes"
     | "navigate-to-element"
     | "focus-viewport"
-    | "synchronous_pipeline"; // NEW: For synchronous pipeline operations
+    | "synchronous_pipeline" // For synchronous pipeline operations
+    // High-priority core operations
+    | "layout_and_render_pipeline"
+    | "process_data_change"
+    | "dimension_change_with_remount"
+    | "layout_and_render_with_remount"
+    // Container operations
+    | "expand_container"
+    | "collapse_container"
+    | "expand_containers"
+    | "collapse_containers"
+    | "expand_container_with_ancestors"
+    // Search operations
+    | "update_search_results"
+    | "clear_search"
+    | "execute_search_pipeline"
+    // Config and navigation operations
+    | "update_render_config"
+    | "navigate_to_element"
+    | "focus_viewport_on_element";
   operation: () => Promise<T>;
   timeout?: number;
   retryCount: number;

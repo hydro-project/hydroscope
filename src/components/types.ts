@@ -26,7 +26,6 @@ export interface LayoutOrchestrator {
   // Placeholder for layout orchestrator functionality
   triggerLayout?: (config?: LayoutConfig) => Promise<void>;
   getCurrentLayout?: () => LayoutConfig | null;
-  isLayoutInProgress?: () => boolean;
 }
 // ============ Base Component Props ============
 export interface BaseComponentProps {

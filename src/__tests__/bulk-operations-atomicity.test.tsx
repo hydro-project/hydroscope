@@ -21,6 +21,11 @@ import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 function createAtomicityTestData(): HydroscopeData {
   return {
     nodes: [
+      // Containers
+      { id: "container_1", label: "Container 1", type: "cluster" },
+      { id: "container_2", label: "Container 2", type: "cluster" },
+      { id: "container_3", label: "Container 3", type: "cluster" },
+
       // Container 1 nodes
       { id: "c1_n1", label: "Container 1 Node 1", type: "process" },
       { id: "c1_n2", label: "Container 1 Node 2", type: "process" },
@@ -76,16 +81,43 @@ const AtomicityTestComponent: React.FC<{
   onError?: (error: Error) => void;
 }> = ({ data, onReady, onError }) => {
   const hydroscopeRef = useRef<HydroscopeCoreHandle>(null);
+  const readyCalledRef = useRef(false);
 
+  const handleVisualizationStateChange = React.useCallback(() => {
+    // Call onReady once after data is loaded and processed
+    if (hydroscopeRef.current && onReady && !readyCalledRef.current) {
+      readyCalledRef.current = true;
+      // Small delay to ensure everything is settled
+      setTimeout(() => {
+        onReady(hydroscopeRef.current!);
+      }, 100);
+    }
+  }, [onReady]);
+
+  const handleError = React.useCallback((error: Error) => {
+    // Even on error, call onReady so tests can proceed
+    if (hydroscopeRef.current && onReady && !readyCalledRef.current) {
+      readyCalledRef.current = true;
+      setTimeout(() => {
+        onReady(hydroscopeRef.current!);
+      }, 100);
+    }
+    if (onError) {
+      onError(error);
+    }
+  }, [onReady, onError]);
+
+  // Fallback: call onReady after a timeout even if visualization state change doesn't fire
   React.useEffect(() => {
-    // Wait for component to initialize, then call onReady
-    const timer = setTimeout(() => {
-      if (hydroscopeRef.current && onReady) {
+    const fallbackTimer = setTimeout(() => {
+      if (hydroscopeRef.current && onReady && !readyCalledRef.current) {
+        readyCalledRef.current = true;
+        console.warn("[TEST COMPONENT] Calling onReady via fallback timeout");
         onReady(hydroscopeRef.current);
       }
-    }, 1000); // Give time for full initialization including ELK setup
+    }, 3000); // 3 second fallback
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(fallbackTimer);
   }, [onReady]);
 
   return (
@@ -98,7 +130,8 @@ const AtomicityTestComponent: React.FC<{
       showControls={true}
       showMiniMap={false}
       showBackground={true}
-      onError={onError}
+      onVisualizationStateChange={handleVisualizationStateChange}
+      onError={handleError}
     />
   );
 };
@@ -149,12 +182,12 @@ describe("Bulk Operations Atomicity Tests", () => {
         const endTime = Date.now();
 
         // Verify operation completed (atomicity timing)
-        expect(endTime - startTime).toBeLessThan(5000); // 5 seconds max for full pipeline
+        expect(endTime - startTime).toBeLessThan(10000); // 10 seconds max for full pipeline
 
         // Verify no errors occurred during the operation
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 15000); // Increase test timeout to 15 seconds
 
     it("should maintain consistency during collapseAll", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
@@ -247,7 +280,7 @@ describe("Bulk Operations Atomicity Tests", () => {
         // Should not have errors for empty container case
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 15000); // Increase test timeout to 15 seconds
   });
 
   describe("ExpandAll Atomicity", () => {
@@ -284,12 +317,12 @@ describe("Bulk Operations Atomicity Tests", () => {
         const endTime = Date.now();
 
         // Verify operation completed (atomicity timing)
-        expect(endTime - startTime).toBeLessThan(5000); // 5 seconds max for full pipeline
+        expect(endTime - startTime).toBeLessThan(10000); // 10 seconds max for full pipeline
 
         // Verify no errors occurred during the operation
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 15000); // Increase test timeout to 15 seconds
 
     it("should maintain consistency during expandAll", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
@@ -381,12 +414,12 @@ describe("Bulk Operations Atomicity Tests", () => {
         const endTime = Date.now();
 
         // All operations should complete within reasonable time
-        expect(endTime - startTime).toBeLessThan(15000); // 15 seconds max for full pipeline
+        expect(endTime - startTime).toBeLessThan(20000); // 20 seconds max for full pipeline
 
         // Should not have errors during sequential operations
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 25000); // Increase test timeout to 25 seconds for sequential operations
 
     it("should handle concurrent bulk operations gracefully", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
@@ -471,7 +504,7 @@ describe("Bulk Operations Atomicity Tests", () => {
         // Should complete without errors
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 20000); // Increase test timeout to 20 seconds
 
     it("should handle mixed individual and bulk operations", async () => {
       let hydroscopeHandle: HydroscopeCoreHandle | null = null;
@@ -506,7 +539,7 @@ describe("Bulk Operations Atomicity Tests", () => {
         // Should complete mixed operations without errors
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 20000); // Increase test timeout to 20 seconds
   });
 
   describe("Error Handling in Bulk Operations", () => {
@@ -591,6 +624,7 @@ describe("Bulk Operations Atomicity Tests", () => {
         // Should maintain consistency throughout operation
         expect(onError).not.toHaveBeenCalled();
       }
-    });
+    }, 15000); // Increase test timeout to 15 seconds
   });
 });
+

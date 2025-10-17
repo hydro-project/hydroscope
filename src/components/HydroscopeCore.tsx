@@ -764,10 +764,12 @@ const HydroscopeCoreInternal = forwardRef<
         if (
           !state.visualizationState ||
           !state.asyncCoordinator ||
-          !jsonParserRef.current
+          !jsonParserRef.current ||
+          !reactFlowBridgeRef.current ||
+          !elkBridgeRef.current
         ) {
           console.warn(
-            `[HydroscopeCore] Cannot process data: missing core instances`,
+            `[HydroscopeCore] Cannot process data: missing core instances (bridges may not be initialized yet)`,
           );
           return;
         }
@@ -869,7 +871,9 @@ const HydroscopeCoreInternal = forwardRef<
         !data ||
         !state.visualizationState ||
         !state.asyncCoordinator ||
-        !jsonParserRef.current
+        !jsonParserRef.current ||
+        !reactFlowBridgeRef.current ||
+        !elkBridgeRef.current
       ) {
         return;
       }

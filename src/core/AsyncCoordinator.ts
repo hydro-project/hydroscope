@@ -27,6 +27,15 @@ export class AsyncCoordinator {
   private operationIdCounter = 0;
   private interactionHandler?: any;
 
+  // Promise-based operation tracking for queue enforcement
+  private operationPromises: Map<
+    string,
+    {
+      resolve: (value: any) => void;
+      reject: (error: Error) => void;
+    }
+  > = new Map();
+
   // DEPRECATED: Callback to update HydroscopeCore's React state when ReactFlow data changes (replaced by direct state updates)
   public onReactFlowDataUpdate?: (reactFlowData: any) => void;
 
@@ -284,38 +293,94 @@ export class AsyncCoordinator {
     this.queue.push(queuedOp);
     return id;
   }
+
+  /**
+   * Enqueue an operation and return a Promise that resolves when the operation completes
+   * This is the core helper for queue-enforced execution
+   *
+   * @param operationType - Type of operation to enqueue
+   * @param handler - Handler function that performs the actual work
+   * @param options - Queue options (timeout, maxRetries)
+   * @returns Promise that resolves with the operation result or rejects with an error
+   */
+  private async _enqueueAndWait<T>(
+    operationType: QueuedOperation["type"],
+    handler: () => Promise<T>,
+    options: QueueOptions = {},
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      // Enqueue the operation
+      const operationId = this.queueOperation(operationType, handler, options);
+
+      // Store resolver/rejecter for this operation
+      this.operationPromises.set(operationId, { resolve, reject });
+
+      // Start processing if not already running
+      if (!this.processing) {
+        this.processQueue().catch((error) => {
+          // If processQueue itself fails, reject the promise
+          console.error("[AsyncCoordinator] Queue processing failed:", error);
+          reject(error);
+        });
+      }
+    });
+  }
   /**
    * Process all queued operations sequentially
    */
   async processQueue(): Promise<void> {
+    console.log(`[TRACE] processQueue: ENTRY, processing=${this.processing}`);
     if (this.processing) {
+      console.log(`[TRACE] processQueue: Already processing, returning`);
       return;
     }
+    console.log(`[TRACE] processQueue: Starting, queue length=${this.queue.length}`);
     this.processing = true;
     try {
       while (this.queue.length > 0) {
         const operation = this.queue.shift()!;
+        console.log(`[TRACE] processQueue: Processing operation ${operation.type} (ID: ${operation.id})`);
         await this.processOperation(operation);
+        console.log(`[TRACE] processQueue: Completed operation ${operation.type} (ID: ${operation.id})`);
       }
+      console.log(`[TRACE] processQueue: Queue empty, exiting`);
     } finally {
       this.processing = false;
       this.currentOperation = undefined;
+      console.log(`[TRACE] processQueue: Cleanup complete`);
     }
   }
   /**
    * Process a single operation with retry logic and timeout handling
+   * Now includes Promise resolution/rejection for queue-enforced operations
    */
   private async processOperation(operation: QueuedOperation): Promise<void> {
+    console.log(`[TRACE] processOperation: ENTRY for ${operation.type} (ID: ${operation.id})`);
     this.currentOperation = operation;
     operation.startedAt = Date.now();
+
+    // Get Promise handlers for this operation (if it was enqueued via _enqueueAndWait)
+    const promiseHandlers = this.operationPromises.get(operation.id);
+    console.log(`[TRACE] processOperation: Promise handlers ${promiseHandlers ? 'FOUND' : 'NOT FOUND'}`);
+
     while (operation.retryCount <= operation.maxRetries) {
       try {
+        console.log(`[TRACE] processOperation: Executing operation (attempt ${operation.retryCount + 1}/${operation.maxRetries + 1})`);
         const result = await this.executeWithTimeout(operation);
+        console.log(`[TRACE] processOperation: Operation succeeded`);
         // Operation succeeded
         operation.completedAt = Date.now();
         operation.result = result;
         this.completedOperations.push(operation);
         this.recordProcessingTime(operation);
+
+        // Resolve caller's Promise if it exists
+        if (promiseHandlers) {
+          console.log(`[TRACE] processOperation: Resolving promise`);
+          promiseHandlers.resolve(result);
+          this.operationPromises.delete(operation.id);
+        }
+
         return;
       } catch (error) {
         operation.error = error as Error;
@@ -332,6 +397,18 @@ export class AsyncCoordinator {
           console.error(
             `[AsyncCoordinator] 💀 Operation ${operation.id} (${operation.type}) failed permanently after ${operation.retryCount} attempts`,
           );
+
+          // Reject caller's Promise if it exists
+          if (promiseHandlers) {
+            promiseHandlers.reject(
+              operation.error ||
+                new Error(
+                  `Operation ${operation.id} (${operation.type}) failed after ${operation.retryCount} attempts`,
+                ),
+            );
+            this.operationPromises.delete(operation.id);
+          }
+
           return;
         }
         await new Promise((resolve) =>
@@ -344,24 +421,33 @@ export class AsyncCoordinator {
    * Execute operation with timeout if specified
    */
   private async executeWithTimeout(operation: QueuedOperation): Promise<any> {
+    console.log(`[TRACE] executeWithTimeout: ENTRY for ${operation.type}, timeout=${operation.timeout}`);
     if (!operation.timeout) {
-      return await operation.operation();
+      console.log(`[TRACE] executeWithTimeout: No timeout, executing directly`);
+      const result = await operation.operation();
+      console.log(`[TRACE] executeWithTimeout: Operation completed (no timeout)`);
+      return result;
     }
+    console.log(`[TRACE] executeWithTimeout: Setting up timeout of ${operation.timeout}ms`);
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
+        console.log(`[TRACE] executeWithTimeout: TIMEOUT FIRED for ${operation.type}`);
         reject(
           new Error(
             `Operation ${operation.id} timed out after ${operation.timeout}ms`,
           ),
         );
       }, operation.timeout);
+      console.log(`[TRACE] executeWithTimeout: Calling operation.operation()`);
       operation
         .operation()
         .then((result) => {
+          console.log(`[TRACE] executeWithTimeout: Operation completed successfully`);
           clearTimeout(timeoutId);
           resolve(result);
         })
         .catch((error) => {
+          console.log(`[TRACE] executeWithTimeout: Operation failed with error:`, error.message);
           clearTimeout(timeoutId);
           reject(error);
         });
@@ -404,8 +490,22 @@ export class AsyncCoordinator {
   }
   /**
    * Clear all queued operations
+   * Also rejects any pending Promises to prevent memory leaks
    */
   clearQueue(): void {
+    // Reject all pending Promises for queued operations
+    for (const operation of this.queue) {
+      const promiseHandlers = this.operationPromises.get(operation.id);
+      if (promiseHandlers) {
+        promiseHandlers.reject(
+          new Error(
+            `Operation ${operation.id} (${operation.type}) was cancelled due to queue clear`,
+          ),
+        );
+        this.operationPromises.delete(operation.id);
+      }
+    }
+
     this.queue = [];
   }
   /**
@@ -649,22 +749,66 @@ export class AsyncCoordinator {
       onVisualizationStateChange?: (state: any) => void;
     } = {},
   ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "process_data_change",
+      () =>
+        this._handleProcessDataChange(
+          newData,
+          visualizationState,
+          jsonParser,
+          reason,
+          options,
+        ),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for data processing pipeline
+   * This method contains the actual implementation and is called by the queue system
+   *
+   * @param newData - The new HydroscopeData to process
+   * @param visualizationState - The VisualizationState instance to update
+   * @param jsonParser - The JSONParser instance for data parsing
+   * @param reason - The reason for data processing (for logging and debugging)
+   * @param options - Pipeline execution options
+   * @returns Promise<ReactFlowData> when complete pipeline is finished
+   */
+  private async _handleProcessDataChange(
+    newData: any, // HydroscopeData - using any to avoid circular dependency
+    visualizationState: any, // VisualizationState - using any to avoid circular dependency
+    jsonParser: any, // JSONParser - using any to avoid circular dependency
+    reason: "initial_load" | "file_load" | "hierarchy_change" | "remount",
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      validateData?: (data: any) => void;
+      onVisualizationStateChange?: (state: any) => void;
+    } = {},
+  ): Promise<any> {
     // ReactFlowData
+    console.log(`[TRACE] _handleProcessDataChange: ENTRY for reason=${reason}`);
     const startTime = Date.now();
 
     try {
+      console.log(`[TRACE] _handleProcessDataChange: Starting pipeline`);
       hscopeLogger.log(
         "coordinator",
         `🚀 AsyncCoordinator: Starting unified data processing pipeline: ${reason}`,
       );
 
       // Validate data structure if validator provided
+      console.log(`[TRACE] _handleProcessDataChange: Validating data`);
       if (options.validateData) {
         options.validateData(newData);
       }
 
       // CRITICAL: Reset layout state for ALL data changes to enable smart collapse
       // This ensures smart collapse runs on first layout after any data change
+      console.log(`[TRACE] _handleProcessDataChange: Resetting layout state`);
       if (typeof visualizationState.resetLayoutState === "function") {
         visualizationState.resetLayoutState();
         hscopeLogger.log(
@@ -678,6 +822,7 @@ export class AsyncCoordinator {
       }
 
       // Parse JSON data into the VisualizationState
+      console.log(`[TRACE] _handleProcessDataChange: Parsing JSON data`);
       if (typeof jsonParser.parseData !== "function") {
         throw new Error("JSONParser.parseData method not available");
       }
@@ -686,6 +831,7 @@ export class AsyncCoordinator {
         newData,
         visualizationState,
       );
+      console.log(`[TRACE] _handleProcessDataChange: JSON parsing complete`);
 
       // Log any warnings from parsing
       if (parseResult.warnings && parseResult.warnings.length > 0) {
@@ -718,12 +864,15 @@ export class AsyncCoordinator {
       }
 
       // Notify about visualization state change
+      console.log(`[TRACE] _handleProcessDataChange: Notifying visualization state change`);
       if (options.onVisualizationStateChange) {
         options.onVisualizationStateChange(visualizationState);
       }
 
       // Execute complete pipeline: layout + render + fitView
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(
+      // IMPORTANT: Call the handler directly to avoid deadlock (we're already in the queue)
+      console.log(`[TRACE] _handleProcessDataChange: About to call _handleLayoutAndRenderPipeline directly`);
+      const reactFlowData = await this._handleLayoutAndRenderPipeline(
         visualizationState,
         {
           relayoutEntities: undefined, // Full layout for data changes
@@ -731,6 +880,7 @@ export class AsyncCoordinator {
           fitViewOptions: options.fitViewOptions,
         },
       );
+      console.log(`[TRACE] _handleProcessDataChange: _handleLayoutAndRenderPipeline completed`);
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -792,6 +942,40 @@ export class AsyncCoordinator {
     options: {
       fitView?: boolean;
       fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "dimension_change_with_remount",
+      () =>
+        this._handleProcessDimensionChangeWithRemount(
+          visualizationState,
+          onRemount,
+          options,
+        ),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for dimension change with remount
+   * This method contains the actual implementation and is called by the queue system
+   *
+   * @param visualizationState - The VisualizationState with updated dimensions
+   * @param onRemount - Callback to trigger ReactFlow remount (e.g., forceReactFlowRemount)
+   * @param options - Pipeline execution options
+   * @returns Promise that resolves after remount is triggered
+   */
+  private async _handleProcessDimensionChangeWithRemount(
+    visualizationState: any,
+    onRemount: () => void,
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
     } = {},
   ): Promise<void> {
     const startTime = Date.now();
@@ -859,6 +1043,41 @@ export class AsyncCoordinator {
       relayoutEntities?: string[];
       fitView?: boolean;
       fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "layout_and_render_with_remount",
+      () =>
+        this._handleExecuteLayoutAndRenderWithRemount(
+          visualizationState,
+          forceRemountCallback,
+          options,
+        ),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for layout and render pipeline with remount
+   * This method contains the actual implementation and is called by the queue system
+   *
+   * @param visualizationState - VisualizationState instance
+   * @param forceRemountCallback - Callback to force ReactFlow remount
+   * @param options - Pipeline execution options
+   * @returns Promise that resolves after ReactFlow remount
+   */
+  private async _handleExecuteLayoutAndRenderWithRemount(
+    visualizationState: any,
+    forceRemountCallback: () => void,
+    options: {
+      relayoutEntities?: string[];
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
     } = {},
   ): Promise<void> {
     hscopeLogger.log(
@@ -910,7 +1129,6 @@ export class AsyncCoordinator {
    * This method returns a Promise but ensures atomic execution of the complete pipeline.
    *
    * @param state - VisualizationState instance
-   * @param elkBridge - ELKBridge instance
    * @param options - Pipeline execution options
    * @returns Promise<ReactFlowData> when complete pipeline is finished (including FitView if enabled)
    */
@@ -929,7 +1147,39 @@ export class AsyncCoordinator {
       maxRetries?: number;
     } = {},
   ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "layout_and_render_pipeline",
+      () => this._handleLayoutAndRenderPipeline(state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for layout and render pipeline
+   * This method contains the actual implementation and is called by the queue system
+   *
+   * @param state - VisualizationState instance
+   * @param options - Pipeline execution options
+   * @returns Promise<ReactFlowData> when complete pipeline is finished (including FitView if enabled)
+   */
+  private async _handleLayoutAndRenderPipeline(
+    state: any, // VisualizationState - using any to avoid circular dependency
+    options: {
+      // Layout control - which entities need re-layout
+      relayoutEntities?: string[]; // undefined = full layout, [] = no layout, [ids] = constrained
+
+      // FitView control - handled internally, no callbacks needed
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+
+      // Standard options
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any> {
     // ReactFlowData
+    console.log(`[TRACE] _handleLayoutAndRenderPipeline: ENTRY`);
     const startTime = Date.now();
     const performanceMetrics = {
       stateChangeDetection: 0,
@@ -939,6 +1189,7 @@ export class AsyncCoordinator {
     };
 
     // Validate required parameters - FAIL FAST with clear messages
+    console.log(`[TRACE] _handleLayoutAndRenderPipeline: Validating state`);
     if (!state) {
       throw new Error(
         "VisualizationState instance is required for layout and render pipeline",
@@ -946,11 +1197,13 @@ export class AsyncCoordinator {
     }
 
     // Use the ELK bridge instance set via setBridgeInstances
+    console.log(`[TRACE] _handleLayoutAndRenderPipeline: Checking ELK bridge`);
     if (!this.elkBridge) {
       throw new Error(
         "ELK bridge is not available - ensure setBridgeInstances was called",
       );
     }
+    console.log(`[TRACE] _handleLayoutAndRenderPipeline: ELK bridge available`);
     const elkBridge = this.elkBridge;
 
     try {
@@ -1001,12 +1254,14 @@ export class AsyncCoordinator {
       }
 
       // Step 1: Execute ELK layout if needed - FAIL FAST on errors
+      console.log(`[TRACE] _handleLayoutAndRenderPipeline: Starting layout step`);
       const layoutStart = Date.now();
       if (
         options.relayoutEntities !== undefined &&
         options.relayoutEntities.length === 0
       ) {
         // Skip layout - relayoutEntities is empty array
+        console.log(`[TRACE] _handleLayoutAndRenderPipeline: Skipping layout - empty relayoutEntities`);
         hscopeLogger.log(
           "coordinator",
           "[AsyncCoordinator] ⏭️ Skipping ELK layout - no entities to re-layout",
@@ -1014,6 +1269,7 @@ export class AsyncCoordinator {
         performanceMetrics.layoutSkipped = true;
       } else if (shouldSkipLayout) {
         // Skip layout - state hasn't changed meaningfully
+        console.log(`[TRACE] _handleLayoutAndRenderPipeline: Skipping layout - no state changes`);
         hscopeLogger.log(
           "coordinator",
           "[AsyncCoordinator] ⚡ Skipping ELK layout - no meaningful state changes detected",
@@ -1021,6 +1277,7 @@ export class AsyncCoordinator {
         performanceMetrics.layoutSkipped = true;
       } else {
         // Execute layout (async but atomic within this pipeline) - NO ERROR SUPPRESSION
+        console.log(`[TRACE] _handleLayoutAndRenderPipeline: Executing ELK layout`);
         if (!this.elkBridge) {
           throw new Error("ELK bridge not available for layout execution");
         }
@@ -1029,11 +1286,13 @@ export class AsyncCoordinator {
           elkBridgeType: typeof elkBridge,
           relayoutEntities: options.relayoutEntities,
         });
+        console.log(`[TRACE] _handleLayoutAndRenderPipeline: About to call executeELKLayoutAsync`);
         await this.executeELKLayoutAsync(
           state,
           elkBridge,
           options.relayoutEntities,
         );
+        console.log(`[TRACE] _handleLayoutAndRenderPipeline: executeELKLayoutAsync completed`);
         performanceMetrics.layoutDuration = Date.now() - layoutStart;
         hscopeLogger.log(
           "coordinator",
@@ -1045,8 +1304,10 @@ export class AsyncCoordinator {
       }
 
       // Step 2: Generate ReactFlow data imperatively - FAIL FAST on errors
+      console.log(`[TRACE] _handleLayoutAndRenderPipeline: Generating ReactFlow data`);
       const renderStart = Date.now();
       const reactFlowData = this.generateReactFlowDataImperative(state);
+      console.log(`[TRACE] _handleLayoutAndRenderPipeline: ReactFlow data generated`);
       performanceMetrics.renderDuration = Date.now() - renderStart;
 
       hscopeLogger.log(
@@ -1096,11 +1357,18 @@ export class AsyncCoordinator {
                 "[AsyncCoordinator] 🎯 Executing post-render fitView",
                 fitViewOptions,
               );
-              this.reactFlowInstance.fitView(fitViewOptions);
-              hscopeLogger.log(
-                "coordinator",
-                "[AsyncCoordinator] ✅ FitView completed",
-              );
+              if (this.reactFlowInstance && typeof this.reactFlowInstance.fitView === 'function') {
+                this.reactFlowInstance.fitView(fitViewOptions);
+                hscopeLogger.log(
+                  "coordinator",
+                  "[AsyncCoordinator] ✅ FitView completed",
+                );
+              } else {
+                hscopeLogger.log(
+                  "coordinator",
+                  "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
+                );
+              }
             });
             hscopeLogger.log(
               "coordinator",
@@ -1170,9 +1438,11 @@ export class AsyncCoordinator {
     elkBridge: any, // ELKBridge instance
     relayoutEntities?: string[], // undefined = full, [] = none, [ids] = constrained
   ): Promise<void> {
+    console.log(`[TRACE] executeELKLayoutAsync: ENTRY`);
     const startTime = Date.now();
 
     try {
+      console.log(`[TRACE] executeELKLayoutAsync: Logging start`);
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] 🎯 Starting ELK layout execution",
@@ -1185,11 +1455,13 @@ export class AsyncCoordinator {
       );
 
       // Set layout phase to indicate processing
+      console.log(`[TRACE] executeELKLayoutAsync: Setting layout phase`);
       if (state && typeof state.setLayoutPhase === "function") {
         state.setLayoutPhase("laying_out");
       }
 
       // Validate ELK bridge availability
+      console.log(`[TRACE] executeELKLayoutAsync: Validating ELK bridge`);
       if (!elkBridge) {
         throw new Error("ELKBridge instance is required for layout operations");
       }
@@ -1199,19 +1471,24 @@ export class AsyncCoordinator {
       }
 
       // Execute ELK layout calculation with timeout protection
+      console.log(`[TRACE] executeELKLayoutAsync: Creating layout promise`);
       const layoutPromise = elkBridge.layout(state, relayoutEntities);
+      console.log(`[TRACE] executeELKLayoutAsync: Layout promise created`);
       const timeoutMs = 15000; // 15 second timeout for layout operations
 
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
+          console.log(`[TRACE] executeELKLayoutAsync: TIMEOUT after ${timeoutMs}ms`);
           reject(
             new Error(`ELK layout operation timed out after ${timeoutMs}ms`),
           );
         }, timeoutMs);
       });
 
+      console.log(`[TRACE] executeELKLayoutAsync: Waiting for layout to complete (with ${timeoutMs}ms timeout)`);
       // Race between layout completion and timeout
       await Promise.race([layoutPromise, timeoutPromise]);
+      
 
       // Increment layout count for smart collapse logic
       if (state && typeof state.incrementLayoutCount === "function") {
@@ -1421,45 +1698,32 @@ export class AsyncCoordinator {
     updates: any, // RenderConfig updates
     options: QueueOptions = {},
   ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const operation = async () => {
-        try {
-          // Update the render config in VisualizationState
-          state.updateRenderConfig(updates);
-          // Use direct ReactFlowBridge instance (must be set via setBridgeInstances)
-          if (!this.reactFlowBridge) {
-            throw new Error(
-              "ReactFlowBridge instance not available - call setBridgeInstances() first",
-            );
-          }
-          const reactFlowBridge = this.reactFlowBridge;
-          // Generate new ReactFlow data with updated config
-          const reactFlowData = reactFlowBridge.toReactFlowData(
-            state,
-            this.interactionHandler,
-            this.renderOptions,
+    // Queue-enforced execution using _enqueueAndWait pattern
+    return this._enqueueAndWait(
+      "render_config_update",
+      async () => {
+        // Update the render config in VisualizationState
+        state.updateRenderConfig(updates);
+        // Use direct ReactFlowBridge instance (must be set via setBridgeInstances)
+        if (!this.reactFlowBridge) {
+          throw new Error(
+            "ReactFlowBridge instance not available - call setBridgeInstances() first",
           );
-          resolve(reactFlowData);
-          return reactFlowData;
-        } catch (error) {
-          console.error(
-            `[AsyncCoordinator] ❌ Render config update failed:`,
-            error,
-          );
-          reject(error);
-          throw error;
         }
-      };
-      // Queue the operation
-      this.queueOperation("render_config_update", operation, {
+        const reactFlowBridge = this.reactFlowBridge;
+        // Generate new ReactFlow data with updated config
+        const reactFlowData = reactFlowBridge.toReactFlowData(
+          state,
+          this.interactionHandler,
+          this.renderOptions,
+        );
+        return reactFlowData;
+      },
+      {
         timeout: options.timeout || 3000, // 3 second default timeout
         maxRetries: options.maxRetries || 1,
-      });
-      // Process the queue if not already processing
-      if (!this.processing) {
-        this.processQueue().catch(reject);
-      }
-    });
+      },
+    );
   }
   /**
    * Process state change synchronously (private method)
@@ -1917,6 +2181,31 @@ export class AsyncCoordinator {
       triggerLayout?: boolean; // Backward compatibility (ignored)
     } = {},
   ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "expand_container_with_ancestors",
+      () =>
+        this._handleExpandContainerWithAncestors(containerId, state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for expand container with ancestors operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleExpandContainerWithAncestors(
+    containerId: string,
+    state: any, // VisualizationState
+    options: {
+      relayoutEntities?: string[]; // Layout control
+      fitView?: boolean; // FitView control
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      triggerLayout?: boolean; // Backward compatibility (ignored)
+    } = {},
+  ): Promise<any> {
     // Get collapsed ancestors
     const collapsedAncestors: string[] = [];
     let currentId = state.getContainerParent?.(containerId);
@@ -1929,17 +2218,17 @@ export class AsyncCoordinator {
       currentId = state.getContainerParent?.(currentId);
     }
 
-    // If there are collapsed ancestors, use expandContainers
+    // If there are collapsed ancestors, use expandContainers handler
     // which handles hierarchical ordering properly
     if (collapsedAncestors.length > 0) {
-      return this.expandContainers(
+      return this._handleExpandContainers(
         state,
         [...collapsedAncestors, containerId],
         options,
       );
     } else {
-      // No collapsed ancestors, use single container expand
-      return this.expandContainer(containerId, state, options);
+      // No collapsed ancestors, use single container expand handler
+      return this._handleExpandContainer(containerId, state, options);
     }
   }
 
@@ -1951,6 +2240,30 @@ export class AsyncCoordinator {
    * use expandContainerWithAncestors() instead to avoid invariant violations.
    */
   async expandContainer(
+    containerId: string,
+    state: any, // VisualizationState
+    options: {
+      relayoutEntities?: string[]; // Layout control
+      fitView?: boolean; // FitView control
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      triggerLayout?: boolean; // Backward compatibility (ignored)
+    } = {},
+  ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "expand_container",
+      () => this._handleExpandContainer(containerId, state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for expand container operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleExpandContainer(
     containerId: string,
     state: any, // VisualizationState
     options: {
@@ -2026,7 +2339,8 @@ export class AsyncCoordinator {
       }
 
       // Use enhanced pipeline for layout and render with graceful error handling
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
+      // Call private handler directly to avoid queue deadlock
+      const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: options.relayoutEntities, // Pass through as-is (undefined = full layout)
         fitView: options.fitView,
         fitViewOptions: options.fitViewOptions,
@@ -2080,6 +2394,30 @@ export class AsyncCoordinator {
    * Returns ReactFlowData when complete pipeline is finished
    */
   async collapseContainer(
+    containerId: string,
+    state: any, // VisualizationState
+    options: {
+      relayoutEntities?: string[]; // Layout control
+      fitView?: boolean; // FitView control
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      triggerLayout?: boolean; // Backward compatibility (ignored)
+    } = {},
+  ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "collapse_container",
+      () => this._handleCollapseContainer(containerId, state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for collapse container operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleCollapseContainer(
     containerId: string,
     state: any, // VisualizationState
     options: {
@@ -2154,7 +2492,8 @@ export class AsyncCoordinator {
       }
 
       // Use enhanced pipeline for layout and render with graceful error handling
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
+      // Call private handler directly to avoid queue deadlock
+      const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: options.relayoutEntities, // Pass through as-is (undefined = full layout)
         fitView: options.fitView,
         fitViewOptions: options.fitViewOptions,
@@ -2202,6 +2541,45 @@ export class AsyncCoordinator {
    * Returns ReactFlowData when complete pipeline is finished
    */
   async expandContainers(
+    state: any, // VisualizationState
+    containerIdsOrOptions?:
+      | string[]
+      | {
+          relayoutEntities?: string[]; // Layout control
+          fitView?: boolean; // FitView control
+          fitViewOptions?: { padding?: number; duration?: number };
+          timeout?: number;
+          maxRetries?: number;
+          triggerLayout?: boolean; // Backward compatibility (ignored)
+        },
+    options: {
+      relayoutEntities?: string[]; // Layout control
+      fitView?: boolean; // FitView control
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      triggerLayout?: boolean; // Backward compatibility (ignored)
+    } = {},
+  ): Promise<any> {
+    // Handle backward compatibility - if second parameter is options object, use it
+    let actualOptions = options;
+    if (containerIdsOrOptions && !Array.isArray(containerIdsOrOptions)) {
+      actualOptions = containerIdsOrOptions;
+    }
+
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "expand_containers",
+      () => this._handleExpandContainers(state, containerIdsOrOptions, options),
+      { timeout: actualOptions.timeout, maxRetries: actualOptions.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for expand all containers operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleExpandContainers(
     state: any, // VisualizationState
     containerIdsOrOptions?:
       | string[]
@@ -2302,7 +2680,8 @@ export class AsyncCoordinator {
       }
 
       // Use enhanced pipeline for layout and render (full layout for expand all)
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
+      // Call private handler directly to avoid queue deadlock
+      const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: actualOptions.relayoutEntities, // undefined = full layout for expand all
         fitView: actualOptions.fitView,
         fitViewOptions: actualOptions.fitViewOptions,
@@ -2352,6 +2731,46 @@ export class AsyncCoordinator {
    * Returns ReactFlowData when complete pipeline is finished
    */
   async collapseContainers(
+    state: any, // VisualizationState
+    containerIdsOrOptions?:
+      | string[]
+      | {
+          relayoutEntities?: string[]; // Layout control
+          fitView?: boolean; // FitView control
+          fitViewOptions?: { padding?: number; duration?: number };
+          timeout?: number;
+          maxRetries?: number;
+          triggerLayout?: boolean; // Backward compatibility (ignored)
+        },
+    options: {
+      relayoutEntities?: string[]; // Layout control
+      fitView?: boolean; // FitView control
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+      triggerLayout?: boolean; // Backward compatibility (ignored)
+    } = {},
+  ): Promise<any> {
+    // Handle backward compatibility - if second parameter is options object, use it
+    let actualOptions = options;
+    if (containerIdsOrOptions && !Array.isArray(containerIdsOrOptions)) {
+      actualOptions = containerIdsOrOptions;
+    }
+
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "collapse_containers",
+      () =>
+        this._handleCollapseContainers(state, containerIdsOrOptions, options),
+      { timeout: actualOptions.timeout, maxRetries: actualOptions.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for collapse all containers operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleCollapseContainers(
     state: any, // VisualizationState
     containerIdsOrOptions?:
       | string[]
@@ -2496,7 +2915,8 @@ export class AsyncCoordinator {
       );
 
       // Use enhanced pipeline for layout and render (full layout for collapse all)
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
+      // Call private handler directly to avoid queue deadlock
+      const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: actualOptions.relayoutEntities, // undefined = full layout for collapse all
         fitView: actualOptions.fitView,
         fitViewOptions: actualOptions.fitViewOptions,
@@ -2632,19 +3052,67 @@ export class AsyncCoordinator {
     visualizationState: any, // VisualizationState
     reactFlowInstance?: any,
   ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "navigate_to_element",
+      () =>
+        this._handleNavigateToElement(
+          elementId,
+          visualizationState,
+          reactFlowInstance,
+        ),
+      {},
+    );
+  }
+
+  /**
+   * Private handler for navigate to element
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleNavigateToElement(
+    elementId: string,
+    visualizationState: any, // VisualizationState
+    reactFlowInstance?: any,
+  ): Promise<void> {
     // Set navigation selection in state
     if (visualizationState.navigateToElement) {
       visualizationState.navigateToElement(elementId);
     }
     // Focus viewport if ReactFlow instance is provided
     if (reactFlowInstance) {
-      await this.focusViewportOnElement(elementId, reactFlowInstance);
+      await this._handleFocusViewportOnElement(elementId, reactFlowInstance);
     }
   }
   /**
    * Focus viewport on element
    */
   async focusViewportOnElement(
+    elementId: string,
+    reactFlowInstance: any,
+    options?: {
+      zoom?: number;
+      duration?: number;
+      visualizationState?: any;
+    },
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "focus_viewport_on_element",
+      () =>
+        this._handleFocusViewportOnElement(
+          elementId,
+          reactFlowInstance,
+          options,
+        ),
+      {},
+    );
+  }
+
+  /**
+   * Private handler for focus viewport on element
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleFocusViewportOnElement(
     elementId: string,
     reactFlowInstance: any,
     options?: {
@@ -3047,6 +3515,34 @@ export class AsyncCoordinator {
       maxRetries?: number;
     } = {},
   ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "update_search_results",
+      () => this._handleUpdateSearchResults(query, state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for search update operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleUpdateSearchResults(
+    query: string,
+    state: any, // VisualizationState
+    options: {
+      // Container expansion control - whether search triggers container expansion (requires layout)
+      expandContainers?: boolean;
+
+      // FitView control - handled internally, no callbacks needed
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+
+      // Standard options
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any> {
     // ReactFlowData
     const startTime = Date.now();
 
@@ -3221,6 +3717,27 @@ export class AsyncCoordinator {
       maxRetries?: number;
     } = {},
   ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "clear_search",
+      () => this._handleClearSearch(state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for search clear operation
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleClearSearch(
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any> {
     const startTime = Date.now();
 
     try {
@@ -3364,47 +3881,35 @@ export class AsyncCoordinator {
     onDataUpdate: (updatedData: any) => void,
     options: QueueOptions = {},
   ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const operation = async () => {
-        try {
-          // Re-parse the data with the new grouping
-          // Create a deep copy to ensure reference change detection works
-          const updatedData = JSON.parse(JSON.stringify(data));
-          // Move the selected hierarchy to the front so it becomes the active one
-          if (updatedData.hierarchyChoices) {
-            const selectedChoice = updatedData.hierarchyChoices.find(
-              (choice: any) => choice.id === groupingId,
-            );
-            const otherChoices = updatedData.hierarchyChoices.filter(
-              (choice: any) => choice.id !== groupingId,
-            );
-            if (selectedChoice) {
-              updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
-            }
-          }
-          // Update the data through the callback
-          onDataUpdate(updatedData);
-          resolve();
-          return "hierarchy_change_complete";
-        } catch (error) {
-          console.error(
-            `[AsyncCoordinator] ❌ Hierarchy change to ${groupingId} failed:`,
-            error,
+    // Queue-enforced execution using _enqueueAndWait pattern
+    return this._enqueueAndWait(
+      "hierarchy_change",
+      async () => {
+        // Re-parse the data with the new grouping
+        // Create a deep copy to ensure reference change detection works
+        const updatedData = JSON.parse(JSON.stringify(data));
+        // Move the selected hierarchy to the front so it becomes the active one
+        if (updatedData.hierarchyChoices) {
+          const selectedChoice = updatedData.hierarchyChoices.find(
+            (choice: any) => choice.id === groupingId,
           );
-          reject(error);
-          throw error;
+          const otherChoices = updatedData.hierarchyChoices.filter(
+            (choice: any) => choice.id !== groupingId,
+          );
+          if (selectedChoice) {
+            updatedData.hierarchyChoices = [selectedChoice, ...otherChoices];
+          }
         }
-      };
-      // Queue the operation
-      this.queueOperation("hierarchy_change", operation, {
+        // Update the data through the callback
+        onDataUpdate(updatedData);
+        // Return void as per Promise<void> signature
+        return;
+      },
+      {
         timeout: options.timeout || 5000, // 5 second default timeout
         maxRetries: options.maxRetries || 1,
-      });
-      // Process the queue if not already processing
-      if (!this.processing) {
-        this.processQueue().catch(reject);
-      }
-    });
+      },
+    );
   }
   /**
    * Unified render config update pipeline
@@ -3416,6 +3921,49 @@ export class AsyncCoordinator {
    * @returns Promise<ReactFlowData> when complete pipeline is finished
    */
   async updateRenderConfig(
+    visualizationState: any, // VisualizationState - using any to avoid circular dependency
+    configUpdates: {
+      layoutAlgorithm?: string;
+      edgeStyle?: string;
+      edgeWidth?: number;
+      edgeDashed?: boolean;
+      nodePadding?: number;
+      nodeFontSize?: number;
+      containerBorderWidth?: number;
+      colorPalette?: string;
+      [key: string]: any; // Allow other config properties
+    },
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      relayoutEntities?: string[]; // For targeted re-layout
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "update_render_config",
+      () =>
+        this._handleUpdateRenderConfig(
+          visualizationState,
+          configUpdates,
+          options,
+        ),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for render config update pipeline
+   * This method contains the actual implementation and is called by the queue system
+   *
+   * @param visualizationState - The VisualizationState instance to update
+   * @param configUpdates - The configuration updates to apply
+   * @param options - Pipeline execution options
+   * @returns Promise<ReactFlowData> when complete pipeline is finished
+   */
+  private async _handleUpdateRenderConfig(
     visualizationState: any, // VisualizationState - using any to avoid circular dependency
     configUpdates: {
       layoutAlgorithm?: string;
@@ -3656,6 +4204,34 @@ export class AsyncCoordinator {
    * @returns Promise<ReactFlowData> when complete pipeline is finished
    */
   async executeSearchPipeline(
+    visualizationState: any, // VisualizationState - using any to avoid circular dependency
+    searchQuery: string | null,
+    options: {
+      expandContainersOnSearch?: boolean;
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "execute_search_pipeline",
+      () =>
+        this._handleExecuteSearchPipeline(
+          visualizationState,
+          searchQuery,
+          options,
+        ),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Private handler for search pipeline execution
+   * This method contains the actual implementation and is called by the queue system
+   */
+  private async _handleExecuteSearchPipeline(
     visualizationState: any, // VisualizationState - using any to avoid circular dependency
     searchQuery: string | null,
     options: {
