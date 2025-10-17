@@ -14,11 +14,7 @@ import { NAVIGATION_TIMING } from "../shared/config.js";
 
 // Type for ReactFlow instance - avoiding full import
 interface ReactFlowInstance {
-  fitView: (options?: {
-    padding?: number;
-    duration?: number;
-    includeHiddenNodes?: boolean;
-  }) => void;
+  fitView: (options?: FitViewOptions) => void;
   getViewport: () => { x: number; y: number; zoom: number };
   setViewport: (viewport: { x: number; y: number; zoom: number }) => void;
   getNodes: () => unknown[];
@@ -27,6 +23,13 @@ interface ReactFlowInstance {
 
 // Type for React setState - using unknown for maximum compatibility with React's types
 type ReactStateSetter = (updater: (prev: unknown) => unknown) => void;
+
+// Type for fitView options
+interface FitViewOptions {
+  padding?: number;
+  duration?: number;
+  includeHiddenNodes?: boolean;
+}
 
 interface ErrorRecoveryResult {
   success: boolean;
@@ -660,7 +663,7 @@ export class AsyncCoordinator {
     reason: "initial_load" | "file_load" | "hierarchy_change" | "remount",
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       validateData?: (data: any) => void;
@@ -809,7 +812,7 @@ export class AsyncCoordinator {
     onRemount: () => void,
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
     } = {},
   ): Promise<void> {
     const startTime = Date.now();
@@ -876,7 +879,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[];
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
     } = {},
   ): Promise<void> {
     hscopeLogger.log(
@@ -940,7 +943,7 @@ export class AsyncCoordinator {
 
       // FitView control - handled internally, no callbacks needed
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
 
       // Standard options
       timeout?: number;
@@ -1929,7 +1932,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -1974,7 +1977,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2103,7 +2106,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2226,7 +2229,7 @@ export class AsyncCoordinator {
       | {
           relayoutEntities?: string[]; // Layout control
           fitView?: boolean; // FitView control
-          fitViewOptions?: { padding?: number; duration?: number };
+          fitViewOptions?: FitViewOptions;
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2234,7 +2237,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2376,7 +2379,7 @@ export class AsyncCoordinator {
       | {
           relayoutEntities?: string[]; // Layout control
           fitView?: boolean; // FitView control
-          fitViewOptions?: { padding?: number; duration?: number };
+          fitViewOptions?: FitViewOptions;
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -2384,7 +2387,7 @@ export class AsyncCoordinator {
     options: {
       relayoutEntities?: string[]; // Layout control
       fitView?: boolean; // FitView control
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
@@ -3058,7 +3061,7 @@ export class AsyncCoordinator {
 
       // FitView control - handled internally, no callbacks needed
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
 
       // Standard options
       timeout?: number;
@@ -3234,7 +3237,7 @@ export class AsyncCoordinator {
     state: any, // VisualizationState
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -3448,7 +3451,7 @@ export class AsyncCoordinator {
     },
     options: {
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       relayoutEntities?: string[]; // For targeted re-layout
       timeout?: number;
       maxRetries?: number;
@@ -3679,7 +3682,7 @@ export class AsyncCoordinator {
     options: {
       expandContainersOnSearch?: boolean;
       fitView?: boolean;
-      fitViewOptions?: { padding?: number; duration?: number };
+      fitViewOptions?: FitViewOptions;
       timeout?: number;
       maxRetries?: number;
     } = {},
@@ -3935,7 +3938,7 @@ export class AsyncCoordinator {
    * Deterministic FitView execution check - no optimizations that could cause zoom issues
    */
   private _shouldExecuteFitView(
-    _fitViewOptions?: { padding?: number; duration?: number },
+    _fitViewOptions?: FitViewOptions,
     reactFlowData?: any,
   ): {
     shouldExecute: boolean;

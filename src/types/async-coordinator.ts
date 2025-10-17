@@ -107,7 +107,7 @@ export type { ReactFlowData, ReactFlowNode, ReactFlowEdge } from "./core.js";
 export interface PipelineOptions {
   relayoutEntities?: string[];
   fitView?: boolean;
-  fitViewOptions?: { padding?: number; duration?: number };
+  fitViewOptions?: { padding?: number; duration?: number; includeHiddenNodes?: boolean };
   timeout?: number;
   maxRetries?: number;
 }
@@ -115,7 +115,7 @@ export interface PipelineOptions {
 export interface ContainerOperationOptions {
   relayoutEntities?: string[];
   fitView?: boolean;
-  fitViewOptions?: { padding?: number; duration?: number };
+  fitViewOptions?: { padding?: number; duration?: number; includeHiddenNodes?: boolean };
   timeout?: number;
   maxRetries?: number;
 }
