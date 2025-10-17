@@ -25,6 +25,7 @@ pnpm-debug.log*
 .vscode/settings.json
 .vscode/launch.json
 .idea/
+.kiro/
 *.swp
 *.swo
 *~
