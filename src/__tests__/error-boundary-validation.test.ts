@@ -129,14 +129,14 @@ describe("Error Boundary Validation", () => {
       const asyncCoordinator = new AsyncCoordinator();
       const visualizationState = new VisualizationState();
 
-      // Test with invalid ELKBridge to trigger error
-      const invalidElkBridge = null;
+      // Test without setting bridge instances to trigger error
+      // Don't call setBridgeInstances, so ELK bridge will be null
 
       await expect(
-        asyncCoordinator.executeLayoutAndRenderPipeline(
-          visualizationState,
-          invalidElkBridge,
-        ),
+        asyncCoordinator.executeLayoutAndRenderPipeline(visualizationState, {
+          relayoutEntities: undefined,
+          fitView: false,
+        }),
       ).rejects.toThrow("ELK bridge is not available");
 
       // Coordinator should remain functional after error

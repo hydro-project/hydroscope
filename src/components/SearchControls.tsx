@@ -170,8 +170,12 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             // Execute navigation synchronously (respecting core architecture)
             onNavigate(direction, result);
             // Enhanced navigation with SearchResult if available
-            if (onResultNavigation && searchResults && searchResults[index]) {
-              onResultNavigation(searchResults[index]);
+            if (onResultNavigation && searchResults) {
+              // Find the corresponding SearchResult by ID, not by index!
+              const searchResult = searchResults.find((sr) => sr.id === result.id);
+              if (searchResult) {
+                onResultNavigation(searchResult);
+              }
             }
             // Announce navigation
             announceToScreenReader(

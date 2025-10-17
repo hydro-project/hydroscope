@@ -1014,8 +1014,13 @@ export const Hydroscope = memo<HydroscopeProps>(
 
                     if (containersToExpand.size > 0) {
                       // Expand only the necessary containers
-                      await hydroscopeCore.expandContainers(
+                      // Don't fitView here - we'll focus on the search result after
+                      await asyncCoordinator.expandContainers(
+                        currentVisualizationState,
                         Array.from(containersToExpand),
+                        {
+                          fitView: false, // Don't fit view during expansion
+                        },
                       );
                     } else {
                       // No expansion needed, just render highlights
@@ -1053,6 +1058,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                     );
                   }
                 }
+
+                // Don't navigate here - let SearchControls handle it after the search completes
+                // This ensures the same code path as arrow key navigation
               } else {
                 // No HydroscopeCore, just queue ReactFlow render
                 if (asyncCoordinator.executeLayoutAndRenderPipeline) {
@@ -1612,7 +1620,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                           }
                         : undefined
                     }
-                    edgeStyleConfig={state.data?.edgeStyleConfig}
+                    edgeStyleConfig={state.data?.edgeStyleConfig as any}
                     nodeTypeConfig={state.data?.nodeTypeConfig}
                     asyncCoordinator={
                       hydroscopeCoreRef.current?.getAsyncCoordinator() || null

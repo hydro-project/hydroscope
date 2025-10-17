@@ -2752,11 +2752,12 @@ export class VisualizationState {
           }
         }
 
-        // Prefix matches for partial words
+        // Prefix and substring matches for partial words
         for (const [indexWord, entityIds] of this._searchIndex) {
           if (
             indexWord.startsWith(queryWord) ||
-            queryWord.startsWith(indexWord)
+            queryWord.startsWith(indexWord) ||
+            indexWord.includes(queryWord) // Allow substring matching (e.g., "keyed" in "foldkeyed")
           ) {
             for (const entityId of entityIds) {
               candidateIds.add(entityId);
@@ -2902,20 +2903,14 @@ export class VisualizationState {
     this.updateCollapsedAncestorsInTree();
   }
   /**
-   * Update graph search highlights using lowest visible ancestor logic
+   * Update graph search highlights - only highlight visible matches
    */
   updateGraphSearchHighlights(results: SearchResult[]): void {
     this._searchNavigationState.graphSearchHighlights.clear();
+    
     for (const result of results) {
-      const lowestVisibleAncestor = this.getLowestVisibleAncestorInGraph(
-        result.id,
-      );
-      if (lowestVisibleAncestor) {
-        this._searchNavigationState.graphSearchHighlights.add(
-          lowestVisibleAncestor,
-        );
-      } else if (this._isElementVisibleInGraph(result.id)) {
-        // Element is directly visible
+      // Only highlight if the element itself is visible
+      if (this._isElementVisibleInGraph(result.id)) {
         this._searchNavigationState.graphSearchHighlights.add(result.id);
       }
     }

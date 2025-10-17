@@ -381,7 +381,13 @@ export interface HydroscopeData {
   hierarchyChoices: HierarchyChoice[];
   nodeAssignments: Record<string, Record<string, string>>;
   nodeTypeConfig?: NodeTypeConfig;
-  edgeStyleConfig?: Record<string, EdgeStyleConfig>;
+  edgeStyleConfig?: {
+    note?: string;
+    semanticMappings?: Record<
+      string,
+      Record<string, Record<string, string | number>>
+    >;
+  };
   legend?: LegendConfig;
   styles?: StyleConfig;
 }

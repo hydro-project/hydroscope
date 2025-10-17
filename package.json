@@ -64,6 +64,7 @@
     "posttest": "npm run test:reminder",
     "test:watch": "vitest --reporter=verbose",
     "test:performance": "vitest run --config vitest.performance.config.ts",
+    "test:cleanup": "pkill -9 -f vitest || true",
     "lint": "npm run lint:prod && npm run lint:tests",
     "lint:prod": "eslint 'src/**/*.{js,ts,tsx}' --ignore-pattern 'src/**/__tests__/**' --max-warnings 0",
     "lint:tests": "eslint 'src/__tests__/**/*.{js,ts,tsx}' --max-warnings 0",

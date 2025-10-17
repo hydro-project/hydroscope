@@ -225,6 +225,15 @@ export class AsyncCoordinator {
   }
 
   /**
+   * Clear all pending post-render callbacks (e.g., fitView)
+   * Used when we want to prevent queued viewport changes from interfering with navigation
+   */
+  clearPendingFitViewCallbacks(): void {
+    console.log(`[VIEWPORT] 🧹 Clearing ${this.postRenderCallbacks.length} pending post-render callbacks`);
+    this.postRenderCallbacks = [];
+  }
+
+  /**
    * Set the React state setter for direct imperative state updates
    * This enables AsyncCoordinator to update React state directly instead of using callbacks
    */
@@ -3093,6 +3102,7 @@ export class AsyncCoordinator {
       zoom?: number;
       duration?: number;
       visualizationState?: any;
+      immediate?: boolean; // If true, snap immediately without animation
     },
   ): Promise<void> {
     // Queue-enforced execution - ensures atomic, sequential processing
@@ -3119,14 +3129,36 @@ export class AsyncCoordinator {
       zoom?: number;
       duration?: number;
       visualizationState?: any;
+      immediate?: boolean; // If true, snap immediately without animation
     },
   ): Promise<void> {
-    if (!reactFlowInstance) {
+    console.log(`[TRACE] _handleFocusViewportOnElement: ENTRY for element ${elementId}`);
+    
+    // Use provided instance or fall back to internal instance
+    const instanceToUse = reactFlowInstance || this.reactFlowInstance;
+    
+    if (!instanceToUse) {
       throw new Error("ReactFlow instance is required for viewport focus");
     }
     try {
+      // Wait for React to render the new nodes before trying to focus
+      // Use requestAnimationFrame to wait for the next browser paint cycle
+      // This ensures ReactFlow has updated its internal node map
+      console.log(`[TRACE] _handleFocusViewportOnElement: Waiting for next frame`);
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          // Wait one more frame to ensure React has fully updated
+          requestAnimationFrame(() => {
+            console.log(`[TRACE] _handleFocusViewportOnElement: Frame wait complete`);
+            resolve();
+          });
+        });
+      });
+
+      console.log(`[TRACE] _handleFocusViewportOnElement: Attempting to get node ${elementId}`);
       // Try to get the node directly first
-      let node = reactFlowInstance.getNode(elementId);
+      let node = instanceToUse.getNode(elementId);
+      console.log(`[TRACE] _handleFocusViewportOnElement: Node found: ${!!node}`);
 
       // If not found and we have visualizationState, find the visible ancestor
       if (!node && options?.visualizationState) {
@@ -3135,11 +3167,12 @@ export class AsyncCoordinator {
             elementId,
           );
         if (visibleElementId) {
-          node = reactFlowInstance.getNode(visibleElementId);
+          node = instanceToUse.getNode(visibleElementId);
         }
       }
 
       if (node) {
+        console.log(`[TRACE] _handleFocusViewportOnElement: Calculating position for node`);
         // Calculate absolute position by recursively walking up the entire parent chain
         let absoluteX = node.position.x;
         let absoluteY = node.position.y;
@@ -3147,7 +3180,7 @@ export class AsyncCoordinator {
         // Recursively add all ancestor positions to get absolute coordinates
         let currentNode = node;
         while (currentNode.parentNode) {
-          const parent = reactFlowInstance.getNode(currentNode.parentNode);
+          const parent = instanceToUse.getNode(currentNode.parentNode);
           if (parent) {
             absoluteX += parent.position.x;
             absoluteY += parent.position.y;
@@ -3163,6 +3196,8 @@ export class AsyncCoordinator {
         const nodeHeight = node.height || 50;
         const x = absoluteX + nodeWidth / 2;
         const y = absoluteY + nodeHeight / 2;
+
+        console.log(`[TRACE] _handleFocusViewportOnElement: Target position (${x}, ${y}), node size (${nodeWidth}, ${nodeHeight})`);
 
         // Calculate zoom to fit with padding
         // Use if options.zoom is explicitly provided, otherwise calculate zoom to fit
@@ -3188,13 +3223,21 @@ export class AsyncCoordinator {
           targetZoom = zoomToFit > 1.0 ? 1.0 : zoomToFit;
         }
 
-        // Center on element with calculated zoom
-        reactFlowInstance.setCenter(x, y, {
+        
+        
+        // Use immediate positioning (duration: 0) by default for reliability
+        // Can be overridden with options.immediate = false for smooth animation
+        const duration = options?.immediate === false 
+          ? (options?.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION)
+          : 0; // Default to immediate for reliability
+        
+        instanceToUse.setCenter(x, y, {
           zoom: targetZoom,
-          duration:
-            options?.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
+          duration: duration,
         });
-      } else {
+        
+        
+      } else{
         console.warn(
           `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
         );
@@ -3371,8 +3414,9 @@ export class AsyncCoordinator {
       // Center the viewport on the element
       // Navigation should ALWAYS pan/zoom regardless of autofit settings
       // Don't pass a default zoom - let focusViewportOnElement calculate the best fit
-      if (reactFlowInstance) {
-        this.focusViewportOnElement(elementId, reactFlowInstance, {
+      const instanceToUse = reactFlowInstance || this.reactFlowInstance;
+      if (instanceToUse) {
+        this.focusViewportOnElement(elementId, instanceToUse, {
           zoom: options.zoom, // Only use explicit zoom if provided
           duration:
             options.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
@@ -4082,6 +4126,8 @@ export class AsyncCoordinator {
                 "[AsyncCoordinator] 🎯 Executing post-render fitView for config change",
                 fitViewOptions,
               );
+              
+              
               this.reactFlowInstance.fitView(fitViewOptions);
               hscopeLogger.log(
                 "coordinator",
