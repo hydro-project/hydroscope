@@ -5,6 +5,7 @@
  * and ResizeObserver loops by using direct DOM manipulation and minimal state updates.
  */
 
+import React from "react";
 import { hscopeLogger } from "./logger.js";
 import {
   globalOperationMonitor,
@@ -12,6 +13,7 @@ import {
   type OperationType,
 } from "./operationPerformanceMonitor.js";
 import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
+import type { SearchResult } from "../types/core.js";
 
 /**
  * Clear search imperatively without triggering AsyncCoordinator cascades
@@ -137,8 +139,9 @@ export function clearSearchImperatively(options: {
  */
 export function clearSearchPanelImperatively(options: {
   setSearchQuery?: (query: string) => void;
-  setSearchMatches?: (matches: any[]) => void;
-  setCurrentSearchMatch?: (match: any) => void;
+  // Using unknown for match types to be compatible with different search match interfaces
+  setSearchMatches?: (matches: unknown[]) => void;
+  setCurrentSearchMatch?: (match: unknown) => void;
   suppressResizeObserver?: boolean;
   debug?: boolean;
   enablePerformanceMonitoring?: boolean;

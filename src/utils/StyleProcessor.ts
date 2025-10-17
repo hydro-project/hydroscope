@@ -5,7 +5,7 @@
  * Based on the semantic mappings configuration from the JSON data.
  */
 import type { CSSProperties } from "react";
-import type { StyleConfig } from "../types/core.js";
+import type { StyleConfig, GraphEdge } from "../types/core.js";
 // Visual channels supported by the style processor
 export const VISUAL_CHANNELS = {
   "line-pattern": ["solid", "dashed", "dotted", "dash-dot"],
@@ -79,7 +79,7 @@ export function processSemanticTags(
  * Process semantic tags for aggregated edges with conflict resolution
  */
 export function processAggregatedSemanticTags(
-  originalEdges: any[],
+  originalEdges: GraphEdge[],
   styleConfig?: StyleConfig,
   originalLabel?: string,
 ): ProcessedStyle {

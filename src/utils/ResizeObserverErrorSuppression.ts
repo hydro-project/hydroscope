@@ -172,6 +172,7 @@ export class DebouncedOperationManager {
   /**
    * Execute an operation with debouncing
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debounce<T extends (...args: any[]) => any>(
     key: string,
     operation: T,
@@ -226,9 +227,13 @@ export class DebouncedOperationManager {
 /**
  * Safe wrapper for operations that might trigger ResizeObserver errors
  */
+// Using any for generic function wrapper - needs to accept any function signature
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withResizeObserverErrorSuppression<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   T extends (...args: any[]) => any,
 >(operation: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ((...args: any[]) => {
     try {
       return operation(...args);
@@ -245,9 +250,13 @@ export function withResizeObserverErrorSuppression<
 /**
  * Safe async wrapper for operations that might trigger ResizeObserver errors
  */
+// Using any for generic async function wrapper - needs to accept any function signature
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAsyncResizeObserverErrorSuppression<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   T extends (...args: any[]) => Promise<any>,
 >(operation: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (async (...args: any[]) => {
     try {
       return await operation(...args);

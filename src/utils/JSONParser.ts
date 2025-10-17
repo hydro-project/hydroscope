@@ -17,9 +17,9 @@ export interface JSONParserOptions {
   /** Enable debug logging */
   debug?: boolean;
   /** Custom node transformation function */
-  nodeTransformer?: (rawNode: any) => Partial<GraphNode>;
+  nodeTransformer?: (rawNode: Record<string, unknown>) => Partial<GraphNode>;
   /** Custom edge transformation function */
-  edgeTransformer?: (rawEdge: any) => Partial<GraphEdge>;
+  edgeTransformer?: (rawEdge: Record<string, unknown>) => Partial<GraphEdge>;
   /** Validate data during parsing */
   validateDuringParsing?: boolean;
 }
@@ -27,8 +27,8 @@ export interface ParseResult {
   visualizationState: VisualizationState;
   hierarchyChoices: HierarchyChoice[];
   selectedHierarchy: string | null;
-  edgeStyleConfig?: any; // Edge style configuration from JSON
-  nodeTypeConfig?: any; // Node type configuration from JSON
+  edgeStyleConfig?: unknown; // Edge style configuration from JSON
+  nodeTypeConfig?: unknown; // Node type configuration from JSON
   warnings: ValidationResult[];
   stats: {
     nodeCount: number;
@@ -51,7 +51,7 @@ export class JSONParser {
     this.debug = this.options.debug;
   }
   // Debug logging helper
-  private debugLog(message: string, data?: any): void {
+  private debugLog(message: string, data?: unknown): void {
     if (this.debug) {
       hscopeLogger.log("debug", `[JSONParser] ${message}`, data);
     }
@@ -485,25 +485,26 @@ export class JSONParser {
       nodeTransformer: (rawNode) => {
         const transformed: Partial<GraphNode> = {};
         // Handle paxos.json specific fields
-        if (rawNode.shortLabel) {
+        if (typeof rawNode.shortLabel === "string") {
           transformed.label = rawNode.shortLabel;
         }
-        if (rawNode.fullLabel) {
+        if (typeof rawNode.fullLabel === "string") {
           transformed.longLabel = rawNode.fullLabel;
         }
-        if (rawNode.nodeType) {
+        if (typeof rawNode.nodeType === "string") {
           transformed.type = rawNode.nodeType;
         }
         // Extract semantic tags from various sources
         const semanticTags: string[] = [];
-        if (rawNode.semanticTags) {
-          semanticTags.push(...rawNode.semanticTags);
+        if (Array.isArray(rawNode.semanticTags)) {
+          semanticTags.push(...(rawNode.semanticTags as string[]));
         }
-        if (rawNode.nodeType) {
+        if (typeof rawNode.nodeType === "string") {
           semanticTags.push(rawNode.nodeType);
         }
-        if (rawNode.data?.locationType) {
-          semanticTags.push(rawNode.data.locationType);
+        const data = rawNode.data as Record<string, unknown> | undefined;
+        if (data && typeof data.locationType === "string") {
+          semanticTags.push(data.locationType);
         }
         transformed.semanticTags = [...new Set(semanticTags)]; // Remove duplicates
         // Apply custom transformer if provided
@@ -516,8 +517,8 @@ export class JSONParser {
       edgeTransformer: (rawEdge) => {
         const transformed: Partial<GraphEdge> = {};
         // Handle paxos.json specific fields
-        if (rawEdge.edgeProperties) {
-          transformed.semanticTags = rawEdge.edgeProperties;
+        if (Array.isArray(rawEdge.edgeProperties)) {
+          transformed.semanticTags = rawEdge.edgeProperties as string[];
         }
         // Apply custom transformer if provided
         if (options.edgeTransformer) {

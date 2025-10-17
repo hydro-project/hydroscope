@@ -277,8 +277,10 @@ const InfoPanelInternal = forwardRef<
     const handleSearchClear = () => {
       clearSearchPanelImperatively({
         setSearchQuery,
-        setSearchMatches,
-        setCurrentSearchMatch,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setSearchMatches: setSearchMatches as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setCurrentSearchMatch: setCurrentSearchMatch as any,
         debug: process.env.NODE_ENV === "development",
       });
     };
