@@ -3481,8 +3481,8 @@ export class AsyncCoordinator {
       }
 
       // Step 1: Clear search state in VisualizationState (synchronous)
-      if (typeof state._clearSearchEnhanced === "function") {
-        state._clearSearchEnhanced();
+      if (typeof state.clearSearch === "function") {
+        state.clearSearch();
 
         hscopeLogger.log(
           "coordinator",
@@ -3490,7 +3490,7 @@ export class AsyncCoordinator {
         );
       } else {
         throw new Error(
-          "[AsyncCoordinator] VisualizationState must have _clearSearchEnhanced method",
+          "[AsyncCoordinator] VisualizationState must have clearSearch method",
         );
       }
 

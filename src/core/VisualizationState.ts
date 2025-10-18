@@ -2313,6 +2313,10 @@ export class VisualizationState {
     this._searchNavigationState.searchResults = [];
     this._searchNavigationState.treeSearchHighlights.clear();
     this._searchNavigationState.graphSearchHighlights.clear();
+    // Clear navigation highlights (blue borders from next/prev navigation)
+    this._searchNavigationState.treeNavigationHighlights.clear();
+    this._searchNavigationState.graphNavigationHighlights.clear();
+    this._searchNavigationState.navigationSelection = null;
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
   }
