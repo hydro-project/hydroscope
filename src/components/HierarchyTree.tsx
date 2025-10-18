@@ -707,46 +707,24 @@ export function HierarchyTree({
   }, [currentSearchResult]);
 
   // ✅ EFFICIENT: Use VisualizationState's optimized search expansion logic with stable dependencies
+  // SINGLE SOURCE OF TRUTH: Tree expansion is derived from collapsedContainers prop
+  // The collapsedContainers prop reflects container.collapsed in VisualizationState
+  // This ensures tree and graph are always in sync - no separate expansion logic needed
   const derivedExpandedKeys = useMemo(() => {
     if (!visualizationState) {
       return [];
     }
-    // When search is cleared, calculate expanded containers from collapsedContainers prop
-    if (!searchResults || searchResults.length === 0) {
-      // Return containers that are NOT in the collapsedContainers set
-      // Use allContainers to include manually hidden containers in the tree
-      const allContainerIds = visualizationState.allContainers.map(
-        (container) => container.id,
-      );
-      const currentlyExpanded = allContainerIds.filter(
-        (id) => !collapsedContainers.has(id),
-      );
-      return currentlyExpanded;
-    }
-    // Enhanced search expansion logic for v1.0.0
-    const expansionKeys = new Set<string>();
-    // For each search result, expand its container hierarchy
-    searchResults.forEach((result) => {
-      if (result.type === "container") {
-        // Expand ancestors of matched containers
-        const ancestors =
-          visualizationState.getContainerAncestors(result.id) || [];
-        ancestors.forEach((ancestorId) => expansionKeys.add(ancestorId));
-      } else if (result.type === "node") {
-        // For node matches, expand the container hierarchy to make the node visible
-        const nodeContainer = visualizationState.getNodeContainer(result.id);
-        if (nodeContainer) {
-          // Expand the direct container
-          expansionKeys.add(nodeContainer);
-          // Expand all ancestors of the container
-          const ancestors =
-            visualizationState.getContainerAncestors(nodeContainer) || [];
-          ancestors.forEach((ancestorId) => expansionKeys.add(ancestorId));
-        }
-      }
-    });
-    return Array.from(expansionKeys);
-  }, [visualizationState, searchResults, collapsedContainers]);
+    
+    // Return containers that are NOT in the collapsedContainers set
+    // Use allContainers to include manually hidden containers in the tree
+    const allContainerIds = visualizationState.allContainers.map(
+      (container) => container.id,
+    );
+    const currentlyExpanded = allContainerIds.filter(
+      (id) => !collapsedContainers.has(id),
+    );
+    return currentlyExpanded;
+  }, [visualizationState, collapsedContainers]);
   // Maintain a controlled expandedKeys state for immediate UI feedback on arrow clicks
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   // Track the last search expansion to prevent duplicate operations

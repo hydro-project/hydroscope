@@ -4330,6 +4330,17 @@ export class AsyncCoordinator {
    * Helper method to get containers that need to be expanded for search results
    * This is a stateless helper that analyzes search results and returns container IDs
    */
+  /**
+   * Get collapsed ancestor containers that need to be expanded to show search results
+   *
+   * SINGLE SOURCE OF TRUTH: This method defines which containers get expanded during search.
+   * It finds all collapsed ancestors of search result nodes, ensuring they become visible.
+   * The expansion state (container.collapsed) is then reflected in both:
+   * - The graph (via ReactFlow rendering)
+   * - The tree (via HierarchyTree's derivedExpandedKeys from collapsedContainers prop)
+   *
+   * This ensures tree and graph stay in sync - no duplicate expansion logic needed.
+   */
   private _getContainersForSearchResults(
     searchResults: any[],
     state: any,
