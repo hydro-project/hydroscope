@@ -608,10 +608,11 @@ export const Hydroscope = memo<HydroscopeProps>(
       isLoading: false,
       statusMessage: "",
     });
-    
+
     // Store AsyncCoordinator in state for stable reference to child components
-    const [asyncCoordinator, setAsyncCoordinator] = useState<AsyncCoordinator | null>(null);
-    
+    const [asyncCoordinator, setAsyncCoordinator] =
+      useState<AsyncCoordinator | null>(null);
+
     // Track current grouping (can be changed by user)
     const [selectedGrouping, setSelectedGrouping] = useState<string | null>(
       null,
@@ -625,17 +626,18 @@ export const Hydroscope = memo<HydroscopeProps>(
     const infoPanelRef = useRef<InfoPanelRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const elkBridgeRef = useRef<ELKBridge | null>(null);
-    
+
     // Capture AsyncCoordinator when HydroscopeCore mounts
     useEffect(() => {
       if (hydroscopeCoreRef.current) {
         const coordinator = hydroscopeCoreRef.current.getAsyncCoordinator();
         if (coordinator && coordinator !== asyncCoordinator) {
-          
           setAsyncCoordinator(coordinator);
         }
       } else {
-        console.warn('[Hydroscope] hydroscopeCoreRef.current not available yet');
+        console.warn(
+          "[Hydroscope] hydroscopeCoreRef.current not available yet",
+        );
       }
     }, [state.data, state.currentVisualizationState]); // Re-check when data or visualizationState changes
     // Refs for cleanup

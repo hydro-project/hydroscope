@@ -79,15 +79,33 @@ export function clearSearchImperatively(options: {
     if (!asyncCoordinator || !visualizationState) {
       console.error(
         "[SearchClearUtils] AsyncCoordinator and VisualizationState are REQUIRED for proper search clearing!",
-        { hasAsyncCoordinator: !!asyncCoordinator, hasVisualizationState: !!visualizationState }
+        {
+          hasAsyncCoordinator: !!asyncCoordinator,
+          hasVisualizationState: !!visualizationState,
+        },
       );
-      throw new Error("AsyncCoordinator is required for search clearing - graph highlights cannot be cleared without it");
+      throw new Error(
+        "AsyncCoordinator is required for search clearing - graph highlights cannot be cleared without it",
+      );
     } else {
       try {
         // Use AsyncCoordinator to ensure ReactFlow data is regenerated
+        // IMPORTANT: Don't await here to prevent blocking the UI, but ensure the promise is handled
         asyncCoordinator
           .clearSearch(visualizationState, {
             fitView: false,
+          })
+          .then((reactFlowData: any) => {
+            if (debug) {
+              hscopeLogger.log(
+                "op",
+                "[SearchClearUtils] ✅ Search cleared successfully, ReactFlow data regenerated",
+                {
+                  nodeCount: reactFlowData?.nodes?.length || 0,
+                  edgeCount: reactFlowData?.edges?.length || 0,
+                },
+              );
+            }
           })
           .catch((error: any) => {
             console.error(
@@ -98,7 +116,7 @@ export function clearSearchImperatively(options: {
         if (debug) {
           hscopeLogger.log(
             "op",
-            "[SearchClearUtils] Search cleared via AsyncCoordinator",
+            "[SearchClearUtils] Search clear requested via AsyncCoordinator",
           );
         }
       } catch (error) {

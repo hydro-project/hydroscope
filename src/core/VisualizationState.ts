@@ -85,10 +85,6 @@ export class VisualizationState {
   private _rootContainersCache: Container[] | null = null;
   private _descendantCache = new Map<string, Set<string>>();
   private _ancestorCache = new Map<string, string[]>();
-  private __collapsedContainersCache: Container[] | null = null;
-  private __visibleNodesCache: GraphNode[] | null = null;
-  private __visibleContainersCache: Container[] | null = null;
-  private __visibleEdgesCache: (GraphEdge | AggregatedEdge)[] | null = null;
   private _cacheVersion = 0;
   // Search and Navigation State
   private _searchNavigationState: SearchNavigationState = {
@@ -137,14 +133,6 @@ export class VisualizationState {
     }
   >();
 
-  // Performance optimization caches
-  private __hierarchyPathCache = new Map<string, string[]>();
-  private __hierarchyPathCacheTimestamp = 0;
-  private __visibilityCache = new Map<string, boolean>();
-  private __visibilityCacheTimestamp = 0;
-  private __aggregationCache = new Map<string, Map<string, any>>();
-  private __aggregationCacheTimestamp = 0;
-  private __cacheInvalidationThreshold = 100; // Invalidate caches after 100ms
   // State persistence
   private _stateVersion = 1;
   private _lastStateSnapshot: string | null = null;
@@ -184,9 +172,6 @@ export class VisualizationState {
     this._descendantCache.clear();
     this._ancestorCache.clear();
     this._rootContainersCache = null;
-    this.__collapsedContainersCache = null;
-    this.__visibleNodesCache = null;
-    this.__visibleContainersCache = null;
     this._invalidateAllCaches();
   }
 
@@ -519,9 +504,6 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _expandContainersForCoordinator(containerIds?: string[]): void {
-    const __containersToExpand = containerIds
-      ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
-      : Array.from(this._containers.values());
     // CRITICAL FIX: Expand containers in hierarchical order (parents before children)
     // This prevents invariant violations where children are expanded before their parents
     let expandedInThisIteration = 0;
@@ -1199,152 +1181,6 @@ export class VisualizationState {
     const containerId = this._nodeContainerMap.get(nodeId);
     return containerId ? this._containers.get(containerId) : undefined;
   }
-  private _getCanonicalKey(source: string, target: string): string {
-    // Always use lexicographically smaller ID first for consistency
-    return source < target ? `${source}-${target}` : `${target}-${source}`;
-  }
-  private __getOrCreateAggregatedEdge(
-    source: string,
-    target: string,
-    originalEdge: GraphEdge,
-  ): AggregatedEdge {
-    const canonicalKey = this._getCanonicalKey(source, target);
-    let aggregatedEdge = this._canonicalAggregatedEdges.get(canonicalKey);
-    if (!aggregatedEdge) {
-      // Create new aggregated edge with consistent ID
-      const aggregatedEdgeId = `agg-${canonicalKey}`;
-      aggregatedEdge = {
-        id: aggregatedEdgeId,
-        source,
-        target,
-        type: originalEdge.type,
-        semanticTags: [...originalEdge.semanticTags],
-        hidden: false,
-        aggregated: true,
-        originalEdgeIds: [],
-        aggregationSource: canonicalKey, // Use canonical key instead of container ID
-      };
-      this._canonicalAggregatedEdges.set(canonicalKey, aggregatedEdge);
-      this._aggregatedEdges.set(aggregatedEdgeId, aggregatedEdge);
-    }
-    return aggregatedEdge;
-  }
-  private _reAggregateAllCollapsedContainers(): void {
-    // Clear all existing aggregated edges
-    this._aggregatedEdges.clear();
-    this._originalToAggregatedMap.clear();
-    this._aggregatedToOriginalMap.clear();
-    this._containerAggregationMap.clear();
-    // Get all collapsed containers and sort them by ID for consistent ordering
-    const collapsedContainers = Array.from(this._containers.values())
-      .filter((container) => container.collapsed && !container.hidden)
-      .sort((a, b) => a.id.localeCompare(b.id));
-    // Aggregate edges for each container in consistent order
-    for (const container of collapsedContainers) {
-      // CRITICAL DEBUG: Check if this is related to bt_136
-      if (
-        container.id.includes("bt_") ||
-        container.id === "bt_126" ||
-        container.id === "bt_217"
-      ) {
-        console.error(
-          `[SmartCollapse] 🚨 AGGREGATING FOR CONTAINER: ${container.id}`,
-        );
-        console.error(
-          `[SmartCollapse] 🚨   Container collapsed: ${container.collapsed}, hidden: ${container.hidden}`,
-        );
-        // Check if bt_136 is a descendant
-        const descendants = this._getAllDescendantIds(container.id);
-        if (descendants.has("bt_136")) {
-          console.error(
-            `[SmartCollapse] 🚨   bt_136 IS A DESCENDANT of ${container.id}`,
-          );
-          console.error(
-            `[SmartCollapse] 🚨   All descendants: ${Array.from(descendants).join(", ")}`,
-          );
-        }
-      }
-      this.aggregateEdgesForContainer(container.id);
-    }
-  }
-  private _reAggregateEdgeIfNeeded(edge: GraphEdge): void {
-    // Find the smallest collapsed container that contains the source or target
-    let sourceContainer: string | undefined;
-    let targetContainer: string | undefined;
-    // Check if source is in a collapsed container
-    const sourceNode = this._nodes.get(edge.source);
-    if (sourceNode && sourceNode.hidden) {
-      sourceContainer = this._findSmallestCollapsedContainerForNode(
-        edge.source,
-      );
-    }
-    // Check if target is in a collapsed container
-    // TODO: DRY this up by combining with previous block
-    const targetNode = this._nodes.get(edge.target);
-    if (targetNode && targetNode.hidden) {
-      targetContainer = this._findSmallestCollapsedContainerForNode(
-        edge.target,
-      );
-    }
-    // If either endpoint needs aggregation, create aggregated edge
-    if (sourceContainer || targetContainer) {
-      const aggregatedSource = sourceContainer || edge.source;
-      const aggregatedTarget = targetContainer || edge.target;
-      // Skip self-loops
-      if (aggregatedSource === aggregatedTarget) {
-        edge.hidden = true;
-        return;
-      }
-      // SIMPLIFIED FIX: Use source-target pair for consistent IDs while preserving directionality
-      const aggregatedEdgeId = `agg-${aggregatedSource}-${aggregatedTarget}`;
-      let existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
-      if (existingAggEdge) {
-        // Add to existing aggregated edge
-        if (!existingAggEdge.originalEdgeIds.includes(edge.id)) {
-          existingAggEdge.originalEdgeIds.push(edge.id);
-        }
-      } else {
-        // Create new aggregated edge
-        const aggregatedEdge = {
-          id: aggregatedEdgeId,
-          source: aggregatedSource,
-          target: aggregatedTarget,
-          type: edge.type,
-          semanticTags: [...edge.semanticTags],
-          hidden: false,
-          aggregated: true as const,
-          originalEdgeIds: [edge.id],
-          aggregationSource: `${aggregatedSource}-${aggregatedTarget}`,
-        };
-        this._aggregatedEdges.set(aggregatedEdge.id, aggregatedEdge);
-        // Update tracking structures
-        this._aggregatedToOriginalMap.set(aggregatedEdge.id, [edge.id]);
-        this._originalToAggregatedMap.set(edge.id, aggregatedEdge.id);
-        // Note: We don't track container ownership for re-aggregated edges
-        // since they use the normalized key system
-      }
-      edge.hidden = true;
-    }
-  }
-  private _findSmallestCollapsedContainerForNode(
-    nodeId: string,
-  ): string | undefined {
-    let currentContainer = this._nodeContainerMap.get(nodeId);
-    while (currentContainer) {
-      const container = this._containers.get(currentContainer);
-      if (container && container.collapsed) {
-        // CRITICAL FIX: If this collapsed container is hidden, find its visible ancestor
-        if (container.hidden) {
-          const visibleAncestor =
-            this._findLowestVisibleAncestorForAggregation(currentContainer);
-          return visibleAncestor || undefined;
-        }
-        return currentContainer;
-      }
-      currentContainer = this._containerParentMap.get(currentContainer);
-    }
-    return undefined;
-  }
   getAggregatedEdges(): ReadonlyArray<AggregatedEdge> {
     return Array.from(this._aggregatedEdges.values()).filter(
       (edge) => !edge.hidden,
@@ -1786,7 +1622,6 @@ export class VisualizationState {
     } else {
       this._collapseContainerForCoordinator(id);
     }
-    const _containerAfter = this._containers.get(id);
   }
   // Internal methods for container operations
   private _expandContainerInternal(id: string): void {
@@ -1939,41 +1774,6 @@ export class VisualizationState {
     // Hide the original edge
     edge.hidden = true;
   }
-  /**
-   * CRITICAL FIX: Clean up all aggregated edges that reference hidden containers
-   * This should be called after all container collapse operations are complete
-   */
-  private _cleanupAllAggregatedEdgesWithHiddenEndpoints(): void {
-    const edgesToDelete: string[] = [];
-    for (const [aggEdgeId, aggEdge] of this._aggregatedEdges) {
-      const sourceContainer = this._containers.get(aggEdge.source);
-      const sourceNode = this._nodes.get(aggEdge.source);
-      const targetContainer = this._containers.get(aggEdge.target);
-      const targetNode = this._nodes.get(aggEdge.target);
-      const sourceExists = sourceContainer || sourceNode;
-      const targetExists = targetContainer || targetNode;
-      const sourceVisible =
-        (sourceContainer && !sourceContainer.hidden) ||
-        (sourceNode && !sourceNode.hidden);
-      const targetVisible =
-        (targetContainer && !targetContainer.hidden) ||
-        (targetNode && !targetNode.hidden);
-      if (!sourceExists || !targetExists || !sourceVisible || !targetVisible) {
-        edgesToDelete.push(aggEdgeId);
-        // Restore original edges to hidden state
-        for (const originalEdgeId of aggEdge.originalEdgeIds) {
-          const originalEdge = this._edges.get(originalEdgeId);
-          if (originalEdge) {
-            originalEdge.hidden = true;
-          }
-        }
-      }
-    }
-    // Delete the problematic aggregated edges
-    for (const aggEdgeId of edgesToDelete) {
-      this._aggregatedEdges.delete(aggEdgeId);
-    }
-  }
   // Edge Aggregation Tracking and Lookup Methods
   private _originalToAggregatedMap = new Map<string, string>();
   private _aggregatedToOriginalMap = new Map<string, string[]>();
@@ -1984,9 +1784,6 @@ export class VisualizationState {
     edgeCount: number;
     timestamp: number;
   }> = [];
-  // SIMPLIFIED APPROACH: Canonical aggregated edge storage
-  // Key: normalized "source-target" pair, Value: aggregated edge
-  private _canonicalAggregatedEdges = new Map<string, AggregatedEdge>();
   getOriginalToAggregatedMapping(): ReadonlyMap<string, string> {
     return new Map(this._originalToAggregatedMap);
   }
@@ -2709,8 +2506,45 @@ export class VisualizationState {
   }
   /**
    * Perform search with enhanced result generation including hierarchy paths and caching
+   *
+   * ⚠️ **WARNING: Do not call this method directly from UI components!**
+   *
+   * This method updates internal search state but does NOT regenerate ReactFlow data.
+   * Calling it directly will result in search highlights not appearing in the graph.
+   *
+   * **Correct usage:**
+   * - From AsyncCoordinator: Use `asyncCoordinator.updateSearchResults()` which handles
+   *   the full pipeline: search → expand → highlight → render
+   * - From tests: Direct calls are OK for unit testing internal behavior
+   *
+   * **Incorrect usage:**
+   * - ❌ From SearchControls or other UI components
+   * - ❌ From event handlers
+   *
+   * @internal This should only be called by AsyncCoordinator or tests
    */
   performSearch(query: string): SearchResult[] {
+    // Warn in development if called outside of AsyncCoordinator context
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      const stack = new Error().stack || "";
+      const isFromAsyncCoordinator = stack.includes("AsyncCoordinator");
+      const isFromTest =
+        stack.includes(".test.ts") || stack.includes(".test.tsx");
+
+      if (!isFromAsyncCoordinator && !isFromTest) {
+        console.warn(
+          "⚠️ [VisualizationState] performSearch() called directly! " +
+            "This will NOT update the graph visualization. " +
+            "Use asyncCoordinator.updateSearchResults() instead.",
+          "\nCall stack:",
+          stack,
+        );
+      }
+    }
+
     const trimmedQuery = query.trim();
     this._searchNavigationState.searchQuery = trimmedQuery;
     // Update backward compatibility state
@@ -2863,47 +2697,6 @@ export class VisualizationState {
     this.updateGraphSearchHighlights(results);
     this._cacheSearchResults(trimmedQuery, results);
     return [...results];
-  }
-  /**
-   * Clear search state while preserving expansion state (enhanced version)
-   * 
-   * @deprecated DO NOT call this directly! Use AsyncCoordinator.clearSearch() instead.
-   * This method only clears the state but does NOT regenerate ReactFlow data,
-   * which means graph highlights will not be cleared.
-   * 
-   * @internal This is called internally by AsyncCoordinator.clearSearch()
-   * @private
-   */
-  private _clearSearchEnhanced(): void {
-    console.log('[VisualizationState] 🧹 _clearSearchEnhanced called');
-    console.trace('[VisualizationState] Call stack:');
-    
-    // Clear any pending debounced search
-    if (this._searchDebounceTimer !== null) {
-      clearTimeout(this._searchDebounceTimer);
-      this._searchDebounceTimer = null;
-    }
-    // Clear search state
-    this._searchNavigationState.searchQuery = "";
-    this._searchNavigationState.searchResults = [];
-    this._searchNavigationState.treeSearchHighlights.clear();
-    
-    console.log('[VisualizationState] 🧹 Clearing graphSearchHighlights, size before:', 
-      this._searchNavigationState.graphSearchHighlights.size);
-    this._searchNavigationState.graphSearchHighlights.clear();
-    
-    // Clear backward compatibility search state as well
-    this._searchQuery = "";
-    this._searchResults = [];
-    this._searchState.isActive = false;
-    this._searchState.query = "";
-    this._searchState.resultCount = 0;
-    // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
-    // This matches the requirement that expansion state persists through search operations
-    // Note: Search cache is NOT cleared to maintain performance across searches
-    // ENHANCEMENT: When search is cleared, re-enable smart collapse for next layout
-    // This allows the system to optimize container states when search is not active
-    this.enableSmartCollapseForNextLayout();
   }
   /**
    * Update tree search highlights based on search results
@@ -3084,18 +2877,15 @@ export class VisualizationState {
       this._searchNavigationState.graphSearchHighlights.has(elementId);
     const hasNavigation =
       this._searchNavigationState.graphNavigationHighlights.has(elementId);
-    
-    const result = hasSearch && hasNavigation ? "both" 
-      : hasSearch ? "search" 
-      : hasNavigation ? "navigation" 
-      : null;
-    
-    // Only log for specific nodes we're tracking
-    if (elementId === "tee" || elementId === "285") {
-      
+
+    if (hasSearch && hasNavigation) {
+      return "both";
+    } else if (hasSearch) {
+      return "search";
+    } else if (hasNavigation) {
+      return "navigation";
     }
-    
-    return result;
+    return null;
   }
   /**
    * Get the lowest visible ancestor in the ReactFlow graph for an element
@@ -3439,25 +3229,10 @@ export class VisualizationState {
     this._rootContainersCache = null;
     this._descendantCache.clear();
     this._ancestorCache.clear();
-    this.__collapsedContainersCache = null;
-    this.__visibleNodesCache = null;
-    this.__visibleContainersCache = null;
-    this.__visibleEdgesCache = null;
     this._invalidateSearchIndex();
   }
 
-  private _invalidateHierarchyCache(): void {
-    this._rootContainersCache = null;
-    this._descendantCache.clear();
-    this._ancestorCache.clear();
-    this.__collapsedContainersCache = null;
-  }
-
-  private _invalidateVisibilityCache(): void {
-    this.__visibleNodesCache = null;
-    this.__visibleContainersCache = null;
-    this.__visibleEdgesCache = null;
-  }
+  private _invalidateVisibilityCache(): void {}
 
   private _invalidateSearchIndex(): void {
     this._searchIndex.clear();
@@ -3512,24 +3287,6 @@ export class VisualizationState {
       .filter((word) => word.length > 0);
   }
 
-  // Performance Monitoring
-  private trackOperation(operationName: string, duration: number): void {
-    // Track operation count
-    const currentCount =
-      this._performanceMetrics.operationCounts.get(operationName) || 0;
-    this._performanceMetrics.operationCounts.set(
-      operationName,
-      currentCount + 1,
-    );
-    // Track operation times (keep last 10 for average calculation)
-    const times =
-      this._performanceMetrics.operationTimes.get(operationName) || [];
-    times.push(duration);
-    if (times.length > 10) {
-      times.shift();
-    }
-    this._performanceMetrics.operationTimes.set(operationName, times);
-  }
   getPerformanceMetrics(): {
     operationCounts: Map<string, number>;
     averageTimes: Map<string, number>;
@@ -4045,73 +3802,6 @@ export class VisualizationState {
     }
     // No visible ancestor found
     return null;
-  }
-  /**
-   * ENHANCEMENT: Validate container expansion preconditions - basic implementation
-   */
-  private _validateContainerExpansionPreconditions(containerId: string): {
-    canExpand: boolean;
-    issues: string[];
-    affectedEdges: string[];
-  } {
-    const container = this._containers.get(containerId);
-    if (!container) {
-      return {
-        canExpand: false,
-        issues: [`Container ${containerId} not found`],
-        affectedEdges: [],
-      };
-    }
-    // Find edges that would be affected by expanding this container
-    const affectedEdges: string[] = [];
-    const descendants = this._getAllDescendantIds(containerId);
-    // Check all edges to see which ones involve descendants of this container
-    for (const [edgeId, edge] of this._edges) {
-      if (descendants.has(edge.source) || descendants.has(edge.target)) {
-        affectedEdges.push(edgeId);
-      }
-    }
-    // Also check aggregated edges
-    for (const [_aggId, aggEdge] of this._aggregatedEdges) {
-      if (descendants.has(aggEdge.source) || descendants.has(aggEdge.target)) {
-        // Add the original edge IDs that this aggregated edge represents
-        affectedEdges.push(...aggEdge.originalEdgeIds);
-      }
-    }
-    return {
-      canExpand: true,
-      issues: [],
-      affectedEdges,
-    };
-  }
-  /**
-   * ENHANCEMENT: Post-expansion edge validation - basic implementation
-   */
-  private _postExpansionEdgeValidation(containerId: string): {
-    validEdges: string[];
-    invalidEdges: Array<{
-      id: string;
-      reason: string;
-    }>;
-    fixedEdges: string[];
-  } {
-    const container = this._containers.get(containerId);
-    if (!container) {
-      return {
-        validEdges: [],
-        invalidEdges: [],
-        fixedEdges: [],
-      };
-    }
-    // Basic validation - just return all visible edges as valid
-    const validEdges = Array.from(this._edges.values())
-      .filter((edge) => !edge.hidden)
-      .map((edge) => edge.id);
-    return {
-      validEdges,
-      invalidEdges: [],
-      fixedEdges: [],
-    };
   }
 
   // ============ MANUAL VISIBILITY CONTROL ============

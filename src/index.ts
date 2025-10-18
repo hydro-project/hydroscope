@@ -12,24 +12,30 @@ if (typeof window !== "undefined") {
     /ResizeObserver loop completed with undelivered notifications/i,
     /ResizeObserver loop/i,
   ];
-  
+
   const originalError = window.onerror;
-  window.onerror = function(message, source, lineno, colno, error) {
+  window.onerror = function (message, source, lineno, colno, error) {
     const errorStr = String(message || error || "");
-    if (resizeObserverPatterns.some(p => p.test(errorStr))) {
+    if (resizeObserverPatterns.some((p) => p.test(errorStr))) {
       return true; // Suppress
     }
-    return originalError ? originalError(message, source, lineno, colno, error) : false;
+    return originalError
+      ? originalError(message, source, lineno, colno, error)
+      : false;
   };
-  
+
   // Also suppress via error event listener (for webpack-dev-server)
-  window.addEventListener('error', (e) => {
-    const errorStr = String(e.message || e.error || "");
-    if (resizeObserverPatterns.some(p => p.test(errorStr))) {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-    }
-  }, true); // Use capture phase to intercept before webpack
+  window.addEventListener(
+    "error",
+    (e) => {
+      const errorStr = String(e.message || e.error || "");
+      if (resizeObserverPatterns.some((p) => p.test(errorStr))) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+    },
+    true,
+  ); // Use capture phase to intercept before webpack
 }
 
 // 🎯 CORE COMPONENTS

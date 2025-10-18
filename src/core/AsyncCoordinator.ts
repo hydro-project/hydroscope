@@ -1756,7 +1756,7 @@ export class AsyncCoordinator {
       throw new Error("Search event missing required payload");
     }
     // Perform search in the state
-    const results = (state as any).search(query || "");
+    const results = (state as any).performSearch(query || "");
     // Expand containers containing search results if needed
     if (event.payload.expandContainers && results.length > 0) {
       for (const result of results) {
@@ -3298,7 +3298,10 @@ export class AsyncCoordinator {
       }
 
       // Step 1: Perform search in VisualizationState (synchronous) - FAIL FAST on errors
-      const searchResults = state.search ? state.search(query) : [];
+      const searchResults = state.performSearch
+        ? state.performSearch(query)
+        : [];
+
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] ✅ Search completed successfully",
@@ -3337,7 +3340,9 @@ export class AsyncCoordinator {
           }
 
           // Execute layout and render pipeline with container expansion
-          const reactFlowData = await this.executeLayoutAndRenderPipeline(
+          // IMPORTANT: Call _handleLayoutAndRenderPipeline directly to avoid queue deadlock
+          // We're already in a queued operation (updateSearchResults), so we can't enqueue another one
+          const reactFlowData = await this._handleLayoutAndRenderPipeline(
             state,
             {
               relayoutEntities: containerIds, // Re-layout expanded containers
@@ -3478,16 +3483,21 @@ export class AsyncCoordinator {
       // Step 1: Clear search state in VisualizationState (synchronous)
       if (typeof state._clearSearchEnhanced === "function") {
         state._clearSearchEnhanced();
+
         hscopeLogger.log(
           "coordinator",
           "[AsyncCoordinator] ✅ Search state cleared",
         );
       } else {
-        throw new Error("[AsyncCoordinator] VisualizationState must have _clearSearchEnhanced method");
+        throw new Error(
+          "[AsyncCoordinator] VisualizationState must have _clearSearchEnhanced method",
+        );
       }
 
       // Step 2: Re-render to remove search highlights (no layout needed, just styling update)
-      const reactFlowData = await this.executeLayoutAndRenderPipeline(state, {
+      // IMPORTANT: Call _handleLayoutAndRenderPipeline directly to avoid queue deadlock
+      // We're already in a queued operation (clearSearch), so we can't enqueue another one
+      const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: [], // No layout needed, just re-render to remove highlights
         fitView: options.fitView || false, // Default to false for clear operations
         fitViewOptions: options.fitViewOptions,
@@ -3508,6 +3518,10 @@ export class AsyncCoordinator {
 
       return reactFlowData;
     } catch (error) {
+      console.error(
+        "[AsyncCoordinator] ❌ CLEAR SEARCH: Failed with error:",
+        error,
+      );
       const endTime = Date.now();
       const duration = endTime - startTime;
 
@@ -4114,7 +4128,6 @@ export class AsyncCoordinator {
             containerCount: currentSnapshot.containerCount,
             nodeCount: currentSnapshot.nodeCount,
             layoutPhase: currentSnapshot.layoutPhase,
-            cacheVersion: currentSnapshot.cacheVersion,
           },
         },
       );
@@ -4129,7 +4142,6 @@ export class AsyncCoordinator {
           containerCount: currentSnapshot.containerCount,
           nodeCount: currentSnapshot.nodeCount,
           layoutPhase: currentSnapshot.layoutPhase,
-          cacheVersion: currentSnapshot.cacheVersion,
         },
       },
     );
@@ -4145,7 +4157,6 @@ export class AsyncCoordinator {
     nodeCount: number;
     edgeCount: number;
     layoutPhase: string;
-    cacheVersion?: number;
   } {
     return {
       timestamp: Date.now(),
@@ -4153,8 +4164,6 @@ export class AsyncCoordinator {
       nodeCount: state.visibleNodes?.length || 0,
       edgeCount: state.visibleEdges?.length || 0,
       layoutPhase: state.layoutPhase || "unknown",
-      // Use VisualizationState's existing cache version if available
-      cacheVersion: state.getCacheVersion ? state.getCacheVersion() : undefined,
     };
   }
 
@@ -4330,28 +4339,38 @@ export class AsyncCoordinator {
     try {
       for (const result of searchResults) {
         if (result.type === "node") {
-          // Find containers that contain this node and are currently collapsed
-          const containers = state.getContainersForNode
-            ? state.getContainersForNode(result.id)
-            : [];
+          // Get the immediate parent container for this node
+          const containerId = state.getNodeContainer
+            ? state.getNodeContainer(result.id)
+            : undefined;
 
-          for (const container of containers) {
-            if (container.collapsed && !containerIds.includes(container.id)) {
-              containerIds.push(container.id);
+          if (containerId) {
+            // Get all ancestor containers up to the root
+            let currentContainerId: string | undefined = containerId;
+
+            while (currentContainerId) {
+              const container = state._containers?.get(currentContainerId);
+              if (!container) break;
+
+              // Check if this container is collapsed
+              if (
+                container.collapsed &&
+                !containerIds.includes(currentContainerId)
+              ) {
+                containerIds.push(currentContainerId);
+              }
+
+              // Move to parent container
+              currentContainerId = state.getContainerParent
+                ? state.getContainerParent(currentContainerId)
+                : undefined;
             }
           }
         }
       }
 
       return containerIds;
-    } catch (error) {
-      console.warn(
-        "[AsyncCoordinator] ⚠️ Failed to get containers for search results:",
-        {
-          error: (error as Error).message,
-          searchResultsCount: searchResults.length,
-        },
-      );
+    } catch (_error) {
       return [];
     }
   }

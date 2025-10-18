@@ -114,6 +114,13 @@ const InfoPanelInternal = forwardRef<
     },
     ref,
   ) => {
+    // DEBUG: Log what we receive
+    console.warn("[InfoPanel] Props received:", {
+      hasVisualizationState: !!visualizationState,
+      hasAsyncCoordinator: !!asyncCoordinator,
+      asyncCoordinatorType: asyncCoordinator?.constructor?.name,
+    });
+
     const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
     const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
     const [groupingCollapsed, setGroupingCollapsed] = useState(false);

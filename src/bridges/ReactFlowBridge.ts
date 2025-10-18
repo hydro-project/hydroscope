@@ -1468,46 +1468,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
     elementType: "node" | "edge",
   ): T[] {
-    console.log(`[ReactFlowBridge] 🎨 applyAllHighlights called for ${elementType}s`, {
-      elementCount: elements.length,
-      elementType,
-    });
-    
     try {
-      // PERFORMANCE OPTIMIZATION: If no highlight method exists, skip all processing
+      // If no highlight method exists, skip all processing
       if (!state.getGraphElementHighlightType) {
-        console.log(`[ReactFlowBridge] ⚠️  No getGraphElementHighlightType method, skipping highlights`);
-        return elements; // No highlighting capability, return as-is
-      }
-
-      // PERFORMANCE OPTIMIZATION: For large graphs, check if any highlights exist first
-      if (elements.length > 100) {
-        // Sample a few elements to see if any highlights exist
-        const sampleSize = Math.min(10, elements.length);
-        let hasAnyHighlights = false;
-        for (let i = 0; i < sampleSize; i++) {
-          if (state.getGraphElementHighlightType(elements[i].id)) {
-            hasAnyHighlights = true;
-            break;
-          }
-        }
-
-        // If no highlights found in sample, likely no highlights at all
-        if (!hasAnyHighlights) {
-          return elements; // Skip expensive per-element processing
-        }
+        return elements;
       }
 
       return elements.map((element) => {
         const highlightType = state.getGraphElementHighlightType(element.id);
         const hasTemporaryHighlight = state.hasTemporaryHighlight?.(element.id);
-        
-        if (elementType === "node") {
-          console.log(`[ReactFlowBridge] 🔍 Checking node ${element.id}:`, {
-            highlightType,
-            hasTemporaryHighlight,
-          });
-        }
 
         // Check if element has temporary highlight (glow effect)
         if (hasTemporaryHighlight) {
@@ -1530,11 +1499,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
               node.data.searchHighlightStrong ||
               node.data.isHighlighted
             ) {
-              console.log(`[ReactFlowBridge] 🧹 CLEARING highlight for node ${node.id}`, {
-                hadSearchHighlight: node.data.searchHighlight,
-                hadSearchHighlightStrong: node.data.searchHighlightStrong,
-                hadIsHighlighted: node.data.isHighlighted,
-              });
               const clearedNode: ReactFlowNode = {
                 ...node,
                 data: {
@@ -1549,14 +1513,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
               // Freeze for immutability
               Object.freeze(clearedNode);
               Object.freeze(clearedNode.data);
-              console.log(`[ReactFlowBridge] ✅ Cleared node ${node.id} data:`, {
-                searchHighlight: clearedNode.data.searchHighlight,
-                searchHighlightStrong: clearedNode.data.searchHighlightStrong,
-                isHighlighted: clearedNode.data.isHighlighted,
-              });
               return clearedNode as T;
-            } else {
-              console.log(`[ReactFlowBridge] ⏭️  Skipping node ${node.id} - no highlights to clear`);
             }
           }
           return element;
@@ -1697,12 +1654,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
       state &&
       state.getCurrentSearchResult()?.id === node.id;
 
-    console.log(`[ReactFlowBridge] ✨ APPLYING ${highlightType} highlight to node ${node.id}`, {
-      isCurrentResult,
-      willSetSearchHighlight: highlightType === "search",
-      willSetSearchHighlightStrong: isCurrentResult,
-    });
-
     // Create new node with highlight data
     // IMPORTANT: Set searchHighlight/searchHighlightStrong for StandardNode component
     const result = {
@@ -1722,9 +1673,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     Object.freeze(result);
     Object.freeze(result.style);
     Object.freeze(result.data);
-    
-    
-    
+
     return result;
   }
   /**

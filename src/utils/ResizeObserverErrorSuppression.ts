@@ -26,9 +26,17 @@ const RESIZE_OBSERVER_ERROR_PATTERNS = [
 if (typeof window !== "undefined") {
   const originalWindowError = window.onerror;
   window.onerror = (message, source, lineno, colno, error) => {
-    const errorToCheck = error || (typeof message === 'string' ? message : String(message));
-    const errorMessage = typeof errorToCheck === "string" ? errorToCheck : errorToCheck.message || "";
-    if (RESIZE_OBSERVER_ERROR_PATTERNS.some(pattern => pattern.test(errorMessage))) {
+    const errorToCheck =
+      error || (typeof message === "string" ? message : String(message));
+    const errorMessage =
+      typeof errorToCheck === "string"
+        ? errorToCheck
+        : errorToCheck.message || "";
+    if (
+      RESIZE_OBSERVER_ERROR_PATTERNS.some((pattern) =>
+        pattern.test(errorMessage),
+      )
+    ) {
       // Suppress the error
       return true;
     }
@@ -132,10 +140,11 @@ export function enableResizeObserverErrorSuppression(): void {
     "unhandledrejection",
     customUnhandledRejectionHandler,
   );
-  
+
   // Also set window.onerror directly to catch ResizeObserver loop errors
   window.onerror = (message, source, lineno, colno, error) => {
-    const errorToCheck = error || (typeof message === 'string' ? message : String(message));
+    const errorToCheck =
+      error || (typeof message === "string" ? message : String(message));
     if (shouldSuppressError(errorToCheck)) {
       logSuppressedError(errorToCheck, "window.onerror");
       return true; // Prevent default error handling
@@ -146,7 +155,7 @@ export function enableResizeObserverErrorSuppression(): void {
     }
     return false;
   };
-  
+
   // Also set window.onunhandledrejection directly
   window.onunhandledrejection = (event: PromiseRejectionEvent) => {
     const reason = event.reason;
@@ -164,10 +173,18 @@ export function enableResizeObserverErrorSuppression(): void {
   // Also override console.error to suppress ResizeObserver errors
   const originalConsoleError = console.error;
   console.error = (...args: any[]) => {
-    const errorString = args.join(' ');
-    if (RESIZE_OBSERVER_ERROR_PATTERNS.some(pattern => pattern.test(errorString))) {
+    const errorString = args.join(" ");
+    if (
+      RESIZE_OBSERVER_ERROR_PATTERNS.some((pattern) =>
+        pattern.test(errorString),
+      )
+    ) {
       if (process.env.NODE_ENV === "development") {
-        hscopeLogger.log("debug", "[Hydroscope] Suppressed ResizeObserver console.error:", errorString);
+        hscopeLogger.log(
+          "debug",
+          "[Hydroscope] Suppressed ResizeObserver console.error:",
+          errorString,
+        );
       }
       return;
     }

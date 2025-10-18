@@ -13,10 +13,12 @@ Welcome to the Hydroscope documentation! This directory contains comprehensive g
 ### Development Guides
 
 #### Architecture & Design
+
 - **[Bridge Reset Architecture](development/bridge-reset-architecture.md)** - Overview of the bridge pattern and reset architecture
 - **[Sync Tree and Graph](development/sync-tree-and-graph.md)** - How hierarchy tree and graph views stay synchronized
 
 #### Implementation Guides
+
 - **[Logging Guide](development/LOGGING.md)** - Logging patterns and debugging strategies
 - **[ResizeObserver Error Fix](development/ResizeObserver-Error-Fix.md)** - Handling ResizeObserver loop errors
 - **[Simplified API Examples](development/simplified-api-examples.md)** - Common API usage patterns and examples
@@ -48,6 +50,14 @@ docs/
     ├── ResizeObserver-Error-Fix.md
     ├── simplified-api-examples.md
     └── sync-tree-and-graph.md
+```
+
+## Printing out hscopeLogger messages
+
+Type the following into the web console:
+
+```
+window.__HYDRO_LOGS = 'coordinator,bridge,op,layout,interaction,debug,search,container,style,performance,panel,validation'
 ```
 
 ## 💡 Additional Resources
