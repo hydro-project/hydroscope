@@ -1468,9 +1468,15 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
     elementType: "node" | "edge",
   ): T[] {
+    console.log(`[ReactFlowBridge] 🎨 applyAllHighlights called for ${elementType}s`, {
+      elementCount: elements.length,
+      elementType,
+    });
+    
     try {
       // PERFORMANCE OPTIMIZATION: If no highlight method exists, skip all processing
       if (!state.getGraphElementHighlightType) {
+        console.log(`[ReactFlowBridge] ⚠️  No getGraphElementHighlightType method, skipping highlights`);
         return elements; // No highlighting capability, return as-is
       }
 
@@ -1495,6 +1501,13 @@ export class ReactFlowBridge implements IReactFlowBridge {
       return elements.map((element) => {
         const highlightType = state.getGraphElementHighlightType(element.id);
         const hasTemporaryHighlight = state.hasTemporaryHighlight?.(element.id);
+        
+        if (elementType === "node") {
+          console.log(`[ReactFlowBridge] 🔍 Checking node ${element.id}:`, {
+            highlightType,
+            hasTemporaryHighlight,
+          });
+        }
 
         // Check if element has temporary highlight (glow effect)
         if (hasTemporaryHighlight) {
@@ -1508,7 +1521,44 @@ export class ReactFlowBridge implements IReactFlowBridge {
         }
 
         if (!highlightType) {
-          // No highlights to apply, return as-is (don't clear non-existent highlights)
+          // No highlights to apply - clear any existing highlight flags
+          if (elementType === "node") {
+            const node = element as ReactFlowNode;
+            // Only create new node if it has highlight flags to clear
+            if (
+              node.data.searchHighlight ||
+              node.data.searchHighlightStrong ||
+              node.data.isHighlighted
+            ) {
+              console.log(`[ReactFlowBridge] 🧹 CLEARING highlight for node ${node.id}`, {
+                hadSearchHighlight: node.data.searchHighlight,
+                hadSearchHighlightStrong: node.data.searchHighlightStrong,
+                hadIsHighlighted: node.data.isHighlighted,
+              });
+              const clearedNode: ReactFlowNode = {
+                ...node,
+                data: {
+                  ...node.data,
+                  searchHighlight: false,
+                  searchHighlightStrong: false,
+                  isHighlighted: false,
+                  highlightType: undefined,
+                  highlightTimestamp: Date.now(), // Force React to recognize change
+                },
+              };
+              // Freeze for immutability
+              Object.freeze(clearedNode);
+              Object.freeze(clearedNode.data);
+              console.log(`[ReactFlowBridge] ✅ Cleared node ${node.id} data:`, {
+                searchHighlight: clearedNode.data.searchHighlight,
+                searchHighlightStrong: clearedNode.data.searchHighlightStrong,
+                isHighlighted: clearedNode.data.isHighlighted,
+              });
+              return clearedNode as T;
+            } else {
+              console.log(`[ReactFlowBridge] ⏭️  Skipping node ${node.id} - no highlights to clear`);
+            }
+          }
           return element;
         }
 
@@ -1633,13 +1683,28 @@ export class ReactFlowBridge implements IReactFlowBridge {
     node: ReactFlowNode,
     highlightStyle: React.CSSProperties,
     highlightType: "search" | "navigation",
+    state?: VisualizationState,
   ): ReactFlowNode {
     // Combine existing style with highlight style
     const combinedStyle = {
       ...node.style,
       ...highlightStyle,
     };
+
+    // Determine if this is the current search result (for strong highlight)
+    const isCurrentResult =
+      highlightType === "search" &&
+      state &&
+      state.getCurrentSearchResult()?.id === node.id;
+
+    console.log(`[ReactFlowBridge] ✨ APPLYING ${highlightType} highlight to node ${node.id}`, {
+      isCurrentResult,
+      willSetSearchHighlight: highlightType === "search",
+      willSetSearchHighlightStrong: isCurrentResult,
+    });
+
     // Create new node with highlight data
+    // IMPORTANT: Set searchHighlight/searchHighlightStrong for StandardNode component
     const result = {
       ...node,
       style: combinedStyle,
@@ -1648,12 +1713,18 @@ export class ReactFlowBridge implements IReactFlowBridge {
         highlightType,
         isHighlighted: true,
         highlightTimestamp: Date.now(), // Force React to recognize data change
+        // Add search highlight flags for StandardNode component
+        searchHighlight: highlightType === "search",
+        searchHighlightStrong: isCurrentResult,
       },
     };
     // Freeze for immutability
     Object.freeze(result);
     Object.freeze(result.style);
     Object.freeze(result.data);
+    
+    
+    
     return result;
   }
   /**
@@ -1691,7 +1762,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
     state: VisualizationState,
   ): ReactFlowNode {
     const searchStyle = this.getSearchHighlightStyle(node, state);
-    return this.createHighlightedNode(node, searchStyle, "search");
+    return this.createHighlightedNode(node, searchStyle, "search", state);
   }
 
   private applyNavigationHighlightToElement(

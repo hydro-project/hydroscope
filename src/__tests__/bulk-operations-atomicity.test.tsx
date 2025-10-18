@@ -94,18 +94,21 @@ const AtomicityTestComponent: React.FC<{
     }
   }, [onReady]);
 
-  const handleError = React.useCallback((error: Error) => {
-    // Even on error, call onReady so tests can proceed
-    if (hydroscopeRef.current && onReady && !readyCalledRef.current) {
-      readyCalledRef.current = true;
-      setTimeout(() => {
-        onReady(hydroscopeRef.current!);
-      }, 100);
-    }
-    if (onError) {
-      onError(error);
-    }
-  }, [onReady, onError]);
+  const handleError = React.useCallback(
+    (error: Error) => {
+      // Even on error, call onReady so tests can proceed
+      if (hydroscopeRef.current && onReady && !readyCalledRef.current) {
+        readyCalledRef.current = true;
+        setTimeout(() => {
+          onReady(hydroscopeRef.current!);
+        }, 100);
+      }
+      if (onError) {
+        onError(error);
+      }
+    },
+    [onReady, onError],
+  );
 
   // Fallback: call onReady after a timeout even if visualization state change doesn't fire
   React.useEffect(() => {
@@ -627,4 +630,3 @@ describe("Bulk Operations Atomicity Tests", () => {
     }, 15000); // Increase test timeout to 15 seconds
   });
 });
-

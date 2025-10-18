@@ -3,6 +3,35 @@
  *
  * Simple, focused API for graph visualization components.
  */
+
+// ⚠️ CRITICAL: Install ResizeObserver error suppression IMMEDIATELY
+// This must be the very first thing that runs when the library loads
+if (typeof window !== "undefined") {
+  const resizeObserverPatterns = [
+    /ResizeObserver loop limit exceeded/i,
+    /ResizeObserver loop completed with undelivered notifications/i,
+    /ResizeObserver loop/i,
+  ];
+  
+  const originalError = window.onerror;
+  window.onerror = function(message, source, lineno, colno, error) {
+    const errorStr = String(message || error || "");
+    if (resizeObserverPatterns.some(p => p.test(errorStr))) {
+      return true; // Suppress
+    }
+    return originalError ? originalError(message, source, lineno, colno, error) : false;
+  };
+  
+  // Also suppress via error event listener (for webpack-dev-server)
+  window.addEventListener('error', (e) => {
+    const errorStr = String(e.message || e.error || "");
+    if (resizeObserverPatterns.some(p => p.test(errorStr))) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  }, true); // Use capture phase to intercept before webpack
+}
+
 // 🎯 CORE COMPONENTS
 export { Hydroscope } from "./components/Hydroscope.js";
 export { HydroscopeCore } from "./components/HydroscopeCore.js";

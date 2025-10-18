@@ -129,9 +129,12 @@ describe("HydroscopeCore Component", () => {
         />,
       );
 
-      await waitFor(() => {
-        expect(ref.current).toBeDefined();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(ref.current).toBeDefined();
+        },
+        { timeout: 10000 },
+      );
 
       // Should not throw when calling collapseContainers
       await expect(ref.current?.collapseContainers()).resolves.not.toThrow();
@@ -147,9 +150,12 @@ describe("HydroscopeCore Component", () => {
         />,
       );
 
-      await waitFor(() => {
-        expect(ref.current).toBeDefined();
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(ref.current).toBeDefined();
+        },
+        { timeout: 10000 },
+      );
 
       // Should not throw when calling expandContainers
       await expect(ref.current?.expandContainers()).resolves.not.toThrow();

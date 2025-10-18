@@ -14,16 +14,20 @@ import {
 import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
- * Clear search imperatively without triggering AsyncCoordinator cascades
+ * Clear search imperatively using AsyncCoordinator for proper coordination
  *
- * This utility implements the pattern we discovered for avoiding ResizeObserver loops:
- * 1. Clear VisualizationState directly (imperative)
+ * IMPORTANT: This MUST use AsyncCoordinator to ensure ReactFlow data is regenerated
+ * after clearing search highlights. Direct calls to clearSearchEnhanced will not
+ * update the graph visualization.
+ *
+ * This utility implements the pattern:
+ * 1. Use AsyncCoordinator.clearSearch() to coordinate the operation
  * 2. Clear DOM input directly (imperative)
  * 3. Update React state minimally (batched)
- * 4. Avoid callbacks that trigger coordination systems
  */
 export function clearSearchImperatively(options: {
   visualizationState?: any;
+  asyncCoordinator?: any;
   inputRef?: React.RefObject<HTMLInputElement>;
   setQuery?: (query: string) => void;
   setMatches?: (matches: any[]) => void;
@@ -35,6 +39,7 @@ export function clearSearchImperatively(options: {
 }): void {
   const {
     visualizationState,
+    asyncCoordinator,
     inputRef,
     setQuery,
     setMatches,
@@ -50,6 +55,7 @@ export function clearSearchImperatively(options: {
   if (enablePerformanceMonitoring) {
     globalOperationMonitor.startOperation(operation, {
       hasVisualizationState: !!visualizationState,
+      hasAsyncCoordinator: !!asyncCoordinator,
       hasInputRef: !!inputRef,
       hasSetters: !!(setQuery && setMatches && setCurrentIndex),
     });
@@ -69,19 +75,35 @@ export function clearSearchImperatively(options: {
       clearTimer();
     }
 
-    // 2. Clear VisualizationState directly (imperative)
-    if (visualizationState && visualizationState.clearSearchEnhanced) {
+    // 2. Use AsyncCoordinator for coordinated clear (REQUIRED for proper ReactFlow update)
+    if (!asyncCoordinator || !visualizationState) {
+      console.error(
+        "[SearchClearUtils] AsyncCoordinator and VisualizationState are REQUIRED for proper search clearing!",
+        { hasAsyncCoordinator: !!asyncCoordinator, hasVisualizationState: !!visualizationState }
+      );
+      throw new Error("AsyncCoordinator is required for search clearing - graph highlights cannot be cleared without it");
+    } else {
       try {
-        visualizationState.clearSearchEnhanced();
+        // Use AsyncCoordinator to ensure ReactFlow data is regenerated
+        asyncCoordinator
+          .clearSearch(visualizationState, {
+            fitView: false,
+          })
+          .catch((error: any) => {
+            console.error(
+              "[SearchClearUtils] AsyncCoordinator clear failed:",
+              error,
+            );
+          });
         if (debug) {
           hscopeLogger.log(
             "op",
-            "[SearchClearUtils] VisualizationState cleared imperatively",
+            "[SearchClearUtils] Search cleared via AsyncCoordinator",
           );
         }
       } catch (error) {
         console.error(
-          "[SearchClearUtils] VisualizationState clear failed:",
+          "[SearchClearUtils] AsyncCoordinator clear failed:",
           error,
         );
       }

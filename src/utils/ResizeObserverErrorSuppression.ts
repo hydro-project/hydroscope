@@ -10,6 +10,35 @@
  * 3. Error boundary integration for graceful recovery
  * 4. Development vs production error handling
  */
+
+/**
+ * ResizeObserver error patterns to suppress
+ */
+const RESIZE_OBSERVER_ERROR_PATTERNS = [
+  /ResizeObserver loop limit exceeded/i,
+  /ResizeObserver loop completed with undelivered notifications/i,
+  /ResizeObserver loop/i, // Catch-all for any ResizeObserver loop error
+  /Non-Error promise rejection captured/i,
+];
+
+// Install global suppression IMMEDIATELY when this module loads
+// This must happen before any other code runs
+if (typeof window !== "undefined") {
+  const originalWindowError = window.onerror;
+  window.onerror = (message, source, lineno, colno, error) => {
+    const errorToCheck = error || (typeof message === 'string' ? message : String(message));
+    const errorMessage = typeof errorToCheck === "string" ? errorToCheck : errorToCheck.message || "";
+    if (RESIZE_OBSERVER_ERROR_PATTERNS.some(pattern => pattern.test(errorMessage))) {
+      // Suppress the error
+      return true;
+    }
+    if (originalWindowError) {
+      return originalWindowError(message, source, lineno, colno, error);
+    }
+    return false;
+  };
+}
+
 import { hscopeLogger } from "./logger.js";
 
 // Global flag to track if error suppression is active
@@ -18,15 +47,6 @@ let originalErrorHandler: OnErrorEventHandler | null = null;
 let originalUnhandledRejectionHandler:
   | ((event: PromiseRejectionEvent) => void)
   | null = null;
-
-/**
- * ResizeObserver error patterns to suppress
- */
-const RESIZE_OBSERVER_ERROR_PATTERNS = [
-  /ResizeObserver loop limit exceeded/i,
-  /ResizeObserver loop completed with undelivered notifications/i,
-  /Non-Error promise rejection captured/i,
-];
 
 /**
  * Check if an error should be suppressed
@@ -105,12 +125,54 @@ export function enableResizeObserverErrorSuppression(): void {
   originalErrorHandler = window.onerror;
   originalUnhandledRejectionHandler = window.onunhandledrejection;
 
-  // Install custom handlers
+  // Install custom handlers via both addEventListener AND direct assignment
+  // ResizeObserver errors can be caught by either method depending on browser
   window.addEventListener("error", customErrorHandler);
   window.addEventListener(
     "unhandledrejection",
     customUnhandledRejectionHandler,
   );
+  
+  // Also set window.onerror directly to catch ResizeObserver loop errors
+  window.onerror = (message, source, lineno, colno, error) => {
+    const errorToCheck = error || (typeof message === 'string' ? message : String(message));
+    if (shouldSuppressError(errorToCheck)) {
+      logSuppressedError(errorToCheck, "window.onerror");
+      return true; // Prevent default error handling
+    }
+    // Call original handler if it exists
+    if (originalErrorHandler) {
+      return originalErrorHandler(message, source, lineno, colno, error);
+    }
+    return false;
+  };
+  
+  // Also set window.onunhandledrejection directly
+  window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+    const reason = event.reason;
+    if (reason && shouldSuppressError(reason)) {
+      logSuppressedError(reason, "window.onunhandledrejection");
+      event.preventDefault();
+      return;
+    }
+    // Call original handler if it exists
+    if (originalUnhandledRejectionHandler) {
+      originalUnhandledRejectionHandler(event);
+    }
+  };
+
+  // Also override console.error to suppress ResizeObserver errors
+  const originalConsoleError = console.error;
+  console.error = (...args: any[]) => {
+    const errorString = args.join(' ');
+    if (RESIZE_OBSERVER_ERROR_PATTERNS.some(pattern => pattern.test(errorString))) {
+      if (process.env.NODE_ENV === "development") {
+        hscopeLogger.log("debug", "[Hydroscope] Suppressed ResizeObserver console.error:", errorString);
+      }
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
 
   isErrorSuppressionActive = true;
 

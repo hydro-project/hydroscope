@@ -608,6 +608,10 @@ export const Hydroscope = memo<HydroscopeProps>(
       isLoading: false,
       statusMessage: "",
     });
+    
+    // Store AsyncCoordinator in state for stable reference to child components
+    const [asyncCoordinator, setAsyncCoordinator] = useState<AsyncCoordinator | null>(null);
+    
     // Track current grouping (can be changed by user)
     const [selectedGrouping, setSelectedGrouping] = useState<string | null>(
       null,
@@ -621,6 +625,19 @@ export const Hydroscope = memo<HydroscopeProps>(
     const infoPanelRef = useRef<InfoPanelRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const elkBridgeRef = useRef<ELKBridge | null>(null);
+    
+    // Capture AsyncCoordinator when HydroscopeCore mounts
+    useEffect(() => {
+      if (hydroscopeCoreRef.current) {
+        const coordinator = hydroscopeCoreRef.current.getAsyncCoordinator();
+        if (coordinator && coordinator !== asyncCoordinator) {
+          
+          setAsyncCoordinator(coordinator);
+        }
+      } else {
+        console.warn('[Hydroscope] hydroscopeCoreRef.current not available yet');
+      }
+    }, [state.data, state.currentVisualizationState]); // Re-check when data or visualizationState changes
     // Refs for cleanup
     const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
@@ -970,109 +987,26 @@ export const Hydroscope = memo<HydroscopeProps>(
             autoFitEnabled: shouldDisableAutoFit ? false : prev.autoFitEnabled,
           };
         });
-        // CRITICAL FIX: Perform search in VisualizationState to expand containers and set highlights
+        // Use consolidated search operation to prevent race conditions and ResizeObserver errors
         if (hydroscopeCoreRef.current) {
           try {
             const asyncCoordinator =
               hydroscopeCoreRef.current.getAsyncCoordinator();
             const currentVisualizationState =
               hydroscopeCoreRef.current.getVisualizationState();
+
             if (asyncCoordinator && currentVisualizationState) {
-              // Don't perform search again if it was already done in SearchControls
-              // This prevents double search execution which can clear highlights
-              const existingHighlights =
-                currentVisualizationState.getGraphSearchHighlights();
-              let searchResults;
-              if (query && existingHighlights.size === 0) {
-                // Search not yet performed or highlights cleared, perform search
-                searchResults = currentVisualizationState.performSearch(query);
-              } else if (query) {
-                // Search already performed, get existing results
-                searchResults = currentVisualizationState.getSearchResults();
-              } else {
-                // Clear search
-                searchResults = currentVisualizationState.performSearch("");
-              }
-              // Container expansion requires ELK layout, not just ReactFlow render
-              // When containers are expanded, visible nodes change and positions need recalculation
-              const hydroscopeCore = hydroscopeCoreRef.current;
-              if (hydroscopeCore) {
-                if (searchResults.length > 0) {
-                  // Search with results - expand only paths to search matches (not all containers)
-                  try {
-                    // Get containers that need to be expanded to show search results
-                    const containersToExpand = new Set<string>();
-                    for (const result of searchResults) {
-                      const expansionPath =
-                        currentVisualizationState.getTreeExpansionPath(
-                          result.id,
-                        );
-                      for (const containerId of expansionPath) {
-                        containersToExpand.add(containerId);
-                      }
-                    }
-
-                    if (containersToExpand.size > 0) {
-                      // Expand only the necessary containers
-                      // Don't fitView here - we'll focus on the search result after
-                      await asyncCoordinator.expandContainers(
-                        currentVisualizationState,
-                        Array.from(containersToExpand),
-                        {
-                          fitView: false, // Don't fit view during expansion
-                        },
-                      );
-                    } else {
-                      // No expansion needed, just render highlights
-                      if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                        await asyncCoordinator.executeLayoutAndRenderPipeline(
-                          currentVisualizationState,
-                          {
-                            relayoutEntities: [], // No layout, just render
-                            fitView: false,
-                          },
-                        );
-                      }
-                    }
-                  } catch (_error) {
-                    // Fallback to ReactFlow render using new pipeline method
-                    if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                      await asyncCoordinator.executeLayoutAndRenderPipeline(
-                        currentVisualizationState,
-                        {
-                          relayoutEntities: [], // No layout, just render
-                          fitView: false,
-                        },
-                      );
-                    }
-                  }
-                } else {
-                  // Search cleared - use ReactFlow render only
-                  if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                    await asyncCoordinator.executeLayoutAndRenderPipeline(
-                      currentVisualizationState,
-                      {
-                        relayoutEntities: [], // No layout, just render
-                        fitView: false,
-                      },
-                    );
-                  }
-                }
-
-                // Don't navigate here - let SearchControls handle it after the search completes
-                // This ensures the same code path as arrow key navigation
-              } else {
-                // No HydroscopeCore, just queue ReactFlow render
-                if (asyncCoordinator.executeLayoutAndRenderPipeline) {
-                  await asyncCoordinator.executeLayoutAndRenderPipeline(
-                    currentVisualizationState,
-                    {
-                      relayoutEntities: [], // No layout, just render
-                      fitView: false,
-                    },
-                  );
-                }
-              }
+              // Use the consolidated updateSearchResults method
+              // This handles: search → expand → highlight → render
+              // All in a single queued operation to prevent race conditions
+              await asyncCoordinator.updateSearchResults(
+                query,
+                currentVisualizationState,
+                {
+                  expandContainers: true, // Expand containers to show search results
+                  fitView: false, // Don't fit view, just focus on first result
+                },
+              );
             }
           } catch (_error) {
             // Handle search errors silently
@@ -1622,9 +1556,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                     }
                     edgeStyleConfig={state.data?.edgeStyleConfig as any}
                     nodeTypeConfig={state.data?.nodeTypeConfig}
-                    asyncCoordinator={
-                      hydroscopeCoreRef.current?.getAsyncCoordinator() || null
-                    }
+                    asyncCoordinator={asyncCoordinator}
                     syncTreeAndGraph={state.syncTreeAndGraph}
                     onSyncTreeAndGraphChange={handleSyncTreeAndGraphToggle}
                   />

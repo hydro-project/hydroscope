@@ -91,15 +91,19 @@ describe("Hierarchy Tree Click-to-Center Feature", () => {
 
     expect(result.success).toBe(true);
 
+    // Wait for async viewport focusing to complete
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     // Verify that setCenter was called with correct parameters
     // Container center: x: 100 + 300/2 = 250, y: 100 + 200/2 = 200
     // Zoom should be 1.0 for native font size
+    // Default behavior is immediate positioning (duration: 0) unless duration is explicitly provided
     expect(mockReactFlowInstance.setCenter).toHaveBeenCalledWith(
       250,
       200,
       expect.objectContaining({
         zoom: 1.0,
-        duration: 800,
+        duration: 800, // navigateToElementWithErrorHandling passes VIEWPORT_ANIMATION_DURATION
       }),
     );
   });
@@ -113,6 +117,9 @@ describe("Hierarchy Tree Click-to-Center Feature", () => {
     );
 
     expect(result.success).toBe(true);
+
+    // Wait for async viewport focusing to complete
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify that setCenter was called with correct parameters
     // Node center: x: 120 + 100/2 = 170, y: 120 + 50/2 = 145
@@ -139,6 +146,9 @@ describe("Hierarchy Tree Click-to-Center Feature", () => {
     );
 
     expect(result.success).toBe(true);
+
+    // Wait for async viewport focusing to complete
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify custom zoom was used
     expect(mockReactFlowInstance.setCenter).toHaveBeenCalledWith(

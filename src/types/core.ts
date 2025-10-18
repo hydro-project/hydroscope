@@ -323,6 +323,7 @@ export interface QueuedOperation<T = any> {
     | "update_search_results"
     | "clear_search"
     | "execute_search_pipeline"
+    | "search_with_expansion"
     // Config and navigation operations
     | "update_render_config"
     | "navigate_to_element"

@@ -2866,8 +2866,18 @@ export class VisualizationState {
   }
   /**
    * Clear search state while preserving expansion state (enhanced version)
+   * 
+   * @deprecated DO NOT call this directly! Use AsyncCoordinator.clearSearch() instead.
+   * This method only clears the state but does NOT regenerate ReactFlow data,
+   * which means graph highlights will not be cleared.
+   * 
+   * @internal This is called internally by AsyncCoordinator.clearSearch()
+   * @private
    */
-  clearSearchEnhanced(): void {
+  private _clearSearchEnhanced(): void {
+    console.log('[VisualizationState] 🧹 _clearSearchEnhanced called');
+    console.trace('[VisualizationState] Call stack:');
+    
     // Clear any pending debounced search
     if (this._searchDebounceTimer !== null) {
       clearTimeout(this._searchDebounceTimer);
@@ -2877,7 +2887,11 @@ export class VisualizationState {
     this._searchNavigationState.searchQuery = "";
     this._searchNavigationState.searchResults = [];
     this._searchNavigationState.treeSearchHighlights.clear();
+    
+    console.log('[VisualizationState] 🧹 Clearing graphSearchHighlights, size before:', 
+      this._searchNavigationState.graphSearchHighlights.size);
     this._searchNavigationState.graphSearchHighlights.clear();
+    
     // Clear backward compatibility search state as well
     this._searchQuery = "";
     this._searchResults = [];
@@ -2907,7 +2921,7 @@ export class VisualizationState {
    */
   updateGraphSearchHighlights(results: SearchResult[]): void {
     this._searchNavigationState.graphSearchHighlights.clear();
-    
+
     for (const result of results) {
       // Only highlight if the element itself is visible
       if (this._isElementVisibleInGraph(result.id)) {
@@ -3070,10 +3084,18 @@ export class VisualizationState {
       this._searchNavigationState.graphSearchHighlights.has(elementId);
     const hasNavigation =
       this._searchNavigationState.graphNavigationHighlights.has(elementId);
-    if (hasSearch && hasNavigation) return "both";
-    if (hasSearch) return "search";
-    if (hasNavigation) return "navigation";
-    return null;
+    
+    const result = hasSearch && hasNavigation ? "both" 
+      : hasSearch ? "search" 
+      : hasNavigation ? "navigation" 
+      : null;
+    
+    // Only log for specific nodes we're tracking
+    if (elementId === "tee" || elementId === "285") {
+      
+    }
+    
+    return result;
   }
   /**
    * Get the lowest visible ancestor in the ReactFlow graph for an element

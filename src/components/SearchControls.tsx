@@ -172,7 +172,9 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             // Enhanced navigation with SearchResult if available
             if (onResultNavigation && searchResults) {
               // Find the corresponding SearchResult by ID, not by index!
-              const searchResult = searchResults.find((sr) => sr.id === result.id);
+              const searchResult = searchResults.find(
+                (sr) => sr.id === result.id,
+              );
               if (searchResult) {
                 onResultNavigation(searchResult);
               }
@@ -240,39 +242,30 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         try {
           const rx = toRegex(query);
           if (!rx) {
-            // Use AsyncCoordinator if available for coordinated clear
-            if (asyncCoordinator && visualizationState) {
-              try {
-                // Use AsyncCoordinator for coordinated clear (async but don't await to prevent blocking)
-                asyncCoordinator
-                  .clearSearch(visualizationState, {
-                    fitView: false,
-                  })
-                  .catch((error: any) => {
-                    console.error(
-                      "[SearchControls] Coordinated search clear failed in debounced effect:",
-                      error,
-                    );
-                  });
-              } catch (error) {
-                console.error(
-                  "[SearchControls] AsyncCoordinator clear failed:",
-                  error,
-                );
-              }
-            } else {
-              // Fallback to direct VisualizationState clear
-              if (
-                visualizationState &&
-                visualizationState.clearSearchEnhanced
-              ) {
-                try {
-                  visualizationState.clearSearchEnhanced();
-                  // ReactFlow regeneration will be handled by Hydroscope component
-                } catch (_error) {
-                  // Silently handle clear errors
-                }
-              }
+            // ALWAYS use AsyncCoordinator for coordinated clear
+            // This ensures ReactFlow data is regenerated after clearing
+            if (!asyncCoordinator || !visualizationState) {
+              console.error("[SearchControls] AsyncCoordinator or VisualizationState not available - cannot clear search properly!");
+              return;
+            }
+            
+            try {
+              // Use AsyncCoordinator for coordinated clear (async but don't await to prevent blocking)
+              asyncCoordinator
+                .clearSearch(visualizationState, {
+                  fitView: false,
+                })
+                .catch((error: any) => {
+                  console.error(
+                    "[SearchControls] Coordinated search clear failed in debounced effect:",
+                    error,
+                  );
+                });
+            } catch (error) {
+              console.error(
+                "[SearchControls] AsyncCoordinator clear failed:",
+                error,
+              );
             }
 
             setMatches([]);
@@ -433,6 +426,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     const clearAll = () => {
       clearSearchImperatively({
         visualizationState,
+        asyncCoordinator, // REQUIRED for proper ReactFlow data regeneration
         inputRef,
         setQuery,
         setMatches,

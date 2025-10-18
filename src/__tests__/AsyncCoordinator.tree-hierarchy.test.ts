@@ -198,9 +198,10 @@ describe("AsyncCoordinator Tree Hierarchy", () => {
       await coordinator.focusViewportOnElement("node1", mockReactFlowInstance);
 
       // setCenter should have been called with zoom 1.0 for native font size
+      // Default behavior is immediate positioning (duration: 0) for reliability
       expect(mockReactFlowInstance.setCenter).toHaveBeenCalledWith(150, 125, {
         zoom: 1.0,
-        duration: 800,
+        duration: 0,
       });
     });
 
