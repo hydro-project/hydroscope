@@ -1002,6 +1002,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         markerEnd: processedStyle.markerEnd || edge.markerEnd,
         appliedTags: processedStyle.appliedTags || [],
         lineStyle: processedStyle.lineStyle || "single",
+        waviness: processedStyle.waviness || false,
         edgeStyleType: ephemeralState.currentEdgeStyle,
       };
 
@@ -1111,6 +1112,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
       (styleData.markerEnd && styleData.markerEnd !== edge.markerEnd) ||
       hasAppliedTags ||
       styleData.lineStyle ||
+      styleData.waviness ||
       styleData.edgeStyleType;
 
     // If nothing changes, return the original edge (no object creation needed)
@@ -1129,6 +1131,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
         ...edge.data,
         appliedSemanticTags: hasAppliedTags ? [...styleData.appliedTags] : [],
         lineStyle: styleData.lineStyle,
+        waviness: styleData.waviness,
         edgeStyleType: styleData.edgeStyleType,
       },
     };

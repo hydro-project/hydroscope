@@ -1,0 +1,90 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "nodeType": "Source",
+      "fullLabel": "Source Node",
+      "shortLabel": "source"
+    },
+    {
+      "id": "n2",
+      "nodeType": "Transform",
+      "fullLabel": "Transform Node",
+      "shortLabel": "transform"
+    },
+    {
+      "id": "n3",
+      "nodeType": "Sink",
+      "fullLabel": "Sink Node",
+      "shortLabel": "sink"
+    },
+    {
+      "id": "n4",
+      "nodeType": "Source",
+      "fullLabel": "Cycle Source",
+      "shortLabel": "cycle_src"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "n1",
+      "target": "n2",
+      "semanticTags": ["SingleLine"]
+    },
+    {
+      "id": "e2",
+      "source": "n2",
+      "target": "n3",
+      "semanticTags": ["DoubleLine"]
+    },
+    {
+      "id": "e3",
+      "source": "n3",
+      "target": "n4",
+      "semanticTags": ["WavyLine"]
+    },
+    {
+      "id": "e4",
+      "source": "n4",
+      "target": "n1",
+      "semanticTags": ["DoubleWavy"]
+    }
+  ],
+  "legend": {
+    "title": "Edge Styles Test",
+    "semanticMappings": {
+      "SingleLine": {
+        "line-style": "single"
+      },
+      "DoubleLine": {
+        "line-style": "double"
+      },
+      "WavyLine": {
+        "waviness": "wavy"
+      },
+      "DoubleWavy": {
+        "line-style": "double",
+        "waviness": "wavy"
+      }
+    },
+    "items": [
+      {
+        "label": "Single Line",
+        "type": "SingleLine"
+      },
+      {
+        "label": "Double Line (Keyed Stream)",
+        "type": "DoubleLine"
+      },
+      {
+        "label": "Wavy Line (Cycle)",
+        "type": "WavyLine"
+      },
+      {
+        "label": "Double Wavy (Keyed Cycle)",
+        "type": "DoubleWavy"
+      }
+    ]
+  }
+}

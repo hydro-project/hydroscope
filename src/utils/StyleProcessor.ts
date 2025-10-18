@@ -41,6 +41,7 @@ export interface ProcessedStyle {
   appliedTags: string[];
   markerEnd?: string | object;
   lineStyle?: "single" | "double";
+  waviness?: boolean;
 }
 /**
  * Process semantic tags and return visual style
@@ -314,6 +315,7 @@ function convertStyleSettingsToVisual(
   let animated = false;
   let markerEnd: string | object | undefined = undefined;
   let lineStyle: "single" | "double" = "single";
+  let waviness = false;
   // Apply line-pattern
   const linePattern = styleSettings["line-pattern"] as string;
   if (linePattern) {
@@ -346,13 +348,13 @@ function convertStyleSettingsToVisual(
   const lineStyleSetting = styleSettings["line-style"] as string;
   if (lineStyleSetting === "double") {
     lineStyle = "double";
-    // For double lines, use a dash pattern that looks like double lines
-    style.strokeDasharray = "10,2,2,2";
+    // Double-line rendering is now handled by CustomEdge component
   }
+
   // Apply waviness
-  const waviness = styleSettings["waviness"] as string;
-  if (waviness === "wavy") {
-    style.waviness = "wavy";
+  const wavinessSetting = styleSettings["waviness"] as string;
+  if (wavinessSetting === "wavy") {
+    waviness = true;
   }
   // Apply halo
   const halo = styleSettings["halo"] as string;
@@ -411,6 +413,7 @@ function convertStyleSettingsToVisual(
     appliedTags,
     markerEnd,
     lineStyle,
+    waviness,
   };
 }
 /**

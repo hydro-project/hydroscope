@@ -7,6 +7,7 @@ import {
   getSmoothStepPath,
   type EdgeProps,
 } from "@xyflow/react";
+import { CustomEdge } from "./CustomEdge.js";
 // Helper function to get the appropriate path based on edge style type
 const getEdgePath = (
   edgeStyleType: string,
@@ -138,6 +139,6 @@ export const MemoAggregatedEdge = React.memo(AggregatedEdge);
 export const MemoDefaultEdge = React.memo(DefaultEdge);
 // Edge types configuration
 export const edgeTypes = {
-  default: MemoDefaultEdge,
+  default: CustomEdge,
   aggregated: MemoAggregatedEdge,
 };
