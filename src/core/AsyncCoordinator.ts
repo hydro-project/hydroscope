@@ -3473,8 +3473,9 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
     } = {},
-  ): Promise<any> {
+  ): Promise<any[]> {
     // Queue-enforced execution - ensures atomic, sequential processing
+    // Returns SearchResult[] AFTER all async work (container expansion, layout, render) completes
     return this._enqueueAndWait(
       "update_search_results",
       () => this._handleUpdateSearchResults(query, state, options),
@@ -3550,6 +3551,10 @@ export class AsyncCoordinator {
           searchResults,
           state,
         );
+
+        console.log("[AsyncCoordinator] Search results count:", searchResults.length);
+        console.log("[AsyncCoordinator] First 5 search result IDs:", searchResults.slice(0, 5).map((r: any) => r.id));
+        console.log("[AsyncCoordinator] Containers to expand:", containerIds);
 
         if (containerIds && containerIds.length > 0) {
           hscopeLogger.log(
@@ -3655,7 +3660,14 @@ export class AsyncCoordinator {
             },
           );
 
-          return reactFlowData;
+          // Wait for React to render the expanded containers before returning
+          // This ensures elements are in the DOM when caller tries to navigate
+          console.log("[AsyncCoordinator] Waiting for React to render expanded containers");
+          await this.waitForNextRender();
+          console.log("[AsyncCoordinator] React render complete, returning search results");
+
+          // Return search results after all work completes AND React has rendered
+          return searchResults;
         }
       }
 
@@ -3708,10 +3720,7 @@ export class AsyncCoordinator {
             !!this.onSearchResultFocused,
           );
           if (this.onSearchResultFocused) {
-            console.log(
-              "[AsyncCoordinator] (path 2) Calling onSearchResultFocused for:",
-              elementId,
-            );
+            
             this.onSearchResultFocused(elementId, 1.0);
           } else {
             
@@ -3735,7 +3744,13 @@ export class AsyncCoordinator {
         },
       );
 
-      return reactFlowData;
+      // Wait for React to render before returning (even without expansion, search highlights need to render)
+      console.log("[AsyncCoordinator] Waiting for React to render search highlights");
+      await this.waitForNextRender();
+      console.log("[AsyncCoordinator] React render complete, returning search results");
+
+      // Return search results after all work completes AND React has rendered
+      return searchResults;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -4685,6 +4700,14 @@ export class AsyncCoordinator {
           const containerId = state.getNodeContainer
             ? state.getNodeContainer(result.id)
             : undefined;
+
+          // Debug element 29 specifically
+          if (result.id === "29") {
+            console.log("[AsyncCoordinator] Checking element 29:");
+            console.log("  - Parent container:", containerId);
+            
+            
+          }
 
           if (containerId) {
             // Get all ancestor containers up to the root

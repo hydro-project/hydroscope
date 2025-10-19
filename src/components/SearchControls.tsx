@@ -60,6 +60,8 @@ type Props = {
   // Accessibility props
   ariaLabel?: string;
   announceResults?: boolean;
+  // Loading state callback for showing spinner during async search
+  onSearchStateChange?: (isSearching: boolean) => void;
 };
 // Convert wildcard pattern (* ?) to case-insensitive regex (substring match)
 function toRegex(pattern: string): RegExp | null {
@@ -94,6 +96,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
       currentSearchIndex = 0,
       ariaLabel = "Search controls",
       announceResults = true,
+      onSearchStateChange,
     },
     ref,
   ) => {
@@ -285,10 +288,20 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 query,
               );
 
+              // Show loading state
+              console.log("[SearchControls] onSearchStateChange available:", !!onSearchStateChange);
+              if (onSearchStateChange) {
+                console.log("[SearchControls] Setting isSearching to true");
+                onSearchStateChange(true);
+              }
+
+              console.log("[SearchControls] About to await updateSearchResults");
+
               // Use AsyncCoordinator to handle search with proper ReactFlow regeneration
               // This ensures: search → expand containers → highlight → render
               // IMPORTANT: Await the search completion before continuing
-              await asyncCoordinator.updateSearchResults(
+              // Returns search results AFTER all async work completes
+              const searchResults = await asyncCoordinator.updateSearchResults(
                 query,
                 visualizationState,
                 {
@@ -297,13 +310,22 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 },
               );
 
-              // After AsyncCoordinator completes, get the search results from state
-              const searchResults = visualizationState.getSearchResults
-                ? visualizationState.getSearchResults()
-                : [];
+              console.log("[SearchControls] updateSearchResults completed, got results:", searchResults.length);
+              console.log("[SearchControls] First 5 search results:", searchResults.slice(0, 5).map((r: any) => r.id));
+
+              // Hide loading state
+              if (onSearchStateChange) {
+                console.log("[SearchControls] Setting isSearching to false");
+                onSearchStateChange(false);
+              }
+
+              // Use the returned search results (guaranteed to be ready)
               const resultsById = new Map(
                 searchResults.map((r: any) => [r.id, r]),
               );
+              
+              console.log("[SearchControls] Results by ID map size:", resultsById.size);
+              console.log("[SearchControls] searchableItems count:", searchableItems.length);
 
               // Re-sort results to match tree order by using searchableItems order
               next = searchableItems
@@ -318,6 +340,13 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                   };
                 });
 
+              console.log("[SearchControls] After tree-order sorting, next.length:", next.length);
+              console.log("[SearchControls] First result in tree order (next[0]):", next[0]?.id);
+              
+              // Check if element 29 is in the results
+              const has29 = next.find(n => n.id === "29");
+              console.log("[SearchControls] Element 29 in results?", !!has29, has29);
+
               setMatches(next);
               setCurrentIndex(0);
 
@@ -327,6 +356,8 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               // Navigate to first result automatically if results found
               if (next.length > 0) {
                 await Promise.resolve(onSearchResult);
+                
+                
                 onNavigate("next", next[0]);
                 if (searchResults && searchResults[0] && onResultNavigation) {
                   onResultNavigation(searchResults[0]);
@@ -351,6 +382,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               return;
             } catch (error) {
               console.error("[SearchControls] Search setup failed:", error);
+              // Hide loading state on error
+              if (onSearchStateChange) {
+                onSearchStateChange(false);
+              }
               // Fall through to local regex search fallback
             }
           }
