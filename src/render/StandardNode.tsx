@@ -236,12 +236,8 @@ export function StandardNode({
               }
             })(),
             transition: "all 0.2s ease",
-            // Use box-shadow animations instead of transform to prevent ResizeObserver loops
-            animation: searchHighlight
-              ? searchHighlightStrong
-                ? "searchPulseStrong 2s ease-in-out infinite"
-                : "searchPulse 3s ease-in-out infinite"
-              : undefined,
+            // No animation - search matches are highlighted with color/border
+            // The current navigation result gets a spotlight instead
           }}
         >
           <HandlesRenderer />
@@ -419,14 +415,9 @@ export function StandardNode({
           })(),
           // Z-index priority: clicked animation (20) > default (1)
           zIndex: (data as any).searchHighlightStrong ? 30 : isClicked ? 20 : 1,
-          // Add prominent animation for search highlights
-          animation: (data as any).searchHighlight
-            ? (data as any).searchHighlightStrong
-              ? "searchPulseStrong 1.5s ease-in-out infinite"
-              : "searchPulse 2s ease-in-out infinite"
-            : isClicked
-              ? "glowEffect 1.5s ease-in-out"
-              : undefined,
+          // No animation for search highlights - use spotlight for current result instead
+          // Keep animation for clicked nodes
+          animation: isClicked ? "glowEffect 1.5s ease-in-out" : undefined,
         }}
         title={
           data.longLabel && data.longLabel !== displayLabel

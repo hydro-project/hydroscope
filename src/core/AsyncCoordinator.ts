@@ -3523,34 +3523,19 @@ export class AsyncCoordinator {
             },
           );
 
-          // Focus on the first search result with zoom 1.0
-          // Enqueue for post-render to ensure React has updated node positions
-          if (
-            options.fitView &&
-            searchResults.length > 0 &&
-            this.reactFlowInstance
-          ) {
+          // Focus viewport on first result to ensure it's visible
+          // Use immediate positioning (no animation) to avoid conflicts with navigation
+          if (searchResults.length > 0 && this.reactFlowInstance) {
             const firstResult = searchResults[0];
             const elementId = firstResult.id;
-            this.enqueuePostRenderCallback(async () => {
-              const animationDuration = options.fitViewOptions?.duration || 300;
 
-              // Focus viewport (this will mark animation start if duration > 0)
-              // Note: We don't create a spotlight here because the caller
-              // (SearchControls -> onNavigate -> navigateToElement) will handle it
-              // Don't specify zoom - let _handleFocusViewportOnElement calculate it
-              // to fit the element with padding (capped at 1.0 max)
-              await this._handleFocusViewportOnElement(
-                elementId,
-                this.reactFlowInstance!,
-                {
-                  duration: animationDuration,
-                },
-              );
-
-              // Wait for viewport animation to complete (event-driven, not timeout-based)
-              await this.waitForViewportAnimationComplete();
-            });
+            await this._handleFocusViewportOnElement(
+              elementId,
+              this.reactFlowInstance,
+              {
+                duration: 0, // Immediate, no animation
+              },
+            );
           }
 
           const endTime = Date.now();
@@ -3586,37 +3571,19 @@ export class AsyncCoordinator {
 
       // Step 4: Focus on first search result with zoom 1.0 (instead of fitView)
       // Enqueue for post-render to ensure React has updated node positions
-      if (
-        options.fitView &&
-        searchResults.length > 0 &&
-        this.reactFlowInstance
-      ) {
+      // Focus viewport on first result to ensure it's visible
+      // Use immediate positioning (no animation) to avoid conflicts with navigation
+      if (searchResults.length > 0 && this.reactFlowInstance) {
         const firstResult = searchResults[0];
         const elementId = firstResult.id;
 
-        this.enqueuePostRenderCallback(async () => {
-          const animationDuration = options.fitViewOptions?.duration || 300;
-
-          // Focus viewport (this will mark animation start if duration > 0)
-          // Note: We don't create a spotlight here because the caller
-          // (SearchControls -> onNavigate -> navigateToElement) will handle it
-          // Don't specify zoom - let _handleFocusViewportOnElement calculate it
-          // to fit the element with padding (capped at 1.0 max)
-          await this._handleFocusViewportOnElement(
-            elementId,
-            this.reactFlowInstance!,
-            {
-              duration: animationDuration,
-            },
-          );
-          hscopeLogger.log(
-            "coordinator",
-            "[AsyncCoordinator] ✅ Viewport focused on first search result",
-          );
-
-          // Wait for viewport animation to complete (event-driven, not timeout-based)
-          await this.waitForViewportAnimationComplete();
-        });
+        await this._handleFocusViewportOnElement(
+          elementId,
+          this.reactFlowInstance,
+          {
+            duration: 0, // Immediate, no animation
+          },
+        );
       }
 
       const endTime = Date.now();

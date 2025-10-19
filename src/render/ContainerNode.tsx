@@ -258,12 +258,8 @@ export function ContainerNode({
             transition: "all 0.2s ease",
             // Z-index for search highlighting
             zIndex: searchHighlightStrong ? 100 : searchHighlight ? 50 : 1,
-            // Add prominent animation for search highlights
-            animation: searchHighlight
-              ? searchHighlightStrong
-                ? "searchPulseStrong 1.5s ease-in-out infinite"
-                : "searchPulse 2s ease-in-out infinite"
-              : undefined,
+            // No animation - search matches are highlighted with color/border
+            // The current navigation result gets a spotlight instead
             // Merge ReactFlow styles (for search highlights) - these take precedence
             ...style,
           }}
@@ -419,12 +415,8 @@ export function ContainerNode({
             }
           })(),
           transition: "all 0.2s ease",
-          // Add prominent animation for search highlights
-          animation: searchHighlight
-            ? searchHighlightStrong
-              ? "searchPulseStrong 1.5s ease-in-out infinite"
-              : "searchPulse 2s ease-in-out infinite"
-            : undefined,
+          // No animation - search matches are highlighted with color/border
+          // The current navigation result gets a spotlight instead
           // Merge ReactFlow styles (for search highlights) - these take precedence
           ...style,
         }}

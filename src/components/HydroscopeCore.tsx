@@ -555,9 +555,9 @@ const HydroscopeCoreInternal = forwardRef<
           };
 
           setState((prev) => ({
-            ...prev,
-            spotlights: [...prev.spotlights, newSpotlight],
-          }));
+              ...prev,
+              spotlights: [...prev.spotlights, newSpotlight],
+            }));
 
           setTimeout(() => {
             setState((prev) => ({
@@ -2309,7 +2309,8 @@ const HydroscopeCoreInternal = forwardRef<
                   borderRadius: "8px",
                   boxShadow: `0 0 20px 4px ${highlightColor.glow}, inset 0 0 20px 2px ${highlightColor.glow.replace("0.8", "0.3")}`,
                   backgroundColor: highlightColor.background,
-                  animation: "glowPulse 2s ease-in-out",
+                  // Remove animation - the spotlight is temporary and will be removed after HIGHLIGHT_DURATION
+                  // animation: "glowPulse 2s ease-in-out",
                   zIndex: 1000,
                 }}
               />
