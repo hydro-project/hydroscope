@@ -58,13 +58,13 @@ describe("UI Operation Stability E2E Tests", () => {
     clearContainerOperationDebouncing();
   });
 
-  afterEach(() => {
-    // Cleanup
+  afterEach(async () => {
+    // Cleanup - wait for any pending timers to complete
+    await new Promise((resolve) => setTimeout(resolve, 50));
     disableResizeObserverErrorSuppression();
     clearContainerOperationDebouncing();
     errorSpy.mockRestore();
     consoleErrorSpy.mockRestore();
-    vi.clearAllTimers();
   });
 
   function setupTestData() {

@@ -1457,6 +1457,17 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
+          // Update ELKBridge configuration FIRST if layout algorithm changed
+          if (updates.layoutAlgorithm && elkBridgeRef.current) {
+            hscopeLogger.log(
+              "orchestrator",
+              `[HydroscopeCore] Updating ELKBridge algorithm to: ${updates.layoutAlgorithm}`,
+            );
+            elkBridgeRef.current.updateConfiguration({
+              algorithm: updates.layoutAlgorithm,
+            });
+          }
+
           // Update render config in VisualizationState
           state.visualizationState.updateRenderConfig(updates);
 

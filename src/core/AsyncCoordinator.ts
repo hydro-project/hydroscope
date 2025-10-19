@@ -591,6 +591,29 @@ export class AsyncCoordinator {
   getQueueLength(): number {
     return this.queue.length;
   }
+  
+  /**
+   * Get detailed queue information for debugging
+   */
+  getQueueDetails(): {
+    queue: Array<{ id: string; type: string; createdAt: number }>;
+    currentOperation: { id: string; type: string; startedAt?: number } | null;
+    processing: boolean;
+  } {
+    return {
+      queue: this.queue.map(op => ({
+        id: op.id,
+        type: op.type,
+        createdAt: op.createdAt,
+      })),
+      currentOperation: this.currentOperation ? {
+        id: this.currentOperation.id,
+        type: this.currentOperation.type,
+        startedAt: this.currentOperation.startedAt,
+      } : null,
+      processing: this.processing,
+    };
+  }
   /**
    * Cancel ELK operation if it's still queued
    */
@@ -4096,7 +4119,8 @@ export class AsyncCoordinator {
         );
 
         // Execute complete pipeline: layout + render + fitView
-        const reactFlowData = await this.executeLayoutAndRenderPipeline(
+        // Call the handler directly since we're already in a queued operation
+        const reactFlowData = await this._handleLayoutAndRenderPipeline(
           visualizationState,
           {
             relayoutEntities: options.relayoutEntities, // Use provided entities or full layout

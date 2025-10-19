@@ -353,6 +353,7 @@ export function ContainerNode({
     );
   }
   // Apply search highlight colors for non-collapsed containers too
+  const baseContainerColors = generateContainerColors(id, colorPalette);
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
     ? {
@@ -367,9 +368,9 @@ export function ContainerNode({
           : searchColors.match.text,
       }
     : {
-        background: "rgba(25, 118, 210, 0.1)",
-        border: "#1976d2",
-        text: "#1976d2", // Blue text on light blue background provides good contrast
+        ...baseContainerColors,
+        // Ensure good contrast for non-highlighted containers too
+        text: getContrastColor(baseContainerColors.background),
       };
   return (
     <>

@@ -77,16 +77,16 @@ export function clearSearchImperatively(options: {
 
     // 2. Use AsyncCoordinator for coordinated clear (REQUIRED for proper ReactFlow update)
     if (!asyncCoordinator || !visualizationState) {
-      console.error(
-        "[SearchClearUtils] AsyncCoordinator and VisualizationState are REQUIRED for proper search clearing!",
-        {
-          hasAsyncCoordinator: !!asyncCoordinator,
-          hasVisualizationState: !!visualizationState,
-        },
-      );
-      throw new Error(
-        "AsyncCoordinator is required for search clearing - graph highlights cannot be cleared without it",
-      );
+      if (debug) {
+        console.warn(
+          "[SearchClearUtils] AsyncCoordinator and VisualizationState not provided - skipping graph highlight clearing",
+          {
+            hasAsyncCoordinator: !!asyncCoordinator,
+            hasVisualizationState: !!visualizationState,
+          },
+        );
+      }
+      // Continue with DOM and React state clearing even without AsyncCoordinator
     } else {
       try {
         // Use AsyncCoordinator to ensure ReactFlow data is regenerated
