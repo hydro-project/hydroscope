@@ -9,6 +9,9 @@ export {
 } from "./Hydroscope.js";
 export { HydroscopeCore, type HydroscopeCoreProps } from "./HydroscopeCore.js";
 
+// Utility Components
+export { Spinner, type SpinnerProps } from "./Spinner.js";
+
 // Panel Components (for advanced users)
 export {
   InfoPanel,

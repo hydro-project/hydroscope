@@ -4,6 +4,7 @@
  */
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import { hscopeLogger } from "../utils/logger.js";
+import { Spinner } from "./Spinner.js";
 import type {
   HydroscopeData,
   ParseError,
@@ -521,7 +522,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="upload-content">
           {state.isProcessing ? (
             <div className="processing-state">
-              <div className="spinner" />
+              <Spinner size={32} borderWidth={3} />
               <p>Processing file...</p>
               {state.uploadProgress > 0 && (
                 <div className="progress-bar">
@@ -663,20 +664,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           flex-direction: column;
           align-items: center;
           gap: 1rem;
-        }
-
-        .spinner {
-          width: 2rem;
-          height: 2rem;
-          border: 3px solid #e2e8f0;
-          border-top: 3px solid #4299e1;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
         }
 
         .progress-bar {

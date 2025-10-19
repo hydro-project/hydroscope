@@ -27,6 +27,7 @@ import {
   SearchControlsRef,
 } from "../SearchControls";
 import { EdgeStyleLegend } from "../EdgeStyleLegend";
+import { Spinner } from "../Spinner";
 import { TYPOGRAPHY, PANEL_CONSTANTS } from "../../shared/config";
 import { clearSearchPanelImperatively } from "../../utils/searchClearUtils.js";
 import { togglePanelImperatively } from "../../utils/panelOperationUtils.js";
@@ -401,24 +402,7 @@ const InfoPanelInternal = forwardRef<
               borderRadius: 2,
             }}
           >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                border: "4px solid #f3f3f3",
-                borderTop: "4px solid #3b82f6",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-              }}
-            />
-            <style>
-              {`
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}
-            </style>
+            <Spinner />
           </div>
         )}
         <div

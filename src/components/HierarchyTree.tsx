@@ -13,8 +13,9 @@
 ): React.ReactNode {ew of container hierarchy for navigation using Ant Design Tree.
  */
 import React, { useMemo, useEffect, useState, useRef } from "react";
-import { Tree, Spin } from "antd";
+import { Tree } from "antd";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
+import { Spinner } from "./Spinner.js";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
 import {
@@ -1206,7 +1207,7 @@ export function HierarchyTree({
                 border: "1px solid #e0e0e0",
               }}
             >
-              <Spin size="default" />
+              <Spinner />
               <span style={{ fontSize: "14px", color: "#333" }}>
                 Updating tree...
               </span>
