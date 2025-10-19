@@ -18,6 +18,7 @@ import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import { Spinner } from "./Spinner.js";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
+import { getSearchableItemsInTreeOrder } from "../utils/hierarchyUtils.js";
 import {
   TYPOGRAPHY,
   COMPONENT_COLORS,
@@ -332,52 +333,6 @@ function createContainerDisplayTitle(
       </span>
     </div>
   );
-}
-
-/**
- * Get searchable items in the same order as they appear in the tree hierarchy
- * @internal
- */
-export function getSearchableItemsInTreeOrder(
-  visualizationState: VisualizationState,
-): Array<{ id: string; label: string; type: "container" | "node" }> {
-  const items: Array<{
-    id: string;
-    label: string;
-    type: "container" | "node";
-  }> = [];
-  const hierarchyTree = buildHierarchyTreeFromState(visualizationState);
-
-  const traverse = (nodes: HierarchyTreeNode[], depth: number = 0) => {
-    for (const node of nodes) {
-      // Add the container first
-      const containerData = visualizationState.getContainer(node.id);
-      const containerLabel = containerData?.label || node.id;
-      items.push({ id: node.id, label: containerLabel, type: "container" });
-
-      // Recurse into child containers FIRST (matching tree render order)
-      if (node.children && node.children.length > 0) {
-        traverse(node.children, depth + 1);
-      }
-
-      // THEN add its leaf children (nodes) - these come after child containers in the tree
-      const containerNodes = visualizationState.getContainerNodes(node.id);
-      if (containerNodes && containerNodes.size > 0) {
-        const leafNodeIds = Array.from(containerNodes);
-        for (const leafId of leafNodeIds) {
-          const nodeData = visualizationState.getGraphNode(leafId);
-          const nodeLabel = nodeData?.label || leafId;
-          items.push({ id: leafId, label: nodeLabel, type: "node" });
-        }
-      }
-    }
-  };
-
-  if (hierarchyTree) {
-    traverse(hierarchyTree);
-  }
-
-  return items;
 }
 
 /**

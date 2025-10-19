@@ -19,7 +19,8 @@ import { EyeOutlined } from "@ant-design/icons";
 import { InfoPanelProps, LegendData } from "../types";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { GroupingControls } from "../GroupingControls";
-import { HierarchyTree, getSearchableItemsInTreeOrder } from "../HierarchyTree";
+import { HierarchyTree } from "../HierarchyTree";
+import { getSearchableItemsInTreeOrder } from "../../utils/hierarchyUtils.js";
 import { Legend } from "../Legend";
 import {
   SearchControls,

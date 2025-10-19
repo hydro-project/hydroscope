@@ -36,13 +36,8 @@ describe("Container Expansion with AutoFit", () => {
         parentNode: undefined,
       })),
       setCenter: vi.fn((x: number, y: number, options?: { zoom?: number; duration?: number }) => {
-        // Only simulate animation completion if duration > 0
-        if (options?.duration && options.duration > 0) {
-          // Simulate async animation - use setTimeout to defer to next event loop
-          setTimeout(() => {
-            coordinator.notifyViewportAnimationComplete();
-          }, 10); // Small delay to simulate animation
-        }
+        // Immediate positioning (duration: 0) - no animation to wait for
+        // This matches the production behavior where we use immediate: true
       }),
       fitView: vi.fn(),
       getViewport: vi.fn(() => ({ x: 0, y: 0, zoom: 1 })),
@@ -51,12 +46,19 @@ describe("Container Expansion with AutoFit", () => {
     coordinator.setReactFlowInstance(mockReactFlowInstance);
 
     // Mock render completion - in tests, we need to manually trigger this
-    // since there's no actual React rendering happening
+    // The coordinator calls waitForNextRender() which enqueues a callback
+    // We need to simulate React completing the render by calling notifyRenderComplete()
+    // This should happen AFTER the callback is enqueued, not immediately
     const originalEnqueuePostRenderCallback = coordinator['enqueuePostRenderCallback'].bind(coordinator);
     coordinator['enqueuePostRenderCallback'] = (callback: () => void | Promise<void>) => {
       originalEnqueuePostRenderCallback(callback);
-      // Immediately notify render complete in tests
-      queueMicrotask(() => coordinator.notifyRenderComplete());
+      // Defer render completion to next microtask to ensure callback is enqueued first
+      queueMicrotask(() => {
+        // Check if there are pending callbacks before notifying
+        if (coordinator.hasPendingCallbacks()) {
+          coordinator.notifyRenderComplete();
+        }
+      });
     };
   });
 

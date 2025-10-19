@@ -3,6 +3,7 @@
  * Architectural constraints: React-free, single source of truth, synchronous core
  */
 import { hscopeLogger } from "../utils/logger.js";
+import { getHierarchyOrderMap } from "../utils/hierarchyUtils.js";
 import {
   LAYOUT_CONSTANTS,
   SIZES,
@@ -2270,15 +2271,7 @@ export class VisualizationState {
         this._searchResults.push(result);
       }
     }
-    // Sort results by relevance (exact matches first, then by match position)
-    this._searchResults.sort((a, b) => {
-      const confidenceDiff = (b.confidence || 0) - (a.confidence || 0);
-      if (confidenceDiff !== 0) return confidenceDiff;
-      // Sort by first match position as tiebreaker
-      const aFirstMatch = a.matchIndices[0]?.[0] ?? Infinity;
-      const bFirstMatch = b.matchIndices[0]?.[0] ?? Infinity;
-      return aFirstMatch - bFirstMatch;
-    });
+
     this._searchState.resultCount = this._searchResults.length;
     // Update new search navigation state
     this._searchNavigationState.searchResults = [...this._searchResults];
@@ -2596,8 +2589,15 @@ export class VisualizationState {
     // Check cache first
     const cachedResults = this._getCachedSearchResults(trimmedQuery);
     if (cachedResults) {
-      // Use cached results and apply common post-processing
-      return this._finalizeSearchResults(trimmedQuery, cachedResults);
+      // Re-sort cached results by hierarchy order
+      const hierarchyOrderMap = this._getHierarchyOrderMap();
+      const sortedResults = [...cachedResults].sort((a, b) => {
+        const orderA = hierarchyOrderMap.get(a.id) ?? Infinity;
+        const orderB = hierarchyOrderMap.get(b.id) ?? Infinity;
+        return orderA - orderB;
+      });
+      // Use sorted results and apply common post-processing
+      return this._finalizeSearchResults(trimmedQuery, sortedResults);
     }
     const queryLower = trimmedQuery.toLowerCase();
     const results: SearchResult[] = [];
@@ -2681,14 +2681,13 @@ export class VisualizationState {
         }
       }
     }
-    // Sort results by confidence (exact matches first, then by match position)
+    // Sort results by hierarchy tree order (depth-first traversal)
+    // This ensures search results appear in the same order as the HierarchyTree component
+    const hierarchyOrderMap = this._getHierarchyOrderMap();
     results.sort((a, b) => {
-      const confidenceDiff = (b.confidence || 0) - (a.confidence || 0);
-      if (confidenceDiff !== 0) return confidenceDiff;
-      // Sort by first match position as tiebreaker
-      const aFirstMatch = a.matchIndices[0]?.[0] ?? Infinity;
-      const bFirstMatch = b.matchIndices[0]?.[0] ?? Infinity;
-      return aFirstMatch - bFirstMatch;
+      const orderA = hierarchyOrderMap.get(a.id) ?? Infinity;
+      const orderB = hierarchyOrderMap.get(b.id) ?? Infinity;
+      return orderA - orderB;
     });
     // Apply common post-processing to new results
     return this._finalizeSearchResults(trimmedQuery, results);
@@ -3196,6 +3195,20 @@ export class VisualizationState {
     // Fuzzy matches get lower scores
     return 0.5;
   }
+  /**
+   * Get hierarchy order map for sorting search results
+   * Results are cached to avoid recomputing on every search
+   */
+  private _hierarchyOrderCache: Map<string, number> | null = null;
+  
+  private _getHierarchyOrderMap(): Map<string, number> {
+    // Invalidate cache if containers have changed
+    // For now, we recompute on every search (can optimize later with change tracking)
+    const orderMap: Map<string, number> = getHierarchyOrderMap(this);
+    this._hierarchyOrderCache = orderMap;
+    return orderMap;
+  }
+
   /**
    * Check if element is visible in the ReactFlow graph
    */
