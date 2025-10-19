@@ -283,19 +283,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
           let next: SearchMatch[] = [];
           if (asyncCoordinator && visualizationState) {
             try {
-              console.warn(
-                "[SearchControls] Using AsyncCoordinator for search:",
-                query,
-              );
-
               // Show loading state
-              console.log("[SearchControls] onSearchStateChange available:", !!onSearchStateChange);
               if (onSearchStateChange) {
-                console.log("[SearchControls] Setting isSearching to true");
                 onSearchStateChange(true);
               }
-
-              console.log("[SearchControls] About to await updateSearchResults");
 
               // Use AsyncCoordinator to handle search with proper ReactFlow regeneration
               // This ensures: search → expand containers → highlight → render
@@ -310,12 +301,8 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 },
               );
 
-              console.log("[SearchControls] updateSearchResults completed, got results:", searchResults.length);
-              console.log("[SearchControls] First 5 search results:", searchResults.slice(0, 5).map((r: any) => r.id));
-
               // Hide loading state
               if (onSearchStateChange) {
-                console.log("[SearchControls] Setting isSearching to false");
                 onSearchStateChange(false);
               }
 
@@ -323,9 +310,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               const resultsById = new Map(
                 searchResults.map((r: any) => [r.id, r]),
               );
-              
-              console.log("[SearchControls] Results by ID map size:", resultsById.size);
-              console.log("[SearchControls] searchableItems count:", searchableItems.length);
 
               // Re-sort results to match tree order by using searchableItems order
               next = searchableItems
@@ -339,13 +323,6 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                     matchIndices: result.matchIndices || [],
                   };
                 });
-
-              console.log("[SearchControls] After tree-order sorting, next.length:", next.length);
-              console.log("[SearchControls] First result in tree order (next[0]):", next[0]?.id);
-              
-              // Check if element 29 is in the results
-              const has29 = next.find(n => n.id === "29");
-              console.log("[SearchControls] Element 29 in results?", !!has29, has29);
 
               setMatches(next);
               setCurrentIndex(0);

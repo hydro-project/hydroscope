@@ -3,6 +3,7 @@
  * Architectural constraints: Coordinates between VisualizationState and AsyncCoordinator
  */
 import type { VisualizationState } from "./VisualizationState.js";
+import { hscopeLogger } from "../utils/logger.js";
 export interface ClickEvent {
   elementId: string;
   elementType: "node" | "container";
@@ -140,7 +141,7 @@ export class InteractionHandler {
       event.elementId,
     );
 
-    console.log("[InteractionHandler] Container click:", {
+    hscopeLogger.log("interaction", "Container click:", {
       containerId: event.elementId,
       shiftKey: event.shiftKey,
       collapsed: containerBefore?.collapsed,

@@ -1154,7 +1154,6 @@ export class AsyncCoordinator {
     } = {},
   ): Promise<any> {
     // ReactFlowData
-    console.log("[AsyncCoordinator] 🚀 _handleLayoutAndRenderPipeline started");
     const startTime = Date.now();
     const performanceMetrics = {
       stateChangeDetection: 0,
@@ -1169,8 +1168,6 @@ export class AsyncCoordinator {
         "VisualizationState instance is required for layout and render pipeline",
       );
     }
-    console.log("[AsyncCoordinator] ✅ State validation passed");
-
     // Use the ELK bridge instance set via setBridgeInstances
     if (!this.elkBridge) {
       throw new Error(
@@ -1250,13 +1247,6 @@ export class AsyncCoordinator {
         if (!this.elkBridge) {
           throw new Error("ELK bridge not available for layout execution");
         }
-        console.log(
-          "[AsyncCoordinator] 🎯 About to call executeELKLayoutAsync",
-          {
-            elkBridgeAvailable: !!this.elkBridge,
-            elkBridgeType: typeof this.elkBridge,
-          },
-        );
         hscopeLogger.log("coordinator", "🎯 Calling executeELKLayoutAsync", {
           elkBridge: !!this.elkBridge,
           elkBridgeType: typeof this.elkBridge,
@@ -1267,7 +1257,6 @@ export class AsyncCoordinator {
           this.elkBridge,
           options.relayoutEntities,
         );
-        console.log("[AsyncCoordinator] ✅ executeELKLayoutAsync completed");
         performanceMetrics.layoutDuration = Date.now() - layoutStart;
         hscopeLogger.log(
           "coordinator",
@@ -1293,13 +1282,6 @@ export class AsyncCoordinator {
 
       // Step 4: Update HydroscopeCore's React state directly (imperative approach)
       if (this.setReactState) {
-        console.log(
-          "[AsyncCoordinator] 🎨 Updating React state with new ReactFlow data:",
-          {
-            nodeCount: reactFlowData.nodes.length,
-            edgeCount: reactFlowData.edges.length,
-          },
-        );
         // Update React state with new nodes/edges
         // Wrap with ResizeObserver error suppression to prevent loops during re-render
         withResizeObserverErrorSuppression(() => {
@@ -1308,7 +1290,6 @@ export class AsyncCoordinator {
             reactFlowData: reactFlowData,
           }));
         })();
-        console.log("[AsyncCoordinator] ✅ React state update completed");
         hscopeLogger.log(
           "coordinator",
           "[AsyncCoordinator] ✅ ReactFlow data updated directly (imperative)",
@@ -1454,7 +1435,6 @@ export class AsyncCoordinator {
       }
 
       // Execute ELK layout calculation with timeout protection
-      console.log("[AsyncCoordinator] 🎯 Calling elkBridge.layout()");
       const layoutPromise = elkBridge.layout(state, relayoutEntities);
       const timeoutMs = 15000; // 15 second timeout for layout operations
 
@@ -1466,11 +1446,7 @@ export class AsyncCoordinator {
         }, timeoutMs);
       });
       // Race between layout completion and timeout
-      console.log(
-        "[AsyncCoordinator] ⏳ Waiting for layout to complete (15s timeout)",
-      );
       await Promise.race([layoutPromise, timeoutPromise]);
-      console.log("[AsyncCoordinator] ✅ Layout completed successfully");
 
       // Increment layout count for smart collapse logic
       if (state && typeof state.incrementLayoutCount === "function") {
@@ -2212,8 +2188,9 @@ export class AsyncCoordinator {
     const startTime = Date.now();
 
     try {
-      console.log(
-        "[AsyncCoordinator] 📦🔄 Starting recursive container expand",
+      hscopeLogger.log(
+        "coordinator",
+        "📦🔄 Starting recursive container expand",
         { containerId, timestamp: startTime },
       );
 
@@ -2221,24 +2198,10 @@ export class AsyncCoordinator {
       const descendantsWithDepth: Array<{ id: string; depth: number }> = [];
       const collectDescendants = (id: string, depth: number) => {
         const cont = state.getContainer(id);
-        console.log(
-          `[RecursiveExpand] Checking container ${id} at depth ${depth}:`,
-          {
-            exists: !!cont,
-            childrenCount: cont?.children?.size || 0,
-            children: cont ? Array.from(cont.children) : [],
-          },
-        );
-
         if (!cont) return;
 
         for (const childId of cont.children) {
           const childContainer = state.getContainer(childId);
-          console.log(`[RecursiveExpand] Child ${childId}:`, {
-            isContainer: !!childContainer,
-            collapsed: childContainer?.collapsed,
-          });
-
           if (childContainer) {
             descendantsWithDepth.push({ id: childId, depth });
             collectDescendants(childId, depth + 1);
@@ -2248,37 +2211,22 @@ export class AsyncCoordinator {
 
       collectDescendants(containerId, 1);
 
-      console.log("[RecursiveExpand] Collected descendants:", {
-        total: descendantsWithDepth.length,
-        descendants: descendantsWithDepth,
-      });
-
       // Sort by depth (shallowest first) to expand from outside in
       descendantsWithDepth.sort((a, b) => a.depth - b.depth);
 
-      console.log("[RecursiveExpand] Expanding root container:", containerId);
       // Expand root container first
       state._expandContainerInternal(containerId);
 
       // Expand all descendants in depth order (shallowest first)
       // This ensures parents are expanded before their children
-      console.log("[RecursiveExpand] Expanding descendants in order...");
       for (const { id, depth } of descendantsWithDepth) {
         const container = state.getContainer(id);
         if (container && container.collapsed) {
-          console.log(`[RecursiveExpand] Expanding ${id} at depth ${depth}`);
           state._expandContainerInternal(id);
-        } else {
-          console.log(
-            `[RecursiveExpand] Skipping ${id} at depth ${depth} (already expanded or not found)`,
-          );
         }
       }
 
       // Single layout and render after all expansions
-      console.log(
-        "[RecursiveExpand] 🎨 Starting layout and render pipeline...",
-      );
       // Call the private handler directly to avoid queue deadlock
       // (we're already inside a queued operation)
       const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
@@ -3319,20 +3267,10 @@ export class AsyncCoordinator {
         })
           .then(async () => {
             // Wait for viewport animation to complete (event-driven)
-            console.log(
-              "[AsyncCoordinator] Navigation: Waiting for viewport animation to complete",
-            );
             await this.waitForViewportAnimationComplete();
-            console.log(
-              "[AsyncCoordinator] Navigation: Viewport animation complete!",
-            );
 
             // Trigger spotlight after animation completes
             if (this.onSearchResultFocused) {
-              console.log(
-                "[AsyncCoordinator] Navigation: Calling onSearchResultFocused for:",
-                elementId,
-              );
               this.onSearchResultFocused(elementId, options.zoom);
             }
           })
@@ -3552,10 +3490,6 @@ export class AsyncCoordinator {
           state,
         );
 
-        console.log("[AsyncCoordinator] Search results count:", searchResults.length);
-        console.log("[AsyncCoordinator] First 5 search result IDs:", searchResults.slice(0, 5).map((r: any) => r.id));
-        console.log("[AsyncCoordinator] Containers to expand:", containerIds);
-
         if (containerIds && containerIds.length > 0) {
           hscopeLogger.log(
             "coordinator",
@@ -3598,15 +3532,7 @@ export class AsyncCoordinator {
           ) {
             const firstResult = searchResults[0];
             const elementId = firstResult.id;
-            console.log(
-              "[AsyncCoordinator] 🎯 Enqueuing focus on first search result:",
-              elementId,
-            );
             this.enqueuePostRenderCallback(async () => {
-              console.log(
-                "[AsyncCoordinator] 🎯 Executing post-render focus on:",
-                elementId,
-              );
               const animationDuration = options.fitViewOptions?.duration || 300;
 
               // Focus viewport (this will mark animation start if duration > 0)
@@ -3620,27 +3546,11 @@ export class AsyncCoordinator {
               );
 
               // Wait for viewport animation to complete (event-driven, not timeout-based)
-              console.log(
-                "[AsyncCoordinator] Waiting for viewport animation to complete (event-driven)",
-              );
               await this.waitForViewportAnimationComplete();
-              console.log("[AsyncCoordinator] Viewport animation complete!");
 
               // Trigger spotlight creation for search result with target viewport state
-              console.log(
-                "[AsyncCoordinator] onSearchResultFocused available:",
-                !!this.onSearchResultFocused,
-              );
               if (this.onSearchResultFocused) {
-                console.log(
-                  "[AsyncCoordinator] Calling onSearchResultFocused for:",
-                  elementId,
-                );
                 this.onSearchResultFocused(elementId, 1.0);
-              } else {
-                console.log(
-                  "[AsyncCoordinator] ERROR: onSearchResultFocused not set!",
-                );
               }
             });
           }
@@ -3662,9 +3572,7 @@ export class AsyncCoordinator {
 
           // Wait for React to render the expanded containers before returning
           // This ensures elements are in the DOM when caller tries to navigate
-          console.log("[AsyncCoordinator] Waiting for React to render expanded containers");
           await this.waitForNextRender();
-          console.log("[AsyncCoordinator] React render complete, returning search results");
 
           // Return search results after all work completes AND React has rendered
           return searchResults;
@@ -3706,19 +3614,9 @@ export class AsyncCoordinator {
           );
 
           // Wait for viewport animation to complete (event-driven, not timeout-based)
-          console.log(
-            "[AsyncCoordinator] (path 2) Waiting for viewport animation to complete (event-driven)",
-          );
           await this.waitForViewportAnimationComplete();
-          console.log(
-            "[AsyncCoordinator] (path 2) Viewport animation complete!",
-          );
 
           // Trigger spotlight creation for search result with target viewport state
-          console.log(
-            "[AsyncCoordinator] (path 2) onSearchResultFocused available:",
-            !!this.onSearchResultFocused,
-          );
           if (this.onSearchResultFocused) {
             
             this.onSearchResultFocused(elementId, 1.0);
@@ -3745,9 +3643,7 @@ export class AsyncCoordinator {
       );
 
       // Wait for React to render before returning (even without expansion, search highlights need to render)
-      console.log("[AsyncCoordinator] Waiting for React to render search highlights");
       await this.waitForNextRender();
-      console.log("[AsyncCoordinator] React render complete, returning search results");
 
       // Return search results after all work completes AND React has rendered
       return searchResults;
@@ -4700,14 +4596,6 @@ export class AsyncCoordinator {
           const containerId = state.getNodeContainer
             ? state.getNodeContainer(result.id)
             : undefined;
-
-          // Debug element 29 specifically
-          if (result.id === "29") {
-            console.log("[AsyncCoordinator] Checking element 29:");
-            console.log("  - Parent container:", containerId);
-            
-            
-          }
 
           if (containerId) {
             // Get all ancestor containers up to the root

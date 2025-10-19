@@ -179,8 +179,6 @@ function mergeStyleSettingsWithConflictResolution(
     }
   }
 
-  console.log("[mergeStyleSettings] propertyValues:", propertyValues);
-
   // Resolve conflicts
   const mergedSettings: Record<string, string | number> = {};
   for (const [property, values] of Object.entries(propertyValues)) {
@@ -196,8 +194,6 @@ function mergeStyleSettingsWithConflictResolution(
       // If no neutral default exists, omit the property (let CSS defaults apply)
     }
   }
-
-  console.log("[mergeStyleSettings] mergedSettings:", mergedSettings);
 
   return mergedSettings;
 }
@@ -434,12 +430,6 @@ function convertStyleSettingsToVisual(
     lineStyle,
     waviness,
   };
-
-  console.log("[convertStyleSettingsToVisual] returning:", {
-    lineStyle: result.lineStyle,
-    waviness: result.waviness,
-    appliedTags: result.appliedTags,
-  });
 
   return result;
 }

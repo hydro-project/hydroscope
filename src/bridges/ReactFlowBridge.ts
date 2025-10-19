@@ -1006,16 +1006,6 @@ export class ReactFlowBridge implements IReactFlowBridge {
         edgeStyleType: ephemeralState.currentEdgeStyle,
       };
 
-      // Debug aggregated edges
-      if (edge.data?.aggregated) {
-        console.log(`[ReactFlowBridge] Aggregated edge ${edge.id}:`, {
-          lineStyle: styleData.lineStyle,
-          waviness: styleData.waviness,
-          processedStyleLineStyle: processedStyle.lineStyle,
-          processedStyleWaviness: processedStyle.waviness,
-        });
-      }
-
       // Skip freezing for large batches to improve performance
       styledEdges.push(this.createImmutableEdge(edge, styleData));
     }

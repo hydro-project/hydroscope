@@ -514,29 +514,8 @@ const HydroscopeCoreInternal = forwardRef<
           elementId: string,
           targetZoom?: number,
         ) => {
-          console.log(
-            "[SPOTLIGHT] onSearchResultFocused called for:",
-            elementId,
-            "targetZoom:",
-            targetZoom,
-          );
-
           // The AsyncCoordinator has already waited for the animation to complete
           // Read the actual DOM position now
-          console.log("[SPOTLIGHT] Reading actual DOM position");
-
-          // Check current viewport state
-          if (reactFlowInstance) {
-            const viewport = reactFlowInstance.getViewport();
-            console.log(
-              "[SPOTLIGHT] Current viewport: zoom=" +
-                viewport.zoom +
-                " x=" +
-                viewport.x +
-                " y=" +
-                viewport.y,
-            );
-          }
 
           const nodeElement = document.querySelector(
             `[data-id="${elementId}"]`,
@@ -546,10 +525,9 @@ const HydroscopeCoreInternal = forwardRef<
           );
 
           if (!nodeElement || !container) {
-            console.error(
-              "[SPOTLIGHT] ERROR: Could not find nodeElement or container for element:",
+            console.warn(
+              "[HydroscopeCore] Could not find element for spotlight:",
               elementId,
-              "- This should not happen if search properly expanded containers",
             );
             return;
           }
@@ -562,8 +540,6 @@ const HydroscopeCoreInternal = forwardRef<
           const screenY = nodeRect.top - containerRect.top;
           const screenWidth = nodeRect.width;
           const screenHeight = nodeRect.height;
-
-          
 
           const borderWidth = 3;
           const spotlightId = `spotlight-${Date.now()}-${elementId}`;
