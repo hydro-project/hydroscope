@@ -486,24 +486,29 @@ export const DEFAULT_RENDER_CONFIG = {
 } as const;
 // Wavy edge rendering configuration
 export const WAVY_EDGE_CONFIG = {
-  // Standard edges (most common)
-  standardEdge: {
-    amplitude: 2, // Wave height
-    frequency: 4, // Number of wave cycles (increased for more visible waves)
-  },
-  // Hyper edges (multi-node connections)
-  hyperEdge: {
-    amplitude: 2, // Slightly smaller amplitude for hyper edges
-    frequency: 4,
-  },
-  // Wave calculation parameters
-  calculation: {
-    segments: {
-      min: 150, // Minimum segments for smooth curves
-      divisor: 1.5, // Distance divisor for segment calculation (lower = more segments)
-    },
-    frequencyDivisor: 20, // Controls wave density (lower = more waves)
-  },
+  // Wave appearance parameters
+  amplitude: 0.8, // Wave height in pixels (perpendicular offset from straight line)
+  frequency: 8, // Number of complete wave cycles per 60px of edge length
+
+  // Wave smoothness parameters
+  pointsPerWave: 20, // Number of sample points per complete wave cycle (higher = smoother)
+  baseWaveLength: 60, // Base wavelength in pixels for frequency calculation
+
+  // Minimum edge length for wavy rendering
+  minEdgeLength: 10, // Edges shorter than this will render as straight lines
+} as const;
+
+// Edge marker visibility configuration
+export const EDGE_MARKER_CONFIG = {
+  // Percentage of edge length to keep plain at each end for marker visibility
+  // 0.15 = 15% at each end (30% total) will be plain, 70% will be styled
+  trimPercentage: 0.15,
+
+  // Minimum trim length in pixels (used for very short edges)
+  minTrimLength: 8,
+
+  // Maximum trim length in pixels (prevents over-trimming on very long edges)
+  maxTrimLength: 30,
 } as const;
 // ELK Layout exports expected by ELKStateManager
 export const ELK_ALGORITHMS = {

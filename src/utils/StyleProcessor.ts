@@ -178,6 +178,9 @@ function mergeStyleSettingsWithConflictResolution(
       propertyValues[property].add(value);
     }
   }
+
+  console.log("[mergeStyleSettings] propertyValues:", propertyValues);
+
   // Resolve conflicts
   const mergedSettings: Record<string, string | number> = {};
   for (const [property, values] of Object.entries(propertyValues)) {
@@ -193,6 +196,9 @@ function mergeStyleSettingsWithConflictResolution(
       // If no neutral default exists, omit the property (let CSS defaults apply)
     }
   }
+
+  console.log("[mergeStyleSettings] mergedSettings:", mergedSettings);
+
   return mergedSettings;
 }
 /**
@@ -349,22 +355,33 @@ function convertStyleSettingsToVisual(
   if (lineStyleSetting === "double") {
     lineStyle = "double";
     // Double-line rendering is now handled by CustomEdge component
+    // which renders two parallel solid lines
   }
 
-  // Apply waviness
-  const wavinessSetting = styleSettings["waviness"] as string;
-  if (wavinessSetting === "wavy") {
+  // Apply waviness (can be boolean true or string "wavy")
+  const wavinessSetting = styleSettings["waviness"];
+  if (
+    wavinessSetting === "wavy" ||
+    wavinessSetting === "true" ||
+    (typeof wavinessSetting === "boolean" && wavinessSetting)
+  ) {
     waviness = true;
   }
   // Apply halo
   const halo = styleSettings["halo"] as string;
   if (halo && halo !== "none") {
-    const haloColor =
-      HALO_COLOR_MAPPINGS[halo as keyof typeof HALO_COLOR_MAPPINGS];
-    if (haloColor) {
-      style.haloColor = haloColor;
+    if (halo === "unbounded-blue") {
+      // Special blue halo for unbounded streams
+      style.haloColor = "rgba(100, 200, 255, 0.4)";
+    } else {
+      const haloColor =
+        HALO_COLOR_MAPPINGS[halo as keyof typeof HALO_COLOR_MAPPINGS];
+      if (haloColor) {
+        style.haloColor = haloColor;
+      }
     }
   }
+
   // Apply arrowhead
   const arrowhead = styleSettings["arrowhead"] as string;
   if (arrowhead && arrowhead !== "none") {
@@ -376,10 +393,12 @@ function convertStyleSettingsToVisual(
         markerEnd = { type: "arrowclosed" };
         break;
       case "circle-filled":
-        markerEnd = "url(#circle-filled)";
+        // Use a simple circle marker (ReactFlow doesn't have this built-in, so we'll use arrowclosed for now)
+        markerEnd = { type: "arrowclosed" };
         break;
       case "diamond-open":
-        markerEnd = "url(#diamond-open)";
+        // Use arrow for diamond (ReactFlow doesn't have this built-in)
+        markerEnd = { type: "arrow" };
         break;
     }
   } else if (elementType === "edge" && !arrowhead) {
@@ -406,7 +425,7 @@ function convertStyleSettingsToVisual(
       delete baseStyle.strokeDasharray;
     }
   }
-  return {
+  const result = {
     style: baseStyle,
     animated,
     label: createTagLabel(appliedTags, originalLabel),
@@ -415,6 +434,14 @@ function convertStyleSettingsToVisual(
     lineStyle,
     waviness,
   };
+
+  console.log("[convertStyleSettingsToVisual] returning:", {
+    lineStyle: result.lineStyle,
+    waviness: result.waviness,
+    appliedTags: result.appliedTags,
+  });
+
+  return result;
 }
 /**
  * Get default style for elements with no semantic tags

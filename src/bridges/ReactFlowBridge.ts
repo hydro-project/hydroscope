@@ -241,10 +241,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
       style: {
         width: dimensions.width,
         height: dimensions.height,
-        border: container.collapsed ? "2px dashed #ccc" : "2px solid #333",
-        backgroundColor: container.collapsed
-          ? "rgba(240, 240, 240, 0.8)"
-          : "rgba(255, 255, 255, 0.9)",
+        // Border and background are handled by ContainerNode component
+        border: "none",
+        backgroundColor: "transparent",
         borderRadius: "8px",
         ...(container.collapsed
           ? this.styleConfig.containerStyles?.collapsed
@@ -914,6 +913,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
           markerEnd: computedStyle.markerEnd || edge.markerEnd,
           appliedTags: computedStyle.appliedTags,
           lineStyle: computedStyle.lineStyle || "single",
+          waviness: computedStyle.waviness || false,
           edgeStyleType: ephemeralState.currentEdgeStyle,
         };
 
@@ -1005,6 +1005,16 @@ export class ReactFlowBridge implements IReactFlowBridge {
         waviness: processedStyle.waviness || false,
         edgeStyleType: ephemeralState.currentEdgeStyle,
       };
+
+      // Debug aggregated edges
+      if (edge.data?.aggregated) {
+        console.log(`[ReactFlowBridge] Aggregated edge ${edge.id}:`, {
+          lineStyle: styleData.lineStyle,
+          waviness: styleData.waviness,
+          processedStyleLineStyle: processedStyle.lineStyle,
+          processedStyleWaviness: processedStyle.waviness,
+        });
+      }
 
       // Skip freezing for large batches to improve performance
       styledEdges.push(this.createImmutableEdge(edge, styleData));

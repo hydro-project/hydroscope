@@ -161,6 +161,9 @@ export interface StyleConfig {
   >;
   // Direct property mappings (legacy support)
   propertyMappings?: Record<string, string | EdgeStyleMapping>;
+  // Priority rules for conflicting semantic tags during edge aggregation
+  // Format: [winner, loser] - when both tags exist, keep only the winner
+  semanticPriorities?: Array<[string, string]>;
 }
 export interface NodeStyleConfig {
   backgroundColor?: string;
@@ -315,6 +318,7 @@ export interface QueuedOperation<T = any> {
     | "layout_and_render_with_remount"
     // Container operations
     | "expand_container"
+    | "expand_container_recursive"
     | "collapse_container"
     | "expand_containers"
     | "collapse_containers"

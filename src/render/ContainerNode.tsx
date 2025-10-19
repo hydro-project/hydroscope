@@ -60,7 +60,7 @@ export function ContainerNode({
   // Calculate the display label for expanded containers based on actual text width
   const expandedDisplayLabel = React.useMemo(() => {
     if (isCollapsed) return containerLabel;
-    
+
     const availableWidth = Number(width) - 36; // Account for padding and border
     const fontSize = 12;
     const fontWeight = "bold";
@@ -76,7 +76,7 @@ export function ContainerNode({
     if (fullTextWidth <= availableWidth) {
       return containerLongLabel;
     }
-    
+
     // Otherwise, truncate intelligently from the left
     // Start with a generous character estimate and let truncateLabel do smart delimiter-based truncation
     const estimatedMaxChars = Math.floor(availableWidth / 6); // Conservative estimate
@@ -432,6 +432,7 @@ export function ContainerNode({
         <HandlesRenderer />
         {/* EXPANDED CONTAINERS: Only lower-right label, positioned to avoid occlusion */}
         <div
+          title={containerLongLabel}
           style={{
             position: "absolute",
             bottom: "8px", // Slightly inset from edge to avoid occlusion

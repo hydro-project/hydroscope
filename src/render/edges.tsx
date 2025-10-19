@@ -32,50 +32,22 @@ const getEdgePath = (
 };
 // Aggregated Edge Component
 // This edge type is used when multiple edges are collapsed into a single aggregated edge
-export const AggregatedEdge: React.FC<EdgeProps> = ({
-  id: _id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  style = {},
-  data,
-  markerEnd,
-}) => {
-  // Get edge style type from data, default to bezier
-  const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
-  const pathParams = {
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  };
-  const [edgePath, labelX, labelY] = getEdgePath(edgeStyleType, pathParams);
-  // Use provided style from semantic processing without modification
-  const aggregatedStyle = {
-    ...style,
-  };
-  // Default to triangle arrowhead if no markerEnd is specified
-  const effectiveMarkerEnd = markerEnd || { type: "arrowclosed" };
-  // Convert object marker to string format for BaseEdge
-  const markerEndString: string | undefined =
-    typeof effectiveMarkerEnd === "object" && effectiveMarkerEnd?.type
-      ? `url(#react-flow__${effectiveMarkerEnd.type})`
-      : (effectiveMarkerEnd as string | undefined);
+// Uses CustomEdge to support lineStyle and waviness
+export const AggregatedEdge: React.FC<EdgeProps> = (props) => {
+  const { sourceX, sourceY, targetX, targetY, data } = props;
+
   // Show count of aggregated edges if available
   const originalEdgeCount = (data?.originalEdgeIds as string[])?.length || 0;
   const showLabel = originalEdgeCount > 1;
+
+  // Calculate label position (midpoint of edge)
+  const labelX = (sourceX + targetX) / 2;
+  const labelY = (sourceY + targetY) / 2;
+
+  // Use CustomEdge for rendering to support lineStyle and waviness
   return (
     <>
-      <BaseEdge
-        path={edgePath}
-        markerEnd={markerEndString}
-        style={aggregatedStyle}
-      />
+      <CustomEdge {...props} />
       {showLabel && (
         <EdgeLabelRenderer>
           <div

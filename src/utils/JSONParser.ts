@@ -146,6 +146,12 @@ export class JSONParser {
         containerCount,
         warningCount: warnings.length,
       });
+
+      // Set edge style config on visualization state (for semantic tag priorities)
+      if (data.edgeStyleConfig) {
+        visualizationState.setEdgeStyleConfig(data.edgeStyleConfig);
+      }
+
       return {
         visualizationState,
         hierarchyChoices,

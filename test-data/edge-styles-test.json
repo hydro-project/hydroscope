@@ -1,89 +1,722 @@
 {
   "nodes": [
     {
-      "id": "n1",
+      "id": "single-straight-A",
       "nodeType": "Source",
-      "fullLabel": "Source Node",
-      "shortLabel": "source"
+      "fullLabel": "Single Straight A",
+      "shortLabel": "A"
     },
     {
-      "id": "n2",
-      "nodeType": "Transform",
-      "fullLabel": "Transform Node",
-      "shortLabel": "transform"
-    },
-    {
-      "id": "n3",
+      "id": "single-straight-B",
       "nodeType": "Sink",
-      "fullLabel": "Sink Node",
-      "shortLabel": "sink"
+      "fullLabel": "Single Straight B",
+      "shortLabel": "B"
     },
     {
-      "id": "n4",
+      "id": "double-straight-A",
       "nodeType": "Source",
-      "fullLabel": "Cycle Source",
-      "shortLabel": "cycle_src"
+      "fullLabel": "Double Straight A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "double-straight-B",
+      "nodeType": "Sink",
+      "fullLabel": "Double Straight B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "single-wavy-A",
+      "nodeType": "Source",
+      "fullLabel": "Single Wavy A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "single-wavy-B",
+      "nodeType": "Sink",
+      "fullLabel": "Single Wavy B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "double-wavy-A",
+      "nodeType": "Source",
+      "fullLabel": "Double Wavy A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "double-wavy-B",
+      "nodeType": "Sink",
+      "fullLabel": "Double Wavy B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "single-halo-A",
+      "nodeType": "Source",
+      "fullLabel": "Single Halo A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "single-halo-B",
+      "nodeType": "Sink",
+      "fullLabel": "Single Halo B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "double-halo-A",
+      "nodeType": "Source",
+      "fullLabel": "Double Halo A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "double-halo-B",
+      "nodeType": "Sink",
+      "fullLabel": "Double Halo B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "dotted-animated-A",
+      "nodeType": "Source",
+      "fullLabel": "Dotted Animated A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "dotted-animated-B",
+      "nodeType": "Sink",
+      "fullLabel": "Dotted Animated B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "thick-thin-A",
+      "nodeType": "Source",
+      "fullLabel": "Thick Thin A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "thick-thin-B",
+      "nodeType": "Sink",
+      "fullLabel": "Thick Thin B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "wavy-halo-A",
+      "nodeType": "Source",
+      "fullLabel": "Wavy Halo A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "wavy-halo-B",
+      "nodeType": "Sink",
+      "fullLabel": "Wavy Halo B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "double-wavy-halo-A",
+      "nodeType": "Source",
+      "fullLabel": "Double Wavy Halo A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "double-wavy-halo-B",
+      "nodeType": "Sink",
+      "fullLabel": "Double Wavy Halo B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "dotted-halo-A",
+      "nodeType": "Source",
+      "fullLabel": "Dotted Halo A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "dotted-halo-B",
+      "nodeType": "Sink",
+      "fullLabel": "Dotted Halo B",
+      "shortLabel": "B"
+    },
+    {
+      "id": "double-dotted-halo-A",
+      "nodeType": "Source",
+      "fullLabel": "Double Dotted Halo A",
+      "shortLabel": "A"
+    },
+    {
+      "id": "double-dotted-halo-B",
+      "nodeType": "Sink",
+      "fullLabel": "Double Dotted Halo B",
+      "shortLabel": "B"
     }
   ],
   "edges": [
     {
-      "id": "e1",
-      "source": "n1",
-      "target": "n2",
-      "semanticTags": ["SingleLine"]
+      "id": "edge-single-straight-1",
+      "source": "single-straight-A",
+      "target": "single-straight-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Stream"
+      ]
     },
     {
-      "id": "e2",
-      "source": "n2",
-      "target": "n3",
-      "semanticTags": ["DoubleLine"]
+      "id": "edge-single-straight-2",
+      "source": "single-straight-A",
+      "target": "single-straight-B",
+      "semanticTags": [
+        "Ordered"
+      ]
     },
     {
-      "id": "e3",
-      "source": "n3",
-      "target": "n4",
-      "semanticTags": ["WavyLine"]
+      "id": "edge-single-straight-3",
+      "source": "single-straight-A",
+      "target": "single-straight-B",
+      "semanticTags": [
+        "Bounded"
+      ]
     },
     {
-      "id": "e4",
-      "source": "n4",
-      "target": "n1",
-      "semanticTags": ["DoubleWavy"]
+      "id": "edge-double-straight-1",
+      "source": "double-straight-A",
+      "target": "double-straight-B",
+      "semanticTags": [
+        "Keyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-double-straight-2",
+      "source": "double-straight-A",
+      "target": "double-straight-B",
+      "semanticTags": [
+        "Ordered"
+      ]
+    },
+    {
+      "id": "edge-double-straight-3",
+      "source": "double-straight-A",
+      "target": "double-straight-B",
+      "semanticTags": [
+        "Bounded"
+      ]
+    },
+    {
+      "id": "edge-single-wavy-1",
+      "source": "single-wavy-A",
+      "target": "single-wavy-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-single-wavy-2",
+      "source": "single-wavy-A",
+      "target": "single-wavy-B",
+      "semanticTags": [
+        "Unordered"
+      ]
+    },
+    {
+      "id": "edge-single-wavy-3",
+      "source": "single-wavy-A",
+      "target": "single-wavy-B",
+      "semanticTags": [
+        "Bounded"
+      ]
+    },
+    {
+      "id": "edge-double-wavy-1",
+      "source": "double-wavy-A",
+      "target": "double-wavy-B",
+      "semanticTags": [
+        "Keyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-double-wavy-2",
+      "source": "double-wavy-A",
+      "target": "double-wavy-B",
+      "semanticTags": [
+        "Unordered"
+      ]
+    },
+    {
+      "id": "edge-double-wavy-3",
+      "source": "double-wavy-A",
+      "target": "double-wavy-B",
+      "semanticTags": [
+        "Bounded"
+      ]
+    },
+    {
+      "id": "edge-single-halo-1",
+      "source": "single-halo-A",
+      "target": "single-halo-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-single-halo-2",
+      "source": "single-halo-A",
+      "target": "single-halo-B",
+      "semanticTags": [
+        "Ordered"
+      ]
+    },
+    {
+      "id": "edge-single-halo-3",
+      "source": "single-halo-A",
+      "target": "single-halo-B",
+      "semanticTags": [
+        "Unbounded"
+      ]
+    },
+    {
+      "id": "edge-double-halo-1",
+      "source": "double-halo-A",
+      "target": "double-halo-B",
+      "semanticTags": [
+        "Keyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-double-halo-2",
+      "source": "double-halo-A",
+      "target": "double-halo-B",
+      "semanticTags": [
+        "Ordered"
+      ]
+    },
+    {
+      "id": "edge-double-halo-3",
+      "source": "double-halo-A",
+      "target": "double-halo-B",
+      "semanticTags": [
+        "Unbounded"
+      ]
+    },
+    {
+      "id": "edge-dotted-animated-1",
+      "source": "dotted-animated-A",
+      "target": "dotted-animated-B",
+      "semanticTags": [
+        "Network"
+      ]
+    },
+    {
+      "id": "edge-dotted-animated-2",
+      "source": "dotted-animated-A",
+      "target": "dotted-animated-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-dotted-animated-3",
+      "source": "dotted-animated-A",
+      "target": "dotted-animated-B",
+      "semanticTags": [
+        "Ordered"
+      ]
+    },
+    {
+      "id": "edge-dotted-animated-4",
+      "source": "dotted-animated-A",
+      "target": "dotted-animated-B",
+      "semanticTags": [
+        "Bounded"
+      ]
+    },
+    {
+      "id": "edge-thick",
+      "source": "thick-thin-A",
+      "target": "thick-thin-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Ordered",
+        "Bounded",
+        "Singleton"
+      ]
+    },
+    {
+      "id": "edge-thin",
+      "source": "thick-thin-B",
+      "target": "thick-thin-A",
+      "semanticTags": [
+        "Unkeyed",
+        "Ordered",
+        "Bounded",
+        "Optional"
+      ]
+    },
+    {
+      "id": "edge-wavy-halo-1",
+      "source": "wavy-halo-A",
+      "target": "wavy-halo-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-wavy-halo-2",
+      "source": "wavy-halo-A",
+      "target": "wavy-halo-B",
+      "semanticTags": [
+        "Unordered"
+      ]
+    },
+    {
+      "id": "edge-wavy-halo-3",
+      "source": "wavy-halo-A",
+      "target": "wavy-halo-B",
+      "semanticTags": [
+        "Unbounded"
+      ]
+    },
+    {
+      "id": "edge-double-wavy-halo-1",
+      "source": "double-wavy-halo-A",
+      "target": "double-wavy-halo-B",
+      "semanticTags": [
+        "Keyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-double-wavy-halo-2",
+      "source": "double-wavy-halo-A",
+      "target": "double-wavy-halo-B",
+      "semanticTags": [
+        "Unordered"
+      ]
+    },
+    {
+      "id": "edge-double-wavy-halo-3",
+      "source": "double-wavy-halo-A",
+      "target": "double-wavy-halo-B",
+      "semanticTags": [
+        "Unbounded"
+      ]
+    },
+    {
+      "id": "edge-dotted-halo-1",
+      "source": "dotted-halo-A",
+      "target": "dotted-halo-B",
+      "semanticTags": [
+        "Network"
+      ]
+    },
+    {
+      "id": "edge-dotted-halo-2",
+      "source": "dotted-halo-A",
+      "target": "dotted-halo-B",
+      "semanticTags": [
+        "Unkeyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-dotted-halo-3",
+      "source": "dotted-halo-A",
+      "target": "dotted-halo-B",
+      "semanticTags": [
+        "Ordered"
+      ]
+    },
+    {
+      "id": "edge-dotted-halo-4",
+      "source": "dotted-halo-A",
+      "target": "dotted-halo-B",
+      "semanticTags": [
+        "Unbounded"
+      ]
+    },
+    {
+      "id": "edge-double-dotted-halo-1",
+      "source": "double-dotted-halo-A",
+      "target": "double-dotted-halo-B",
+      "semanticTags": [
+        "Network"
+      ]
+    },
+    {
+      "id": "edge-double-dotted-halo-2",
+      "source": "double-dotted-halo-A",
+      "target": "double-dotted-halo-B",
+      "semanticTags": [
+        "Keyed",
+        "Stream"
+      ]
+    },
+    {
+      "id": "edge-double-dotted-halo-3",
+      "source": "double-dotted-halo-A",
+      "target": "double-dotted-halo-B",
+      "semanticTags": [
+        "Ordered"
+      ]
+    },
+    {
+      "id": "edge-double-dotted-halo-4",
+      "source": "double-dotted-halo-A",
+      "target": "double-dotted-halo-B",
+      "semanticTags": [
+        "Unbounded"
+      ]
     }
   ],
-  "legend": {
-    "title": "Edge Styles Test",
+  "hierarchyChoices": [
+    {
+      "id": "containers",
+      "name": "Edge Style Combinations",
+      "children": [
+        {
+          "id": "container-single-straight-A",
+          "name": "Unkeyed, Ordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-single-straight-B",
+          "name": "Unkeyed, Ordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-double-straight-A",
+          "name": "Keyed, Ordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-double-straight-B",
+          "name": "Keyed, Ordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-single-wavy-A",
+          "name": "Unkeyed, Unordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-single-wavy-B",
+          "name": "Unkeyed, Unordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-double-wavy-A",
+          "name": "Keyed, Unordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-double-wavy-B",
+          "name": "Keyed, Unordered, Bounded",
+          "children": []
+        },
+        {
+          "id": "container-single-halo-A",
+          "name": "Unkeyed, Ordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-single-halo-B",
+          "name": "Unkeyed, Ordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-double-halo-A",
+          "name": "Keyed, Ordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-double-halo-B",
+          "name": "Keyed, Ordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-dotted-animated-A",
+          "name": "Network, Unkeyed, Ordered",
+          "children": []
+        },
+        {
+          "id": "container-dotted-animated-B",
+          "name": "Network, Unkeyed, Ordered",
+          "children": []
+        },
+        {
+          "id": "container-thick-thin-A",
+          "name": "Singleton/Optional Width",
+          "children": []
+        },
+        {
+          "id": "container-thick-thin-B",
+          "name": "Singleton/Optional Width",
+          "children": []
+        },
+        {
+          "id": "container-wavy-halo-A",
+          "name": "Unkeyed, Unordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-wavy-halo-B",
+          "name": "Unkeyed, Unordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-double-wavy-halo-A",
+          "name": "Keyed, Unordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-double-wavy-halo-B",
+          "name": "Keyed, Unordered, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-dotted-halo-A",
+          "name": "Network, Unkeyed, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-dotted-halo-B",
+          "name": "Network, Unkeyed, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-double-dotted-halo-A",
+          "name": "Network, Keyed, Unbounded",
+          "children": []
+        },
+        {
+          "id": "container-double-dotted-halo-B",
+          "name": "Network, Keyed, Unbounded",
+          "children": []
+        }
+      ]
+    }
+  ],
+  "nodeAssignments": {
+    "containers": {
+      "single-straight-A": "container-single-straight-A",
+      "single-straight-B": "container-single-straight-B",
+      "double-straight-A": "container-double-straight-A",
+      "double-straight-B": "container-double-straight-B",
+      "single-wavy-A": "container-single-wavy-A",
+      "single-wavy-B": "container-single-wavy-B",
+      "double-wavy-A": "container-double-wavy-A",
+      "double-wavy-B": "container-double-wavy-B",
+      "single-halo-A": "container-single-halo-A",
+      "single-halo-B": "container-single-halo-B",
+      "double-halo-A": "container-double-halo-A",
+      "double-halo-B": "container-double-halo-B",
+      "dotted-animated-A": "container-dotted-animated-A",
+      "dotted-animated-B": "container-dotted-animated-B",
+      "thick-thin-A": "container-thick-thin-A",
+      "thick-thin-B": "container-thick-thin-B",
+      "wavy-halo-A": "container-wavy-halo-A",
+      "wavy-halo-B": "container-wavy-halo-B",
+      "double-wavy-halo-A": "container-double-wavy-halo-A",
+      "double-wavy-halo-B": "container-double-wavy-halo-B",
+      "dotted-halo-A": "container-dotted-halo-A",
+      "dotted-halo-B": "container-dotted-halo-B",
+      "double-dotted-halo-A": "container-double-dotted-halo-A",
+      "double-dotted-halo-B": "container-double-dotted-halo-B"
+    }
+  },
+  "edgeStyleConfig": {
+    "semanticPriorities": [
+      ["Unbounded", "Bounded"],
+      ["Unordered", "Ordered"],
+      ["Keyed", "Unkeyed"],
+      ["Network", "Local"]
+    ],
     "semanticMappings": {
-      "SingleLine": {
-        "line-style": "single"
+      "KeyednessGroup": {
+        "Keyed": {
+          "line-style": "double"
+        },
+        "Unkeyed": {
+          "line-style": "single"
+        }
       },
-      "DoubleLine": {
-        "line-style": "double"
+      "NetworkGroup": {
+        "Network": {
+          "line-pattern": "dotted",
+          "animation": "animated"
+        }
       },
-      "WavyLine": {
-        "waviness": "wavy"
+      "CollectionKindGroup": {
+        "Stream": {
+          "color": "#3b82f6"
+        },
+        "Singleton": {
+          "color": "#000000"
+        },
+        "Optional": {
+          "color": "#6b7280"
+        }
       },
-      "DoubleWavy": {
-        "line-style": "double",
-        "waviness": "wavy"
+      "OrderGroup": {
+        "Ordered": {
+          "waviness": false
+        },
+        "Unordered": {
+          "waviness": true
+        }
+      },
+      "BoundedGroup": {
+        "Unbounded": {
+          "halo": "unbounded-blue"
+        },
+        "Bounded": {
+          "halo": "none"
+        }
       }
-    },
+    }
+  },
+  "legend": {
+    "title": "Edge Style Semantic Channels",
     "items": [
       {
-        "label": "Single Line",
-        "type": "SingleLine"
+        "label": "Keyed (hash marks)",
+        "type": "Keyed"
       },
       {
-        "label": "Double Line (Keyed Stream)",
-        "type": "DoubleLine"
+        "label": "Unkeyed (plain)",
+        "type": "Unkeyed"
       },
       {
-        "label": "Wavy Line (Cycle)",
-        "type": "WavyLine"
+        "label": "Network (dotted+animated)",
+        "type": "Network"
       },
       {
-        "label": "Double Wavy (Keyed Cycle)",
-        "type": "DoubleWavy"
+        "label": "Ordered (straight)",
+        "type": "Ordered"
+      },
+      {
+        "label": "Unordered (wavy)",
+        "type": "Unordered"
+      },
+      {
+        "label": "Unbounded (blue halo)",
+        "type": "Unbounded"
+      },
+      {
+        "label": "Bounded (no halo)",
+        "type": "Bounded"
+      },
+      {
+        "label": "Stream (blue)",
+        "type": "Stream"
+      },
+      {
+        "label": "Singleton (black)",
+        "type": "Singleton"
+      },
+      {
+        "label": "Optional (gray)",
+        "type": "Optional"
       }
     ]
   }

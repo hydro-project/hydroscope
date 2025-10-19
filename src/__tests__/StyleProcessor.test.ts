@@ -141,7 +141,8 @@ describe("StyleProcessor", () => {
 
       const doubleResult = processSemanticTags(["Double"], styleConfig);
       expect(doubleResult.lineStyle).toBe("double");
-      expect(doubleResult.style.strokeDasharray).toBe("10,2,2,2");
+      // line-style should not be in the CSS style object
+      expect(doubleResult.style["line-style"]).toBeUndefined();
     });
 
     it("should handle halo colors", () => {
@@ -200,7 +201,9 @@ describe("StyleProcessor", () => {
       };
 
       const wavyResult = processSemanticTags(["Wavy"], styleConfig);
-      expect(wavyResult.style.waviness).toBe("wavy");
+      expect(wavyResult.waviness).toBe(true);
+      // waviness should not be in the CSS style object
+      expect(wavyResult.style.waviness).toBeUndefined();
     });
 
     it("should combine multiple semantic mappings", () => {

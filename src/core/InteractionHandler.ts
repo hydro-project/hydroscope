@@ -11,6 +11,7 @@ export interface ClickEvent {
     x: number;
     y: number;
   };
+  shiftKey?: boolean;
 }
 export interface InteractionConfig {
   debounceDelay: number;
@@ -62,12 +63,14 @@ export class InteractionHandler {
       x: number;
       y: number;
     },
+    shiftKey?: boolean,
   ): void {
     const clickEvent: ClickEvent = {
       elementId: containerId,
       elementType: "container",
       timestamp: Date.now(),
       position: position || { x: 0, y: 0 },
+      shiftKey: shiftKey || false,
     };
 
     // CRITICAL FIX: Disable debouncing for container clicks to prevent double-click issues
@@ -137,6 +140,12 @@ export class InteractionHandler {
       event.elementId,
     );
 
+    console.log("[InteractionHandler] Container click:", {
+      containerId: event.elementId,
+      shiftKey: event.shiftKey,
+      collapsed: containerBefore?.collapsed,
+    });
+
     if (!containerBefore) {
       console.warn(
         `[InteractionHandler] Container ${event.elementId} not found`,
@@ -154,18 +163,23 @@ export class InteractionHandler {
 
       // Use AsyncCoordinator's container methods for proper pipeline execution
       if (wasCollapsed) {
-        this._asyncCoordinator
-          .expandContainer(event.elementId, this._visualizationState, {
-            relayoutEntities: undefined, // Full layout to let ELK recalculate positions
-            fitView: true, // Auto-fit after container operations since positions change
-            fitViewOptions: { padding: 0.2, duration: 300 },
-          })
-          .catch((error: Error) => {
-            console.error(
-              "[InteractionHandler] Container expand failed:",
-              error,
-            );
-          });
+        // Shift-click: expand recursively
+        if (event.shiftKey) {
+          this._expandContainerRecursively(event.elementId);
+        } else {
+          this._asyncCoordinator
+            .expandContainer(event.elementId, this._visualizationState, {
+              relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+              fitView: true, // Auto-fit after container operations since positions change
+              fitViewOptions: { padding: 0.2, duration: 300 },
+            })
+            .catch((error: Error) => {
+              console.error(
+                "[InteractionHandler] Container expand failed:",
+                error,
+              );
+            });
+        }
       } else {
         this._asyncCoordinator
           .collapseContainer(event.elementId, this._visualizationState, {
@@ -185,6 +199,32 @@ export class InteractionHandler {
       this._visualizationState._toggleContainerForCoordinator(event.elementId);
     }
   }
+  /**
+   * Recursively expand a container and all its descendant containers
+   */
+  private _expandContainerRecursively(containerId: string): void {
+    if (
+      !this._asyncCoordinator ||
+      !this._asyncCoordinator.expandContainerRecursively
+    ) {
+      console.warn("[InteractionHandler] Recursive expand not available");
+      return;
+    }
+
+    this._asyncCoordinator
+      .expandContainerRecursively(containerId, this._visualizationState, {
+        relayoutEntities: undefined,
+        fitView: true,
+        fitViewOptions: { padding: 0.2, duration: 300 },
+      })
+      .catch((error: Error) => {
+        console.error(
+          "[InteractionHandler] Recursive container expand failed:",
+          error,
+        );
+      });
+  }
+
   private _triggerLayoutUpdateIfNeeded(event: ClickEvent): void {
     // Container clicks always need layout updates
     if (event.elementType === "container") {

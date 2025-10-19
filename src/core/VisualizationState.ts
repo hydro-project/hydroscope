@@ -18,6 +18,7 @@ import type {
   AggregatedEdge,
   LayoutState,
   SearchResult,
+  StyleConfig,
   InvariantViolation,
   SearchNavigationState,
 } from "../types/core.js";
@@ -58,6 +59,14 @@ export class VisualizationState {
     showFullNodeLabels: false,
   };
   private _searchResults: SearchResult[] = [];
+  private _edgeStyleConfig?: StyleConfig;
+
+  /**
+   * Set the edge style configuration (including semantic priorities)
+   */
+  setEdgeStyleConfig(config: StyleConfig): void {
+    this._edgeStyleConfig = config;
+  }
   private _searchQuery: string = "";
   private _searchHistory: string[] = [];
   private _searchState: {
@@ -854,12 +863,10 @@ export class VisualizationState {
           ...existingAggEdge.originalEdgeIds,
           ...uniqueNewIds,
         ];
-        existingAggEdge.semanticTags = [
-          ...new Set([
-            ...existingAggEdge.semanticTags,
-            ...edges.flatMap((e) => e.semanticTags),
-          ]),
-        ];
+        existingAggEdge.semanticTags = this._mergeSemanticTagsWithPriority([
+          ...existingAggEdge.semanticTags,
+          ...edges.flatMap((e) => e.semanticTags),
+        ]);
       } else {
         // Create new aggregated edge
         const aggregatedEdge: AggregatedEdge = {
@@ -867,7 +874,9 @@ export class VisualizationState {
           source,
           target,
           type: edges[0].type, // Use type from first edge
-          semanticTags: [...new Set(edges.flatMap((e) => e.semanticTags))], // Merge unique tags
+          semanticTags: this._mergeSemanticTagsWithPriority(
+            edges.flatMap((e) => e.semanticTags),
+          ), // Merge tags with priority rules
           hidden: false,
           aggregated: true,
           originalEdgeIds: edges.map((e) => e.id),
@@ -903,6 +912,26 @@ export class VisualizationState {
       });
     }
   }
+  /**
+   * Merge semantic tags with priority rules for conflicting tags.
+   * Priority rules are defined in the edgeStyleConfig.semanticPriorities field.
+   */
+  private _mergeSemanticTagsWithPriority(tags: string[]): string[] {
+    const tagSet = new Set(tags);
+
+    // Get priority rules from config (if provided)
+    const priorityRules = this._edgeStyleConfig?.semanticPriorities || [];
+
+    // Apply priority rules: if both tags exist, keep only the winner
+    for (const [winner, loser] of priorityRules) {
+      if (tagSet.has(winner) && tagSet.has(loser)) {
+        tagSet.delete(loser);
+      }
+    }
+
+    return Array.from(tagSet);
+  }
+
   private _getAllDescendantIds(containerId: string): Set<string> {
     // Check cache first
     if (this._descendantCache.has(containerId)) {

@@ -634,11 +634,10 @@ export const Hydroscope = memo<HydroscopeProps>(
         if (coordinator && coordinator !== asyncCoordinator) {
           setAsyncCoordinator(coordinator);
         }
-      } else {
-        console.warn(
-          "[Hydroscope] hydroscopeCoreRef.current not available yet",
-        );
       }
+      // Note: It's normal for hydroscopeCoreRef.current to be null during initial render
+      // The ref will be set after HydroscopeCore mounts, and this effect will run again
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state.data, state.currentVisualizationState]); // Re-check when data or visualizationState changes
     // Refs for cleanup
     const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1006,7 +1005,11 @@ export const Hydroscope = memo<HydroscopeProps>(
                 currentVisualizationState,
                 {
                   expandContainers: true, // Expand containers to show search results
-                  fitView: false, // Don't fit view, just focus on first result
+                  fitView: true, // Fit view to show search results
+                  fitViewOptions: {
+                    padding: 0.2,
+                    duration: 300,
+                  },
                 },
               );
             }

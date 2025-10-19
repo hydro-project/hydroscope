@@ -7,6 +7,7 @@ To enable double-line and wavy-line rendering in your existing Hydroscope JSON f
 ## Example: Enabling Double Lines for KeyedStream
 
 If your data file has edges like this:
+
 ```json
 {
   "edges": [
@@ -21,6 +22,7 @@ If your data file has edges like this:
 ```
 
 Add this to your legend:
+
 ```json
 {
   "legend": {
@@ -36,6 +38,7 @@ Add this to your legend:
 ## Common Semantic Mappings
 
 ### For Keyed Streams (Double Lines)
+
 ```json
 {
   "legend": {
@@ -52,6 +55,7 @@ Add this to your legend:
 ```
 
 ### For Cycles/Feedback (Wavy Lines)
+
 ```json
 {
   "legend": {
@@ -68,6 +72,7 @@ Add this to your legend:
 ```
 
 ### For Keyed Cycles (Double Wavy Lines)
+
 ```json
 {
   "legend": {
@@ -158,24 +163,29 @@ The file `test-data/chat2.json` has edges with `semanticTags: ["KeyedStream"]` b
 The following visual channels are supported for edges:
 
 ### line-style
+
 - `"single"` - Normal single line (default)
 - `"double"` - Two parallel lines (for keyed streams)
 
 ### waviness
+
 - `"none"` - Straight line (default)
 - `"wavy"` - Sine wave path (for cycles/feedback)
 
 ### line-pattern
+
 - `"solid"` - Continuous line (default)
 - `"dashed"` - Dashed line
 - `"dotted"` - Dotted line
 - `"dash-dot"` - Dash-dot pattern
 
 ### animation
+
 - `"static"` - No animation (default)
 - `"animated"` - Flowing animation
 
 ### line-width
+
 - `1` - Thin line
 - `2` - Normal line (default)
 - `3` - Thick line
@@ -207,6 +217,7 @@ You can combine multiple visual channels:
 ## Testing Your Changes
 
 1. **Start dev server**:
+
    ```bash
    npm run dev
    ```
@@ -222,30 +233,38 @@ You can combine multiple visual channels:
 ## Troubleshooting
 
 ### Edges still render as single lines
+
 **Problem**: Semantic mappings not applied
-**Solution**: 
+**Solution**:
+
 - Check that semantic tag in edge matches key in semanticMappings
 - Case-sensitive: "KeyedStream" ≠ "keyedstream"
 - Verify JSON is valid (use a JSON validator)
 
 ### Wavy lines look straight
+
 **Problem**: waviness value incorrect
 **Solution**:
+
 - Use `"waviness": "wavy"` not `"waviness": true`
 - Check spelling of "waviness"
 
 ### Double lines look weird
+
 **Problem**: May be combined with incompatible strokeDasharray
 **Solution**:
+
 - Don't use `"line-pattern": "dotted"` with double lines
 - Use solid or dashed patterns only
 
 ## Migration Guide
 
 ### From Old Hydroscope (pre-v1.0)
+
 If you have old data files that used filter-based styling:
 
 **Old format** (no longer supported):
+
 ```json
 {
   "edges": [
@@ -258,6 +277,7 @@ If you have old data files that used filter-based styling:
 ```
 
 **New format**:
+
 ```json
 {
   "edges": [
@@ -283,6 +303,7 @@ If you have old data files that used filter-based styling:
    - ❌ Bad: "edge1", "type2", "special"
 
 2. **Document your semantic tags in legend items**:
+
    ```json
    {
      "legend": {

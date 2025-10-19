@@ -114,13 +114,6 @@ const InfoPanelInternal = forwardRef<
     },
     ref,
   ) => {
-    // DEBUG: Log what we receive
-    console.warn("[InfoPanel] Props received:", {
-      hasVisualizationState: !!visualizationState,
-      hasAsyncCoordinator: !!asyncCoordinator,
-      asyncCoordinatorType: asyncCoordinator?.constructor?.name,
-    });
-
     const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
     const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
     const [groupingCollapsed, setGroupingCollapsed] = useState(false);
@@ -327,13 +320,22 @@ const InfoPanelInternal = forwardRef<
       _dir: "prev" | "next",
       current: SearchMatch,
     ) => {
+      console.log("[SEARCH NAV] handleSearchNavigate called:", {
+        dir: _dir,
+        currentId: current.id,
+        currentType: current.type,
+      });
       setCurrentSearchMatch(current);
       // Don't call onSearchUpdate for navigation - it triggers expandAll which does fitView
       // onSearchUpdate is for when the query changes, not for navigating results
       // onSearchUpdate?.(searchQuery, searchMatches, current);
 
       // Trigger navigation to highlight the element in the graph
+      console.log("[SEARCH NAV] Calling onElementNavigation");
       onElementNavigation?.(current.id, current.type);
+
+      // TODO: Add spotlight for navigation arrows
+      // Currently disabled due to race conditions with viewport animations
     };
     // Panel style with ResizeObserver loop prevention
     const panelStyle: React.CSSProperties = {

@@ -509,6 +509,90 @@ const HydroscopeCoreInternal = forwardRef<
         // CRITICAL FIX: Set React state setter for direct imperative updates
         asyncCoordinator.setReactStateSetter(setState);
 
+        // Set search result focus callback for spotlight creation
+        asyncCoordinator.onSearchResultFocused = (
+          elementId: string,
+          targetZoom?: number,
+        ) => {
+          console.log(
+            "[SPOTLIGHT] onSearchResultFocused called for:",
+            elementId,
+            "targetZoom:",
+            targetZoom,
+          );
+
+          // The AsyncCoordinator has already waited for the animation to complete
+          // Read the actual DOM position now
+          console.log("[SPOTLIGHT] Reading actual DOM position");
+
+          // Check current viewport state
+          if (reactFlowInstance) {
+            const viewport = reactFlowInstance.getViewport();
+            console.log(
+              "[SPOTLIGHT] Current viewport: zoom=" +
+                viewport.zoom +
+                " x=" +
+                viewport.x +
+                " y=" +
+                viewport.y,
+            );
+          }
+
+          const nodeElement = document.querySelector(
+            `[data-id="${elementId}"]`,
+          );
+          const container = document.querySelector(
+            '[data-testid="graph-container"]',
+          );
+
+          if (!nodeElement || !container) {
+            console.error(
+              "[SPOTLIGHT] ERROR: Could not find nodeElement or container for element:",
+              elementId,
+              "- This should not happen if search properly expanded containers",
+            );
+            return;
+          }
+
+          const nodeRect = nodeElement.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+
+          // Calculate position relative to container
+          const screenX = nodeRect.left - containerRect.left;
+          const screenY = nodeRect.top - containerRect.top;
+          const screenWidth = nodeRect.width;
+          const screenHeight = nodeRect.height;
+
+          
+
+          const borderWidth = 3;
+          const spotlightId = `spotlight-${Date.now()}-${elementId}`;
+          const newSpotlight = {
+            id: spotlightId,
+            elementId: elementId,
+            position: { x: screenX - borderWidth, y: screenY - borderWidth },
+            size: {
+              width: screenWidth + borderWidth * 2,
+              height: screenHeight + borderWidth * 2,
+            },
+            timestamp: Date.now(),
+          };
+
+          
+
+          setState((prev) => ({
+            ...prev,
+            spotlights: [...prev.spotlights, newSpotlight],
+          }));
+
+          setTimeout(() => {
+            setState((prev) => ({
+              ...prev,
+              spotlights: prev.spotlights.filter((s) => s.id !== spotlightId),
+            }));
+          }, NAVIGATION_TIMING.HIGHLIGHT_DURATION);
+        };
+
         // Create InteractionHandler
         interactionHandlerRef.current = new InteractionHandler(
           visualizationState,
@@ -617,6 +701,7 @@ const HydroscopeCoreInternal = forwardRef<
         interactionHandler.handleContainerClick = async (
           containerId: string,
           _position?: { x: number; y: number },
+          shiftKey?: boolean,
         ) => {
           // Skip container interactions in readOnly mode
           if (readOnly) {
@@ -673,21 +758,39 @@ const HydroscopeCoreInternal = forwardRef<
               let reactFlowData;
 
               if (wasCollapsed) {
-                // Use expandContainerWithAncestors for safety (though ancestors should already be expanded)
-                reactFlowData =
-                  await state.asyncCoordinator.expandContainerWithAncestors(
-                    containerId,
-                    currentVisualizationState,
-                    {
-                      relayoutEntities: undefined, // Full layout to let ELK recalculate positions
-                      ...createFitViewOptions(
-                        createAutoFitOptions(
-                          AutoFitScenarios.CONTAINER_OPERATION,
-                          state.autoFitEnabled,
+                // Shift-click: expand recursively
+                if (shiftKey) {
+                  reactFlowData =
+                    await state.asyncCoordinator.expandContainerRecursively(
+                      containerId,
+                      currentVisualizationState,
+                      {
+                        relayoutEntities: undefined,
+                        ...createFitViewOptions(
+                          createAutoFitOptions(
+                            AutoFitScenarios.CONTAINER_OPERATION,
+                            state.autoFitEnabled,
+                          ),
                         ),
-                      ),
-                    },
-                  );
+                      },
+                    );
+                } else {
+                  // Regular click: expand with ancestors
+                  reactFlowData =
+                    await state.asyncCoordinator.expandContainerWithAncestors(
+                      containerId,
+                      currentVisualizationState,
+                      {
+                        relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+                        ...createFitViewOptions(
+                          createAutoFitOptions(
+                            AutoFitScenarios.CONTAINER_OPERATION,
+                            state.autoFitEnabled,
+                          ),
+                        ),
+                      },
+                    );
+                }
                 // Call callback after synchronous operation completes
                 onContainerExpand?.(containerId, currentVisualizationState);
               } else {
@@ -783,6 +886,27 @@ const HydroscopeCoreInternal = forwardRef<
             error: null,
             autoFitEnabled: true,
           }));
+
+          // Update ReactFlowBridge with semantic mappings from the new data
+          if (
+            newData.edgeStyleConfig?.semanticMappings &&
+            reactFlowBridgeRef.current
+          ) {
+            reactFlowBridgeRef.current = new ReactFlowBridge({
+              nodeStyles: {},
+              edgeStyles: {},
+              semanticMappings: newData.edgeStyleConfig.semanticMappings,
+              propertyMappings: {},
+            });
+
+            // Update AsyncCoordinator with the new bridge instance
+            if (state.asyncCoordinator && elkBridgeRef.current) {
+              state.asyncCoordinator.setBridgeInstances(
+                reactFlowBridgeRef.current,
+                elkBridgeRef.current,
+              );
+            }
+          }
 
           // Update the interaction handler for the current state
           if (state.asyncCoordinator) {
@@ -1457,56 +1581,8 @@ const HydroscopeCoreInternal = forwardRef<
               }
             }
 
-            // Get the actual DOM element to find its rendered position (for graph overlay)
-            const nodeElement = document.querySelector(
-              `[data-id="${visibleElementId}"]`,
-            );
-            if (nodeElement) {
-              const rect = nodeElement.getBoundingClientRect();
-              const container = document.querySelector(
-                '[data-testid="graph-container"]',
-              );
-              const containerRect = container?.getBoundingClientRect();
-
-              if (containerRect) {
-                // Calculate position relative to the graph container
-                const screenX = rect.left - containerRect.left + rect.width / 2;
-                const screenY = rect.top - containerRect.top + rect.height / 2;
-                const screenWidth = rect.width;
-                const screenHeight = rect.height;
-
-                // Add new spotlight to array (allows concurrent glows)
-                const spotlightId = `spotlight-${Date.now()}-${visibleElementId}`;
-                const newSpotlight = {
-                  id: spotlightId,
-                  elementId: visibleElementId,
-                  position: {
-                    x: screenX - screenWidth / 2,
-                    y: screenY - screenHeight / 2,
-                  },
-                  size: {
-                    width: screenWidth,
-                    height: screenHeight,
-                  },
-                  timestamp: Date.now(),
-                };
-
-                setState((prev) => ({
-                  ...prev,
-                  spotlights: [...prev.spotlights, newSpotlight],
-                }));
-
-                // Remove this specific spotlight after duration
-                setTimeout(() => {
-                  setState((prev) => ({
-                    ...prev,
-                    spotlights: prev.spotlights.filter(
-                      (s) => s.id !== spotlightId,
-                    ),
-                  }));
-                }, NAVIGATION_TIMING.HIGHLIGHT_DURATION);
-              }
-            }
+            // Spotlight creation is now handled by the search-specific callback
+            // (onSearchResultFocused) to avoid creating spotlights for non-search navigation
           }, NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION);
 
           // Notify parent component of visualization state change to trigger re-render
@@ -1691,7 +1767,11 @@ const HydroscopeCoreInternal = forwardRef<
           if (node.data && node.data.nodeType === "container") {
             // Handle container clicks directly through InteractionHandler
             if (!readOnly && interactionHandlerRef.current) {
-              interactionHandlerRef.current.handleContainerClick(node.id);
+              interactionHandlerRef.current.handleContainerClick(
+                node.id,
+                undefined,
+                event.shiftKey,
+              );
             }
           } else {
             // Handle regular node clicks - show popup if node has longLabel
@@ -2176,6 +2256,9 @@ const HydroscopeCoreInternal = forwardRef<
             edges={state.reactFlowData.edges as any[]}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            defaultEdgeOptions={{
+              markerEnd: { type: "arrowclosed" },
+            }}
             onInit={() => {
               // ReactFlow instance initialized
             }}
@@ -2191,6 +2274,11 @@ const HydroscopeCoreInternal = forwardRef<
                 ...prev,
                 activePopups: new Map(),
               }));
+            }}
+            onMoveEnd={() => {
+              // Notify AsyncCoordinator that viewport animation has completed
+              // This provides deterministic signaling for event-driven coordination
+              state.asyncCoordinator?.notifyViewportAnimationComplete();
             }}
             onPaneClick={
               readOnly

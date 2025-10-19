@@ -714,7 +714,7 @@ export function HierarchyTree({
     if (!visualizationState) {
       return [];
     }
-    
+
     // Return containers that are NOT in the collapsedContainers set
     // Use allContainers to include manually hidden containers in the tree
     const allContainerIds = visualizationState.allContainers.map(

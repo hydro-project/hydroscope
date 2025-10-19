@@ -233,7 +233,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
     // Debounced search with error handling (keeping synchronous core operations)
     useEffect(() => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
-      timerRef.current = window.setTimeout(() => {
+      timerRef.current = window.setTimeout(async () => {
         // Prevent processing the same query multiple times
         if (lastProcessedQuery.current === query) {
           return;
@@ -287,7 +287,8 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
 
               // Use AsyncCoordinator to handle search with proper ReactFlow regeneration
               // This ensures: search → expand containers → highlight → render
-              const updatePromise = asyncCoordinator.updateSearchResults(
+              // IMPORTANT: Await the search completion before continuing
+              await asyncCoordinator.updateSearchResults(
                 query,
                 visualizationState,
                 {
@@ -296,86 +297,57 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 },
               );
 
-              updatePromise
-                .then(() => {
-                  // After AsyncCoordinator completes, get the search results from state
-                  const searchResults = visualizationState.getSearchResults
-                    ? visualizationState.getSearchResults()
-                    : [];
-                  const resultsById = new Map(
-                    searchResults.map((r: any) => [r.id, r]),
-                  );
+              // After AsyncCoordinator completes, get the search results from state
+              const searchResults = visualizationState.getSearchResults
+                ? visualizationState.getSearchResults()
+                : [];
+              const resultsById = new Map(
+                searchResults.map((r: any) => [r.id, r]),
+              );
 
-                  // Re-sort results to match tree order by using searchableItems order
-                  next = searchableItems
-                    .filter((item) => resultsById.has(item.id))
-                    .map((item) => {
-                      const result = resultsById.get(item.id) as any;
-                      return {
-                        id: result.id,
-                        label: result.label,
-                        type: result.type,
-                        matchIndices: result.matchIndices || [],
-                      };
-                    });
-
-                  setMatches(next);
-                  setCurrentIndex(0);
-
-                  // Apply search results synchronously
-                  const onSearchResult = onSearch(query, next);
-
-                  // Navigate to first result automatically if results found
-                  if (next.length > 0) {
-                    Promise.resolve(onSearchResult).then(() => {
-                      onNavigate("next", next[0]);
-                      if (
-                        onResultNavigation &&
-                        searchResults &&
-                        searchResults[0]
-                      ) {
-                        onResultNavigation(searchResults[0]);
-                      }
-                    });
-                  }
-
-                  // Add to history when we get results
-                  if (next.length > 0) {
-                    addToHistory(query);
-                  }
-
-                  // Announce search results for accessibility
-                  if (announceResults) {
-                    const message =
-                      next.length === 0
-                        ? "No search results found"
-                        : `${next.length} search result${next.length === 1 ? "" : "s"} found`;
-                    announceToScreenReader(message);
-                  }
-                })
-                .catch((error: any) => {
-                  console.warn(
-                    "[SearchControls] updateSearchResults REJECTED!",
-                  );
-                  console.error(
-                    "[SearchControls] AsyncCoordinator search failed:",
-                    error,
-                  );
-                  // Fallback to local search
-                  const rx = toRegex(query);
-                  if (!rx) return;
-                  next = searchableItems
-                    .filter((i) => rx.test(i.label))
-                    .map((i) => ({
-                      ...i,
-                      matchIndices: [],
-                    }));
-                  setMatches(next);
-                  setCurrentIndex(0);
-                  onSearch(query, next);
+              // Re-sort results to match tree order by using searchableItems order
+              next = searchableItems
+                .filter((item) => resultsById.has(item.id))
+                .map((item) => {
+                  const result = resultsById.get(item.id) as any;
+                  return {
+                    id: result.id,
+                    label: result.label,
+                    type: result.type,
+                    matchIndices: result.matchIndices || [],
+                  };
                 });
 
-              // Return early - the search is async now
+              setMatches(next);
+              setCurrentIndex(0);
+
+              // Apply search results synchronously
+              const onSearchResult = onSearch(query, next);
+
+              // Navigate to first result automatically if results found
+              if (next.length > 0) {
+                await Promise.resolve(onSearchResult);
+                onNavigate("next", next[0]);
+                if (searchResults && searchResults[0] && onResultNavigation) {
+                  onResultNavigation(searchResults[0]);
+                }
+              }
+
+              // Add to history when we get results
+              if (next.length > 0) {
+                addToHistory(query);
+              }
+
+              // Announce search results for accessibility
+              if (announceResults) {
+                const message =
+                  next.length === 0
+                    ? "No search results found"
+                    : `${next.length} search result${next.length === 1 ? "" : "s"} found`;
+                announceToScreenReader(message);
+              }
+
+              // Search completed successfully, return
               return;
             } catch (error) {
               console.error("[SearchControls] Search setup failed:", error);
