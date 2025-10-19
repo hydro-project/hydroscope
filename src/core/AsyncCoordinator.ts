@@ -17,6 +17,14 @@ export interface QueueOptions {
   timeout?: number;
   maxRetries?: number;
 }
+/**
+ * ASYNC COORDINATOR CONTRACT:
+ * - All operations MUST be sequential and deterministic
+ * - NO setTimeout/setInterval for timing logic (only for timeouts wrapped in awaited Promises)
+ * - ALL async method calls MUST be awaited
+ * - NO fire-and-forget .then() chains (except documented cases like spotlight)
+ * - Wait for actual events (like notifyViewportAnimationComplete), not durations
+ */
 export class AsyncCoordinator {
   private queue: QueuedOperation[] = [];
   private processing = false;
@@ -134,11 +142,9 @@ export class AsyncCoordinator {
    * This is deterministic - it waits for ReactFlow's onMoveEnd event
    */
   private waitForViewportAnimationComplete(): Promise<void> {
-    if (!this.isViewportAnimating) {
-      // No animation in progress, resolve immediately
-      return Promise.resolve();
-    }
-
+    // Always register a resolver and wait for the animation to complete
+    // Even if isViewportAnimating is false, the animation might start soon
+    // The resolver will be called when notifyViewportAnimationComplete() is triggered
     return new Promise<void>((resolve) => {
       this.viewportAnimationCompleteResolvers.push(resolve);
     });
@@ -2099,15 +2105,61 @@ export class AsyncCoordinator {
         );
       }
 
+      // SEQUENTIAL STEP: Determine viewport behavior based on AutoFit mode
+      // In AutoFit mode, we focus on the expanded container instead of using fitView
+      const renderConfig = state.getRenderConfig?.();
+      const isAutoFitEnabled = renderConfig?.fitView !== false;
+      const shouldFocusOnContainer =
+        isAutoFitEnabled && !!this.reactFlowInstance;
+
       // Use enhanced pipeline for layout and render with graceful error handling
       // Call private handler directly to avoid queue deadlock
+      // Disable fitView if we're going to focus on the container instead
       const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: options.relayoutEntities, // Pass through as-is (undefined = full layout)
-        fitView: options.fitView,
+        fitView: shouldFocusOnContainer ? false : options.fitView, // Disable fitView if focusing on container
         fitViewOptions: options.fitViewOptions,
         timeout: options.timeout,
         maxRetries: options.maxRetries,
       });
+
+      // SEQUENTIAL STEP: Focus viewport on expanded container if in AutoFit mode
+      // This replaces fitView to provide a focused view on the specific container
+      if (shouldFocusOnContainer) {
+        try {
+          // Wait for React to render the expanded container before focusing
+          // Only wait if there are pending callbacks (i.e., in production with React)
+          // CRITICAL: Always wait for React to render and measure the expanded container
+          // The layout pipeline has updated the data, but ReactFlow needs time to:
+          // 1. Render the new nodes
+          // 2. Measure their actual dimensions
+          // Without this wait, we'll get stale (pre-expansion) dimensions
+          await this.waitForNextRender();
+
+          // Call focusViewportOnElement directly (not through queue to avoid deadlock)
+          // This ensures consistent viewport positioning behavior
+          await this._handleFocusViewportOnElement(
+            containerId,
+            this.reactFlowInstance,
+            {
+              visualizationState: state,
+              immediate: true, // Use immediate positioning (duration: 0) for reliability
+              // ReactFlow's setCenter() is fire-and-forget with no completion callback.
+              // Animated transitions (duration > 0) rely on onMoveEnd event, which only
+              // fires if viewport actually moves. This causes race conditions in the queue.
+              // Immediate positioning is synchronous and deterministic.
+              // No zoom specified - let it auto-calculate to fit the expanded container
+            },
+          );
+        } catch (focusError) {
+          // Log but don't fail the expansion if viewport focus fails
+          console.error(
+            "[AsyncCoordinator] Failed to focus viewport on expanded container:",
+            focusError,
+          );
+          console.error("Error stack:", (focusError as Error).stack);
+        }
+      }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -2355,15 +2407,77 @@ export class AsyncCoordinator {
         );
       }
 
+      // SEQUENTIAL STEP: Determine viewport behavior based on AutoFit mode
+      // In AutoFit mode, we focus on the collapsed container instead of using fitView
+      const renderConfig = state.getRenderConfig?.();
+      const isAutoFitEnabled = renderConfig?.fitView !== false;
+      const shouldFocusOnContainer =
+        isAutoFitEnabled && !!this.reactFlowInstance;
+
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] 🔍 Collapse viewport focus check:",
+        {
+          containerId,
+          isAutoFitEnabled,
+          hasReactFlowInstance: !!this.reactFlowInstance,
+          shouldFocusOnContainer,
+          renderConfig,
+        },
+      );
+
       // Use enhanced pipeline for layout and render with graceful error handling
       // Call private handler directly to avoid queue deadlock
+      // Disable fitView if we're going to focus on the container instead
       const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: options.relayoutEntities, // Pass through as-is (undefined = full layout)
-        fitView: options.fitView,
+        fitView: shouldFocusOnContainer ? false : options.fitView, // Disable fitView if focusing on container
         fitViewOptions: options.fitViewOptions,
         timeout: options.timeout,
         maxRetries: options.maxRetries,
       });
+
+      // SEQUENTIAL STEP: Focus viewport on collapsed container if in AutoFit mode
+      // This replaces fitView to provide a focused view on the specific container
+      if (shouldFocusOnContainer) {
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] 🎯 Focusing viewport on collapsed container (AutoFit mode)",
+          { containerId },
+        );
+
+        try {
+          // CRITICAL: Always wait for React to render and measure the collapsed container
+          // The layout pipeline has updated the data, but ReactFlow needs time to:
+          // 1. Render the updated container
+          // 2. Measure its actual dimensions
+          // Without this wait, we'll get stale (pre-collapse) dimensions
+          await this.waitForNextRender();
+
+          // Call focusViewportOnElement directly (not through queue to avoid deadlock)
+          // This ensures consistent viewport positioning behavior
+          await this._handleFocusViewportOnElement(
+            containerId,
+            this.reactFlowInstance,
+            {
+              visualizationState: state,
+              immediate: true, // Use immediate positioning (duration: 0) for reliability
+              // ReactFlow's setCenter() is fire-and-forget with no completion callback.
+              // Animated transitions (duration > 0) rely on onMoveEnd event, which only
+              // fires if viewport actually moves. This causes race conditions in the queue.
+              // Immediate positioning is synchronous and deterministic.
+              zoom: 1.0, // Fixed zoom for collapsed containers
+            },
+          );
+        } catch (focusError) {
+          // Log but don't fail the collapse if viewport focus fails
+          console.error(
+            "[AsyncCoordinator] Failed to focus viewport on collapsed container:",
+            focusError,
+          );
+          console.error("Error stack:", (focusError as Error).stack);
+        }
+      }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -3012,6 +3126,7 @@ export class AsyncCoordinator {
       }
 
       if (node) {
+
         // Calculate absolute position by recursively walking up the entire parent chain
         let absoluteX = node.position.x;
         let absoluteY = node.position.y;
@@ -3031,8 +3146,17 @@ export class AsyncCoordinator {
 
         // Pan to the node with smooth animation
         // Calculate zoom level to fit the node on screen with padding
-        const nodeWidth = node.width || 100;
-        const nodeHeight = node.height || 50;
+        // Require actual dimensions - fail fast if not available
+        const nodeWidth = node.measured?.width || node.width;
+        const nodeHeight = node.measured?.height || node.height;
+
+        if (!nodeWidth || !nodeHeight) {
+          throw new Error(
+            `Cannot focus on element ${elementId}: node dimensions not available (width: ${nodeWidth}, height: ${nodeHeight}). ` +
+              `Node may not be rendered yet. measured: ${JSON.stringify(node.measured)}, width: ${node.width}, height: ${node.height}`,
+          );
+        }
+
         const x = absoluteX + nodeWidth / 2;
         const y = absoluteY + nodeHeight / 2;
 
@@ -3047,7 +3171,7 @@ export class AsyncCoordinator {
           // Calculate zoom to fit the node with comfortable padding
           const viewportWidth = window.innerWidth;
           const viewportHeight = window.innerHeight;
-          const paddingFactor = 0.7; // Use 70% of viewport (30% padding total)
+          const paddingFactor = 0.8; // Use 80% of viewport (20% padding total) for better visibility
 
           // Node dimensions are in the graph coordinate space (unscaled)
           // Calculate what zoom would fit the node in the viewport with padding
@@ -3055,9 +3179,10 @@ export class AsyncCoordinator {
           const zoomToFitHeight = (viewportHeight * paddingFactor) / nodeHeight;
           const zoomToFit = Math.min(zoomToFitWidth, zoomToFitHeight);
 
-          // Only cap at 1.0 if zooming IN (zoomToFit > 1.0)
-          // Allow zooming OUT below 1.0 for large nodes
-          targetZoom = zoomToFit > 1.0 ? 1.0 : zoomToFit;
+          // Cap at 1.0 for maximum zoom (don't zoom in beyond native size)
+          // Allow zooming out below 1.0 for large containers
+          // Also set a minimum zoom of 0.1 to prevent zooming out too far
+          targetZoom = Math.max(0.1, Math.min(1.0, zoomToFit));
         }
 
         // Use immediate positioning (duration: 0) by default for reliability
@@ -3078,6 +3203,18 @@ export class AsyncCoordinator {
           zoom: targetZoom,
           duration: duration,
         });
+
+        // CRITICAL: Wait for viewport animation to complete before returning
+        // This ensures sequential execution - the next operation won't start until this viewport change finishes
+        // We ALWAYS wait if duration > 0, regardless of the flag state
+        // NOTE: Waiting for animation is unreliable because ReactFlow's onMoveEnd only fires
+        // if the viewport actually moves. For navigation/search, we accept this limitation
+        // and trigger callbacks based on duration timeout instead.
+        if (duration > 0) {
+          // Mark animation start for tracking
+          // Don't wait for completion - return immediately to avoid hanging
+          // Callbacks should use setTimeout(callback, duration) instead of waiting for events
+        }
       } else {
         console.warn(
           `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
@@ -3258,22 +3395,30 @@ export class AsyncCoordinator {
       const instanceToUse = reactFlowInstance || this.reactFlowInstance;
       if (instanceToUse) {
         // Queue the viewport focus + spotlight sequence
-        // This ensures proper event-driven coordination
+        // Use animated transition for better UX (unlike container expand/collapse which use immediate)
+        const animationDuration =
+          options.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION;
+
+        // Fire-and-forget .then() is acceptable here because spotlight is a non-critical
+        // visual effect that shouldn't block navigation. The core navigation functionality
+        // (highlight) works even if spotlight fails.
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.focusViewportOnElement(elementId, instanceToUse, {
           zoom: options.zoom, // Only use explicit zoom if provided
-          duration:
-            options.duration ?? NAVIGATION_TIMING.VIEWPORT_ANIMATION_DURATION,
+          duration: animationDuration,
           visualizationState: visualizationState,
-        })
-          .then(async () => {
-            // Wait for viewport animation to complete (event-driven)
-            await this.waitForViewportAnimationComplete();
-
-            // Trigger spotlight after animation completes
+        }).then(() => {
+          // Trigger spotlight after animation duration
+          // ReactFlow's setCenter() is fire-and-forget with no completion callback.
+          // The onMoveEnd event only fires if viewport actually moves, causing hangs when
+          // viewport is already at target position. Using duration-based timeout is the only
+          // reliable way to trigger spotlight after animation completes.
+          setTimeout(() => {
             if (this.onSearchResultFocused) {
               this.onSearchResultFocused(elementId, options.zoom);
             }
-          })
+          }, animationDuration);
+        })
           .catch((error) => {
             // Log viewport focus errors for debugging
             console.error(

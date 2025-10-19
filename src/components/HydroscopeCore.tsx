@@ -555,9 +555,9 @@ const HydroscopeCoreInternal = forwardRef<
           };
 
           setState((prev) => ({
-              ...prev,
-              spotlights: [...prev.spotlights, newSpotlight],
-            }));
+            ...prev,
+            spotlights: [...prev.spotlights, newSpotlight],
+          }));
 
           setTimeout(() => {
             setState((prev) => ({

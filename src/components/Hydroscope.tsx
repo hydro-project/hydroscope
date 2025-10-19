@@ -508,7 +508,7 @@ export const Hydroscope = memo<HydroscopeProps>(
     style,
     generatedFilePath,
     enableUrlParsing = typeof process !== "undefined" &&
-      process.env.NODE_ENV === "test"
+    process.env.NODE_ENV === "test"
       ? false
       : true,
   }) => {
@@ -1554,9 +1554,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                     legendData={
                       state.data?.legend
                         ? {
-                          title: state.data.legend.title || "Legend",
-                          items: state.data.legend.items,
-                        }
+                            title: state.data.legend.title || "Legend",
+                            items: state.data.legend.items,
+                          }
                         : undefined
                     }
                     edgeStyleConfig={state.data?.edgeStyleConfig as any}
