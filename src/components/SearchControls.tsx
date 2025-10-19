@@ -306,23 +306,17 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 onSearchStateChange(false);
               }
 
-              // Use the returned search results (guaranteed to be ready)
-              const resultsById = new Map(
-                searchResults.map((r: any) => [r.id, r]),
-              );
-
-              // Re-sort results to match tree order by using searchableItems order
-              next = searchableItems
-                .filter((item) => resultsById.has(item.id))
-                .map((item) => {
-                  const result = resultsById.get(item.id) as any;
-                  return {
-                    id: result.id,
-                    label: result.label,
-                    type: result.type,
-                    matchIndices: result.matchIndices || [],
-                  };
-                });
+              // Use the returned search results directly
+              // CRITICAL FIX: Don't filter through searchableItems - it's built from the tree
+              // BEFORE containers are expanded, so it won't include nodes that were hidden
+              // The search results from updateSearchResults are already complete, correct,
+              // and sorted by the VisualizationState's performSearch method
+              next = searchResults.map((r: any) => ({
+                id: r.id,
+                label: r.label,
+                type: r.type,
+                matchIndices: r.matchIndices || [],
+              }));
 
               setMatches(next);
               setCurrentIndex(0);
@@ -333,8 +327,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               // Navigate to first result automatically if results found
               if (next.length > 0) {
                 await Promise.resolve(onSearchResult);
-                
-                
+
                 onNavigate("next", next[0]);
                 if (searchResults && searchResults[0] && onResultNavigation) {
                   onResultNavigation(searchResults[0]);

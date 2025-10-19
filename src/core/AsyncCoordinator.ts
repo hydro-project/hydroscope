@@ -3536,22 +3536,20 @@ export class AsyncCoordinator {
               const animationDuration = options.fitViewOptions?.duration || 300;
 
               // Focus viewport (this will mark animation start if duration > 0)
+              // Note: We don't create a spotlight here because the caller
+              // (SearchControls -> onNavigate -> navigateToElement) will handle it
+              // Don't specify zoom - let _handleFocusViewportOnElement calculate it
+              // to fit the element with padding (capped at 1.0 max)
               await this._handleFocusViewportOnElement(
                 elementId,
                 this.reactFlowInstance!,
                 {
-                  zoom: 1.0,
                   duration: animationDuration,
                 },
               );
 
               // Wait for viewport animation to complete (event-driven, not timeout-based)
               await this.waitForViewportAnimationComplete();
-
-              // Trigger spotlight creation for search result with target viewport state
-              if (this.onSearchResultFocused) {
-                this.onSearchResultFocused(elementId, 1.0);
-              }
             });
           }
 
@@ -3600,11 +3598,14 @@ export class AsyncCoordinator {
           const animationDuration = options.fitViewOptions?.duration || 300;
 
           // Focus viewport (this will mark animation start if duration > 0)
+          // Note: We don't create a spotlight here because the caller
+          // (SearchControls -> onNavigate -> navigateToElement) will handle it
+          // Don't specify zoom - let _handleFocusViewportOnElement calculate it
+          // to fit the element with padding (capped at 1.0 max)
           await this._handleFocusViewportOnElement(
             elementId,
             this.reactFlowInstance!,
             {
-              zoom: 1.0,
               duration: animationDuration,
             },
           );
@@ -3615,14 +3616,6 @@ export class AsyncCoordinator {
 
           // Wait for viewport animation to complete (event-driven, not timeout-based)
           await this.waitForViewportAnimationComplete();
-
-          // Trigger spotlight creation for search result with target viewport state
-          if (this.onSearchResultFocused) {
-            
-            this.onSearchResultFocused(elementId, 1.0);
-          } else {
-            
-          }
         });
       }
 
@@ -4587,42 +4580,65 @@ export class AsyncCoordinator {
     searchResults: any[],
     state: any,
   ): string[] {
-    const containerIds: string[] = [];
+    // Use a Map to track containers and their depth (distance from root)
+    // This allows us to sort them so parents are expanded before children
+    const containerDepthMap = new Map<string, number>();
 
     try {
       for (const result of searchResults) {
+        let startContainerId: string | undefined;
+
         if (result.type === "node") {
           // Get the immediate parent container for this node
-          const containerId = state.getNodeContainer
+          startContainerId = state.getNodeContainer
             ? state.getNodeContainer(result.id)
             : undefined;
+        } else if (result.type === "container") {
+          // For container results, we need to expand the container itself
+          // AND its parent containers to make it visible
+          startContainerId = result.id;
+        }
 
-          if (containerId) {
-            // Get all ancestor containers up to the root
-            let currentContainerId: string | undefined = containerId;
+        if (startContainerId) {
+          // Get all ancestor containers up to the root, tracking depth
+          const ancestorChain: Array<{ id: string; depth: number }> = [];
+          let currentContainerId: string | undefined = startContainerId;
+          let depth = 0;
 
-            while (currentContainerId) {
-              const container = state._containers?.get(currentContainerId);
-              if (!container) break;
+          while (currentContainerId) {
+            const container = state._containers?.get(currentContainerId);
+            if (!container) break;
 
-              // Check if this container is collapsed
-              if (
-                container.collapsed &&
-                !containerIds.includes(currentContainerId)
-              ) {
-                containerIds.push(currentContainerId);
-              }
+            // Check if this container is collapsed
+            if (container.collapsed) {
+              ancestorChain.push({ id: currentContainerId, depth });
+            }
 
-              // Move to parent container
-              currentContainerId = state.getContainerParent
-                ? state.getContainerParent(currentContainerId)
-                : undefined;
+            // Move to parent container
+            currentContainerId = state.getContainerParent
+              ? state.getContainerParent(currentContainerId)
+              : undefined;
+            depth++;
+          }
+
+          // Add to map, keeping the maximum depth for each container
+          // (in case it appears in multiple chains)
+          for (const { id, depth } of ancestorChain) {
+            const existingDepth = containerDepthMap.get(id);
+            if (existingDepth === undefined || depth > existingDepth) {
+              containerDepthMap.set(id, depth);
             }
           }
         }
       }
 
-      return containerIds;
+      // Sort containers by depth (descending) so parents are expanded before children
+      // Higher depth = closer to root = should be expanded first
+      const sortedContainers = Array.from(containerDepthMap.entries())
+        .sort((a, b) => b[1] - a[1]) // Sort by depth descending
+        .map(([id]) => id);
+
+      return sortedContainers;
     } catch (_error) {
       return [];
     }

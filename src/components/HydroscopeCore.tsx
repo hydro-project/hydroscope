@@ -554,8 +554,6 @@ const HydroscopeCoreInternal = forwardRef<
             timestamp: Date.now(),
           };
 
-          
-
           setState((prev) => ({
             ...prev,
             spotlights: [...prev.spotlights, newSpotlight],
