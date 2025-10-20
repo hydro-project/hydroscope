@@ -81,13 +81,20 @@ describe("CustomEdge Rendering", () => {
       console.log(`g[${i}] transform:`, g.getAttribute("transform"));
     });
 
-    // Hashed line should have at least 2 paths (main line + hash marks)
-    expect(paths.length).toBeGreaterThanOrEqual(2);
+    // Double line should have 2 paths (two parallel lines)
+    expect(paths.length).toBe(2);
 
-    // Check that we have a main path
-    const mainPath = paths[0];
-    expect(mainPath).toBeDefined();
-    expect(mainPath.getAttribute("d")).toBeTruthy();
+    // Should have 2 g elements with transforms (one for each line)
+    expect(gElements.length).toBe(2);
+
+    // Check that transforms are perpendicular offsets (non-zero x and y)
+    const transforms = Array.from(gElements).map((g) =>
+      g.getAttribute("transform"),
+    );
+    // Transforms should be mirror images (one positive, one negative)
+    expect(transforms.length).toBe(2);
+    expect(transforms[0]).toBeTruthy();
+    expect(transforms[1]).toBeTruthy();
   });
 
   it("should render wavy path when waviness=true", () => {
@@ -140,24 +147,16 @@ describe("CustomEdge Rendering", () => {
     const gElements = container.querySelectorAll("g[transform]");
     console.log("g[transform] elements found:", gElements.length);
 
-    // Should have multiple paths (main wavy path + hash marks)
-    expect(paths.length).toBeGreaterThanOrEqual(2);
+    // Should have 2 paths (double line)
+    expect(paths.length).toBe(2);
 
-    // At least one path should be wavy (have curve commands and be long)
-    const pathDataArray = Array.from(paths).map(
-      (p) => p.getAttribute("d") || "",
-    );
-    const wavyPath = pathDataArray.find((d) => d.length > 100);
+    // Should have 2 g elements with transforms
+    expect(gElements.length).toBe(2);
 
-    expect(wavyPath).toBeDefined();
-    expect(wavyPath!.length).toBeGreaterThan(100); // Wavy paths are long
-
-    // Check for curve commands or line segments in wavy path
-    const hasComplexPath =
-      wavyPath!.includes("L") ||
-      wavyPath!.includes("C") ||
-      wavyPath!.includes("Q");
-    expect(hasComplexPath).toBe(true); // Wavy paths have multiple segments
+    // Both paths should be wavy (long path data)
+    const pathData = paths[0]?.getAttribute("d") || "";
+    console.log("First path length:", pathData.length);
+    expect(pathData.length).toBeGreaterThan(100); // Wavy paths are long
   });
 
   it("should extract lineStyle and waviness from edge data", () => {

@@ -37,9 +37,9 @@ describe("Container Expansion with AutoFit", () => {
       })),
       setCenter: vi.fn(
         (
-          x: number,
-          y: number,
-          options?: { zoom?: number; duration?: number },
+          _x: number,
+          _y: number,
+          _options?: { zoom?: number; duration?: number },
         ) => {
           // Immediate positioning (duration: 0) - no animation to wait for
           // This matches the production behavior where we use immediate: true

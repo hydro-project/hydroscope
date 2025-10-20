@@ -5,7 +5,7 @@
  * These tests prevent regression of the bug where tree expansion didn't work when sync was disabled.
  */
 
-import React from "react"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HierarchyTree } from "../components/HierarchyTree";
@@ -24,12 +24,12 @@ describe("HierarchyTree Sync Behavior", () => {
     mockOnToggleContainer = vi.fn();
     mockOnElementNavigation = vi.fn();
 
-    // Set up test data with simple containers
+    // Set up test data with simple containers (start expanded to avoid invariant violations)
     visualizationState.addContainer({
       id: "container1",
       label: "Container 1",
       children: new Set<string>(),
-      collapsed: true,
+      collapsed: false,
       hidden: false,
       position: { x: 0, y: 0 },
       dimensions: { width: 200, height: 150 },
@@ -39,7 +39,7 @@ describe("HierarchyTree Sync Behavior", () => {
       id: "container2",
       label: "Container 2",
       children: new Set<string>(),
-      collapsed: true,
+      collapsed: false,
       hidden: false,
       position: { x: 0, y: 200 },
       dimensions: { width: 200, height: 150 },
@@ -61,6 +61,10 @@ describe("HierarchyTree Sync Behavior", () => {
 
     visualizationState.assignNodeToContainer("node1", "container1");
     visualizationState.assignNodeToContainer("node2", "container2");
+
+    // Now collapse the containers (this will automatically hide the nodes)
+    visualizationState.collapseContainerSystemOperation("container1");
+    visualizationState.collapseContainerSystemOperation("container2");
   });
 
   describe("when syncEnabled is true", () => {

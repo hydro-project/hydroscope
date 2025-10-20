@@ -86,7 +86,6 @@ function createSearchHighlightDiv(
   hasTemporaryHighlight: boolean = false,
   palette: string = "Set3",
   isManuallyHidden: boolean = false,
-  onToggleVisibility?: (e: React.MouseEvent) => void,
   containerId?: string,
   longLabel?: string,
 ): React.ReactNode {
@@ -131,37 +130,7 @@ function createSearchHighlightDiv(
       style={{ ...style, display: "flex", alignItems: "center", gap: "6px" }}
       data-container-id={containerId}
     >
-      {/* Eye icon toggle */}
-      {onToggleVisibility && (
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleVisibility(e);
-          }}
-          style={{
-            cursor: "pointer",
-            fontSize: "13px",
-            opacity: 0.7,
-            userSelect: "none",
-            transition: "opacity 0.15s",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.7";
-          }}
-          title={
-            isManuallyHidden
-              ? "Show in graph (currently hidden)"
-              : "Hide from graph (Shift+click to hide all others)"
-          }
-        >
-          {isManuallyHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-        </span>
-      )}
+      {/* Eye icon toggle - removed for leaf nodes */}
       <span
         style={{
           opacity: isManuallyHidden ? 0.4 : 1,
@@ -346,7 +315,6 @@ function getTreeDataStructure(
   truncateLabels: boolean = true,
   maxLabelLength: number = 20,
   showNodeCounts: boolean = true,
-  onToggleNodeVisibility?: (nodeId: string, shiftKey?: boolean) => void,
   onToggleContainerVisibility?: (
     containerId: string,
     shiftKey?: boolean,
@@ -422,10 +390,6 @@ function getTreeDataStructure(
                 visualizationState?.hasTemporaryHighlight(leafNode.id) ?? false,
                 palette,
                 isManuallyHidden,
-                onToggleNodeVisibility
-                  ? (e: React.MouseEvent) =>
-                      onToggleNodeVisibility(leafNode.id, e.shiftKey)
-                  : undefined,
                 leafNode.id, // Add containerId for scroll targeting
                 leafNode.longLabel, // Show full label on hover
               ),
@@ -480,10 +444,6 @@ function getTreeDataStructure(
                 visualizationState?.hasTemporaryHighlight(leafNode.id) ?? false,
                 palette,
                 isManuallyHidden,
-                onToggleNodeVisibility
-                  ? (e: React.MouseEvent) =>
-                      onToggleNodeVisibility(leafNode.id, e.shiftKey)
-                  : undefined,
                 leafNode.id, // Add containerId for scroll targeting
                 leafNode.longLabel, // Show full label on hover
               ),
@@ -563,7 +523,7 @@ function getTreeDataStructure(
 export function HierarchyTree({
   collapsedContainers = new Set(),
   onToggleContainer,
-  onToggleNodeVisibility,
+  onToggleNodeVisibility: _onToggleNodeVisibility,
   onToggleContainerVisibility,
   onElementNavigation,
   layoutOrchestrator,
@@ -981,7 +941,6 @@ export function HierarchyTree({
       truncateLabels,
       maxLabelLength,
       showNodeCounts,
-      onToggleNodeVisibility,
       onToggleContainerVisibility,
       expandedKeys, // Pass expandedKeys to control tree data structure
     );
@@ -995,7 +954,6 @@ export function HierarchyTree({
     truncateLabels,
     maxLabelLength,
     showNodeCounts,
-    onToggleNodeVisibility,
     onToggleContainerVisibility,
     expandedKeys, // Re-compute when expandedKeys changes
   ]);
@@ -1031,8 +989,8 @@ export function HierarchyTree({
     // Show loading indicator
     setIsRecalculating(true);
 
-    // Then toggle corresponding container in the visualization
-    if (info.node && onToggleContainer) {
+    // Then toggle corresponding container in the visualization (only if sync is enabled)
+    if (syncEnabled && info.node && onToggleContainer) {
       const nodeKey = info.node.key as string;
       // Check if we're expanding or collapsing by comparing current state
       const wasExpanded = expandedKeys.includes(nodeKey);

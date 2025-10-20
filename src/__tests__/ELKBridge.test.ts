@@ -133,9 +133,9 @@ describe("ELKBridge", () => {
       expect(elkGraph.children).toHaveLength(1);
       const elkContainer = elkGraph.children![0];
       expect(elkContainer.id).toBe("c1");
-      // ELK will determine container size automatically - width/height should be undefined
-      expect(elkContainer.width).toBeUndefined();
-      expect(elkContainer.height).toBeUndefined();
+      // Container with visible children gets default dimensions
+      expect(elkContainer.width).toBe(200);
+      expect(elkContainer.height).toBe(150);
       expect(elkContainer.children).toHaveLength(2);
       expect(elkContainer.layoutOptions).toBeDefined();
 

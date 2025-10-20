@@ -145,15 +145,6 @@ export class AsyncCoordinator {
    * Returns a promise that resolves when the next viewport animation completes
    * This is deterministic - it waits for ReactFlow's onMoveEnd event
    */
-  private waitForViewportAnimationComplete(): Promise<void> {
-    // Always register a resolver and wait for the animation to complete
-    // Even if isViewportAnimating is false, the animation might start soon
-    // The resolver will be called when notifyViewportAnimationComplete() is triggered
-    return new Promise<void>((resolve) => {
-      this.viewportAnimationCompleteResolvers.push(resolve);
-    });
-  }
-
   /**
    * Mark that a viewport animation is starting
    * This should be called before any setCenter or fitView operation
@@ -205,7 +196,8 @@ export class AsyncCoordinator {
    */
   updateAllNodeInternals(visualizationState: any): void {
     if (!this.updateNodeInternals) {
-      console.warn(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] updateNodeInternals not available - edge handles may not update correctly",
       );
       return;
@@ -907,6 +899,21 @@ export class AsyncCoordinator {
         options.validateData(newData);
       }
 
+      // CRITICAL: Clear VisualizationState for hierarchy changes to prevent stale edge references
+      // When hierarchy changes, the container structure is completely different, so we need to start fresh
+      if (reason === "hierarchy_change") {
+        if (
+          visualizationState &&
+          typeof visualizationState.clear === "function"
+        ) {
+          visualizationState.clear();
+          hscopeLogger.log(
+            "coordinator",
+            `🧹 AsyncCoordinator: Cleared VisualizationState for hierarchy_change to prevent stale references`,
+          );
+        }
+      }
+
       // CRITICAL: Reset layout state for ALL data changes to enable smart collapse
       // This ensures smart collapse runs on first layout after any data change
       if (
@@ -919,7 +926,8 @@ export class AsyncCoordinator {
           `🔄 AsyncCoordinator: Reset layout state for ${reason} - smart collapse will run on next layout`,
         );
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] VisualizationState.resetLayoutState not available`,
         );
       }
@@ -940,7 +948,8 @@ export class AsyncCoordinator {
 
       // Log any warnings from parsing
       if (parseResult.warnings && parseResult.warnings.length > 0) {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] Parsing warnings for ${reason}:`,
           parseResult.warnings,
         );
@@ -956,13 +965,15 @@ export class AsyncCoordinator {
       // Warn about potential issues but don't fail
       if (parseResult.stats) {
         if (parseResult.stats.edgeCount === 0) {
-          console.warn(
+          hscopeLogger.log(
+            "coordinator",
             `[AsyncCoordinator] No edges found in data for ${reason} - visualization will only show nodes`,
           );
         }
 
         if (parseResult.stats.containerCount === 0) {
-          console.warn(
+          hscopeLogger.log(
+            "coordinator",
             `[AsyncCoordinator] No containers found in data for ${reason} - nodes will not be grouped`,
           );
         }
@@ -1301,7 +1312,6 @@ export class AsyncCoordinator {
         "ELK bridge is not available - ensure setBridgeInstances was called",
       );
     }
-    const elkBridge = this.elkBridge;
 
     try {
       hscopeLogger.log(
@@ -1424,7 +1434,8 @@ export class AsyncCoordinator {
 
         // If fitView is requested, enqueue it to execute AFTER React renders
         if (options.fitView) {
-          console.log(
+          hscopeLogger.log(
+            "coordinator",
             "[AsyncCoordinator] 🎯 fitView requested, checking if should execute",
           );
           const fitViewCheck = this._shouldExecuteFitView(
@@ -1433,7 +1444,8 @@ export class AsyncCoordinator {
           );
 
           if (fitViewCheck.shouldExecute) {
-            console.log(
+            hscopeLogger.log(
+              "coordinator",
               "[AsyncCoordinator] ✅ Enqueueing fitView callback for post-render execution",
             );
 
@@ -1443,11 +1455,13 @@ export class AsyncCoordinator {
             this.setExpectedNodeMeasurements(nodeIds);
 
             this.enqueuePostRenderCallback(() => {
-              console.log(
+              hscopeLogger.log(
+                "coordinator",
                 "[AsyncCoordinator] 🎯 EXECUTING fitView callback NOW",
               );
               if (!this.reactFlowInstance) {
-                console.warn(
+                hscopeLogger.log(
+                  "coordinator",
                   "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
                 );
                 return;
@@ -1459,7 +1473,8 @@ export class AsyncCoordinator {
                 includeHiddenNodes: false,
               };
 
-              console.log(
+              hscopeLogger.log(
+                "coordinator",
                 "[AsyncCoordinator] 🎯 Calling reactFlowInstance.fitView with:",
                 fitViewOptions,
               );
@@ -1468,12 +1483,18 @@ export class AsyncCoordinator {
               if (this.reactFlowInstance) {
                 const viewport = this.reactFlowInstance.getViewport();
                 const nodes = this.reactFlowInstance.getNodes();
-                console.log(
+                hscopeLogger.log(
+                  "coordinator",
                   "[AsyncCoordinator] 📊 Current viewport:",
                   viewport,
                 );
-                console.log("[AsyncCoordinator] 📊 Node count:", nodes.length);
-                console.log(
+                hscopeLogger.log(
+                  "coordinator",
+                  "[AsyncCoordinator] 📊 Node count:",
+                  nodes.length,
+                );
+                hscopeLogger.log(
+                  "coordinator",
                   "[AsyncCoordinator] 📊 First 3 nodes:",
                   nodes.slice(0, 3).map((n: any) => ({
                     id: n.id,
@@ -1490,31 +1511,44 @@ export class AsyncCoordinator {
                 typeof this.reactFlowInstance.fitView === "function"
               ) {
                 this.reactFlowInstance.fitView(fitViewOptions);
-                console.log("[AsyncCoordinator] ✅ FitView called");
+                hscopeLogger.log(
+                  "coordinator",
+                  "[AsyncCoordinator] ✅ FitView called",
+                );
 
                 // Log viewport after fitView
                 const newViewport = this.reactFlowInstance.getViewport();
-                console.log(
+                hscopeLogger.log(
+                  "coordinator",
                   "[AsyncCoordinator] 📊 Viewport after fitView:",
                   newViewport,
                 );
               } else {
-                console.log(
+                hscopeLogger.log(
+                  "coordinator",
                   "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
                 );
               }
             });
-            console.log(
+            hscopeLogger.log(
+              "coordinator",
               "[AsyncCoordinator] ✅ FitView callback enqueued, pending callbacks:",
               this.postRenderCallbacks.length,
             );
           } else {
-            console.log("[AsyncCoordinator] ⏭️ Skipping FitView execution", {
-              reason: fitViewCheck.skipReason,
-            });
+            hscopeLogger.log(
+              "coordinator",
+              "[AsyncCoordinator] ⏭️ Skipping FitView execution",
+              {
+                reason: fitViewCheck.skipReason,
+              },
+            );
           }
         } else {
-          console.log("[AsyncCoordinator] ⏭️ fitView NOT requested in options");
+          hscopeLogger.log(
+            "coordinator",
+            "[AsyncCoordinator] ⏭️ fitView NOT requested in options",
+          );
         }
       } else if (this.onReactFlowDataUpdate) {
         // Fallback to callback for backward compatibility
@@ -1658,120 +1692,6 @@ export class AsyncCoordinator {
   }
 
   /**
-   * Generate ReactFlow data synchronously (private helper for synchronous pipeline)
-   */
-  private generateReactFlowDataSync(state: any): any {
-    // ReactFlowData
-    const startTime = Date.now();
-
-    try {
-      hscopeLogger.log(
-        "coordinator",
-        "[AsyncCoordinator] 🎨 Starting ReactFlow data generation",
-        {
-          stateAvailable: !!state,
-          timestamp: startTime,
-        },
-      );
-
-      // Validate state availability
-      if (!state) {
-        throw new Error(
-          "VisualizationState instance is required for ReactFlow data generation",
-        );
-      }
-
-      // Set layout phase to indicate rendering
-      if (typeof state.setLayoutPhase === "function") {
-        state.setLayoutPhase("rendering");
-      }
-
-      // Get ReactFlowBridge instance (must be set via setBridgeInstances)
-      if (!this.reactFlowBridge) {
-        throw new Error(
-          "ReactFlowBridge instance is not available - call setBridgeInstances() first",
-        );
-      }
-
-      const reactFlowBridge = this.reactFlowBridge;
-
-      if (typeof reactFlowBridge.toReactFlowData !== "function") {
-        throw new Error(
-          "ReactFlowBridge toReactFlowData method is not available",
-        );
-      }
-
-      // Convert to ReactFlow format using current VisualizationState data
-      // Type assertion: we know the actual VisualizationState implementation is compatible
-      const reactFlowData = reactFlowBridge.toReactFlowData(
-        state as any,
-        this.interactionHandler,
-        this.renderOptions,
-      );
-
-      // Validate generated data structure
-      if (!reactFlowData || typeof reactFlowData !== "object") {
-        throw new Error("ReactFlowBridge returned invalid data structure");
-      }
-
-      if (!Array.isArray(reactFlowData.nodes)) {
-        console.warn(
-          "[AsyncCoordinator] ⚠️ ReactFlow data missing nodes array, using empty array",
-        );
-        (reactFlowData as any).nodes = [];
-      }
-
-      if (!Array.isArray(reactFlowData.edges)) {
-        console.warn(
-          "[AsyncCoordinator] ⚠️ ReactFlow data missing edges array, using empty array",
-        );
-        (reactFlowData as any).edges = [];
-      }
-
-      // Set layout phase to displayed
-      if (typeof state.setLayoutPhase === "function") {
-        state.setLayoutPhase("displayed");
-      }
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      hscopeLogger.log(
-        "coordinator",
-        "[AsyncCoordinator] ✅ ReactFlow data generation completed successfully",
-        {
-          duration: `${duration}ms`,
-          nodesCount: reactFlowData.nodes.length,
-          edgesCount: reactFlowData.edges.length,
-          timestamp: endTime,
-        },
-      );
-
-      return reactFlowData;
-    } catch (error) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      console.error(
-        "[AsyncCoordinator] ❌ Synchronous ReactFlow render operation failed:",
-        {
-          error: (error as Error).message,
-          stack: (error as Error).stack,
-          duration: `${duration}ms`,
-          stateAvailable: !!state,
-          timestamp: endTime,
-        },
-      );
-
-      if (state && typeof state.setLayoutPhase === "function") {
-        state.setLayoutPhase("error");
-      }
-
-      throw error;
-    }
-  }
-
-  /**
    * Cancel ReactFlow operation if it's still queued
    */
   cancelReactFlowOperation(operationId: string): boolean {
@@ -1900,7 +1820,8 @@ export class AsyncCoordinator {
       if ((state as any).expandTreeNodes) {
         (state as any).expandTreeNodes([containerId]);
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] expandTreeNodes method not available on state`,
         );
       }
@@ -1909,7 +1830,8 @@ export class AsyncCoordinator {
       if ((state as any)._expandContainerForCoordinator) {
         (state as any)._expandContainerForCoordinator(containerId);
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] _expandContainerForCoordinator method not available on state`,
         );
       }
@@ -1931,7 +1853,8 @@ export class AsyncCoordinator {
       if ((state as any).collapseTreeNodes) {
         (state as any).collapseTreeNodes([containerId]);
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] collapseTreeNodes method not available on state`,
         );
       }
@@ -1940,7 +1863,8 @@ export class AsyncCoordinator {
       if ((state as any)._collapseContainerForCoordinator) {
         (state as any)._collapseContainerForCoordinator(containerId);
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] _collapseContainerForCoordinator method not available on state`,
         );
       }
@@ -2429,7 +2353,7 @@ export class AsyncCoordinator {
 
       // Expand all descendants in depth order (shallowest first)
       // This ensures parents are expanded before their children
-      for (const { id, depth } of descendantsWithDepth) {
+      for (const { id, depth: _depth } of descendantsWithDepth) {
         const container = state.getContainer(id);
         if (container && container.collapsed) {
           state._expandContainerInternal(id);
@@ -3040,7 +2964,8 @@ export class AsyncCoordinator {
           this.processStateChange(event);
           successfullyCollapsed.push(container.id);
         } catch (stateError) {
-          console.warn(
+          hscopeLogger.log(
+            "coordinator",
             "[AsyncCoordinator] ⚠️ Failed to collapse container, continuing with others:",
             {
               containerId: container.id,
@@ -3064,7 +2989,8 @@ export class AsyncCoordinator {
 
       // Use enhanced pipeline for layout and render (full layout for collapse all)
       // Call private handler directly to avoid queue deadlock
-      console.log(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] 🎯 CollapseAll: Calling layout pipeline with options:",
         {
           relayoutEntities: actualOptions.relayoutEntities,
@@ -3399,7 +3325,8 @@ export class AsyncCoordinator {
           // Callbacks should use setTimeout(callback, duration) instead of waiting for events
         }
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] Element ${elementId} not found in ReactFlow`,
         );
       }
@@ -3612,7 +3539,8 @@ export class AsyncCoordinator {
             // These don't block the core navigation functionality (highlight still works)
           });
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] Cannot focus viewport - reactFlowInstance not available`,
         );
       }
@@ -3690,7 +3618,8 @@ export class AsyncCoordinator {
           try {
             this.expandContainers(state, containerIds);
           } catch (expansionError) {
-            console.warn(
+            hscopeLogger.log(
+              "coordinator",
               `[AsyncCoordinator] Container expansion failed during search:`,
               expansionError,
             );
@@ -3842,15 +3771,12 @@ export class AsyncCoordinator {
           // Execute layout and render pipeline with container expansion
           // IMPORTANT: Call _handleLayoutAndRenderPipeline directly to avoid queue deadlock
           // We're already in a queued operation (updateSearchResults), so we can't enqueue another one
-          const reactFlowData = await this._handleLayoutAndRenderPipeline(
-            state,
-            {
-              relayoutEntities: undefined, // Full layout needed when expanding containers to avoid overlaps
-              fitView: false, // Don't use fitView, we'll focus on first result instead
-              timeout: options.timeout,
-              maxRetries: options.maxRetries,
-            },
-          );
+          await this._handleLayoutAndRenderPipeline(state, {
+            relayoutEntities: undefined, // Full layout needed when expanding containers to avoid overlaps
+            fitView: false, // Don't use fitView, we'll focus on first result instead
+            timeout: options.timeout,
+            maxRetries: options.maxRetries,
+          });
 
           // Focus viewport on first result to ensure it's visible
           // Use immediate positioning (no animation) to avoid conflicts with navigation
@@ -3892,7 +3818,7 @@ export class AsyncCoordinator {
       }
 
       // Step 3: If no container expansion needed, just update ReactFlow with search highlights - FAIL FAST
-      const reactFlowData = this.generateReactFlowDataImperative(state);
+      this.generateReactFlowDataImperative(state);
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] ✅ ReactFlow data generated for search highlighting",
@@ -4261,7 +4187,8 @@ export class AsyncCoordinator {
           `🔧 AsyncCoordinator: Applied render config updates to VisualizationState`,
         );
       } else {
-        console.warn(
+        hscopeLogger.log(
+          "coordinator",
           `[AsyncCoordinator] VisualizationState.updateRenderConfig not available`,
         );
       }
@@ -4325,7 +4252,8 @@ export class AsyncCoordinator {
           if (fitViewCheck.shouldExecute) {
             this.enqueuePostRenderCallback(() => {
               if (!this.reactFlowInstance) {
-                console.warn(
+                hscopeLogger.log(
+                  "coordinator",
                   "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
                 );
                 return;
@@ -4547,7 +4475,8 @@ export class AsyncCoordinator {
             });
           }
         } else {
-          console.warn(
+          hscopeLogger.log(
+            "coordinator",
             `[AsyncCoordinator] VisualizationState.performSearch not available`,
           );
         }
@@ -4848,7 +4777,8 @@ export class AsyncCoordinator {
 
     // Log performance warnings if needed
     if (totalDuration > 1000) {
-      console.warn(
+      hscopeLogger.log(
+        "coordinator",
         "[AsyncCoordinator] ⚠️ Pipeline performance warning: Slow execution detected",
         {
           duration: `${totalDuration}ms`,

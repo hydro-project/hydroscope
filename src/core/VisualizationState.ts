@@ -3228,15 +3228,9 @@ export class VisualizationState {
   }
   /**
    * Get hierarchy order map for sorting search results
-   * Results are cached to avoid recomputing on every search
    */
-  private _hierarchyOrderCache: Map<string, number> | null = null;
-
   private _getHierarchyOrderMap(): Map<string, number> {
-    // Invalidate cache if containers have changed
-    // For now, we recompute on every search (can optimize later with change tracking)
     const orderMap: Map<string, number> = getHierarchyOrderMap(this);
-    this._hierarchyOrderCache = orderMap;
     return orderMap;
   }
 
@@ -3969,7 +3963,8 @@ export class VisualizationState {
 
     // Hide all nodes within this container and descendants
     const allDescendants = this._getAllDescendantIds(containerId);
-    console.log(
+    hscopeLogger.log(
+      "validation",
       `[VisualizationState] Hiding container ${containerId}, descendants:`,
       Array.from(allDescendants),
     );
@@ -4157,26 +4152,6 @@ export class VisualizationState {
   }
 
   /**
-   * Recursively clean up aggregated edges for a hidden container and all its descendants
-   */
-  private _cleanupAggregatedEdgesForHiddenContainerRecursive(
-    containerId: string,
-  ): void {
-    const container = this._containers.get(containerId);
-    if (!container) return;
-
-    // Clean up edges for this container
-    this._cleanupAggregatedEdgesForHiddenContainer(containerId);
-
-    // Recursively clean up for all child containers
-    for (const childId of container.children) {
-      if (this._containers.has(childId)) {
-        this._cleanupAggregatedEdgesForHiddenContainerRecursive(childId);
-      }
-    }
-  }
-
-  /**
    * Show descendant containers based on their saved manually hidden state
    */
   private _showDescendantContainersBasedOnSnapshot(
@@ -4213,68 +4188,5 @@ export class VisualizationState {
         }
       }
     }
-  }
-
-  /**
-   * Validate container expansion preconditions (for testing)
-   * @private
-   */
-  private _validateContainerExpansionPreconditions(
-    containerId: string,
-  ): boolean {
-    const container = this._containers.get(containerId);
-    if (!container) return false;
-
-    // Check if container exists and is collapsed
-    if (!container.collapsed) return true;
-
-    // Check if all ancestors are expanded
-    return this._canExpandContainer(containerId);
-  }
-
-  /**
-   * Validate edges after container expansion (for testing)
-   * @private
-   */
-  private _postExpansionEdgeValidation(containerId: string): {
-    validEdges: string[];
-    invalidEdges: string[];
-    fixedEdges: string[];
-  } {
-    const result = {
-      validEdges: [] as string[],
-      invalidEdges: [] as string[],
-      fixedEdges: [] as string[],
-    };
-
-    const container = this._containers.get(containerId);
-    if (!container) return result;
-
-    // Get all descendants
-    const descendants = this._getAllDescendantIds(containerId);
-
-    // Check all edges involving this container or its descendants
-    for (const [edgeId, edge] of this._edges) {
-      const sourceInvolved =
-        edge.source === containerId || descendants.has(edge.source);
-      const targetInvolved =
-        edge.target === containerId || descendants.has(edge.target);
-
-      if (sourceInvolved || targetInvolved) {
-        // Check if both endpoints exist
-        const sourceExists =
-          this._nodes.has(edge.source) || this._containers.has(edge.source);
-        const targetExists =
-          this._nodes.has(edge.target) || this._containers.has(edge.target);
-
-        if (sourceExists && targetExists) {
-          result.validEdges.push(edgeId);
-        } else {
-          result.invalidEdges.push(edgeId);
-        }
-      }
-    }
-
-    return result;
   }
 }

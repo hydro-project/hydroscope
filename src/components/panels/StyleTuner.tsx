@@ -16,7 +16,6 @@
  * for stable UI operations without browser errors or performance issues.
  */
 import React, { useState, memo } from "react";
-import { hscopeLogger } from "../../utils/logger.js";
 import { Button, Divider } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
@@ -98,7 +97,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   asyncCoordinator: _asyncCoordinator,
   onError: _onError,
   onFullNodeLabelsChange,
-  onReallocateBridges,
+  onReallocateBridges: _onReallocateBridges,
 }: StyleTunerPanelProps) => {
   // Use getDerivedStateFromProps pattern - store prev value in state
   const [local, setLocal] = useState(value);

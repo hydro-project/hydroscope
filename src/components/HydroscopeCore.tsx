@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * HydroscopeCore - Minimal visualization component
  *
@@ -1122,12 +1121,6 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
-          console.log("[HydroscopeCore] 🎯 CollapseAll button clicked", {
-            autoFitEnabled: state.autoFitEnabled,
-            hasAsyncCoordinator: !!state.asyncCoordinator,
-            hasVisualizationState: !!state.visualizationState,
-          });
-
           // Use AsyncCoordinator's synchronous collapseContainers method
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
           const fitViewOptions = createFitViewOptions(
@@ -1136,11 +1129,6 @@ const HydroscopeCoreInternal = forwardRef<
               state.autoFitEnabled,
             ),
           );
-
-          console.log("[HydroscopeCore] 🎯 Calling collapseContainers with:", {
-            fitViewOptions,
-            isBulkOperation: true,
-          });
 
           const reactFlowData = await state.asyncCoordinator.collapseContainers(
             state.visualizationState,
@@ -1151,10 +1139,6 @@ const HydroscopeCoreInternal = forwardRef<
               isBulkOperation: true,
             },
           );
-
-          console.log("[HydroscopeCore] 🎯 CollapseAll completed", {
-            reactFlowData,
-          });
 
           // At this point, the ENTIRE pipeline is complete:
           // - All containers collapsed
@@ -1885,23 +1869,11 @@ const HydroscopeCoreInternal = forwardRef<
           );
 
           if (dimensionChanges.length > 0) {
-            console.log(
-              `[HydroscopeCore] 📏 Dimension changes detected for ${dimensionChanges.length} nodes`,
-              dimensionChanges.map((c) => ({
-                id: c.id,
-                dimensions: c.dimensions,
-              })),
-            );
-
             // Deterministic logic: Check if there are pending callbacks (like fitView)
             // If yes: this is a major change (initial load or container expansion) - trigger callbacks
             // If no: this is a minor change (node label click) - preserve viewport
             const hasPendingCallbacks =
               state.asyncCoordinator?.hasPendingCallbacks() || false;
-
-            console.log(
-              `[HydroscopeCore] 📏 Checking pending callbacks: ${hasPendingCallbacks}`,
-            );
 
             if (hasPendingCallbacks) {
               // Major change: initial load or container expansion
@@ -1912,14 +1884,7 @@ const HydroscopeCoreInternal = forwardRef<
 
               // Only trigger fitView when ALL expected nodes have been measured
               if (allNodesMeasured) {
-                console.log(
-                  "[HydroscopeCore] ✅ All nodes measured - triggering fitView",
-                );
                 state.asyncCoordinator?.notifyRenderComplete();
-              } else {
-                console.log(
-                  "[HydroscopeCore] ⏳ Waiting for more nodes to be measured...",
-                );
               }
             } else {
               // Minor change: node label expansion - preserve viewport
