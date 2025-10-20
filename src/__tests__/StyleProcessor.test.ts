@@ -409,7 +409,11 @@ describe("StyleProcessor", () => {
       ]);
       expect(VISUAL_CHANNELS["line-width"]).toEqual([2, 3, 4, 5]); // Updated range for better visibility
       expect(VISUAL_CHANNELS["animation"]).toEqual(["static", "animated"]);
-      expect(VISUAL_CHANNELS["line-style"]).toEqual(["single", "double", "hash-marks"]);
+      expect(VISUAL_CHANNELS["line-style"]).toEqual([
+        "single",
+        "double",
+        "hash-marks",
+      ]);
       expect(VISUAL_CHANNELS["halo"]).toEqual([
         "none",
         "light-blue",

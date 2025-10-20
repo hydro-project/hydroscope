@@ -79,13 +79,13 @@ describe("CustomEdge Rendering", () => {
     console.log("g[transform] elements found:", gElements.length);
     // Hash marks should have circles instead of double lines
     const circles = container.querySelectorAll("circle");
-    
+
     // Should have at least one circle for hash marks
     expect(circles.length).toBeGreaterThan(0);
-    
+
     // Should have one main path
     expect(paths.length).toBe(1);
-    
+
     // Circles should have proper radius
     circles.forEach((circle) => {
       expect(circle.getAttribute("r")).toBe("3");
@@ -123,9 +123,9 @@ describe("CustomEdge Rendering", () => {
     expect(pathData.length).toBeGreaterThan(100);
   });
 
-  it("should render hash marks on wavy lines when both lineStyle="hash-marks" and waviness=true", () => {
+  it('should render hash marks on wavy lines when both lineStyle="hash-marks" and waviness=true', () => {
     const props = createEdgeProps({
-      data: { lineStyle: "double", waviness: true },
+      data: { lineStyle: "hash-marks", waviness: true },
     });
 
     const { container } = render(
