@@ -163,6 +163,13 @@ describe("Async Boundary Integration Tests", () => {
       const containers = state.visibleContainers.slice(0, 10);
       const startTime = Date.now();
 
+      // Set up periodic render callbacks to unblock operations
+      const renderInterval = setInterval(() => {
+        coordinator.notifyRenderComplete();
+      }, 50);
+
+      try {
+
       // Create many concurrent operations
       const operations: Promise<any>[] = [];
 
@@ -251,6 +258,9 @@ describe("Async Boundary Integration Tests", () => {
       expect(totalTime).toBeLessThan(10000); // 10 seconds max
 
       // Verify queued operations completed successfully
+      } finally {
+        clearInterval(renderInterval);
+      }
       // Note: expandContainer/collapseContainer use direct pipeline, not queue
       const finalStatus = coordinator.getQueueStatus();
       expect(finalStatus.pending).toBe(0);

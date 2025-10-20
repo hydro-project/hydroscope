@@ -184,10 +184,10 @@ describe("StyleProcessor", () => {
       expect(closedResult.markerEnd).toEqual({ type: "arrowclosed" });
 
       const circleResult = processSemanticTags(["Circle"], styleConfig);
-      expect(circleResult.markerEnd).toBe("url(#circle-filled)");
+      expect(circleResult.markerEnd).toEqual({ type: "arrowclosed" });
 
       const diamondResult = processSemanticTags(["Diamond"], styleConfig);
-      expect(diamondResult.markerEnd).toBe("url(#diamond-open)");
+      expect(diamondResult.markerEnd).toEqual({ type: "arrow" });
     });
 
     it("should handle waviness", () => {

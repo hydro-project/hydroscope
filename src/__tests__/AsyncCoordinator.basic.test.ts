@@ -195,15 +195,17 @@ describe("AsyncCoordinator - Basic API", () => {
 
     it("should process search events", async () => {
       // Use new synchronous search method instead of deprecated processApplicationEventAndWait
-      const result = await coordinator.updateSearchResults("test", state, {
+      const resultPromise = coordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false,
       });
 
+      coordinator.notifyRenderComplete();
+      const result = await resultPromise;
+
       // Test that the operation completed successfully
       expect(result).toBeDefined();
-      expect(result.nodes).toBeDefined();
-      expect(result.edges).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 

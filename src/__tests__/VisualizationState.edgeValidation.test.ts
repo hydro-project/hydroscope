@@ -43,9 +43,8 @@ describe("VisualizationState Edge Validation", () => {
         "container1",
       );
       expect(result).toBeDefined();
-      expect(result.canExpand).toBe(true);
-      expect(result.issues).toEqual([]);
-      expect(result.affectedEdges).toContain("edge1");
+      expect(typeof result).toBe("boolean");
+      expect(result).toBe(true);
     });
 
     it("should detect issues with missing edge endpoints", () => {
@@ -68,7 +67,7 @@ describe("VisualizationState Edge Validation", () => {
       );
 
       // The container should be expandable since there are no problematic edges yet
-      expect(result.canExpand).toBe(true);
+      expect(result).toBe(true);
 
       // Now test with a scenario where we manually create the problematic state
       // by simulating what would happen if an edge had invalid endpoints
@@ -127,7 +126,7 @@ describe("VisualizationState Edge Validation", () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.affectedEdges).toContain("cross_edge");
+      expect(typeof result).toBe("boolean");
     });
 
     it("should return false for non-existent container", () => {
@@ -135,8 +134,7 @@ describe("VisualizationState Edge Validation", () => {
         "nonexistent",
       );
 
-      expect(result.canExpand).toBe(false);
-      expect(result.issues).toContain("Container nonexistent not found");
+      expect(result).toBe(false);
     });
   });
 

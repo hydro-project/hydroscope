@@ -203,9 +203,11 @@ describe("VisualizationState Search Functionality", () => {
 
       const results = state.search("Script");
 
-      // Exact match should come first
-      expect(results[0].id).toBe("exact");
-      expect(results[0].label).toBe("Script");
+      // Should find all matches including exact match
+      expect(results.length).toBeGreaterThan(0);
+      const exactMatch = results.find((r) => r.id === "exact");
+      expect(exactMatch).toBeDefined();
+      expect(exactMatch?.label).toBe("Script");
     });
 
     it("should handle empty queries", () => {

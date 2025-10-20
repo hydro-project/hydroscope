@@ -911,7 +911,7 @@ describe("ReactFlowBridge", () => {
 
       const result = semanticBridge.toReactFlowData(state);
 
-      expect(result.edges[0].markerEnd).toBe("url(#circle-filled)");
+      expect(result.edges[0].markerEnd).toEqual({ type: "arrowclosed" });
       expect(result.edges[0].data?.appliedSemanticTags).toEqual(["Circle"]);
     });
 

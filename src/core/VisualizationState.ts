@@ -2335,12 +2335,24 @@ export class VisualizationState {
     this._searchNavigationState.searchResults = [];
     this._searchNavigationState.treeSearchHighlights.clear();
     this._searchNavigationState.graphSearchHighlights.clear();
-    // Clear navigation highlights (blue borders from next/prev navigation)
-    this._searchNavigationState.treeNavigationHighlights.clear();
-    this._searchNavigationState.graphNavigationHighlights.clear();
-    this._searchNavigationState.navigationSelection = null;
+    // DO NOT clear navigation highlights - those are independent
+    // Navigation highlights (blue borders from next/prev navigation) should persist
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
+  }
+
+  /**
+   * Enhanced search clearing that preserves expansion state AND navigation state
+   * Only clears search highlights, not navigation highlights
+   * Also cancels any pending debounced search operations
+   */
+  clearSearchEnhanced(): void {
+    this.clearSearch();
+    // Cancel any pending debounced search
+    if (this._searchDebounceTimer !== null) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
   }
   // Search state getters (backward compatibility)
   getSearchQuery(): string {
@@ -4096,5 +4108,62 @@ export class VisualizationState {
         }
       }
     }
+  }
+
+  /**
+   * Validate container expansion preconditions (for testing)
+   * @private
+   */
+  private _validateContainerExpansionPreconditions(containerId: string): boolean {
+    const container = this._containers.get(containerId);
+    if (!container) return false;
+    
+    // Check if container exists and is collapsed
+    if (!container.collapsed) return true;
+    
+    // Check if all ancestors are expanded
+    return this._canExpandContainer(containerId);
+  }
+
+  /**
+   * Validate edges after container expansion (for testing)
+   * @private
+   */
+  private _postExpansionEdgeValidation(containerId: string): {
+    validEdges: string[];
+    invalidEdges: string[];
+    fixedEdges: string[];
+  } {
+    const result = {
+      validEdges: [] as string[],
+      invalidEdges: [] as string[],
+      fixedEdges: [] as string[],
+    };
+
+    const container = this._containers.get(containerId);
+    if (!container) return result;
+
+    // Get all descendants
+    const descendants = this._getAllDescendantIds(containerId);
+
+    // Check all edges involving this container or its descendants
+    for (const [edgeId, edge] of this._edges) {
+      const sourceInvolved = edge.source === containerId || descendants.has(edge.source);
+      const targetInvolved = edge.target === containerId || descendants.has(edge.target);
+
+      if (sourceInvolved || targetInvolved) {
+        // Check if both endpoints exist
+        const sourceExists = this._nodes.has(edge.source) || this._containers.has(edge.source);
+        const targetExists = this._nodes.has(edge.target) || this._containers.has(edge.target);
+
+        if (sourceExists && targetExists) {
+          result.validEdges.push(edgeId);
+        } else {
+          result.invalidEdges.push(edgeId);
+        }
+      }
+    }
+
+    return result;
   }
 }

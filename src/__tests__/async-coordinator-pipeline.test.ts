@@ -179,14 +179,20 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      // Start the search operation
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false,
       });
 
+      // Simulate React render completion
+      asyncCoordinator.notifyRenderComplete();
+
+      const result = await resultPromise;
+
       expect(result).toBeDefined();
-      expect(result.nodes).toBeDefined();
-      expect(result.edges).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
     });
 
     it("should perform search with container expansion when enabled", async () => {
@@ -205,24 +211,35 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
         childContainers: [],
       });
 
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: true,
         fitView: false,
       });
 
+      // Simulate React render completion (multiple times for layout + render + expansion)
+      setTimeout(() => {
+        for (let i = 0; i < 5; i++) {
+          asyncCoordinator.notifyRenderComplete();
+        }
+      }, 100);
+
+      const result = await resultPromise;
+
       expect(result).toBeDefined();
-      expect(result.nodes).toBeDefined();
-      expect(result.edges).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
     });
 
     it("should trigger FitView callback when enabled for search results", async () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: true,
       });
+
+      asyncCoordinator.notifyRenderComplete();
+      const result = await resultPromise;
 
       expect(result).toBeDefined();
     });
@@ -231,10 +248,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false,
       });
+
+      asyncCoordinator.notifyRenderComplete();
+      const result = await resultPromise;
 
       expect(result).toBeDefined();
     });
@@ -243,41 +263,47 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false,
       });
 
+      asyncCoordinator.notifyRenderComplete();
+      const result = await resultPromise;
+
       expect(result).toBeDefined();
-      expect(result.nodes).toBeDefined();
-      expect(result.edges).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
     });
 
     it("should handle empty search query gracefully", async () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const result = await asyncCoordinator.updateSearchResults("", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("", state, {
         expandContainers: false,
         fitView: false,
       });
 
+      asyncCoordinator.notifyRenderComplete();
+      const result = await resultPromise;
+
       expect(result).toBeDefined();
-      expect(result.nodes).toBeDefined();
-      expect(result.edges).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
     });
 
     it("should handle search errors gracefully", async () => {
       // Create a state that might cause search issues
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: false,
         fitView: false,
       });
 
+      asyncCoordinator.notifyRenderComplete();
+      const result = await resultPromise;
+
       // Should not throw, should return valid result
       expect(result).toBeDefined();
-      expect(result.nodes).toBeDefined();
-      expect(result.edges).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 
@@ -440,10 +466,13 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node1);
 
       // This should complete successfully
-      const result = await asyncCoordinator.updateSearchResults("test", state, {
+      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
         expandContainers: true,
         fitView: false,
       });
+
+      asyncCoordinator.notifyRenderComplete();
+      const result = await resultPromise;
 
       expect(result).toBeDefined();
     });
