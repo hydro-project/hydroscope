@@ -1052,7 +1052,10 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     // Common edge style properties (in priority order: edge > semantic > type > default)
     const stroke =
-      edgeStyle?.stroke ?? semanticStyle.stroke ?? typeStyle.stroke ?? DEFAULT_STYLE.STROKE_COLOR;
+      edgeStyle?.stroke ??
+      semanticStyle.stroke ??
+      typeStyle.stroke ??
+      DEFAULT_STYLE.STROKE_COLOR;
     const strokeWidth =
       edgeStyle?.strokeWidth ??
       semanticStyle.strokeWidth ??

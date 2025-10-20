@@ -129,20 +129,20 @@ describe("StyleProcessor", () => {
       expect(thickResult.style.strokeWidth).toBe(3);
     });
 
-    it("should handle double line style", () => {
+    it("should handle hash-marks line style", () => {
       const styleConfig: StyleConfig = {
         semanticMappings: {
           style: {
             Single: { "line-style": "single" },
-            Double: { "line-style": "double" },
+            HashMarks: { "line-style": "hash-marks" },
           },
         },
       };
 
-      const doubleResult = processSemanticTags(["Double"], styleConfig);
-      expect(doubleResult.lineStyle).toBe("double");
+      const hashMarksResult = processSemanticTags(["HashMarks"], styleConfig);
+      expect(hashMarksResult.lineStyle).toBe("hash-marks");
       // line-style should not be in the CSS style object
-      expect(doubleResult.style["line-style"]).toBeUndefined();
+      expect(hashMarksResult.style["line-style"]).toBeUndefined();
     });
 
     it("should handle halo colors", () => {
@@ -407,9 +407,9 @@ describe("StyleProcessor", () => {
         "dotted",
         "dash-dot",
       ]);
-      expect(VISUAL_CHANNELS["line-width"]).toEqual([1, 2, 3, 4]);
+      expect(VISUAL_CHANNELS["line-width"]).toEqual([2, 3, 4, 5]); // Updated range for better visibility
       expect(VISUAL_CHANNELS["animation"]).toEqual(["static", "animated"]);
-      expect(VISUAL_CHANNELS["line-style"]).toEqual(["single", "double"]);
+      expect(VISUAL_CHANNELS["line-style"]).toEqual(["single", "double", "hash-marks"]);
       expect(VISUAL_CHANNELS["halo"]).toEqual([
         "none",
         "light-blue",
@@ -430,7 +430,7 @@ describe("StyleProcessor", () => {
   describe("DEFAULT_STYLE", () => {
     it("should define default style constants", () => {
       expect(DEFAULT_STYLE.STROKE_COLOR).toBe("#666666");
-      expect(DEFAULT_STYLE.STROKE_WIDTH).toBe(2);
+      expect(DEFAULT_STYLE.STROKE_WIDTH).toBe(3); // Updated to 3px for better visibility
       expect(DEFAULT_STYLE.DEFAULT_STROKE_COLOR).toBe("#999999");
     });
   });

@@ -33,8 +33,10 @@ export class ELKBridge implements IELKBridge {
       algorithm: layoutConfig.algorithm || DEFAULT_ELK_ALGORITHM,
       direction: layoutConfig.direction || "DOWN",
       spacing: layoutConfig.spacing,
-      nodeSpacing: layoutConfig.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
-      layerSpacing: layoutConfig.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
+      nodeSpacing:
+        layoutConfig.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
+      layerSpacing:
+        layoutConfig.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
       edgeSpacing: layoutConfig.edgeSpacing ?? LAYOUT_SPACING.EDGE_EDGE,
       portSpacing: layoutConfig.portSpacing ?? LAYOUT_SPACING.NODE_EDGE,
       separateConnectedComponents:
@@ -674,16 +676,23 @@ export class ELKBridge implements IELKBridge {
           ? config.nodeSpacing
           : LAYOUT_SPACING.NODE_TO_NODE_NORMAL
       ).toString(),
-      "elk.spacing.edgeNode": (config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE).toString(),
-      "elk.spacing.edgeEdge": (config.edgeSpacing || LAYOUT_SPACING.EDGE_EDGE).toString(),
+      "elk.spacing.edgeNode": (
+        config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE
+      ).toString(),
+      "elk.spacing.edgeEdge": (
+        config.edgeSpacing || LAYOUT_SPACING.EDGE_EDGE
+      ).toString(),
       "elk.layered.spacing.nodeNodeBetweenLayers": (
         config.layerSpacing || LAYOUT_SPACING.NODE_TO_NODE_NORMAL
       ).toString(),
       "elk.layered.spacing.edgeNodeBetweenLayers": (
         config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE
       ).toString(),
-      "elk.spacing.portPort": (config.portSpacing || LAYOUT_SPACING.NODE_EDGE).toString(),
-      "elk.spacing.componentComponent": LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
+      "elk.spacing.portPort": (
+        config.portSpacing || LAYOUT_SPACING.NODE_EDGE
+      ).toString(),
+      "elk.spacing.componentComponent":
+        LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
     };
     // Add performance optimizations
     if (config.separateConnectedComponents) {
@@ -767,13 +776,21 @@ export class ELKBridge implements IELKBridge {
       LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING;
     options["elk.padding"] =
       `[top=${padding},left=${padding},bottom=${bottomPadding},right=${padding}]`;
-    
+
     // Set spacing for nodes INSIDE the container
-    options["elk.spacing.nodeNode"] = (config.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL).toString();
-    options["elk.layered.spacing.nodeNodeBetweenLayers"] = (config.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL).toString();
-    options["elk.spacing.edgeNode"] = (config.edgeSpacing ?? LAYOUT_SPACING.NODE_EDGE).toString();
-    options["elk.spacing.edgeEdge"] = (config.edgeSpacing ?? LAYOUT_SPACING.EDGE_EDGE).toString();
-    
+    options["elk.spacing.nodeNode"] = (
+      config.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL
+    ).toString();
+    options["elk.layered.spacing.nodeNodeBetweenLayers"] = (
+      config.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL
+    ).toString();
+    options["elk.spacing.edgeNode"] = (
+      config.edgeSpacing ?? LAYOUT_SPACING.NODE_EDGE
+    ).toString();
+    options["elk.spacing.edgeEdge"] = (
+      config.edgeSpacing ?? LAYOUT_SPACING.EDGE_EDGE
+    ).toString();
+
     if (config.hierarchicalLayout) {
       options["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
     }

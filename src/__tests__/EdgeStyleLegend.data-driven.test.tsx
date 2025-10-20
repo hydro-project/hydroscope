@@ -12,7 +12,6 @@
  * 5. No hardcoded edge styles or semantic tags
  */
 
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { EdgeStyleLegend } from "../components/EdgeStyleLegend.js";
@@ -64,9 +63,7 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
         },
       };
 
-      const { container } = render(
-        <EdgeStyleLegend edgeStyleConfig={edgeStyleConfig} />,
-      );
+      render(<EdgeStyleLegend edgeStyleConfig={edgeStyleConfig} />);
 
       // Should show all tags
       expect(screen.getByText("Bounded")).toBeInTheDocument();
@@ -221,7 +218,7 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
       expect(svgs.length).toBe(3); // One for each pattern
     });
 
-    it("should generate SVG samples for double line style", () => {
+    it("should generate SVG samples for hash-marks line style", () => {
       const edgeStyleConfig = {
         semanticMappings: {
           StyleGroup: {
@@ -238,9 +235,9 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
       const svgs = container.querySelectorAll("svg");
       expect(svgs.length).toBe(2);
 
-      // Double line should have 2 lines
+      // Hash marks should have circles
       const lines = container.querySelectorAll("line");
-      expect(lines.length).toBeGreaterThan(2); // At least 2 for double line
+      expect(lines.length).toBeGreaterThan(0); // At least 1 for hash marks
     });
 
     it("should generate SVG samples for wavy edges", () => {
@@ -490,9 +487,10 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
       const paths = container.querySelectorAll("path");
       expect(paths.length).toBeGreaterThan(0);
 
-      // Path should have a 'd' attribute with wave pattern
+      // Path should have a 'd' attribute with wave pattern (using line segments)
       const wavyPath = paths[0];
-      expect(wavyPath.getAttribute("d")).toContain("Q"); // Quadratic bezier curves
+      const pathData = wavyPath.getAttribute("d") || "";
+      expect(pathData.length).toBeGreaterThan(50); // Wavy paths have many points
     });
   });
 

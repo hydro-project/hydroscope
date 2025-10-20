@@ -54,9 +54,9 @@ describe("CustomEdge Rendering", () => {
     expect(paths.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("should render double lines for edges with lineStyle='double'", () => {
+  it('should render hash marks (circles) for edges with lineStyle="hash-marks"', () => {
     const props = createEdgeProps({
-      data: { lineStyle: "double" },
+      data: { lineStyle: "hash-marks" },
     });
 
     const { container } = render(
@@ -77,24 +77,19 @@ describe("CustomEdge Rendering", () => {
     // Check for g elements with transform
     const gElements = container.querySelectorAll("g[transform]");
     console.log("g[transform] elements found:", gElements.length);
-    gElements.forEach((g, i) => {
-      console.log(`g[${i}] transform:`, g.getAttribute("transform"));
+    // Hash marks should have circles instead of double lines
+    const circles = container.querySelectorAll("circle");
+    
+    // Should have at least one circle for hash marks
+    expect(circles.length).toBeGreaterThan(0);
+    
+    // Should have one main path
+    expect(paths.length).toBe(1);
+    
+    // Circles should have proper radius
+    circles.forEach((circle) => {
+      expect(circle.getAttribute("r")).toBe("3");
     });
-
-    // Double line should have 2 paths (two parallel lines)
-    expect(paths.length).toBe(2);
-
-    // Should have 2 g elements with transforms (one for each line)
-    expect(gElements.length).toBe(2);
-
-    // Check that transforms are perpendicular offsets (non-zero x and y)
-    const transforms = Array.from(gElements).map((g) =>
-      g.getAttribute("transform"),
-    );
-    // Transforms should be mirror images (one positive, one negative)
-    expect(transforms.length).toBe(2);
-    expect(transforms[0]).toBeTruthy();
-    expect(transforms[1]).toBeTruthy();
   });
 
   it("should render wavy path when waviness=true", () => {
@@ -128,7 +123,7 @@ describe("CustomEdge Rendering", () => {
     expect(pathData.length).toBeGreaterThan(100);
   });
 
-  it("should render double wavy lines when both lineStyle='double' and waviness=true", () => {
+  it("should render hash marks on wavy lines when both lineStyle="hash-marks" and waviness=true", () => {
     const props = createEdgeProps({
       data: { lineStyle: "double", waviness: true },
     });
@@ -147,13 +142,14 @@ describe("CustomEdge Rendering", () => {
     const gElements = container.querySelectorAll("g[transform]");
     console.log("g[transform] elements found:", gElements.length);
 
-    // Should have 2 paths (double line)
-    expect(paths.length).toBe(2);
+    // Should have circles for hash marks
+    const circles = container.querySelectorAll("circle");
+    expect(circles.length).toBeGreaterThan(0);
 
-    // Should have 2 g elements with transforms
-    expect(gElements.length).toBe(2);
+    // Should have one wavy path
+    expect(paths.length).toBe(1);
 
-    // Both paths should be wavy (long path data)
+    // Path should be wavy (long path data)
     const pathData = paths[0]?.getAttribute("d") || "";
     console.log("First path length:", pathData.length);
     expect(pathData.length).toBeGreaterThan(100); // Wavy paths are long
@@ -163,9 +159,9 @@ describe("CustomEdge Rendering", () => {
     const props = createEdgeProps({
       id: "e2",
       data: {
-        lineStyle: "double",
+        lineStyle: "hash-marks",
         waviness: false,
-        appliedSemanticTags: ["DoubleLine"],
+        appliedSemanticTags: ["HashMarks"],
       },
     });
 

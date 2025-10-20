@@ -655,7 +655,7 @@ describe("ELKBridge", () => {
         "true",
       );
       expect(elkGraph.layoutOptions["elk.spacing.componentComponent"]).toBe(
-        "20",
+        "75",
       );
       expect(elkGraph.layoutOptions["elk.hierarchyHandling"]).toBe(
         "INCLUDE_CHILDREN",

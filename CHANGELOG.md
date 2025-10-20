@@ -8,17 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2024-10-16
 
 ### Fixed
+
 - Removed unused ReactDOM import causing lint errors
 - Fixed import paths in performance test suite
 - Applied prettier formatting across codebase
 
 ### Changed
+
 - Moved slow InfoPanel search test to performance suite to prevent CI timeouts
 - Updated performance test structure for better organization
 
 ## [1.0.0] - 2024-10-16
 
 ### Added
+
 - Initial public release of @hydro-project/hydroscope
 - React-based graph visualization component with ELK layout engine
 - Hierarchical container support with smart collapse/expand
@@ -29,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite
 
 ### Features
+
 - Auto-close popups on canvas pan/zoom
 - Accurate popup positioning using getBoundingClientRect()
 - Configurable layout options via ELK bridge

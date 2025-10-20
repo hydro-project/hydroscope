@@ -342,13 +342,13 @@ function convertStyleSettingsToVisual(
   if (lineWidth) {
     style.strokeWidth = lineWidth;
   }
-  
+
   // Apply color (for edge stroke color)
   const color = styleSettings["color"] as string;
   if (color) {
     style.stroke = color;
   }
-  
+
   // Apply animation
   const animation = styleSettings["animation"] as string;
   if (animation === "animated") {

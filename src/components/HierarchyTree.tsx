@@ -658,17 +658,20 @@ export function HierarchyTree({
   }, []);
   // Track if user is manually controlling the tree (when sync is disabled)
   const userControlledRef = useRef(false);
-  
+
   // Track the previous derivedExpandedKeys to detect actual changes
   const prevDerivedExpandedKeysRef = useRef<React.Key[]>([]);
 
   // Sync local expanded state based on sync mode
   useEffect(() => {
     // Check if derivedExpandedKeys actually changed (not just reference)
-    const derivedKeysChanged = 
-      prevDerivedExpandedKeysRef.current.length !== derivedExpandedKeys.length ||
-      !derivedExpandedKeys.every((key) => prevDerivedExpandedKeysRef.current.includes(key));
-    
+    const derivedKeysChanged =
+      prevDerivedExpandedKeysRef.current.length !==
+        derivedExpandedKeys.length ||
+      !derivedExpandedKeys.every((key) =>
+        prevDerivedExpandedKeysRef.current.includes(key),
+      );
+
     if (syncEnabled) {
       // When sync is enabled, only update if derivedExpandedKeys actually changed
       // This prevents resetting user's manual tree collapses when parent re-renders
