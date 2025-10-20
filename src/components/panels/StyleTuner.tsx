@@ -293,13 +293,6 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
               type="checkbox"
               checked={Boolean(local.showFullNodeLabels)}
               onChange={(e) => {
-                hscopeLogger.log(
-                  "debug",
-                  "🏷️ [StyleTuner] Checkbox clicked, current state:",
-                  local.showFullNodeLabels,
-                  "new state:",
-                  e.target.checked,
-                );
                 const enabled = e.target.checked;
                 const next = { ...local, showFullNodeLabels: enabled };
                 setLocal(next);
@@ -317,113 +310,41 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                   });
                 }
 
-                // Apply all long labels or reset to short labels
-                hscopeLogger.log(
-                  "debug",
-                  "🔍 [StyleTuner] _visualizationState available:",
-                  !!_visualizationState,
-                  "enabled:",
-                  enabled,
-                );
+                // Apply label changes to current visualization state
                 if (_visualizationState) {
                   if (enabled) {
-                    hscopeLogger.log(
-                      "debug",
-                      "🏷️ [StyleTuner] Calling expandAllNodeLabelsToLong",
-                    );
                     _visualizationState.expandAllNodeLabelsToLong();
                     if (
                       typeof _visualizationState.updateNodeDimensionsForFullLabels ===
                       "function"
                     ) {
-                      hscopeLogger.log(
-                        "debug",
-                        "📏 [StyleTuner] Calling updateNodeDimensionsForFullLabels(true)",
-                      );
-                      _visualizationState.updateNodeDimensionsForFullLabels(
-                        true,
-                      );
+                      _visualizationState.updateNodeDimensionsForFullLabels(true);
                     }
                   } else {
-                    hscopeLogger.log(
-                      "debug",
-                      "🏷️ [StyleTuner] Calling resetAllNodeLabelsToShort",
-                    );
                     _visualizationState.resetAllNodeLabelsToShort();
                     if (
                       typeof _visualizationState.updateNodeDimensionsForFullLabels ===
                       "function"
                     ) {
-                      hscopeLogger.log(
-                        "debug",
-                        "📏 [StyleTuner] Calling updateNodeDimensionsForFullLabels(false)",
-                      );
-                      _visualizationState.updateNodeDimensionsForFullLabels(
-                        false,
-                      );
+                      _visualizationState.updateNodeDimensionsForFullLabels(false);
                     }
                   }
-                } else {
-                  console.warn(
-                    "⚠️ [StyleTuner] _visualizationState is not available!",
-                  );
-                }
 
-                // BRIDGE REALLOCATION: Deallocate and reallocate fresh instances
-                // This prevents edge handle positioning issues when node dimensions change
-                if (onReallocateBridges) {
-                  hscopeLogger.log(
-                    "debug",
-                    "🔄 [StyleTuner] Performing bridge reallocation for full node labels toggle",
-                  );
-
-                  const instances = onReallocateBridges();
-                  if (
-                    instances &&
-                    instances.asyncCoordinator &&
-                    instances.visualizationState &&
-                    instances.forceRemount
-                  ) {
-                    // Use AsyncCoordinator to manage the complete sequence:
-                    // 1. Execute layout and render pipeline with new bridges
-                    // 2. Wait for React to render the new data
-                    // 3. Force ReactFlow to remount with fresh data
-                    instances.asyncCoordinator
-                      .executeLayoutAndRenderWithRemount(
-                        instances.visualizationState,
-                        instances.forceRemount,
-                        {
-                          relayoutEntities: undefined, // Full layout - all entities
-                          fitView: false, // Don't auto-fit on manual interactions
-                        },
-                      )
-                      .catch((error: Error) => {
-                        console.error(
-                          "[StyleTuner] Bridge reallocation with remount failed:",
-                          error,
-                        );
-                      });
-                  }
-                } else {
-                  console.warn(
-                    "⚠️ [StyleTuner] onReallocateBridges not available, falling back to regular reset",
-                  );
-
-                  // Fallback to regular reset if reallocation not available
-                  if (_visualizationState && _asyncCoordinator) {
-                    // DON'T reset layout state - preserve container expansion and positions
+                  // Trigger re-layout with current bridges
+                  if (_asyncCoordinator) {
                     _asyncCoordinator
                       .executeLayoutAndRenderPipeline(_visualizationState, {
                         relayoutEntities: undefined,
                         fitView: false,
                       })
                       .catch((error: Error) => {
-                        console.error(
-                          "[StyleTuner] Fallback layout failed:",
-                          error,
-                        );
+                        console.error("[StyleTuner] Layout failed:", error);
                       });
                   }
+                } else {
+                  console.warn(
+                    "⚠️ [StyleTuner] _visualizationState is not available!",
+                  );
                 }
               }}
               style={{

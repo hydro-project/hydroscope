@@ -1139,38 +1139,42 @@ export const Hydroscope = memo<HydroscopeProps>(
     );
 
     // Apply persisted showFullNodeLabels setting when VisualizationState becomes available
+    // Note: This only runs on initial mount to restore persisted settings
     useEffect(() => {
       const visualizationState =
         hydroscopeCoreRef.current?.getVisualizationState?.();
-      if (visualizationState && state.renderConfig.showFullNodeLabels) {
-        hscopeLogger.log(
-          "orchestrator",
-          "🔄 [Hydroscope] Applying persisted showFullNodeLabels=true to VisualizationState",
-        );
-        visualizationState.expandAllNodeLabelsToLong();
-        visualizationState.updateNodeDimensionsForFullLabels(true);
+      if (!visualizationState) return;
 
-        // Trigger a re-layout to apply the new dimensions
-        const asyncCoordinator =
-          hydroscopeCoreRef.current?.getAsyncCoordinator?.();
-        if (asyncCoordinator) {
-          asyncCoordinator
-            .executeLayoutAndRenderPipeline(visualizationState, {
-              relayoutEntities: undefined, // Full layout
-              fitView: false,
-            })
-            .catch((error: Error) => {
-              console.error(
-                "[Hydroscope] Failed to apply persisted showFullNodeLabels:",
-                error,
-              );
-            });
-        }
+      // Only apply on initial mount when we have a persisted setting
+      const enabled = state.renderConfig.showFullNodeLabels;
+      if (!enabled) return; // Only need to apply if it was persisted as true
+
+      hscopeLogger.log(
+        "orchestrator",
+        "🔄 [Hydroscope] Applying persisted showFullNodeLabels=true on mount",
+      );
+
+      visualizationState.expandAllNodeLabelsToLong();
+      visualizationState.updateNodeDimensionsForFullLabels(true);
+
+      // Trigger a re-layout to apply the new dimensions
+      const asyncCoordinator =
+        hydroscopeCoreRef.current?.getAsyncCoordinator?.();
+      if (asyncCoordinator) {
+        asyncCoordinator
+          .executeLayoutAndRenderPipeline(visualizationState, {
+            relayoutEntities: undefined, // Full layout
+            fitView: false,
+          })
+          .catch((error: Error) => {
+            console.error(
+              "[Hydroscope] Failed to apply persisted showFullNodeLabels:",
+              error,
+            );
+          });
       }
-    }, [
-      state.renderConfig.showFullNodeLabels,
-      state.currentVisualizationState,
-    ]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.currentVisualizationState]); // Only run when visualization state becomes available
 
     // Reallocate bridges and instances for hard reset
     const reallocateBridges = useCallback(() => {

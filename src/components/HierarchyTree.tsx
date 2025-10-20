@@ -352,6 +352,7 @@ function getTreeDataStructure(
     containerId: string,
     shiftKey?: boolean,
   ) => void,
+  expandedKeys?: React.Key[],
 ): TreeDataNode[] {
   // Build hierarchy tree structure from VisualizationState
   // Get the current color palette for highlight colors
@@ -384,7 +385,10 @@ function getTreeDataStructure(
         .filter(Boolean) as GraphNode[];
       const hasChildren = node.children && node.children.length > 0;
       const hasLeafChildren = leafChildrenCount > 0;
-      const isCollapsed = collapsedContainers.has(node.id);
+      // Check if this node is collapsed - use expandedKeys if provided, otherwise fall back to collapsedContainers
+      const isCollapsed = expandedKeys
+        ? !expandedKeys.includes(node.id)
+        : collapsedContainers.has(node.id);
       // For collapsed containers that have content, add a virtual child to show the expand icon
       // For expanded containers, show real children AND actual leaf nodes
       let children: TreeDataNode[] | undefined = undefined;
@@ -693,9 +697,34 @@ export function HierarchyTree({
       clearContainerOperationDebouncing();
     };
   }, []);
-  // Sync local expanded state whenever the derived value changes (e.g., collapse/expand in vis, search)
+  // Track if user is manually controlling the tree (when sync is disabled)
+  const userControlledRef = useRef(false);
+
+  // Sync local expanded state based on sync mode
   useEffect(() => {
-    setExpandedKeys(derivedExpandedKeys);
+    if (syncEnabled) {
+      // When sync is enabled, always follow derivedExpandedKeys (graph drives tree)
+      setExpandedKeys(derivedExpandedKeys);
+      userControlledRef.current = false;
+    } else {
+      // When sync is disabled, only update for search operations or initial load
+      // This preserves user's manual tree expansions while still supporting search
+      if (
+        searchQuery &&
+        searchQuery.trim() &&
+        searchResults &&
+        searchResults.length
+      ) {
+        // Search is active - update to show search results
+        setExpandedKeys(derivedExpandedKeys);
+        userControlledRef.current = false;
+      } else if (!userControlledRef.current) {
+        // Initial load when sync is disabled - set initial state
+        setExpandedKeys(derivedExpandedKeys);
+      }
+      // Otherwise, don't touch expandedKeys - let user control tree independently
+    }
+
     // During search, expand containers that are ancestors of matches (including node matches)
     // Add debouncing to prevent excessive operations
     if (
@@ -955,6 +984,7 @@ export function HierarchyTree({
       showNodeCounts,
       onToggleNodeVisibility,
       onToggleContainerVisibility,
+      expandedKeys, // Pass expandedKeys to control tree data structure
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -968,6 +998,7 @@ export function HierarchyTree({
     showNodeCounts,
     onToggleNodeVisibility,
     onToggleContainerVisibility,
+    expandedKeys, // Re-compute when expandedKeys changes
   ]);
 
   // Clear loading state when collapsedContainers changes (signaling state update complete)
@@ -993,6 +1024,11 @@ export function HierarchyTree({
     // Update UI immediately
     setExpandedKeys(nextExpandedKeys);
 
+    // Mark that user is manually controlling the tree (when sync is disabled)
+    if (!syncEnabled) {
+      userControlledRef.current = true;
+    }
+
     // Show loading indicator
     setIsRecalculating(true);
 
@@ -1006,6 +1042,7 @@ export function HierarchyTree({
       if (wasExpanded !== isNowExpanded) {
         // Call the parent's toggle handler which goes through AsyncCoordinator
         // This ensures proper layout recalculation and ReactFlow updates
+
         onToggleContainer(nodeKey);
       }
     }

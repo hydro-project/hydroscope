@@ -51,22 +51,6 @@ function LegendInner({
     return [];
   }, [nodeTypeConfig, legendData]);
 
-  // Safety check for legend items
-  if (legendItems.length === 0) {
-    return (
-      <div className={`legend-empty ${className}`} style={style}>
-        <span
-          style={{
-            color: COMPONENT_COLORS.TEXT_DISABLED,
-            fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
-            fontStyle: "italic",
-          }}
-        >
-          No legend data available
-        </span>
-      </div>
-    );
-  }
   const displayTitle = title || legendData?.title || "Node Types";
   const paletteKey =
     colorPalette in COLOR_PALETTES
@@ -74,7 +58,6 @@ function LegendInner({
       : "Set3";
 
   // Precompute colors for all legend items using a memoized map
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const colorsByType = useMemo(() => {
     const map = new Map<
       string,
@@ -104,7 +87,7 @@ function LegendInner({
     }
     return map;
   }, [legendItems, paletteKey]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+
   const legendStyle: React.CSSProperties = useMemo(
     () => ({
       fontSize: compact ? "9px" : "10px",
@@ -112,7 +95,7 @@ function LegendInner({
     }),
     [compact, style],
   );
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+
   const itemStyle: React.CSSProperties = useMemo(
     () => ({
       display: "flex",
@@ -122,6 +105,24 @@ function LegendInner({
     }),
     [compact],
   );
+
+  // Safety check for legend items - AFTER all hooks
+  if (legendItems.length === 0) {
+    return (
+      <div className={`legend-empty ${className}`} style={style}>
+        <span
+          style={{
+            color: COMPONENT_COLORS.TEXT_DISABLED,
+            fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
+            fontStyle: "italic",
+          }}
+        >
+          No legend data available
+        </span>
+      </div>
+    );
+  }
+
   const colorBoxStyle = (colors: any): React.CSSProperties => ({
     width: compact ? "10px" : "12px",
     height: compact ? "10px" : "12px",
