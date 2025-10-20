@@ -1230,9 +1230,23 @@ export class VisualizationState {
    * Get all nodes regardless of manual visibility state
    * (includes both visible and manually hidden nodes)
    * Used by Show All button to find hidden nodes
+   *
+   * CRITICAL: This includes manually hidden nodes (where node.hidden = true
+   * but they're in _manuallyHiddenNodes set). It only excludes nodes that
+   * are hidden due to collapse (not manually hidden).
    */
   get allNodes(): ReadonlyArray<GraphNode> {
-    return Array.from(this._nodes.values()).filter((node) => !node.hidden);
+    return Array.from(this._nodes.values()).filter(
+      (node) => !node.hidden || this._manuallyHiddenNodes.has(node.id),
+    );
+  }
+
+  getAllNodes(): Array<GraphNode> {
+    return Array.from(this._nodes.values());
+  }
+
+  getAllEdges(): Array<GraphEdge> {
+    return Array.from(this._edges.values());
   }
 
   get visibleEdges(): ReadonlyArray<GraphEdge | AggregatedEdge> {
@@ -1255,10 +1269,15 @@ export class VisualizationState {
    * Get all containers regardless of visibility state
    * (includes both visible and manually hidden containers)
    * Used by hierarchy tree to show all containers with appropriate eye icons
+   *
+   * CRITICAL: This includes manually hidden containers (where container.hidden = true
+   * but they're in _manuallyHiddenContainers set). It only excludes containers that
+   * are hidden due to collapse (not manually hidden).
    */
   get allContainers(): ReadonlyArray<Container> {
     return Array.from(this._containers.values()).filter(
-      (container) => !container.hidden,
+      (container) =>
+        !container.hidden || this._manuallyHiddenContainers.has(container.id),
     );
   }
 
@@ -3945,8 +3964,34 @@ export class VisualizationState {
     // Mark as manually hidden
     this._manuallyHiddenContainers.add(containerId);
 
-    // Also hide all descendant containers (they'll be restored when parent is shown)
+    // Hide all descendant containers
     this._hideAllDescendantContainers(containerId);
+
+    // Hide all nodes within this container and descendants
+    const allDescendants = this._getAllDescendantIds(containerId);
+    console.log(
+      `[VisualizationState] Hiding container ${containerId}, descendants:`,
+      Array.from(allDescendants),
+    );
+    for (const descendantId of allDescendants) {
+      const node = this._nodes.get(descendantId);
+      if (node) {
+        this._manuallyHiddenNodes.add(descendantId);
+        node.hidden = true;
+      }
+    }
+
+    // Hide edges that connect to hidden nodes/containers
+    for (const edge of this._edges.values()) {
+      if (
+        allDescendants.has(edge.source) ||
+        allDescendants.has(edge.target) ||
+        edge.source === containerId ||
+        edge.target === containerId
+      ) {
+        edge.hidden = true;
+      }
+    }
   }
 
   /**
@@ -3972,6 +4017,44 @@ export class VisualizationState {
 
     // Show all descendant containers that should be visible
     this._showDescendantContainersBasedOnSnapshot(containerId, snapshot);
+
+    // Show all nodes within this container and descendants
+    const allDescendants = this._getAllDescendantIds(containerId);
+    for (const descendantId of allDescendants) {
+      const node = this._nodes.get(descendantId);
+      if (node) {
+        this._manuallyHiddenNodes.delete(descendantId);
+        node.hidden = false;
+      }
+    }
+
+    // Show edges that were hidden when we hid this container
+    // Only show edges that involve this container or its descendants
+    for (const edge of this._edges.values()) {
+      if (
+        allDescendants.has(edge.source) ||
+        allDescendants.has(edge.target) ||
+        edge.source === containerId ||
+        edge.target === containerId
+      ) {
+        // Check if both endpoints are now visible
+        const sourceNode = this._nodes.get(edge.source);
+        const targetNode = this._nodes.get(edge.target);
+        const sourceContainer = this._containers.get(edge.source);
+        const targetContainer = this._containers.get(edge.target);
+
+        const sourceVisible =
+          (sourceNode && !sourceNode.hidden) ||
+          (sourceContainer && !sourceContainer.hidden);
+        const targetVisible =
+          (targetNode && !targetNode.hidden) ||
+          (targetContainer && !targetContainer.hidden);
+
+        if (sourceVisible && targetVisible) {
+          edge.hidden = false;
+        }
+      }
+    }
   }
 
   /**
@@ -4066,8 +4149,29 @@ export class VisualizationState {
       const childContainer = this._containers.get(childId);
       if (childContainer) {
         this._manuallyHiddenContainers.add(childId);
+        childContainer.hidden = true;
         // Recursively hide descendants
         this._hideAllDescendantContainers(childId);
+      }
+    }
+  }
+
+  /**
+   * Recursively clean up aggregated edges for a hidden container and all its descendants
+   */
+  private _cleanupAggregatedEdgesForHiddenContainerRecursive(
+    containerId: string,
+  ): void {
+    const container = this._containers.get(containerId);
+    if (!container) return;
+
+    // Clean up edges for this container
+    this._cleanupAggregatedEdgesForHiddenContainer(containerId);
+
+    // Recursively clean up for all child containers
+    for (const childId of container.children) {
+      if (this._containers.has(childId)) {
+        this._cleanupAggregatedEdgesForHiddenContainerRecursive(childId);
       }
     }
   }
@@ -4098,6 +4202,7 @@ export class VisualizationState {
         if (!wasManuallyHidden) {
           // Child was not manually hidden, so show it
           this._manuallyHiddenContainers.delete(childId);
+          childContainer.hidden = false;
         }
         // Note: if it WAS manually hidden, leave it in the hidden set
 

@@ -140,6 +140,33 @@ export class ELKBridge implements IELKBridge {
             ),
           );
         }
+
+        // Check if all children are collapsed or if there are no visible children
+        const hasVisibleExpandedContent = elkChildren.some((child) => {
+          if (child.children && child.children.length > 0) {
+            return true; // Has expanded child container
+          }
+          const childContainer = state.getContainer(child.id);
+          if (childContainer && !childContainer.collapsed) {
+            return true; // Has expanded child container
+          }
+          return false; // Collapsed container or node
+        });
+
+        // If container has no visible expanded content, use collapsed dimensions
+        if (elkChildren.length === 0 || !hasVisibleExpandedContent) {
+          return {
+            id: container.id,
+            width: SIZES.COLLAPSED_CONTAINER_WIDTH,
+            height: SIZES.COLLAPSED_CONTAINER_HEIGHT,
+            children: elkChildren,
+            layoutOptions: this.getContainerLayoutOptions(
+              container,
+              optimizedConfig,
+            ),
+          };
+        }
+
         const containerLayoutOptions = this.getContainerLayoutOptions(
           container,
           optimizedConfig,

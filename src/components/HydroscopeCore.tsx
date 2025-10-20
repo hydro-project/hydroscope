@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * HydroscopeCore - Minimal visualization component
  *
@@ -510,10 +511,7 @@ const HydroscopeCoreInternal = forwardRef<
         asyncCoordinator.setReactStateSetter(setState);
 
         // Set search result focus callback for spotlight creation
-        asyncCoordinator.onSearchResultFocused = (
-          elementId: string,
-          targetZoom?: number,
-        ) => {
+        asyncCoordinator.onSearchResultFocused = (elementId: string) => {
           // The AsyncCoordinator has already waited for the animation to complete
           // Read the actual DOM position now
 
@@ -1558,10 +1556,6 @@ const HydroscopeCoreInternal = forwardRef<
           }
 
           // Find the actual visible element in the graph (might be a parent container)
-          const visibleElementId =
-            state.visualizationState.getLowestVisibleAncestorInGraph(
-              elementId,
-            ) || elementId;
 
           // Wait for viewport animation to complete before showing highlights
           setTimeout(() => {

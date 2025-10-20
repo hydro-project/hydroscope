@@ -18,7 +18,6 @@ import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import { Spinner } from "./Spinner.js";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
-import { getSearchableItemsInTreeOrder } from "../utils/hierarchyUtils.js";
 import {
   TYPOGRAPHY,
   COMPONENT_COLORS,

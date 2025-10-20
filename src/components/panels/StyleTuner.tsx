@@ -318,7 +318,9 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                       typeof _visualizationState.updateNodeDimensionsForFullLabels ===
                       "function"
                     ) {
-                      _visualizationState.updateNodeDimensionsForFullLabels(true);
+                      _visualizationState.updateNodeDimensionsForFullLabels(
+                        true,
+                      );
                     }
                   } else {
                     _visualizationState.resetAllNodeLabelsToShort();
@@ -326,7 +328,9 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                       typeof _visualizationState.updateNodeDimensionsForFullLabels ===
                       "function"
                     ) {
-                      _visualizationState.updateNodeDimensionsForFullLabels(false);
+                      _visualizationState.updateNodeDimensionsForFullLabels(
+                        false,
+                      );
                     }
                   }
 

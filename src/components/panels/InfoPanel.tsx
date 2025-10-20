@@ -523,10 +523,10 @@ const InfoPanelInternal = forwardRef<
                       onClick={async () => {
                         if (!visualizationState || !asyncCoordinator) return;
 
-                        // Show all manually hidden nodes
-                        const hiddenNodes = visualizationState.allNodes.filter(
-                          (node) =>
-                            visualizationState.isNodeManuallyHidden(node.id),
+                        // Show ALL hidden nodes (not just manually hidden ones)
+                        const allNodes = visualizationState.getAllNodes();
+                        const hiddenNodes = allNodes.filter(
+                          (node) => node.hidden,
                         );
 
                         // Show all manually hidden containers
@@ -537,15 +537,63 @@ const InfoPanelInternal = forwardRef<
                             ),
                           );
 
-                        // Toggle visibility for all hidden items
-                        for (const node of hiddenNodes) {
-                          visualizationState.toggleNodeVisibility(node.id);
-                        }
+                        // CRITICAL: Show containers FIRST (parents before children), THEN nodes
+                        // This prevents edge aggregation issues where nodes are visible but their containers are hidden
 
+                        // Sort containers by depth (parents first)
+                        hiddenContainers.sort((a, b) => {
+                          const depthA =
+                            visualizationState.getContainerAncestors(
+                              a.id,
+                            ).length;
+                          const depthB =
+                            visualizationState.getContainerAncestors(
+                              b.id,
+                            ).length;
+                          return depthA - depthB; // Shallower (parents) first
+                        });
+
+                        // Show containers first
                         for (const container of hiddenContainers) {
                           visualizationState.toggleContainerVisibility(
                             container.id,
                           );
+                        }
+
+                        // Then show nodes (only toggle if they're actually hidden)
+                        for (const node of hiddenNodes) {
+                          // Only toggle if the node is in the manually hidden set
+                          if (
+                            visualizationState.isNodeManuallyHidden(node.id)
+                          ) {
+                            visualizationState.toggleNodeVisibility(node.id);
+                          }
+                        }
+
+                        // Show edges that connect visible nodes/containers
+                        const allEdges = visualizationState.getAllEdges();
+                        for (const edge of allEdges) {
+                          const sourceNode = visualizationState.getGraphNode(
+                            edge.source,
+                          );
+                          const targetNode = visualizationState.getGraphNode(
+                            edge.target,
+                          );
+                          const sourceContainer =
+                            visualizationState.getContainer(edge.source);
+                          const targetContainer =
+                            visualizationState.getContainer(edge.target);
+
+                          const sourceVisible =
+                            (sourceNode && !sourceNode.hidden) ||
+                            (sourceContainer && !sourceContainer.hidden);
+                          const targetVisible =
+                            (targetNode && !targetNode.hidden) ||
+                            (targetContainer && !targetContainer.hidden);
+
+                          if (sourceVisible && targetVisible) {
+                            edge.hidden = false;
+                          }
                         }
 
                         // Force re-render

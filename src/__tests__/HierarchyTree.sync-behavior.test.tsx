@@ -82,7 +82,7 @@ describe("HierarchyTree Sync Behavior", () => {
       const expandButton = container1
         .closest(".ant-tree-treenode")
         ?.querySelector(".ant-tree-switcher");
-      
+
       expect(expandButton).toBeInTheDocument();
       fireEvent.click(expandButton!);
 
@@ -128,7 +128,7 @@ describe("HierarchyTree Sync Behavior", () => {
       const expandButton = container1
         .closest(".ant-tree-treenode")
         ?.querySelector(".ant-tree-switcher");
-      
+
       expect(expandButton).toBeInTheDocument();
       fireEvent.click(expandButton!);
 
