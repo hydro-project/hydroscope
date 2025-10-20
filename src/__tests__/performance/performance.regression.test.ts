@@ -274,7 +274,7 @@ describe("Performance Regression Tests", () => {
           // Multiple search operations
           for (let i = 0; i < 20; i++) {
             const query = getRandomQuery();
-            state.search(query);
+            state.performSearch(query);
           }
           state.clearSearch();
 
@@ -325,7 +325,7 @@ describe("Performance Regression Tests", () => {
       const { metrics } = measureSync(() => {
         for (let i = 0; i < searchCount; i++) {
           const query = getRandomQuery();
-          state.search(query);
+          state.performSearch(query);
         }
         return searchCount;
       });

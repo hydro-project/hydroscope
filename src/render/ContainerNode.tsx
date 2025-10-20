@@ -344,6 +344,7 @@ export function ContainerNode({
               });
               window.dispatchEvent(customEvent);
             }}
+            data-info-button="true"
             title={`Show details for ${containerLabel}`}
           >
             ℹ

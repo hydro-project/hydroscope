@@ -1743,6 +1743,18 @@ const HydroscopeCoreInternal = forwardRef<
             return;
           }
 
+          // Check if the click was on the info button - if so, ignore it here
+          // The info button has its own click handler that dispatches a custom event
+          const target = event.target as HTMLElement;
+          const isInfoButton =
+            target.closest('[data-info-button="true"]') !== null ||
+            target.getAttribute("data-info-button") === "true";
+
+          if (isInfoButton) {
+            // Let the info button's own handler deal with this
+            return;
+          }
+
           // Check if this is a container node
           if (node.data && node.data.nodeType === "container") {
             // Handle container clicks directly through InteractionHandler
@@ -1753,18 +1765,9 @@ const HydroscopeCoreInternal = forwardRef<
                 event.shiftKey,
               );
             }
-          } else {
-            // Handle regular node clicks - show popup if node has longLabel
-            const shouldShowPopup =
-              !readOnly &&
-              node.data &&
-              node.data.longLabel &&
-              node.data.longLabel !== node.data.label;
-
-            if (shouldShowPopup) {
-              handleNodePopupToggle(node.id, node);
-            }
           }
+          // Note: Removed automatic popup toggle on node click
+          // Popups should only be shown via the info button click
 
           // Always call the general node click callback
           if (onNodeClick) {
@@ -1788,7 +1791,7 @@ const HydroscopeCoreInternal = forwardRef<
           }));
         }
       },
-      [handleNodePopupToggle, onNodeClick, readOnly, state.visualizationState],
+      [onNodeClick, readOnly, state.visualizationState],
     );
 
     // Close popups when containers are collapsed (original nodes might be hidden)

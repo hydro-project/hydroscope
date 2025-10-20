@@ -117,7 +117,7 @@ describe("Error Boundary Validation", () => {
 
       // Search should handle invalid queries gracefully
       expect(() => {
-        const results = visualizationState.search(longQuery);
+        const results = visualizationState.performSearch(longQuery);
         // Should return results or empty array, not crash
         expect(Array.isArray(results)).toBe(true);
       }).not.toThrow();

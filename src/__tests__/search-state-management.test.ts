@@ -294,7 +294,7 @@ describe("Search and Navigation State Management", () => {
       state.addNode(node1);
 
       // Old search method should still work
-      const oldResults = state.search("Test");
+      const oldResults = state.performSearch("Test");
       expect(oldResults).toHaveLength(1);
 
       // New search method should work

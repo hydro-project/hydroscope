@@ -526,7 +526,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       expect(hiddenNode).toBeUndefined();
 
       // Perform search that should expand container
-      const searchResults = state.search("Searchable");
+      const searchResults = state.performSearch("Searchable");
       expect(searchResults.length).toBeGreaterThan(0);
 
       // Manually expand container to show search results (simulating search expansion)
@@ -564,7 +564,7 @@ describe("End-to-End Integration: Complete Data Flow", () => {
 
     it("should handle search clearing through pipeline", async () => {
       // Perform search first
-      const searchResults = state.search("Searchable");
+      const searchResults = state.performSearch("Searchable");
 
       // Run pipeline with search results
       let elkGraph = elkBridge.toELKGraph(state);
@@ -594,13 +594,13 @@ describe("End-to-End Integration: Complete Data Flow", () => {
       );
 
       // Verify search was cleared (search again should return same results)
-      const clearedResults = state.search("Searchable");
+      const clearedResults = state.performSearch("Searchable");
       expect(clearedResults.length).toBeGreaterThan(0); // Search still works
     });
 
     it("should handle search with node label highlighting", async () => {
       // Perform search
-      const searchResults = state.search("Node");
+      const searchResults = state.performSearch("Node");
       expect(searchResults.length).toBeGreaterThan(0);
 
       // Run pipeline

@@ -376,7 +376,7 @@ describe("Application Integration: Complete Application with paxos.json", () => 
       }
 
       // Test search functionality
-      const searchResults = state.search("persist");
+      const searchResults = state.performSearch("persist");
       expect(Array.isArray(searchResults)).toBe(true);
 
       // Test search clearing
@@ -428,7 +428,7 @@ describe("Application Integration: Complete Application with paxos.json", () => 
       const operationStartTime = Date.now();
 
       // Test search
-      const searchResults = state.search("Performance");
+      const searchResults = state.performSearch("Performance");
       expect(searchResults.length).toBeGreaterThan(0);
 
       const operationTime = Date.now() - operationStartTime;

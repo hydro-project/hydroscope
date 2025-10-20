@@ -2220,84 +2220,7 @@ export class VisualizationState {
       errors,
     };
   }
-  // Search (backward compatibility)
-  search(query: string): SearchResult[] {
-    // Update both old and new search state for backward compatibility
-    this._searchQuery = query.trim();
-    this._searchState.isActive = this._searchQuery.length > 0;
-    this._searchState.query = this._searchQuery;
-    this._searchState.lastSearchTime = Date.now();
-    // Also update new search navigation state
-    this._searchNavigationState.searchQuery = this._searchQuery;
-    // Add to search history if not empty
-    if (this._searchQuery) {
-      // Remove existing entry if present
-      const existingIndex = this._searchHistory.indexOf(this._searchQuery);
-      if (existingIndex !== -1) {
-        this._searchHistory.splice(existingIndex, 1);
-      }
-      // Add to front
-      this._searchHistory.unshift(this._searchQuery);
-      // Keep only last 10 searches
-      if (this._searchHistory.length > 10) {
-        this._searchHistory = this._searchHistory.slice(0, 10);
-      }
-    }
-    this._searchResults = [];
-    if (!this._searchQuery) {
-      this._searchState.resultCount = 0;
-      this._searchNavigationState.searchResults = [];
-      this.updateTreeSearchHighlights([]);
-      this.updateGraphSearchHighlights([]);
-      return this._searchResults;
-    }
-    const queryLower = this._searchQuery.toLowerCase();
-    // Search nodes - prioritize exact matches
-    for (const node of this._nodes.values()) {
-      const matchResult = this._findMatches(node.label, queryLower);
-      if (matchResult.matches) {
-        const result: SearchResult = {
-          id: node.id,
-          label: node.label,
-          type: "node",
-          matchIndices: matchResult.indices,
-          hierarchyPath: this._getHierarchyPath(node.id),
-          confidence: this._calculateSearchConfidence(
-            node.label,
-            queryLower,
-            matchResult.isExact,
-          ),
-        };
-        this._searchResults.push(result);
-      }
-    }
-    // Search containers - prioritize exact matches
-    for (const container of this._containers.values()) {
-      const matchResult = this._findMatches(container.label, queryLower);
-      if (matchResult.matches) {
-        const result: SearchResult = {
-          id: container.id,
-          label: container.label,
-          type: "container",
-          matchIndices: matchResult.indices,
-          hierarchyPath: this._getHierarchyPath(container.id),
-          confidence: this._calculateSearchConfidence(
-            container.label,
-            queryLower,
-            matchResult.isExact,
-          ),
-        };
-        this._searchResults.push(result);
-      }
-    }
 
-    this._searchState.resultCount = this._searchResults.length;
-    // Update new search navigation state
-    this._searchNavigationState.searchResults = [...this._searchResults];
-    this.updateTreeSearchHighlights(this._searchResults);
-    this.updateGraphSearchHighlights(this._searchResults);
-    return [...this._searchResults];
-  }
   // TODO: Use a library for this.
   private _findMatches(
     text: string,
@@ -2395,14 +2318,7 @@ export class VisualizationState {
   clearSearchHistory(): void {
     this._searchHistory = [];
   }
-  // Advanced search methods
-  searchByType(
-    query: string,
-    entityType: "node" | "container",
-  ): SearchResult[] {
-    const allResults = this.search(query);
-    return allResults.filter((result) => result.type === entityType);
-  }
+
   searchBySemanticTag(tag: string): SearchResult[] {
     this._searchResults = [];
     // Search nodes by semantic tags
@@ -2735,8 +2651,8 @@ export class VisualizationState {
     this._searchNavigationState.searchResults = results;
     this._searchResults = [...results];
     this._searchState.resultCount = results.length;
-    // Add to search history if not empty
-    if (trimmedQuery && results.length > 0) {
+    // Add to search history if query is not empty (regardless of results)
+    if (trimmedQuery) {
       // Remove existing entry if present
       const existingIndex = this._searchHistory.indexOf(trimmedQuery);
       if (existingIndex !== -1) {
