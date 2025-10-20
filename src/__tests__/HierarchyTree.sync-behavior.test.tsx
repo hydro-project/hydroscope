@@ -159,19 +159,22 @@ describe("HierarchyTree Sync Behavior", () => {
         />,
       );
 
-      const container1 = screen.getByText("Container 1");
-      const expandButton = container1
-        .closest(".ant-tree-treenode")
-        ?.querySelector(".ant-tree-switcher");
+      // Helper to get fresh switcher button reference
+      const getSwitcher = () => {
+        const container1 = screen.getByText("Container 1");
+        return container1
+          .closest(".ant-tree-treenode")
+          ?.querySelector(".ant-tree-switcher");
+      };
 
       // Expand
-      fireEvent.click(expandButton!);
+      fireEvent.click(getSwitcher()!);
       await waitFor(() => {
         expect(screen.getByText("Node 1")).toBeInTheDocument();
       });
 
-      // Collapse
-      fireEvent.click(expandButton!);
+      // Collapse - get fresh reference after DOM update
+      fireEvent.click(getSwitcher()!);
       await waitFor(
         () => {
           expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
@@ -179,8 +182,8 @@ describe("HierarchyTree Sync Behavior", () => {
         { timeout: 3000 },
       );
 
-      // Expand again
-      fireEvent.click(expandButton!);
+      // Expand again - get fresh reference
+      fireEvent.click(getSwitcher()!);
       await waitFor(() => {
         expect(screen.getByText("Node 1")).toBeInTheDocument();
       });
