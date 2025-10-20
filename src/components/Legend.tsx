@@ -2,12 +2,21 @@
  * @fileoverview Legend Component
  *
  * Displays a color-coded legend for different node types.
+ * Data-driven from JSON's nodeTypeConfig, with palette from StyleTuner.
  */
 import React, { useMemo, memo } from "react";
 import { LegendProps } from "./types";
 import { generateNodeColors } from "../shared/colorUtils";
 import { COLOR_PALETTES, COMPONENT_COLORS } from "../shared/config";
 import { TYPOGRAPHY } from "../shared/config";
+
+interface LegendItemWithColor {
+  type: string;
+  label: string;
+  description?: string;
+  colorIndex?: number;
+}
+
 function LegendInner({
   legendData,
   colorPalette = "Set3",
@@ -17,8 +26,33 @@ function LegendInner({
   className = "",
   style,
 }: LegendProps) {
-  // Safety check for legendData and items
-  if (!legendData || !legendData.items || !Array.isArray(legendData.items)) {
+  // Build legend items from nodeTypeConfig if available, otherwise fall back to legendData
+  const legendItems = useMemo((): LegendItemWithColor[] => {
+    // Priority 1: Use nodeTypeConfig from JSON if available
+    if (nodeTypeConfig?.types && Array.isArray(nodeTypeConfig.types)) {
+      return nodeTypeConfig.types.map((type) => ({
+        type: type.id,
+        label: type.label || type.id,
+        description: type.description,
+        colorIndex: type.colorIndex,
+      }));
+    }
+
+    // Priority 2: Fall back to legendData
+    if (legendData?.items && Array.isArray(legendData.items)) {
+      return legendData.items.map((item) => ({
+        type: item.type,
+        label: item.label,
+        description: item.description,
+        colorIndex: undefined, // No colorIndex in legacy format
+      }));
+    }
+
+    return [];
+  }, [nodeTypeConfig, legendData]);
+
+  // Safety check for legend items
+  if (legendItems.length === 0) {
     return (
       <div className={`legend-empty ${className}`} style={style}>
         <span
@@ -33,11 +67,12 @@ function LegendInner({
       </div>
     );
   }
-  const displayTitle = title || legendData.title || "Legend";
+  const displayTitle = title || legendData?.title || "Node Types";
   const paletteKey =
     colorPalette in COLOR_PALETTES
       ? (colorPalette as keyof typeof COLOR_PALETTES)
       : "Set3";
+
   // Precompute colors for all legend items using a memoized map
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const colorsByType = useMemo(() => {
@@ -48,17 +83,27 @@ function LegendInner({
         border: string;
       }
     >();
-    for (const item of legendData.items) {
-      // generateNodeColors accepts an array of types; use single type per item
-      const colors = generateNodeColors([item.type], paletteKey) as {
-        primary: string;
-        border: string;
-      };
-      map.set(item.type, colors);
+
+    for (const item of legendItems) {
+      // If colorIndex is specified in nodeTypeConfig, use it directly
+      if (typeof item.colorIndex === "number") {
+        const palette = COLOR_PALETTES[paletteKey];
+        const colorEntry = palette[item.colorIndex % palette.length];
+        map.set(item.type, {
+          primary: colorEntry.primary,
+          border: colorEntry.secondary || colorEntry.primary,
+        });
+      } else {
+        // Fall back to generateNodeColors for dynamic color assignment
+        const colors = generateNodeColors([item.type], paletteKey) as {
+          primary: string;
+          border: string;
+        };
+        map.set(item.type, colors);
+      }
     }
     return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- nodeTypeConfig is part of the props interface and could affect color generation in future implementations
-  }, [legendData.items, paletteKey, nodeTypeConfig]);
+  }, [legendItems, paletteKey]);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const legendStyle: React.CSSProperties = useMemo(
     () => ({
@@ -102,7 +147,7 @@ function LegendInner({
         </div>
       )}
 
-      {legendData.items.map((item) => (
+      {legendItems.map((item) => (
         <div
           key={item.type}
           style={itemStyle}

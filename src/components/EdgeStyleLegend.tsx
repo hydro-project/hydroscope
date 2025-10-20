@@ -2,161 +2,27 @@
  * @fileoverview EdgeStyleLegend Component
  *
  * Displays a legend showing what different edge visual styles represent
- * in terms of stream properties (Bounded/Unbounded, TotalOrder/NoOrder, etc.)
+ * based on semantic tags from the JSON data's edgeStyleConfig.
  */
 import React, { useMemo } from "react";
-import { COMPONENT_COLORS, TYPOGRAPHY } from "../shared/config";
+import {
+  COMPONENT_COLORS,
+  TYPOGRAPHY,
+  WAVY_EDGE_CONFIG,
+} from "../shared/config";
+
 interface EdgeStyleLegendProps {
   edgeStyleConfig?: {
     semanticMappings?: Record<
       string,
       Record<string, Record<string, string | number>>
     >;
-    // Legacy support
-    booleanPropertyPairs?: Array<{
-      pair: [string, string];
-      defaultStyle: string;
-      altStyle: string;
-      description: string;
-    }>;
-    singlePropertyMappings?: Record<string, string>;
-    combinationRules?: any;
-    // Semantics-focused: accept a styleTag string or an object with optional styleTag
-    // (additional fields from internal configs are tolerated but ignored by the legend)
-    propertyMappings?: Record<
-      string,
-      | string
-      | {
-          styleTag?: string;
-          [key: string]: any;
-        }
-    >;
   };
   compact?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
-// Visual representations of each edge style
-const EDGE_STYLE_SAMPLES = {
-  // New numbered edge style system
-  edge_style_1: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="2" />
-    </svg>
-  ),
-  edge_style_1_alt: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line
-        x1="0"
-        y1="1.5"
-        x2="40"
-        y2="1.5"
-        stroke="#4a5568"
-        strokeWidth="2"
-        strokeDasharray="4,4"
-      />
-    </svg>
-  ),
-  edge_style_2: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="1" />
-    </svg>
-  ),
-  edge_style_2_alt: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="3" />
-    </svg>
-  ),
-  edge_style_3: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="2" />
-    </svg>
-  ),
-  edge_style_3_alt: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="2" />
-      <animateTransform
-        attributeName="transform"
-        type="translate"
-        values="0,0;5,0;0,0"
-        dur="1s"
-        repeatCount="indefinite"
-      />
-    </svg>
-  ),
-  edge_style_4: (
-    <svg width="40" height="5" viewBox="0 0 40 5">
-      <line
-        x1="0"
-        y1="1"
-        x2="40"
-        y2="1"
-        stroke="#4a5568"
-        strokeWidth="1"
-        strokeDasharray="8,2,2,2"
-      />
-    </svg>
-  ),
-  edge_style_5: (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line
-        x1="0"
-        y1="1.5"
-        x2="40"
-        y2="1.5"
-        stroke="#4a5568"
-        strokeWidth="2"
-        strokeDasharray="2,2"
-      />
-    </svg>
-  ),
-  // Legacy styles for backward compatibility
-  "thick-stroke": (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="3" />
-    </svg>
-  ),
-  "thin-stroke": (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="1" />
-    </svg>
-  ),
-  "smooth-line": (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#4a5568" strokeWidth="2" />
-    </svg>
-  ),
-  "wavy-line": (
-    <svg width="40" height="10" viewBox="0 0 40 10">
-      <path
-        d="M0,5 Q10,0 20,5 T40,5"
-        stroke="#4a5568"
-        strokeWidth="2"
-        fill="none"
-      />
-    </svg>
-  ),
-  "dashed-animated": (
-    <svg width="40" height="3" viewBox="0 0 40 3">
-      <line
-        x1="0"
-        y1="1.5"
-        x2="40"
-        y2="1.5"
-        stroke="#4a5568"
-        strokeWidth="2"
-        strokeDasharray="5,3"
-      />
-    </svg>
-  ),
-  "double-line": (
-    <svg width="40" height="5" viewBox="0 0 40 5">
-      <line x1="0" y1="1" x2="40" y2="1" stroke="#4a5568" strokeWidth="1" />
-      <line x1="0" y1="4" x2="40" y2="4" stroke="#4a5568" strokeWidth="1" />
-    </svg>
-  ),
-};
-// Note: Removed unused PROPERTY_DESCRIPTIONS dead constant
+// No hardcoded edge style samples - all generated dynamically from semantic mappings
 function EdgeStyleLegendInner({
   edgeStyleConfig,
   compact = false,
@@ -164,13 +30,7 @@ function EdgeStyleLegendInner({
   style,
 }: EdgeStyleLegendProps) {
   // Safety check for edgeStyleConfig
-  if (
-    !edgeStyleConfig ||
-    (!edgeStyleConfig.semanticMappings &&
-      !edgeStyleConfig.booleanPropertyPairs &&
-      !edgeStyleConfig.singlePropertyMappings &&
-      !edgeStyleConfig.propertyMappings)
-  ) {
+  if (!edgeStyleConfig?.semanticMappings) {
     return (
       <div className={`edge-style-legend-empty ${className}`} style={style}>
         <span
@@ -197,111 +57,105 @@ function EdgeStyleLegendInner({
   const styles = useMemo(() => {
     const pairBoxStyle: React.CSSProperties = {
       display: "flex",
-      alignItems: "flex-start",
+      alignItems: "center",
       border: "1px solid #ddd",
       borderRadius: "4px",
-      padding: "6px",
-      margin: "3px 0",
+      padding: "6px 8px",
+      margin: "2px 0",
       backgroundColor: "#fafafa",
-    };
-    const numberStyle: React.CSSProperties = {
-      fontSize: "12px",
-      fontWeight: "bold",
-      marginRight: "8px",
-      minWidth: "16px",
-      color: COMPONENT_COLORS.TEXT_PRIMARY,
-      flexShrink: 0,
     };
     const contentStyle: React.CSSProperties = { flex: 1 };
     const edgeRowStyle: React.CSSProperties = {
       display: "flex",
       alignItems: "center",
-      margin: "1px 0",
       fontSize: compact ? TYPOGRAPHY.UI_SMALL : TYPOGRAPHY.UI_MEDIUM,
     };
     const sampleStyle: React.CSSProperties = {
-      marginRight: "8px",
+      marginRight: "10px",
       minWidth: "48px",
       display: "flex",
       alignItems: "center",
     };
     const labelStyle: React.CSSProperties = {
-      fontSize: "10px",
+      fontSize: compact ? "9px" : "11px",
       color: COMPONENT_COLORS.TEXT_PRIMARY,
     };
     return {
       pairBoxStyle,
-      numberStyle,
       contentStyle,
       edgeRowStyle,
       sampleStyle,
       labelStyle,
     };
   }, [compact]);
-  // Helper function to render semantic mapping boxes
+  // Helper function to render semantic mapping boxes grouped by category
   const renderSemanticMappingBoxes = () => {
     if (!edgeStyleConfig.semanticMappings) return null;
-    let groupNumber = 1;
+
     const allBoxes: JSX.Element[] = [];
+
     // Process each group
     Object.entries(edgeStyleConfig.semanticMappings).forEach(
-      ([groupName, group]) => {
-        // Create group header
-        const groupHeader = (
+      ([groupName, group], groupIndex) => {
+        // Add group header with visual separator
+        const displayGroupName = groupName.replace(/Group$/, "");
+
+        if (groupIndex > 0) {
+          // Add separator between groups
+          allBoxes.push(
+            <div
+              key={`separator-${groupName}`}
+              style={{
+                height: "1px",
+                backgroundColor: COMPONENT_COLORS.BORDER_LIGHT,
+                margin: "8px 0",
+              }}
+            />,
+          );
+        }
+
+        // Add group header
+        allBoxes.push(
           <div
-            key={`${groupName}-header`}
+            key={`header-${groupName}`}
             style={{
-              ...styles.edgeRowStyle,
-              fontWeight: "bold",
-              marginTop: groupNumber > 1 ? "8px" : "0px",
-              marginBottom: "2px",
-              color: COMPONENT_COLORS.TEXT_PRIMARY,
+              fontSize: compact ? "10px" : "12px",
+              fontWeight: "600",
+              color: COMPONENT_COLORS.TEXT_SECONDARY,
+              marginBottom: "4px",
+              marginTop: groupIndex > 0 ? "4px" : "0px",
             }}
           >
-            {groupNumber}. {groupName}
-          </div>
+            {displayGroupName}
+          </div>,
         );
-        allBoxes.push(groupHeader);
-        // Process each option within the group
-        Object.entries(group).forEach(
-          ([optionName, styleSettings], optionIndex) => {
-            // Generate a visual sample based on the style settings
-            const sample = generateVisualSample(styleSettings);
-            const box = (
-              <div
-                key={`${groupName}-${optionName}`}
-                style={{
-                  ...styles.pairBoxStyle,
-                  marginLeft: "16px", // Indent options under group
-                  marginBottom: "1px",
-                }}
-              >
-                <div
-                  style={{
-                    ...styles.numberStyle,
-                    backgroundColor: "transparent",
-                    color: COMPONENT_COLORS.TEXT_SECONDARY,
-                    fontSize: "10px",
-                    width: "12px",
-                  }}
-                >
-                  {String.fromCharCode(97 + optionIndex)} {/* 'a', 'b', etc. */}
-                </div>
 
-                <div style={styles.contentStyle}>
-                  <div style={styles.edgeRowStyle}>
-                    <div style={styles.sampleStyle}>{sample}</div>
-                    <span style={styles.labelStyle}>{optionName}</span>
-                  </div>
+        // Process each option within the group
+        Object.entries(group).forEach(([optionName, styleSettings]) => {
+          // Generate a visual sample based on the style settings
+          const sample = generateVisualSample(styleSettings);
+
+          const box = (
+            <div
+              key={`${groupName}-${optionName}`}
+              style={{
+                ...styles.pairBoxStyle,
+                marginBottom: "3px",
+              }}
+            >
+              <div style={styles.contentStyle}>
+                <div style={styles.edgeRowStyle}>
+                  <div style={styles.sampleStyle}>{sample}</div>
+                  <span style={styles.labelStyle}>{optionName}</span>
                 </div>
               </div>
-            );
-            allBoxes.push(box);
-          },
-        );
-        groupNumber++;
+            </div>
+          );
+          allBoxes.push(box);
+        });
       },
     );
+
     return allBoxes;
   };
   // Helper function to generate visual sample from style settings
@@ -372,8 +226,25 @@ function EdgeStyleLegendInner({
           return null;
       }
     };
-    // Helper to build a gentle wavy path centered on y
-    const wavePathD = (y: number) => `M0,${y} Q10,${y - 3} 20,${y} T40,${y}`;
+    // Helper to build a wavy path using config parameters
+    const wavePathD = (y: number) => {
+      const edgeLength = 40; // SVG width
+      const { amplitude, frequency, baseWaveLength } = WAVY_EDGE_CONFIG;
+
+      // Calculate wavelength based on frequency
+      const wavelength = baseWaveLength / frequency;
+      const numWaves = edgeLength / wavelength;
+
+      // Build path with quadratic bezier curves
+      let path = `M0,${y}`;
+      for (let i = 0; i < numWaves; i++) {
+        const x1 = (i + 0.5) * wavelength;
+        const x2 = (i + 1) * wavelength;
+        const yOffset = i % 2 === 0 ? -amplitude : amplitude;
+        path += ` Q${x1},${y + yOffset} ${x2},${y}`;
+      }
+      return path;
+    };
     const isWavy = waviness === "wavy";
     if (lineStyle === "double") {
       // Render double lines with extra height to avoid stroke clipping
@@ -574,106 +445,7 @@ function EdgeStyleLegendInner({
       );
     }
   };
-  // Helper function to render boolean pair boxes
-  const renderBooleanPairBoxes = () => {
-    if (!edgeStyleConfig.booleanPropertyPairs) return null;
-    return edgeStyleConfig.booleanPropertyPairs.map((pairConfig, index) => {
-      const [defaultProp, altProp] = pairConfig.pair;
-      const defaultSample =
-        EDGE_STYLE_SAMPLES[
-          pairConfig.defaultStyle as keyof typeof EDGE_STYLE_SAMPLES
-        ];
-      const altSample =
-        EDGE_STYLE_SAMPLES[
-          pairConfig.altStyle as keyof typeof EDGE_STYLE_SAMPLES
-        ];
-      return (
-        <div key={`pair-${index}`} style={styles.pairBoxStyle}>
-          <div style={styles.numberStyle}>{index + 1}</div>
 
-          <div style={styles.contentStyle}>
-            <div style={styles.edgeRowStyle}>
-              <div style={styles.sampleStyle}>
-                {defaultSample || <span>—</span>}
-              </div>
-              <span style={styles.labelStyle}>{defaultProp}</span>
-            </div>
-
-            <div style={styles.edgeRowStyle}>
-              <div style={styles.sampleStyle}>
-                {altSample || <span>- -</span>}
-              </div>
-              <span style={styles.labelStyle}>{altProp}</span>
-            </div>
-          </div>
-        </div>
-      );
-    });
-  };
-  // Helper function to render single property boxes
-  const renderSinglePropertyBoxes = () => {
-    if (!edgeStyleConfig.singlePropertyMappings) return null;
-    return Object.entries(edgeStyleConfig.singlePropertyMappings).map(
-      ([property, styleTag], _index) => {
-        const sample =
-          EDGE_STYLE_SAMPLES[styleTag as keyof typeof EDGE_STYLE_SAMPLES];
-        const styleNumber = styleTag.replace("edge_style_", "");
-        return (
-          <div key={property} style={styles.pairBoxStyle}>
-            <div style={styles.numberStyle}>{styleNumber}</div>
-
-            <div style={styles.contentStyle}>
-              <div style={styles.edgeRowStyle}>
-                <div style={styles.sampleStyle}>{sample || <span>■</span>}</div>
-                <span style={styles.labelStyle}>{property}</span>
-              </div>
-            </div>
-          </div>
-        );
-      },
-    );
-  };
-  // Legacy support - render old format in simple boxes
-  const renderLegacyBoxes = () => {
-    if (!edgeStyleConfig.propertyMappings) return null;
-    return Object.entries(edgeStyleConfig.propertyMappings).map(
-      ([property, styleDefinition], index) => {
-        let sample;
-        let displayLabel = property;
-        // Handle both old string format and new object format
-        if (typeof styleDefinition === "string") {
-          sample =
-            EDGE_STYLE_SAMPLES[
-              styleDefinition as keyof typeof EDGE_STYLE_SAMPLES
-            ];
-        } else if (
-          typeof styleDefinition === "object" &&
-          styleDefinition !== null
-        ) {
-          const config = styleDefinition as {
-            styleTag?: string;
-          };
-          sample = config.styleTag
-            ? EDGE_STYLE_SAMPLES[
-                config.styleTag as keyof typeof EDGE_STYLE_SAMPLES
-              ]
-            : undefined;
-        }
-        // ...existing code...
-        return (
-          <div key={property} style={styles.pairBoxStyle}>
-            <div style={styles.numberStyle}>{index + 1}</div>
-            <div style={styles.contentStyle}>
-              <div style={styles.edgeRowStyle}>
-                <div style={styles.sampleStyle}>{sample}</div>
-                <span style={styles.labelStyle}>{displayLabel}</span>
-              </div>
-            </div>
-          </div>
-        );
-      },
-    );
-  };
   // Memoize sections to avoid re-computation on unrelated re-renders
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const semanticBoxes = useMemo(
@@ -681,24 +453,7 @@ function EdgeStyleLegendInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderSemanticMappingBoxes is stable
     [edgeStyleConfig?.semanticMappings, styles],
   );
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const booleanPairs = useMemo(
-    () => renderBooleanPairBoxes(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderBooleanPairBoxes is stable
-    [edgeStyleConfig?.booleanPropertyPairs, styles],
-  );
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const singleProps = useMemo(
-    () => renderSinglePropertyBoxes(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderSinglePropertyBoxes is stable
-    [edgeStyleConfig?.singlePropertyMappings, styles],
-  );
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const legacyBoxes = useMemo(
-    () => renderLegacyBoxes(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- renderLegacyBoxes is stable
-    [edgeStyleConfig?.propertyMappings, styles],
-  );
+
   return (
     <div className={`edge-style-legend ${className}`} style={legendStyle}>
       <div
@@ -712,17 +467,7 @@ function EdgeStyleLegendInner({
         Edge Styles
       </div>
 
-      {/* New semantic mappings system */}
       {semanticBoxes}
-
-      {/* Legacy boolean pair system */}
-      {booleanPairs}
-
-      {/* Single properties */}
-      {singleProps}
-
-      {/* Legacy support */}
-      {legacyBoxes}
     </div>
   );
 }
