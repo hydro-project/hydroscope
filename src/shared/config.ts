@@ -491,7 +491,7 @@ export const WAVY_EDGE_CONFIG = {
   frequency: 8, // Number of complete wave cycles per 60px of edge length
 
   // Wave smoothness parameters
-  pointsPerWave: 20, // Number of sample points per complete wave cycle (higher = smoother)
+  pointsPerWave: 40, // Number of sample points per complete wave cycle (higher = smoother)
   baseWaveLength: 60, // Base wavelength in pixels for frequency calculation
 
   // Minimum edge length for wavy rendering

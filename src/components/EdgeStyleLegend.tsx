@@ -229,19 +229,25 @@ function EdgeStyleLegendInner({
     // Helper to build a wavy path using config parameters
     const wavePathD = (y: number) => {
       const edgeLength = 40; // SVG width
-      const { amplitude, frequency, baseWaveLength } = WAVY_EDGE_CONFIG;
+      const { amplitude, frequency, baseWaveLength, pointsPerWave } =
+        WAVY_EDGE_CONFIG;
 
-      // Calculate wavelength based on frequency
-      const wavelength = baseWaveLength / frequency;
-      const numWaves = edgeLength / wavelength;
+      // Calculate total waves and sample points for smooth rendering
+      const totalWaves = (edgeLength / baseWaveLength) * frequency;
+      const totalPoints = Math.max(
+        pointsPerWave,
+        Math.ceil(totalWaves * pointsPerWave),
+      );
 
-      // Build path with quadratic bezier curves
+      // Build path with many small line segments for smooth curves
       let path = `M0,${y}`;
-      for (let i = 0; i < numWaves; i++) {
-        const x1 = (i + 0.5) * wavelength;
-        const x2 = (i + 1) * wavelength;
-        const yOffset = i % 2 === 0 ? -amplitude : amplitude;
-        path += ` Q${x1},${y + yOffset} ${x2},${y}`;
+      for (let i = 1; i <= totalPoints; i++) {
+        const t = i / totalPoints;
+        const x = edgeLength * t;
+        const wavePhase = t * totalWaves * 2 * Math.PI;
+        const offset = Math.sin(wavePhase) * amplitude;
+        const finalY = y + offset;
+        path += ` L${x.toFixed(2)},${finalY.toFixed(2)}`;
       }
       return path;
     };
@@ -274,6 +280,7 @@ function EdgeStyleLegendInner({
                     fill="none"
                     strokeDasharray={strokeDasharray}
                     strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                   <path
                     d={wavePathD(y2)}
@@ -282,6 +289,7 @@ function EdgeStyleLegendInner({
                     fill="none"
                     strokeDasharray={strokeDasharray}
                     strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </>
               ) : (
@@ -319,6 +327,7 @@ function EdgeStyleLegendInner({
                 fill="none"
                 strokeDasharray={strokeDasharray}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
               <path
                 d={wavePathD(y2)}
@@ -327,6 +336,7 @@ function EdgeStyleLegendInner({
                 fill="none"
                 strokeDasharray={strokeDasharray}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </>
           ) : (
@@ -397,6 +407,7 @@ function EdgeStyleLegendInner({
                 fill="none"
                 strokeDasharray={strokeDasharray}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             ) : (
               <line
@@ -418,6 +429,7 @@ function EdgeStyleLegendInner({
               fill="none"
               strokeDasharray={strokeDasharray}
               strokeLinecap="round"
+              strokeLinejoin="round"
             />
           ) : (
             <line
