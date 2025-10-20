@@ -7,7 +7,7 @@ import type { CSSProperties } from "react";
 import { WAVY_EDGE_CONFIG } from "../shared/config.js";
 
 export interface EdgeStyleData {
-  lineStyle?: "single" | "double";
+  lineStyle?: "single" | "hash-marks";
   waviness?: boolean;
   haloColor?: string;
   style?: CSSProperties;

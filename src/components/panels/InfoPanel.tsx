@@ -119,6 +119,7 @@ const InfoPanelInternal = forwardRef<
     const [legendCollapsed, setLegendCollapsed] = useState(true); // Start expanded so users can see it
     const [edgeStyleCollapsed, setEdgeStyleCollapsed] = useState(true);
     const [groupingCollapsed, setGroupingCollapsed] = useState(false);
+    const [hierarchyCollapsed, setHierarchyCollapsed] = useState(false);
     // Track update counter to force re-renders when visibility changes
     const [_updateCounter, setUpdateCounter] = useState(0);
     // Search state (containers-only to start)
@@ -177,7 +178,7 @@ const InfoPanelInternal = forwardRef<
           clearTimeout(suppressionTimer);
         }
       };
-    }, [legendCollapsed, groupingCollapsed, edgeStyleCollapsed, open]);
+    }, [legendCollapsed, groupingCollapsed, edgeStyleCollapsed, hierarchyCollapsed, open]);
     // Get default legend data if none provided
     const defaultLegendData: LegendData = {
       title: "Node Types",
@@ -317,6 +318,16 @@ const InfoPanelInternal = forwardRef<
       });
     };
 
+    const handleHierarchyToggle = () => {
+      togglePanelImperatively({
+        panelId: "hierarchy",
+        setState: setHierarchyCollapsed,
+        currentState: hierarchyCollapsed,
+        debounce: true,
+        debug: process.env.NODE_ENV === "development",
+      });
+    };
+
     // Batched panel operations for bulk actions
 
     const handleSearchNavigate = (
@@ -443,42 +454,46 @@ const InfoPanelInternal = forwardRef<
             paddingRight: 4,
           }}
         >
-          {/* Grouping & Hierarchy Section */}
-          {(safeHierarchyChoices.length > 0 || visualizationState) && (
+          {/* Grouping Controls Section */}
+          {safeHierarchyChoices.length > 0 && (
             <CollapsibleSection
               title="Grouping"
               isCollapsed={groupingCollapsed}
               onToggle={handleGroupingToggle}
             >
-              {/* Grouping Controls */}
-              {safeHierarchyChoices.length > 0 && (
-                <div
-                  style={{
-                    marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5,
-                  }}
-                >
-                  {/* 8px */}
-                  <GroupingControls
-                    hierarchyChoices={safeHierarchyChoices}
-                    currentGrouping={currentGrouping}
-                    onGroupingChange={onGroupingChange}
-                    compact={true}
-                  />
-                </div>
-              )}
-              {/* Search + Hierarchy Tree */}
-              {visualizationState && (
-                <div>
-                  {/* Control Buttons Row */}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {/* Sync Control Button */}
-                    <Button
+              <div
+                style={{
+                  marginBottom: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5,
+                }}
+              >
+                {/* 8px */}
+                <GroupingControls
+                  hierarchyChoices={safeHierarchyChoices}
+                  currentGrouping={currentGrouping}
+                  onGroupingChange={onGroupingChange}
+                  compact={true}
+                />
+              </div>
+            </CollapsibleSection>
+          )}
+          {/* Container Hierarchy Section */}
+          {visualizationState && (
+            <CollapsibleSection
+              title={`${currentGroupingName} Hierarchy`}
+              isCollapsed={hierarchyCollapsed}
+              onToggle={handleHierarchyToggle}
+            >
+                  <div>
+                    {/* Control Buttons Row */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      {/* Sync Control Button */}
+                      <Button
                       type="text"
                       size="small"
                       onClick={() =>
@@ -838,7 +853,6 @@ const InfoPanelInternal = forwardRef<
                     syncEnabled={syncTreeAndGraph}
                   />
                 </div>
-              )}
             </CollapsibleSection>
           )}
           {/* Edge Style Legend Section - Show whenever edgeStyleConfig exists */}

@@ -658,12 +658,24 @@ export function HierarchyTree({
   }, []);
   // Track if user is manually controlling the tree (when sync is disabled)
   const userControlledRef = useRef(false);
+  
+  // Track the previous derivedExpandedKeys to detect actual changes
+  const prevDerivedExpandedKeysRef = useRef<React.Key[]>([]);
 
   // Sync local expanded state based on sync mode
   useEffect(() => {
+    // Check if derivedExpandedKeys actually changed (not just reference)
+    const derivedKeysChanged = 
+      prevDerivedExpandedKeysRef.current.length !== derivedExpandedKeys.length ||
+      !derivedExpandedKeys.every((key) => prevDerivedExpandedKeysRef.current.includes(key));
+    
     if (syncEnabled) {
-      // When sync is enabled, always follow derivedExpandedKeys (graph drives tree)
-      setExpandedKeys(derivedExpandedKeys);
+      // When sync is enabled, only update if derivedExpandedKeys actually changed
+      // This prevents resetting user's manual tree collapses when parent re-renders
+      if (derivedKeysChanged) {
+        setExpandedKeys(derivedExpandedKeys);
+        prevDerivedExpandedKeysRef.current = derivedExpandedKeys;
+      }
       userControlledRef.current = false;
     } else {
       // When sync is disabled, only update for search operations or initial load
@@ -676,10 +688,12 @@ export function HierarchyTree({
       ) {
         // Search is active - update to show search results
         setExpandedKeys(derivedExpandedKeys);
+        prevDerivedExpandedKeysRef.current = derivedExpandedKeys;
         userControlledRef.current = false;
       } else if (!userControlledRef.current) {
         // Initial load when sync is disabled - set initial state
         setExpandedKeys(derivedExpandedKeys);
+        prevDerivedExpandedKeysRef.current = derivedExpandedKeys;
       }
       // Otherwise, don't touch expandedKeys - let user control tree independently
     }

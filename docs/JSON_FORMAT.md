@@ -202,25 +202,26 @@ Defines semantic mappings for edge styling based on tags.
 {
   "edgeStyleConfig": {
     "semanticMappings": {
-      "BoundednessGroup": {
-        "Bounded": { "line-width": 3 },
-        "Unbounded": { "line-width": 1 }
+      "NetworkGroup": {
+        "Local": { "line-pattern": "solid", "animation": "static" },
+        "Network": { "line-pattern": "dashed", "animation": "animated" }
       },
       "OrderingGroup": {
-        "TotalOrder": { "waviness": "none" },
+        "TotalOrder": { "waviness": "straight" },
         "NoOrder": { "waviness": "wavy" }
       },
-      "NetworkGroup": {
-        "Local": { "animation": "static", "line-pattern": "solid" },
-        "Network": { "animation": "animated", "line-pattern": "dotted" }
+      "BoundednessGroup": {
+        "Bounded": { "halo": "none" },
+        "Unbounded": { "halo": "light-blue" }
+      },
+      "KeyednessGroup": {
+        "NotKeyed": { "line-style": "single" },
+        "Keyed": { "line-style": "double" }
       },
       "CollectionGroup": {
-        "Stream": { "arrowhead": "triangle-filled", "line-style": "single" },
-        "Singleton": { "arrowhead": "circle-filled", "line-style": "single" }
-      },
-      "FlowGroup": {
-        "Linear": { "halo": "none" },
-        "Cycle": { "halo": "light-red" }
+        "Stream": { "color": "#2563eb", "arrowhead": "triangle-filled" },
+        "Singleton": { "color": "#000000", "arrowhead": "circle-filled" },
+        "Optional": { "color": "#6b7280", "arrowhead": "diamond-open" }
       }
     }
   }
@@ -229,13 +230,13 @@ Defines semantic mappings for edge styling based on tags.
 
 ### Supported Style Properties
 
-- **`line-width`**: Thickness of the edge (number)
-- **`line-pattern`**: "solid" or "dotted"
-- **`line-style`**: "single" or "double"
-- **`waviness`**: "none" or "wavy"
+- **`line-pattern`**: "solid" or "dashed"
+- **`line-style`**: "single" (plain line) or "hash-marks" (line with vertical hash marks for keyed streams)
+- **`waviness`**: "straight" or "wavy" (for ordering information)
 - **`animation`**: "static" or "animated"
 - **`arrowhead`**: "triangle-filled", "circle-filled", "diamond-open"
-- **`halo`**: "none", "light-red", or other color names
+- **`halo`**: "none", "light-blue" (transparent halo for unbounded streams)
+- **`color`**: Hex color code for the edge (e.g., "#001f3f" for navy blue)
 
 ## Legend Configuration
 

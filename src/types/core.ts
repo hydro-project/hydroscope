@@ -259,7 +259,7 @@ export interface ReactFlowEdge {
 export interface ReactFlowEdgeData {
   semanticTags?: string[];
   appliedSemanticTags?: string[];
-  lineStyle?: "single" | "double";
+  lineStyle?: "single" | "hash-marks";
   originalEdge?: GraphEdge;
   originalEdgeIds?: string[];
   aggregationSource?: string;

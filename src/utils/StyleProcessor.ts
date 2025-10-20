@@ -9,9 +9,10 @@ import type { StyleConfig } from "../types/core.js";
 // Visual channels supported by the style processor
 export const VISUAL_CHANNELS = {
   "line-pattern": ["solid", "dashed", "dotted", "dash-dot"],
-  "line-width": [1, 2, 3, 4],
+  "line-width": [2, 3, 4, 5],
   animation: ["static", "animated"],
-  "line-style": ["single", "double"],
+  "line-style": ["single", "double", "hash-marks"],
+  color: [], // Edge stroke color - values are hex codes from semantic mappings
   halo: ["none", "light-blue", "light-red", "light-green"],
   arrowhead: [
     "none",
@@ -25,7 +26,7 @@ export const VISUAL_CHANNELS = {
 // Default style values
 export const DEFAULT_STYLE = {
   STROKE_COLOR: "#666666",
-  STROKE_WIDTH: 2,
+  STROKE_WIDTH: 3,
   DEFAULT_STROKE_COLOR: "#999999", // For elements with no semantic tags
 } as const;
 // Halo color mappings
@@ -40,7 +41,7 @@ export interface ProcessedStyle {
   label?: string;
   appliedTags: string[];
   markerEnd?: string | object;
-  lineStyle?: "single" | "double";
+  lineStyle?: "single" | "hash-marks";
   waviness?: boolean;
 }
 /**
@@ -316,7 +317,7 @@ function convertStyleSettingsToVisual(
   let style: CSSProperties & Record<string, unknown> = {};
   let animated = false;
   let markerEnd: string | object | undefined = undefined;
-  let lineStyle: "single" | "double" = "single";
+  let lineStyle: "single" | "hash-marks" = "single";
   let waviness = false;
   // Apply line-pattern
   const linePattern = styleSettings["line-pattern"] as string;
@@ -341,6 +342,13 @@ function convertStyleSettingsToVisual(
   if (lineWidth) {
     style.strokeWidth = lineWidth;
   }
+  
+  // Apply color (for edge stroke color)
+  const color = styleSettings["color"] as string;
+  if (color) {
+    style.stroke = color;
+  }
+  
   // Apply animation
   const animation = styleSettings["animation"] as string;
   if (animation === "animated") {
@@ -348,10 +356,10 @@ function convertStyleSettingsToVisual(
   }
   // Apply line-style
   const lineStyleSetting = styleSettings["line-style"] as string;
-  if (lineStyleSetting === "double") {
-    lineStyle = "double";
-    // Double-line rendering is now handled by CustomEdge component
-    // which renders two parallel solid lines
+  if (lineStyleSetting === "hash-marks") {
+    lineStyle = "hash-marks";
+    // Hash marks rendering is handled by CustomEdge component
+    // which renders vertical tick marks along the edge for keyed streams
   }
 
   // Apply waviness (can be boolean true or string "wavy")

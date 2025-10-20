@@ -17,6 +17,7 @@ import type { IELKBridge } from "../types/bridges.js";
 import {
   SIZES,
   LAYOUT_CONSTANTS,
+  LAYOUT_SPACING,
   DEFAULT_ELK_ALGORITHM,
   DEFAULT_LAYOUT_CONFIG,
 } from "../shared/config.js";
@@ -32,10 +33,10 @@ export class ELKBridge implements IELKBridge {
       algorithm: layoutConfig.algorithm || DEFAULT_ELK_ALGORITHM,
       direction: layoutConfig.direction || "DOWN",
       spacing: layoutConfig.spacing,
-      nodeSpacing: layoutConfig.nodeSpacing ?? 20,
-      layerSpacing: layoutConfig.layerSpacing ?? 25,
-      edgeSpacing: layoutConfig.edgeSpacing ?? 10,
-      portSpacing: layoutConfig.portSpacing ?? 10,
+      nodeSpacing: layoutConfig.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
+      layerSpacing: layoutConfig.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
+      edgeSpacing: layoutConfig.edgeSpacing ?? LAYOUT_SPACING.EDGE_EDGE,
+      portSpacing: layoutConfig.portSpacing ?? LAYOUT_SPACING.NODE_EDGE,
       separateConnectedComponents:
         layoutConfig.separateConnectedComponents ?? true,
       mergeEdges: layoutConfig.mergeEdges ?? false,
@@ -671,21 +672,25 @@ export class ELKBridge implements IELKBridge {
         ? config.spacing
         : config.nodeSpacing !== undefined
           ? config.nodeSpacing
-          : 50
+          : LAYOUT_SPACING.NODE_TO_NODE_NORMAL
       ).toString(),
-      "elk.spacing.edgeNode": (config.edgeSpacing || 10).toString(),
-      "elk.spacing.edgeEdge": (config.edgeSpacing || 10).toString(),
+      "elk.spacing.edgeNode": (config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE).toString(),
+      "elk.spacing.edgeEdge": (config.edgeSpacing || LAYOUT_SPACING.EDGE_EDGE).toString(),
       "elk.layered.spacing.nodeNodeBetweenLayers": (
-        config.layerSpacing || 25
+        config.layerSpacing || LAYOUT_SPACING.NODE_TO_NODE_NORMAL
       ).toString(),
-      "elk.spacing.portPort": (config.portSpacing || 10).toString(),
+      "elk.layered.spacing.edgeNodeBetweenLayers": (
+        config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE
+      ).toString(),
+      "elk.spacing.portPort": (config.portSpacing || LAYOUT_SPACING.NODE_EDGE).toString(),
+      "elk.spacing.componentComponent": LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
     };
     // Add performance optimizations
     if (config.separateConnectedComponents) {
       options["elk.separateConnectedComponents"] = "true";
     }
     if (config.compactLayout) {
-      options["elk.spacing.componentComponent"] = "20";
+      // Don't override componentComponent spacing - use the value set above
       options["elk.layered.compaction.postCompaction.strategy"] = "EDGE_LENGTH";
     }
     if (config.hierarchicalLayout) {
@@ -754,7 +759,7 @@ export class ELKBridge implements IELKBridge {
     const options: Record<string, any> = {};
     // Container-specific layout options
     // Use configured container padding to create proper visual separation between nested levels
-    const padding = config.containerPadding ?? 20; // Use nullish coalescing to respect 0 values
+    const padding = config.containerPadding ?? LAYOUT_SPACING.CONTAINER_PADDING;
     // Add extra bottom padding to accommodate container labels
     const bottomPadding =
       padding +
@@ -762,6 +767,13 @@ export class ELKBridge implements IELKBridge {
       LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING;
     options["elk.padding"] =
       `[top=${padding},left=${padding},bottom=${bottomPadding},right=${padding}]`;
+    
+    // Set spacing for nodes INSIDE the container
+    options["elk.spacing.nodeNode"] = (config.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL).toString();
+    options["elk.layered.spacing.nodeNodeBetweenLayers"] = (config.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL).toString();
+    options["elk.spacing.edgeNode"] = (config.edgeSpacing ?? LAYOUT_SPACING.NODE_EDGE).toString();
+    options["elk.spacing.edgeEdge"] = (config.edgeSpacing ?? LAYOUT_SPACING.EDGE_EDGE).toString();
+    
     if (config.hierarchicalLayout) {
       options["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
     }

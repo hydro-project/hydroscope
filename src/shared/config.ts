@@ -528,26 +528,26 @@ export const DEFAULT_LAYOUT_CONFIG = {
   nodeSize: { width: 180, height: 60 },
 } as const;
 export const LAYOUT_SPACING = {
-  // Updated to match working Visualizer spacing values
-  NODE_NODE: 75, // Increased for better node separation
-  NODE_EDGE: 10, // Keep edge spacing tight
-  EDGE_EDGE: 10, // Keep edge spacing tight
-  NODE_TO_NODE_NORMAL: 75, // Match Visualizer: better readability
-  EDGE_TO_EDGE: 10, // Keep edge spacing tight
-  EDGE_TO_NODE: 0, // Match Visualizer: no extra edge-node gap
-  COMPONENT_TO_COMPONENT: 60, // Match Visualizer: better component separation
-  ROOT_PADDING: 20, // Keep root padding minimal
-  CONTAINER_PADDING: 60, // Match Visualizer: proper breathing room in containers
+  // Updated spacing values (1.25x increase for better visibility)
+  NODE_NODE: 94, // Increased for better node separation (75 * 1.25)
+  NODE_EDGE: 13, // Edge spacing (10 * 1.25, rounded)
+  EDGE_EDGE: 13, // Edge spacing (10 * 1.25, rounded)
+  NODE_TO_NODE_NORMAL: 94, // Better readability (75 * 1.25)
+  EDGE_TO_EDGE: 13, // Edge spacing (10 * 1.25, rounded)
+  EDGE_TO_NODE: 0, // No extra edge-node gap
+  COMPONENT_TO_COMPONENT: 75, // Better component separation (60 * 1.25)
+  ROOT_PADDING: 25, // Root padding (20 * 1.25)
+  CONTAINER_PADDING: 75, // Proper breathing room in containers (60 * 1.25)
 };
 export const ELK_LAYOUT_OPTIONS = {
   "elk.algorithm": DEFAULT_ELK_ALGORITHM,
   "elk.direction": "DOWN",
   "elk.spacing.nodeNode": LAYOUT_SPACING.NODE_TO_NODE_NORMAL.toString(),
-  "elk.spacing.edgeNode": LAYOUT_SPACING.EDGE_TO_NODE.toString(),
-  "elk.spacing.edgeEdge": LAYOUT_SPACING.EDGE_TO_EDGE.toString(),
+  "elk.spacing.edgeNode": LAYOUT_SPACING.NODE_EDGE.toString(),
+  "elk.spacing.edgeEdge": LAYOUT_SPACING.EDGE_EDGE.toString(),
   "elk.spacing.componentComponent":
     LAYOUT_SPACING.COMPONENT_TO_COMPONENT.toString(),
-  "elk.layered.spacing.nodeNodeBetweenLayers": "50", // Match Visualizer layer separation
+  "elk.layered.spacing.nodeNodeBetweenLayers": "94", // Layer separation (75 * 1.25)
   "elk.edgeRouting": "ORTHOGONAL", // less edge overlap
   "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX", // stagger nodes
   "elk.nodeSize.options": "DEFAULT_MINIMUM_SIZE", // Respect our specified dimensions

@@ -1656,29 +1656,29 @@ const HydroscopeCoreInternal = forwardRef<
       () => ({
         collapseContainers: readOnly
           ? async () =>
-              console.warn(
-                "[HydroscopeCore] collapseContainers disabled in readOnly mode",
-              )
+            console.warn(
+              "[HydroscopeCore] collapseContainers disabled in readOnly mode",
+            )
           : handleCollapseAll,
         expandContainers: readOnly
           ? async () =>
-              console.warn(
-                "[HydroscopeCore] expandContainers disabled in readOnly mode",
-              )
+            console.warn(
+              "[HydroscopeCore] expandContainers disabled in readOnly mode",
+            )
           : handleExpandAll,
         collapse: readOnly
           ? async () =>
-              console.warn(
-                "[HydroscopeCore] collapse disabled in readOnly mode",
-              )
+            console.warn(
+              "[HydroscopeCore] collapse disabled in readOnly mode",
+            )
           : handleCollapse,
         expand: readOnly
           ? async () =>
-              console.warn("[HydroscopeCore] expand disabled in readOnly mode")
+            console.warn("[HydroscopeCore] expand disabled in readOnly mode")
           : handleExpand,
         toggle: readOnly
           ? async () =>
-              console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
+            console.warn("[HydroscopeCore] toggle disabled in readOnly mode")
           : handleToggle,
         fitView: () => {
           if (reactFlowInstance) {
@@ -1691,9 +1691,9 @@ const HydroscopeCoreInternal = forwardRef<
         },
         navigateToElement: readOnly
           ? async () =>
-              console.warn(
-                "[HydroscopeCore] navigateToElement disabled in readOnly mode",
-              )
+            console.warn(
+              "[HydroscopeCore] navigateToElement disabled in readOnly mode",
+            )
           : handleNavigateToElement,
         updateRenderConfig: handleRenderConfigUpdate,
         getAsyncCoordinator: () => state.asyncCoordinator,
@@ -2260,8 +2260,8 @@ const HydroscopeCoreInternal = forwardRef<
               readOnly
                 ? undefined
                 : () => {
-                    // Pane clicked
-                  }
+                  // Pane clicked
+                }
             }
             nodesDraggable={!readOnly}
             nodesConnectable={!readOnly}

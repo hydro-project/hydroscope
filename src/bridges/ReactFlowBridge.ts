@@ -1047,33 +1047,25 @@ export class ReactFlowBridge implements IReactFlowBridge {
     semanticStyle: Record<string, string | number>,
     edgeStyle?: Record<string, string | number>,
   ): Record<string, string | number> {
-    // Fast path: if all styles are empty, return empty object
-    if (
-      Object.keys(typeStyle).length === 0 &&
-      Object.keys(semanticStyle).length === 0 &&
-      (!edgeStyle || Object.keys(edgeStyle).length === 0)
-    ) {
-      return {};
-    }
-
     // Create result object and merge known properties explicitly
     const result: Record<string, string | number> = {};
 
-    // Common edge style properties (in priority order: edge > semantic > type)
+    // Common edge style properties (in priority order: edge > semantic > type > default)
     const stroke =
-      edgeStyle?.stroke ?? semanticStyle.stroke ?? typeStyle.stroke;
+      edgeStyle?.stroke ?? semanticStyle.stroke ?? typeStyle.stroke ?? DEFAULT_STYLE.STROKE_COLOR;
     const strokeWidth =
       edgeStyle?.strokeWidth ??
       semanticStyle.strokeWidth ??
-      typeStyle.strokeWidth;
+      typeStyle.strokeWidth ??
+      DEFAULT_STYLE.STROKE_WIDTH;
     const strokeDasharray =
       edgeStyle?.strokeDasharray ??
       semanticStyle.strokeDasharray ??
       typeStyle.strokeDasharray;
 
-    // Only set properties that have values
-    if (stroke !== undefined) result.stroke = stroke;
-    if (strokeWidth !== undefined) result.strokeWidth = strokeWidth;
+    // Always set stroke and strokeWidth (with defaults)
+    result.stroke = stroke;
+    result.strokeWidth = strokeWidth;
     if (strokeDasharray !== undefined) result.strokeDasharray = strokeDasharray;
 
     // Handle any other properties that might exist (fallback to spreading for unknown props)

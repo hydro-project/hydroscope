@@ -252,14 +252,28 @@ function EdgeStyleLegendInner({
       return path;
     };
     const isWavy = waviness === "wavy";
-    if (lineStyle === "double") {
-      // Render double lines with extra height to avoid stroke clipping
-      const height = Math.max(10, lineWidth + 6);
-      // Keep a minimum separation of 2px between double lines
+    if (lineStyle === "hash-marks") {
+      // Render line with hash marks
+      const height = Math.max(10, lineWidth + 8);
       const mid = Math.round(height / 2);
-      const sep = Math.max(2, Math.round(lineWidth / 2));
-      const y1 = mid - sep;
-      const y2 = mid + sep;
+
+      // Generate hash marks for legend (every 8px)
+      const hashMarks = [];
+      for (let x = 8; x < 40; x += 8) {
+        hashMarks.push(
+          <line
+            key={x}
+            x1={x}
+            y1={mid - 3}
+            x2={x}
+            y2={mid + 3}
+            stroke="#4a5568"
+            strokeWidth={lineWidth}
+            strokeLinecap="round"
+          />,
+        );
+      }
+
       return (
         <svg
           width="40"
@@ -268,121 +282,43 @@ function EdgeStyleLegendInner({
           style={{ overflow: "visible" }}
         >
           {/* approximate head marker in legend */}
-          {renderHeadMarker(34, y1, "#4a5568")}
+          {renderHeadMarker(34, mid, "#4a5568")}
+          {/* Halo if present */}
           {haloColor && (
-            <>
-              {isWavy ? (
-                <>
-                  <path
-                    d={wavePathD(y1)}
-                    stroke={haloColor}
-                    strokeWidth={lineWidth + 4}
-                    fill="none"
-                    strokeDasharray={strokeDasharray}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={wavePathD(y2)}
-                    stroke={haloColor}
-                    strokeWidth={lineWidth + 4}
-                    fill="none"
-                    strokeDasharray={strokeDasharray}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </>
-              ) : (
-                <>
-                  <line
-                    x1="0"
-                    y1={y1}
-                    x2="40"
-                    y2={y1}
-                    stroke={haloColor}
-                    strokeWidth={lineWidth + 4}
-                    strokeDasharray={strokeDasharray}
-                    strokeLinecap="round"
-                  />
-                  <line
-                    x1="0"
-                    y1={y2}
-                    x2="40"
-                    y2={y2}
-                    stroke={haloColor}
-                    strokeWidth={lineWidth + 4}
-                    strokeDasharray={strokeDasharray}
-                    strokeLinecap="round"
-                  />
-                </>
-              )}
-            </>
+            <line
+              x1="0"
+              y1={mid}
+              x2="40"
+              y2={mid}
+              stroke={haloColor}
+              strokeWidth={lineWidth + 4}
+              strokeDasharray={strokeDasharray}
+              strokeLinecap="round"
+            />
           )}
-          {isWavy ? (
-            <>
-              <path
-                d={wavePathD(y1)}
-                stroke="#4a5568"
-                strokeWidth={lineWidth}
-                fill="none"
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          {/* Main line */}
+          <line
+            x1="0"
+            y1={mid}
+            x2="40"
+            y2={mid}
+            stroke="#4a5568"
+            strokeWidth={lineWidth}
+            strokeDasharray={strokeDasharray}
+            strokeLinecap="round"
+          >
+            {animation === "animated" && (
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="0,0;5,0;0,0"
+                dur="1s"
+                repeatCount="indefinite"
               />
-              <path
-                d={wavePathD(y2)}
-                stroke="#4a5568"
-                strokeWidth={lineWidth}
-                fill="none"
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </>
-          ) : (
-            <>
-              <line
-                x1="0"
-                y1={y1}
-                x2="40"
-                y2={y1}
-                stroke="#4a5568"
-                strokeWidth={lineWidth}
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-              >
-                {animation === "animated" && (
-                  <animateTransform
-                    attributeName="transform"
-                    type="translate"
-                    values="0,0;5,0;0,0"
-                    dur="1s"
-                    repeatCount="indefinite"
-                  />
-                )}
-              </line>
-              <line
-                x1="0"
-                y1={y2}
-                x2="40"
-                y2={y2}
-                stroke="#4a5568"
-                strokeWidth={lineWidth}
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-              >
-                {animation === "animated" && (
-                  <animateTransform
-                    attributeName="transform"
-                    type="translate"
-                    values="0,0;5,0;0,0"
-                    dur="1s"
-                    repeatCount="indefinite"
-                  />
-                )}
-              </line>
-            </>
-          )}
+            )}
+          </line>
+          {/* Hash marks */}
+          {hashMarks}
         </svg>
       );
     } else {

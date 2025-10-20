@@ -1,5 +1,6 @@
 import { BaseEdge, EdgeProps, getStraightPath } from "@xyflow/react";
 import { memo } from "react";
+import { generateHashMarks } from "./edgeStyleUtils.js";
 
 /**
  * Generate a wavy path using SVG path commands
@@ -64,12 +65,12 @@ function getWavyPath(params: {
 }
 
 /**
- * Custom edge component supporting double lines and wavy paths
+ * Custom edge component supporting hash marks and wavy paths
  *
  * Features:
- * - Double-line rendering for keyed streams (lineStyle: "double")
- * - Wavy path rendering for cycles (waviness: true)
- * - Combination of both (double wavy lines)
+ * - Hash marks rendering for keyed streams (lineStyle: "hash-marks")
+ * - Wavy path rendering for unordered streams (waviness: true)
+ * - Combination of both (wavy lines with hash marks)
  */
 export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
   const { sourceX, sourceY, targetX, targetY, markerEnd, style, data } = props;
@@ -78,7 +79,7 @@ export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
   const lineStyle = (data as any)?.lineStyle;
   const waviness = (data as any)?.waviness;
 
-  const isDouble = lineStyle === "double";
+  const hasHashMarks = lineStyle === "hash-marks";
   const isWavy = waviness === true;
 
   // Generate edge path (wavy or straight)
@@ -100,38 +101,38 @@ export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
   const { stroke, strokeWidth, strokeDasharray } = style || {};
 
   // Single line rendering (default case)
-  if (!isDouble) {
+  if (!hasHashMarks) {
     return <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />;
   }
 
-  // Double line rendering - calculate perpendicular offset
-  // For parallel lines, we need to offset perpendicular to the edge direction
-  const dx = targetX - sourceX;
-  const dy = targetY - sourceY;
-  const length = Math.sqrt(dx * dx + dy * dy);
-
-  // Calculate perpendicular offset vector (2px offset for each line)
-  const offset = 2;
-  const perpX = (-dy / length) * offset;
-  const perpY = (dx / length) * offset;
-
+  // Hash marks rendering - vertical tick marks along the edge
   const pathStyle = {
-    stroke: stroke || "#b1b1b7",
-    strokeWidth: strokeWidth || 1,
+    stroke: stroke || "#666666",
+    strokeWidth: strokeWidth || 3,
     strokeDasharray,
     fill: "none",
   };
 
+  // Generate positions for circles along the path
+  const circleSpacing = 20; // pixels between circles
+  const circleRadius = 3; // radius of each circle
+  const hashMarks = generateHashMarks(edgePath, circleSpacing, 0); // Use 0 for length since we just need positions
+
   return (
     <g>
-      {/* First line with arrow marker - offset one direction */}
-      <g transform={`translate(${perpX}, ${perpY})`}>
-        <path d={edgePath} style={pathStyle} markerEnd={markerEnd} />
-      </g>
-      {/* Second line - offset opposite direction */}
-      <g transform={`translate(${-perpX}, ${-perpY})`}>
-        <path d={edgePath} style={pathStyle} />
-      </g>
+      {/* Main edge path with arrow marker */}
+      <path d={edgePath} style={pathStyle} markerEnd={markerEnd} />
+      {/* Filled circles instead of hash marks */}
+      {hashMarks.map((mark, i) => (
+        <circle
+          key={i}
+          cx={(mark.x1 + mark.x2) / 2}
+          cy={(mark.y1 + mark.y2) / 2}
+          r={circleRadius}
+          fill={pathStyle.stroke}
+          stroke="none"
+        />
+      ))}
     </g>
   );
 });
