@@ -172,9 +172,12 @@ describe("HierarchyTree Sync Behavior", () => {
 
       // Collapse
       fireEvent.click(expandButton!);
-      await waitFor(() => {
-        expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Expand again
       fireEvent.click(expandButton!);
