@@ -253,23 +253,22 @@ function EdgeStyleLegendInner({
     };
     const isWavy = waviness === "wavy";
     if (lineStyle === "hash-marks") {
-      // Render line with hash marks
+      // Render line with circles (matching CustomEdge implementation)
       const height = Math.max(10, lineWidth + 8);
       const mid = Math.round(height / 2);
+      const circleRadius = 3;
 
-      // Generate hash marks for legend (every 8px)
-      const hashMarks = [];
+      // Generate circles for legend (every 8px, matching CustomEdge spacing)
+      const circles = [];
       for (let x = 8; x < 40; x += 8) {
-        hashMarks.push(
-          <line
+        circles.push(
+          <circle
             key={x}
-            x1={x}
-            y1={mid - 3}
-            x2={x}
-            y2={mid + 3}
-            stroke="#4a5568"
-            strokeWidth={lineWidth}
-            strokeLinecap="round"
+            cx={x}
+            cy={mid}
+            r={circleRadius}
+            fill="#4a5568"
+            stroke="none"
           />,
         );
       }
@@ -317,8 +316,8 @@ function EdgeStyleLegendInner({
               />
             )}
           </line>
-          {/* Hash marks */}
-          {hashMarks}
+          {/* Filled circles instead of hash marks */}
+          {circles}
         </svg>
       );
     } else {

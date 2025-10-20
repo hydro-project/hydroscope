@@ -1,6 +1,6 @@
 {
   "name": "@hydro-project/hydroscope",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "React-based graph visualization library for Hydro dataflow programs",
   "keywords": [
     "hydro",

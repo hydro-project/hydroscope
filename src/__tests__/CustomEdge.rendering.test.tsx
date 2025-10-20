@@ -173,9 +173,16 @@ describe("CustomEdge Rendering", () => {
       </ReactFlowProvider>,
     );
 
-    // This edge should render as double (2 paths)
+    // Hash marks should render with circles, not double lines
     const paths = container.querySelectorAll("path");
+    const circles = container.querySelectorAll("circle");
     console.log("Edge e2 - paths found:", paths.length);
-    expect(paths.length).toBe(2);
+    console.log("Edge e2 - circles found:", circles.length);
+
+    // Should have one main path
+    expect(paths.length).toBe(1);
+
+    // Should have circles for hash marks
+    expect(circles.length).toBeGreaterThan(0);
   });
 });

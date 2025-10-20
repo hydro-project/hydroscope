@@ -223,7 +223,7 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
         semanticMappings: {
           StyleGroup: {
             Single: { "line-style": "single" },
-            Double: { "line-style": "double" },
+            HashMarks: { "line-style": "hash-marks" },
           },
         },
       };
@@ -235,9 +235,13 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
       const svgs = container.querySelectorAll("svg");
       expect(svgs.length).toBe(2);
 
-      // Hash marks should have circles
+      // Hash marks should have circles (matching CustomEdge implementation)
+      const circles = container.querySelectorAll("circle");
+      expect(circles.length).toBeGreaterThan(0); // At least some circles for hash marks
+
+      // Should still have lines for the main edge path
       const lines = container.querySelectorAll("line");
-      expect(lines.length).toBeGreaterThan(0); // At least 1 for hash marks
+      expect(lines.length).toBeGreaterThan(0);
     });
 
     it("should generate SVG samples for wavy edges", () => {
