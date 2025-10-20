@@ -75,6 +75,10 @@ export class AsyncCoordinator {
   // Post-render callback queue - executed after React renders new nodes
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
 
+  // Node measurement tracking - ensures fitView waits for all nodes to be measured
+  private expectedNodeMeasurements: Set<string> = new Set();
+  private receivedNodeMeasurements: Set<string> = new Set();
+
   // Callbacks for tracking container expansion lifecycle
   private onContainerExpansionStart?: (containerId: string) => void;
   private onContainerExpansionComplete?: (containerId: string) => void;
@@ -293,6 +297,98 @@ export class AsyncCoordinator {
    */
   clearPendingFitViewCallbacks(): void {
     this.postRenderCallbacks = [];
+  }
+
+  /**
+   * Set the expected nodes that need to be measured before fitView can execute
+   * This ensures fitView waits for ALL nodes to be measured, not just the first one
+   */
+  setExpectedNodeMeasurements(nodeIds: string[]): void {
+    this.expectedNodeMeasurements = new Set(nodeIds);
+    this.receivedNodeMeasurements = new Set();
+    hscopeLogger.log(
+      "coordinator",
+      `[AsyncCoordinator] 📏 Expecting measurements for ${nodeIds.length} nodes`,
+    );
+  }
+
+  /**
+   * Notify that a node has been measured
+   * Returns true if all expected nodes have been measured
+   */
+  notifyNodeMeasured(nodeId: string): boolean {
+    if (this.expectedNodeMeasurements.size === 0) {
+      // No measurement tracking active
+      return true;
+    }
+
+    this.receivedNodeMeasurements.add(nodeId);
+
+    const allMeasured =
+      this.receivedNodeMeasurements.size >= this.expectedNodeMeasurements.size;
+
+    if (allMeasured) {
+      hscopeLogger.log(
+        "coordinator",
+        `[AsyncCoordinator] ✅ All ${this.expectedNodeMeasurements.size} nodes measured`,
+      );
+      // Clear tracking
+      this.expectedNodeMeasurements.clear();
+      this.receivedNodeMeasurements.clear();
+    } else {
+      hscopeLogger.log(
+        "coordinator",
+        `[AsyncCoordinator] 📏 Node measured: ${nodeId} (${this.receivedNodeMeasurements.size}/${this.expectedNodeMeasurements.size})`,
+      );
+    }
+
+    return allMeasured;
+  }
+
+  /**
+   * Notify that multiple nodes have been measured (batch processing)
+   * Returns true if all expected nodes have been measured
+   */
+  notifyNodesMeasured(nodeIds: string[]): boolean {
+    if (this.expectedNodeMeasurements.size === 0) {
+      // No measurement tracking active
+      return true;
+    }
+
+    // Add all measured nodes
+    for (const nodeId of nodeIds) {
+      this.receivedNodeMeasurements.add(nodeId);
+    }
+
+    const allMeasured =
+      this.receivedNodeMeasurements.size >= this.expectedNodeMeasurements.size;
+
+    hscopeLogger.log(
+      "coordinator",
+      `[AsyncCoordinator] 📏 Batch measured: ${nodeIds.length} nodes (${this.receivedNodeMeasurements.size}/${this.expectedNodeMeasurements.size})`,
+    );
+
+    if (allMeasured) {
+      hscopeLogger.log(
+        "coordinator",
+        `[AsyncCoordinator] ✅ All ${this.expectedNodeMeasurements.size} nodes measured`,
+      );
+      // Clear tracking
+      this.expectedNodeMeasurements.clear();
+      this.receivedNodeMeasurements.clear();
+    }
+
+    return allMeasured;
+  }
+
+  /**
+   * Check if we're waiting for node measurements
+   */
+  isWaitingForMeasurements(): boolean {
+    return (
+      this.expectedNodeMeasurements.size > 0 &&
+      this.receivedNodeMeasurements.size < this.expectedNodeMeasurements.size
+    );
   }
 
   /**
@@ -591,7 +687,7 @@ export class AsyncCoordinator {
   getQueueLength(): number {
     return this.queue.length;
   }
-  
+
   /**
    * Get detailed queue information for debugging
    */
@@ -601,16 +697,18 @@ export class AsyncCoordinator {
     processing: boolean;
   } {
     return {
-      queue: this.queue.map(op => ({
+      queue: this.queue.map((op) => ({
         id: op.id,
         type: op.type,
         createdAt: op.createdAt,
       })),
-      currentOperation: this.currentOperation ? {
-        id: this.currentOperation.id,
-        type: this.currentOperation.type,
-        startedAt: this.currentOperation.startedAt,
-      } : null,
+      currentOperation: this.currentOperation
+        ? {
+            id: this.currentOperation.id,
+            type: this.currentOperation.type,
+            startedAt: this.currentOperation.startedAt,
+          }
+        : null,
       processing: this.processing,
     };
   }
@@ -1326,13 +1424,28 @@ export class AsyncCoordinator {
 
         // If fitView is requested, enqueue it to execute AFTER React renders
         if (options.fitView) {
+          console.log(
+            "[AsyncCoordinator] 🎯 fitView requested, checking if should execute",
+          );
           const fitViewCheck = this._shouldExecuteFitView(
             options.fitViewOptions,
             reactFlowData,
           );
 
           if (fitViewCheck.shouldExecute) {
+            console.log(
+              "[AsyncCoordinator] ✅ Enqueueing fitView callback for post-render execution",
+            );
+
+            // Set expected node measurements BEFORE enqueueing fitView
+            // This ensures fitView will only execute after ALL nodes are measured
+            const nodeIds = reactFlowData.nodes.map((n: any) => n.id);
+            this.setExpectedNodeMeasurements(nodeIds);
+
             this.enqueuePostRenderCallback(() => {
+              console.log(
+                "[AsyncCoordinator] 🎯 EXECUTING fitView callback NOW",
+              );
               if (!this.reactFlowInstance) {
                 console.warn(
                   "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
@@ -1346,40 +1459,62 @@ export class AsyncCoordinator {
                 includeHiddenNodes: false,
               };
 
-              hscopeLogger.log(
-                "coordinator",
-                "[AsyncCoordinator] 🎯 Executing post-render fitView",
+              console.log(
+                "[AsyncCoordinator] 🎯 Calling reactFlowInstance.fitView with:",
                 fitViewOptions,
               );
+
+              // Log current viewport and node info for debugging
+              if (this.reactFlowInstance) {
+                const viewport = this.reactFlowInstance.getViewport();
+                const nodes = this.reactFlowInstance.getNodes();
+                console.log(
+                  "[AsyncCoordinator] 📊 Current viewport:",
+                  viewport,
+                );
+                console.log("[AsyncCoordinator] 📊 Node count:", nodes.length);
+                console.log(
+                  "[AsyncCoordinator] 📊 First 3 nodes:",
+                  nodes.slice(0, 3).map((n: any) => ({
+                    id: n.id,
+                    position: n.position,
+                    width: n.width,
+                    height: n.height,
+                    measured: n.measured,
+                  })),
+                );
+              }
+
               if (
                 this.reactFlowInstance &&
                 typeof this.reactFlowInstance.fitView === "function"
               ) {
                 this.reactFlowInstance.fitView(fitViewOptions);
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] ✅ FitView completed",
+                console.log("[AsyncCoordinator] ✅ FitView called");
+
+                // Log viewport after fitView
+                const newViewport = this.reactFlowInstance.getViewport();
+                console.log(
+                  "[AsyncCoordinator] 📊 Viewport after fitView:",
+                  newViewport,
                 );
               } else {
-                hscopeLogger.log(
-                  "coordinator",
+                console.log(
                   "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
                 );
               }
             });
-            hscopeLogger.log(
-              "coordinator",
-              "[AsyncCoordinator] ✅ FitView enqueued for post-render execution",
+            console.log(
+              "[AsyncCoordinator] ✅ FitView callback enqueued, pending callbacks:",
+              this.postRenderCallbacks.length,
             );
           } else {
-            hscopeLogger.log(
-              "coordinator",
-              "[AsyncCoordinator] ⏭️ Skipping FitView execution",
-              {
-                reason: fitViewCheck.skipReason,
-              },
-            );
+            console.log("[AsyncCoordinator] ⏭️ Skipping FitView execution", {
+              reason: fitViewCheck.skipReason,
+            });
           }
+        } else {
+          console.log("[AsyncCoordinator] ⏭️ fitView NOT requested in options");
         }
       } else if (this.onReactFlowDataUpdate) {
         // Fallback to callback for backward compatibility
@@ -2552,6 +2687,7 @@ export class AsyncCoordinator {
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
+          isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
         },
     options: {
       relayoutEntities?: string[]; // Layout control
@@ -2560,6 +2696,7 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
+      isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
     } = {},
   ): Promise<any> {
     // Handle backward compatibility - if second parameter is options object, use it
@@ -2591,6 +2728,7 @@ export class AsyncCoordinator {
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
+          isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
         },
     options: {
       relayoutEntities?: string[]; // Layout control
@@ -2599,6 +2737,7 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
+      isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
     } = {},
   ): Promise<any> {
     // ReactFlowData
@@ -2690,6 +2829,10 @@ export class AsyncCoordinator {
         maxRetries: actualOptions.maxRetries,
       });
 
+      // The fitView callback has been enqueued and will be executed by onNodesChange
+      // when React finishes rendering and dimension changes are detected
+      // We don't wait here - the callback will fire asynchronously when React is ready
+
       const endTime = Date.now();
       const duration = endTime - startTime;
 
@@ -2742,6 +2885,7 @@ export class AsyncCoordinator {
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
+          isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
         },
     options: {
       relayoutEntities?: string[]; // Layout control
@@ -2750,6 +2894,7 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
+      isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
     } = {},
   ): Promise<any> {
     // Handle backward compatibility - if second parameter is options object, use it
@@ -2782,6 +2927,7 @@ export class AsyncCoordinator {
           timeout?: number;
           maxRetries?: number;
           triggerLayout?: boolean; // Backward compatibility (ignored)
+          isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
         },
     options: {
       relayoutEntities?: string[]; // Layout control
@@ -2790,6 +2936,7 @@ export class AsyncCoordinator {
       timeout?: number;
       maxRetries?: number;
       triggerLayout?: boolean; // Backward compatibility (ignored)
+      isBulkOperation?: boolean; // Flag to trigger automatic notifyRenderComplete
     } = {},
   ): Promise<any> {
     // ReactFlowData
@@ -2917,6 +3064,16 @@ export class AsyncCoordinator {
 
       // Use enhanced pipeline for layout and render (full layout for collapse all)
       // Call private handler directly to avoid queue deadlock
+      console.log(
+        "[AsyncCoordinator] 🎯 CollapseAll: Calling layout pipeline with options:",
+        {
+          relayoutEntities: actualOptions.relayoutEntities,
+          fitView: actualOptions.fitView,
+          fitViewOptions: actualOptions.fitViewOptions,
+          isBulkOperation: actualOptions.isBulkOperation,
+        },
+      );
+
       const reactFlowData = await this._handleLayoutAndRenderPipeline(state, {
         relayoutEntities: actualOptions.relayoutEntities, // undefined = full layout for collapse all
         fitView: actualOptions.fitView,
@@ -2924,6 +3081,10 @@ export class AsyncCoordinator {
         timeout: actualOptions.timeout,
         maxRetries: actualOptions.maxRetries,
       });
+
+      // The fitView callback has been enqueued and will be executed by onNodesChange
+      // when React finishes rendering and dimension changes are detected
+      // We don't wait here - the callback will fire asynchronously when React is ready
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -3149,7 +3310,6 @@ export class AsyncCoordinator {
       }
 
       if (node) {
-
         // Calculate absolute position by recursively walking up the entire parent chain
         let absoluteX = node.position.x;
         let absoluteY = node.position.y;
@@ -3425,23 +3585,24 @@ export class AsyncCoordinator {
         // Fire-and-forget .then() is acceptable here because spotlight is a non-critical
         // visual effect that shouldn't block navigation. The core navigation functionality
         // (highlight) works even if spotlight fails.
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+
         this.focusViewportOnElement(elementId, instanceToUse, {
           zoom: options.zoom, // Only use explicit zoom if provided
           duration: animationDuration,
           visualizationState: visualizationState,
-        }).then(() => {
-          // Trigger spotlight after animation duration
-          // ReactFlow's setCenter() is fire-and-forget with no completion callback.
-          // The onMoveEnd event only fires if viewport actually moves, causing hangs when
-          // viewport is already at target position. Using duration-based timeout is the only
-          // reliable way to trigger spotlight after animation completes.
-          setTimeout(() => {
-            if (this.onSearchResultFocused) {
-              this.onSearchResultFocused(elementId, options.zoom);
-            }
-          }, animationDuration);
         })
+          .then(() => {
+            // Trigger spotlight after animation duration
+            // ReactFlow's setCenter() is fire-and-forget with no completion callback.
+            // The onMoveEnd event only fires if viewport actually moves, causing hangs when
+            // viewport is already at target position. Using duration-based timeout is the only
+            // reliable way to trigger spotlight after animation completes.
+            setTimeout(() => {
+              if (this.onSearchResultFocused) {
+                this.onSearchResultFocused(elementId, options.zoom);
+              }
+            }, animationDuration);
+          })
           .catch((error) => {
             // Log viewport focus errors for debugging
             console.error(

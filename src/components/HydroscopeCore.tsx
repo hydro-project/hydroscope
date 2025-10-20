@@ -1124,33 +1124,50 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
+          console.log("[HydroscopeCore] 🎯 CollapseAll button clicked", {
+            autoFitEnabled: state.autoFitEnabled,
+            hasAsyncCoordinator: !!state.asyncCoordinator,
+            hasVisualizationState: !!state.visualizationState,
+          });
+
           // Use AsyncCoordinator's synchronous collapseContainers method
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
+          const fitViewOptions = createFitViewOptions(
+            createAutoFitOptions(
+              AutoFitScenarios.CONTAINER_OPERATION,
+              state.autoFitEnabled,
+            ),
+          );
+
+          console.log("[HydroscopeCore] 🎯 Calling collapseContainers with:", {
+            fitViewOptions,
+            isBulkOperation: true,
+          });
+
           const reactFlowData = await state.asyncCoordinator.collapseContainers(
             state.visualizationState,
             {
               relayoutEntities: undefined, // Full layout for collapse all
-              ...createFitViewOptions(
-                createAutoFitOptions(
-                  AutoFitScenarios.CONTAINER_OPERATION,
-                  state.autoFitEnabled,
-                ),
-              ),
+              ...fitViewOptions,
+              // Pass a flag to indicate this is a bulk operation
+              isBulkOperation: true,
             },
           );
+
+          console.log("[HydroscopeCore] 🎯 CollapseAll completed", {
+            reactFlowData,
+          });
 
           // At this point, the ENTIRE pipeline is complete:
           // - All containers collapsed
           // - Layout calculated
           // - ReactFlow data generated and updated
-          // - FitView triggered (if enabled)
+          // - FitView enqueued (if enabled)
+          // - notifyRenderComplete will be called automatically by the pipeline
 
-          // Notify parent component of visualization state change AFTER a short delay
-          // This ensures post-render callbacks (fitView) complete before triggering React re-renders
+          // Notify parent component of visualization state change
           const currentState = state.visualizationState;
-          setTimeout(() => {
-            onVisualizationStateChange?.(currentState);
-          }, 0);
+          onVisualizationStateChange?.(currentState);
 
           // Call success callback
           onCollapseAll?.(currentState);
@@ -1210,6 +1227,8 @@ const HydroscopeCoreInternal = forwardRef<
                     state.autoFitEnabled,
                   ),
                 ),
+                // Pass a flag to indicate this is a bulk operation
+                isBulkOperation: true,
               },
             );
 
@@ -1217,14 +1236,12 @@ const HydroscopeCoreInternal = forwardRef<
             // - All containers expanded
             // - Layout calculated
             // - ReactFlow data generated and updated
-            // - FitView triggered (if enabled)
+            // - FitView enqueued (if enabled)
+            // - notifyRenderComplete will be called automatically by the pipeline
 
-            // Notify parent component of visualization state change AFTER a short delay
-            // This ensures post-render callbacks (fitView) complete before triggering React re-renders
+            // Notify parent component of visualization state change
             const currentState = state.visualizationState;
-            setTimeout(() => {
-              onVisualizationStateChange?.(currentState);
-            }, 0);
+            onVisualizationStateChange?.(currentState);
 
             // Call success callback
             onExpandAll?.(currentState);
@@ -1874,10 +1891,12 @@ const HydroscopeCoreInternal = forwardRef<
           );
 
           if (dimensionChanges.length > 0) {
-            hscopeLogger.log(
-              "orchestrator",
+            console.log(
               `[HydroscopeCore] 📏 Dimension changes detected for ${dimensionChanges.length} nodes`,
-              dimensionChanges.map((c) => c.id),
+              dimensionChanges.map((c) => ({
+                id: c.id,
+                dimensions: c.dimensions,
+              })),
             );
 
             // Deterministic logic: Check if there are pending callbacks (like fitView)
@@ -1886,18 +1905,28 @@ const HydroscopeCoreInternal = forwardRef<
             const hasPendingCallbacks =
               state.asyncCoordinator?.hasPendingCallbacks() || false;
 
-            hscopeLogger.log(
-              "orchestrator",
+            console.log(
               `[HydroscopeCore] 📏 Checking pending callbacks: ${hasPendingCallbacks}`,
             );
 
             if (hasPendingCallbacks) {
-              // Major change: initial load or container expansion - trigger fitView
-              hscopeLogger.log(
-                "orchestrator",
-                "[HydroscopeCore] 📏 Major change detected (pending callbacks) - calling notifyRenderComplete",
-              );
-              state.asyncCoordinator?.notifyRenderComplete();
+              // Major change: initial load or container expansion
+              // Notify AsyncCoordinator about ALL measured nodes in this batch
+              const nodeIds = dimensionChanges.map((c) => c.id);
+              const allNodesMeasured =
+                state.asyncCoordinator?.notifyNodesMeasured(nodeIds);
+
+              // Only trigger fitView when ALL expected nodes have been measured
+              if (allNodesMeasured) {
+                console.log(
+                  "[HydroscopeCore] ✅ All nodes measured - triggering fitView",
+                );
+                state.asyncCoordinator?.notifyRenderComplete();
+              } else {
+                console.log(
+                  "[HydroscopeCore] ⏳ Waiting for more nodes to be measured...",
+                );
+              }
             } else {
               // Minor change: node label expansion - preserve viewport
               hscopeLogger.log(

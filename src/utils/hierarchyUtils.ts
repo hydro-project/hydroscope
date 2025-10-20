@@ -1,6 +1,6 @@
 /**
  * Utility functions for working with hierarchy tree structures
- * 
+ *
  * These utilities traverse the container hierarchy in depth-first order,
  * which matches the visual order in the HierarchyTree component.
  */
@@ -12,7 +12,7 @@ import type { VisualizationState } from "../core/VisualizationState.js";
  * This is used for:
  * 1. Search result ordering (so results match tree order)
  * 2. Search navigation (so next/prev follows tree order)
- * 
+ *
  * The traversal order is:
  * 1. Container
  * 2. Child containers (recursively)
@@ -83,10 +83,10 @@ export function getHierarchyOrderMap(
 ): Map<string, number> {
   const orderMap = new Map<string, number>();
   const items = getSearchableItemsInTreeOrder(visualizationState);
-  
+
   items.forEach((item, index) => {
     orderMap.set(item.id, index);
   });
-  
+
   return orderMap;
 }

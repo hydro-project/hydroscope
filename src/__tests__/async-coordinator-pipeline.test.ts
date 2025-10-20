@@ -180,10 +180,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node1);
 
       // Start the search operation
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: false,
-        fitView: false,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: false,
+          fitView: false,
+        },
+      );
 
       // Simulate React render completion
       asyncCoordinator.notifyRenderComplete();
@@ -211,10 +215,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
         childContainers: [],
       });
 
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: true,
-        fitView: false,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: true,
+          fitView: false,
+        },
+      );
 
       // Simulate React render completion (multiple times for layout + render + expansion)
       setTimeout(() => {
@@ -233,10 +241,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: false,
-        fitView: true,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: false,
+          fitView: true,
+        },
+      );
 
       asyncCoordinator.notifyRenderComplete();
       const result = await resultPromise;
@@ -248,10 +260,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: false,
-        fitView: false,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: false,
+          fitView: false,
+        },
+      );
 
       asyncCoordinator.notifyRenderComplete();
       const result = await resultPromise;
@@ -263,10 +279,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       const node1 = createTestNode("n1", "Test Node");
       state.addNode(node1);
 
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: false,
-        fitView: false,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: false,
+          fitView: false,
+        },
+      );
 
       asyncCoordinator.notifyRenderComplete();
       const result = await resultPromise;
@@ -293,10 +313,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
 
     it("should handle search errors gracefully", async () => {
       // Create a state that might cause search issues
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: false,
-        fitView: false,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: false,
+          fitView: false,
+        },
+      );
 
       asyncCoordinator.notifyRenderComplete();
       const result = await resultPromise;
@@ -466,10 +490,14 @@ describe("AsyncCoordinator Pipeline Sequencing", () => {
       state.addNode(node1);
 
       // This should complete successfully
-      const resultPromise = asyncCoordinator.updateSearchResults("test", state, {
-        expandContainers: true,
-        fitView: false,
-      });
+      const resultPromise = asyncCoordinator.updateSearchResults(
+        "test",
+        state,
+        {
+          expandContainers: true,
+          fitView: false,
+        },
+      );
 
       asyncCoordinator.notifyRenderComplete();
       const result = await resultPromise;

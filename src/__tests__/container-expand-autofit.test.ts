@@ -35,10 +35,16 @@ describe("Container Expansion with AutoFit", () => {
         height: 100,
         parentNode: undefined,
       })),
-      setCenter: vi.fn((x: number, y: number, options?: { zoom?: number; duration?: number }) => {
-        // Immediate positioning (duration: 0) - no animation to wait for
-        // This matches the production behavior where we use immediate: true
-      }),
+      setCenter: vi.fn(
+        (
+          x: number,
+          y: number,
+          options?: { zoom?: number; duration?: number },
+        ) => {
+          // Immediate positioning (duration: 0) - no animation to wait for
+          // This matches the production behavior where we use immediate: true
+        },
+      ),
       fitView: vi.fn(),
       getViewport: vi.fn(() => ({ x: 0, y: 0, zoom: 1 })),
     };
@@ -49,8 +55,11 @@ describe("Container Expansion with AutoFit", () => {
     // The coordinator calls waitForNextRender() which enqueues a callback
     // We need to simulate React completing the render by calling notifyRenderComplete()
     // This should happen AFTER the callback is enqueued, not immediately
-    const originalEnqueuePostRenderCallback = coordinator['enqueuePostRenderCallback'].bind(coordinator);
-    coordinator['enqueuePostRenderCallback'] = (callback: () => void | Promise<void>) => {
+    const originalEnqueuePostRenderCallback =
+      coordinator["enqueuePostRenderCallback"].bind(coordinator);
+    coordinator["enqueuePostRenderCallback"] = (
+      callback: () => void | Promise<void>,
+    ) => {
       originalEnqueuePostRenderCallback(callback);
       // Defer render completion to next microtask to ensure callback is enqueued first
       queueMicrotask(() => {
@@ -62,47 +71,51 @@ describe("Container Expansion with AutoFit", () => {
     };
   });
 
-  it("should focus viewport on container when expanding in AutoFit mode", { timeout: 3000 }, async () => {
-    // Add test nodes
-    state.addNode({
-      id: "node1",
-      label: "Node 1",
-      longLabel: "Node 1",
-      type: "default",
-      semanticTags: [],
-      hidden: true, // Hidden because container is collapsed
-    });
+  it(
+    "should focus viewport on container when expanding in AutoFit mode",
+    { timeout: 3000 },
+    async () => {
+      // Add test nodes
+      state.addNode({
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "default",
+        semanticTags: [],
+        hidden: true, // Hidden because container is collapsed
+      });
 
-    state.addNode({
-      id: "node2",
-      label: "Node 2",
-      longLabel: "Node 2",
-      type: "default",
-      semanticTags: [],
-      hidden: true,
-    });
+      state.addNode({
+        id: "node2",
+        label: "Node 2",
+        longLabel: "Node 2",
+        type: "default",
+        semanticTags: [],
+        hidden: true,
+      });
 
-    // Add collapsed container
-    state.addContainer({
-      id: "container1",
-      label: "Container 1",
-      longLabel: "Container 1",
-      children: new Set(["node1", "node2"]),
-      collapsed: true,
-      hidden: false,
-    });
+      // Add collapsed container
+      state.addContainer({
+        id: "container1",
+        label: "Container 1",
+        longLabel: "Container 1",
+        children: new Set(["node1", "node2"]),
+        collapsed: true,
+        hidden: false,
+      });
 
-    // Enable AutoFit mode (default is true)
-    state.updateRenderConfig({ fitView: true });
+      // Enable AutoFit mode (default is true)
+      state.updateRenderConfig({ fitView: true });
 
-    // Expand the container
-    await coordinator.expandContainer("container1", state, {
-      fitView: false, // Don't use fitView, we want to test viewport focusing
-    });
+      // Expand the container
+      await coordinator.expandContainer("container1", state, {
+        fitView: false, // Don't use fitView, we want to test viewport focusing
+      });
 
-    // Verify setCenter was called to focus on the container
-    expect(mockReactFlowInstance.setCenter).toHaveBeenCalled();
-  });
+      // Verify setCenter was called to focus on the container
+      expect(mockReactFlowInstance.setCenter).toHaveBeenCalled();
+    },
+  );
 
   it("should NOT focus viewport when AutoFit mode is disabled", async () => {
     // Add test nodes
@@ -140,82 +153,90 @@ describe("Container Expansion with AutoFit", () => {
     expect(mockReactFlowInstance.setCenter).not.toHaveBeenCalled();
   });
 
-  it("should handle viewport focus errors gracefully", { timeout: 3000 }, async () => {
-    // Add test node
-    state.addNode({
-      id: "node1",
-      label: "Node 1",
-      longLabel: "Node 1",
-      type: "default",
-      semanticTags: [],
-      hidden: true,
-    });
+  it(
+    "should handle viewport focus errors gracefully",
+    { timeout: 3000 },
+    async () => {
+      // Add test node
+      state.addNode({
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "default",
+        semanticTags: [],
+        hidden: true,
+      });
 
-    // Add collapsed container
-    state.addContainer({
-      id: "container1",
-      label: "Container 1",
-      longLabel: "Container 1",
-      children: new Set(["node1"]),
-      collapsed: true,
-      hidden: false,
-    });
+      // Add collapsed container
+      state.addContainer({
+        id: "container1",
+        label: "Container 1",
+        longLabel: "Container 1",
+        children: new Set(["node1"]),
+        collapsed: true,
+        hidden: false,
+      });
 
-    state.updateRenderConfig({ fitView: true });
+      state.updateRenderConfig({ fitView: true });
 
-    // Make setCenter throw an error
-    mockReactFlowInstance.setCenter.mockImplementation(() => {
-      throw new Error("Viewport focus failed");
-    });
+      // Make setCenter throw an error
+      mockReactFlowInstance.setCenter.mockImplementation(() => {
+        throw new Error("Viewport focus failed");
+      });
 
-    // Expansion should still succeed even if viewport focus fails
-    await expect(
-      coordinator.expandContainer("container1", state, { fitView: false }),
-    ).resolves.toBeDefined();
+      // Expansion should still succeed even if viewport focus fails
+      await expect(
+        coordinator.expandContainer("container1", state, { fitView: false }),
+      ).resolves.toBeDefined();
 
-    // Container should still be expanded
-    const container = state.getContainer("container1");
-    expect(container?.collapsed).toBe(false);
-  });
+      // Container should still be expanded
+      const container = state.getContainer("container1");
+      expect(container?.collapsed).toBe(false);
+    },
+  );
 
   // NOTE: Custom duration test removed because we now use immediate positioning (duration: 0)
   // for reliability. Animated viewport transitions were causing race conditions with the queue system.
 
-  it("should focus viewport on container when collapsing in AutoFit mode", { timeout: 3000 }, async () => {
-    // Add test nodes
-    state.addNode({
-      id: "node1",
-      label: "Node 1",
-      longLabel: "Node 1",
-      type: "default",
-      semanticTags: [],
-      hidden: false, // Visible because container is expanded
-    });
+  it(
+    "should focus viewport on container when collapsing in AutoFit mode",
+    { timeout: 3000 },
+    async () => {
+      // Add test nodes
+      state.addNode({
+        id: "node1",
+        label: "Node 1",
+        longLabel: "Node 1",
+        type: "default",
+        semanticTags: [],
+        hidden: false, // Visible because container is expanded
+      });
 
-    // Add expanded container
-    state.addContainer({
-      id: "container1",
-      label: "Container 1",
-      longLabel: "Container 1",
-      children: new Set(["node1"]),
-      collapsed: false,
-      hidden: false,
-    });
+      // Add expanded container
+      state.addContainer({
+        id: "container1",
+        label: "Container 1",
+        longLabel: "Container 1",
+        children: new Set(["node1"]),
+        collapsed: false,
+        hidden: false,
+      });
 
-    // Enable AutoFit mode
-    state.updateRenderConfig({ fitView: true });
+      // Enable AutoFit mode
+      state.updateRenderConfig({ fitView: true });
 
-    // Clear any previous calls
-    mockReactFlowInstance.setCenter.mockClear();
+      // Clear any previous calls
+      mockReactFlowInstance.setCenter.mockClear();
 
-    // Collapse the container
-    await coordinator.collapseContainer("container1", state, {
-      fitView: false, // Don't use fitView, we want to test viewport focusing
-    });
+      // Collapse the container
+      await coordinator.collapseContainer("container1", state, {
+        fitView: false, // Don't use fitView, we want to test viewport focusing
+      });
 
-    // Verify setCenter was called to focus on the container
-    expect(mockReactFlowInstance.setCenter).toHaveBeenCalled();
-  });
+      // Verify setCenter was called to focus on the container
+      expect(mockReactFlowInstance.setCenter).toHaveBeenCalled();
+    },
+  );
 
   it("should NOT focus viewport when collapsing with AutoFit disabled", async () => {
     // Add test node

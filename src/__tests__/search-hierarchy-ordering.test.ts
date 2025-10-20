@@ -61,7 +61,7 @@ describe("Search Results Hierarchy Ordering", () => {
     });
 
     const results = state.performSearch("test");
-    
+
     expect(results).toHaveLength(3);
     expect(results[0].id).toBe("node1");
     expect(results[1].id).toBe("node2");
@@ -97,7 +97,7 @@ describe("Search Results Hierarchy Ordering", () => {
     });
 
     const results = state.performSearch("xyz");
-    
+
     expect(results).toHaveLength(2);
     expect(results[0].id).toBe("node1");
     expect(results[1].id).toBe("node2");
@@ -132,7 +132,7 @@ describe("Search Results Hierarchy Ordering", () => {
     });
 
     const results = state.performSearch("search");
-    
+
     expect(results).toHaveLength(3);
     expect(results[0].id).toBe("container1");
     expect(results[1].id).toBe("node1");

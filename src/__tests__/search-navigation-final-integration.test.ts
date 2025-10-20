@@ -329,10 +329,11 @@ describe("Search Navigation Final Integration", () => {
 
       highlightedNodes.forEach((node) => {
         // Highlighted nodes should have either a background color or border
-        const hasVisualHighlight = 
-          (node.style?.backgroundColor && node.style.backgroundColor !== "transparent") ||
+        const hasVisualHighlight =
+          (node.style?.backgroundColor &&
+            node.style.backgroundColor !== "transparent") ||
           node.style?.border;
-        
+
         // At least one visual indicator should be present
         expect(hasVisualHighlight || node.data?.isHighlighted).toBeTruthy();
       });

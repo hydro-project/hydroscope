@@ -144,14 +144,19 @@ describe("CustomEdge Rendering", () => {
     expect(paths.length).toBeGreaterThanOrEqual(2);
 
     // At least one path should be wavy (have curve commands and be long)
-    const pathDataArray = Array.from(paths).map(p => p.getAttribute("d") || "");
-    const wavyPath = pathDataArray.find(d => d.length > 100);
-    
+    const pathDataArray = Array.from(paths).map(
+      (p) => p.getAttribute("d") || "",
+    );
+    const wavyPath = pathDataArray.find((d) => d.length > 100);
+
     expect(wavyPath).toBeDefined();
     expect(wavyPath!.length).toBeGreaterThan(100); // Wavy paths are long
-    
+
     // Check for curve commands or line segments in wavy path
-    const hasComplexPath = wavyPath!.includes("L") || wavyPath!.includes("C") || wavyPath!.includes("Q");
+    const hasComplexPath =
+      wavyPath!.includes("L") ||
+      wavyPath!.includes("C") ||
+      wavyPath!.includes("Q");
     expect(hasComplexPath).toBe(true); // Wavy paths have multiple segments
   });
 

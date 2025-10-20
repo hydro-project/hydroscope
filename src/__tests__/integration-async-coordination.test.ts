@@ -169,95 +169,94 @@ describe("Async Boundary Integration Tests", () => {
       }, 50);
 
       try {
+        // Create many concurrent operations
+        const operations: Promise<any>[] = [];
 
-      // Create many concurrent operations
-      const operations: Promise<any>[] = [];
+        // Container operations (simplified)
+        for (let i = 0; i < containers.length; i++) {
+          const container = containers[i];
 
-      // Container operations (simplified)
-      for (let i = 0; i < containers.length; i++) {
-        const container = containers[i];
+          operations.push(
+            (async () => {
+              await coordinator.expandContainer(container.id, state, {
+                fitView: false,
+              });
+            })(),
+          );
 
-        operations.push(
-          (async () => {
-            await coordinator.expandContainer(container.id, state, {
-              fitView: false,
-            });
-          })(),
-        );
+          operations.push(
+            (async () => {
+              await coordinator.collapseContainer(container.id, state, {
+                fitView: false,
+              });
+            })(),
+          );
+        }
 
-        operations.push(
-          (async () => {
-            await coordinator.collapseContainer(container.id, state, {
-              fitView: false,
-            });
-          })(),
-        );
-      }
-
-      // Layout operations (simplified)
-      for (let i = 0; i < 5; i++) {
-        operations.push(
-          (async () => {
-            coordinator.queueOperation("elk_layout", () =>
-              Promise.resolve("layout_complete"),
-            );
-          })(),
-        );
-      }
-
-      // ReactFlow render operations (simplified)
-      for (let i = 0; i < 5; i++) {
-        operations.push(
-          (async () => {
-            coordinator.queueOperation("reactflow_render", () =>
-              Promise.resolve({ nodes: [], edges: [] }),
-            );
-          })(),
-        );
-      }
-
-      // Application events
-      for (let i = 0; i < 10; i++) {
-        const event: ApplicationEvent = {
-          type: "search",
-          payload: {
-            query: `test${i}`,
-            state,
-            expandContainers: false,
-          },
-          timestamp: Date.now(),
-        };
-
-        operations.push(
-          (async () => {
-            // Use new synchronous search method instead of deprecated queueApplicationEvent
-            if (event.payload.query) {
-              await coordinator.updateSearchResults(
-                event.payload.query,
-                event.payload.state,
-                {
-                  expandContainers: event.payload.expandContainers,
-                  fitView: false,
-                },
+        // Layout operations (simplified)
+        for (let i = 0; i < 5; i++) {
+          operations.push(
+            (async () => {
+              coordinator.queueOperation("elk_layout", () =>
+                Promise.resolve("layout_complete"),
               );
-            }
-          })(),
-        );
-      }
+            })(),
+          );
+        }
 
-      // Execute all operations
-      await Promise.all(operations);
+        // ReactFlow render operations (simplified)
+        for (let i = 0; i < 5; i++) {
+          operations.push(
+            (async () => {
+              coordinator.queueOperation("reactflow_render", () =>
+                Promise.resolve({ nodes: [], edges: [] }),
+              );
+            })(),
+          );
+        }
 
-      // Process queued operations (layout/render operations)
-      await coordinator.processQueue();
+        // Application events
+        for (let i = 0; i < 10; i++) {
+          const event: ApplicationEvent = {
+            type: "search",
+            payload: {
+              query: `test${i}`,
+              state,
+              expandContainers: false,
+            },
+            timestamp: Date.now(),
+          };
 
-      const endTime = Date.now();
-      const totalTime = endTime - startTime;
+          operations.push(
+            (async () => {
+              // Use new synchronous search method instead of deprecated queueApplicationEvent
+              if (event.payload.query) {
+                await coordinator.updateSearchResults(
+                  event.payload.query,
+                  event.payload.state,
+                  {
+                    expandContainers: event.payload.expandContainers,
+                    fitView: false,
+                  },
+                );
+              }
+            })(),
+          );
+        }
 
-      // Verify performance is acceptable (should complete within reasonable time)
-      expect(totalTime).toBeLessThan(10000); // 10 seconds max
+        // Execute all operations
+        await Promise.all(operations);
 
-      // Verify queued operations completed successfully
+        // Process queued operations (layout/render operations)
+        await coordinator.processQueue();
+
+        const endTime = Date.now();
+        const totalTime = endTime - startTime;
+
+        // Verify performance is acceptable (should complete within reasonable time)
+        expect(totalTime).toBeLessThan(10000); // 10 seconds max
+
+        // Verify queued operations completed successfully
       } finally {
         clearInterval(renderInterval);
       }

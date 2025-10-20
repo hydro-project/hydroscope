@@ -183,7 +183,7 @@ export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
     );
     tempPath.setAttribute("d", pathString);
     // getTotalLength may not be available in test environments (jsdom)
-    if (typeof tempPath.getTotalLength === 'function') {
+    if (typeof tempPath.getTotalLength === "function") {
       return tempPath.getTotalLength();
     }
     // Fallback: estimate length from path string for tests
