@@ -5,7 +5,7 @@ import postcss from 'rollup-plugin-postcss';
 
 export default {
   input: 'src/index.ts',
-  external: ['react', 'react-dom', 'react/jsx-runtime', '@xyflow/react', 'elkjs', 'antd'],
+  external: ['react', 'react-dom', 'react/jsx-runtime', '@xyflow/react', 'elkjs', 'elkjs/lib/elk.bundled.js', 'antd'],
   onwarn(warning, warn) {
     // Suppress "use client" directive warnings from Ant Design
     if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && warning.message.includes('use client')) {

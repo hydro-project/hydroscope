@@ -2,7 +2,7 @@
  * ELKBridge - Stateless bridge for ELK layout engine integration
  * Architectural constraints: Stateless, React-free, synchronous conversions
  */
-import ELK from "elkjs";
+import ELK from "elkjs/lib/elk.bundled.js";
 import { hscopeLogger } from "../utils/logger.js";
 import type { VisualizationState } from "../core/VisualizationState.js";
 import type {
