@@ -488,7 +488,7 @@ export const DEFAULT_RENDER_CONFIG = {
 export const WAVY_EDGE_CONFIG = {
   // Wave appearance parameters
   amplitude: 0.8, // Wave height in pixels (perpendicular offset from straight line)
-  frequency: 8, // Number of complete wave cycles per 60px of edge length
+  frequency: 6, // Number of complete wave cycles per 60px of edge length
 
   // Wave smoothness parameters
   pointsPerWave: 40, // Number of sample points per complete wave cycle (higher = smoother)

@@ -26,7 +26,7 @@ export const VISUAL_CHANNELS = {
 // Default style values
 export const DEFAULT_STYLE = {
   STROKE_COLOR: "#666666",
-  STROKE_WIDTH: 3,
+  STROKE_WIDTH: 2,
   DEFAULT_STROKE_COLOR: "#999999", // For elements with no semantic tags
 } as const;
 // Halo color mappings
@@ -106,7 +106,7 @@ export function processAggregatedSemanticTags(
     return result;
   }
   // Process each original edge to get its style settings
-  const edgeStyleSettings: Record<string, string | number>[] = [];
+  const edgeStyleSettings: Record<string, string | number | boolean>[] = [];
   for (const edge of originalEdges) {
     const edgeTags = edge.semanticTags || [];
     if (edgeTags.length > 0) {
@@ -139,8 +139,8 @@ export function processAggregatedSemanticTags(
 function extractStyleSettingsFromTags(
   semanticTags: string[],
   styleConfig: StyleConfig,
-): Record<string, string | number> {
-  const styleSettings: Record<string, string | number> = {};
+): Record<string, string | number | boolean> {
+  const styleSettings: Record<string, string | number | boolean> = {};
   if (!styleConfig.semanticMappings) {
     return styleSettings;
   }
@@ -161,8 +161,8 @@ function extractStyleSettingsFromTags(
  * Merge style settings from multiple edges with conflict resolution
  */
 function mergeStyleSettingsWithConflictResolution(
-  edgeStyleSettings: Record<string, string | number>[],
-): Record<string, string | number> {
+  edgeStyleSettings: Record<string, string | number | boolean>[],
+): Record<string, string | number | boolean> {
   if (edgeStyleSettings.length === 0) {
     return {};
   }
@@ -170,7 +170,7 @@ function mergeStyleSettingsWithConflictResolution(
     return { ...edgeStyleSettings[0] };
   }
   // Collect all style properties and their values across edges
-  const propertyValues: Record<string, Set<string | number>> = {};
+  const propertyValues: Record<string, Set<string | number | boolean>> = {};
   for (const settings of edgeStyleSettings) {
     for (const [property, value] of Object.entries(settings)) {
       if (!propertyValues[property]) {
@@ -181,7 +181,7 @@ function mergeStyleSettingsWithConflictResolution(
   }
 
   // Resolve conflicts
-  const mergedSettings: Record<string, string | number> = {};
+  const mergedSettings: Record<string, string | number | boolean> = {};
   for (const [property, values] of Object.entries(propertyValues)) {
     if (values.size === 1) {
       // No conflict - use the single value
@@ -228,7 +228,7 @@ function processWithSemanticMappings(
     return getDefaultStyle(elementType);
   }
   // Collect all style settings from matching semantic tags
-  const styleSettings: Record<string, string | number> = {};
+  const styleSettings: Record<string, string | number | boolean> = {};
   const appliedTags: string[] = [];
   // Process each group in the semantic mappings
   for (const [, group] of Object.entries(styleConfig.semanticMappings)) {
@@ -309,7 +309,7 @@ function processWithPropertyMappings(
  * Convert style settings to visual format
  */
 function convertStyleSettingsToVisual(
-  styleSettings: Record<string, string | number>,
+  styleSettings: Record<string, string | number | boolean>,
   appliedTags: string[],
   originalLabel?: string,
   elementType: "node" | "edge" = "edge",
@@ -362,14 +362,27 @@ function convertStyleSettingsToVisual(
     // which renders vertical tick marks along the edge for keyed streams
   }
 
-  // Apply waviness (can be boolean true or string "wavy")
+  // Apply waviness (can be boolean true/false or string "wavy"/"none")
   const wavinessSetting = styleSettings["waviness"];
-  if (
-    wavinessSetting === "wavy" ||
-    wavinessSetting === "true" ||
-    (typeof wavinessSetting === "boolean" && wavinessSetting)
-  ) {
-    waviness = true;
+  if (wavinessSetting !== undefined && wavinessSetting !== null) {
+    // Check for truthy values (including boolean true)
+    if (
+      wavinessSetting === true ||
+      wavinessSetting === "wavy" ||
+      wavinessSetting === "true" ||
+      wavinessSetting === 1
+    ) {
+      waviness = true;
+    }
+    // Check for falsy values (including boolean false)
+    else if (
+      wavinessSetting === false ||
+      wavinessSetting === "none" ||
+      wavinessSetting === "false" ||
+      wavinessSetting === 0
+    ) {
+      waviness = false;
+    }
   }
   // Apply halo
   const halo = styleSettings["halo"] as string;

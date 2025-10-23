@@ -292,10 +292,17 @@ export class JSONParser {
             childrenIds.add(child.id);
           }
         }
+        // Extract short label from collapsed hierarchy names
+        // For names like "main <- block_on <- block_on_inner", use the last part
+        const fullName = hierarchyNode.name;
+        const shortLabel = fullName.includes(" <- ")
+          ? fullName.split(" <- ").pop() || fullName
+          : fullName;
+
         const container: Container = {
           id: hierarchyNode.id,
-          label: hierarchyNode.name,
-          longLabel: hierarchyNode.name, // Use name as longLabel (no longer description available)
+          label: shortLabel, // Short label for collapsed view
+          longLabel: fullName, // Full collapsed name for expanded view
           children: childrenIds,
           collapsed: false, // Start expanded by default to avoid invariant violations
           hidden: false,

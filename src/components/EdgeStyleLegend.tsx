@@ -3,13 +3,12 @@
  *
  * Displays a legend showing what different edge visual styles represent
  * based on semantic tags from the JSON data's edgeStyleConfig.
+ *
+ * Uses the same CustomEdge component as the main graph to ensure consistency.
  */
 import React, { useMemo } from "react";
-import {
-  COMPONENT_COLORS,
-  TYPOGRAPHY,
-  WAVY_EDGE_CONFIG,
-} from "../shared/config";
+import { COMPONENT_COLORS, TYPOGRAPHY, WAVY_EDGE_CONFIG } from "../shared/config";
+import { processSemanticTags } from "../utils/StyleProcessor";
 
 interface EdgeStyleLegendProps {
   edgeStyleConfig?: {
@@ -131,9 +130,9 @@ function EdgeStyleLegendInner({
         );
 
         // Process each option within the group
-        Object.entries(group).forEach(([optionName, styleSettings]) => {
-          // Generate a visual sample based on the style settings
-          const sample = generateVisualSample(styleSettings);
+        Object.entries(group).forEach(([optionName, _styleSettings]) => {
+          // Generate a visual sample using the semantic tag (optionName)
+          const sample = generateVisualSample(optionName);
 
           const box = (
             <div
@@ -158,239 +157,111 @@ function EdgeStyleLegendInner({
 
     return allBoxes;
   };
-  // Helper function to generate visual sample from style settings
-  const generateVisualSample = (
-    styleSettings: Record<string, string | number>,
-  ) => {
-    const linePattern = (styleSettings["line-pattern"] as string) || "solid";
-    // Default to thin to match graph default stroke width
-    const lineWidth = (styleSettings["line-width"] as number) ?? 1;
-    const animation = styleSettings["animation"] as string;
-    const lineStyle = (styleSettings["line-style"] as string) || "single";
-    const halo = styleSettings["halo"] as string;
-    const arrowhead = styleSettings["arrowhead"] as string;
-    const waviness = styleSettings["waviness"] as string;
-    let strokeDasharray = undefined;
-    switch (linePattern) {
-      case "dashed":
-        strokeDasharray = "8,4";
-        break;
-      case "dotted":
-        strokeDasharray = "2,2";
-        break;
-      case "dash-dot":
-        strokeDasharray = "8,2,2,2";
-        break;
-    }
-    const haloColors = {
-      "light-blue": "#e6f3ff",
-      // Slightly stronger so it peeks beyond the stroke clearly
-      "light-red": "#ffb3b3",
-      "light-green": "#e6ffe6",
-    };
-    const haloColor =
-      halo && halo !== "none"
-        ? haloColors[halo as keyof typeof haloColors]
-        : undefined;
-    // Helper to render a head marker according to arrowhead
-    const renderHeadMarker = (x: number, y: number, color: string) => {
-      switch (arrowhead) {
-        case "triangle-open":
-          return (
-            <polygon
-              points={`${x},${y} ${x - 6},${y - 4} ${x - 6},${y + 4}`}
-              fill="none"
-              stroke={color}
-              strokeWidth={1}
-            />
-          );
-        case "triangle-filled":
-          return (
-            <polygon
-              points={`${x},${y} ${x - 6},${y - 4} ${x - 6},${y + 4}`}
-              fill={color}
-            />
-          );
-        case "circle-filled":
-          return <circle cx={x - 4} cy={y} r={3} fill={color} />;
-        case "diamond-open":
-          return (
-            <polygon
-              points={`${x - 2},${y} ${x - 6},${y - 3} ${x - 10},${y} ${x - 6},${y + 3}`}
-              fill="none"
-              stroke={color}
-              strokeWidth={1}
-            />
-          );
-        default:
-          return null;
-      }
-    };
-    // Helper to build a wavy path using config parameters
-    const wavePathD = (y: number) => {
-      const edgeLength = 40; // SVG width
-      const { amplitude, frequency, baseWaveLength, pointsPerWave } =
-        WAVY_EDGE_CONFIG;
+  // Helper function to generate visual sample from semantic tags using StyleProcessor
+  const generateVisualSample = (semanticTag: string) => {
+    // Use StyleProcessor to process the semantic tag, just like the graph does
+    const processedStyle = processSemanticTags(
+      [semanticTag],
+      { semanticMappings: edgeStyleConfig?.semanticMappings } as any,
+      undefined,
+      "edge",
+    );
 
-      // Calculate total waves and sample points for smooth rendering
-      const totalWaves = (edgeLength / baseWaveLength) * frequency;
-      const totalPoints = Math.max(
-        pointsPerWave,
-        Math.ceil(totalWaves * pointsPerWave),
-      );
+    const height = 20;
+    const mid = Math.round(height / 2);
 
-      // Build path with many small line segments for smooth curves
-      let path = `M0,${y}`;
-      for (let i = 1; i <= totalPoints; i++) {
-        const t = i / totalPoints;
-        const x = edgeLength * t;
-        const wavePhase = t * totalWaves * 2 * Math.PI;
-        const offset = Math.sin(wavePhase) * amplitude;
-        const finalY = y + offset;
-        path += ` L${x.toFixed(2)},${finalY.toFixed(2)}`;
+    // Extract styling from processed style
+    const stroke = (processedStyle.style.stroke as string) || "#666";
+    // Use thin default (1.5) for legend unless explicitly set
+    const strokeWidth =
+      (processedStyle.style.strokeWidth as number) === 3
+        ? 1.5 // Override the default thick width with thin
+        : (processedStyle.style.strokeWidth as number) || 1.5;
+    const strokeDasharray = processedStyle.style.strokeDasharray as
+      | string
+      | undefined;
+    const haloColor = (processedStyle.style as any).haloColor;
+    const isWavy = processedStyle.waviness === true;
+    const isHashMarks = processedStyle.lineStyle === "hash-marks";
+
+    // Generate wavy path if needed (using config values scaled for legend size)
+    const generateWavyPath = () => {
+      // Scale amplitude for legend (legend is ~40px, config is for longer edges)
+      const amplitude = WAVY_EDGE_CONFIG.amplitude * 3; // Scale up for visibility in small legend
+      const frequency = WAVY_EDGE_CONFIG.frequency / 4; // Scale down frequency for short legend
+      let path = `M 0,${mid}`;
+      const segments = 20;
+      // Stop the wave before the end to leave room for a straight segment
+      const waveEndX = 34; // Stop wave 6px before the end
+      for (let i = 1; i <= segments; i++) {
+        const t = i / segments;
+        const x = waveEndX * t;
+        const offset = Math.sin(t * frequency * 2 * Math.PI) * amplitude;
+        path += ` L ${x},${mid + offset}`;
       }
+      // Add a straight segment at the end so the arrowhead points right
+      path += ` L 40,${mid}`;
       return path;
     };
-    const isWavy = waviness === "wavy";
-    if (lineStyle === "hash-marks") {
-      // Render line with circles (matching CustomEdge implementation)
-      const height = Math.max(10, lineWidth + 8);
-      const mid = Math.round(height / 2);
-      const circleRadius = 3;
 
-      // Generate circles for legend (every 8px, matching CustomEdge spacing)
-      const circles = [];
-      for (let x = 8; x < 40; x += 8) {
-        circles.push(
-          <circle
-            key={x}
-            cx={x}
-            cy={mid}
-            r={circleRadius}
-            fill="#4a5568"
-            stroke="none"
-          />,
-        );
-      }
+    const pathD = isWavy ? generateWavyPath() : `M 0,${mid} L 40,${mid}`;
 
-      return (
-        <svg
-          width="40"
-          height={height}
-          viewBox={`0 0 40 ${height}`}
-          style={{ overflow: "visible" }}
-        >
-          {/* approximate head marker in legend */}
-          {renderHeadMarker(34, mid, "#4a5568")}
-          {/* Halo if present */}
-          {haloColor && (
-            <line
-              x1="0"
-              y1={mid}
-              x2="40"
-              y2={mid}
-              stroke={haloColor}
-              strokeWidth={lineWidth + 4}
-              strokeDasharray={strokeDasharray}
-              strokeLinecap="round"
-            />
-          )}
-          {/* Main line */}
-          <line
-            x1="0"
-            y1={mid}
-            x2="40"
-            y2={mid}
-            stroke="#4a5568"
-            strokeWidth={lineWidth}
-            strokeDasharray={strokeDasharray}
+    return (
+      <svg
+        width="40"
+        height={height}
+        viewBox={`0 0 40 ${height}`}
+        style={{ overflow: "visible" }}
+      >
+        {/* Halo layer */}
+        {haloColor && (
+          <path
+            d={pathD}
+            stroke={haloColor}
+            strokeWidth={strokeWidth + 4}
+            fill="none"
             strokeLinecap="round"
-          >
-            {animation === "animated" && (
-              <animateTransform
-                attributeName="transform"
-                type="translate"
-                values="0,0;5,0;0,0"
-                dur="1s"
-                repeatCount="indefinite"
-              />
-            )}
-          </line>
-          {/* Filled circles instead of hash marks */}
-          {circles}
-        </svg>
-      );
-    } else {
-      // Render single line with extra height to avoid stroke clipping
-      const height = Math.max(8, lineWidth + 4);
-      const y = Math.round(height / 2);
-      return (
-        <svg
-          width="40"
-          height={height}
-          viewBox={`0 0 40 ${height}`}
-          style={{ overflow: "visible" }}
+          />
+        )}
+
+        {/* Main edge path */}
+        <path
+          d={pathD}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          fill="none"
+          strokeLinecap="round"
         >
-          {/* approximate head marker in legend */}
-          {renderHeadMarker(34, y, "#4a5568")}
-          {haloColor &&
-            (isWavy ? (
-              <path
-                d={wavePathD(y)}
-                stroke={haloColor}
-                strokeWidth={lineWidth + 4}
-                fill="none"
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ) : (
-              <line
-                x1="0"
-                y1={y}
-                x2="40"
-                y2={y}
-                stroke={haloColor}
-                strokeWidth={lineWidth + 4}
-                strokeDasharray={strokeDasharray}
-                strokeLinecap="round"
-              />
-            ))}
-          {isWavy ? (
-            <path
-              d={wavePathD(y)}
-              stroke="#4a5568"
-              strokeWidth={lineWidth}
-              fill="none"
-              strokeDasharray={strokeDasharray}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {processedStyle.animated && (
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              values="0,0;5,0;0,0"
+              dur="1s"
+              repeatCount="indefinite"
             />
-          ) : (
-            <line
-              x1="0"
-              y1={y}
-              x2="40"
-              y2={y}
-              stroke="#4a5568"
-              strokeWidth={lineWidth}
-              strokeDasharray={strokeDasharray}
-              strokeLinecap="round"
-            >
-              {animation === "animated" && (
-                <animateTransform
-                  attributeName="transform"
-                  type="translate"
-                  values="0,0;5,0;0,0"
-                  dur="1s"
-                  repeatCount="indefinite"
-                />
-              )}
-            </line>
           )}
-        </svg>
-      );
-    }
+        </path>
+
+        {/* Hash marks (circles) for keyed streams */}
+        {isHashMarks && (
+          <>
+            {[8, 16, 24, 32].map((x) => (
+              <circle key={x} cx={x} cy={mid} r={2} fill={stroke} />
+            ))}
+          </>
+        )}
+
+        {/* Arrowhead - always point right regardless of wavy path */}
+        {processedStyle.markerEnd && (
+          <polygon
+            points={`40,${mid} 34,${mid - 3} 34,${mid + 3}`}
+            fill={stroke}
+          />
+        )}
+      </svg>
+    );
   };
 
   // Memoize sections to avoid re-computation on unrelated re-renders

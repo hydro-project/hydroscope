@@ -13,25 +13,6 @@ import {
 } from "../shared/colorUtils";
 import { SIZES } from "../shared/config";
 
-/**
- * Measure text width using canvas for accurate measurement
- */
-function measureTextWidth(
-  text: string,
-  fontSize: number,
-  fontWeight: string,
-): number {
-  if (typeof document === "undefined") return text.length * 7; // SSR fallback
-
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  if (!context) return text.length * 7; // Fallback
-
-  context.font = `${fontWeight} ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-  const metrics = context.measureText(text);
-  return metrics.width;
-}
-
 export function ContainerNode({
   id,
   data,
@@ -57,29 +38,16 @@ export function ContainerNode({
   const containerLabel = String(data.label || id);
   const containerLongLabel = String(data.longLabel || data.label || id);
 
-  // Calculate the display label for expanded containers based on actual text width
+  // For expanded containers, use longLabel with left truncation if needed
   const expandedDisplayLabel = React.useMemo(() => {
     if (isCollapsed) return containerLabel;
 
-    const availableWidth = Number(width) - 36; // Account for padding and border
-    const fontSize = 12;
-    const fontWeight = "bold";
+    // Calculate available width for the label
+    const availableWidth = Number(width) - 24;
+    // Estimate max characters (average char width ~7px for 12px bold font)
+    const estimatedMaxChars = Math.floor(availableWidth / 7);
 
-    // Measure the full text width
-    const fullTextWidth = measureTextWidth(
-      containerLongLabel,
-      fontSize,
-      fontWeight,
-    );
-
-    // If it fits, use the full label
-    if (fullTextWidth <= availableWidth) {
-      return containerLongLabel;
-    }
-
-    // Otherwise, truncate intelligently from the left
-    // Start with a generous character estimate and let truncateLabel do smart delimiter-based truncation
-    const estimatedMaxChars = Math.floor(availableWidth / 6); // Conservative estimate
+    // Truncate from the left to show the most recent stack frames
     return truncateLabel(containerLongLabel, {
       maxLength: estimatedMaxChars,
       preferDelimiters: true,
@@ -177,21 +145,21 @@ export function ContainerNode({
     // Apply search highlight colors if needed
     const containerColors = searchHighlight
       ? {
-          background: searchHighlightStrong
-            ? searchColors.current.background
-            : searchColors.match.background,
-          border: searchHighlightStrong
-            ? searchColors.current.border
-            : searchColors.match.border,
-          text: searchHighlightStrong
-            ? searchColors.current.text
-            : searchColors.match.text,
-        }
+        background: searchHighlightStrong
+          ? searchColors.current.background
+          : searchColors.match.background,
+        border: searchHighlightStrong
+          ? searchColors.current.border
+          : searchColors.match.border,
+        text: searchHighlightStrong
+          ? searchColors.current.text
+          : searchColors.match.text,
+      }
       : {
-          ...baseContainerColors,
-          // Ensure good contrast for non-highlighted containers too
-          text: getContrastColor(baseContainerColors.background),
-        };
+        ...baseContainerColors,
+        // Ensure good contrast for non-highlighted containers too
+        text: getContrastColor(baseContainerColors.background),
+      };
     return (
       <>
         {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -358,21 +326,21 @@ export function ContainerNode({
   const searchColors = getSearchHighlightColors();
   const nonCollapsedColors = searchHighlight
     ? {
-        background: searchHighlightStrong
-          ? searchColors.current.background
-          : searchColors.match.background,
-        border: searchHighlightStrong
-          ? searchColors.current.border
-          : searchColors.match.border,
-        text: searchHighlightStrong
-          ? searchColors.current.text
-          : searchColors.match.text,
-      }
+      background: searchHighlightStrong
+        ? searchColors.current.background
+        : searchColors.match.background,
+      border: searchHighlightStrong
+        ? searchColors.current.border
+        : searchColors.match.border,
+      text: searchHighlightStrong
+        ? searchColors.current.text
+        : searchColors.match.text,
+    }
     : {
-        ...baseContainerColors,
-        // Ensure good contrast for non-highlighted containers too
-        text: getContrastColor(baseContainerColors.background),
-      };
+      ...baseContainerColors,
+      // Ensure good contrast for non-highlighted containers too
+      text: getContrastColor(baseContainerColors.background),
+    };
   return (
     <>
       {/* Search highlight animations use box-shadow to prevent ResizeObserver loops */}
@@ -434,7 +402,7 @@ export function ContainerNode({
             fontSize: "12px",
             fontWeight: "bold",
             color: nonCollapsedColors.text,
-            maxWidth: `${Number(width) - 36}px`,
+            maxWidth: `${Number(width) - 24}px`, // More generous - just account for right padding
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",

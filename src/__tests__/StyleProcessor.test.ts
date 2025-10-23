@@ -434,7 +434,7 @@ describe("StyleProcessor", () => {
   describe("DEFAULT_STYLE", () => {
     it("should define default style constants", () => {
       expect(DEFAULT_STYLE.STROKE_COLOR).toBe("#666666");
-      expect(DEFAULT_STYLE.STROKE_WIDTH).toBe(3); // Updated to 3px for better visibility
+      expect(DEFAULT_STYLE.STROKE_WIDTH).toBe(2);
       expect(DEFAULT_STYLE.DEFAULT_STROKE_COLOR).toBe("#999999");
     });
   });

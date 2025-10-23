@@ -32,7 +32,7 @@ export function truncateLabel(
     maxLength,
     preferDelimiters = true,
     delimiters = DEFAULT_DELIMITERS,
-    leftTruncate = false,
+    leftTruncate = true,
   } = options;
   // Early return if no truncation needed
   if (!label || label.length <= maxLength) {
@@ -52,49 +52,40 @@ export function truncateLabel(
     : `${label.slice(0, maxLength - 1)}…`;
 }
 /**
- * Left-truncate keeping the meaningful ending (like Rust paths)
- * This is what's used for collapsed containers
+ * Left-truncate keeping the meaningful ending (like stack traces)
+ * This keeps the rightmost part of the string, truncating from the left
  */
 function leftTruncateWithDelimiters(
   label: string,
   maxLength: number,
   delimiters: string[],
 ): string {
-  // Try each delimiter to find the best truncation
+  // If it fits, return as-is
+  if (label.length <= maxLength) {
+    return label;
+  }
+
+  // Simple approach: take the rightmost characters that fit, with ellipsis
+  // Try to break on a delimiter if possible
+  const targetLength = maxLength - 1; // Reserve 1 char for ellipsis
+  const rightPart = label.slice(-targetLength);
+
+  // Try to find a delimiter near the start of rightPart to make a clean break
+  let bestBreakIndex = 0;
   for (const delimiter of delimiters) {
-    if (label.includes(delimiter)) {
-      const parts = label.split(delimiter);
-      const lastPart = parts[parts.length - 1];
-      // If the last part is meaningful and fits, use it with ellipsis
-      if (lastPart.length > 2 && lastPart.length <= maxLength - 2) {
-        return `…${delimiter}${lastPart}`;
-      }
-      // Try to keep multiple meaningful parts from the end
-      if (parts.length > 1) {
-        // Start with the last part and add more from the right
-        let result = lastPart;
-        for (let i = parts.length - 2; i >= 0; i--) {
-          const candidate = parts[i] + delimiter + result;
-          const withEllipsis = `…${delimiter}${result}`;
-          if (candidate.length <= maxLength) {
-            // Can fit without ellipsis
-            result = candidate;
-          } else if (withEllipsis.length <= maxLength) {
-            // Need ellipsis but it fits
-            return withEllipsis;
-          } else {
-            // Doesn't fit even with ellipsis, return previous result
-            break;
-          }
-        }
-        if (result.length <= maxLength) {
-          return result;
-        }
-      }
+    const delimIndex = rightPart.indexOf(delimiter);
+    if (delimIndex > 0 && delimIndex < rightPart.length * 0.3) {
+      // Found a delimiter in the first 30% - use it for a clean break
+      bestBreakIndex = Math.max(bestBreakIndex, delimIndex + delimiter.length);
     }
   }
-  // Fallback: simple left truncation
-  return `…${label.slice(-(maxLength - 1))}`;
+
+  if (bestBreakIndex > 0) {
+    return `…${rightPart.slice(bestBreakIndex)}`;
+  }
+
+  // No good delimiter found, just truncate
+  return `…${rightPart}`;
 }
 /**
  * Right-truncate keeping the meaningful beginning

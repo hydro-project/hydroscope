@@ -1,68 +1,13 @@
-import { BaseEdge, EdgeProps, getStraightPath } from "@xyflow/react";
+import {
+  BaseEdge,
+  EdgeProps,
+  getStraightPath,
+  getBezierPath,
+  getSmoothStepPath,
+} from "@xyflow/react";
 import { memo } from "react";
-import { generateHashMarks } from "./edgeStyleUtils.js";
-
-/**
- * Generate a wavy path using SVG path commands
- * Creates a sine wave between source and target points
- */
-function getWavyPath(params: {
-  sourceX: number;
-  sourceY: number;
-  targetX: number;
-  targetY: number;
-  amplitude?: number;
-  frequency?: number;
-}): string {
-  const {
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    amplitude = 8,
-    frequency = 4,
-  } = params;
-
-  const dx = targetX - sourceX;
-  const dy = targetY - sourceY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-
-  // Avoid division by zero for very short edges
-  if (distance < 10) {
-    return `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-  }
-
-  // Number of wave cycles based on distance and frequency
-  const cycles = Math.max(1, Math.floor(distance / (100 / frequency)));
-  const segmentsPerCycle = 8; // Smooth wave with 8 segments per cycle
-  const totalSegments = cycles * segmentsPerCycle;
-
-  // Calculate angle for perpendicular offset
-  const angle = Math.atan2(dy, dx);
-  const perpAngle = angle + Math.PI / 2;
-
-  // Build SVG path with quadratic curves to approximate sine wave
-  let path = `M ${sourceX} ${sourceY}`;
-
-  for (let i = 0; i < totalSegments; i++) {
-    const t = (i + 1) / totalSegments; // Progress along edge (0 to 1)
-    const waveT = t * cycles * 2 * Math.PI; // Wave position
-
-    // Current point position
-    const x = sourceX + dx * t;
-    const y = sourceY + dy * t;
-
-    // Perpendicular offset based on sine wave
-    const offset = Math.sin(waveT) * amplitude;
-    const offsetX = Math.cos(perpAngle) * offset;
-    const offsetY = Math.sin(perpAngle) * offset;
-
-    // Add line segment to point with wave offset
-    path += ` L ${x + offsetX} ${y + offsetY}`;
-  }
-
-  return path;
-}
+import { generateHashMarks, applyWavinessToPath } from "./edgeStyleUtils.js";
+import { DEFAULT_STYLE } from "../utils/StyleProcessor.js";
 
 /**
  * Custom edge component supporting hash marks and wavy paths
@@ -73,29 +18,52 @@ function getWavyPath(params: {
  * - Combination of both (wavy lines with hash marks)
  */
 export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
-  const { sourceX, sourceY, targetX, targetY, markerEnd, style, data } = props;
+  const {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    markerEnd,
+    style,
+    data,
+  } = props;
 
   // Extract edge styling properties from data
   const lineStyle = (data as any)?.lineStyle;
   const waviness = (data as any)?.waviness;
+  const edgeStyleType = (data as any)?.edgeStyleType || "bezier";
 
   const hasHashMarks = lineStyle === "hash-marks";
   const isWavy = waviness === true;
 
-  // Generate edge path (wavy or straight)
-  let edgePath: string;
-  if (isWavy) {
-    edgePath = getWavyPath({
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      amplitude: 8,
-      frequency: 4,
-    });
-  } else {
-    [edgePath] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+  // Generate base edge path based on edgeStyleType
+  const pathParams = {
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  };
+
+  let basePath: string;
+  switch (edgeStyleType) {
+    case "straight":
+      [basePath] = getStraightPath(pathParams);
+      break;
+    case "smoothstep":
+      [basePath] = getSmoothStepPath(pathParams);
+      break;
+    case "bezier":
+    default:
+      [basePath] = getBezierPath(pathParams);
+      break;
   }
+
+  // Apply waviness on top of the base path if needed (using config defaults)
+  const edgePath = isWavy ? applyWavinessToPath(basePath) : basePath;
 
   // Extract style properties
   const { stroke, strokeWidth, strokeDasharray } = style || {};
@@ -107,8 +75,8 @@ export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
 
   // Hash marks rendering - vertical tick marks along the edge
   const pathStyle = {
-    stroke: stroke || "#666666",
-    strokeWidth: strokeWidth || 3,
+    stroke: stroke || DEFAULT_STYLE.STROKE_COLOR,
+    strokeWidth: strokeWidth || DEFAULT_STYLE.STROKE_WIDTH,
     strokeDasharray,
     fill: "none",
   };

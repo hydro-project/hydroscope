@@ -1,0 +1,1043 @@
+{
+  "nodes": [
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/location/mod.rs",
+            "filename": "src/location/mod.rs",
+            "fn": "source_cluster_members",
+            "function": "source_cluster_members",
+            "line": 209,
+            "lineNumber": 209
+          },
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 58,
+            "lineNumber": 58
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "source_iter(q!({ use hydro_lang :: __staged :: __deps :: * ; use hydro_lang :: __staged :: location :: * ; let underlying_memberids__free = unsafe { :: std :: mem :: transmute :: < _ , & [hydro_lang :: location :: MemberId < () >] > (__hydro_lang_cluster_ids_1) } ; underlying_memberids__free }))",
+      "id": "0",
+      "label": "source_iter",
+      "nodeType": "Source",
+      "shortLabel": "source_iter"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/location/mod.rs",
+            "filename": "src/location/mod.rs",
+            "fn": "source_cluster_members",
+            "function": "source_cluster_members",
+            "line": 210,
+            "lineNumber": 210
+          },
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 58,
+            "lineNumber": 58
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| id | (* id , MembershipEvent :: Joined)))",
+      "id": "1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 68,
+            "lineNumber": 68
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 1,
+        "locationType": "Cluster"
+      },
+      "fullLabel": "inspect(q!(move | n | println ! (\"cluster received: {:?} (self cluster id: {})\" , n , CLUSTER_SELF_ID__free)))",
+      "id": "10",
+      "label": "inspect",
+      "nodeType": "Transform",
+      "shortLabel": "inspect"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 72,
+            "lineNumber": 72
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "network(send + recv)",
+      "id": "11",
+      "label": "network",
+      "nodeType": "Network",
+      "shortLabel": "network"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "send_bincode",
+            "function": "send_bincode",
+            "line": 455,
+            "lineNumber": 455
+          },
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 72,
+            "lineNumber": 72
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "12",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 73,
+            "lineNumber": 73
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "13",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 74,
+            "lineNumber": 74
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "observenondet [hydro operator]",
+      "id": "14",
+      "label": "observenondet",
+      "nodeType": "Transform",
+      "shortLabel": "observenondet"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 74,
+            "lineNumber": 74
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "for_each(q!(| (id , d) | println ! (\"node received: ({}, {:?})\" , id , d)))",
+      "id": "15",
+      "label": "for_each",
+      "nodeType": "Sink",
+      "shortLabel": "for_each"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/location/mod.rs",
+            "filename": "src/location/mod.rs",
+            "fn": "source_cluster_members",
+            "function": "source_cluster_members",
+            "line": 211,
+            "lineNumber": 211
+          },
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 58,
+            "lineNumber": 58
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "2",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 59,
+            "lineNumber": 59
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "3",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 60,
+            "lineNumber": 60
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "filtermap(q!(| (i , e) | match e { MembershipEvent :: Joined => Some (i) , MembershipEvent :: Left => None , }))",
+      "id": "4",
+      "label": "filtermap",
+      "nodeType": "Transform",
+      "shortLabel": "filtermap"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 56,
+            "lineNumber": 56
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "source_iter(q!({ use crate :: __staged :: __deps :: * ; use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 }))",
+      "id": "5",
+      "label": "source_iter",
+      "nodeType": "Source",
+      "shortLabel": "source_iter"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "crossproduct [hydro operator]",
+      "id": "6",
+      "label": "crossproduct",
+      "nodeType": "Join",
+      "shortLabel": "crossproduct"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| (id , n) | (id , (id , n))))",
+      "id": "7",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "demux_bincode",
+            "function": "demux_bincode",
+            "line": 301,
+            "lineNumber": 301
+          },
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 67,
+            "lineNumber": 67
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 0,
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "8",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "demux_bincode",
+            "function": "demux_bincode",
+            "line": 301,
+            "lineNumber": 301
+          },
+          {
+            "file": "src/cluster/simple_cluster.rs",
+            "filename": "src/cluster/simple_cluster.rs",
+            "fn": "simple_cluster",
+            "function": "simple_cluster",
+            "line": 67,
+            "lineNumber": 67
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 53,
+            "lineNumber": 53
+          },
+          {
+            "file": "examples/simple_cluster.rs",
+            "filename": "examples/simple_cluster.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 79,
+            "lineNumber": 79
+          }
+        ],
+        "locationId": 1,
+        "locationType": "Cluster"
+      },
+      "fullLabel": "network(send + recv)",
+      "id": "9",
+      "label": "network",
+      "nodeType": "Network",
+      "shortLabel": "network"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "0",
+      "target": "1"
+    },
+    {
+      "id": "e1",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "1",
+      "target": "2"
+    },
+    {
+      "id": "e10",
+      "label": "to Some(0)",
+      "semanticTags": [
+        "Network",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "10",
+      "target": "11"
+    },
+    {
+      "id": "e11",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "11",
+      "target": "12"
+    },
+    {
+      "id": "e12",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "NoOrder",
+        "Unbounded"
+      ],
+      "source": "12",
+      "target": "13"
+    },
+    {
+      "id": "e13",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "13",
+      "target": "14"
+    },
+    {
+      "id": "e14",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "14",
+      "target": "15"
+    },
+    {
+      "id": "e2",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "2",
+      "target": "3"
+    },
+    {
+      "id": "e3",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "3",
+      "target": "4"
+    },
+    {
+      "id": "e4",
+      "label": "left",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "4",
+      "target": "6"
+    },
+    {
+      "id": "e5",
+      "label": "right",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "5",
+      "target": "6"
+    },
+    {
+      "id": "e6",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "6",
+      "target": "7"
+    },
+    {
+      "id": "e7",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "7",
+      "target": "8"
+    },
+    {
+      "id": "e8",
+      "label": "to Some(1)",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Network",
+        "NoOrder",
+        "Unbounded"
+      ],
+      "source": "8",
+      "target": "9"
+    },
+    {
+      "id": "e9",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "9",
+      "target": "10"
+    }
+  ],
+  "hierarchyChoices": [
+    {
+      "children": [
+        {
+          "children": [],
+          "id": "loc_0",
+          "name": "Process 0"
+        },
+        {
+          "children": [],
+          "id": "loc_1",
+          "name": "()"
+        }
+      ],
+      "id": "location",
+      "name": "Location"
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "id": "bt_15",
+              "name": "demux_bincode"
+            },
+            {
+              "id": "bt_16",
+              "name": "send_bincode"
+            },
+            {
+              "id": "bt_17",
+              "name": "source_cluster_members"
+            }
+          ],
+          "id": "bt_14",
+          "name": "ops/function.rs ← main ← block_on ← block_on_inner ← block_on ← enter_runtime ← {{closure}} ← block_on ← budget ← with_budget ← {{closure}} ← poll ← {{closure}} ← simple_cluster"
+        }
+      ],
+      "id": "backtrace",
+      "name": "Backtrace"
+    }
+  ],
+  "nodeAssignments": {
+    "backtrace": {
+      "0": "bt_17",
+      "1": "bt_17",
+      "10": "bt_14",
+      "11": "bt_14",
+      "12": "bt_16",
+      "13": "bt_14",
+      "14": "bt_14",
+      "15": "bt_14",
+      "2": "bt_17",
+      "3": "bt_14",
+      "4": "bt_14",
+      "5": "bt_14",
+      "6": "bt_14",
+      "7": "bt_14",
+      "8": "bt_15",
+      "9": "bt_15"
+    },
+    "location": {
+      "0": "loc_0",
+      "1": "loc_0",
+      "10": "loc_1",
+      "11": "loc_0",
+      "12": "loc_0",
+      "13": "loc_0",
+      "14": "loc_0",
+      "15": "loc_0",
+      "2": "loc_0",
+      "3": "loc_0",
+      "4": "loc_0",
+      "5": "loc_0",
+      "6": "loc_0",
+      "7": "loc_0",
+      "8": "loc_0",
+      "9": "loc_1"
+    }
+  },
+  "selectedHierarchy": "location",
+  "edgeStyleConfig": {
+    "note": "Edge styles are now computed per-edge using the unified edge style system. This config is provided for reference and compatibility.",
+    "semanticMappings": {
+      "BoundednessGroup": {
+        "Bounded": {
+          "halo": "none"
+        },
+        "Unbounded": {
+          "halo": "light-blue"
+        }
+      },
+      "CollectionGroup": {
+        "Optional": {
+          "arrowhead": "diamond-open",
+          "color": "#6b7280"
+        },
+        "Singleton": {
+          "arrowhead": "circle-filled",
+          "color": "#000000"
+        },
+        "Stream": {
+          "arrowhead": "triangle-filled",
+          "color": "#2563eb"
+        }
+      },
+      "KeyednessGroup": {
+        "Keyed": {
+          "line-style": "hash-marks"
+        },
+        "NotKeyed": {
+          "line-style": "single"
+        }
+      },
+      "NetworkGroup": {
+        "Local": {
+          "animation": "static",
+          "line-pattern": "solid"
+        },
+        "Network": {
+          "animation": "animated",
+          "line-pattern": "dashed"
+        }
+      },
+      "OrderingGroup": {
+        "NoOrder": {
+          "waviness": "wavy"
+        },
+        "TotalOrder": {
+          "waviness": "straight"
+        }
+      }
+    },
+    "semanticPriorities": [
+      [
+        "Unbounded",
+        "Bounded"
+      ],
+      [
+        "NoOrder",
+        "TotalOrder"
+      ],
+      [
+        "Keyed",
+        "NotKeyed"
+      ],
+      [
+        "Network",
+        "Local"
+      ]
+    ]
+  },
+  "nodeTypeConfig": {
+    "defaultType": "Transform",
+    "types": [
+      {
+        "colorIndex": 0,
+        "id": "Aggregation",
+        "label": "Aggregation"
+      },
+      {
+        "colorIndex": 1,
+        "id": "Join",
+        "label": "Join"
+      },
+      {
+        "colorIndex": 2,
+        "id": "Network",
+        "label": "Network"
+      },
+      {
+        "colorIndex": 3,
+        "id": "Sink",
+        "label": "Sink"
+      },
+      {
+        "colorIndex": 4,
+        "id": "Source",
+        "label": "Source"
+      },
+      {
+        "colorIndex": 5,
+        "id": "Tee",
+        "label": "Tee"
+      },
+      {
+        "colorIndex": 6,
+        "id": "Transform",
+        "label": "Transform"
+      }
+    ]
+  },
+  "legend": {
+    "items": [
+      {
+        "label": "Aggregation",
+        "type": "Aggregation"
+      },
+      {
+        "label": "Join",
+        "type": "Join"
+      },
+      {
+        "label": "Network",
+        "type": "Network"
+      },
+      {
+        "label": "Sink",
+        "type": "Sink"
+      },
+      {
+        "label": "Source",
+        "type": "Source"
+      },
+      {
+        "label": "Tee",
+        "type": "Tee"
+      },
+      {
+        "label": "Transform",
+        "type": "Transform"
+      }
+    ],
+    "title": "Node Types"
+  }
+}
