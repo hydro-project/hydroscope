@@ -29,7 +29,11 @@ describe("Search Navigation Workflow Integration", () => {
     coordinator = testSetup.asyncCoordinator;
 
     // Load the actual simple_cluster.json file
-    const chatPath = path.join(process.cwd(), "test-data", "simple_cluster.json");
+    const chatPath = path.join(
+      process.cwd(),
+      "test-data",
+      "simple_cluster.json",
+    );
 
     if (!fs.existsSync(chatPath)) {
       throw new Error(`Test data file not found: ${chatPath}`);
