@@ -388,19 +388,18 @@ describe("StyleTuner Component", () => {
       expect(onFullNodeLabelsChange).toHaveBeenCalledWith(true);
     });
 
-    it("should update AsyncCoordinator render options when toggled", () => {
-      const mockSetRenderOptions = vi.fn();
-      const mockExecuteLayoutAndRenderPipeline = vi
-        .fn()
-        .mockResolvedValue(undefined);
+    it("should update AsyncCoordinator render options when toggled", async () => {
+      const mockToggleFullNodeLabels = vi.fn().mockResolvedValue(undefined);
       const mockAsyncCoordinator = {
-        setRenderOptions: mockSetRenderOptions,
-        executeLayoutAndRenderPipeline: mockExecuteLayoutAndRenderPipeline,
+        toggleFullNodeLabels: mockToggleFullNodeLabels,
       };
+
+      const mockVisualizationState = {};
 
       const propsWithCoordinator = {
         ...mockProps,
         asyncCoordinator: mockAsyncCoordinator,
+        visualizationState: mockVisualizationState,
       };
 
       render(<StyleTuner {...propsWithCoordinator} />);
@@ -408,20 +407,26 @@ describe("StyleTuner Component", () => {
       const checkbox = screen.getByRole("checkbox");
       fireEvent.click(checkbox);
 
-      expect(mockSetRenderOptions).toHaveBeenCalledWith({
-        showFullNodeLabels: true,
+      // Wait for async operation
+      await vi.waitFor(() => {
+        expect(mockToggleFullNodeLabels).toHaveBeenCalledWith(
+          true,
+          mockVisualizationState,
+          { fitView: true },
+        );
       });
     });
 
-    it("should expand all node labels when enabled", () => {
-      const mockExpandAllNodeLabelsToLong = vi.fn();
-      const mockVisualizationState = {
-        expandAllNodeLabelsToLong: mockExpandAllNodeLabelsToLong,
-        resetAllNodeLabelsToShort: vi.fn(),
+    it("should expand all node labels when enabled", async () => {
+      const mockToggleFullNodeLabels = vi.fn().mockResolvedValue(undefined);
+      const mockAsyncCoordinator = {
+        toggleFullNodeLabels: mockToggleFullNodeLabels,
       };
+      const mockVisualizationState = {};
 
       const propsWithState = {
         ...mockProps,
+        asyncCoordinator: mockAsyncCoordinator,
         visualizationState: mockVisualizationState,
       };
 
@@ -430,19 +435,27 @@ describe("StyleTuner Component", () => {
       const checkbox = screen.getByRole("checkbox");
       fireEvent.click(checkbox);
 
-      expect(mockExpandAllNodeLabelsToLong).toHaveBeenCalled();
+      // Wait for async operation
+      await vi.waitFor(() => {
+        expect(mockToggleFullNodeLabels).toHaveBeenCalledWith(
+          true,
+          mockVisualizationState,
+          { fitView: true },
+        );
+      });
     });
 
-    it("should reset all node labels when disabled", () => {
-      const mockResetAllNodeLabelsToShort = vi.fn();
-      const mockVisualizationState = {
-        expandAllNodeLabelsToLong: vi.fn(),
-        resetAllNodeLabelsToShort: mockResetAllNodeLabelsToShort,
+    it("should reset all node labels when disabled", async () => {
+      const mockToggleFullNodeLabels = vi.fn().mockResolvedValue(undefined);
+      const mockAsyncCoordinator = {
+        toggleFullNodeLabels: mockToggleFullNodeLabels,
       };
+      const mockVisualizationState = {};
 
       const propsWithState = {
         ...mockProps,
         value: { ...defaultStyleConfig, showFullNodeLabels: true },
+        asyncCoordinator: mockAsyncCoordinator,
         visualizationState: mockVisualizationState,
       };
 
@@ -451,7 +464,14 @@ describe("StyleTuner Component", () => {
       const checkbox = screen.getByRole("checkbox");
       fireEvent.click(checkbox); // This will uncheck it since it starts checked
 
-      expect(mockResetAllNodeLabelsToShort).toHaveBeenCalled();
+      // Wait for async operation
+      await vi.waitFor(() => {
+        expect(mockToggleFullNodeLabels).toHaveBeenCalledWith(
+          false,
+          mockVisualizationState,
+          { fitView: true },
+        );
+      });
     });
   });
 

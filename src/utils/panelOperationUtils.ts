@@ -16,7 +16,6 @@ import {
   recordDOMUpdate,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Panel operation types supported by the utilities
@@ -391,10 +390,8 @@ export function changeStyleImperatively(options: {
     return true;
   };
 
-  // Use centralized ResizeObserver error suppression
-  if (suppressResizeObserver) {
-    return withResizeObserverErrorSuppression(performStyleChange)();
-  }
+  // Execute the operation (ResizeObserver debouncing handles any issues)
+  return performStyleChange();
 
   return performStyleChange();
 }

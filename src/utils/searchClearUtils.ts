@@ -11,7 +11,6 @@ import {
   recordDOMUpdate,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Clear search imperatively using AsyncCoordinator for proper coordination
@@ -92,7 +91,7 @@ export function clearSearchImperatively(options: {
         // Use AsyncCoordinator to ensure ReactFlow data is regenerated
         // IMPORTANT: Don't await here to prevent blocking the UI, but ensure the promise is handled
         asyncCoordinator
-          .clearSearch(visualizationState, {
+          .clearSearchHighlights(visualizationState, {
             fitView: false,
           })
           .then((reactFlowData: any) => {
@@ -162,12 +161,8 @@ export function clearSearchImperatively(options: {
     }
   };
 
-  // Use ResizeObserver error suppression if enabled
-  if (suppressResizeObserver) {
-    withResizeObserverErrorSuppression(performSearchClear)();
-  } else {
-    performSearchClear();
-  }
+  // Execute the clear operation (ResizeObserver debouncing handles any issues)
+  performSearchClear();
 }
 
 /**
@@ -238,12 +233,8 @@ export function clearSearchPanelImperatively(options: {
     }
   };
 
-  // Use ResizeObserver error suppression if enabled
-  if (suppressResizeObserver) {
-    withResizeObserverErrorSuppression(performPanelClear)();
-  } else {
-    performPanelClear();
-  }
+  // Execute the clear operation (ResizeObserver debouncing handles any issues)
+  performPanelClear();
 }
 
 /**

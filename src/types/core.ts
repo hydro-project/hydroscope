@@ -328,6 +328,18 @@ export interface QueuedOperation<T = any> {
     | "clear_search"
     | "execute_search_pipeline"
     | "search_with_expansion"
+    | "search_highlight_update" // New: Update search highlights
+    | "search_highlight_clear" // New: Clear search highlights
+    // Navigation operations
+    | "navigation_highlight_update" // New: Update navigation highlights
+    | "navigation_highlight_clear" // New: Clear navigation highlights
+    | "temporary_highlight_add" // New: Add temporary highlight
+    | "temporary_highlight_remove" // New: Remove temporary highlight
+    // Style operations
+    | "style_palette_update" // New: Update color palette
+    | "style_edge_update" // New: Update edge style
+    | "style_layout_algorithm_update" // New: Update layout algorithm
+    | "style_label_visibility_update" // New: Toggle full node labels
     // Config and navigation operations
     | "update_render_config"
     | "navigate_to_element"

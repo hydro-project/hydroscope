@@ -3,17 +3,15 @@
  *
  * Provides UI controls for adjusting visualization styling and layout settings.
  *
- * IMPORTANT: This component implements comprehensive ResizeObserver loop prevention
- * using imperative style operation utilities:
- * 1. Layout algorithm changes use changeLayoutImperatively() to avoid coordination cascades
- * 2. Color palette changes use changeColorPaletteImperatively() with ResizeObserver suppression
- * 3. Edge style changes use changeEdgeStyleImperatively() with requestAnimationFrame batching
- * 4. Reset operations use resetStylesImperatively() with comprehensive error suppression
- * 5. All operations avoid AsyncCoordinator calls during UI interactions
- * 6. Multi-layer error suppression handles any remaining ResizeObserver errors
+ * IMPORTANT: This component uses AsyncCoordinator queue operations to prevent race conditions:
+ * 1. Layout algorithm changes use asyncCoordinator.updateLayoutAlgorithm()
+ * 2. Color palette changes use asyncCoordinator.updateColorPalette()
+ * 3. Edge style changes use asyncCoordinator.updateEdgeStyle()
+ * 4. Label visibility changes use asyncCoordinator.toggleFullNodeLabels()
+ * 5. All operations are queued sequentially to prevent ResizeObserver errors
+ * 6. Error handling is provided through onError callback
  *
- * This follows the established pattern from containerOperationUtils and panelOperationUtils
- * for stable UI operations without browser errors or performance issues.
+ * This follows the queue-based architecture pattern for all DOM-mutating operations.
  */
 import React, { useState, memo } from "react";
 import { Button, Divider } from "antd";
@@ -25,14 +23,9 @@ import {
 } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
-import {
-  changeLayoutImperatively,
-  changeColorPaletteImperatively,
-  changeEdgeStyleImperatively,
-  resetStylesImperatively,
-  type EdgeStyleKind,
-} from "../../utils/styleOperationUtils.js";
-// EdgeStyleKind is now imported from styleOperationUtils
+
+// Edge style type definition
+type EdgeStyleKind = "bezier" | "straight" | "smoothstep";
 export interface StyleConfig {
   edgeStyle?: EdgeStyleKind;
   edgeWidth?: number;
@@ -208,16 +201,44 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           <select
             value={currentLayout}
             style={inputStyle}
-            onChange={(e) => {
-              // Use imperative utility to avoid coordination cascades and ResizeObserver loops
+            onChange={async (e) => {
               const newLayout = e.target.value;
-              changeLayoutImperatively({
-                algorithm: newLayout,
-                onLayoutChange,
-                visualizationState: _visualizationState || undefined,
-                suppressResizeObserver: true,
-                debug: false,
-              });
+
+              // Call legacy callback if provided (with error handling)
+              if (onLayoutChange) {
+                try {
+                  onLayoutChange(newLayout);
+                } catch (error) {
+                  console.error(
+                    "[StyleTuner] Layout change callback failed:",
+                    error,
+                  );
+                  if (_onError) {
+                    _onError(error as Error);
+                  }
+                }
+              }
+
+              // Use AsyncCoordinator queue operation if available
+              if (_asyncCoordinator && _visualizationState) {
+                try {
+                  await _asyncCoordinator.updateLayoutAlgorithm(
+                    newLayout,
+                    _visualizationState,
+                    {
+                      fitView: true,
+                    },
+                  );
+                } catch (error) {
+                  console.error(
+                    "[StyleTuner] Layout algorithm update failed:",
+                    error,
+                  );
+                  if (_onError) {
+                    _onError(error as Error);
+                  }
+                }
+              }
             }}
           >
             {Object.entries(layoutOptions).map(([key, label]) => (
@@ -232,20 +253,57 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           <select
             value={local.edgeStyle || "bezier"}
             style={inputStyle}
-            onChange={(e) => {
+            onChange={async (e) => {
               // Update local state immediately for responsive UI
               const newEdgeStyle = e.target.value as EdgeStyleKind;
               const next = { ...local, edgeStyle: newEdgeStyle };
               setLocal(next);
 
-              // Use imperative utility to avoid coordination cascades and ResizeObserver loops
-              changeEdgeStyleImperatively({
-                edgeStyle: newEdgeStyle,
-                onEdgeStyleChange: onEdgeStyleChange || (() => onChange(next)),
-                visualizationState: _visualizationState || undefined,
-                suppressResizeObserver: true,
-                debug: false,
-              });
+              // Call legacy callback (with error handling)
+              try {
+                onChange(next);
+              } catch (error) {
+                console.error("[StyleTuner] onChange callback failed:", error);
+                if (_onError) {
+                  _onError(error as Error);
+                }
+              }
+
+              // Call legacy edge style callback if provided (with error handling)
+              if (onEdgeStyleChange) {
+                try {
+                  onEdgeStyleChange(newEdgeStyle);
+                } catch (error) {
+                  console.error(
+                    "[StyleTuner] Edge style change callback failed:",
+                    error,
+                  );
+                  if (_onError) {
+                    _onError(error as Error);
+                  }
+                }
+              }
+
+              // Use AsyncCoordinator queue operation if available
+              if (_asyncCoordinator && _visualizationState) {
+                try {
+                  await _asyncCoordinator.updateEdgeStyle(
+                    newEdgeStyle,
+                    _visualizationState,
+                    {
+                      fitView: false,
+                    },
+                  );
+                } catch (error) {
+                  console.error(
+                    "[StyleTuner] Edge style update failed:",
+                    error,
+                  );
+                  if (_onError) {
+                    _onError(error as Error);
+                  }
+                }
+              }
             }}
           >
             <option value="bezier">Bezier</option>
@@ -257,16 +315,44 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           <label>Color Palette</label>
           <select
             value={colorPalette}
-            onChange={(e) => {
-              // Use imperative utility to avoid coordination cascades and ResizeObserver loops
+            onChange={async (e) => {
               const newPalette = e.target.value;
-              changeColorPaletteImperatively({
-                palette: newPalette,
-                onPaletteChange,
-                visualizationState: _visualizationState || undefined,
-                suppressResizeObserver: true,
-                debug: false,
-              });
+
+              // Call legacy callback if provided (with error handling)
+              if (onPaletteChange) {
+                try {
+                  onPaletteChange(newPalette);
+                } catch (error) {
+                  console.error(
+                    "[StyleTuner] Palette change callback failed:",
+                    error,
+                  );
+                  if (_onError) {
+                    _onError(error as Error);
+                  }
+                }
+              }
+
+              // Use AsyncCoordinator queue operation if available
+              if (_asyncCoordinator && _visualizationState) {
+                try {
+                  await _asyncCoordinator.updateColorPalette(
+                    newPalette,
+                    _visualizationState,
+                    {
+                      fitView: false,
+                    },
+                  );
+                } catch (error) {
+                  console.error(
+                    "[StyleTuner] Color palette update failed:",
+                    error,
+                  );
+                  if (_onError) {
+                    _onError(error as Error);
+                  }
+                }
+              }
             }}
             style={inputStyle}
           >
@@ -291,10 +377,12 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             <input
               type="checkbox"
               checked={Boolean(local.showFullNodeLabels)}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const enabled = e.target.checked;
                 const next = { ...local, showFullNodeLabels: enabled };
                 setLocal(next);
+
+                // Call legacy callback
                 onChange(next);
 
                 // Handle full node labels mode change
@@ -302,52 +390,25 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
                   onFullNodeLabelsChange(enabled);
                 }
 
-                // Update AsyncCoordinator render options
-                if (_asyncCoordinator && _asyncCoordinator.setRenderOptions) {
-                  _asyncCoordinator.setRenderOptions({
-                    showFullNodeLabels: enabled,
-                  });
-                }
-
-                // Apply label changes to current visualization state
-                if (_visualizationState) {
-                  if (enabled) {
-                    _visualizationState.expandAllNodeLabelsToLong();
-                    if (
-                      typeof _visualizationState.updateNodeDimensionsForFullLabels ===
-                      "function"
-                    ) {
-                      _visualizationState.updateNodeDimensionsForFullLabels(
-                        true,
-                      );
-                    }
-                  } else {
-                    _visualizationState.resetAllNodeLabelsToShort();
-                    if (
-                      typeof _visualizationState.updateNodeDimensionsForFullLabels ===
-                      "function"
-                    ) {
-                      _visualizationState.updateNodeDimensionsForFullLabels(
-                        false,
-                      );
+                // Use AsyncCoordinator queue operation if available
+                if (_asyncCoordinator && _visualizationState) {
+                  try {
+                    await _asyncCoordinator.toggleFullNodeLabels(
+                      enabled,
+                      _visualizationState,
+                      {
+                        fitView: true,
+                      },
+                    );
+                  } catch (error) {
+                    console.error(
+                      "[StyleTuner] Full node labels toggle failed:",
+                      error,
+                    );
+                    if (_onError) {
+                      _onError(error as Error);
                     }
                   }
-
-                  // Trigger re-layout with current bridges
-                  if (_asyncCoordinator) {
-                    _asyncCoordinator
-                      .executeLayoutAndRenderPipeline(_visualizationState, {
-                        relayoutEntities: undefined,
-                        fitView: false,
-                      })
-                      .catch((error: Error) => {
-                        console.error("[StyleTuner] Layout failed:", error);
-                      });
-                  }
-                } else {
-                  console.warn(
-                    "⚠️ [StyleTuner] _visualizationState is not available!",
-                  );
                 }
               }}
               style={{
@@ -362,14 +423,49 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
         <Button
           type="default"
           icon={<ReloadOutlined />}
-          onClick={() => {
-            // Use imperative utility to avoid coordination cascades and ResizeObserver loops
-            resetStylesImperatively({
-              onResetToDefaults,
-              visualizationState: _visualizationState || undefined,
-              suppressResizeObserver: true,
-              debug: false,
-            });
+          onClick={async () => {
+            // Call legacy callback if provided
+            if (onResetToDefaults) {
+              onResetToDefaults();
+            }
+
+            // Reset to default values using AsyncCoordinator queue operations
+            if (_asyncCoordinator && _visualizationState) {
+              try {
+                // Reset color palette
+                await _asyncCoordinator.updateColorPalette(
+                  DEFAULT_COLOR_PALETTE,
+                  _visualizationState,
+                  { fitView: false },
+                );
+
+                // Reset layout algorithm
+                await _asyncCoordinator.updateLayoutAlgorithm(
+                  DEFAULT_ELK_ALGORITHM,
+                  _visualizationState,
+                  { fitView: false },
+                );
+
+                // Reset edge style to bezier
+                await _asyncCoordinator.updateEdgeStyle(
+                  "bezier",
+                  _visualizationState,
+                  { fitView: false },
+                );
+
+                // Reset full node labels to false
+                await _asyncCoordinator.toggleFullNodeLabels(
+                  false,
+                  _visualizationState,
+                  { fitView: true },
+                );
+              } catch (error) {
+                console.error("[StyleTuner] Reset to defaults failed:", error);
+                if (_onError) {
+                  _onError(error as Error);
+                }
+              }
+            }
           }}
           block
           size="small"

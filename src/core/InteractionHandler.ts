@@ -58,6 +58,142 @@ export class InteractionHandler {
     };
     this.processClickEvent(clickEvent);
   }
+
+  // Hover event handlers
+  handleNodeHover(nodeId: string): void {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.addTemporaryHighlight
+    ) {
+      this._asyncCoordinator
+        .addTemporaryHighlight(nodeId, this._visualizationState, {
+          duration: undefined, // No auto-removal, will be removed on hover end
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Temporary highlight add failed:",
+            error,
+          );
+        });
+    }
+  }
+
+  handleNodeHoverEnd(nodeId: string): void {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.removeTemporaryHighlight
+    ) {
+      this._asyncCoordinator
+        .removeTemporaryHighlight(nodeId, this._visualizationState, {
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Temporary highlight remove failed:",
+            error,
+          );
+        });
+    }
+  }
+
+  handleContainerHover(containerId: string): void {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.addTemporaryHighlight
+    ) {
+      this._asyncCoordinator
+        .addTemporaryHighlight(containerId, this._visualizationState, {
+          duration: undefined, // No auto-removal, will be removed on hover end
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Temporary highlight add failed:",
+            error,
+          );
+        });
+    }
+  }
+
+  handleContainerHoverEnd(containerId: string): void {
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.removeTemporaryHighlight
+    ) {
+      this._asyncCoordinator
+        .removeTemporaryHighlight(containerId, this._visualizationState, {
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Temporary highlight remove failed:",
+            error,
+          );
+        });
+    }
+  }
+
+  // Double-click handlers
+  handleNodeDoubleClick(nodeId: string): void {
+    // For nodes, double-click could toggle label or perform other actions
+    // Currently just toggle label like single click
+    this._visualizationState.toggleNodeLabel(nodeId);
+  }
+
+  handleContainerDoubleClick(containerId: string): void {
+    // Double-click on container: expand/collapse using AsyncCoordinator
+    const container = this._visualizationState.getContainer(containerId);
+    if (!container) {
+      console.warn(`[InteractionHandler] Container ${containerId} not found`);
+      return;
+    }
+
+    // Ensure container operations go through AsyncCoordinator queue
+    if (!this._asyncCoordinator) {
+      throw new Error(
+        "[InteractionHandler] AsyncCoordinator is not initialized\n" +
+          "   Why: This is required for container operations\n" +
+          "   Fix: Ensure AsyncCoordinator is passed to InteractionHandler constructor",
+      );
+    }
+
+    if (
+      !this._asyncCoordinator.expandContainer ||
+      !this._asyncCoordinator.collapseContainer
+    ) {
+      throw new Error(
+        "[InteractionHandler] Container expand/collapse methods not available\n" +
+          "   Why: These methods are required for container operations\n" +
+          "   Fix: Ensure you're using the latest version of AsyncCoordinator",
+      );
+    }
+
+    if (container.collapsed) {
+      this._asyncCoordinator
+        .expandContainer(containerId, this._visualizationState, {
+          relayoutEntities: undefined, // Full layout
+          fitView: true,
+          fitViewOptions: { padding: 0.2, duration: 300 },
+        })
+        .catch((error: Error) => {
+          console.error("[InteractionHandler] Container expand failed:", error);
+        });
+    } else {
+      this._asyncCoordinator
+        .collapseContainer(containerId, this._visualizationState, {
+          relayoutEntities: undefined, // Full layout
+          fitView: true,
+          fitViewOptions: { padding: 0.2, duration: 300 },
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Container collapse failed:",
+            error,
+          );
+        });
+    }
+  }
   handleContainerClick(
     containerId: string,
     position?: {
@@ -133,6 +269,24 @@ export class InteractionHandler {
       return;
     }
 
+    // Update navigation highlight for the clicked node
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.updateNavigationHighlight
+    ) {
+      this._asyncCoordinator
+        .updateNavigationHighlight(event.elementId, this._visualizationState, {
+          focusViewport: false, // Don't auto-focus on node clicks
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Navigation highlight update failed:",
+            error,
+          );
+        });
+    }
+
     // Toggle node label between short and long
     this._visualizationState.toggleNodeLabel(event.elementId);
   }
@@ -154,62 +308,98 @@ export class InteractionHandler {
       return;
     }
 
-    // Use AsyncCoordinator methods if available for proper pipeline execution
+    // Update navigation highlight for the clicked container
     if (
       this._asyncCoordinator &&
-      this._asyncCoordinator.expandContainer &&
-      this._asyncCoordinator.collapseContainer
+      this._asyncCoordinator.updateNavigationHighlight
     ) {
-      const wasCollapsed = containerBefore.collapsed;
+      this._asyncCoordinator
+        .updateNavigationHighlight(event.elementId, this._visualizationState, {
+          focusViewport: false, // Don't auto-focus on container clicks
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Navigation highlight update failed:",
+            error,
+          );
+        });
+    }
 
-      // Use AsyncCoordinator's container methods for proper pipeline execution
-      if (wasCollapsed) {
-        // Shift-click: expand recursively
-        if (event.shiftKey) {
-          this._expandContainerRecursively(event.elementId);
-        } else {
-          this._asyncCoordinator
-            .expandContainer(event.elementId, this._visualizationState, {
-              relayoutEntities: undefined, // Full layout to let ELK recalculate positions
-              fitView: true, // Auto-fit after container operations since positions change
-              fitViewOptions: { padding: 0.2, duration: 300 },
-            })
-            .catch((error: Error) => {
-              console.error(
-                "[InteractionHandler] Container expand failed:",
-                error,
-              );
-            });
-        }
+    // Validate AsyncCoordinator is available
+    if (!this._asyncCoordinator) {
+      throw new Error(
+        "[InteractionHandler] AsyncCoordinator is not initialized\n" +
+          "   Why: This is required for container operations\n" +
+          "   Fix: Ensure AsyncCoordinator is passed to InteractionHandler constructor",
+      );
+    }
+
+    if (
+      !this._asyncCoordinator.expandContainer ||
+      !this._asyncCoordinator.collapseContainer
+    ) {
+      throw new Error(
+        "[InteractionHandler] Container expand/collapse methods not available\n" +
+          "   Why: These methods are required for container operations\n" +
+          "   Fix: Ensure you're using the latest version of AsyncCoordinator",
+      );
+    }
+
+    const wasCollapsed = containerBefore.collapsed;
+
+    // Use AsyncCoordinator's container methods for proper pipeline execution
+    if (wasCollapsed) {
+      // Shift-click: expand recursively
+      if (event.shiftKey) {
+        this._expandContainerRecursively(event.elementId);
       } else {
         this._asyncCoordinator
-          .collapseContainer(event.elementId, this._visualizationState, {
+          .expandContainer(event.elementId, this._visualizationState, {
             relayoutEntities: undefined, // Full layout to let ELK recalculate positions
             fitView: true, // Auto-fit after container operations since positions change
             fitViewOptions: { padding: 0.2, duration: 300 },
           })
           .catch((error: Error) => {
             console.error(
-              "[InteractionHandler] Container collapse failed:",
+              "[InteractionHandler] Container expand failed:",
               error,
             );
           });
       }
     } else {
-      // Fallback to direct VisualizationState methods (legacy behavior)
-      this._visualizationState._toggleContainerForCoordinator(event.elementId);
+      this._asyncCoordinator
+        .collapseContainer(event.elementId, this._visualizationState, {
+          relayoutEntities: undefined, // Full layout to let ELK recalculate positions
+          fitView: true, // Auto-fit after container operations since positions change
+          fitViewOptions: { padding: 0.2, duration: 300 },
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Container collapse failed:",
+            error,
+          );
+        });
     }
   }
   /**
    * Recursively expand a container and all its descendant containers
    */
   private _expandContainerRecursively(containerId: string): void {
-    if (
-      !this._asyncCoordinator ||
-      !this._asyncCoordinator.expandContainerRecursively
-    ) {
-      console.warn("[InteractionHandler] Recursive expand not available");
-      return;
+    if (!this._asyncCoordinator) {
+      throw new Error(
+        "[InteractionHandler] AsyncCoordinator is not initialized\n" +
+          "   Why: This is required for container operations\n" +
+          "   Fix: Ensure AsyncCoordinator is passed to InteractionHandler constructor",
+      );
+    }
+
+    if (!this._asyncCoordinator.expandContainerRecursively) {
+      throw new Error(
+        "[InteractionHandler] expandContainerRecursively method not available\n" +
+          "   Why: This method is required for recursive container expansion\n" +
+          "   Fix: Ensure you're using the latest version of AsyncCoordinator",
+      );
     }
 
     this._asyncCoordinator
@@ -309,21 +499,53 @@ export class InteractionHandler {
     // Trigger constrained layout update for only the affected nodes
     this._triggerConstrainedLayoutUpdate(nodeIds);
   }
+
   handleBulkContainerToggle(containerIds: string[], collapsed: boolean): void {
-    for (const containerId of containerIds) {
-      const container = this._visualizationState.getContainer(containerId);
-      if (container && container.collapsed !== collapsed) {
-        if (collapsed) {
-          this._visualizationState._collapseContainerForCoordinator(
-            containerId,
-          );
-        } else {
-          this._visualizationState._expandContainerForCoordinator(containerId);
-        }
-      }
+    // Validate AsyncCoordinator is available
+    if (!this._asyncCoordinator) {
+      throw new Error(
+        "[InteractionHandler] AsyncCoordinator is not initialized\n" +
+          "   Why: This is required for container operations\n" +
+          "   Fix: Ensure AsyncCoordinator is passed to InteractionHandler constructor",
+      );
     }
-    // Trigger single layout update for all changes
-    this._triggerLayoutUpdate();
+
+    if (
+      !this._asyncCoordinator.expandContainers ||
+      !this._asyncCoordinator.collapseContainers
+    ) {
+      throw new Error(
+        "[InteractionHandler] Batch container expand/collapse methods not available\n" +
+          "   Why: These methods are required for bulk container operations\n" +
+          "   Fix: Ensure you're using the latest version of AsyncCoordinator",
+      );
+    }
+
+    if (collapsed) {
+      this._asyncCoordinator
+        .collapseContainers(this._visualizationState, containerIds, {
+          relayoutEntities: undefined, // Full layout
+          fitView: false, // Don't auto-fit for bulk operations
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Bulk container collapse failed:",
+            error,
+          );
+        });
+    } else {
+      this._asyncCoordinator
+        .expandContainers(this._visualizationState, containerIds, {
+          relayoutEntities: undefined, // Full layout
+          fitView: false, // Don't auto-fit for bulk operations
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Bulk container expand failed:",
+            error,
+          );
+        });
+    }
   }
   // Configuration management
   updateConfig(newConfig: Partial<InteractionConfig>): void {
@@ -379,29 +601,59 @@ export class InteractionHandler {
     elementId: string,
     elementType: "node" | "container",
   ): void {
+    // Update navigation highlight for the clicked search result
+    if (
+      this._asyncCoordinator &&
+      this._asyncCoordinator.updateNavigationHighlight
+    ) {
+      this._asyncCoordinator
+        .updateNavigationHighlight(elementId, this._visualizationState, {
+          focusViewport: true, // Auto-focus on search result clicks
+          zoom: 1.5, // Zoom in on the result
+          duration: 500,
+          timeout: 5000,
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Navigation highlight update failed:",
+            error,
+          );
+        });
+    }
+
     if (elementType === "container") {
       // Search result clicks should expand containers using AsyncCoordinator
-      if (this._asyncCoordinator && this._asyncCoordinator.expandContainer) {
-        this._asyncCoordinator
-          .expandContainer(elementId, this._visualizationState, {
-            fitView: true, // Auto-fit for search results
-            fitViewOptions: {
-              padding: 0.3,
-              duration: 500,
-              includeHiddenNodes: false,
-            },
-          })
-          .catch((error: Error) => {
-            console.error(
-              "[InteractionHandler] Search result container expansion failed:",
-              error,
-            );
-          });
-      } else {
-        // Fallback to direct method
-        this._visualizationState.expandContainerForSearch(elementId);
-        this._triggerLayoutUpdateWithAutofit();
+      if (!this._asyncCoordinator) {
+        throw new Error(
+          "[InteractionHandler] AsyncCoordinator is not initialized\n" +
+            "   Why: This is required for container operations\n" +
+            "   Fix: Ensure AsyncCoordinator is passed to InteractionHandler constructor",
+        );
       }
+
+      if (!this._asyncCoordinator.expandContainer) {
+        throw new Error(
+          "[InteractionHandler] expandContainer method not available\n" +
+            "   Why: This method is required for container expansion\n" +
+            "   Fix: Ensure you're using the latest version of AsyncCoordinator",
+        );
+      }
+
+      this._asyncCoordinator
+        .expandContainer(elementId, this._visualizationState, {
+          fitView: true, // Auto-fit for search results
+          fitViewOptions: {
+            padding: 0.3,
+            duration: 500,
+            includeHiddenNodes: false,
+          },
+        })
+        .catch((error: Error) => {
+          console.error(
+            "[InteractionHandler] Search result container expansion failed:",
+            error,
+          );
+        });
     } else {
       // For nodes, just show long label
       this._visualizationState.setNodeLabelState(elementId, true);

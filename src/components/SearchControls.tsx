@@ -255,22 +255,18 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             }
 
             try {
-              // Use AsyncCoordinator for coordinated clear (async but don't await to prevent blocking)
-              asyncCoordinator
-                .clearSearch(visualizationState, {
-                  fitView: false,
-                })
-                .catch((error: any) => {
-                  console.error(
-                    "[SearchControls] Coordinated search clear failed in debounced effect:",
-                    error,
-                  );
-                });
+              // Use AsyncCoordinator for coordinated clear
+              // Await the operation to ensure consistency
+              await asyncCoordinator.clearSearchHighlights(visualizationState, {
+                fitView: false,
+              });
             } catch (error) {
               console.error(
                 "[SearchControls] AsyncCoordinator clear failed:",
                 error,
               );
+              // Let error propagate for proper error handling
+              throw error;
             }
 
             setMatches([]);
@@ -292,14 +288,15 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               // This ensures: search → expand containers → highlight → render
               // IMPORTANT: Await the search completion before continuing
               // Returns search results AFTER all async work completes
-              const searchResults = await asyncCoordinator.updateSearchResults(
-                query,
-                visualizationState,
-                {
-                  expandContainers: true, // Expand containers to show search results
-                  fitView: false, // Don't auto-fit, let parent handle navigation
-                },
-              );
+              const searchResults =
+                await asyncCoordinator.updateSearchHighlights(
+                  query,
+                  visualizationState,
+                  {
+                    expandContainers: true, // Expand containers to show search results
+                    fitView: false, // Don't auto-fit, let parent handle navigation
+                  },
+                );
 
               // Hide loading state
               if (onSearchStateChange) {
@@ -309,7 +306,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
               // Use the returned search results directly
               // CRITICAL FIX: Don't filter through searchableItems - it's built from the tree
               // BEFORE containers are expanded, so it won't include nodes that were hidden
-              // The search results from updateSearchResults are already complete, correct,
+              // The search results from updateSearchHighlights are already complete, correct,
               // and sorted by the VisualizationState's performSearch method
               next = searchResults.map((r: any) => ({
                 id: r.id,

@@ -16,7 +16,6 @@ import {
   recordDOMUpdate,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Style operation types supported by the utilities
@@ -198,11 +197,8 @@ export function changeLayoutImperatively(options: {
       return true;
     };
 
-    if (suppressResizeObserver) {
-      withResizeObserverErrorSuppression(layoutOperation)();
-    } else {
-      layoutOperation();
-    }
+    // Execute the operation (ResizeObserver debouncing handles any issues)
+    layoutOperation();
 
     return true;
   };
@@ -320,11 +316,8 @@ export function changeColorPaletteImperatively(options: {
       return true;
     };
 
-    if (suppressResizeObserver) {
-      withResizeObserverErrorSuppression(paletteOperation)();
-    } else {
-      paletteOperation();
-    }
+    // Execute the operation (ResizeObserver debouncing handles any issues)
+    paletteOperation();
 
     return true;
   };
@@ -442,11 +435,8 @@ export function changeEdgeStyleImperatively(options: {
       return true;
     };
 
-    if (suppressResizeObserver) {
-      withResizeObserverErrorSuppression(edgeStyleOperation)();
-    } else {
-      edgeStyleOperation();
-    }
+    // Execute the operation (ResizeObserver debouncing handles any issues)
+    edgeStyleOperation();
 
     return true;
   };
@@ -549,11 +539,8 @@ export function resetStylesImperatively(options: {
       return true;
     };
 
-    if (suppressResizeObserver) {
-      withResizeObserverErrorSuppression(resetOperation)();
-    } else {
-      resetOperation();
-    }
+    // Execute the operation (ResizeObserver debouncing handles any issues)
+    resetOperation();
 
     return true;
   };
@@ -695,11 +682,8 @@ export function batchStyleOperationsImperatively(options: {
     }
   };
 
-  if (suppressResizeObserver) {
-    withResizeObserverErrorSuppression(performBatchOperation)();
-  } else {
-    performBatchOperation();
-  }
+  // Execute the batch operation (ResizeObserver debouncing handles any issues)
+  performBatchOperation();
 
   return results;
 }

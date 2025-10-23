@@ -4,7 +4,6 @@
  */
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 // Removed BridgeFactory import - using direct bridge instances only
-import { withResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 import { hscopeLogger } from "../utils/logger.js";
 import { NAVIGATION_TIMING } from "../shared/config.js";
 
@@ -72,6 +71,10 @@ export class AsyncCoordinator {
   // Configuration for rendering options
   private renderOptions: { showFullNodeLabels?: boolean } = {};
 
+  // Render batching mechanism - consolidates multiple state updates into single render
+  private pendingStateUpdate: any = null;
+  private isBatchingRenders = false;
+
   // Post-render callback queue - executed after React renders new nodes
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
 
@@ -85,6 +88,71 @@ export class AsyncCoordinator {
 
   constructor(interactionHandler?: any) {
     this.interactionHandler = interactionHandler;
+  }
+
+  /**
+   * Validate that required dependencies are available for operations
+   * Throws actionable errors if dependencies are missing
+   * @private
+   */
+  private _validateDependencies(
+    methodName: string,
+    requirements: {
+      state?: boolean;
+      reactFlowBridge?: boolean;
+      elkBridge?: boolean;
+      reactFlowInstance?: boolean;
+    },
+    state?: any,
+  ): void {
+    const errors: string[] = [];
+
+    // Validate state parameter
+    if (requirements.state && !state) {
+      errors.push(
+        "❌ VisualizationState is required\n" +
+          "   Fix: Pass a valid VisualizationState instance as the 'state' parameter",
+      );
+    }
+
+    // Validate ReactFlowBridge
+    if (requirements.reactFlowBridge && !this.reactFlowBridge) {
+      errors.push(
+        "❌ ReactFlowBridge is not initialized\n" +
+          "   Why: This bridge is required for rendering operations\n" +
+          "   Fix: Call asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge) before using this method\n" +
+          "   See: HydroscopeCore initialization in components/HydroscopeEnhanced.tsx",
+      );
+    }
+
+    // Validate ELKBridge
+    if (requirements.elkBridge && !this.elkBridge) {
+      errors.push(
+        "❌ ELKBridge is not initialized\n" +
+          "   Why: This bridge is required for layout operations\n" +
+          "   Fix: Call asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge) before using this method\n" +
+          "   See: HydroscopeCore initialization in components/HydroscopeEnhanced.tsx",
+      );
+    }
+
+    // Validate ReactFlow instance
+    if (requirements.reactFlowInstance && !this.reactFlowInstance) {
+      errors.push(
+        "❌ ReactFlow instance is not set\n" +
+          "   Why: This is required for viewport operations\n" +
+          "   Fix: Call asyncCoordinator.setReactFlowInstance(reactFlowInstance) before using this method\n" +
+          "   See: HydroscopeCore initialization in components/HydroscopeEnhanced.tsx",
+      );
+    }
+
+    // Throw error with all validation failures
+    if (errors.length > 0) {
+      throw new Error(
+        `[AsyncCoordinator.${methodName}] Validation failed:\n\n` +
+          errors.join("\n\n") +
+          "\n\nOperation aborted to prevent race conditions and undefined behavior.",
+      );
+    }
   }
 
   /**
@@ -272,15 +340,47 @@ export class AsyncCoordinator {
   }
 
   /**
-   * Returns a promise that resolves after the next React render completes
-   * Use this to sequence operations that need to wait for React state updates
+   * UNSAFE: Returns a promise that resolves after the next React render completes
+   *
+   * ⚠️ WARNING: This method is UNSAFE when render batching is active!
+   * If you call this while isBatchingRenders=true, it will HANG forever waiting
+   * for a render that was queued but never flushed.
+   *
+   * ✅ SAFE ALTERNATIVE: Use flushAndWaitForRender() instead!
+   *
+   * This method includes a runtime check that will throw an error if called
+   * while batching is active, preventing the hang bug.
    */
-  private waitForNextRender(): Promise<void> {
+  private unsafeWaitForNextRender(): Promise<void> {
+    // Runtime safety check: prevent hanging by detecting unsafe usage
+    if (this.isBatchingRenders) {
+      throw new Error(
+        "[AsyncCoordinator] UNSAFE: waitForNextRender() called while batching is active!\n" +
+          "  This will cause a hang because the batched render was never flushed.\n" +
+          "  Fix: Use flushAndWaitForRender() instead, which safely flushes before waiting.\n" +
+          "  Location: Check the stack trace to find where this was called.",
+      );
+    }
+
     return new Promise((resolve) => {
       this.enqueuePostRenderCallback(() => {
         resolve();
       });
     });
+  }
+
+  /**
+   * ✅ SAFE: Flushes any batched renders and waits for React to complete rendering
+   *
+   * This is the correct way to wait for renders when using render batching.
+   * It ensures the batched render is flushed before waiting, preventing hangs.
+   *
+   * Use this instead of manually calling flushBatchedRender() + unsafeWaitForNextRender()
+   * to avoid bugs where the flush is forgotten.
+   */
+  private async flushAndWaitForRender(): Promise<void> {
+    this.flushBatchedRender();
+    await this.unsafeWaitForNextRender();
   }
 
   /**
@@ -505,6 +605,7 @@ export class AsyncCoordinator {
   /**
    * Process a single operation with retry logic and timeout handling
    * Now includes Promise resolution/rejection for queue-enforced operations
+   * Automatically enables render batching for all operations
    */
   private async processOperation(operation: QueuedOperation): Promise<void> {
     this.currentOperation = operation;
@@ -512,6 +613,9 @@ export class AsyncCoordinator {
 
     // Get Promise handlers for this operation (if it was enqueued via _enqueueAndWait)
     const promiseHandlers = this.operationPromises.get(operation.id);
+
+    // Start batching renders for this operation
+    this.startBatchingRenders();
 
     while (operation.retryCount <= operation.maxRetries) {
       try {
@@ -521,6 +625,9 @@ export class AsyncCoordinator {
         operation.result = result;
         this.completedOperations.push(operation);
         this.recordProcessingTime(operation);
+
+        // Flush batched renders before resolving
+        this.flushBatchedRender();
 
         // Resolve caller's Promise if it exists
         if (promiseHandlers) {
@@ -544,6 +651,9 @@ export class AsyncCoordinator {
           console.error(
             `[AsyncCoordinator] 💀 Operation ${operation.id} (${operation.type}) failed permanently after ${operation.retryCount} attempts`,
           );
+
+          // Flush batched renders even on failure
+          this.flushBatchedRender();
 
           // Reject caller's Promise if it exists
           if (promiseHandlers) {
@@ -681,6 +791,16 @@ export class AsyncCoordinator {
   }
 
   /**
+   * Check if queue is currently empty
+   * Returns true only if there are no queued operations AND no operation is currently processing
+   *
+   * @returns true if queue is empty and not processing, false otherwise
+   */
+  isQueueEmpty(): boolean {
+    return this.queue.length === 0 && !this.processing;
+  }
+
+  /**
    * Get detailed queue information for debugging
    */
   getQueueDetails(): {
@@ -741,6 +861,144 @@ export class AsyncCoordinator {
       lastFailed,
     };
   }
+  /**
+   * Start batching renders - all setState calls will be deferred until flushBatchedRender()
+   * This prevents multiple React renders during a single queued operation
+   */
+  private startBatchingRenders(): void {
+    this.isBatchingRenders = true;
+    this.pendingStateUpdate = null;
+    console.log(
+      "[RENDER-DEBUG] 🎯 Started batching renders",
+      new Error().stack?.split("\n").slice(2, 4).join("\n"),
+    );
+    hscopeLogger.log(
+      "coordinator",
+      "[AsyncCoordinator] 🎯 Started batching renders",
+    );
+  }
+
+  /**
+   * Queue a state update to be applied when flushBatchedRender() is called
+   * If not batching, applies immediately
+   */
+  private queueStateUpdate(reactFlowData: any): void {
+    console.log(
+      "[RENDER-DEBUG] 📦 queueStateUpdate called, isBatchingRenders:",
+      this.isBatchingRenders,
+      "nodes:",
+      reactFlowData?.nodes?.length,
+      new Error().stack?.split("\n").slice(2, 4).join("\n"),
+    );
+
+    if (!this.isBatchingRenders) {
+      // Not batching, apply immediately
+      console.log("[RENDER-DEBUG] ⚠️ Not batching - applying immediately");
+      this._applyStateUpdate(reactFlowData);
+      return;
+    }
+
+    // Store the latest state update (overwrites previous pending updates)
+    this.pendingStateUpdate = reactFlowData;
+    console.log("[RENDER-DEBUG] ✅ Queued state update for batching");
+    hscopeLogger.log(
+      "coordinator",
+      "[AsyncCoordinator] 📦 Queued state update for batching",
+    );
+  }
+
+  /**
+   * Flush all batched renders - applies the pending state update and triggers ONE React render
+   */
+  private flushBatchedRender(): void {
+    console.log(
+      "[RENDER-DEBUG] 🚀 flushBatchedRender called, isBatchingRenders:",
+      this.isBatchingRenders,
+      "hasPending:",
+      !!this.pendingStateUpdate,
+      new Error().stack?.split("\n").slice(2, 4).join("\n"),
+    );
+
+    if (!this.isBatchingRenders) {
+      console.log("[RENDER-DEBUG] ⚠️ Not batching - nothing to flush");
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ⚠️ flushBatchedRender called but not batching",
+      );
+      return;
+    }
+
+    this.isBatchingRenders = false;
+
+    if (this.pendingStateUpdate) {
+      console.log(
+        "[RENDER-DEBUG] ✅ Flushing batched render (THIS IS THE SINGLE RENDER)",
+      );
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ Flushing batched render (1 React render)",
+      );
+      this._applyStateUpdate(this.pendingStateUpdate);
+      this.pendingStateUpdate = null;
+    } else {
+      console.log("[RENDER-DEBUG] ⏭️ No pending state update to flush");
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ⏭️ No pending state update to flush",
+      );
+    }
+  }
+
+  /**
+   * Apply a state update immediately (internal helper)
+   * NOTE: No ResizeObserver suppression needed - batching ensures single render per operation
+   */
+  private _applyStateUpdate(reactFlowData: any): void {
+    console.log(
+      "[RENDER-DEBUG] 🔥 _applyStateUpdate called - THIS TRIGGERS REACT RENDER",
+      "hasSetReactState:",
+      !!this.setReactState,
+      "hasCallback:",
+      !!this.onReactFlowDataUpdate,
+      "nodes:",
+      reactFlowData?.nodes?.length,
+      new Error().stack?.split("\n").slice(2, 5).join("\n"),
+    );
+
+    if (this.setReactState) {
+      console.log("[RENDER-DEBUG] 🔥🔥 Calling setReactState NOW");
+      this.setReactState((prev: any) => {
+        // Preserve existing popup nodes when updating ReactFlow data
+        const existingPopupNodes =
+          prev.reactFlowData?.nodes?.filter((n: any) => n.type === "popup") ||
+          [];
+        const newNodes = [...reactFlowData.nodes, ...existingPopupNodes];
+
+        return {
+          ...prev,
+          reactFlowData: {
+            ...reactFlowData,
+            nodes: newNodes,
+          },
+        };
+      });
+      
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ Applied state update to React",
+      );
+    } else if (this.onReactFlowDataUpdate) {
+      // Fallback to callback for backward compatibility
+      
+      this.onReactFlowDataUpdate(reactFlowData);
+
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ Applied state update via callback (fallback)",
+      );
+    }
+  }
+
   // ReactFlow-specific async operations
   /**
    * Generate ReactFlow data synchronously (private method) - OPTIMIZED
@@ -786,15 +1044,18 @@ export class AsyncCoordinator {
       }
 
       // Update React state directly (imperative approach)
-      // Wrap with ResizeObserver error suppression to prevent loops during re-render
-      if (this.setReactState) {
-        withResizeObserverErrorSuppression(() => {
-          this.setReactState!((prev: any) => ({
-            ...prev,
-            reactFlowData: reactFlowData,
-          }));
-        })();
+      // NOTE: No ResizeObserver suppression needed - batching ensures single render per operation
+      if (this.isBatchingRenders) {
+        // If batching is active, queue the update instead of applying immediately
+        this.queueStateUpdate(reactFlowData);
+      } else if (this.setReactState) {
+        // Not batching - apply immediately for backward compatibility
+        this.setReactState((prev: any) => ({
+          ...prev,
+          reactFlowData: reactFlowData,
+        }));
       } else if (this.onReactFlowDataUpdate) {
+        // Fallback to callback
         this.onReactFlowDataUpdate(reactFlowData);
       }
 
@@ -1114,7 +1375,7 @@ export class AsyncCoordinator {
         "coordinator",
         "  2️⃣ Waiting for React render to complete",
       );
-      await this.waitForNextRender();
+      await this.unsafeWaitForNextRender();
 
       // Step 3: Trigger ReactFlow remount
       hscopeLogger.log("coordinator", "  3️⃣ Triggering ReactFlow remount");
@@ -1211,7 +1472,7 @@ export class AsyncCoordinator {
     );
 
     // Step 2: Wait for React to complete rendering the new data
-    await this.waitForNextRender();
+    await this.unsafeWaitForNextRender();
 
     hscopeLogger.log(
       "coordinator",
@@ -1417,145 +1678,130 @@ export class AsyncCoordinator {
         },
       );
 
-      // Step 4: Update HydroscopeCore's React state directly (imperative approach)
-      if (this.setReactState) {
-        // Update React state with new nodes/edges
-        // Wrap with ResizeObserver error suppression to prevent loops during re-render
-        withResizeObserverErrorSuppression(() => {
-          this.setReactState!((prev: any) => ({
-            ...prev,
-            reactFlowData: reactFlowData,
-          }));
-        })();
+      // Step 4: Queue state update for batching (will be flushed by caller)
+      // This prevents multiple React renders during a single queued operation
+      this.queueStateUpdate(reactFlowData);
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] ✅ ReactFlow data queued for batched render",
+      );
+
+      // If fitView is requested, enqueue it to execute AFTER React renders
+      if (options.fitView) {
         hscopeLogger.log(
           "coordinator",
-          "[AsyncCoordinator] ✅ ReactFlow data updated directly (imperative)",
+          "[AsyncCoordinator] 🎯 fitView requested, checking if should execute",
+        );
+        const fitViewCheck = this._shouldExecuteFitView(
+          options.fitViewOptions,
+          reactFlowData,
         );
 
-        // If fitView is requested, enqueue it to execute AFTER React renders
-        if (options.fitView) {
+        if (fitViewCheck.shouldExecute) {
           hscopeLogger.log(
             "coordinator",
-            "[AsyncCoordinator] 🎯 fitView requested, checking if should execute",
-          );
-          const fitViewCheck = this._shouldExecuteFitView(
-            options.fitViewOptions,
-            reactFlowData,
+            "[AsyncCoordinator] ✅ Enqueueing fitView callback for post-render execution",
           );
 
-          if (fitViewCheck.shouldExecute) {
+          // Set expected node measurements BEFORE enqueueing fitView
+          // This ensures fitView will only execute after ALL nodes are measured
+          const nodeIds = reactFlowData.nodes.map((n: any) => n.id);
+          this.setExpectedNodeMeasurements(nodeIds);
+
+          this.enqueuePostRenderCallback(() => {
             hscopeLogger.log(
               "coordinator",
-              "[AsyncCoordinator] ✅ Enqueueing fitView callback for post-render execution",
+              "[AsyncCoordinator] 🎯 EXECUTING fitView callback NOW",
             );
-
-            // Set expected node measurements BEFORE enqueueing fitView
-            // This ensures fitView will only execute after ALL nodes are measured
-            const nodeIds = reactFlowData.nodes.map((n: any) => n.id);
-            this.setExpectedNodeMeasurements(nodeIds);
-
-            this.enqueuePostRenderCallback(() => {
+            if (!this.reactFlowInstance) {
               hscopeLogger.log(
                 "coordinator",
-                "[AsyncCoordinator] 🎯 EXECUTING fitView callback NOW",
+                "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
               );
-              if (!this.reactFlowInstance) {
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
-                );
-                return;
-              }
+              return;
+            }
 
-              const fitViewOptions = {
-                padding: options.fitViewOptions?.padding || 0.15,
-                duration: options.fitViewOptions?.duration || 300,
-                includeHiddenNodes: false,
-              };
+            const fitViewOptions = {
+              padding: options.fitViewOptions?.padding || 0.15,
+              duration: options.fitViewOptions?.duration || 300,
+              includeHiddenNodes: false,
+            };
 
+            hscopeLogger.log(
+              "coordinator",
+              "[AsyncCoordinator] 🎯 Calling reactFlowInstance.fitView with:",
+              fitViewOptions,
+            );
+
+            // Log current viewport and node info for debugging
+            if (this.reactFlowInstance) {
+              const viewport = this.reactFlowInstance.getViewport();
+              const nodes = this.reactFlowInstance.getNodes();
               hscopeLogger.log(
                 "coordinator",
-                "[AsyncCoordinator] 🎯 Calling reactFlowInstance.fitView with:",
-                fitViewOptions,
+                "[AsyncCoordinator] 📊 Current viewport:",
+                viewport,
+              );
+              hscopeLogger.log(
+                "coordinator",
+                "[AsyncCoordinator] 📊 Node count:",
+                nodes.length,
+              );
+              hscopeLogger.log(
+                "coordinator",
+                "[AsyncCoordinator] 📊 First 3 nodes:",
+                nodes.slice(0, 3).map((n: any) => ({
+                  id: n.id,
+                  position: n.position,
+                  width: n.width,
+                  height: n.height,
+                  measured: n.measured,
+                })),
+              );
+            }
+
+            if (
+              this.reactFlowInstance &&
+              typeof this.reactFlowInstance.fitView === "function"
+            ) {
+              this.reactFlowInstance.fitView(fitViewOptions);
+              hscopeLogger.log(
+                "coordinator",
+                "[AsyncCoordinator] ✅ FitView called",
               );
 
-              // Log current viewport and node info for debugging
-              if (this.reactFlowInstance) {
-                const viewport = this.reactFlowInstance.getViewport();
-                const nodes = this.reactFlowInstance.getNodes();
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] 📊 Current viewport:",
-                  viewport,
-                );
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] 📊 Node count:",
-                  nodes.length,
-                );
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] 📊 First 3 nodes:",
-                  nodes.slice(0, 3).map((n: any) => ({
-                    id: n.id,
-                    position: n.position,
-                    width: n.width,
-                    height: n.height,
-                    measured: n.measured,
-                  })),
-                );
-              }
-
-              if (
-                this.reactFlowInstance &&
-                typeof this.reactFlowInstance.fitView === "function"
-              ) {
-                this.reactFlowInstance.fitView(fitViewOptions);
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] ✅ FitView called",
-                );
-
-                // Log viewport after fitView
-                const newViewport = this.reactFlowInstance.getViewport();
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] 📊 Viewport after fitView:",
-                  newViewport,
-                );
-              } else {
-                hscopeLogger.log(
-                  "coordinator",
-                  "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
-                );
-              }
-            });
-            hscopeLogger.log(
-              "coordinator",
-              "[AsyncCoordinator] ✅ FitView callback enqueued, pending callbacks:",
-              this.postRenderCallbacks.length,
-            );
-          } else {
-            hscopeLogger.log(
-              "coordinator",
-              "[AsyncCoordinator] ⏭️ Skipping FitView execution",
-              {
-                reason: fitViewCheck.skipReason,
-              },
-            );
-          }
+              // Log viewport after fitView
+              const newViewport = this.reactFlowInstance.getViewport();
+              hscopeLogger.log(
+                "coordinator",
+                "[AsyncCoordinator] 📊 Viewport after fitView:",
+                newViewport,
+              );
+            } else {
+              hscopeLogger.log(
+                "coordinator",
+                "[AsyncCoordinator] ⚠️ ReactFlow instance not available for fitView",
+              );
+            }
+          });
+          hscopeLogger.log(
+            "coordinator",
+            "[AsyncCoordinator] ✅ FitView callback enqueued, pending callbacks:",
+            this.postRenderCallbacks.length,
+          );
         } else {
           hscopeLogger.log(
             "coordinator",
-            "[AsyncCoordinator] ⏭️ fitView NOT requested in options",
+            "[AsyncCoordinator] ⏭️ Skipping FitView execution",
+            {
+              reason: fitViewCheck.skipReason,
+            },
           );
         }
-      } else if (this.onReactFlowDataUpdate) {
-        // Fallback to callback for backward compatibility
-        this.onReactFlowDataUpdate(reactFlowData);
+      } else {
         hscopeLogger.log(
           "coordinator",
-          "[AsyncCoordinator] ✅ ReactFlow data update callback completed successfully (fallback)",
+          "[AsyncCoordinator] ⏭️ fitView NOT requested in options",
         );
       }
 
@@ -1569,6 +1815,11 @@ export class AsyncCoordinator {
         reactFlowData,
         options,
       );
+
+      // If not batching, flush immediately (backward compatibility)
+      if (!this.isBatchingRenders && this.pendingStateUpdate) {
+        this.flushBatchedRender();
+      }
 
       return reactFlowData;
     } catch (error) {
@@ -2144,18 +2395,21 @@ export class AsyncCoordinator {
 
       // Validate inputs
       if (!containerId) {
-        throw new Error("Container ID is required for expand operation");
-      }
-      if (!state) {
-        throw new Error("VisualizationState is required for expand operation");
-      }
-
-      // Use the ELK bridge instance set via setBridgeInstances
-      if (!this.elkBridge) {
         throw new Error(
-          "ELK bridge is not available - ensure setBridgeInstances was called",
+          "[AsyncCoordinator.expandContainer] Container ID is required\n" +
+            "   Fix: Pass a valid container ID as the first parameter",
         );
       }
+
+      // Validate all required dependencies
+      this._validateDependencies(
+        "expandContainer",
+        {
+          state: true,
+          elkBridge: true,
+        },
+        state,
+      );
 
       // Process state change synchronously with error handling
       try {
@@ -2209,14 +2463,13 @@ export class AsyncCoordinator {
       // This replaces fitView to provide a focused view on the specific container
       if (shouldFocusOnContainer) {
         try {
-          // Wait for React to render the expanded container before focusing
-          // Only wait if there are pending callbacks (i.e., in production with React)
-          // CRITICAL: Always wait for React to render and measure the expanded container
-          // The layout pipeline has updated the data, but ReactFlow needs time to:
+          // CRITICAL: Flush batched render and wait for React to complete
+          // The layout pipeline queued the state update, now we flush and wait for it
+          // This ensures ReactFlow has time to:
           // 1. Render the new nodes
           // 2. Measure their actual dimensions
           // Without this wait, we'll get stale (pre-expansion) dimensions
-          await this.waitForNextRender();
+          await this.flushAndWaitForRender();
 
           // Call focusViewportOnElement directly (not through queue to avoid deadlock)
           // This ensures consistent viewport positioning behavior
@@ -2444,20 +2697,21 @@ export class AsyncCoordinator {
 
       // Validate inputs
       if (!containerId) {
-        throw new Error("Container ID is required for collapse operation");
-      }
-      if (!state) {
         throw new Error(
-          "VisualizationState is required for collapse operation",
+          "[AsyncCoordinator.collapseContainer] Container ID is required\n" +
+            "   Fix: Pass a valid container ID as the first parameter",
         );
       }
 
-      // Use the ELK bridge instance set via setBridgeInstances
-      if (!this.elkBridge) {
-        throw new Error(
-          "ELK bridge is not available - ensure setBridgeInstances was called",
-        );
-      }
+      // Validate all required dependencies
+      this._validateDependencies(
+        "collapseContainer",
+        {
+          state: true,
+          elkBridge: true,
+        },
+        state,
+      );
 
       // Process state change synchronously with error handling
       try {
@@ -2529,12 +2783,13 @@ export class AsyncCoordinator {
         );
 
         try {
-          // CRITICAL: Always wait for React to render and measure the collapsed container
-          // The layout pipeline has updated the data, but ReactFlow needs time to:
+          // CRITICAL: Flush batched render and wait for React to complete
+          // The layout pipeline queued the state update, now we flush and wait for it
+          // This ensures ReactFlow has time to:
           // 1. Render the updated container
           // 2. Measure its actual dimensions
           // Without this wait, we'll get stale (pre-collapse) dimensions
-          await this.waitForNextRender();
+          await this.flushAndWaitForRender();
 
           // Call focusViewportOnElement directly (not through queue to avoid deadlock)
           // This ensures consistent viewport positioning behavior
@@ -2694,19 +2949,15 @@ export class AsyncCoordinator {
         },
       );
 
-      // Validate inputs
-      if (!state) {
-        throw new Error(
-          "VisualizationState is required for expand all containers operation",
-        );
-      }
-
-      // Use the ELK bridge instance set via setBridgeInstances
-      if (!this.elkBridge) {
-        throw new Error(
-          "ELK bridge is not available - ensure setBridgeInstances was called",
-        );
-      }
+      // Validate all required dependencies
+      this._validateDependencies(
+        "expandContainers",
+        {
+          state: true,
+          elkBridge: true,
+        },
+        state,
+      );
 
       // Process state change synchronously with error handling
       try {
@@ -2893,19 +3144,15 @@ export class AsyncCoordinator {
         },
       );
 
-      // Validate inputs
-      if (!state) {
-        throw new Error(
-          "VisualizationState is required for collapse all containers operation",
-        );
-      }
-
-      // Use the ELK bridge instance set via setBridgeInstances
-      if (!this.elkBridge) {
-        throw new Error(
-          "ELK bridge is not available - ensure setBridgeInstances was called",
-        );
-      }
+      // Validate all required dependencies
+      this._validateDependencies(
+        "collapseContainers",
+        {
+          state: true,
+          elkBridge: true,
+        },
+        state,
+      );
 
       // Get containers to collapse - either specified list or all expanded containers
       let containersToCollapse: any[] = [];
@@ -3702,6 +3949,9 @@ export class AsyncCoordinator {
     // ReactFlowData
     const startTime = Date.now();
 
+    // Start batching renders - all state updates will be consolidated into ONE React render
+    this.startBatchingRenders();
+
     try {
       hscopeLogger.log(
         "coordinator",
@@ -3714,17 +3964,15 @@ export class AsyncCoordinator {
         },
       );
 
-      // Validate inputs
-      if (!state) {
-        throw new Error("VisualizationState is required for search operations");
-      }
-
-      // Use the ELK bridge instance set via setBridgeInstances
-      if (!this.elkBridge) {
-        throw new Error(
-          "ELK bridge is not available - ensure setBridgeInstances was called",
-        );
-      }
+      // Validate all required dependencies
+      this._validateDependencies(
+        "updateSearchHighlights",
+        {
+          state: true,
+          elkBridge: true,
+        },
+        state,
+      );
 
       // Step 1: Perform search in VisualizationState (synchronous) - FAIL FAST on errors
       const searchResults = state.performSearch
@@ -3739,6 +3987,20 @@ export class AsyncCoordinator {
           resultsCount: searchResults.length,
         },
       );
+
+      // Step 1.5: Update search highlights via friend pattern
+      // This is now separate from performSearch to prevent race conditions
+      if (state._forAsyncCoordinator) {
+        state._forAsyncCoordinator.updateTreeSearchHighlights(searchResults);
+        state._forAsyncCoordinator.updateGraphSearchHighlights(searchResults);
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] ✅ Search highlights updated",
+          {
+            resultsCount: searchResults.length,
+          },
+        );
+      }
 
       // Step 2: Optionally expand containers containing search results
       if (options.expandContainers && searchResults.length > 0) {
@@ -3808,9 +4070,19 @@ export class AsyncCoordinator {
             },
           );
 
-          // Wait for React to render the expanded containers before returning
+          hscopeLogger.log(
+            "coordinator",
+            "[AsyncCoordinator] ✅ Search update with container expansion completed successfully",
+            {
+              query,
+              expandedContainers: containerIds.length,
+              resultsCount: searchResults.length,
+            },
+          );
+
+          // Flush batched render and wait for React to complete
           // This ensures elements are in the DOM when caller tries to navigate
-          await this.waitForNextRender();
+          await this.flushAndWaitForRender();
 
           // Return search results after all work completes AND React has rendered
           return searchResults;
@@ -3823,23 +4095,6 @@ export class AsyncCoordinator {
         "coordinator",
         "[AsyncCoordinator] ✅ ReactFlow data generated for search highlighting",
       );
-
-      // Step 4: Focus on first search result with zoom 1.0 (instead of fitView)
-      // Enqueue for post-render to ensure React has updated node positions
-      // Focus viewport on first result to ensure it's visible
-      // Use immediate positioning (no animation) to avoid conflicts with navigation
-      if (searchResults.length > 0 && this.reactFlowInstance) {
-        const firstResult = searchResults[0];
-        const elementId = firstResult.id;
-
-        await this._handleFocusViewportOnElement(
-          elementId,
-          this.reactFlowInstance,
-          {
-            duration: 0, // Immediate, no animation
-          },
-        );
-      }
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -3857,14 +4112,21 @@ export class AsyncCoordinator {
         },
       );
 
-      // Wait for React to render before returning (even without expansion, search highlights need to render)
-      await this.waitForNextRender();
+      // Flush batched render and wait for React to complete
+      // Even without expansion, search highlights need to render
+      await this.flushAndWaitForRender();
+
+      // NOTE: Viewport focusing removed to prevent ResizeObserver errors
+      // The search highlights are visible, user can manually navigate if needed
 
       // Return search results after all work completes AND React has rendered
       return searchResults;
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
+
+      // Flush any pending renders even on error
+      this.flushBatchedRender();
 
       console.error("[AsyncCoordinator] ❌ Search update failed:", {
         query,
@@ -3920,6 +4182,9 @@ export class AsyncCoordinator {
   ): Promise<any> {
     const startTime = Date.now();
 
+    // Start batching renders - all state updates will be consolidated into ONE React render
+    this.startBatchingRenders();
+
     try {
       hscopeLogger.log(
         "coordinator",
@@ -3938,16 +4203,27 @@ export class AsyncCoordinator {
       }
 
       // Step 1: Clear search state in VisualizationState (synchronous)
-      if (typeof state.clearSearch === "function") {
+      if (
+        state._forAsyncCoordinator &&
+        state._forAsyncCoordinator.clearSearchHighlights
+      ) {
+        state._forAsyncCoordinator.clearSearchHighlights();
+
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] ✅ Search state cleared via friend pattern",
+        );
+      } else if (typeof state.clearSearch === "function") {
+        // Fallback for backward compatibility during migration
         state.clearSearch();
 
         hscopeLogger.log(
           "coordinator",
-          "[AsyncCoordinator] ✅ Search state cleared",
+          "[AsyncCoordinator] ✅ Search state cleared (legacy method)",
         );
       } else {
         throw new Error(
-          "[AsyncCoordinator] VisualizationState must have clearSearch method",
+          "[AsyncCoordinator] VisualizationState must have clearSearch method or _forAsyncCoordinator.clearSearchHighlights",
         );
       }
 
@@ -3973,6 +4249,9 @@ export class AsyncCoordinator {
         },
       );
 
+      // Flush batched render - triggers ONE React render with all state changes
+      this.flushBatchedRender();
+
       return reactFlowData;
     } catch (error) {
       console.error(
@@ -3981,6 +4260,9 @@ export class AsyncCoordinator {
       );
       const endTime = Date.now();
       const duration = endTime - startTime;
+
+      // Flush any pending renders even on error
+      this.flushBatchedRender();
 
       console.error("[AsyncCoordinator] ❌ Search clear failed:", {
         error: (error as Error).message,
@@ -3997,6 +4279,593 @@ export class AsyncCoordinator {
 
       throw error;
     }
+  }
+
+  /**
+   * Update search highlights (semantic alias for updateSearchResults)
+   * This method queues highlight updates to prevent race conditions
+   *
+   * @param query - Search query string
+   * @param state - VisualizationState instance
+   * @param options - Search options including container expansion and viewport control
+   * @returns Promise that resolves with search results after all operations complete
+   */
+  async updateSearchHighlights(
+    query: string,
+    state: any, // VisualizationState
+    options: {
+      // Container expansion control - whether search triggers container expansion (requires layout)
+      expandContainers?: boolean;
+
+      // FitView control - handled internally, no callbacks needed
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+
+      // Standard options
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any[]> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    // Returns SearchResult[] AFTER all async work (container expansion, layout, render) completes
+    return this._enqueueAndWait(
+      "search_highlight_update",
+      () => this._handleUpdateSearchResults(query, state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Clear search highlights (semantic alias for clearSearch)
+   * This method queues highlight clearing to prevent race conditions
+   *
+   * @param state - VisualizationState instance
+   * @param options - Clear options including fitView control
+   * @returns Promise that resolves when clearing is complete
+   */
+  async clearSearchHighlights(
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      fitViewOptions?: { padding?: number; duration?: number };
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<any> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "search_highlight_clear",
+      () => this._handleClearSearch(state, options),
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  // ============================================================================
+  // NAVIGATION HIGHLIGHT OPERATIONS
+  // ============================================================================
+
+  /**
+   * Update navigation highlight (selection)
+   * This method queues navigation highlight updates to prevent race conditions
+   *
+   * @param elementId - ID of element to highlight (null to clear)
+   * @param state - VisualizationState instance
+   * @param options - Navigation options including viewport focus control
+   * @returns Promise that resolves when navigation highlight is updated
+   */
+  async updateNavigationHighlight(
+    elementId: string | null,
+    state: any, // VisualizationState
+    options: {
+      focusViewport?: boolean;
+      zoom?: number;
+      duration?: number;
+      skipTemporaryHighlight?: boolean;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "navigation_highlight_update",
+      async () => {
+        // Start batching renders
+        this.startBatchingRenders();
+
+        try {
+          hscopeLogger.log(
+            "coordinator",
+            `[AsyncCoordinator] 🎯 Updating navigation highlight: ${elementId}`,
+          );
+
+          // Validate required dependencies
+          if (!state) {
+            throw new Error(
+              "[AsyncCoordinator] VisualizationState is required for updateNavigationHighlight",
+            );
+          }
+
+          if (!state._forAsyncCoordinator) {
+            throw new Error(
+              "[AsyncCoordinator] VisualizationState must have _forAsyncCoordinator interface",
+            );
+          }
+
+          // Update navigation highlight via friend pattern
+          if (elementId) {
+            if (!state._forAsyncCoordinator.updateNavigationHighlight) {
+              throw new Error(
+                "[AsyncCoordinator] VisualizationState must have _forAsyncCoordinator.updateNavigationHighlight method",
+              );
+            }
+            state._forAsyncCoordinator.updateNavigationHighlight(
+              elementId,
+              options,
+            );
+          } else {
+            // Clear navigation if elementId is null
+            if (!state._forAsyncCoordinator.clearNavigationHighlight) {
+              throw new Error(
+                "[AsyncCoordinator] VisualizationState must have _forAsyncCoordinator.clearNavigationHighlight method",
+              );
+            }
+            state._forAsyncCoordinator.clearNavigationHighlight();
+          }
+
+          // Regenerate ReactFlow data to apply highlights
+          await this._handleLayoutAndRenderPipeline(state, {
+            relayoutEntities: [], // No layout needed, just re-render to apply highlights
+            fitView: false, // Don't auto-fit, let focusViewport handle it
+          });
+
+          // Focus viewport if requested
+          if (options.focusViewport && elementId && this.reactFlowInstance) {
+            await this._handleFocusViewportOnElement(
+              elementId,
+              this.reactFlowInstance,
+              {
+                zoom: options.zoom,
+                duration: options.duration,
+              },
+            );
+          }
+
+          // Flush batched render
+          this.flushBatchedRender();
+        } catch (error) {
+          // Flush on error too
+          this.flushBatchedRender();
+          throw error;
+        }
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Navigation highlight updated: ${elementId}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Clear navigation highlight
+   * This method queues navigation highlight clearing to prevent race conditions
+   *
+   * @param state - VisualizationState instance
+   * @param options - Clear options
+   * @returns Promise that resolves when navigation highlight is cleared
+   */
+  async clearNavigationHighlight(
+    state: any, // VisualizationState
+    options: {
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "navigation_highlight_clear",
+      async () => {
+        // Start batching renders
+        this.startBatchingRenders();
+
+        try {
+          hscopeLogger.log(
+            "coordinator",
+            "[AsyncCoordinator] 🎯 Clearing navigation highlight",
+          );
+
+          // Validate required dependencies
+          if (!state) {
+            throw new Error(
+              "[AsyncCoordinator] VisualizationState is required for clearNavigationHighlight",
+            );
+          }
+
+          if (
+            !state._forAsyncCoordinator ||
+            !state._forAsyncCoordinator.clearNavigationHighlight
+          ) {
+            throw new Error(
+              "[AsyncCoordinator] VisualizationState must have _forAsyncCoordinator.clearNavigationHighlight method",
+            );
+          }
+
+          // Clear navigation highlight via friend pattern
+          state._forAsyncCoordinator.clearNavigationHighlight();
+
+          // Regenerate ReactFlow data to remove highlights
+          await this._handleLayoutAndRenderPipeline(state, {
+            relayoutEntities: [], // No layout needed, just re-render to remove highlights
+            fitView: false,
+          });
+
+          // Flush batched render
+          this.flushBatchedRender();
+        } catch (error) {
+          // Flush on error too
+          this.flushBatchedRender();
+          throw error;
+        }
+
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] ✅ Navigation highlight cleared",
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  // ============================================================================
+  // TEMPORARY HIGHLIGHT OPERATIONS
+  // ============================================================================
+
+  /**
+   * Add temporary highlight (click feedback, hover effect)
+   * This method queues temporary highlight addition to prevent race conditions
+   *
+   * @param elementId - ID of element to highlight
+   * @param state - VisualizationState instance
+   * @param options - Highlight options including auto-removal duration
+   * @returns Promise that resolves when temporary highlight is added
+   */
+  async addTemporaryHighlight(
+    elementId: string,
+    state: any, // VisualizationState
+    options: {
+      duration?: number; // Auto-remove after duration (ms)
+      onClear?: () => void; // Callback when highlight is cleared
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "temporary_highlight_add",
+      async () => {
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎯 Adding temporary highlight: ${elementId}`,
+        );
+
+        // Validate required dependencies
+        if (!state) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState is required for addTemporaryHighlight",
+          );
+        }
+
+        if (
+          !state._forAsyncCoordinator ||
+          !state._forAsyncCoordinator.addTemporaryHighlight
+        ) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState must have _forAsyncCoordinator.addTemporaryHighlight method",
+          );
+        }
+
+        // Add temporary highlight via friend pattern
+        state._forAsyncCoordinator.addTemporaryHighlight(
+          elementId,
+          options.duration,
+          options.onClear,
+        );
+
+        // Regenerate ReactFlow data to apply highlight
+        await this._handleLayoutAndRenderPipeline(state, {
+          relayoutEntities: [], // No layout needed, just re-render to apply highlight
+          fitView: false,
+        });
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Temporary highlight added: ${elementId}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Remove temporary highlight
+   * This method queues temporary highlight removal to prevent race conditions
+   *
+   * @param elementId - ID of element to remove highlight from
+   * @param state - VisualizationState instance
+   * @param options - Remove options
+   * @returns Promise that resolves when temporary highlight is removed
+   */
+  async removeTemporaryHighlight(
+    elementId: string,
+    state: any, // VisualizationState
+    options: {
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "temporary_highlight_remove",
+      async () => {
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎯 Removing temporary highlight: ${elementId}`,
+        );
+
+        // Validate required dependencies
+        if (!state) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState is required for removeTemporaryHighlight",
+          );
+        }
+
+        if (
+          !state._forAsyncCoordinator ||
+          !state._forAsyncCoordinator.removeTemporaryHighlight
+        ) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState must have _forAsyncCoordinator.removeTemporaryHighlight method",
+          );
+        }
+
+        // Remove temporary highlight via friend pattern
+        state._forAsyncCoordinator.removeTemporaryHighlight(elementId);
+
+        // Regenerate ReactFlow data to remove highlight
+        await this._handleLayoutAndRenderPipeline(state, {
+          relayoutEntities: [], // No layout needed, just re-render to remove highlight
+          fitView: false,
+        });
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Temporary highlight removed: ${elementId}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  // ============================================================================
+  // STYLE UPDATE OPERATIONS
+  // ============================================================================
+
+  /**
+   * Update color palette
+   * This method queues color palette updates to prevent race conditions
+   *
+   * @param palette - Color palette name to apply
+   * @param state - VisualizationState instance
+   * @param options - Update options
+   * @returns Promise that resolves when color palette is updated
+   */
+  async updateColorPalette(
+    palette: string,
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "style_palette_update",
+      async () => {
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎨 Updating color palette: ${palette}`,
+        );
+
+        // Validate required dependencies
+        if (!state) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState is required for updateColorPalette",
+          );
+        }
+
+        // Use existing updateRenderConfig to apply the change
+        await this._handleUpdateRenderConfig(
+          state,
+          { colorPalette: palette },
+          {
+            fitView: options.fitView || false,
+            relayoutEntities: [], // No layout needed for color changes
+          },
+        );
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Color palette updated: ${palette}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Update edge style
+   * This method queues edge style updates to prevent race conditions
+   *
+   * @param edgeStyle - Edge style to apply ('bezier', 'straight', or 'smoothstep')
+   * @param state - VisualizationState instance
+   * @param options - Update options
+   * @returns Promise that resolves when edge style is updated
+   */
+  async updateEdgeStyle(
+    edgeStyle: "bezier" | "straight" | "smoothstep",
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "style_edge_update",
+      async () => {
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎨 Updating edge style: ${edgeStyle}`,
+        );
+
+        // Validate required dependencies
+        if (!state) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState is required for updateEdgeStyle",
+          );
+        }
+
+        // Use existing updateRenderConfig to apply the change
+        await this._handleUpdateRenderConfig(
+          state,
+          { edgeStyle },
+          {
+            fitView: options.fitView || false,
+            relayoutEntities: [], // No layout needed for edge style changes
+          },
+        );
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Edge style updated: ${edgeStyle}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Update layout algorithm
+   * This method queues layout algorithm updates to prevent race conditions
+   *
+   * @param algorithm - Layout algorithm name to apply
+   * @param state - VisualizationState instance
+   * @param options - Update options
+   * @returns Promise that resolves when layout algorithm is updated
+   */
+  async updateLayoutAlgorithm(
+    algorithm: string,
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "style_layout_algorithm_update",
+      async () => {
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎨 Updating layout algorithm: ${algorithm}`,
+        );
+
+        // Validate required dependencies
+        if (!state) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState is required for updateLayoutAlgorithm",
+          );
+        }
+
+        // Use existing updateRenderConfig to apply the change
+        // Layout algorithm changes require full re-layout
+        await this._handleUpdateRenderConfig(
+          state,
+          { layoutAlgorithm: algorithm },
+          {
+            fitView: options.fitView !== false, // Default to true for layout changes
+            relayoutEntities: undefined, // Full layout needed for algorithm changes
+          },
+        );
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Layout algorithm updated: ${algorithm}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
+  }
+
+  /**
+   * Toggle full node labels
+   * This method queues label visibility updates to prevent race conditions
+   *
+   * @param showFullLabels - Whether to show full node labels
+   * @param state - VisualizationState instance
+   * @param options - Update options
+   * @returns Promise that resolves when label visibility is updated
+   */
+  async toggleFullNodeLabels(
+    showFullLabels: boolean,
+    state: any, // VisualizationState
+    options: {
+      fitView?: boolean;
+      timeout?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<void> {
+    // Queue-enforced execution - ensures atomic, sequential processing
+    return this._enqueueAndWait(
+      "style_label_visibility_update",
+      async () => {
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎨 Toggling full node labels: ${showFullLabels}`,
+        );
+
+        // Validate required dependencies
+        if (!state) {
+          throw new Error(
+            "[AsyncCoordinator] VisualizationState is required for toggleFullNodeLabels",
+          );
+        }
+
+        // Update render options (affects InteractionHandler configuration)
+        this.setRenderOptions({ showFullNodeLabels: showFullLabels });
+
+        // Use existing updateRenderConfig to apply the change
+        // Label changes may require layout recalculation due to size changes
+        await this._handleUpdateRenderConfig(
+          state,
+          { showFullNodeLabels: showFullLabels },
+          {
+            fitView: options.fitView !== false, // Default to true for label changes
+            relayoutEntities: undefined, // Full layout may be needed for label size changes
+          },
+        );
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] ✅ Full node labels toggled: ${showFullLabels}`,
+        );
+      },
+      { timeout: options.timeout, maxRetries: options.maxRetries },
+    );
   }
 
   /**
@@ -4482,11 +5351,21 @@ export class AsyncCoordinator {
         }
       } else {
         // Clear search
-        if (typeof visualizationState.clearSearch === "function") {
+        if (
+          visualizationState._forAsyncCoordinator &&
+          visualizationState._forAsyncCoordinator.clearSearchHighlights
+        ) {
+          visualizationState._forAsyncCoordinator.clearSearchHighlights();
+          hscopeLogger.log(
+            "coordinator",
+            `🔍 AsyncCoordinator: Search cleared via friend pattern`,
+          );
+        } else if (typeof visualizationState.clearSearch === "function") {
+          // Fallback for backward compatibility
           visualizationState.clearSearch();
           hscopeLogger.log(
             "coordinator",
-            `🔍 AsyncCoordinator: Search cleared`,
+            `🔍 AsyncCoordinator: Search cleared (legacy method)`,
           );
         }
       }
@@ -4869,5 +5748,77 @@ export class AsyncCoordinator {
     } catch (_error) {
       return [];
     }
+  }
+
+  // ============================================================================
+  // QUEUE COORDINATION UTILITIES
+  // ============================================================================
+
+  /**
+   * Wait for all pending operations to complete
+   * Use this when you need a consistent snapshot of state
+   *
+   * @param timeout - Optional timeout in milliseconds (default: 30000ms)
+   * @returns Promise that resolves when queue is empty or rejects on timeout
+   * @throws Error if timeout is reached before queue becomes empty
+   */
+  async waitForQueueEmpty(timeout: number = 30000): Promise<void> {
+    const startTime = Date.now();
+
+    // If queue is already empty, return immediately
+    if (this.isQueueEmpty()) {
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] waitForQueueEmpty: Queue already empty",
+      );
+      return;
+    }
+
+    hscopeLogger.log(
+      "coordinator",
+      `[AsyncCoordinator] waitForQueueEmpty: Waiting for queue to empty (timeout: ${timeout}ms)`,
+      {
+        queueLength: this.queue.length,
+        processing: this.processing,
+      },
+    );
+
+    // Poll queue status until empty or timeout
+    return new Promise<void>((resolve, reject) => {
+      const pollInterval = 50; // Check every 50ms
+      const checkQueue = () => {
+        const elapsed = Date.now() - startTime;
+
+        // Check if timeout reached
+        if (elapsed >= timeout) {
+          const queueStatus = this.getQueueStatus();
+          reject(
+            new Error(
+              `[AsyncCoordinator] waitForQueueEmpty timed out after ${timeout}ms. ` +
+                `Queue status: ${queueStatus.pending} pending, ${queueStatus.processing} processing. ` +
+                `Current operation: ${queueStatus.currentOperation?.type || "none"}`,
+            ),
+          );
+          return;
+        }
+
+        // Check if queue is empty
+        if (this.isQueueEmpty()) {
+          const duration = Date.now() - startTime;
+          hscopeLogger.log(
+            "coordinator",
+            `[AsyncCoordinator] waitForQueueEmpty: Queue empty after ${duration}ms`,
+          );
+          resolve();
+          return;
+        }
+
+        // Continue polling
+        setTimeout(checkQueue, pollInterval);
+      };
+
+      // Start polling
+      checkQueue();
+    });
   }
 }

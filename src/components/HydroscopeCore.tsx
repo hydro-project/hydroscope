@@ -1849,35 +1849,43 @@ const HydroscopeCoreInternal = forwardRef<
             );
           }
 
-          // Apply all changes using ReactFlow's built-in function
-          // This ensures proper handling of dragging, selection, and other node states
-          setState((prev) => {
-            const updatedNodes = applyNodeChanges(
-              changes,
-              prev.reactFlowData.nodes,
-            ) as ReactFlowNode[];
-
-            return {
-              ...prev,
-              reactFlowData: {
-                ...prev.reactFlowData,
-                nodes: updatedNodes,
-              },
-            };
-          });
-
-          // Check if this is a dimension change (node resize)
+          // Check if this includes dimension changes
           const dimensionChanges = changes.filter(
             (change) => change.type === "dimensions",
           );
+          const nonDimensionChanges = changes.filter(
+            (change) => change.type !== "dimensions",
+          );
+
+          // Only apply non-dimension changes immediately (drag, select, etc.)
+          // Dimension changes are skipped unless we're in a critical phase
+          const hasPendingCallbacks =
+            state.asyncCoordinator?.hasPendingCallbacks() || false;
+
+          const changesToApply =
+            dimensionChanges.length > 0 && !hasPendingCallbacks
+              ? nonDimensionChanges // Skip dimension changes if no pending callbacks
+              : changes; // Apply all changes if we have pending callbacks
+
+          // Only call setState if there are changes to apply
+          if (changesToApply.length > 0) {
+            setState((prev) => {
+              const updatedNodes = applyNodeChanges(
+                changesToApply,
+                prev.reactFlowData.nodes,
+              ) as ReactFlowNode[];
+
+              return {
+                ...prev,
+                reactFlowData: {
+                  ...prev.reactFlowData,
+                  nodes: updatedNodes,
+                },
+              };
+            });
+          }
 
           if (dimensionChanges.length > 0) {
-            // Deterministic logic: Check if there are pending callbacks (like fitView)
-            // If yes: this is a major change (initial load or container expansion) - trigger callbacks
-            // If no: this is a minor change (node label click) - preserve viewport
-            const hasPendingCallbacks =
-              state.asyncCoordinator?.hasPendingCallbacks() || false;
-
             if (hasPendingCallbacks) {
               // Major change: initial load or container expansion
               // Notify AsyncCoordinator about ALL measured nodes in this batch

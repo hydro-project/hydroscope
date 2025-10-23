@@ -449,6 +449,7 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _expandContainerForCoordinator(id: string): void {
+    this._validateAsyncCoordinatorContext("_expandContainerForCoordinator");
     this._expandContainerInternal(id);
     // User operations disable smart collapse
     this.disableSmartCollapseForUserOperations();
@@ -476,6 +477,7 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _collapseContainerForCoordinator(id: string): void {
+    this._validateAsyncCoordinatorContext("_collapseContainerForCoordinator");
     this._collapseContainerInternal(id);
     // Aggregate edges when container collapses
     this.aggregateEdgesForContainer(id);
@@ -514,6 +516,7 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _expandContainersForCoordinator(containerIds?: string[]): void {
+    this._validateAsyncCoordinatorContext("_expandContainersForCoordinator");
     // CRITICAL FIX: Expand containers in hierarchical order (parents before children)
     // This prevents invariant violations where children are expanded before their parents
     let expandedInThisIteration = 0;
@@ -559,6 +562,7 @@ export class VisualizationState {
   }
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _collapseContainersForCoordinator(containerIds?: string[]): void {
+    this._validateAsyncCoordinatorContext("_collapseContainersForCoordinator");
     const containersToCollapse = containerIds
       ? containerIds.map((id) => this._containers.get(id)).filter(Boolean)
       : Array.from(this._containers.values());
@@ -1661,6 +1665,7 @@ export class VisualizationState {
   // Toggle container (user operation)
   // Internal method for AsyncCoordinator use only - DO NOT CALL DIRECTLY
   _toggleContainerForCoordinator(id: string): void {
+    this._validateAsyncCoordinatorContext("_toggleContainerForCoordinator");
     const container = this._containers.get(id);
     if (!container) {
       console.warn("[VisualizationState] Container not found:", id);
@@ -2264,7 +2269,70 @@ export class VisualizationState {
     }
     return { matches: false, indices: [], isExact: false };
   }
-  clearSearch(): void {
+
+  /**
+   * Validate that a method is being called from AsyncCoordinator context
+   * Throws error in development if called directly
+   * @internal
+   */
+  private _validateAsyncCoordinatorContext(methodName: string): void {
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      const stack = new Error().stack || "";
+      const isFromAsyncCoordinator = stack.includes("AsyncCoordinator");
+      const isFromTest =
+        stack.includes(".test.ts") || stack.includes(".test.tsx");
+
+      if (!isFromAsyncCoordinator && !isFromTest) {
+        const suggestion = this._suggestAsyncCoordinatorMethod(methodName);
+        throw new Error(
+          `[VisualizationState] ${methodName} called directly!\n` +
+            `Why: This causes race conditions with other DOM mutations.\n` +
+            `Fix: Use ${suggestion} instead.\n` +
+            `See: docs/architecture/async-coordinator.md\n` +
+            `Call stack:\n${stack}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Suggest the correct AsyncCoordinator method for a given VisualizationState method
+   * @internal
+   */
+  private _suggestAsyncCoordinatorMethod(methodName: string): string {
+    const suggestions: Record<string, string> = {
+      _updateTreeSearchHighlights: "asyncCoordinator.updateSearchHighlights()",
+      _updateGraphSearchHighlights: "asyncCoordinator.updateSearchHighlights()",
+      _clearSearchHighlights: "asyncCoordinator.clearSearchHighlights()",
+      _updateNavigationHighlight:
+        "asyncCoordinator.updateNavigationHighlight()",
+      _clearNavigationHighlight: "asyncCoordinator.clearNavigationHighlight()",
+      _navigateToElement: "asyncCoordinator.updateNavigationHighlight()",
+      _clearNavigation: "asyncCoordinator.clearNavigationHighlight()",
+      _addTemporaryHighlight: "asyncCoordinator.addTemporaryHighlight()",
+      _removeTemporaryHighlight: "asyncCoordinator.removeTemporaryHighlight()",
+      _expandContainerInternal: "asyncCoordinator.expandContainer()",
+      _collapseContainerInternal: "asyncCoordinator.collapseContainer()",
+      _expandContainerForCoordinator: "asyncCoordinator.expandContainer()",
+      _collapseContainerForCoordinator: "asyncCoordinator.collapseContainer()",
+      _expandContainersForCoordinator: "asyncCoordinator.expandContainers()",
+      _collapseContainersForCoordinator:
+        "asyncCoordinator.collapseContainers()",
+      _toggleContainerForCoordinator:
+        "asyncCoordinator.expandContainer() or asyncCoordinator.collapseContainer()",
+    };
+    return suggestions[methodName] || "appropriate AsyncCoordinator method";
+  }
+
+  /**
+   * Clear search highlights and state
+   * @internal Only call from AsyncCoordinator
+   */
+  _clearSearchHighlights(): void {
+    this._validateAsyncCoordinatorContext("_clearSearchHighlights");
     // Clear old search state for backward compatibility
     this._searchResults = [];
     this._searchQuery = "";
@@ -2281,6 +2349,13 @@ export class VisualizationState {
     // Navigation highlights (blue borders from next/prev navigation) should persist
     // Note: Expansion state is preserved (expandedTreeNodes, expandedGraphContainers)
     // This matches the requirement that expansion state persists through search operations
+  }
+
+  /**
+   * @deprecated Use asyncCoordinator.clearSearchHighlights() instead
+   */
+  clearSearch(): void {
+    this._clearSearchHighlights();
   }
 
   /**
@@ -2529,8 +2604,9 @@ export class VisualizationState {
       this._searchNavigationState.searchResults = [];
       this._searchResults = [];
       this._searchState.resultCount = 0;
-      this.updateTreeSearchHighlights([]);
-      this.updateGraphSearchHighlights([]);
+      // NOTE: Highlight updates removed - must be done via AsyncCoordinator
+      // this.updateTreeSearchHighlights([]);
+      // this.updateGraphSearchHighlights([]);
       return [];
     }
     // Check cache first
@@ -2671,16 +2747,17 @@ export class VisualizationState {
     // 2. LayoutOrchestrator.expandForSearch for graph view (via async operations)
     // This prevents unwanted side effects and double rendering.
 
-    // Update highlights and cache results
-    this.updateTreeSearchHighlights(results);
-    this.updateGraphSearchHighlights(results);
+    // Cache results but DO NOT update highlights
+    // Highlight updates must be done via AsyncCoordinator to prevent race conditions
     this._cacheSearchResults(trimmedQuery, results);
     return [...results];
   }
   /**
    * Update tree search highlights based on search results
+   * @internal Only call from AsyncCoordinator
    */
-  updateTreeSearchHighlights(results: SearchResult[]): void {
+  _updateTreeSearchHighlights(results: SearchResult[]): void {
+    this._validateAsyncCoordinatorContext("_updateTreeSearchHighlights");
     this._searchNavigationState.treeSearchHighlights.clear();
     for (const result of results) {
       this._searchNavigationState.treeSearchHighlights.add(result.id);
@@ -2690,8 +2767,10 @@ export class VisualizationState {
   }
   /**
    * Update graph search highlights - only highlight visible matches
+   * @internal Only call from AsyncCoordinator
    */
-  updateGraphSearchHighlights(results: SearchResult[]): void {
+  _updateGraphSearchHighlights(results: SearchResult[]): void {
+    this._validateAsyncCoordinatorContext("_updateGraphSearchHighlights");
     this._searchNavigationState.graphSearchHighlights.clear();
 
     for (const result of results) {
@@ -2702,12 +2781,15 @@ export class VisualizationState {
     }
   }
   /**
-   * Navigate to a specific element
+   * Navigate to a specific element (internal implementation)
+   * @internal Only call from AsyncCoordinator
    */
-  navigateToElement(
+  _navigateToElement(
     elementId: string,
     options?: { skipTemporaryHighlight?: boolean },
   ): void {
+    this._validateAsyncCoordinatorContext("_navigateToElement");
+
     this._searchNavigationState.navigationSelection = elementId;
     this._searchNavigationState.lastNavigationTarget = elementId;
     this._searchNavigationState.shouldFocusViewport = true;
@@ -2722,15 +2804,18 @@ export class VisualizationState {
 
     // Set temporary highlight for visual feedback (glow effect) unless skipped
     if (!options?.skipTemporaryHighlight) {
-      this.setTemporaryHighlight(elementId);
+      this._setTemporaryHighlight(elementId);
     }
   }
 
   /**
-   * Clear navigation state (selection and highlights)
+   * Clear navigation state (selection and highlights) (internal implementation)
    * This clears navigation without affecting search highlights
+   * @internal Only call from AsyncCoordinator
    */
-  clearNavigation(): void {
+  _clearNavigation(): void {
+    this._validateAsyncCoordinatorContext("_clearNavigation");
+
     this._searchNavigationState.navigationSelection = null;
     this._searchNavigationState.lastNavigationTarget = null;
     this._searchNavigationState.treeNavigationHighlights.clear();
@@ -2740,14 +2825,36 @@ export class VisualizationState {
   }
 
   /**
-   * Set temporary highlight for an element (glow effect after click)
-   * Adds a new highlight without clearing existing ones (allows concurrent glows)
+   * Navigate to a specific element (public wrapper for backward compatibility)
+   * @deprecated Use asyncCoordinator.updateNavigationHighlight() instead
    */
-  setTemporaryHighlight(
+  navigateToElement(
+    elementId: string,
+    options?: { skipTemporaryHighlight?: boolean },
+  ): void {
+    this._navigateToElement(elementId, options);
+  }
+
+  /**
+   * Clear navigation state (public wrapper for backward compatibility)
+   * @deprecated Use asyncCoordinator.clearNavigationHighlight() instead
+   */
+  clearNavigation(): void {
+    this._clearNavigation();
+  }
+
+  /**
+   * Set temporary highlight for an element (glow effect after click) (internal implementation)
+   * Adds a new highlight without clearing existing ones (allows concurrent glows)
+   * @internal Only call from AsyncCoordinator
+   */
+  _setTemporaryHighlight(
     elementId: string,
     durationMs: number = NAVIGATION_TIMING.HIGHLIGHT_DURATION,
     onClear?: () => void,
   ): void {
+    this._validateAsyncCoordinatorContext("_setTemporaryHighlight");
+
     // Don't clear existing highlights - allow multiple concurrent glows
     const timestamp = Date.now();
     this._searchNavigationState.temporaryHighlights.add(elementId);
@@ -2775,13 +2882,25 @@ export class VisualizationState {
     setTimeout(() => {
       // Remove only the highlights we added
       highlightedElements.forEach((id) => {
-        this.removeTemporaryHighlight(id);
+        this._removeTemporaryHighlight(id);
       });
       // Notify callback that highlights were cleared so React can re-render
       if (onClear) {
         onClear();
       }
     }, durationMs);
+  }
+
+  /**
+   * Set temporary highlight (public wrapper for backward compatibility)
+   * @deprecated Use asyncCoordinator.addTemporaryHighlight() instead
+   */
+  setTemporaryHighlight(
+    elementId: string,
+    durationMs: number = NAVIGATION_TIMING.HIGHLIGHT_DURATION,
+    onClear?: () => void,
+  ): void {
+    this._setTemporaryHighlight(elementId, durationMs, onClear);
   }
 
   /**
@@ -2812,10 +2931,13 @@ export class VisualizationState {
   }
 
   /**
-   * Add a temporary highlight to a node or container.
+   * Add a temporary highlight to a node or container (internal implementation)
+   * @internal Only call from AsyncCoordinator
    * @param id - The ID of the node or container to highlight.
    */
-  addTemporaryHighlight(id: string): void {
+  _addTemporaryHighlight(id: string): void {
+    this._validateAsyncCoordinatorContext("_addTemporaryHighlight");
+
     this._searchNavigationState.temporaryHighlights.add(id);
     this._searchNavigationState.temporaryHighlightTimestamps.set(
       id,
@@ -2824,12 +2946,31 @@ export class VisualizationState {
   }
 
   /**
-   * Remove a temporary highlight from a node or container.
+   * Remove a temporary highlight from a node or container (internal implementation)
+   * @internal Only call from AsyncCoordinator
    * @param id - The ID of the node or container to remove the highlight from.
    */
-  removeTemporaryHighlight(id: string): void {
+  _removeTemporaryHighlight(id: string): void {
+    this._validateAsyncCoordinatorContext("_removeTemporaryHighlight");
+
     this._searchNavigationState.temporaryHighlights.delete(id);
     this._searchNavigationState.temporaryHighlightTimestamps.delete(id);
+  }
+
+  /**
+   * Add a temporary highlight (public wrapper for backward compatibility)
+   * @deprecated Use asyncCoordinator.addTemporaryHighlight() instead
+   */
+  addTemporaryHighlight(id: string): void {
+    this._addTemporaryHighlight(id);
+  }
+
+  /**
+   * Remove a temporary highlight (public wrapper for backward compatibility)
+   * @deprecated Use asyncCoordinator.removeTemporaryHighlight() instead
+   */
+  removeTemporaryHighlight(id: string): void {
+    this._removeTemporaryHighlight(id);
   }
   /**
    * Get highlight type for tree elements
@@ -4105,4 +4246,75 @@ export class VisualizationState {
       }
     }
   }
+
+  /**
+   * Friend pattern for AsyncCoordinator access to internal methods
+   * This allows AsyncCoordinator to call internal mutation methods while
+   * preventing direct access from other components
+   * @internal
+   */
+  public readonly _forAsyncCoordinator = {
+    /**
+     * Update tree search highlights
+     * @internal Only for AsyncCoordinator use
+     */
+    updateTreeSearchHighlights: (results: SearchResult[]): void => {
+      this._updateTreeSearchHighlights(results);
+    },
+
+    /**
+     * Update graph search highlights
+     * @internal Only for AsyncCoordinator use
+     */
+    updateGraphSearchHighlights: (results: SearchResult[]): void => {
+      this._updateGraphSearchHighlights(results);
+    },
+
+    /**
+     * Clear search highlights
+     * @internal Only for AsyncCoordinator use
+     */
+    clearSearchHighlights: (): void => {
+      this._clearSearchHighlights();
+    },
+
+    /**
+     * Update navigation highlight
+     * @internal Only for AsyncCoordinator use
+     */
+    updateNavigationHighlight: (
+      elementId: string,
+      options?: { skipTemporaryHighlight?: boolean },
+    ): void => {
+      this._navigateToElement(elementId, options);
+    },
+
+    /**
+     * Clear navigation highlight
+     * @internal Only for AsyncCoordinator use
+     */
+    clearNavigationHighlight: (): void => {
+      this._clearNavigation();
+    },
+
+    /**
+     * Add temporary highlight
+     * @internal Only for AsyncCoordinator use
+     */
+    addTemporaryHighlight: (
+      elementId: string,
+      durationMs?: number,
+      onClear?: () => void,
+    ): void => {
+      this._setTemporaryHighlight(elementId, durationMs, onClear);
+    },
+
+    /**
+     * Remove temporary highlight
+     * @internal Only for AsyncCoordinator use
+     */
+    removeTemporaryHighlight: (elementId: string): void => {
+      this._removeTemporaryHighlight(elementId);
+    },
+  };
 }

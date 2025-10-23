@@ -4,38 +4,15 @@
  * Simple, focused API for graph visualization components.
  */
 
-// ⚠️ CRITICAL: Install ResizeObserver error suppression IMMEDIATELY
+// ⚠️ CRITICAL: Install ResizeObserver debouncing IMMEDIATELY
 // This must be the very first thing that runs when the library loads
+import { enableResizeObserverDebouncing } from "./utils/resizeObserverDebounce.js";
+
 if (typeof window !== "undefined") {
-  const resizeObserverPatterns = [
-    /ResizeObserver loop limit exceeded/i,
-    /ResizeObserver loop completed with undelivered notifications/i,
-    /ResizeObserver loop/i,
-  ];
-
-  const originalError = window.onerror;
-  window.onerror = function (message, source, lineno, colno, error) {
-    const errorStr = String(message || error || "");
-    if (resizeObserverPatterns.some((p) => p.test(errorStr))) {
-      return true; // Suppress
-    }
-    return originalError
-      ? originalError(message, source, lineno, colno, error)
-      : false;
-  };
-
-  // Also suppress via error event listener (for webpack-dev-server)
-  window.addEventListener(
-    "error",
-    (e) => {
-      const errorStr = String(e.message || e.error || "");
-      if (resizeObserverPatterns.some((p) => p.test(errorStr))) {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-      }
-    },
-    true,
-  ); // Use capture phase to intercept before webpack
+  // Enable ResizeObserver debouncing to prevent cascading loops at the source
+  // This batches rapid ResizeObserver callbacks into single 16ms windows,
+  // preventing the browser from exceeding its ResizeObserver limit
+  enableResizeObserverDebouncing();
 }
 
 // 🎯 CORE COMPONENTS
@@ -58,19 +35,10 @@ export type {
 export { parseDataFromUrl } from "./utils/urlParser.js";
 export { decompressData } from "./utils/compression.js";
 export {
-  enableResizeObserverErrorSuppression,
-  disableResizeObserverErrorSuppression,
-  DebouncedOperationManager,
-  withResizeObserverErrorSuppression,
-  withAsyncResizeObserverErrorSuppression,
-  useResizeObserverErrorSuppression,
-  withDOMResizeObserverErrorSuppression,
-  withLayoutResizeObserverErrorSuppression,
-  withStyleResizeObserverErrorSuppression,
-  withContainerResizeObserverErrorSuppression,
-  withSearchResizeObserverErrorSuppression,
-  withBatchResizeObserverErrorSuppression,
-} from "./utils/ResizeObserverErrorSuppression.js";
+  enableResizeObserverDebouncing,
+  disableResizeObserverDebouncing,
+  isResizeObserverDebouncingEnabled,
+} from "./utils/resizeObserverDebounce.js";
 export {
   clearSearchImperatively,
   clearSearchPanelImperatively,

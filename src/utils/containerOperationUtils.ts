@@ -16,7 +16,6 @@ import {
   recordCoordinatorCall,
   type OperationType,
 } from "./operationPerformanceMonitor.js";
-import { withResizeObserverErrorSuppression } from "./ResizeObserverErrorSuppression.js";
 
 /**
  * Debounce utility for rapid container operations
@@ -243,12 +242,8 @@ export function toggleContainerImperatively(options: {
       }
     };
 
-    // Use ResizeObserver error suppression if enabled
-    if (suppressResizeObserver) {
-      return withResizeObserverErrorSuppression(containerOperation)();
-    } else {
-      return containerOperation();
-    }
+    // Execute the operation (ResizeObserver debouncing handles any issues)
+    return containerOperation();
   };
 
   // Execute with or without debouncing
@@ -414,12 +409,8 @@ export function batchContainerOperationsImperatively(options: {
     }
   };
 
-  // Use ResizeObserver error suppression for batch operations
-  if (suppressResizeObserver) {
-    withResizeObserverErrorSuppression(performBatchOperation)();
-  } else {
-    performBatchOperation();
-  }
+  // Execute the batch operation (ResizeObserver debouncing handles any issues)
+  performBatchOperation();
 
   if (debug) {
     hscopeLogger.log(
