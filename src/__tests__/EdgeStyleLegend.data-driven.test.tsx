@@ -194,9 +194,9 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
       const svgs = container.querySelectorAll("svg");
       expect(svgs.length).toBe(2); // One for each tag
 
-      // Check that lines have different stroke widths
-      const lines = container.querySelectorAll("line");
-      expect(lines.length).toBeGreaterThan(0);
+      // Check that paths have different stroke widths (now using path instead of line)
+      const paths = container.querySelectorAll("path");
+      expect(paths.length).toBeGreaterThan(0);
     });
 
     it("should generate SVG samples for line-pattern variations", () => {
@@ -239,9 +239,9 @@ describe("EdgeStyleLegend Component - Data-Driven Regression Tests", () => {
       const circles = container.querySelectorAll("circle");
       expect(circles.length).toBeGreaterThan(0); // At least some circles for hash marks
 
-      // Should still have lines for the main edge path
-      const lines = container.querySelectorAll("line");
-      expect(lines.length).toBeGreaterThan(0);
+      // Should have paths for the main edge path (now using path instead of line)
+      const paths = container.querySelectorAll("path");
+      expect(paths.length).toBeGreaterThan(0);
     });
 
     it("should generate SVG samples for wavy edges", () => {

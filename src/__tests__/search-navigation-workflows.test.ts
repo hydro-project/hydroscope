@@ -1,7 +1,7 @@
 /**
  * @fileoverview Search Navigation Workflow Integration Tests
  *
- * Tests the complete workflows for search and navigation functionality using real chat.json data:
+ * Tests the complete workflows for search and navigation functionality using real simple_cluster.json data:
  * 1. Search query → tree expansion → graph update flow
  * 2. Tree click → graph navigation → viewport focus flow
  * 3. Combined search and navigation operations
@@ -28,8 +28,8 @@ describe("Search Navigation Workflow Integration", () => {
     const testSetup = await createTestAsyncCoordinator();
     coordinator = testSetup.asyncCoordinator;
 
-    // Load the actual chat.json file
-    const chatPath = path.join(process.cwd(), "test-data", "chat.json");
+    // Load the actual simple_cluster.json file
+    const chatPath = path.join(process.cwd(), "test-data", "simple_cluster.json");
 
     if (!fs.existsSync(chatPath)) {
       throw new Error(`Test data file not found: ${chatPath}`);
@@ -66,13 +66,13 @@ describe("Search Navigation Workflow Integration", () => {
         }
       });
 
-      // Perform search for persist (exists in both locations)
-      const results = state.performSearch("persist");
+      // Perform search for map (exists in the data)
+      const results = state.performSearch("map");
 
-      // Should find persist nodes
+      // Should find map nodes
       expect(results.length).toBeGreaterThan(0);
-      const persistResult = results.find((r) => r.label.includes("persist"));
-      expect(persistResult).toBeDefined();
+      const mapResult = results.find((r) => r.label.includes("map"));
+      expect(mapResult).toBeDefined();
 
       // Tree should be expanded to show the matches (currently not working)
       // TODO: Fix automatic tree expansion during search
@@ -133,7 +133,7 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should clear search highlights while preserving expansion state", () => {
       // Perform search to expand tree
-      state.performSearch("persist");
+      state.performSearch("map");
 
       // Verify highlights exist
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
@@ -176,11 +176,11 @@ describe("Search Navigation Workflow Integration", () => {
       };
 
       // Navigate to a real node (simulating tree click)
-      await coordinator.navigateToElement("5", state, mockReactFlowInstance); // persist node
+      await coordinator.navigateToElement("1", state, mockReactFlowInstance); // map node
 
       // Navigation state should be updated
-      expect(state.getNavigationSelection()).toBe("5");
-      expect(state.getLastNavigationTarget()).toBe("5");
+      expect(state.getNavigationSelection()).toBe("1");
+      expect(state.getLastNavigationTarget()).toBe("1");
       expect(state.getShouldFocusViewport()).toBe(true);
 
       // Viewport should be focused
@@ -204,10 +204,10 @@ describe("Search Navigation Workflow Integration", () => {
       };
 
       // Navigate to a node that's inside a container
-      await coordinator.navigateToElement("5", state, mockReactFlowInstance); // persist node
+      await coordinator.navigateToElement("1", state, mockReactFlowInstance); // map node
 
       // Navigation should work even if containers need expansion
-      expect(state.getNavigationSelection()).toBe("5");
+      expect(state.getNavigationSelection()).toBe("1");
     });
 
     it("should handle navigation to container elements", async () => {
@@ -238,43 +238,43 @@ describe("Search Navigation Workflow Integration", () => {
   describe("Combined Search and Navigation Operations", () => {
     it("should maintain both search and navigation highlights simultaneously", () => {
       // Perform search for persist
-      state.performSearch("persist");
+      state.performSearch("map");
       const searchHighlights = state.getTreeSearchHighlights();
       expect(searchHighlights.size).toBeGreaterThan(0);
 
       // Navigate to different element (a node)
-      state.navigateToElement("6"); // flatmap node
-      expect(state.getTreeNavigationHighlights().has("6")).toBe(true);
+      state.navigateToElement("2"); // flatmap node
+      expect(state.getTreeNavigationHighlights().has("2")).toBe(true);
 
       // Both highlights should coexist
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
-      expect(state.getTreeNavigationHighlights().has("6")).toBe(true);
+      expect(state.getTreeNavigationHighlights().has("2")).toBe(true);
 
       // Check highlight types for navigation
-      expect(state.getTreeElementHighlightType("6")).toBe("navigation");
+      expect(state.getTreeElementHighlightType("2")).toBe("navigation");
     });
 
     it("should handle overlapping search and navigation highlights", () => {
-      // Search for persist (which includes node 5)
-      state.performSearch("persist");
-      expect(state.getTreeSearchHighlights().has("5")).toBe(true);
+      // Search for map (which includes node 1)
+      state.performSearch("map");
+      expect(state.getTreeSearchHighlights().has("1")).toBe(true);
 
       // Navigate to the same node
-      state.navigateToElement("5");
-      expect(state.getTreeNavigationHighlights().has("5")).toBe(true);
+      state.navigateToElement("1");
+      expect(state.getTreeNavigationHighlights().has("1")).toBe(true);
 
       // Should detect combined highlight in tree
-      expect(state.getTreeElementHighlightType("5")).toBe("both");
+      expect(state.getTreeElementHighlightType("1")).toBe("both");
 
       // Graph highlighting might work differently, so just check that both sets contain the element
-      expect(state.getTreeSearchHighlights().has("5")).toBe(true);
-      expect(state.getTreeNavigationHighlights().has("5")).toBe(true);
+      expect(state.getTreeSearchHighlights().has("1")).toBe(true);
+      expect(state.getTreeNavigationHighlights().has("1")).toBe(true);
     });
 
     it("should clear search highlights independently of navigation", () => {
       // Set up both search and navigation
-      state.performSearch("persist");
-      state.navigateToElement("6"); // flatmap node
+      state.performSearch("map");
+      state.navigateToElement("2"); // flatmap node
 
       // Verify both are active
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
@@ -286,13 +286,13 @@ describe("Search Navigation Workflow Integration", () => {
       // Search highlights cleared, navigation preserved
       expect(state.getTreeSearchHighlights().size).toBe(0);
       expect(state.getTreeNavigationHighlights().size).toBeGreaterThan(0);
-      expect(state.getNavigationSelection()).toBe("6");
+      expect(state.getNavigationSelection()).toBe("2");
     });
 
     it("should clear navigation highlights independently of search", () => {
       // Set up both search and navigation
-      state.performSearch("persist");
-      state.navigateToElement("6"); // flatmap node
+      state.performSearch("map");
+      state.navigateToElement("2"); // flatmap node
 
       // Clear only navigation
       state.clearNavigation();
@@ -300,7 +300,7 @@ describe("Search Navigation Workflow Integration", () => {
       // Navigation highlights cleared, search preserved
       expect(state.getTreeNavigationHighlights().size).toBe(0);
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
-      expect(state.getSearchQuery()).toBe("persist");
+      expect(state.getSearchQuery()).toBe("map");
     });
   });
 
@@ -316,20 +316,20 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should handle rapid search query changes", async () => {
       // Simulate rapid search changes
-      const queries = ["per", "pers", "persist"];
+      const queries = ["per", "pers", "map"];
 
       for (const query of queries) {
         state.performSearch(query);
       }
 
       // Final query should be active
-      expect(state.getSearchQuery()).toBe("persist");
+      expect(state.getSearchQuery()).toBe("map");
 
       // Should have results for final query
       const results = state.getSearchResults();
       expect(results.length).toBeGreaterThan(0);
-      const persistResult = results.find((r) => r.label.includes("persist"));
-      expect(persistResult).toBeDefined();
+      const mapResult = results.find((r) => r.label.includes("map"));
+      expect(mapResult).toBeDefined();
     });
 
     it("should handle search during ongoing navigation operations", async () => {
@@ -346,20 +346,20 @@ describe("Search Navigation Workflow Integration", () => {
 
       // Start navigation to a node
       const navigationPromise = coordinator.navigateToElement(
-        "6",
+        "2",
         state,
         mockReactFlowInstance,
       ); // flatmap node
 
       // Perform search while navigation is happening
-      state.performSearch("persist");
+      state.performSearch("map");
 
       // Wait for navigation to complete
       await navigationPromise;
 
       // Both operations should complete successfully
-      expect(state.getNavigationSelection()).toBe("6");
-      expect(state.getSearchQuery()).toBe("persist");
+      expect(state.getNavigationSelection()).toBe("2");
+      expect(state.getSearchQuery()).toBe("map");
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
     });
 
@@ -377,7 +377,7 @@ describe("Search Navigation Workflow Integration", () => {
 
       // Start multiple navigation operations
       const nav1 = coordinator.navigateToElement(
-        "6",
+        "2",
         state,
         mockReactFlowInstance,
       ); // flatmap
@@ -396,18 +396,18 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should handle search clearing during active operations", () => {
       // Start search
-      state.performSearch("persist");
+      state.performSearch("map");
       expect(state.getTreeSearchHighlights().size).toBeGreaterThan(0);
 
       // Start navigation
-      state.navigateToElement("6"); // flatmap node
+      state.navigateToElement("2"); // flatmap node
 
       // Clear search during active navigation
       state.clearSearchEnhanced();
 
       // Search should be cleared, navigation should remain
       expect(state.getTreeSearchHighlights().size).toBe(0);
-      expect(state.getNavigationSelection()).toBe("6");
+      expect(state.getNavigationSelection()).toBe("2");
       expect(state.getTreeNavigationHighlights().size).toBeGreaterThan(0);
     });
   });
@@ -415,7 +415,7 @@ describe("Search Navigation Workflow Integration", () => {
   describe("ReactFlow Bridge Integration in Workflows", () => {
     it("should apply correct highlights throughout search workflow", () => {
       // Perform search
-      state.performSearch("persist");
+      state.performSearch("map");
 
       // Convert to ReactFlow data
       let reactFlowData = bridge.toReactFlowData(state);
@@ -424,7 +424,7 @@ describe("Search Navigation Workflow Integration", () => {
       expect(reactFlowData.nodes.length).toBeGreaterThan(0);
 
       // Add navigation
-      state.navigateToElement("6"); // flatmap node
+      state.navigateToElement("2"); // flatmap node
 
       // Convert again
       reactFlowData = bridge.toReactFlowData(state);
@@ -435,8 +435,8 @@ describe("Search Navigation Workflow Integration", () => {
 
     it("should handle highlight updates during container operations", async () => {
       // Set up search and navigation
-      state.performSearch("persist");
-      state.navigateToElement("6"); // flatmap node
+      state.performSearch("map");
+      state.navigateToElement("2"); // flatmap node
 
       // Expand containers
       await coordinator.expandContainers(state, { fitView: false });

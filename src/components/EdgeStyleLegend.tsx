@@ -7,7 +7,11 @@
  * Uses the same CustomEdge component as the main graph to ensure consistency.
  */
 import React, { useMemo } from "react";
-import { COMPONENT_COLORS, TYPOGRAPHY, WAVY_EDGE_CONFIG } from "../shared/config";
+import {
+  COMPONENT_COLORS,
+  TYPOGRAPHY,
+  WAVY_EDGE_CONFIG,
+} from "../shared/config";
 import { processSemanticTags } from "../utils/StyleProcessor";
 
 interface EdgeStyleLegendProps {

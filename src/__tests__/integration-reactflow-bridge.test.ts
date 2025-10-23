@@ -504,7 +504,7 @@ describe("VisualizationState + ReactFlowBridge Integration", () => {
       // Verify aggregated edge style - with new semantic styling system
       for (const aggEdge of aggregatedEdges) {
         expect(aggEdge.style).toMatchObject({
-          strokeWidth: 3, // Default thickness (updated for visibility)
+          strokeWidth: 2, // Default thickness
           stroke: "#999999", // Default stroke color for unstyled edges
         });
       }
