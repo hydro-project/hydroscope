@@ -8,6 +8,15 @@
 // This must be the very first thing that runs when the library loads
 import { enableResizeObserverDebouncing } from "./utils/resizeObserverDebounce.js";
 
+declare global {
+  interface Window {
+    hscopeLogger?: typeof import("./utils/logger").hscopeLogger;
+  }
+}
+
+import { hscopeLogger } from "./utils/logger";
+window.hscopeLogger = hscopeLogger;
+
 if (typeof window !== "undefined") {
   // Enable ResizeObserver debouncing to prevent cascading loops at the source
   // This batches rapid ResizeObserver callbacks into single 16ms windows,

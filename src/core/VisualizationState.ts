@@ -824,36 +824,7 @@ export class VisualizationState {
       }
       // SIMPLIFIED FIX: Use source-target pair for consistent IDs while preserving directionality
       const aggregatedEdgeId = `agg-${source}-${target}`;
-      // CRITICAL DEBUG: Log when we create problematic edges
-      if (source === "bt_136" || target === "bt_136") {
-        console.error(
-          `[EdgeDebug] 🚨 CREATING PROBLEMATIC EDGE: ${aggregatedEdgeId}`,
-        );
-        console.error(
-          `[EdgeDebug] 🚨   Container ${containerId} is aggregating edges`,
-        );
-        console.error(
-          `[EdgeDebug] 🚨   bt_136 container exists: ${this._containers.has("bt_136")}`,
-        );
-        console.error(
-          `[EdgeDebug] 🚨   bt_136 container hidden: ${this._containers.get("bt_136")?.hidden}`,
-        );
-        console.error(
-          `[EdgeDebug] 🚨   Original edges: ${edges.map((e) => e.id).join(", ")}`,
-        );
-        // Check the hierarchy
-        const bt136Container = this._containers.get("bt_136");
-        if (bt136Container) {
-          const parent = this._containerParentMap.get("bt_136");
-          console.error(`[EdgeDebug] 🚨   bt_136 parent: ${parent}`);
-          if (parent) {
-            const parentContainer = this._containers.get(parent);
-            console.error(
-              `[EdgeDebug] 🚨   Parent ${parent} hidden: ${parentContainer?.hidden}, collapsed: ${parentContainer?.collapsed}`,
-            );
-          }
-        }
-      }
+
       // Check if this aggregated edge already exists
       const existingAggEdge = this._aggregatedEdges.get(aggregatedEdgeId);
       if (existingAggEdge && !existingAggEdge.hidden) {
@@ -2604,9 +2575,9 @@ export class VisualizationState {
       this._searchNavigationState.searchResults = [];
       this._searchResults = [];
       this._searchState.resultCount = 0;
-      // NOTE: Highlight updates removed - must be done via AsyncCoordinator
-      // this.updateTreeSearchHighlights([]);
-      // this.updateGraphSearchHighlights([]);
+      // Backward-compat: also clear highlights when called directly
+      this._searchNavigationState.treeSearchHighlights.clear();
+      this._searchNavigationState.graphSearchHighlights.clear();
       return [];
     }
     // Check cache first
@@ -2747,9 +2718,25 @@ export class VisualizationState {
     // 2. LayoutOrchestrator.expandForSearch for graph view (via async operations)
     // This prevents unwanted side effects and double rendering.
 
-    // Cache results but DO NOT update highlights
-    // Highlight updates must be done via AsyncCoordinator to prevent race conditions
+    // Cache results first
     this._cacheSearchResults(trimmedQuery, results);
+
+    // Backward-compat: When performSearch is called directly (tests or simple usage),
+    // also update both tree and graph highlight sets synchronously here.
+    // Coordinator-based flows will re-apply these highlights safely.
+    this._searchNavigationState.treeSearchHighlights.clear();
+    this._searchNavigationState.graphSearchHighlights.clear();
+    for (const result of results) {
+      // Always add to tree highlights
+      this._searchNavigationState.treeSearchHighlights.add(result.id);
+      // Only add to graph highlights if element is visible in graph
+      if (this._isElementVisibleInGraph(result.id)) {
+        this._searchNavigationState.graphSearchHighlights.add(result.id);
+      }
+    }
+    // Also update collapsed ancestor highlighting in tree
+    this.updateCollapsedAncestorsInTree();
+
     return [...results];
   }
   /**
@@ -3996,6 +3983,51 @@ export class VisualizationState {
     }
 
     // Invalidate caches
+    this._invalidateAllCaches();
+  }
+
+  /**
+   * Recalculate edge visibility based on current node/container visibility
+   * Call this after bulk visibility changes (e.g., shift-click to hide multiple containers)
+   */
+  recalculateEdgeVisibility(): void {
+    // Handle regular edges
+    for (const edge of this._edges.values()) {
+      // Check if both source and target are visible
+      const sourceNode = this._nodes.get(edge.source);
+      const targetNode = this._nodes.get(edge.target);
+      const sourceContainer = this._containers.get(edge.source);
+      const targetContainer = this._containers.get(edge.target);
+
+      // An endpoint is hidden if we found it and it's marked as hidden
+      const sourceHidden =
+        sourceNode?.hidden === true || sourceContainer?.hidden === true;
+      const targetHidden =
+        targetNode?.hidden === true || targetContainer?.hidden === true;
+
+      // Edge is hidden only if at least one endpoint is explicitly hidden
+      edge.hidden = sourceHidden || targetHidden;
+    }
+
+    // CRITICAL FIX: Also handle aggregated edges
+    for (const aggEdge of this._aggregatedEdges.values()) {
+      // Check if both source and target are visible
+      const sourceNode = this._nodes.get(aggEdge.source);
+      const targetNode = this._nodes.get(aggEdge.target);
+      const sourceContainer = this._containers.get(aggEdge.source);
+      const targetContainer = this._containers.get(aggEdge.target);
+
+      // An endpoint is hidden if we found it and it's marked as hidden
+      const sourceHidden =
+        sourceNode?.hidden === true || sourceContainer?.hidden === true;
+      const targetHidden =
+        targetNode?.hidden === true || targetContainer?.hidden === true;
+
+      // Aggregated edge is hidden if at least one endpoint is explicitly hidden
+      aggEdge.hidden = sourceHidden || targetHidden;
+    }
+
+    // Invalidate caches since edge visibility changed
     this._invalidateAllCaches();
   }
 

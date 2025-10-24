@@ -597,6 +597,7 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
     // ARCHITECTURAL PRINCIPLE: Trust VisualizationState to provide clean, valid data
     // Validation should happen at the data layer, not the presentation layer
+
     hscopeLogger.log(
       "bridge",
       `[ReactFlowBridge] Converting ${state.visibleEdges.length} edges (trusting VisualizationState data)`,
@@ -623,7 +624,9 @@ export class ReactFlowBridge implements IReactFlowBridge {
         edges.push(renderedEdge);
       } else {
         skippedEdgeCount++;
-        console.warn(`[ReactFlowBridge] ⚠️ Edge ${edge.id} failed to render`);
+        console.warn(
+          `[ReactFlowBridge] ⚠️ Edge ${edge.id} failed to render - source: ${edge.source}, target: ${edge.target}`,
+        );
       }
     }
 

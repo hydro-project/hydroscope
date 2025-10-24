@@ -14,7 +14,7 @@
  */
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { Tree } from "antd";
-import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
+// import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons"; // DISABLED: Eye icons removed due to edge consistency issues
 import { Spinner } from "./Spinner.js";
 import type { TreeDataNode } from "antd";
 import { HierarchyTreeProps, HierarchyTreeNode } from "./types";
@@ -188,7 +188,7 @@ function createContainerDisplayTitle(
   hasTemporaryHighlight: boolean = false,
   palette: string = "Set3",
   isManuallyHidden: boolean = false,
-  onToggleVisibility?: (e: React.MouseEvent) => void,
+  _onToggleVisibility?: (e: React.MouseEvent) => void,
   containerId?: string,
   longLabel?: string,
 ): React.ReactNode {
@@ -245,37 +245,7 @@ function createContainerDisplayTitle(
       }}
       data-container-id={containerId}
     >
-      {/* Eye icon toggle */}
-      {onToggleVisibility && (
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleVisibility(e);
-          }}
-          style={{
-            cursor: "pointer",
-            fontSize: "14px",
-            opacity: 0.7,
-            userSelect: "none",
-            transition: "opacity 0.15s",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.7";
-          }}
-          title={
-            isManuallyHidden
-              ? "Show in graph (currently hidden)"
-              : "Hide from graph (Shift+click to hide all others)"
-          }
-        >
-          {isManuallyHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-        </span>
-      )}
+      {/* Eye icon toggle disabled due to edge consistency issues (see ISSUE_NODE_VISIBILITY_EYEBALLS.md) */}
       <span
         style={{
           fontWeight:
@@ -532,6 +502,7 @@ export function HierarchyTree({
   showNodeCounts = true,
   truncateLabels = true,
   maxLabelLength = 20,
+  headerAction,
   className = "",
   style,
   visualizationState,
@@ -1062,16 +1033,38 @@ export function HierarchyTree({
   // Check if we have any containers to display (including hidden ones)
   if (!visualizationState || visualizationState.allContainers.length === 0) {
     return (
-      <div className={`hierarchy-tree-empty ${className}`} style={style}>
-        <span
-          style={{
-            color: COMPONENT_COLORS.TEXT_DISABLED,
-            fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
-            fontStyle: "italic",
-          }}
-        >
-          No hierarchy available
-        </span>
+      <div className={`hierarchy-tree ${className}`} style={style}>
+        {title && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_NODE,
+              fontWeight: "bold",
+              color: COMPONENT_COLORS.TEXT_PRIMARY,
+              marginBottom: "8px",
+              paddingBottom: "4px",
+              borderBottom: `1px solid ${COMPONENT_COLORS.BORDER_LIGHT}`,
+            }}
+          >
+            <span>{title}</span>
+            {headerAction && (
+              <div style={{ marginLeft: "8px" }}>{headerAction}</div>
+            )}
+          </div>
+        )}
+        <div className={`hierarchy-tree-empty`}>
+          <span
+            style={{
+              color: COMPONENT_COLORS.TEXT_DISABLED,
+              fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
+              fontStyle: "italic",
+            }}
+          >
+            No hierarchy available
+          </span>
+        </div>
       </div>
     );
   }
@@ -1080,6 +1073,9 @@ export function HierarchyTree({
       {title && (
         <div
           style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_NODE,
             fontWeight: "bold",
             color: COMPONENT_COLORS.TEXT_PRIMARY,
@@ -1088,7 +1084,10 @@ export function HierarchyTree({
             borderBottom: `1px solid ${COMPONENT_COLORS.BORDER_LIGHT}`,
           }}
         >
-          {title}
+          <span>{title}</span>
+          {headerAction && (
+            <div style={{ marginLeft: "8px" }}>{headerAction}</div>
+          )}
         </div>
       )}
 

@@ -104,7 +104,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
         promises.push(
           coordinator.updateSearchHighlights(query, state, {
             expandContainers: false,
-            focusFirstResult: false,
           }),
         );
       }
@@ -120,7 +119,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       for (const query of queries) {
         await coordinator.updateSearchHighlights(query, state, {
           expandContainers: false,
-          focusFirstResult: false,
         });
       }
 
@@ -137,7 +135,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
         promises.push(
           coordinator.updateSearchHighlights(`query${i}`, state, {
             expandContainers: false,
-            focusFirstResult: false,
           }),
         );
       }
@@ -159,7 +156,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
         promises.push(
           coordinator.updateSearchHighlights(`node${i}`, state, {
             expandContainers: true,
-            focusFirstResult: false,
           }),
         );
       }
@@ -185,14 +181,11 @@ describe("Race Condition Prevention - Integration Tests", () => {
       const operations = [
         coordinator.updateSearchHighlights("Test", state, {
           expandContainers: false,
-          focusFirstResult: false,
         }),
         coordinator.expandContainer("container1", state, {
-          relayoutEntities: ["container1"],
           fitView: false,
         }),
         coordinator.updateColorPalette("dark", state, {
-          relayoutEntities: [],
           fitView: false,
         }),
       ];
@@ -206,14 +199,11 @@ describe("Race Condition Prevention - Integration Tests", () => {
       await Promise.all([
         coordinator.updateSearchHighlights("node", state, {
           expandContainers: false,
-          focusFirstResult: false,
         }),
         coordinator.expandContainer("container1", state, {
-          relayoutEntities: ["container1"],
           fitView: false,
         }),
         coordinator.collapseContainer("container2", state, {
-          relayoutEntities: ["container2"],
           fitView: false,
         }),
       ]);
@@ -236,13 +226,11 @@ describe("Race Condition Prevention - Integration Tests", () => {
       const op1 = coordinator
         .updateSearchHighlights("test1", state, {
           expandContainers: false,
-          focusFirstResult: false,
         })
         .then(() => executionOrder.push("search"));
 
       const op2 = coordinator
         .expandContainer("container1", state, {
-          relayoutEntities: ["container1"],
           fitView: false,
         })
         .then(() => executionOrder.push("expand"));
@@ -250,7 +238,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       const op3 = coordinator
         .updateSearchHighlights("test2", state, {
           expandContainers: false,
-          focusFirstResult: false,
         })
         .then(() => executionOrder.push("search2"));
 
@@ -267,22 +254,17 @@ describe("Race Condition Prevention - Integration Tests", () => {
       const operations = [
         coordinator.updateSearchHighlights("node1", state, {
           expandContainers: true,
-          focusFirstResult: false,
         }),
         coordinator.expandContainer("container1", state, {
-          relayoutEntities: ["container1"],
           fitView: false,
         }),
         coordinator.updateSearchHighlights("node2", state, {
           expandContainers: false,
-          focusFirstResult: false,
         }),
         coordinator.collapseContainer("container2", state, {
-          relayoutEntities: ["container2"],
           fitView: false,
         }),
         coordinator.clearSearchHighlights(state, {
-          relayoutEntities: [],
           fitView: false,
         }),
       ];
@@ -297,7 +279,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       // Perform a search operation
       await coordinator.updateSearchHighlights("Test", state, {
         expandContainers: false,
-        focusFirstResult: false,
       });
 
       // Read should see consistent state
@@ -313,7 +294,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       // Set up initial state
       await coordinator.updateSearchHighlights("node", state, {
         expandContainers: false,
-        focusFirstResult: false,
       });
 
       // Take snapshot
@@ -323,7 +303,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       // Perform another operation
       await coordinator.updateSearchHighlights("Test", state, {
         expandContainers: false,
-        focusFirstResult: false,
       });
 
       // Take another snapshot
@@ -339,9 +318,12 @@ describe("Race Condition Prevention - Integration Tests", () => {
     it("should handle opportunistic reads without crashing", () => {
       // Opportunistic reads should not crash even if state is being modified
       expect(() => {
-        const results = state.getSearchResults();
+        const _results = state.getSearchResults();
         const searchState = (state as any)._searchNavigationState;
-        const query = searchState.searchQuery;
+        const _query = searchState.searchQuery;
+        void _results;
+        void _query;
+        void searchState;
       }).not.toThrow();
     });
 
@@ -350,7 +332,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       for (let i = 0; i < 10; i++) {
         await coordinator.updateSearchHighlights(`query${i}`, state, {
           expandContainers: false,
-          focusFirstResult: false,
         });
 
         // Read immediately after write
@@ -371,7 +352,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
       // Perform search with container expansion
       await coordinator.updateSearchHighlights("node1", state, {
         expandContainers: true,
-        focusFirstResult: false,
       });
 
       // Check for ResizeObserver errors
@@ -394,13 +374,11 @@ describe("Race Condition Prevention - Integration Tests", () => {
       for (let i = 0; i < 10; i++) {
         operations.push(
           coordinator.expandContainer("container1", state, {
-            relayoutEntities: ["container1"],
             fitView: false,
           }),
         );
         operations.push(
           coordinator.collapseContainer("container1", state, {
-            relayoutEntities: ["container1"],
             fitView: false,
           }),
         );
@@ -427,22 +405,18 @@ describe("Race Condition Prevention - Integration Tests", () => {
       // Run various search scenarios
       await coordinator.updateSearchHighlights("Test", state, {
         expandContainers: true,
-        focusFirstResult: true,
       });
 
       await coordinator.updateSearchHighlights("node", state, {
         expandContainers: false,
-        focusFirstResult: false,
       });
 
       await coordinator.clearSearchHighlights(state, {
-        relayoutEntities: [],
         fitView: false,
       });
 
       await coordinator.updateSearchHighlights("Node 1", state, {
         expandContainers: true,
-        focusFirstResult: true,
       });
 
       // No errors or warnings should be logged
@@ -460,35 +434,29 @@ describe("Race Condition Prevention - Integration Tests", () => {
       for (let i = 0; i < 5; i++) {
         await coordinator.updateSearchHighlights(`t${i}`, state, {
           expandContainers: true,
-          focusFirstResult: false,
         });
       }
 
       // Scenario 2: Search with container expansion
       await coordinator.updateSearchHighlights("node1", state, {
         expandContainers: true,
-        focusFirstResult: true,
       });
 
       // Scenario 3: Clear and search again
       await coordinator.clearSearchHighlights(state, {
-        relayoutEntities: [],
         fitView: false,
       });
 
       await coordinator.updateSearchHighlights("Test", state, {
         expandContainers: true,
-        focusFirstResult: true,
       });
 
       // Scenario 4: Multiple concurrent operations
       await Promise.all([
         coordinator.updateSearchHighlights("node", state, {
           expandContainers: true,
-          focusFirstResult: false,
         }),
         coordinator.expandContainer("container2", state, {
-          relayoutEntities: ["container2"],
           fitView: false,
         }),
       ]);
@@ -514,7 +482,6 @@ describe("Race Condition Prevention - Integration Tests", () => {
         promises.push(
           coordinator.updateSearchHighlights(`query${i}`, state, {
             expandContainers: false,
-            focusFirstResult: false,
           }),
         );
       }
@@ -527,21 +494,17 @@ describe("Race Condition Prevention - Integration Tests", () => {
       // Interleave different operation types
       await coordinator.updateSearchHighlights("node1", state, {
         expandContainers: false,
-        focusFirstResult: false,
       });
 
       await coordinator.expandContainer("container1", state, {
-        relayoutEntities: ["container1"],
         fitView: false,
       });
 
       await coordinator.updateSearchHighlights("node2", state, {
         expandContainers: false,
-        focusFirstResult: false,
       });
 
       await coordinator.collapseContainer("container1", state, {
-        relayoutEntities: ["container1"],
         fitView: false,
       });
 

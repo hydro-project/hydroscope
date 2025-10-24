@@ -108,11 +108,11 @@ describe("Search Navigation InfoPanel Performance", () => {
     const searchInput = searchInputs[0];
     fireEvent.change(searchInput, { target: { value: "Test" } });
 
-    // Should show search results
+    // Should show search results counter in the InfoPanel (format: "current / total")
     await waitFor(
       () => {
-        const resultCountElements = screen.getAllByText(/\d+.*results?/i);
-        expect(resultCountElements.length).toBeGreaterThan(0);
+        const counter = screen.getByTestId("search-results");
+        expect(counter.textContent?.trim()).toMatch(/\d+\s*\/\s*\d+/);
       },
       { timeout: 2000 },
     );

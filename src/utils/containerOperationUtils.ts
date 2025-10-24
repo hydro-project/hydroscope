@@ -93,7 +93,7 @@ export function toggleContainerImperatively(options: {
     forceCollapsed,
     debounce = false,
     debounceKey,
-    suppressResizeObserver = true,
+    suppressResizeObserver: _suppressResizeObserver = true,
     debug = false,
     enablePerformanceMonitoring = true,
   } = options;
@@ -314,7 +314,7 @@ export function batchContainerOperationsImperatively(options: {
   const {
     operations,
     visualizationState,
-    suppressResizeObserver = true,
+    suppressResizeObserver: _suppressResizeObserver2 = true,
     debug = false,
     enablePerformanceMonitoring = true,
   } = options;

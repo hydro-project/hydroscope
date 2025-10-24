@@ -120,6 +120,7 @@ export interface HierarchyTreeProps extends BaseComponentProps {
   showNodeCounts?: boolean;
   truncateLabels?: boolean;
   maxLabelLength?: number;
+  headerAction?: React.ReactNode; // Optional action button to display next to the title
 }
 // ============ Legend Props ============
 export interface LegendProps extends BaseComponentProps {

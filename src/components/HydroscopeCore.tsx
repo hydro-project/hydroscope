@@ -1078,6 +1078,11 @@ const HydroscopeCoreInternal = forwardRef<
                   ),
                 },
               );
+
+              // CRITICAL FIX: Force ReactFlow remount AFTER layout to fix edge rendering bug
+              // When layout algorithm changes, ReactFlow's internal edge state gets stale
+              // Incrementing the key forces a complete remount with fresh edge data
+              setReactFlowResetKey((prev) => prev + 1);
             } catch (error) {
               console.error(
                 `[HydroscopeCore] ❌ Error during layout recalculation:`,
@@ -1282,6 +1287,10 @@ const HydroscopeCoreInternal = forwardRef<
         }
 
         try {
+          hscopeLogger.log(
+            "orchestrator",
+            `[HydroscopeCore] 🚩 Starting collapseContainer for containerId=${containerId}`,
+          );
           // Use AsyncCoordinator's synchronous collapseContainer method
           // When it returns, the complete pipeline is done (state change + layout + render + fitView)
           const reactFlowData = await state.asyncCoordinator.collapseContainer(
@@ -1296,6 +1305,17 @@ const HydroscopeCoreInternal = forwardRef<
                 ),
               ),
             },
+          );
+
+          // Log post-layout window status immediately after collapse
+
+          const inPostLayoutWindow =
+            state.asyncCoordinator?.isInPostLayoutWindow?.(800) || false;
+
+          hscopeLogger.log(
+            "orchestrator",
+            `[HydroscopeCore] 🕒 Post-layout window after collapseContainer: inPostLayoutWindow=${inPostLayoutWindow}`,
+            { containerId },
           );
 
           // At this point, the ENTIRE pipeline is complete:
@@ -1315,7 +1335,7 @@ const HydroscopeCoreInternal = forwardRef<
 
           hscopeLogger.log(
             "orchestrator",
-            `[HydroscopeCore] Container collapse operation completed`,
+            `[HydroscopeCore] ✅ Container collapse operation completed`,
             { containerId, reactFlowData },
           );
         } catch (error) {
@@ -1857,15 +1877,52 @@ const HydroscopeCoreInternal = forwardRef<
             (change) => change.type !== "dimensions",
           );
 
+          hscopeLogger.log(
+            "orchestrator",
+            "[HydroscopeCore] 🔍 onNodesChange summary",
+            {
+              totalChanges: changes.length,
+              dimensionChanges: dimensionChanges.length,
+              nonDimensionChanges: nonDimensionChanges.length,
+            },
+          );
+
           // Only apply non-dimension changes immediately (drag, select, etc.)
           // Dimension changes are skipped unless we're in a critical phase
           const hasPendingCallbacks =
             state.asyncCoordinator?.hasPendingCallbacks() || false;
 
+          const isInMajorUpdatePhase =
+            state.asyncCoordinator?.isInMajorUpdatePhase || false;
+
+          hscopeLogger.log(
+            "orchestrator",
+            `[HydroscopeCore] 🔍 async status after node change: hasPendingCallbacks=${hasPendingCallbacks} isInMajorUpdatePhase=${isInMajorUpdatePhase}`,
+            {
+              hasPendingCallbacks,
+              isInMajorUpdatePhase,
+              dimensionChanges: dimensionChanges.length,
+              nonDimensionChanges: nonDimensionChanges.length,
+            },
+          );
+
+          const treatAsMajor = hasPendingCallbacks || isInMajorUpdatePhase;
           const changesToApply =
-            dimensionChanges.length > 0 && !hasPendingCallbacks
+            dimensionChanges.length > 0 && !treatAsMajor
               ? nonDimensionChanges // Skip dimension changes if no pending callbacks
               : changes; // Apply all changes if we have pending callbacks
+
+          hscopeLogger.log(
+            "orchestrator",
+            "[HydroscopeCore] 🔀 Applying changes path",
+            {
+              path:
+                dimensionChanges.length > 0 && !treatAsMajor
+                  ? "minor (preserve viewport)"
+                  : "major (pipeline/post-layout window)",
+              applyingCount: changesToApply.length,
+            },
+          );
 
           // Only call setState if there are changes to apply
           if (changesToApply.length > 0) {
@@ -1886,7 +1943,7 @@ const HydroscopeCoreInternal = forwardRef<
           }
 
           if (dimensionChanges.length > 0) {
-            if (hasPendingCallbacks) {
+            if (treatAsMajor) {
               // Major change: initial load or container expansion
               // Notify AsyncCoordinator about ALL measured nodes in this batch
               const nodeIds = dimensionChanges.map((c) => c.id);
@@ -1930,12 +1987,24 @@ const HydroscopeCoreInternal = forwardRef<
                     // Mark that we're remounting to prevent fitView on the subsequent data reload
                     isRemountingRef.current = true;
 
+                    hscopeLogger.log(
+                      "orchestrator",
+                      "[HydroscopeCore] 🔧 Setting isRemountingReactFlow=true",
+                    );
                     // Hide ReactFlow immediately before remount
                     setIsRemountingReactFlow(true);
 
                     // Wait a tick for opacity to apply, then remount
                     requestAnimationFrame(() => {
-                      setReactFlowResetKey((prev) => prev + 1);
+                      setReactFlowResetKey((prev) => {
+                        const next = prev + 1;
+                        hscopeLogger.log(
+                          "orchestrator",
+                          "[HydroscopeCore] 🔁 Increment reactFlowResetKey",
+                          { next },
+                        );
+                        return next;
+                      });
 
                       // Restore viewport after remount completes
                       // Use multiple RAF to ensure ReactFlow has fully rendered
@@ -1952,6 +2021,10 @@ const HydroscopeCoreInternal = forwardRef<
                             });
                             // Wait one more frame before showing to ensure viewport is applied
                             requestAnimationFrame(() => {
+                              hscopeLogger.log(
+                                "orchestrator",
+                                "[HydroscopeCore] 🔧 Setting isRemountingReactFlow=false",
+                              );
                               setIsRemountingReactFlow(false);
                             });
                           });
@@ -1960,6 +2033,11 @@ const HydroscopeCoreInternal = forwardRef<
                     });
 
                     lastDimensionResetRef.current = Date.now();
+                    hscopeLogger.log(
+                      "orchestrator",
+                      "[HydroscopeCore] ⏱️ Remount scheduled",
+                      { debounceMs: 100 },
+                    );
                   }
                 }, 100) as unknown as number; // 100ms debounce to prevent loops
               } else {

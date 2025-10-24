@@ -15,7 +15,7 @@ import React, {
 } from "react";
 import { hscopeLogger } from "../../utils/logger.js";
 import { Button } from "antd";
-import { EyeOutlined } from "@ant-design/icons";
+// import { EyeOutlined } from "@ant-design/icons"; // DISABLED: Eye icons removed due to edge consistency issues
 import { InfoPanelProps, LegendData } from "../types";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { GroupingControls } from "../GroupingControls";
@@ -490,177 +490,6 @@ const InfoPanelInternal = forwardRef<
               onToggle={handleHierarchyToggle}
             >
               <div>
-                {/* Control Buttons Row */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {/* Sync Control Button */}
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={() =>
-                      onSyncTreeAndGraphChange?.(!syncTreeAndGraph)
-                    }
-                    title={
-                      syncTreeAndGraph
-                        ? "Tree and graph are synced - click to unlink"
-                        : "Tree and graph are independent - click to link"
-                    }
-                    style={{
-                      flex: 1,
-                      padding: "4px 8px",
-                      height: "auto",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      backgroundColor: syncTreeAndGraph
-                        ? "rgba(59, 130, 246, 0.05)"
-                        : "rgba(128, 128, 128, 0.05)",
-                      borderRadius: "4px",
-                      border: `1px solid ${syncTreeAndGraph ? "rgba(59, 130, 246, 0.2)" : "rgba(128, 128, 128, 0.2)"}`,
-                      color: syncTreeAndGraph ? "#3b82f6" : "#888",
-                    }}
-                  >
-                    {syncTreeAndGraph ? <LinkIcon /> : <BrokenLinkIcon />}
-                    <span
-                      style={{
-                        fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
-                        fontWeight: syncTreeAndGraph ? 500 : 400,
-                      }}
-                    >
-                      {syncTreeAndGraph ? "Linked" : "Unlinked"}
-                    </span>
-                  </Button>
-
-                  {/* Show All Button */}
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={async () => {
-                      if (!visualizationState || !asyncCoordinator) return;
-
-                      // Show ALL hidden nodes (not just manually hidden ones)
-                      const allNodes = visualizationState.getAllNodes();
-                      const hiddenNodes = allNodes.filter(
-                        (node) => node.hidden,
-                      );
-
-                      // Show all manually hidden containers
-                      const hiddenContainers =
-                        visualizationState.allContainers.filter((container) =>
-                          visualizationState.isContainerManuallyHidden(
-                            container.id,
-                          ),
-                        );
-
-                      // CRITICAL: Show containers FIRST (parents before children), THEN nodes
-                      // This prevents edge aggregation issues where nodes are visible but their containers are hidden
-
-                      // Sort containers by depth (parents first)
-                      hiddenContainers.sort((a, b) => {
-                        const depthA = visualizationState.getContainerAncestors(
-                          a.id,
-                        ).length;
-                        const depthB = visualizationState.getContainerAncestors(
-                          b.id,
-                        ).length;
-                        return depthA - depthB; // Shallower (parents) first
-                      });
-
-                      // Show containers first
-                      for (const container of hiddenContainers) {
-                        visualizationState.toggleContainerVisibility(
-                          container.id,
-                        );
-                      }
-
-                      // Then show nodes (only toggle if they're actually hidden)
-                      for (const node of hiddenNodes) {
-                        // Only toggle if the node is in the manually hidden set
-                        if (visualizationState.isNodeManuallyHidden(node.id)) {
-                          visualizationState.toggleNodeVisibility(node.id);
-                        }
-                      }
-
-                      // Show edges that connect visible nodes/containers
-                      const allEdges = visualizationState.getAllEdges();
-                      for (const edge of allEdges) {
-                        const sourceNode = visualizationState.getGraphNode(
-                          edge.source,
-                        );
-                        const targetNode = visualizationState.getGraphNode(
-                          edge.target,
-                        );
-                        const sourceContainer = visualizationState.getContainer(
-                          edge.source,
-                        );
-                        const targetContainer = visualizationState.getContainer(
-                          edge.target,
-                        );
-
-                        const sourceVisible =
-                          (sourceNode && !sourceNode.hidden) ||
-                          (sourceContainer && !sourceContainer.hidden);
-                        const targetVisible =
-                          (targetNode && !targetNode.hidden) ||
-                          (targetContainer && !targetContainer.hidden);
-
-                        if (sourceVisible && targetVisible) {
-                          edge.hidden = false;
-                        }
-                      }
-
-                      // Force re-render
-                      setUpdateCounter((c) => c + 1);
-
-                      // Trigger layout update
-                      try {
-                        await asyncCoordinator.executeLayoutAndRenderPipeline(
-                          visualizationState,
-                          {
-                            relayoutEntities: undefined, // Full layout
-                            fitView: false,
-                          },
-                        );
-                      } catch (error) {
-                        console.warn(
-                          "[InfoPanel] Layout update failed for show all:",
-                          error,
-                        );
-                      }
-                    }}
-                    title="Show all hidden nodes and containers"
-                    style={{
-                      flex: 1,
-                      padding: "4px 8px",
-                      height: "auto",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      backgroundColor: "rgba(34, 197, 94, 0.05)",
-                      borderRadius: "4px",
-                      border: "1px solid rgba(34, 197, 94, 0.2)",
-                      color: "#22c55e",
-                    }}
-                  >
-                    <EyeOutlined style={{ fontSize: "14px" }} />
-                    <span
-                      style={{
-                        fontSize: TYPOGRAPHY.INFOPANEL_HIERARCHY_DETAILS,
-                        fontWeight: 500,
-                      }}
-                    >
-                      Show All
-                    </span>
-                  </Button>
-                </div>
-
                 <SearchControls
                   ref={searchControlsRef}
                   searchableItems={searchableItems}
@@ -797,6 +626,24 @@ const InfoPanelInternal = forwardRef<
                       const containersToHide = allContainers.filter(
                         (c) => !related.has(c.id),
                       );
+                      // Hide all sibling containers in the same parent container
+                      // Note: Node hiding disabled due to edge consistency issues - see ISSUE_NODE_VISIBILITY_EYEBALLS.md
+                      const parentId =
+                        visualizationState.getContainerParent(containerId);
+                      if (parentId) {
+                        // Node hiding logic removed - was causing edge consistency issues
+
+                        // Add sibling containers (containers in the same parent, excluding the shift-clicked one and its related containers)
+                        containersToHide.push(
+                          ...allContainers.filter(
+                            (c) =>
+                              visualizationState.getContainerParent(c.id) ===
+                                parentId &&
+                              c.id !== containerId &&
+                              !related.has(c.id),
+                          ),
+                        );
+                      }
 
                       for (const container of containersToHide) {
                         if (
@@ -809,6 +656,17 @@ const InfoPanelInternal = forwardRef<
                           );
                         }
                       }
+
+                      // Node hiding disabled due to edge consistency issues - see ISSUE_NODE_VISIBILITY_EYEBALLS.md
+                      // for (const node of nodesToHide) {
+                      //   if (!visualizationState.isNodeManuallyHidden(node)) {
+                      //     visualizationState.toggleNodeVisibility(node);
+                      //   }
+                      // }
+
+                      // CRITICAL: Recalculate edge visibility after bulk container AND node hiding
+                      // This ensures edges that reference hidden nodes are also hidden
+                      visualizationState.recalculateEdgeVisibility();
                     } else {
                       // Normal click - just toggle this container
                       visualizationState.toggleContainerVisibility(containerId);
@@ -842,6 +700,37 @@ const InfoPanelInternal = forwardRef<
                   showNodeCounts={true}
                   truncateLabels={true}
                   maxLabelLength={15}
+                  headerAction={
+                    <button
+                      onClick={() =>
+                        onSyncTreeAndGraphChange?.(!syncTreeAndGraph)
+                      }
+                      title={
+                        syncTreeAndGraph
+                          ? "Tree and graph are synced - click to unlink"
+                          : "Tree and graph are independent - click to link"
+                      }
+                      style={{
+                        width: "24px",
+                        height: "24px",
+                        minWidth: "24px",
+                        padding: "0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: syncTreeAndGraph
+                          ? "rgba(59, 130, 246, 0.1)"
+                          : "rgba(128, 128, 128, 0.1)",
+                        borderRadius: "4px",
+                        border: `1px solid ${syncTreeAndGraph ? "rgba(59, 130, 246, 0.3)" : "rgba(128, 128, 128, 0.3)"}`,
+                        color: syncTreeAndGraph ? "#3b82f6" : "#888",
+                        background: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {syncTreeAndGraph ? <LinkIcon /> : <BrokenLinkIcon />}
+                    </button>
+                  }
                   // search integration - pass ALL matches (containers + nodes), not just containers
                   searchQuery={searchQuery}
                   searchResults={searchMatches}

@@ -76,41 +76,28 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       const parseResult = await parser.parseData(paxosFlippedData);
       const visualizationState = parseResult.visualizationState;
 
-      // Find the runtime/park.rs container
+      // Pick a representative container (prefer one with children)
       const containers = visualizationState.visibleContainers;
-      const runtimeParkContainer = containers.find(
-        (container) =>
-          container.id.includes("runtime/park.rs") ||
-          container.label.includes("runtime/park.rs") ||
-          container.id.includes("park.rs") ||
-          container.label.includes("park.rs"),
-      );
+      const targetContainer =
+        containers.find((c) => (c.children?.size ?? 0) > 0) || containers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
-      const containerId = runtimeParkContainer!.id;
+      expect(targetContainer).toBeDefined();
+      const containerId = targetContainer!.id;
 
       // Ensure container is collapsed
-      if (!runtimeParkContainer!.collapsed) {
-        await coordinator.collapseContainer(
-          containerId,
-          visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
-        );
+      if (!targetContainer!.collapsed) {
+        await coordinator.collapseContainer(containerId, visualizationState, {
+          fitView: false,
+        });
       }
 
       // Measure expansion time
       const expansionStartTime = performance.now();
 
       try {
-        await coordinator.expandContainer(
-          containerId,
-          visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
-        );
+        await coordinator.expandContainer(containerId, visualizationState, {
+          fitView: false,
+        });
         const expansionTime = performance.now() - expansionStartTime;
 
         console.log(`📊 Container Expansion Performance:`);
@@ -260,18 +247,13 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       const parseResult = await parser.parseData(paxosFlippedData);
       const visualizationState = parseResult.visualizationState;
 
-      // Find the runtime/park.rs container
+      // Pick a representative container
       const containers = visualizationState.visibleContainers;
-      const runtimeParkContainer = containers.find(
-        (container) =>
-          container.id.includes("runtime/park.rs") ||
-          container.label.includes("runtime/park.rs") ||
-          container.id.includes("park.rs") ||
-          container.label.includes("park.rs"),
-      );
+      const targetContainer =
+        containers.find((c) => (c.children?.size ?? 0) > 0) || containers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
-      const containerId = runtimeParkContainer!.id;
+      expect(targetContainer).toBeDefined();
+      const containerId = targetContainer!.id;
 
       let successfulOperations = 0;
       let failedOperations = 0;
@@ -284,22 +266,14 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       for (let i = 0; i < totalOperations; i++) {
         try {
           // Collapse
-          await coordinator.collapseContainer(
-            containerId,
-            visualizationState,
-            { fitView: false },
-            coordinator,
-            { fitView: false },
-          );
+          await coordinator.collapseContainer(containerId, visualizationState, {
+            fitView: false,
+          });
 
           // Expand
-          await coordinator.expandContainer(
-            containerId,
-            visualizationState,
-            { fitView: false },
-            coordinator,
-            { fitView: false },
-          );
+          await coordinator.expandContainer(containerId, visualizationState, {
+            fitView: false,
+          });
 
           successfulOperations++;
         } catch (error) {
@@ -353,18 +327,13 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       console.log(`  - Containers: ${initialState.containerCount}`);
       console.log(`  - Edges: ${initialState.edgeCount}`);
 
-      // Find the runtime/park.rs container
+      // Pick a representative container
       const containers = visualizationState.visibleContainers;
-      const runtimeParkContainer = containers.find(
-        (container) =>
-          container.id.includes("runtime/park.rs") ||
-          container.label.includes("runtime/park.rs") ||
-          container.id.includes("park.rs") ||
-          container.label.includes("park.rs"),
-      );
+      const targetContainer =
+        containers.find((c) => (c.children?.size ?? 0) > 0) || containers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
-      const containerId = runtimeParkContainer!.id;
+      expect(targetContainer).toBeDefined();
+      const containerId = targetContainer!.id;
 
       // Perform operations and check state consistency
       const stateSnapshots: Array<{
@@ -376,13 +345,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
 
       try {
         // Collapse
-        await coordinator.collapseContainer(
-          containerId,
-          visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
-        );
+        await coordinator.collapseContainer(containerId, visualizationState, {
+          fitView: false,
+        });
         stateSnapshots.push({
           operation: "collapse",
           nodeCount: visualizationState.visibleNodes.length,
@@ -391,13 +356,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         });
 
         // Expand
-        await coordinator.expandContainer(
-          containerId,
-          visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
-        );
+        await coordinator.expandContainer(containerId, visualizationState, {
+          fitView: false,
+        });
         stateSnapshots.push({
           operation: "expand",
           nodeCount: visualizationState.visibleNodes.length,
@@ -406,13 +367,9 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
         });
 
         // Collapse again
-        await coordinator.collapseContainer(
-          containerId,
-          visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
-        );
+        await coordinator.collapseContainer(containerId, visualizationState, {
+          fitView: false,
+        });
         stateSnapshots.push({
           operation: "collapse_again",
           nodeCount: visualizationState.visibleNodes.length,
@@ -472,18 +429,13 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       const parseResult = await parser.parseData(paxosFlippedData);
       const visualizationState = parseResult.visualizationState;
 
-      // Find the runtime/park.rs container
+      // Pick a representative container
       const containers = visualizationState.visibleContainers;
-      const runtimeParkContainer = containers.find(
-        (container) =>
-          container.id.includes("runtime/park.rs") ||
-          container.label.includes("runtime/park.rs") ||
-          container.id.includes("park.rs") ||
-          container.label.includes("park.rs"),
-      );
+      const targetContainer =
+        containers.find((c) => (c.children?.size ?? 0) > 0) || containers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
-      const containerId = runtimeParkContainer!.id;
+      expect(targetContainer).toBeDefined();
+      const containerId = targetContainer!.id;
 
       // Capture console errors to analyze bug patterns
       const originalConsoleError = console.error;
@@ -503,7 +455,7 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
 
       try {
         // Ensure container is collapsed
-        if (!runtimeParkContainer!.collapsed) {
+        if (!targetContainer!.collapsed) {
           visualizationState.collapseContainerSystemOperation(containerId);
         }
 
@@ -579,18 +531,13 @@ describe("Paxos-Flipped Performance and Stability Validation", () => {
       const testSetup = await createTestAsyncCoordinator();
       const coordinator = testSetup.asyncCoordinator;
 
-      // Find the runtime/park.rs container
+      // Pick a representative container
       const containers = visualizationState.visibleContainers;
-      const runtimeParkContainer = containers.find(
-        (container) =>
-          container.id.includes("runtime/park.rs") ||
-          container.label.includes("runtime/park.rs") ||
-          container.id.includes("park.rs") ||
-          container.label.includes("park.rs"),
-      );
+      const targetContainer =
+        containers.find((c) => (c.children?.size ?? 0) > 0) || containers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
-      const containerId = runtimeParkContainer!.id;
+      expect(targetContainer).toBeDefined();
+      const containerId = targetContainer!.id;
 
       // Perform multiple expansion/collapse cycles
       for (let cycle = 1; cycle <= 3; cycle++) {

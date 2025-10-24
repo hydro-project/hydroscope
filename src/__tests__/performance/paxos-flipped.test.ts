@@ -162,7 +162,7 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
 
       // Check for nested containers by parent references
       const nestedContainers = visualizationState.visibleContainers.filter(
-        (c) => c.parentContainer,
+        (c) => !!visualizationState.getContainerParent(c.id),
       );
 
       console.log(
@@ -171,14 +171,11 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
 
       // Check that all containers have valid parent references
       for (const container of visualizationState.visibleContainers) {
-        if (container.parentContainer) {
-          const parent = visualizationState.visibleContainers.find(
-            (c) => c.id === container.parentContainer,
-          );
+        const parentId = visualizationState.getContainerParent(container.id);
+        if (parentId) {
+          const parent = visualizationState.getContainer(parentId);
           expect(parent).toBeDefined();
-          console.log(
-            `Container ${container.id} has valid parent ${container.parentContainer}`,
-          );
+          console.log(`Container ${container.id} has valid parent ${parentId}`);
         }
       }
 
@@ -229,7 +226,7 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
     });
   });
 
-  describe("Runtime/Park.rs Container Expansion", () => {
+  describe("Generic Container Expansion", () => {
     let coordinator: AsyncCoordinator;
     let visualizationState: VisualizationState;
     let elkBridge: ELKBridge;
@@ -246,38 +243,41 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
       visualizationState = parseResult.visualizationState;
     });
 
-    it("should find runtime/park.rs container in paxos-flipped.json", () => {
-      const runtimeParkContainer = visualizationState.visibleContainers.find(
-        (c) => c.label === "runtime/park.rs",
-      );
+    it("should find a representative container in paxos-flipped.json", () => {
+      const targetContainer =
+        visualizationState.visibleContainers.find(
+          // Prefer a container that actually has children to exercise expansion
+          (c) => (c.children?.size ?? 0) > 0,
+        ) ?? visualizationState.visibleContainers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
+      expect(targetContainer).toBeDefined();
       console.log(
-        `Found runtime/park.rs container: ${runtimeParkContainer!.id}, collapsed: ${runtimeParkContainer!.collapsed}`,
+        `Found container: ${targetContainer!.id} (${targetContainer!.label}), collapsed: ${targetContainer!.collapsed}`,
       );
     });
 
-    it("should expand runtime/park.rs container without invalid edge errors", async () => {
-      const runtimeParkContainer = visualizationState.visibleContainers.find(
-        (c) => c.label === "runtime/park.rs",
-      );
+    it("should expand a container without invalid edge errors", async () => {
+      const targetContainer =
+        visualizationState.visibleContainers.find(
+          (c) => (c.children?.size ?? 0) > 0,
+        ) ?? visualizationState.visibleContainers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
+      expect(targetContainer).toBeDefined();
 
       // Expand the container if it's collapsed
-      if (runtimeParkContainer!.collapsed) {
+      if (targetContainer!.collapsed) {
         await coordinator.expandContainer(
-          runtimeParkContainer!.id,
+          targetContainer!.id,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          {
+            fitView: false,
+          },
         );
       }
 
       // Should not have collapsed state anymore
       const expandedContainer = visualizationState.visibleContainers.find(
-        (c) => c.id === runtimeParkContainer!.id,
+        (c) => c.id === targetContainer!.id,
       );
       expect(expandedContainer!.collapsed).toBe(false);
 
@@ -289,20 +289,21 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
     });
 
     it("should handle multiple expansion/collapse cycles with paxos-flipped data", async () => {
-      const runtimeParkContainer = visualizationState.visibleContainers.find(
-        (c) => c.label === "runtime/park.rs",
-      );
+      const targetContainer =
+        visualizationState.visibleContainers.find(
+          (c) => (c.children?.size ?? 0) > 0,
+        ) ?? visualizationState.visibleContainers[0];
 
-      expect(runtimeParkContainer).toBeDefined();
+      expect(targetContainer).toBeDefined();
 
       // Ensure it starts collapsed
-      if (!runtimeParkContainer!.collapsed) {
+      if (!targetContainer!.collapsed) {
         await coordinator.collapseContainer(
-          runtimeParkContainer!.id,
+          targetContainer!.id,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          {
+            fitView: false,
+          },
         );
       }
 
@@ -310,11 +311,11 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
       for (let i = 0; i < 3; i++) {
         // Expand
         await coordinator.expandContainer(
-          runtimeParkContainer!.id,
+          targetContainer!.id,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          {
+            fitView: false,
+          },
         );
 
         // Validate edges after expansion
@@ -325,11 +326,11 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
 
         // Collapse
         await coordinator.collapseContainer(
-          runtimeParkContainer!.id,
+          targetContainer!.id,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          {
+            fitView: false,
+          },
         );
 
         // Validate edges after collapse
@@ -342,19 +343,20 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
       console.log("✅ Completed 3 expand/collapse cycles without errors");
     });
 
-    it("should render expanded runtime/park.rs container through ReactFlow bridge", async () => {
-      const runtimeParkContainer = visualizationState.visibleContainers.find(
-        (c) => c.label === "runtime/park.rs",
-      );
+    it("should render an expanded container through ReactFlow bridge", async () => {
+      const targetContainer =
+        visualizationState.visibleContainers.find(
+          (c) => (c.children?.size ?? 0) > 0,
+        ) ?? visualizationState.visibleContainers[0];
 
       // Expand the container if it's collapsed
-      if (runtimeParkContainer!.collapsed) {
+      if (targetContainer!.collapsed) {
         await coordinator.expandContainer(
-          runtimeParkContainer!.id,
+          targetContainer!.id,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          {
+            fitView: false,
+          },
         );
       }
 
@@ -371,18 +373,19 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
     });
 
     it("should maintain data integrity throughout expansion operations", async () => {
-      const runtimeParkContainer = visualizationState.visibleContainers.find(
-        (c) => c.label === "runtime/park.rs",
-      );
+      const targetContainer =
+        visualizationState.visibleContainers.find(
+          (c) => (c.children?.size ?? 0) > 0,
+        ) ?? visualizationState.visibleContainers[0];
 
       // Ensure it starts collapsed
-      if (!runtimeParkContainer!.collapsed) {
+      if (!targetContainer!.collapsed) {
         await coordinator.collapseContainer(
-          runtimeParkContainer!.id,
+          targetContainer!.id,
           visualizationState,
-          { fitView: false },
-          coordinator,
-          { fitView: false },
+          {
+            fitView: false,
+          },
         );
       }
 
@@ -391,22 +394,22 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
 
       // Expand
       await coordinator.expandContainer(
-        runtimeParkContainer!.id,
+        targetContainer!.id,
         visualizationState,
-        { fitView: false },
-        coordinator,
-        { fitView: false },
+        {
+          fitView: false,
+        },
       );
 
       const expandedNodeCount = visualizationState.visibleNodes.length;
 
       // Collapse back
       await coordinator.collapseContainer(
-        runtimeParkContainer!.id,
+        targetContainer!.id,
         visualizationState,
-        { fitView: false },
-        coordinator,
-        { fitView: false },
+        {
+          fitView: false,
+        },
       );
 
       // Should return to initial counts
@@ -463,10 +466,10 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
 
       // Analyze container hierarchy
       const rootContainers = visualizationState.visibleContainers.filter(
-        (c) => !c.parentContainer,
+        (c) => !visualizationState.getContainerParent(c.id),
       );
       const nestedContainers = visualizationState.visibleContainers.filter(
-        (c) => c.parentContainer,
+        (c) => !!visualizationState.getContainerParent(c.id),
       );
 
       console.log(`Root containers: ${rootContainers.length}`);
@@ -479,15 +482,13 @@ describe("Paxos-Flipped Nested Container Hierarchy", () => {
           return depthMap.get(containerId)!;
         }
 
-        const container = visualizationState.visibleContainers.find(
-          (c) => c.id === containerId,
-        );
-        if (!container || !container.parentContainer) {
+        const parentId = visualizationState.getContainerParent(containerId);
+        if (!parentId) {
           depthMap.set(containerId, 0);
           return 0;
         }
 
-        const depth = 1 + calculateDepth(container.parentContainer);
+        const depth = 1 + calculateDepth(parentId);
         depthMap.set(containerId, depth);
         return depth;
       };

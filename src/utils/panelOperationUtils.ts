@@ -392,8 +392,6 @@ export function changeStyleImperatively(options: {
 
   // Execute the operation (ResizeObserver debouncing handles any issues)
   return performStyleChange();
-
-  return performStyleChange();
 }
 
 /**

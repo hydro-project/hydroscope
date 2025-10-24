@@ -473,7 +473,7 @@ export const DEFAULT_RENDER_CONFIG = {
   enablePan: true,
   enableSelection: true,
   // Visual style defaults (kept here to avoid importing types and to satisfy FlowGraph expectations)
-  edgeStyle: "bezier", // 'bezier' | 'straight' | 'smoothstep'
+  edgeStyle: "smoothstep", // 'bezier' | 'straight' | 'smoothstep'
   edgeColor: "#1976d2", // default blue edge color
   edgeWidth: 2, // px
   edgeDashed: false, // solid by default

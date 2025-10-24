@@ -8,7 +8,7 @@
  * - AsyncCoordinator context is properly detected
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";

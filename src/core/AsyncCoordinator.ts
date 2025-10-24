@@ -25,6 +25,10 @@ export interface QueueOptions {
  * - Wait for actual events (like notifyViewportAnimationComplete), not durations
  */
 export class AsyncCoordinator {
+  // Tracks whether a major layout/render pipeline is in progress (covers all interaction types)
+  public isInMajorUpdatePhase: boolean = false;
+  // Internal: tracks if we are waiting for dimension changes (node measurements)
+  private _majorUpdatePhaseWaitForMeasurements: boolean = false;
   private queue: QueuedOperation[] = [];
   private processing = false;
   private completedOperations: QueuedOperation[] = [];
@@ -74,6 +78,8 @@ export class AsyncCoordinator {
   // Render batching mechanism - consolidates multiple state updates into single render
   private pendingStateUpdate: any = null;
   private isBatchingRenders = false;
+  // Timestamp of the last time we flushed a batched render (end of a pipeline step)
+  private lastPipelineFlushAt: number = 0;
 
   // Post-render callback queue - executed after React renders new nodes
   private postRenderCallbacks: Array<() => void | Promise<void>> = [];
@@ -121,7 +127,7 @@ export class AsyncCoordinator {
         "❌ ReactFlowBridge is not initialized\n" +
           "   Why: This bridge is required for rendering operations\n" +
           "   Fix: Call asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge) before using this method\n" +
-          "   See: HydroscopeCore initialization in components/HydroscopeEnhanced.tsx",
+          "   See: HydroscopeCore initialization in components/HydroscopeCore.tsx",
       );
     }
 
@@ -131,7 +137,7 @@ export class AsyncCoordinator {
         "❌ ELKBridge is not initialized\n" +
           "   Why: This bridge is required for layout operations\n" +
           "   Fix: Call asyncCoordinator.setBridgeInstances(reactFlowBridge, elkBridge) before using this method\n" +
-          "   See: HydroscopeCore initialization in components/HydroscopeEnhanced.tsx",
+          "   See: HydroscopeCore initialization in components/HydroscopeCore.tsx",
       );
     }
 
@@ -141,7 +147,7 @@ export class AsyncCoordinator {
         "❌ ReactFlow instance is not set\n" +
           "   Why: This is required for viewport operations\n" +
           "   Fix: Call asyncCoordinator.setReactFlowInstance(reactFlowInstance) before using this method\n" +
-          "   See: HydroscopeCore initialization in components/HydroscopeEnhanced.tsx",
+          "   See: HydroscopeCore initialization in components/HydroscopeCore.tsx",
       );
     }
 
@@ -254,6 +260,15 @@ export class AsyncCoordinator {
     hscopeLogger.log(
       "coordinator",
       `[AsyncCoordinator] 🔍 hasPendingCallbacks: ${hasPending} (count: ${this.postRenderCallbacks.length})`,
+      {
+        queueLength: this.queue.length,
+        processing: this.processing,
+        currentOpType: this.currentOperation?.type,
+        isBatchingRenders: this.isBatchingRenders,
+        hasPendingStateUpdate: !!this.pendingStateUpdate,
+        expectedMeasurements: this.expectedNodeMeasurements.size,
+        receivedMeasurements: this.receivedNodeMeasurements.size,
+      },
     );
     return hasPending;
   }
@@ -398,6 +413,13 @@ export class AsyncCoordinator {
   setExpectedNodeMeasurements(nodeIds: string[]): void {
     this.expectedNodeMeasurements = new Set(nodeIds);
     this.receivedNodeMeasurements = new Set();
+    if (nodeIds.length > 0 && this.isInMajorUpdatePhase) {
+      this._majorUpdatePhaseWaitForMeasurements = true;
+      hscopeLogger.log(
+        "coordinator",
+        `[AsyncCoordinator] 🟡 Major update phase: waiting for ${nodeIds.length} node measurements`,
+      );
+    }
     hscopeLogger.log(
       "coordinator",
       `[AsyncCoordinator] 📏 Expecting measurements for ${nodeIds.length} nodes`,
@@ -427,6 +449,15 @@ export class AsyncCoordinator {
       // Clear tracking
       this.expectedNodeMeasurements.clear();
       this.receivedNodeMeasurements.clear();
+      // If we were waiting for measurements to end major update phase, do so now
+      if (this._majorUpdatePhaseWaitForMeasurements) {
+        this.isInMajorUpdatePhase = false;
+        this._majorUpdatePhaseWaitForMeasurements = false;
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] 🟢 Major update phase OFF (all node measurements received)",
+        );
+      }
     } else {
       hscopeLogger.log(
         "coordinator",
@@ -468,6 +499,15 @@ export class AsyncCoordinator {
       // Clear tracking
       this.expectedNodeMeasurements.clear();
       this.receivedNodeMeasurements.clear();
+      // If we were waiting for measurements to end major update phase, do so now
+      if (this._majorUpdatePhaseWaitForMeasurements) {
+        this.isInMajorUpdatePhase = false;
+        this._majorUpdatePhaseWaitForMeasurements = false;
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] 🟢 Major update phase OFF (all node measurements received)",
+        );
+      }
     }
 
     return allMeasured;
@@ -550,6 +590,11 @@ export class AsyncCoordinator {
       createdAt: Date.now(),
     };
     this.queue.push(queuedOp);
+    // Queue instrumentation
+    hscopeLogger.log(
+      "coordinator",
+      `[Queue] ➕ Enqueued operation ${id} (${type}). Pending: ${this.queue.length}`,
+    );
     return id;
   }
 
@@ -574,8 +619,14 @@ export class AsyncCoordinator {
       // Store resolver/rejecter for this operation
       this.operationPromises.set(operationId, { resolve, reject });
 
+      hscopeLogger.log(
+        "coordinator",
+        `[Queue] 📥 Awaiting operation ${operationId} (${operationType}). Current processing: ${this.processing}. Queue length: ${this.queue.length}`,
+      );
+
       // Start processing if not already running
       if (!this.processing) {
+        hscopeLogger.log("coordinator", "[Queue] ▶️ Starting queue processing");
         this.processQueue().catch((error) => {
           // If processQueue itself fails, reject the promise
           console.error("[AsyncCoordinator] Queue processing failed:", error);
@@ -592,6 +643,10 @@ export class AsyncCoordinator {
       return;
     }
     this.processing = true;
+    hscopeLogger.log(
+      "coordinator",
+      `[Queue] 🚚 Processing started. Items in queue: ${this.queue.length}`,
+    );
     try {
       while (this.queue.length > 0) {
         const operation = this.queue.shift()!;
@@ -600,6 +655,10 @@ export class AsyncCoordinator {
     } finally {
       this.processing = false;
       this.currentOperation = undefined;
+      hscopeLogger.log(
+        "coordinator",
+        "[Queue] ✅ Processing complete. Queue is empty.",
+      );
     }
   }
   /**
@@ -617,6 +676,11 @@ export class AsyncCoordinator {
     // Start batching renders for this operation
     this.startBatchingRenders();
 
+    hscopeLogger.log(
+      "coordinator",
+      `[Queue] ▶️ Starting operation ${operation.id} (${operation.type})`,
+    );
+
     while (operation.retryCount <= operation.maxRetries) {
       try {
         const result = await this.executeWithTimeout(operation);
@@ -628,6 +692,14 @@ export class AsyncCoordinator {
 
         // Flush batched renders before resolving
         this.flushBatchedRender();
+
+        const duration =
+          (operation.completedAt || Date.now()) -
+          (operation.startedAt || Date.now());
+        hscopeLogger.log(
+          "coordinator",
+          `[Queue] ✅ Operation ${operation.id} (${operation.type}) succeeded in ${duration}ms`,
+        );
 
         // Resolve caller's Promise if it exists
         if (promiseHandlers) {
@@ -643,6 +715,12 @@ export class AsyncCoordinator {
           `[AsyncCoordinator] ❌ Operation ${operation.id} (${operation.type}) failed (attempt ${operation.retryCount}/${operation.maxRetries + 1}):`,
           error,
         );
+        if (operation.retryCount <= operation.maxRetries) {
+          hscopeLogger.log(
+            "coordinator",
+            `[Queue] 🔁 Retrying operation ${operation.id} (${operation.type}) - next attempt ${operation.retryCount}/${operation.maxRetries + 1}`,
+          );
+        }
         // If we've exhausted retries, mark as failed
         if (operation.retryCount > operation.maxRetries) {
           operation.completedAt = Date.now();
@@ -654,6 +732,14 @@ export class AsyncCoordinator {
 
           // Flush batched renders even on failure
           this.flushBatchedRender();
+
+          const duration =
+            (operation.completedAt || Date.now()) -
+            (operation.startedAt || Date.now());
+          hscopeLogger.log(
+            "coordinator",
+            `[Queue] ❌ Operation ${operation.id} (${operation.type}) failed after ${duration}ms`,
+          );
 
           // Reject caller's Promise if it exists
           if (promiseHandlers) {
@@ -868,13 +954,11 @@ export class AsyncCoordinator {
   private startBatchingRenders(): void {
     this.isBatchingRenders = true;
     this.pendingStateUpdate = null;
-    console.log(
-      "[RENDER-DEBUG] 🎯 Started batching renders",
-      new Error().stack?.split("\n").slice(2, 4).join("\n"),
-    );
+    this.isInMajorUpdatePhase = true;
+    this._majorUpdatePhaseWaitForMeasurements = false;
     hscopeLogger.log(
       "coordinator",
-      "[AsyncCoordinator] 🎯 Started batching renders",
+      "[AsyncCoordinator] 🎯 Started batching renders (major update phase ON)",
     );
   }
 
@@ -883,24 +967,14 @@ export class AsyncCoordinator {
    * If not batching, applies immediately
    */
   private queueStateUpdate(reactFlowData: any): void {
-    console.log(
-      "[RENDER-DEBUG] 📦 queueStateUpdate called, isBatchingRenders:",
-      this.isBatchingRenders,
-      "nodes:",
-      reactFlowData?.nodes?.length,
-      new Error().stack?.split("\n").slice(2, 4).join("\n"),
-    );
-
     if (!this.isBatchingRenders) {
       // Not batching, apply immediately
-      console.log("[RENDER-DEBUG] ⚠️ Not batching - applying immediately");
       this._applyStateUpdate(reactFlowData);
       return;
     }
 
     // Store the latest state update (overwrites previous pending updates)
     this.pendingStateUpdate = reactFlowData;
-    console.log("[RENDER-DEBUG] ✅ Queued state update for batching");
     hscopeLogger.log(
       "coordinator",
       "[AsyncCoordinator] 📦 Queued state update for batching",
@@ -911,16 +985,7 @@ export class AsyncCoordinator {
    * Flush all batched renders - applies the pending state update and triggers ONE React render
    */
   private flushBatchedRender(): void {
-    console.log(
-      "[RENDER-DEBUG] 🚀 flushBatchedRender called, isBatchingRenders:",
-      this.isBatchingRenders,
-      "hasPending:",
-      !!this.pendingStateUpdate,
-      new Error().stack?.split("\n").slice(2, 4).join("\n"),
-    );
-
     if (!this.isBatchingRenders) {
-      console.log("[RENDER-DEBUG] ⚠️ Not batching - nothing to flush");
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] ⚠️ flushBatchedRender called but not batching",
@@ -931,17 +996,20 @@ export class AsyncCoordinator {
     this.isBatchingRenders = false;
 
     if (this.pendingStateUpdate) {
-      console.log(
-        "[RENDER-DEBUG] ✅ Flushing batched render (THIS IS THE SINGLE RENDER)",
-      );
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] ✅ Flushing batched render (1 React render)",
       );
       this._applyStateUpdate(this.pendingStateUpdate);
       this.pendingStateUpdate = null;
+      // Record time of pipeline flush so UI can treat immediate dimension changes as part of a major render
+      this.lastPipelineFlushAt = Date.now();
+      hscopeLogger.log(
+        "coordinator",
+        "[AsyncCoordinator] 🕒 Recorded pipeline flush timestamp",
+        { lastPipelineFlushAt: this.lastPipelineFlushAt },
+      );
     } else {
-      console.log("[RENDER-DEBUG] ⏭️ No pending state update to flush");
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] ⏭️ No pending state update to flush",
@@ -950,23 +1018,28 @@ export class AsyncCoordinator {
   }
 
   /**
+   * Returns true for a short window after a pipeline flush to indicate
+   * we are in a post-layout render phase where many dimension changes are expected.
+   * This helps consumers (HydroscopeCore) avoid treating those as "minor" changes.
+   */
+  isInPostLayoutWindow(windowMs: number = 800): boolean {
+    if (!this.lastPipelineFlushAt) return false;
+    const delta = Date.now() - this.lastPipelineFlushAt;
+    const inWindow = delta >= 0 && delta < windowMs;
+    hscopeLogger.log(
+      "coordinator",
+      "[AsyncCoordinator] ⏱️ Post-layout window check",
+      { windowMs, delta, inWindow },
+    );
+    return inWindow;
+  }
+
+  /**
    * Apply a state update immediately (internal helper)
    * NOTE: No ResizeObserver suppression needed - batching ensures single render per operation
    */
   private _applyStateUpdate(reactFlowData: any): void {
-    console.log(
-      "[RENDER-DEBUG] 🔥 _applyStateUpdate called - THIS TRIGGERS REACT RENDER",
-      "hasSetReactState:",
-      !!this.setReactState,
-      "hasCallback:",
-      !!this.onReactFlowDataUpdate,
-      "nodes:",
-      reactFlowData?.nodes?.length,
-      new Error().stack?.split("\n").slice(2, 5).join("\n"),
-    );
-
     if (this.setReactState) {
-      console.log("[RENDER-DEBUG] 🔥🔥 Calling setReactState NOW");
       this.setReactState((prev: any) => {
         // Preserve existing popup nodes when updating ReactFlow data
         const existingPopupNodes =
@@ -982,14 +1055,25 @@ export class AsyncCoordinator {
           },
         };
       });
-      
+
       hscopeLogger.log(
         "coordinator",
         "[AsyncCoordinator] ✅ Applied state update to React",
       );
+      // If no more pending callbacks, end major update phase (unless waiting for measurements)
+      if (
+        this.postRenderCallbacks.length === 0 &&
+        !this._majorUpdatePhaseWaitForMeasurements
+      ) {
+        this.isInMajorUpdatePhase = false;
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] 🟢 Major update phase OFF (all callbacks processed)",
+        );
+      }
     } else if (this.onReactFlowDataUpdate) {
       // Fallback to callback for backward compatibility
-      
+
       this.onReactFlowDataUpdate(reactFlowData);
 
       hscopeLogger.log(
@@ -1168,6 +1252,7 @@ export class AsyncCoordinator {
           typeof visualizationState.clear === "function"
         ) {
           visualizationState.clear();
+
           hscopeLogger.log(
             "coordinator",
             `🧹 AsyncCoordinator: Cleared VisualizationState for hierarchy_change to prevent stale references`,
@@ -1678,13 +1763,21 @@ export class AsyncCoordinator {
         },
       );
 
-      // Step 4: Queue state update for batching (will be flushed by caller)
-      // This prevents multiple React renders during a single queued operation
-      this.queueStateUpdate(reactFlowData);
-      hscopeLogger.log(
-        "coordinator",
-        "[AsyncCoordinator] ✅ ReactFlow data queued for batched render",
-      );
+      // Track expected node measurements for this render (even if fitView not requested)
+      try {
+        const nodeIds = Array.isArray(reactFlowData?.nodes)
+          ? reactFlowData.nodes.map((n: any) => n.id)
+          : [];
+        this.setExpectedNodeMeasurements(nodeIds);
+      } catch (_e) {
+        hscopeLogger.log(
+          "coordinator",
+          "[AsyncCoordinator] ⚠️ Unable to set expected measurements (non-fatal)",
+        );
+      }
+
+      // NOTE: State update is already queued by generateReactFlowDataImperative
+      // No need to queue again here - that would overwrite the queued data
 
       // If fitView is requested, enqueue it to execute AFTER React renders
       if (options.fitView) {
@@ -1703,10 +1796,7 @@ export class AsyncCoordinator {
             "[AsyncCoordinator] ✅ Enqueueing fitView callback for post-render execution",
           );
 
-          // Set expected node measurements BEFORE enqueueing fitView
-          // This ensures fitView will only execute after ALL nodes are measured
-          const nodeIds = reactFlowData.nodes.map((n: any) => n.id);
-          this.setExpectedNodeMeasurements(nodeIds);
+          // Expected node measurements are already set above for this render
 
           this.enqueuePostRenderCallback(() => {
             hscopeLogger.log(
@@ -3479,6 +3569,10 @@ export class AsyncCoordinator {
           );
         if (visibleElementId) {
           node = instanceToUse.getNode(visibleElementId);
+          hscopeLogger.log(
+            "coordinator",
+            `[AsyncCoordinator] 🔎 Focus: original element not found, using visible ancestor ${visibleElementId}`,
+          );
         }
       }
 
@@ -3554,6 +3648,20 @@ export class AsyncCoordinator {
         if (duration > 0) {
           this.markViewportAnimationStart();
         }
+
+        hscopeLogger.log(
+          "coordinator",
+          `[AsyncCoordinator] 🎯 Focus setCenter params`,
+          {
+            elementId,
+            x,
+            y,
+            targetZoom,
+            duration,
+            nodeDims: { width: nodeWidth, height: nodeHeight },
+            usedImmediate: duration === 0,
+          },
+        );
 
         instanceToUse.setCenter(x, y, {
           zoom: targetZoom,

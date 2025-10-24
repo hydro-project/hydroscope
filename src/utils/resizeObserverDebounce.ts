@@ -1,10 +1,10 @@
 /**
  * ResizeObserver Debouncing Utility
- * 
+ *
  * Patches the global ResizeObserver to debounce callbacks and prevent cascading loops.
  * This fixes the "ResizeObserver loop completed with undelivered notifications" error
  * that occurs when many elements are measured rapidly (e.g., during search operations).
- * 
+ *
  * The debouncing accumulates entries over a 16ms window (one animation frame) and
  * delivers them in a single batch, preventing the cascade that triggers the error.
  */
@@ -17,26 +17,26 @@ let originalResizeObserver: typeof ResizeObserver | null = null;
  * This should be called once when the application initializes
  */
 export function enableResizeObserverDebouncing(): void {
-  if (typeof window === 'undefined' || isPatched) {
+  if (typeof window === "undefined" || isPatched) {
     return;
   }
 
   originalResizeObserver = window.ResizeObserver;
-  
+
   class DebouncedResizeObserver extends originalResizeObserver {
     constructor(callback: ResizeObserverCallback) {
       let pendingEntries: ResizeObserverEntry[] = [];
       let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-      
+
       super((entries, observer) => {
         // Always accumulate entries for batching
         pendingEntries.push(...entries);
-        
+
         // Clear existing timer
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
-        
+
         // Batch all callbacks with 0ms delay (same event loop tick)
         // This prevents cascading loops while still allowing measurements to complete
         debounceTimer = setTimeout(() => {
@@ -49,7 +49,7 @@ export function enableResizeObserverDebouncing(): void {
       });
     }
   }
-  
+
   window.ResizeObserver = DebouncedResizeObserver as any;
   isPatched = true;
 }
@@ -58,10 +58,10 @@ export function enableResizeObserverDebouncing(): void {
  * Disable ResizeObserver debouncing and restore original behavior
  */
 export function disableResizeObserverDebouncing(): void {
-  if (typeof window === 'undefined' || !isPatched || !originalResizeObserver) {
+  if (typeof window === "undefined" || !isPatched || !originalResizeObserver) {
     return;
   }
-  
+
   window.ResizeObserver = originalResizeObserver;
   isPatched = false;
 }

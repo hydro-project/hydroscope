@@ -44,7 +44,7 @@ export function clearSearchImperatively(options: {
     setMatches,
     setCurrentIndex,
     clearTimer,
-    suppressResizeObserver = true,
+    suppressResizeObserver: _suppressResizeObserver = true,
     debug = false,
     enablePerformanceMonitoring = true,
   } = options;
@@ -182,7 +182,7 @@ export function clearSearchPanelImperatively(options: {
     setSearchQuery,
     setSearchMatches,
     setCurrentSearchMatch,
-    suppressResizeObserver = true,
+    suppressResizeObserver: _suppressResizeObserver2 = true,
     debug = false,
     enablePerformanceMonitoring = true,
   } = options;

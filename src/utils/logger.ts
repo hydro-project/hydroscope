@@ -106,3 +106,45 @@ export const hscopeLogger = {
   warn: (cat: HydroLogCategory, ...args: any[]) => base(cat, "warn", args),
   error: (cat: HydroLogCategory, ...args: any[]) => base(cat, "error", args),
 };
+
+// Developer-friendly browser hooks
+// These globals make it easy to enable logging from the DevTools console without code changes.
+if (typeof window !== "undefined") {
+  // Refresh function hook (advanced)
+  (window as any).__HYDRO_REFRESH_LOGGER = refreshLoggerConfig;
+
+  // Simple helper: enable categories and refresh in one call
+  (window as any).hydroEnableLogs = (categories: string | string[]) => {
+    const cats = Array.isArray(categories)
+      ? categories.join(",")
+      : String(categories || "");
+    (window as any).__HYDRO_LOGS = cats;
+    try {
+      refreshLoggerConfig();
+      // Provide immediate feedback in console
+      console.warn(
+        "[hydroscope] Logging enabled for categories:",
+        cats || "<none>",
+      );
+    } catch (e) {
+      console.warn("[hydroscope] Failed to refresh logger config:", e);
+    }
+  };
+
+  // Helper to inspect currently enabled categories
+  (window as any).hydroShowLogCategories = () => {
+    // We can't access the internal Set directly in a type-safe way; re-evaluate via refresh
+    try {
+      refreshLoggerConfig();
+    } catch {}
+    // Re-run detection similar to getEnabled()
+    const current = (window as any).__HYDRO_LOGS
+      ? String((window as any).__HYDRO_LOGS)
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+    console.warn("[hydroscope] Current __HYDRO_LOGS:", current);
+    return current;
+  };
+}
