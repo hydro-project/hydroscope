@@ -5,7 +5,7 @@
  * without relying on Ant Design Tree component (which can be flaky in CI).
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useState, useEffect, useRef } from "react";
 
@@ -16,11 +16,13 @@ describe("HierarchyTree State Management", () => {
       const { result } = renderHook(() => {
         const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
         const userControlledRef = useRef(false);
-        const derivedExpandedKeys: string[] = []; // Start with no derived keys
         const syncEnabled = false;
 
         // Simulate the useEffect that syncs state
+        // Note: derivedExpandedKeys is intentionally constant in this test
         useEffect(() => {
+          const derivedExpandedKeys: string[] = []; // Start with no derived keys
+
           if (syncEnabled) {
             setExpandedKeys(derivedExpandedKeys);
             userControlledRef.current = false;
@@ -30,7 +32,7 @@ describe("HierarchyTree State Management", () => {
               setExpandedKeys(derivedExpandedKeys);
             }
           }
-        }, [derivedExpandedKeys, syncEnabled]);
+        }, [syncEnabled]);
 
         // Simulate handleExpand
         const handleExpand = (nextKeys: string[]) => {
@@ -99,7 +101,10 @@ describe("HierarchyTree State Management", () => {
           setExpandedKeys(nextKeys);
 
           // Only call onToggleContainer when sync is enabled
-          if (syncEnabled && isExpanding !== expandedKeys.includes(changedKey)) {
+          if (
+            syncEnabled &&
+            isExpanding !== expandedKeys.includes(changedKey)
+          ) {
             mockOnToggleContainer(changedKey);
           }
         };
@@ -170,7 +175,9 @@ describe("HierarchyTree State Management", () => {
             // Check if derivedExpandedKeys actually changed
             const derivedKeysChanged =
               prevDerivedKeysRef.current.length !== derivedKeys.length ||
-              !derivedKeys.every((key) => prevDerivedKeysRef.current.includes(key));
+              !derivedKeys.every((key) =>
+                prevDerivedKeysRef.current.includes(key),
+              );
 
             if (syncEnabled && derivedKeysChanged) {
               setExpandedKeys(derivedKeys);
