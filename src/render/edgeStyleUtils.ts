@@ -4,7 +4,7 @@
  */
 
 import type { CSSProperties } from "react";
-import { WAVY_EDGE_CONFIG } from "../shared/config.js";
+import { WAVY_EDGE_CONFIG } from "../shared/config/styling.js";
 
 export interface EdgeStyleData {
   lineStyle?: "single" | "hash-marks";

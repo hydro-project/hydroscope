@@ -12,12 +12,12 @@ import {
 import { truncateLabel } from "../shared/textUtils";
 import { useStyleConfig } from "./StyleConfigContext";
 import { HandlesRenderer } from "./handles";
-import { PANEL_CONSTANTS } from "../shared/config";
+import { PANEL_CONSTANTS } from "../shared/config/ui.js";
 import {
-  UI_CONSTANTS,
   COLOR_CONSTANTS,
   DEFAULT_COLOR_PALETTE,
-} from "../shared/config";
+} from "../shared/config/styling.js";
+import { LAYOUT_DIMENSIONS } from "../shared/config/layout.js";
 // Container color generation (copied from ContainerNode for consistency)
 function generateContainerColors(containerId: string, palette: string) {
   const hash = containerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
@@ -150,8 +150,8 @@ export function StandardNode({
   // Calculate width based on label length when in full labels mode
   const showFullLabels = (data as any).showFullNodeLabels;
   const baseWidth = isCollapsedContainer
-    ? UI_CONSTANTS.NODE_WIDTH_CONTAINER
-    : UI_CONSTANTS.NODE_WIDTH_DEFAULT;
+    ? LAYOUT_DIMENSIONS.NODE_WIDTH_CONTAINER
+    : LAYOUT_DIMENSIONS.NODE_WIDTH_DEFAULT;
 
   // FIXED: Use pre-calculated dimensions from VisualizationState when available
   // This ensures nodes are properly sized when "Show full node labels" is enabled
@@ -159,8 +159,8 @@ export function StandardNode({
   const height =
     data.height ||
     (isCollapsedContainer
-      ? UI_CONSTANTS.NODE_HEIGHT_CONTAINER
-      : UI_CONSTANTS.NODE_HEIGHT_DEFAULT);
+      ? LAYOUT_DIMENSIONS.NODE_HEIGHT_CONTAINER
+      : LAYOUT_DIMENSIONS.NODE_HEIGHT_DEFAULT);
   const nodeCount = Number(data.nodeCount || 0);
   const containerLabel = String(
     data.longLabel || data.label || id || "Unknown Container",

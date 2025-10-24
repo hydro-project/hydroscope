@@ -3,11 +3,11 @@
  *
  * Simple color utilities for the visualization system.
  */
+import { COLOR_PALETTES } from "./config/styling.js";
 import {
-  COLOR_PALETTES,
   SEARCH_HIGHLIGHT_COLORS,
   SEARCH_CURRENT_COLORS,
-} from "./config";
+} from "./config/search.js";
 // Basic color utility functions
 export function hexToRgb(hex: string): {
   r: number;

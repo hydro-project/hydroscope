@@ -1,4 +1,4 @@
-import type { NodeStyle, EdgeStyle, ContainerStyle } from "./config";
+import type { NodeStyle, EdgeStyle, ContainerStyle } from "./config/styling.js";
 import type { GraphNode } from "../types/core.js";
 // External-facing container type (no expandedDimensions)
 export interface ExternalContainer {

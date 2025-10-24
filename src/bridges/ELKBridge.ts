@@ -15,12 +15,11 @@ import type {
 } from "../types/core.js";
 import type { IELKBridge } from "../types/bridges.js";
 import {
-  SIZES,
-  LAYOUT_CONSTANTS,
   LAYOUT_SPACING,
   DEFAULT_ELK_ALGORITHM,
   DEFAULT_LAYOUT_CONFIG,
-} from "../shared/config.js";
+} from "../shared/config/layout.js";
+import { SIZES } from "../shared/config/ui.js";
 
 export class ELKBridge implements IELKBridge {
   private performanceHints?: PerformanceHints;
@@ -33,10 +32,8 @@ export class ELKBridge implements IELKBridge {
       algorithm: layoutConfig.algorithm || DEFAULT_ELK_ALGORITHM,
       direction: layoutConfig.direction || "DOWN",
       spacing: layoutConfig.spacing,
-      nodeSpacing:
-        layoutConfig.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
-      layerSpacing:
-        layoutConfig.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL,
+      nodeSpacing: layoutConfig.nodeSpacing ?? LAYOUT_SPACING.NODE_NODE,
+      layerSpacing: layoutConfig.layerSpacing ?? LAYOUT_SPACING.NODE_NODE,
       edgeSpacing: layoutConfig.edgeSpacing ?? LAYOUT_SPACING.EDGE_EDGE,
       portSpacing: layoutConfig.portSpacing ?? LAYOUT_SPACING.NODE_EDGE,
       separateConnectedComponents:
@@ -668,7 +665,7 @@ export class ELKBridge implements IELKBridge {
         ? config.spacing
         : config.nodeSpacing !== undefined
           ? config.nodeSpacing
-          : LAYOUT_SPACING.NODE_TO_NODE_NORMAL
+          : LAYOUT_SPACING.NODE_NODE
       ).toString(),
       "elk.spacing.edgeNode": (
         config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE
@@ -677,7 +674,7 @@ export class ELKBridge implements IELKBridge {
         config.edgeSpacing || LAYOUT_SPACING.EDGE_EDGE
       ).toString(),
       "elk.layered.spacing.nodeNodeBetweenLayers": (
-        config.layerSpacing || LAYOUT_SPACING.NODE_TO_NODE_NORMAL
+        config.layerSpacing || LAYOUT_SPACING.NODE_NODE
       ).toString(),
       "elk.layered.spacing.edgeNodeBetweenLayers": (
         config.edgeSpacing || LAYOUT_SPACING.NODE_EDGE
@@ -766,17 +763,17 @@ export class ELKBridge implements IELKBridge {
     // Add extra bottom padding to accommodate container labels
     const bottomPadding =
       padding +
-      LAYOUT_CONSTANTS.CONTAINER_LABEL_HEIGHT +
-      LAYOUT_CONSTANTS.CONTAINER_LABEL_PADDING;
+      LAYOUT_SPACING.CONTAINER_LABEL_HEIGHT +
+      LAYOUT_SPACING.CONTAINER_LABEL_PADDING;
     options["elk.padding"] =
       `[top=${padding},left=${padding},bottom=${bottomPadding},right=${padding}]`;
 
     // Set spacing for nodes INSIDE the container
     options["elk.spacing.nodeNode"] = (
-      config.nodeSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL
+      config.nodeSpacing ?? LAYOUT_SPACING.NODE_NODE
     ).toString();
     options["elk.layered.spacing.nodeNodeBetweenLayers"] = (
-      config.layerSpacing ?? LAYOUT_SPACING.NODE_TO_NODE_NORMAL
+      config.layerSpacing ?? LAYOUT_SPACING.NODE_NODE
     ).toString();
     options["elk.spacing.edgeNode"] = (
       config.edgeSpacing ?? LAYOUT_SPACING.NODE_EDGE

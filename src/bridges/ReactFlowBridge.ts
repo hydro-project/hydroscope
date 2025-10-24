@@ -23,11 +23,9 @@ import {
   SEARCH_HIGHLIGHT_COLORS,
   SEARCH_CURRENT_COLORS,
   NAVIGATION_HIGHLIGHT_COLORS,
-  HIGHLIGHT_STYLING,
-} from "../shared/config.js";
-// Performance optimization constants
-const LARGE_GRAPH_NODE_THRESHOLD = 1000;
-const LARGE_GRAPH_EDGE_THRESHOLD = 2000;
+} from "../shared/config/search.js";
+import { HIGHLIGHT_STYLING } from "../shared/config/styling.js";
+import { RESOURCE_LIMITS } from "../shared/config/performance.js";
 // ENHANCEMENT: Fail-fast edge validation error types
 export class ReactFlowBridge implements IReactFlowBridge {
   constructor(private styleConfig: StyleConfig) {}
@@ -108,8 +106,8 @@ export class ReactFlowBridge implements IReactFlowBridge {
 
   private isLargeGraph(state: VisualizationState): boolean {
     return (
-      state.visibleNodes.length > LARGE_GRAPH_NODE_THRESHOLD ||
-      state.visibleEdges.length > LARGE_GRAPH_EDGE_THRESHOLD
+      state.visibleNodes.length > RESOURCE_LIMITS.LARGE_GRAPH_NODE_THRESHOLD ||
+      state.visibleEdges.length > RESOURCE_LIMITS.LARGE_GRAPH_EDGE_THRESHOLD
     );
   }
   private deepFreezeReactFlowData(data: ReactFlowData): void {

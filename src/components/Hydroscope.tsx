@@ -35,10 +35,8 @@ import { VisualizationState } from "../core/VisualizationState.js";
 import { AsyncCoordinator } from "../core/AsyncCoordinator.js";
 import { ELKBridge } from "../bridges/ELKBridge.js";
 import type { HydroscopeData } from "../types/core.js";
-import {
-  DEFAULT_COLOR_PALETTE,
-  DEFAULT_ELK_ALGORITHM,
-} from "../shared/config.js";
+import { DEFAULT_COLOR_PALETTE } from "../shared/config/styling.js";
+import { DEFAULT_ELK_ALGORITHM } from "../shared/config/layout.js";
 import {
   enableResizeObserverErrorSuppression,
   disableResizeObserverErrorSuppression,

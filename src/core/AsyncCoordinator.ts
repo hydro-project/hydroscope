@@ -5,7 +5,7 @@
 import { QueuedOperation, QueueStatus, ApplicationEvent } from "../types/core";
 // Removed BridgeFactory import - using direct bridge instances only
 import { hscopeLogger } from "../utils/logger.js";
-import { NAVIGATION_TIMING } from "../shared/config.js";
+import { NAVIGATION_TIMING } from "../shared/config/search.js";
 
 interface ErrorRecoveryResult {
   success: boolean;

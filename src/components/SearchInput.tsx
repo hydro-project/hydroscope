@@ -4,6 +4,7 @@
  */
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import type { SearchResult } from "../types/core.js";
+import { SEARCH_CONFIG } from "../shared/config/search.js";
 export interface SearchInputProps {
   onSearch: (query: string) => void;
   onClear: () => void;
@@ -26,7 +27,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   isSearching = false,
   query = "",
   placeholder = "Search nodes and containers...",
-  debounceMs = 300,
+  debounceMs = SEARCH_CONFIG.DEFAULT_DEBOUNCE_MS,
 }) => {
   const [inputValue, setInputValue] = useState(query);
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
