@@ -167,31 +167,48 @@ describe("HierarchyTree Sync Behavior", () => {
           ?.querySelector(".ant-tree-switcher");
       };
 
+      // Helper to check if tree is expanded
+      const isTreeExpanded = () => {
+        const treeNode = screen
+          .getByText("Container 1")
+          .closest(".ant-tree-treenode");
+        return treeNode?.getAttribute("aria-expanded") === "true";
+      };
+
       // Expand
       fireEvent.click(getSwitcher()!);
-      await waitFor(() => {
-        expect(screen.getByText("Node 1")).toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          expect(screen.getByText("Node 1")).toBeInTheDocument();
+          expect(isTreeExpanded()).toBe(true);
+        },
+        { timeout: 2000 },
+      );
 
       // Collapse - get fresh reference after DOM update
       fireEvent.click(getSwitcher()!);
 
-      // Use a more reliable check - wait for the switcher to change state
-      // instead of waiting for the node to disappear
-      await waitFor(() => {
-        const switcher = getSwitcher();
-        const isExpanded = switcher?.getAttribute("aria-expanded") === "true";
-        expect(isExpanded).toBe(false);
-      });
+      // Wait for collapse to complete
+      await waitFor(
+        () => {
+          expect(isTreeExpanded()).toBe(false);
+          expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
 
-      // Verify node is not visible when collapsed
-      expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
+      // Add a small delay to ensure Ant Design Tree internal state is fully updated
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Expand again - get fresh reference
       fireEvent.click(getSwitcher()!);
-      await waitFor(() => {
-        expect(screen.getByText("Node 1")).toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          expect(isTreeExpanded()).toBe(true);
+          expect(screen.getByText("Node 1")).toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
 
       expect(mockOnToggleContainer).not.toHaveBeenCalled();
     });
