@@ -11,6 +11,8 @@
 
 export const LAYOUT_DIMENSIONS = {
   // Node dimensions (fallback values when ELK doesn't provide sizing)
+  // BUGFIX: NODE_WIDTH_DEFAULT was previously 120 in UI_CONSTANTS.NODE_WIDTH_DEFAULT (deleted config.ts).
+  // Updated to 180 to fix incorrect node width.
   NODE_WIDTH_DEFAULT: 180,
   NODE_HEIGHT_DEFAULT: 60,
   NODE_WIDTH_CONTAINER: 180, // For collapsed containers
