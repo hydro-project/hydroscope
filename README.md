@@ -2,18 +2,17 @@
 
 [![CI](https://github.com/hydro-project/hydro/actions/workflows/ci.yml/badge.svg)](https://github.com/hydro-project/hydro/actions/workflows/ci.yml)
 
-A web-based graph visualization library originally designed for Hydro dataflow programs with advanced layout capabilities and interactive exploration features.
+A web-based interactive graph visualization and exploration library, well suited for exploring large directed graphs, especially those that have nested subgraph structure.
+
+Hydroscope was originally designed for visualizing [Hydro](https://hydro.run) dataflow graphs, which come with two distinct nested hierarchies: call stacks and runtime locations. However Hydroscope is not tightly coupled to Hydro and is configurable for use with any directed graph.
 
 ## Features
 
 - **Hierarchical Graph Visualization**: Visualize complex nested container structures with automatic layout
-- **ELK Layout Engine**: Powered by Eclipse Layout Kernel for sophisticated graph layouts
 - **Interactive Controls**: Pan, zoom, search, and navigate through graph hierarchies
 - **Smart Node Collapsing**: Collapse and expand containers with preserved relationships
 - **Search and Focus**: Functionality to search for nodes in the graph and hide subgraphs to improve focus.
 - **Info Panels**: View detailed node information with context-aware popups
-- **React Flow Integration**: Built on top of React Flow for robust graph rendering
-- **TypeScript Support**: Full type safety and IntelliSense support
 
 ## Installation
 
