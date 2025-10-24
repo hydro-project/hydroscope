@@ -44,6 +44,7 @@ export {
   SEARCH_CURRENT_COLORS,
   NAVIGATION_HIGHLIGHT_COLORS,
   NAVIGATION_TIMING,
+  SEARCH_CONFIG,
 } from "./search.js";
 
 // Type exports

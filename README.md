@@ -4,7 +4,7 @@
 
 A web-based interactive graph visualization and exploration library, well suited for exploring large directed graphs, especially those that have nested subgraph structure.
 
-Hydroscope was originally designed for visualizing [Hydro](https://hydro.run) dataflow graphs, which come with two distinct nested hierarchies: call stacks and runtime locations. However Hydroscope is not tightly coupled to Hydro and is configurable for use with any directed graph.
+Hydroscope was originally designed for visualizing [Hydro](https://hydro.run) dataflow graphs, which come with two distinct nested hierarchies: call stacks and runtime locations. However Hydroscope is not tightly coupled to Hydro and is configurable for use with any directed graph -- nested or flat.
 
 ## Features
 

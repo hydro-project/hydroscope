@@ -19,7 +19,7 @@ import {
   useCallback,
 } from "react";
 import { Input, Button, Tooltip, AutoComplete, List, Typography } from "antd";
-import { PANEL_CONSTANTS } from "../shared/config";
+import { PANEL_CONSTANTS, SEARCH_CONFIG } from "../shared/config";
 import type { SearchResult } from "../types/core.js";
 import { clearSearchImperatively } from "../utils/searchClearUtils.js";
 export type SearchableItem = {
@@ -121,7 +121,9 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         if (stored) {
           const history = JSON.parse(stored);
           if (Array.isArray(history)) {
-            setSearchHistory(history.slice(0, 10)); // TODO: Move to config
+            setSearchHistory(
+              history.slice(0, SEARCH_CONFIG.MAX_SEARCH_HISTORY),
+            );
           }
         }
       } catch (e) {
@@ -135,7 +137,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         const newHistory = [
           searchQuery,
           ...currentHistory.filter((h) => h !== searchQuery),
-        ].slice(0, 10); // TODO: Move to config
+        ].slice(0, SEARCH_CONFIG.MAX_SEARCH_HISTORY);
         // Save to localStorage
         try {
           localStorage.setItem(
@@ -418,7 +420,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
             announceToScreenReader("Search failed. Please try again.");
           }
         }
-      }, 300); // 300ms debounce delay to prevent excessive operations
+      }, SEARCH_CONFIG.DEFAULT_DEBOUNCE_MS);
       return () => {
         if (timerRef.current) window.clearTimeout(timerRef.current);
       };
@@ -669,7 +671,10 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
                 if (
                   !resultsListRef.current?.contains(e.relatedTarget as Node)
                 ) {
-                  setTimeout(() => setShowResultsList(false), 150);
+                  setTimeout(
+                    () => setShowResultsList(false),
+                    SEARCH_CONFIG.RESULTS_LIST_HIDE_DELAY,
+                  );
                 }
               }}
               style={{ height: compact ? 28 : undefined }}

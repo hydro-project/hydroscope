@@ -73,8 +73,7 @@ function LegendInner({
         const palette = COLOR_PALETTES[paletteKey];
         const colorEntry = palette[item.colorIndex % palette.length] as {
           primary: string;
-          secondary: string;
-          name: string;
+          secondary?: string;
         };
         map.set(item.type, {
           primary: colorEntry.primary,
