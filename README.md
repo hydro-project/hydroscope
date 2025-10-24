@@ -1,5 +1,7 @@
 # @hydro-project/hydroscope
 
+[![CI](https://github.com/hydro-project/hydro/actions/workflows/ci.yml/badge.svg)](https://github.com/hydro-project/hydro/actions/workflows/ci.yml)
+
 A web-based graph visualization library originally designed for Hydro dataflow programs with advanced layout capabilities and interactive exploration features.
 
 ## Features

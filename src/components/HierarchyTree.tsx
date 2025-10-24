@@ -972,10 +972,14 @@ export function HierarchyTree({
     // Mark that user is manually controlling the tree (when sync is disabled)
     if (!syncEnabled) {
       userControlledRef.current = true;
+      // When sync is disabled, we don't need the loading indicator since
+      // we're only updating local tree state, not triggering external operations
+      // Clear any existing recalculating state immediately
+      setIsRecalculating(false);
+    } else {
+      // Show loading indicator only when sync is enabled
+      setIsRecalculating(true);
     }
-
-    // Show loading indicator
-    setIsRecalculating(true);
 
     // Then toggle corresponding container in the visualization (only if sync is enabled)
     if (syncEnabled && info.node && onToggleContainer) {
