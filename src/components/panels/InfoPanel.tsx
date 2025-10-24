@@ -15,6 +15,7 @@ import React, {
 } from "react";
 import { hscopeLogger } from "../../utils/logger.js";
 import { Button } from "antd";
+import { useTheme } from "../../utils/useTheme.js";
 // import { EyeOutlined } from "@ant-design/icons"; // DISABLED: Eye icons removed due to edge consistency issues
 import { InfoPanelProps, LegendData } from "../types";
 import { CollapsibleSection } from "../CollapsibleSection";
@@ -122,6 +123,8 @@ const InfoPanelInternal = forwardRef<
     const [hierarchyCollapsed, setHierarchyCollapsed] = useState(false);
     // Track update counter to force re-renders when visibility changes
     const [_updateCounter, setUpdateCounter] = useState(0);
+    // Get theme colors
+    const { colors } = useTheme();
     // Search state (containers-only to start)
     const [searchQuery, setSearchQuery] = useState("");
     const [searchMatches, setSearchMatches] = useState<SearchMatch[]>([]);
@@ -359,10 +362,10 @@ const InfoPanelInternal = forwardRef<
       zIndex: 1200,
       minWidth: PANEL_CONSTANTS.INFO_PANEL_MIN_WIDTH,
       maxWidth: PANEL_CONSTANTS.INFO_PANEL_MAX_WIDTH,
-      background: "#fff",
-      boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+      background: colors.panelBackground,
+      boxShadow: `0 4px 24px ${colors.panelShadow}`,
       borderRadius: 2,
-      border: "1px solid #eee",
+      border: `1px solid ${colors.panelBorder}`,
       padding: PANEL_CONSTANTS.INFO_PANEL_PADDING,
       transition: "transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s",
       transform: open ? "translateX(0)" : "translateX(120%)", // slide from right
@@ -375,12 +378,12 @@ const InfoPanelInternal = forwardRef<
     // Custom button style for open/close, matching CustomControls
     const controlButtonStyle: React.CSSProperties = {
       fontSize: PANEL_CONSTANTS.FONT_SIZE_LARGE,
-      color: "#222",
+      color: colors.buttonText,
       marginLeft: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5, // 8px
-      backgroundColor: "rgba(59, 130, 246, 0.1)",
-      border: "1px solid #3b82f6",
+      backgroundColor: colors.buttonBackground,
+      border: `1px solid ${colors.buttonBorder}`,
       borderRadius: PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS,
-      boxShadow: "0 1px 4px rgba(59,130,246,0.08)",
+      boxShadow: `0 1px 4px ${colors.buttonBorder}20`,
       transition: "background 0.18s, box-shadow 0.18s",
       padding: "2px 8px",
       outline: "none",
@@ -393,13 +396,14 @@ const InfoPanelInternal = forwardRef<
       ...controlButtonStyle,
       backgroundColor:
         btnHover || btnFocus
-          ? "rgba(59,130,246,0.18)"
+          ? colors.buttonHoverBackground
           : controlButtonStyle.backgroundColor,
       boxShadow:
         btnHover || btnFocus
-          ? "0 2px 8px rgba(59,130,246,0.16)"
+          ? `0 2px 8px ${colors.buttonBorder}30`
           : controlButtonStyle.boxShadow,
-      borderColor: btnHover || btnFocus ? "#2563eb" : "#3b82f6",
+      borderColor:
+        btnHover || btnFocus ? colors.buttonHoverBorder : colors.buttonBorder,
     };
     return (
       <div style={panelStyle}>
@@ -435,6 +439,7 @@ const InfoPanelInternal = forwardRef<
             style={{
               fontWeight: 600,
               fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM,
+              color: colors.textPrimary,
             }}
           >
             Graph Info
@@ -458,6 +463,7 @@ const InfoPanelInternal = forwardRef<
             maxHeight: "68vh",
             overflowY: "auto",
             paddingRight: 4,
+            color: colors.textPrimary,
           }}
         >
           {/* Grouping Controls Section */}

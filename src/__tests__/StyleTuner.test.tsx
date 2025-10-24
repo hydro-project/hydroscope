@@ -196,20 +196,20 @@ describe("StyleTuner Component", () => {
     it("should display available color palettes", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const paletteSelect = screen.getByDisplayValue("Set2");
+      const paletteSelect = screen.getByDisplayValue("Set2 (Light)");
       expect(paletteSelect).toBeInTheDocument();
 
       // Check options exist
-      expect(screen.getByText("Set2")).toBeInTheDocument();
-      expect(screen.getByText("Set3")).toBeInTheDocument();
-      expect(screen.getByText("Pastel1")).toBeInTheDocument();
-      expect(screen.getByText("Dark2")).toBeInTheDocument();
+      expect(screen.getByText("Set2 (Light)")).toBeInTheDocument();
+      expect(screen.getByText("Set3 (Light)")).toBeInTheDocument();
+      expect(screen.getByText("Pastel1 (Light)")).toBeInTheDocument();
+      expect(screen.getByText("Dark2 (Saturated)")).toBeInTheDocument();
     });
 
     it("should call onPaletteChange when palette is selected", () => {
       render(<StyleTuner {...mockProps} />);
 
-      const paletteSelect = screen.getByDisplayValue("Set2");
+      const paletteSelect = screen.getByDisplayValue("Set2 (Light)");
       fireEvent.change(paletteSelect, { target: { value: "Set3" } });
 
       expect(mockCallbacks.onPaletteChange).toHaveBeenCalledWith("Set3");
@@ -226,7 +226,7 @@ describe("StyleTuner Component", () => {
 
       render(<StyleTuner {...mockProps} />);
 
-      const paletteSelect = screen.getByDisplayValue("Set2");
+      const paletteSelect = screen.getByDisplayValue("Set2 (Light)");
 
       // Should not crash when error occurs
       expect(() => {

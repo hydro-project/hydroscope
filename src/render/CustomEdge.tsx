@@ -7,7 +7,8 @@ import {
 } from "@xyflow/react";
 import { memo } from "react";
 import { generateHashMarks, applyWavinessToPath } from "./edgeStyleUtils.js";
-import { DEFAULT_STYLE } from "../utils/StyleProcessor.js";
+import { getDefaultEdgeStyle } from "../utils/StyleProcessor.js";
+import { detectDarkMode } from "../shared/config/theme.js";
 
 /**
  * Custom edge component supporting hash marks and wavy paths
@@ -68,6 +69,10 @@ export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
   // Extract style properties
   const { stroke, strokeWidth, strokeDasharray } = style || {};
 
+  // Get theme-aware default colors
+  const isDark = detectDarkMode();
+  const defaultStyle = getDefaultEdgeStyle(isDark);
+
   // Single line rendering (default case)
   if (!hasHashMarks) {
     return <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />;
@@ -75,8 +80,8 @@ export const CustomEdge = memo(function CustomEdge(props: EdgeProps) {
 
   // Hash marks rendering - vertical tick marks along the edge
   const pathStyle = {
-    stroke: stroke || DEFAULT_STYLE.STROKE_COLOR,
-    strokeWidth: strokeWidth || DEFAULT_STYLE.STROKE_WIDTH,
+    stroke: stroke || defaultStyle.STROKE_COLOR,
+    strokeWidth: strokeWidth || defaultStyle.STROKE_WIDTH,
     strokeDasharray,
     fill: "none",
   };

@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "../styles/dark-mode.css";
 import {
   HydroscopeCore,
   type HydroscopeCoreProps,

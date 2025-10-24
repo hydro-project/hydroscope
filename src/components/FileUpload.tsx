@@ -5,6 +5,7 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import { hscopeLogger } from "../utils/logger.js";
 import { Spinner } from "./Spinner.js";
+import { useTheme } from "../utils/useTheme.js";
 import type {
   HydroscopeData,
   ParseError,
@@ -57,6 +58,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(true);
+  const { colors } = useTheme();
+
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -609,13 +612,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
 
         .upload-area {
-          border: 2px dashed #cbd5e0;
+          border: 2px dashed ${colors.uploadAreaBorder};
           border-radius: 8px;
           padding: 2rem;
           text-align: center;
           cursor: pointer;
           transition: all 0.2s ease;
-          background: #f7fafc;
+          background: ${colors.uploadAreaBackground};
           min-height: 200px;
           display: flex;
           align-items: center;
@@ -623,13 +626,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
 
         .upload-area:hover {
-          border-color: #4299e1;
-          background: #ebf8ff;
+          border-color: ${colors.uploadAreaHoverBorder};
+          background: ${colors.uploadAreaHoverBackground};
         }
 
         .upload-area.drag-over {
-          border-color: #3182ce;
-          background: #bee3f8;
+          border-color: ${colors.uploadAreaDragBorder};
+          background: ${colors.uploadAreaDragBackground};
           transform: scale(1.02);
         }
 
@@ -650,13 +653,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         .idle-state .primary-text {
           font-size: 1.125rem;
           font-weight: 600;
-          color: #2d3748;
+          color: ${colors.textPrimary};
           margin-bottom: 0.5rem;
         }
 
         .idle-state .secondary-text {
           font-size: 0.875rem;
-          color: #718096;
+          color: ${colors.textSecondary};
         }
 
         .processing-state {
@@ -669,14 +672,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         .progress-bar {
           width: 200px;
           height: 4px;
-          background: #e2e8f0;
+          background: ${colors.dividerColor};
           border-radius: 2px;
           overflow: hidden;
         }
 
         .progress-fill {
           height: 100%;
-          background: #4299e1;
+          background: ${colors.buttonBorder};
           transition: width 0.3s ease;
         }
 
@@ -691,15 +694,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
 
         .status-message.error {
-          background: #fed7d7;
-          color: #c53030;
-          border: 1px solid #feb2b2;
+          background: ${colors.errorBackground};
+          color: ${colors.errorText};
+          border: 1px solid ${colors.errorBorder};
         }
 
         .status-message.success {
-          background: #c6f6d5;
-          color: #22543d;
-          border: 1px solid #9ae6b4;
+          background: ${colors.successBackground};
+          color: ${colors.successText};
+          border: 1px solid ${colors.successBorder};
         }
 
         .status-icon {
@@ -713,15 +716,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         .file-path-display {
           margin-top: 1.5rem;
           padding: 1rem;
-          border: 1px solid #e2e8f0;
+          border: 1px solid ${colors.filePathBorder};
           border-radius: 6px;
-          background: #f7fafc;
+          background: ${colors.filePathBackground};
         }
 
         .file-path-label {
           margin: 0 0 0.75rem 0;
           font-weight: 600;
-          color: #2d3748;
+          color: ${colors.textPrimary};
           font-size: 0.875rem;
         }
 
@@ -732,14 +735,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
         .file-path-code {
           display: block;
-          background: #e8f5e8;
+          background: ${colors.filePathCodeBackground};
           padding: 0.75rem 3rem 0.75rem 0.75rem;
           border-radius: 4px;
           font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-          color: #2e7d32;
+          color: ${colors.filePathCodeText};
           font-size: 0.8125rem;
           word-break: break-all;
-          border: 1px solid #c8e6c9;
+          border: 1px solid ${colors.filePathCodeBorder};
         }
 
         .copy-button {
@@ -747,7 +750,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           top: 50%;
           right: 0.5rem;
           transform: translateY(-50%);
-          background: #007acc;
+          background: ${colors.buttonBorder};
           color: white;
           border: none;
           border-radius: 4px;
@@ -758,13 +761,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
 
         .copy-button:hover {
-          background: #005999;
+          background: ${colors.buttonHoverBorder};
         }
 
         .file-path-hint {
           margin: 0;
           font-size: 0.75rem;
-          color: #718096;
+          color: ${colors.textSecondary};
           font-style: italic;
         }
       `}</style>

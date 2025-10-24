@@ -1,0 +1,348 @@
+/**
+ * Dark Mode Overrides for ReactFlow Controls
+ * 
+ * ReactFlow's built-in controls don't automatically adapt to dark mode,
+ * so we need to override their styles when the user has dark mode enabled.
+ */
+
+/* Hide ReactFlow attribution (node count badge) in all modes */
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* Dark mode media query - ultra high specificity */
+@media (prefers-color-scheme: dark) {
+  /* ReactFlow control buttons - maximum specificity */
+  .react-flow .react-flow__panel .react-flow__controls .react-flow__controls-button,
+  .react-flow .react-flow__controls .react-flow__controls-button,
+  .react-flow__panel .react-flow__controls .react-flow__controls-button,
+  .react-flow__controls .react-flow__controls-button,
+  .react-flow__controls button {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+    fill: #e0e0e0 !important;
+  }
+
+  .react-flow .react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
+  .react-flow .react-flow__controls .react-flow__controls-button:hover,
+  .react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
+  .react-flow__controls .react-flow__controls-button:hover,
+  .react-flow__controls button:hover {
+    background-color: #3a3a3a !important;
+    border-color: #5a5a5a !important;
+  }
+
+  /* SVG icons inside buttons */
+  .react-flow .react-flow__controls .react-flow__controls-button svg,
+  .react-flow__controls .react-flow__controls-button svg,
+  .react-flow__controls button svg,
+  .react-flow__controls svg {
+    fill: #e0e0e0 !important;
+    color: #e0e0e0 !important;
+  }
+
+  /* SVG paths */
+  .react-flow .react-flow__controls .react-flow__controls-button svg path,
+  .react-flow__controls .react-flow__controls-button svg path,
+  .react-flow__controls .react-flow__controls-button path,
+  .react-flow__controls button path,
+  .react-flow__controls svg path {
+    fill: #e0e0e0 !important;
+  }
+
+  /* Custom control buttons (pack/unpack/autofit/load) - positioned above ReactFlow controls */
+  div[style*="bottom: 125px"] button.react-flow__controls-button,
+  div[style*="bottom: 125px"] button {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+  }
+
+  div[style*="bottom: 125px"] button.react-flow__controls-button:hover,
+  div[style*="bottom: 125px"] button:hover {
+    background-color: #3a3a3a !important;
+  }
+
+  div[style*="bottom: 125px"] button svg,
+  div[style*="bottom: 125px"] button svg path,
+  div[style*="bottom: 125px"] button svg rect {
+    fill: #e0e0e0 !important;
+    stroke: #e0e0e0 !important;
+    color: #e0e0e0 !important;
+  }
+
+  /* Custom controls container background */
+  div[style*="bottom: 125px"][style*="backgroundColor: white"] {
+    background-color: #2a2a2a !important;
+  }
+
+  /* Panel toggle buttons (InfoPanel and StyleTuner) - upper right corner */
+  div[style*="top: 20px"][style*="right: 20px"] button {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+  }
+
+  /* Active state for panel toggle buttons */
+  div[style*="top: 20px"][style*="right: 20px"] button[style*="rgb(76, 175, 80)"] {
+    background-color: #4caf50 !important;
+  }
+
+  div[style*="top: 20px"][style*="right: 20px"] button:hover {
+    background-color: #3a3a3a !important;
+  }
+
+  div[style*="top: 20px"][style*="right: 20px"] button svg,
+  div[style*="top: 20px"][style*="right: 20px"] button svg path {
+    fill: #e0e0e0 !important;
+    color: #e0e0e0 !important;
+  }
+
+  /* InfoPanel and StyleTuner - Ant Design components */
+  /* Select dropdowns */
+  .ant-select,
+  .ant-select-selector {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+  }
+
+  .ant-select-arrow {
+    color: #e0e0e0 !important;
+  }
+
+  .ant-select-selection-item {
+    color: #e0e0e0 !important;
+  }
+
+  /* Select dropdown menu */
+  .ant-select-dropdown {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+  }
+
+  .ant-select-item {
+    color: #e0e0e0 !important;
+  }
+
+  .ant-select-item-option-selected {
+    background-color: #3a3a3a !important;
+  }
+
+  .ant-select-item-option-active {
+    background-color: #3a3a3a !important;
+  }
+
+  /* Input fields - maximum specificity */
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-affix-wrapper > input,
+  input.ant-input,
+  input[type="text"],
+  input[type="search"],
+  .search-input,
+  input.search-input {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+  }
+
+  .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):hover {
+    border-color: #5a5a5a !important;
+  }
+
+  .ant-input-affix-wrapper-focused,
+  .ant-input-affix-wrapper:focus,
+  .ant-input:focus {
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+  }
+
+  .ant-input::placeholder,
+  .ant-input-affix-wrapper input::placeholder,
+  input::placeholder,
+  .search-input::placeholder {
+    color: #707070 !important;
+  }
+
+  /* AutoComplete dropdown */
+  .ant-select-auto-complete .ant-select-selector {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+  }
+
+  /* Search input container */
+  .search-input-container,
+  .search-input-wrapper {
+    background-color: transparent !important;
+  }
+
+  /* Clear button in input */
+  .ant-input-clear-icon {
+    color: #a0a0a0 !important;
+  }
+
+  .ant-input-clear-icon:hover {
+    color: #e0e0e0 !important;
+  }
+
+  /* Buttons */
+  .ant-btn {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+  }
+
+  .ant-btn:hover {
+    background-color: #3a3a3a !important;
+    border-color: #5a5a5a !important;
+  }
+
+  .ant-btn-primary {
+    background-color: #60a5fa !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .ant-btn-primary:hover {
+    background-color: #3b82f6 !important;
+  }
+
+  /* Dividers */
+  .ant-divider {
+    border-color: #3a3a3a !important;
+  }
+
+  /* Tree view in InfoPanel */
+  .ant-tree {
+    background-color: transparent !important;
+    color: #e0e0e0 !important;
+  }
+
+  .ant-tree-node-content-wrapper {
+    color: #e0e0e0 !important;
+  }
+
+  .ant-tree-node-content-wrapper:hover {
+    background-color: #3a3a3a !important;
+  }
+
+  .ant-tree-node-selected .ant-tree-node-content-wrapper {
+    background-color: #3a3a3a !important;
+  }
+
+  .ant-tree-switcher {
+    color: #e0e0e0 !important;
+  }
+
+  .ant-tree-title {
+    color: #e0e0e0 !important;
+  }
+
+  /* Checkboxes */
+  .ant-checkbox-wrapper {
+    color: #e0e0e0 !important;
+  }
+
+  .ant-checkbox-inner {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+  }
+
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #60a5fa !important;
+    border-color: #3b82f6 !important;
+  }
+
+  /* Collapsible section headers */
+  .collapsible-summary,
+  summary.collapsible-summary,
+  details > summary {
+    color: #e0e0e0 !important;
+  }
+
+  .collapsible-summary span,
+  summary.collapsible-summary span {
+    color: #e0e0e0 !important;
+  }
+
+  /* Collapsible section caret icon */
+  .collapsible-summary span[aria-hidden="true"] {
+    color: #a0a0a0 !important;
+  }
+
+  /* Search controls buttons */
+  button[title*="Previous"],
+  button[title*="Next"],
+  button[title*="Clear"] {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e0e0e0 !important;
+  }
+
+  button[title*="Previous"]:hover,
+  button[title*="Next"]:hover,
+  button[title*="Clear"]:hover {
+    background-color: #3a3a3a !important;
+  }
+
+  /* Hierarchy tree container with white background */
+  div[style*="background: white"],
+  div[style*="background: rgb(255, 255, 255)"],
+  div[style*="backgroundColor: white"],
+  div[style*="backgroundColor: rgb(255, 255, 255)"] {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+  }
+
+  /* ReactFlow minimap */
+  .react-flow__minimap {
+    background-color: #2a2a2a !important;
+    border: 1px solid #4a4a4a !important;
+  }
+
+  .react-flow__minimap-mask {
+    fill: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .react-flow__minimap-node {
+    fill: #4a4a4a !important;
+    stroke: #6a6a6a !important;
+  }
+
+  /* ReactFlow attribution */
+  .react-flow__attribution {
+    background-color: rgba(42, 42, 42, 0.8) !important;
+    color: #a0a0a0 !important;
+  }
+
+  .react-flow__attribution a {
+    color: #60a5fa !important;
+  }
+
+  /* ReactFlow panel (used by controls) */
+  .react-flow__panel {
+    color: #e0e0e0 !important;
+  }
+
+  /* ReactFlow edges */
+  .react-flow__edge-path {
+    stroke: #a0a0a0 !important;
+  }
+
+  /* ReactFlow selection box */
+  .react-flow__selection {
+    background: rgba(96, 165, 250, 0.1) !important;
+    border: 1px solid #60a5fa !important;
+  }
+
+  /* ReactFlow node selection */
+  .react-flow__node.selected {
+    box-shadow: 0 0 0 2px #60a5fa !important;
+  }
+
+  /* ReactFlow edge selection */
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke: #60a5fa !important;
+  }
+}

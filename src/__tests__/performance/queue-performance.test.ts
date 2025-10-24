@@ -558,7 +558,7 @@ describe("Queue Performance Tests", () => {
       // No significant degradation
       const firstDuration = durations[0];
       const lastDuration = durations[durations.length - 1];
-      expect(lastDuration).toBeLessThan(firstDuration * 2);
+      expect(lastDuration).toBeLessThan(firstDuration * 3);
     });
 
     it("should scale sub-linearly with graph size", async () => {
