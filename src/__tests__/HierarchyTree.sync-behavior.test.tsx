@@ -175,7 +175,7 @@ describe("HierarchyTree Sync Behavior", () => {
 
       // Collapse - get fresh reference after DOM update
       fireEvent.click(getSwitcher()!);
-      
+
       // Use a more reliable check - wait for the switcher to change state
       // instead of waiting for the node to disappear
       await waitFor(() => {
