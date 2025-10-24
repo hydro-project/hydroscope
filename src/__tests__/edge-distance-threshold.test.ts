@@ -3,7 +3,7 @@
  */
 
 import { vi } from "vitest";
-import { LAYOUT_CONSTANTS } from "../shared/config.js";
+import { SMART_COLLAPSE_CONFIG } from "../shared/config/layout.js";
 import { ReactFlowBridge } from "../bridges/ReactFlowBridge.js";
 import { VisualizationState } from "../core/VisualizationState.js";
 import { createTestNode } from "../utils/testData.js";
@@ -19,10 +19,10 @@ describe("Edge Distance Validation Threshold", () => {
 
   it("should use configurable threshold for edge distance warnings", () => {
     // Verify the threshold is configurable and set to a reasonable value
-    expect(LAYOUT_CONSTANTS.EDGE_DISTANCE_WARNING_THRESHOLD).toBe(5000);
-    expect(LAYOUT_CONSTANTS.EDGE_DISTANCE_WARNING_THRESHOLD).toBeGreaterThan(
-      2000,
-    );
+    expect(SMART_COLLAPSE_CONFIG.EDGE_DISTANCE_WARNING_THRESHOLD).toBe(5000);
+    expect(
+      SMART_COLLAPSE_CONFIG.EDGE_DISTANCE_WARNING_THRESHOLD,
+    ).toBeGreaterThan(2000);
   });
 
   it("should not warn for edges under the threshold distance", () => {

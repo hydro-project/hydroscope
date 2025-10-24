@@ -3,8 +3,8 @@ import {
   NODE_STYLES,
   EDGE_STYLES,
   CONTAINER_STYLES,
-  LAYOUT_CONSTANTS,
-} from "../config";
+} from "../config/styling.js";
+import { LAYOUT_DIMENSIONS } from "../config/layout.js";
 
 describe("Constants", () => {
   describe("NODE_STYLES", () => {
@@ -36,15 +36,15 @@ describe("Constants", () => {
     });
   });
 
-  describe("LAYOUT_CONSTANTS", () => {
+  describe("LAYOUT_DIMENSIONS", () => {
     it("should have positive numeric values", () => {
-      expect(LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH).toBeGreaterThan(0);
-      expect(LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT).toBeGreaterThan(0);
-      expect(LAYOUT_CONSTANTS.DEFAULT_CONTAINER_PADDING).toBeGreaterThanOrEqual(
-        0,
-      );
-      expect(LAYOUT_CONSTANTS.MIN_CONTAINER_WIDTH).toBeGreaterThan(0);
-      expect(LAYOUT_CONSTANTS.MIN_CONTAINER_HEIGHT).toBeGreaterThan(0);
+      expect(LAYOUT_DIMENSIONS.NODE_WIDTH_DEFAULT).toBeGreaterThan(0);
+      expect(LAYOUT_DIMENSIONS.NODE_HEIGHT_DEFAULT).toBeGreaterThan(0);
+      expect(
+        LAYOUT_DIMENSIONS.DEFAULT_CONTAINER_PADDING,
+      ).toBeGreaterThanOrEqual(0);
+      expect(LAYOUT_DIMENSIONS.MIN_CONTAINER_WIDTH).toBeGreaterThan(0);
+      expect(LAYOUT_DIMENSIONS.MIN_CONTAINER_HEIGHT).toBeGreaterThan(0);
     });
   });
 });

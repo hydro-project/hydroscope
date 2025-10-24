@@ -5,12 +5,13 @@
 import { hscopeLogger } from "../utils/logger.js";
 import { getHierarchyOrderMap } from "../utils/hierarchyUtils.js";
 import {
-  LAYOUT_CONSTANTS,
-  SIZES,
-  DEFAULT_COLOR_PALETTE,
+  LAYOUT_DIMENSIONS,
+  SMART_COLLAPSE_CONFIG,
   DEFAULT_ELK_ALGORITHM,
-  NAVIGATION_TIMING,
-} from "@/shared/config.js";
+} from "../shared/config/layout.js";
+import { SIZES } from "../shared/config/ui.js";
+import { DEFAULT_COLOR_PALETTE } from "../shared/config/styling.js";
+import { NAVIGATION_TIMING } from "../shared/config/search.js";
 import type { RenderConfig } from "@/components/Hydroscope.js";
 import type {
   GraphNode,
@@ -1526,7 +1527,8 @@ export class VisualizationState {
     // Sort candidates by cost (lowest first)
     expansionCandidates.sort((a, b) => a.cost - b.cost);
     // Step 3: Expand containers until budget is reached
-    const budget = budgetOverride ?? LAYOUT_CONSTANTS.SMART_COLLAPSE_BUDGET;
+    const budget =
+      budgetOverride ?? SMART_COLLAPSE_CONFIG.SMART_COLLAPSE_BUDGET;
     let currentCost = 0;
     let _expandedCount = 0;
     while (expansionCandidates.length > 0) {
@@ -1588,8 +1590,8 @@ export class VisualizationState {
       } else if (this._nodes.has(childId)) {
         // Direct node children
         childrenArea +=
-          LAYOUT_CONSTANTS.DEFAULT_NODE_WIDTH *
-          LAYOUT_CONSTANTS.DEFAULT_NODE_HEIGHT;
+          LAYOUT_DIMENSIONS.NODE_WIDTH_DEFAULT *
+          LAYOUT_DIMENSIONS.NODE_HEIGHT_DEFAULT;
       }
     }
     // Expanded container needs to contain children plus border/padding

@@ -7,8 +7,8 @@
 import React, { useMemo, memo } from "react";
 import { LegendProps } from "./types";
 import { generateNodeColors } from "../shared/colorUtils";
-import { COLOR_PALETTES, COMPONENT_COLORS } from "../shared/config";
-import { TYPOGRAPHY } from "../shared/config";
+import { COLOR_PALETTES } from "../shared/config/styling.js";
+import { COMPONENT_COLORS, TYPOGRAPHY } from "../shared/config/ui.js";
 
 interface LegendItemWithColor {
   type: string;
@@ -71,7 +71,11 @@ function LegendInner({
       // If colorIndex is specified in nodeTypeConfig, use it directly
       if (typeof item.colorIndex === "number") {
         const palette = COLOR_PALETTES[paletteKey];
-        const colorEntry = palette[item.colorIndex % palette.length];
+        const colorEntry = palette[item.colorIndex % palette.length] as {
+          primary: string;
+          secondary: string;
+          name: string;
+        };
         map.set(item.type, {
           primary: colorEntry.primary,
           border: colorEntry.secondary || colorEntry.primary,

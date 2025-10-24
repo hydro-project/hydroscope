@@ -63,12 +63,10 @@ import {
 import { ErrorBoundary } from "./ErrorBoundary.js";
 import { hscopeLogger } from "../utils/logger.js";
 import type { RenderConfig } from "./Hydroscope.js";
-import {
-  DEFAULT_COLOR_PALETTE,
-  DEFAULT_ELK_ALGORITHM,
-  NAVIGATION_TIMING,
-  PANEL_CONSTANTS,
-} from "../shared/config.js";
+import { DEFAULT_COLOR_PALETTE } from "../shared/config/styling.js";
+import { DEFAULT_ELK_ALGORITHM } from "../shared/config/layout.js";
+import { NAVIGATION_TIMING } from "../shared/config/search.js";
+import { PANEL_CONSTANTS } from "../shared/config/ui.js";
 import { getHighlightColor, generateNodeColors } from "../shared/colorUtils.js";
 import { withAsyncResizeObserverErrorSuppression } from "../utils/ResizeObserverErrorSuppression.js";
 

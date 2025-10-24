@@ -121,7 +121,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         if (stored) {
           const history = JSON.parse(stored);
           if (Array.isArray(history)) {
-            setSearchHistory(history.slice(0, 10)); // Keep only last 10
+            setSearchHistory(history.slice(0, 10)); // TODO: Move to config
           }
         }
       } catch (e) {
@@ -135,7 +135,7 @@ export const SearchControls = forwardRef<SearchControlsRef, Props>(
         const newHistory = [
           searchQuery,
           ...currentHistory.filter((h) => h !== searchQuery),
-        ].slice(0, 10); // Keep only last 10 unique searches
+        ].slice(0, 10); // TODO: Move to config
         // Save to localStorage
         try {
           localStorage.setItem(
