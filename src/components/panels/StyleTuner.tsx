@@ -20,9 +20,11 @@ import {
   PANEL_CONSTANTS,
   DEFAULT_COLOR_PALETTE,
   DEFAULT_ELK_ALGORITHM,
+  PALETTE_LABELS,
 } from "../../shared/config";
 import { AsyncCoordinator } from "../../core/AsyncCoordinator";
 import { VisualizationState } from "../../core/VisualizationState";
+import { useTheme } from "../../utils/useTheme.js";
 
 // Edge style type definition
 type EdgeStyleKind = "bezier" | "straight" | "smoothstep";
@@ -43,12 +45,20 @@ const layoutOptions = {
   force: "Force-Directed",
   stress: "Stress Minimization",
 };
-// Color palette options
-const paletteOptions = {
-  Set3: "Set3",
-  Set2: "Set2",
-  Pastel1: "Pastel1",
-  Dark2: "Dark2",
+// Color palette options - organized by theme
+const lightPaletteOptions = {
+  Set3: PALETTE_LABELS.Set3,
+  Set2: PALETTE_LABELS.Set2,
+  Pastel1: PALETTE_LABELS.Pastel1,
+  Dark2: PALETTE_LABELS.Dark2,
+};
+
+const darkPaletteOptions = {
+  Set1Bright: PALETTE_LABELS.Set1Bright,
+  Accent: PALETTE_LABELS.Accent,
+  Paired: PALETTE_LABELS.Paired,
+  Set3: PALETTE_LABELS.Set3,
+  Set2: PALETTE_LABELS.Set2,
 };
 export interface StyleTunerPanelProps {
   // Feed and control the FlowGraph RenderConfig style fields
@@ -96,6 +106,9 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   const [local, setLocal] = useState(value);
   const [prevValue, setPrevValue] = useState(value);
 
+  // Get theme colors
+  const { isDark, colors } = useTheme();
+
   // Sync when external value changes (React 18+ pattern)
   if (value !== prevValue) {
     setPrevValue(value);
@@ -104,9 +117,10 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   // Removed unused _update function - using direct state updates instead
   const inputStyle: React.CSSProperties = {
     padding: "4px 8px",
-    border: "1px solid #ced4da",
+    border: `1px solid ${colors.inputBorder}`,
     borderRadius: `${PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS}px`,
-    backgroundColor: "#fff",
+    backgroundColor: colors.inputBackground,
+    color: colors.inputText,
     fontSize: `${PANEL_CONSTANTS.FONT_SIZE_SMALL}px`,
     width: "100%",
   };
@@ -120,12 +134,12 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
   // Custom button style for open/close, matching CustomControls
   const controlButtonStyle: React.CSSProperties = {
     fontSize: PANEL_CONSTANTS.FONT_SIZE_LARGE,
-    color: "#222",
+    color: colors.buttonText,
     marginLeft: PANEL_CONSTANTS.COMPONENT_PADDING / 1.5, // 8px
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
-    border: "1px solid #3b82f6",
+    backgroundColor: colors.buttonBackground,
+    border: `1px solid ${colors.buttonBorder}`,
     borderRadius: PANEL_CONSTANTS.COMPONENT_BORDER_RADIUS,
-    boxShadow: "0 1px 4px rgba(59,130,246,0.08)",
+    boxShadow: `0 1px 4px ${colors.buttonBorder}20`,
     transition: "background 0.18s, box-shadow 0.18s",
     padding: "2px 8px",
     outline: "none",
@@ -138,13 +152,14 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
     ...controlButtonStyle,
     backgroundColor:
       btnHover || btnFocus
-        ? "rgba(59,130,246,0.18)"
+        ? colors.buttonHoverBackground
         : controlButtonStyle.backgroundColor,
     boxShadow:
       btnHover || btnFocus
-        ? "0 2px 8px rgba(59,130,246,0.16)"
+        ? `0 2px 8px ${colors.buttonBorder}30`
         : controlButtonStyle.boxShadow,
-    borderColor: btnHover || btnFocus ? "#2563eb" : "#3b82f6",
+    borderColor:
+      btnHover || btnFocus ? colors.buttonHoverBorder : colors.buttonBorder,
   };
   return (
     <div
@@ -155,10 +170,10 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
         zIndex: 1200, // higher than button
         minWidth: PANEL_CONSTANTS.STYLE_TUNER_MIN_WIDTH,
         maxWidth: PANEL_CONSTANTS.STYLE_TUNER_MAX_WIDTH,
-        background: "#fff",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+        background: colors.panelBackground,
+        boxShadow: `0 4px 24px ${colors.panelShadow}`,
         borderRadius: PANEL_CONSTANTS.STYLE_TUNER_BORDER_RADIUS,
-        border: "1px solid #eee",
+        border: `1px solid ${colors.panelBorder}`,
         padding: PANEL_CONSTANTS.STYLE_TUNER_PADDING,
         transition: "transform 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s",
         transform: open ? "translateX(0)" : "translateX(120%)", // slide from right
@@ -178,6 +193,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           style={{
             fontWeight: 600,
             fontSize: PANEL_CONSTANTS.FONT_SIZE_MEDIUM,
+            color: colors.textPrimary,
           }}
         >
           Style Tuner
@@ -195,9 +211,14 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           ×
         </Button>
       </div>
-      <div style={{ fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL }}>
+      <div
+        style={{
+          fontSize: PANEL_CONSTANTS.FONT_SIZE_SMALL,
+          color: colors.textPrimary,
+        }}
+      >
         <div style={rowStyle}>
-          <label>Layout Algorithm</label>
+          <label style={{ color: colors.textPrimary }}>Layout Algorithm</label>
           <select
             value={currentLayout}
             style={inputStyle}
@@ -249,7 +270,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           </select>
         </div>
         <div style={rowStyle}>
-          <label>Edge Style</label>
+          <label style={{ color: colors.textPrimary }}>Edge Style</label>
           <select
             value={local.edgeStyle || "bezier"}
             style={inputStyle}
@@ -312,7 +333,7 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
           </select>
         </div>
         <div style={rowStyle}>
-          <label>Color Palette</label>
+          <label style={{ color: colors.textPrimary }}>Color Palette</label>
           <select
             value={colorPalette}
             onChange={async (e) => {
@@ -356,7 +377,9 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
             }}
             style={inputStyle}
           >
-            {Object.entries(paletteOptions).map(([key, label]) => (
+            {Object.entries(
+              isDark ? darkPaletteOptions : lightPaletteOptions,
+            ).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
@@ -365,7 +388,9 @@ const StyleTunerPanelInternal: React.FC<StyleTunerPanelProps> = ({
         </div>
 
         <div style={rowStyle}>
-          <label>Show full node labels</label>
+          <label style={{ color: colors.textPrimary }}>
+            Show full node labels
+          </label>
           <label
             style={{
               display: "flex",

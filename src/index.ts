@@ -24,6 +24,9 @@ if (typeof window !== "undefined") {
   enableResizeObserverDebouncing();
 }
 
+// 🎨 STYLES
+import "./styles/dark-mode.css";
+
 // 🎯 CORE COMPONENTS
 export { Hydroscope } from "./components/Hydroscope.js";
 export { HydroscopeCore } from "./components/HydroscopeCore.js";

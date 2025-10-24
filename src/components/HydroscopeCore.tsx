@@ -46,6 +46,7 @@ import {
   type EdgeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "../styles/dark-mode.css";
 
 import { nodeTypes, edgeTypes } from "../render/index.js";
 
@@ -2319,6 +2320,7 @@ const HydroscopeCoreInternal = forwardRef<
             defaultEdgeOptions={{
               markerEnd: { type: "arrowclosed" },
             }}
+            proOptions={{ hideAttribution: true }}
             onInit={() => {
               // ReactFlow instance initialized
             }}
@@ -2370,7 +2372,14 @@ const HydroscopeCoreInternal = forwardRef<
                 <Controls />
               </>
             )}
-            {showMiniMap && <MiniMap />}
+            {showMiniMap && (
+              <MiniMap
+                pannable={true}
+                zoomable={true}
+                nodeStrokeWidth={3}
+                maskColor="rgba(0, 0, 0, 0.1)"
+              />
+            )}
           </ReactFlow>
 
           {/* Glow overlays for navigation highlighting (supports concurrent glows) */}

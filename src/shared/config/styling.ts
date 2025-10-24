@@ -43,6 +43,17 @@ export type ContainerStyle =
 
 export const DEFAULT_COLOR_PALETTE = "Set3";
 
+// Palette display labels for UI
+export const PALETTE_LABELS = {
+  Set3: "Set3 (Light)",
+  Set2: "Set2 (Light)",
+  Pastel1: "Pastel1 (Light)",
+  Dark2: "Dark2 (Saturated)",
+  Set1Bright: "Set1 Bright",
+  Accent: "Accent",
+  Paired: "Paired",
+} as const;
+
 export const COLOR_PALETTES = {
   Set3: [
     { primary: "#8dd3c7", secondary: "#ffffb3", name: "Light Teal" },
@@ -82,6 +93,38 @@ export const COLOR_PALETTES = {
     { primary: "#e6ab02", secondary: "#a6761d", name: "Dark Gold" },
     { primary: "#a6761d", secondary: "#666666", name: "Dark Brown" },
     { primary: "#666666", secondary: "#1b9e77", name: "Dark Gray" },
+  ],
+  // ColorBrewer palettes optimized for dark backgrounds
+  // These are brightened versions of ColorBrewer qualitative schemes
+  Set1Bright: [
+    { primary: "#e74c3c", secondary: "#3498db", name: "Bright Red" },
+    { primary: "#3498db", secondary: "#2ecc71", name: "Bright Blue" },
+    { primary: "#2ecc71", secondary: "#9b59b6", name: "Bright Green" },
+    { primary: "#9b59b6", secondary: "#f39c12", name: "Bright Purple" },
+    { primary: "#f39c12", secondary: "#f1c40f", name: "Bright Orange" },
+    { primary: "#f1c40f", secondary: "#e67e22", name: "Bright Yellow" },
+    { primary: "#e67e22", secondary: "#95a5a6", name: "Bright Brown" },
+    { primary: "#95a5a6", secondary: "#e74c3c", name: "Bright Gray" },
+  ],
+  Accent: [
+    { primary: "#7fcdbb", secondary: "#edf8b1", name: "Teal" },
+    { primary: "#c7e9b4", secondary: "#ffffcc", name: "Light Green" },
+    { primary: "#fddaec", secondary: "#f2f0f7", name: "Pink" },
+    { primary: "#b3cde3", secondary: "#ccebc5", name: "Light Blue" },
+    { primary: "#decbe4", secondary: "#fed9a6", name: "Lavender" },
+    { primary: "#fed9a6", secondary: "#fbb4ae", name: "Peach" },
+    { primary: "#fbb4ae", secondary: "#b3cde3", name: "Salmon" },
+    { primary: "#ffffcc", secondary: "#7fcdbb", name: "Yellow" },
+  ],
+  Paired: [
+    { primary: "#a6cee3", secondary: "#1f78b4", name: "Light Blue" },
+    { primary: "#b2df8a", secondary: "#33a02c", name: "Light Green" },
+    { primary: "#fb9a99", secondary: "#e31a1c", name: "Light Red" },
+    { primary: "#fdbf6f", secondary: "#ff7f00", name: "Light Orange" },
+    { primary: "#cab2d6", secondary: "#6a3d9a", name: "Light Purple" },
+    { primary: "#ffff99", secondary: "#b15928", name: "Light Yellow" },
+    { primary: "#1f78b4", secondary: "#a6cee3", name: "Dark Blue" },
+    { primary: "#33a02c", secondary: "#b2df8a", name: "Dark Green" },
   ],
 } as const;
 
@@ -237,6 +280,9 @@ export const DEFAULT_EDGE_STYLE = {
   STROKE_COLOR: "#666666",
   STROKE_WIDTH: 2,
   DEFAULT_STROKE_COLOR: "#999999", // For edges with no properties
+  // Dark mode edge colors
+  DARK_STROKE_COLOR: "#a0a0a0",
+  DARK_DEFAULT_STROKE_COLOR: "#c0c0c0",
 } as const;
 
 export const EDGE_PROPERTY_ABBREVIATIONS = {

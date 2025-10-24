@@ -29,6 +29,20 @@ export const DEFAULT_STYLE = {
   STROKE_WIDTH: 2,
   DEFAULT_STROKE_COLOR: "#999999", // For elements with no semantic tags
 } as const;
+
+// Dark mode style values
+export const DARK_MODE_STYLE = {
+  STROKE_COLOR: "#a0a0a0",
+  STROKE_WIDTH: 2,
+  DEFAULT_STROKE_COLOR: "#c0c0c0", // For elements with no semantic tags
+} as const;
+
+/**
+ * Get default edge style based on theme
+ */
+export function getDefaultEdgeStyle(isDark: boolean) {
+  return isDark ? DARK_MODE_STYLE : DEFAULT_STYLE;
+}
 // Halo color mappings
 export const HALO_COLOR_MAPPINGS = {
   "light-blue": "#4a90e2",

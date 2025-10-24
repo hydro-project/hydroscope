@@ -11,6 +11,7 @@ export * from "./styling.js";
 export * from "./ui.js";
 export * from "./performance.js";
 export * from "./search.js";
+export * from "./theme.js";
 
 // Legacy compatibility - re-export commonly used constants
 export {
@@ -29,6 +30,7 @@ export {
   EDGE_STYLE_TAG_MAPPINGS,
   DEFAULT_COLOR_PALETTE,
   COLOR_PALETTES,
+  PALETTE_LABELS,
 } from "./styling.js";
 
 export {
