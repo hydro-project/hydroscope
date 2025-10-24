@@ -175,12 +175,17 @@ describe("HierarchyTree Sync Behavior", () => {
 
       // Collapse - get fresh reference after DOM update
       fireEvent.click(getSwitcher()!);
-      await waitFor(
-        () => {
-          expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
-        },
-        { timeout: 3000 },
-      );
+      
+      // Use a more reliable check - wait for the switcher to change state
+      // instead of waiting for the node to disappear
+      await waitFor(() => {
+        const switcher = getSwitcher();
+        const isExpanded = switcher?.getAttribute("aria-expanded") === "true";
+        expect(isExpanded).toBe(false);
+      });
+
+      // Verify node is not visible when collapsed
+      expect(screen.queryByText("Node 1")).not.toBeInTheDocument();
 
       // Expand again - get fresh reference
       fireEvent.click(getSwitcher()!);
