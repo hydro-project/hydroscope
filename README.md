@@ -186,6 +186,7 @@ For detailed documentation, see:
 ## Sample Data
 
 Example JSON files are available in `test-data/`:
+
 - `paxos.json` - Complex distributed system (543 nodes, 581 edges)
 - `chat.json` - Simpler chat application example
 
