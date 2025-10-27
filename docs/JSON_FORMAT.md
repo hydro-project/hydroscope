@@ -207,7 +207,7 @@ Defines semantic mappings for edge styling based on tags.
         "Network": { "line-pattern": "dashed", "animation": "animated" }
       },
       "OrderingGroup": {
-        "TotalOrder": { "waviness": "straight" },
+        "TotalOrder": { "waviness": "none" },
         "NoOrder": { "waviness": "wavy" }
       },
       "BoundednessGroup": {
@@ -219,9 +219,12 @@ Defines semantic mappings for edge styling based on tags.
         "Keyed": { "line-style": "double" }
       },
       "CollectionGroup": {
-        "Stream": { "color": "#2563eb", "arrowhead": "triangle-filled" },
-        "Singleton": { "color": "#000000", "arrowhead": "circle-filled" },
-        "Optional": { "color": "#6b7280", "arrowhead": "diamond-open" }
+        "Stream": {
+          "color-token": "highlight-1",
+          "arrowhead": "triangle-filled"
+        },
+        "Singleton": { "color-token": "default", "arrowhead": "circle-filled" },
+        "Optional": { "color-token": "muted", "arrowhead": "diamond-open" }
       }
     }
   }
@@ -232,11 +235,15 @@ Defines semantic mappings for edge styling based on tags.
 
 - **`line-pattern`**: "solid" or "dashed"
 - **`line-style`**: "single" (plain line) or "hash-marks" (line with vertical hash marks for keyed streams)
-- **`waviness`**: "straight" or "wavy" (for ordering information)
+- **`waviness`**: "none" or "wavy" (for ordering information)
 - **`animation`**: "static" or "animated"
 - **`arrowhead`**: "triangle-filled", "circle-filled", "diamond-open"
 - **`halo`**: "none", "light-blue" (transparent halo for unbounded streams)
-- **`color`**: Hex color code for the edge (e.g., "#001f3f" for navy blue)
+- **`color-token`**: Semantic color token for the edge's stroke color. Resolution is theme-aware at runtime (light/dark). Supported tokens:
+  - `default`, `muted`, `light`
+  - `highlight-1`, `highlight-2`, `highlight-3`
+  - `success`, `warning`, `danger`
+- Legacy: **`color`** (hex) is still supported for backward compatibility but is deprecated. Prefer tokens for theme-aware palettes.
 
 ## Legend Configuration
 
@@ -307,6 +314,7 @@ See the [README](../README.md) for examples of loading JSON files in your applic
 ## Sample Files
 
 Example JSON files are available in the `test-data/` directory:
+
 - `test-data/paxos.json` - Complex distributed system (543 nodes, 581 edges)
 - `test-data/chat.json` - Simpler chat application example
 

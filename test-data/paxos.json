@@ -128974,7 +128974,7 @@
                         }
                       ],
                       "id": "bt_26",
-                      "name": "into_singleton ← unwrap_or"
+                      "name": "into_singleton → unwrap_or"
                     }
                   ],
                   "id": "bt_23",
@@ -129022,7 +129022,7 @@
                             }
                           ],
                           "id": "bt_38",
-                          "name": "repeat_with_keys ← keys"
+                          "name": "repeat_with_keys → keys"
                         },
                         {
                           "id": "bt_40",
@@ -129120,7 +129120,7 @@
                             }
                           ],
                           "id": "bt_60",
-                          "name": "into_singleton ← unwrap_or"
+                          "name": "into_singleton → unwrap_or"
                         },
                         {
                           "children": [
@@ -129162,7 +129162,7 @@
                                 }
                               ],
                               "id": "bt_71",
-                              "name": "cycle_with_initial ← create_source_with_initial ← unwrap_or"
+                              "name": "cycle_with_initial → create_source_with_initial → unwrap_or"
                             }
                           ],
                           "id": "bt_64",
@@ -129230,7 +129230,7 @@
                                 }
                               ],
                               "id": "bt_88",
-                              "name": "into_singleton ← unwrap_or"
+                              "name": "into_singleton → unwrap_or"
                             }
                           ],
                           "id": "bt_84",
@@ -129314,7 +129314,7 @@
                                     }
                                   ],
                                   "id": "bt_107",
-                                  "name": "repeat_with_keys ← keys"
+                                  "name": "repeat_with_keys → keys"
                                 },
                                 {
                                   "id": "bt_109",
@@ -129366,7 +129366,7 @@
                                     }
                                   ],
                                   "id": "bt_120",
-                                  "name": "cycle_with_initial ← create_source_with_initial ← unwrap_or"
+                                  "name": "cycle_with_initial → create_source_with_initial → unwrap_or"
                                 },
                                 {
                                   "id": "bt_122",
@@ -129436,7 +129436,7 @@
                                         }
                                       ],
                                       "id": "bt_136",
-                                      "name": "into_singleton ← unwrap_or"
+                                      "name": "into_singleton → unwrap_or"
                                     }
                                   ],
                                   "id": "bt_132",
@@ -129666,7 +129666,7 @@
                                     }
                                   ],
                                   "id": "bt_184",
-                                  "name": "into_singleton ← unwrap_or"
+                                  "name": "into_singleton → unwrap_or"
                                 },
                                 {
                                   "id": "bt_186",
@@ -129698,7 +129698,7 @@
                                     }
                                   ],
                                   "id": "bt_192",
-                                  "name": "repeat_with_keys ← keys"
+                                  "name": "repeat_with_keys → keys"
                                 },
                                 {
                                   "id": "bt_194",
@@ -129790,7 +129790,7 @@
                                     }
                                   ],
                                   "id": "bt_213",
-                                  "name": "cycle_with_initial ← create_source_with_initial ← unwrap_or"
+                                  "name": "cycle_with_initial → create_source_with_initial → unwrap_or"
                                 },
                                 {
                                   "children": [
@@ -129818,7 +129818,7 @@
                                 }
                               ],
                               "id": "bt_219",
-                              "name": "join_responses ← cycle"
+                              "name": "join_responses → cycle"
                             },
                             {
                               "children": [
@@ -129852,7 +129852,7 @@
                                     }
                                   ],
                                   "id": "bt_228",
-                                  "name": "into_singleton ← unwrap_or"
+                                  "name": "into_singleton → unwrap_or"
                                 },
                                 {
                                   "children": [
@@ -129912,7 +129912,7 @@
                                     }
                                   ],
                                   "id": "bt_241",
-                                  "name": "repeat_with_keys ← keys"
+                                  "name": "repeat_with_keys → keys"
                                 },
                                 {
                                   "id": "bt_243",
@@ -129954,7 +129954,7 @@
                                     }
                                   ],
                                   "id": "bt_251",
-                                  "name": "into_singleton ← unwrap_or"
+                                  "name": "into_singleton → unwrap_or"
                                 }
                               ],
                               "id": "bt_248",
@@ -129984,7 +129984,7 @@
                         }
                       ],
                       "id": "bt_82",
-                      "name": "with_client ← build ← paxos_core"
+                      "name": "with_client → build → paxos_core"
                     }
                   ],
                   "id": "bt_34",
@@ -130024,7 +130024,7 @@
                         }
                       ],
                       "id": "bt_264",
-                      "name": "into_singleton ← unwrap_or"
+                      "name": "into_singleton → unwrap_or"
                     }
                   ],
                   "id": "bt_261",
@@ -130048,7 +130048,7 @@
                     }
                   ],
                   "id": "bt_267",
-                  "name": "key_count ← key_count_inside_tick"
+                  "name": "key_count → key_count_inside_tick"
                 },
                 {
                   "id": "bt_271",
@@ -130118,7 +130118,7 @@
             }
           ],
           "id": "bt_14",
-          "name": "ops/function.rs ← main ← block_on ← block_on_inner ← block_on ← enter_runtime ← {{closure}} ← block_on ← budget ← with_budget ← {{closure}} ← poll ← {{closure}} ← paxos_bench"
+          "name": "ops/function.rs → main → block_on → block_on_inner → block_on → enter_runtime → {{closure}} → block_on → budget → with_budget → {{closure}} → poll → {{closure}} → paxos_bench"
         }
       ],
       "id": "backtrace",
@@ -131488,15 +131488,15 @@
       "CollectionGroup": {
         "Optional": {
           "arrowhead": "diamond-open",
-          "color": "#6b7280"
+          "color-token": "muted"
         },
         "Singleton": {
           "arrowhead": "circle-filled",
-          "color": "#000000"
+          "color-token": "default"
         },
         "Stream": {
           "arrowhead": "triangle-filled",
-          "color": "#2563eb"
+          "color-token": "highlight-1"
         }
       },
       "KeyednessGroup": {

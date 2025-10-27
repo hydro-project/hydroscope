@@ -28,12 +28,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -73,12 +169,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -110,12 +302,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 1,
@@ -147,12 +435,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -192,12 +576,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -229,12 +709,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -266,12 +842,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -303,12 +975,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -348,12 +1116,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -385,12 +1249,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -422,12 +1382,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -459,12 +1515,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -496,12 +1648,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -533,12 +1781,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -578,12 +1922,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 0,
@@ -623,12 +2063,108 @@
             "lineNumber": 53
           },
           {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "poll",
+            "function": "poll",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "with_budget",
+            "function": "with_budget",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "budget",
+            "function": "budget",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "{{closure}}",
+            "function": "{{closure}}",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "enter_runtime",
+            "function": "enter_runtime",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on_inner",
+            "function": "block_on_inner",
+            "line": 358,
+            "lineNumber": 358
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "block_on",
+            "function": "block_on",
+            "line": 328,
+            "lineNumber": 328
+          },
+          {
             "file": "examples/simple_cluster.rs",
             "filename": "examples/simple_cluster.rs",
             "fn": "main",
             "function": "main",
             "line": 79,
             "lineNumber": 79
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once",
+            "function": "call_once",
+            "line": 253,
+            "lineNumber": 253
           }
         ],
         "locationId": 1,
@@ -850,7 +2386,7 @@
             }
           ],
           "id": "bt_14",
-          "name": "ops/function.rs ← main ← block_on ← block_on_inner ← block_on ← enter_runtime ← {{closure}} ← block_on ← budget ← with_budget ← {{closure}} ← poll ← {{closure}} ← simple_cluster"
+          "name": "ops/function.rs → main → block_on → block_on_inner → block_on → enter_runtime → {{closure}} → block_on → budget → with_budget → {{closure}} → poll → {{closure}} → simple_cluster"
         }
       ],
       "id": "backtrace",
@@ -910,15 +2446,15 @@
       "CollectionGroup": {
         "Optional": {
           "arrowhead": "diamond-open",
-          "color": "#6b7280"
+          "color-token": "muted"
         },
         "Singleton": {
           "arrowhead": "circle-filled",
-          "color": "#000000"
+          "color-token": "default"
         },
         "Stream": {
           "arrowhead": "triangle-filled",
-          "color": "#2563eb"
+          "color-token": "highlight-1"
         }
       },
       "KeyednessGroup": {

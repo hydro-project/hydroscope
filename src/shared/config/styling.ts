@@ -165,19 +165,19 @@ export const EDGE_STYLE_TAG_MAPPINGS = {
     label: "3*",
   },
   edge_style_4: {
-    style: { strokeDasharray: "8,2,2,2" }, // double-line pattern
+    style: { strokeDasharray: "8,2,2,2", strokeWidth: 2 }, // double-line pattern
     animated: false,
     label: "4",
   },
   edge_style_5: {
-    style: { strokeDasharray: "2,2" }, // dotted for cycles
+    style: { strokeDasharray: "2,2", strokeWidth: 2 }, // dotted for cycles
     animated: true,
     label: "5",
   },
 
   // Legacy compound visual styles (for backward compatibility)
   "dashed-animated": {
-    style: { strokeDasharray: "8,4" },
+    style: { strokeDasharray: "8,4", strokeWidth: 2 },
     animated: true,
     label: "- ->",
   },
@@ -192,44 +192,44 @@ export const EDGE_STYLE_TAG_MAPPINGS = {
     label: "thick",
   },
   "wavy-line": {
-    style: { strokeDasharray: "5,5" },
+    style: { strokeDasharray: "5,5", strokeWidth: 2 },
     animated: true,
     label: "~",
   },
   "smooth-line": {
-    style: { strokeDasharray: undefined },
+    style: { strokeDasharray: undefined, strokeWidth: 2 },
     animated: false,
     label: "—",
   },
   "double-line": {
-    style: { strokeDasharray: "10,2,2,2" },
+    style: { strokeDasharray: "10,2,2,2", strokeWidth: 2 },
     animated: false,
     label: "=",
   },
 
   // Basic line patterns
   solid: {
-    style: { strokeDasharray: undefined },
+    style: { strokeDasharray: undefined, strokeWidth: 2 },
     animated: false,
     label: "—",
   },
   dashed: {
-    style: { strokeDasharray: "8,4" },
+    style: { strokeDasharray: "8,4", strokeWidth: 2 },
     animated: false,
     label: "- -",
   },
   dotted: {
-    style: { strokeDasharray: "2,2" },
+    style: { strokeDasharray: "2,2", strokeWidth: 2 },
     animated: false,
     label: "...",
   },
   wavy: {
-    style: { strokeDasharray: "5,5" },
+    style: { strokeDasharray: "5,5", strokeWidth: 2 },
     animated: true,
     label: "~",
   },
   double: {
-    style: { strokeDasharray: "10,2,2,2" },
+    style: { strokeDasharray: "10,2,2,2", strokeWidth: 2 },
     animated: false,
     label: "=",
   },
