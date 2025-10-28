@@ -9,9 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+<!-- Add entries for the next release here -->
+
+## [1.2.0] - 2025-10-27
+
+### Added
+
+- Semantic color tokens across the UI for consistent theming
+- Dark mode support using CSS custom properties and luminance-aware detection
+- UI scaling options for improved accessibility and embedding flexibility
 - Save button in CustomControls with export dialog for PNG and JSON formats
 - Modal dialog for choosing export format (PNG image or JSON data)
 - Automatic filename generation based on uploaded file or default name
+
+### Documentation
+
+- Updated JSON format spec and added UI scaling guide
 
 ## [1.0.2] - 2024-10-20
 
@@ -93,3 +106,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.2]: https://github.com/hydro-project/hydroscope/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/hydro-project/hydroscope/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hydro-project/hydroscope/releases/tag/v1.0.0
+[1.2.0]: https://github.com/hydro-project/hydroscope/compare/v1.0.2...v1.2.0
+[Unreleased]: https://github.com/hydro-project/hydroscope/compare/v1.2.0...HEAD
