@@ -6,24 +6,63 @@
 
 export type ThemeMode = "light" | "dark";
 
+// Cache for theme detection result
+let cachedDarkMode: boolean | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 100; // Cache for 100ms to avoid repeated checks in same render cycle
+
 /**
- * Detect if the user prefers dark mode
+ * Detect if the user prefers dark mode (with caching)
  */
 export function detectDarkMode(): boolean {
+  // Return cached result if still valid
+  const now = Date.now();
+  if (cachedDarkMode !== null && now - cacheTimestamp < CACHE_DURATION) {
+    return cachedDarkMode;
+  }
+
+  // Perform actual detection
+  const result = detectDarkModeUncached();
+
+  // Update cache
+  cachedDarkMode = result;
+  cacheTimestamp = now;
+
+  return result;
+}
+
+/**
+ * Internal: Detect dark mode without caching
+ */
+function detectDarkModeUncached(): boolean {
   if (typeof window === "undefined") return false;
 
   // In test environments (jsdom), force light mode for deterministic results
   // to avoid relying on missing VS Code classes or computed styles.
   try {
-    const maybeProcess = (globalThis as any)?.process;
+    // Define proper type for globalThis with process
+    interface GlobalWithProcess {
+      process?: {
+        env?: {
+          NODE_ENV?: string;
+        };
+      };
+    }
+    const maybeProcess = (globalThis as GlobalWithProcess)?.process;
     if (
       typeof maybeProcess !== "undefined" &&
       maybeProcess?.env?.NODE_ENV === "test"
     ) {
       return false;
     }
-  } catch {
-    // ignore
+  } catch (error) {
+    // In development, log the error for debugging
+    if (
+      typeof process !== "undefined" &&
+      process.env?.NODE_ENV === "development"
+    ) {
+      console.warn("[Hydroscope] Theme detection test check failed:", error);
+    }
   }
 
   // Check for VS Code webview theme (takes precedence)
@@ -56,8 +95,14 @@ export function detectDarkMode(): boolean {
         }
       }
     }
-  } catch {
-    // ignore
+  } catch (error) {
+    // In development, log the error for debugging
+    if (
+      typeof process !== "undefined" &&
+      process.env?.NODE_ENV === "development"
+    ) {
+      console.warn("[Hydroscope] Theme luminance detection failed:", error);
+    }
   }
 
   // Fallback to browser preference
@@ -66,7 +111,14 @@ export function detectDarkMode(): boolean {
   try {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     return mediaQuery?.matches ?? false;
-  } catch {
+  } catch (error) {
+    // In development, log the error for debugging
+    if (
+      typeof process !== "undefined" &&
+      process.env?.NODE_ENV === "development"
+    ) {
+      console.warn("[Hydroscope] matchMedia detection failed:", error);
+    }
     return false; // Fallback for environments without matchMedia support
   }
 }
@@ -82,6 +134,8 @@ export function onThemeChange(callback: (isDark: boolean) => void): () => void {
   // Listen for VS Code theme changes via MutationObserver
   try {
     const observer = new MutationObserver(() => {
+      // Invalidate cache when theme changes
+      cachedDarkMode = null;
       callback(detectDarkMode());
     });
 
@@ -91,8 +145,14 @@ export function onThemeChange(callback: (isDark: boolean) => void): () => void {
     });
 
     cleanupFunctions.push(() => observer.disconnect());
-  } catch {
-    // MutationObserver not available
+  } catch (error) {
+    // In development, log the error for debugging
+    if (
+      typeof process !== "undefined" &&
+      process.env?.NODE_ENV === "development"
+    ) {
+      console.warn("[Hydroscope] MutationObserver setup failed:", error);
+    }
   }
 
   // Also listen for browser preference changes
@@ -100,7 +160,11 @@ export function onThemeChange(callback: (isDark: boolean) => void): () => void {
     try {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       if (mediaQuery) {
-        const handler = (e: MediaQueryListEvent) => callback(e.matches);
+        const handler = (e: MediaQueryListEvent) => {
+          // Invalidate cache when theme changes
+          cachedDarkMode = null;
+          callback(e.matches);
+        };
 
         // Modern browsers
         if (mediaQuery.addEventListener) {
@@ -115,8 +179,14 @@ export function onThemeChange(callback: (isDark: boolean) => void): () => void {
           cleanupFunctions.push(() => mediaQuery.removeListener?.(handler));
         }
       }
-    } catch {
-      // matchMedia not available
+    } catch (error) {
+      // In development, log the error for debugging
+      if (
+        typeof process !== "undefined" &&
+        process.env?.NODE_ENV === "development"
+      ) {
+        console.warn("[Hydroscope] matchMedia listener setup failed:", error);
+      }
     }
   }
 

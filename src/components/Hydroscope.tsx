@@ -15,6 +15,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "../styles/dark-mode.css";
+import { toPng } from "html-to-image";
 import {
   HydroscopeCore,
   type HydroscopeCoreProps,
@@ -47,6 +48,7 @@ import {
 import { parseDataFromUrl } from "../utils/urlParser.js";
 import { assertCollapsedSetConsistent } from "../core/invariantChecks.js";
 import { resetAllBridges } from "../utils/bridgeResetUtils.js";
+import { SaveDialog, type SaveFormat } from "./SaveDialog.js";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -327,6 +329,26 @@ interface CustomControlsProps {
   autoFitEnabled?: boolean;
   currentData?: HydroscopeData | null;
 }
+
+// Shared style for custom control buttons
+const CONTROL_BUTTON_STYLE: React.CSSProperties = {
+  alignItems: "center",
+  background: "#fefefe",
+  border: "none",
+  borderBottom: "1px solid #b1b1b7",
+  color: "#555",
+  cursor: "pointer",
+  display: "flex",
+  height: "26px",
+  justifyContent: "center",
+  padding: "4px",
+  userSelect: "none",
+  width: "26px",
+  fontSize: "12px",
+  margin: "0",
+  borderRadius: "0",
+};
+
 const CustomControls = memo(
   ({
     visualizationState,
@@ -402,23 +424,7 @@ const CustomControls = memo(
                 onClick={onSave}
                 title="Save visualization"
                 className="react-flow__controls-button"
-                style={{
-                  alignItems: "center",
-                  background: "#fefefe",
-                  border: "none",
-                  borderBottom: "1px solid #b1b1b7",
-                  color: "#555",
-                  cursor: "pointer",
-                  display: "flex",
-                  height: "26px",
-                  justifyContent: "center",
-                  padding: "4px",
-                  userSelect: "none",
-                  width: "26px",
-                  fontSize: "12px",
-                  margin: "0",
-                  borderRadius: "0",
-                }}
+                style={CONTROL_BUTTON_STYLE}
               >
                 <SaveIcon />
               </button>
@@ -430,23 +436,7 @@ const CustomControls = memo(
                 onClick={onLoadFile}
                 title="Load another file"
                 className="react-flow__controls-button"
-                style={{
-                  alignItems: "center",
-                  background: "#fefefe",
-                  border: "none",
-                  borderBottom: "1px solid #b1b1b7",
-                  color: "#555",
-                  cursor: "pointer",
-                  display: "flex",
-                  height: "26px",
-                  justifyContent: "center",
-                  padding: "4px",
-                  userSelect: "none",
-                  width: "26px",
-                  fontSize: "12px",
-                  margin: "0",
-                  borderRadius: "0",
-                }}
+                style={CONTROL_BUTTON_STYLE}
               >
                 <LoadFileIcon />
               </button>
@@ -554,6 +544,25 @@ export const Hydroscope = memo<HydroscopeProps>(
       : true,
     uiScale = 1.0,
   }) => {
+    // Validate and constrain uiScale to reasonable range
+    const constrainedUiScale = useMemo(() => {
+      const MIN_SCALE = 0.5;
+      const MAX_SCALE = 2.0;
+      const constrained = Math.max(MIN_SCALE, Math.min(MAX_SCALE, uiScale));
+
+      if (
+        constrained !== uiScale &&
+        typeof process !== "undefined" &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.warn(
+          `[Hydroscope] uiScale ${uiScale} out of range [${MIN_SCALE}, ${MAX_SCALE}], clamped to ${constrained}`,
+        );
+      }
+
+      return constrained;
+    }, [uiScale]);
+
     // Load initial settings
     const [settings, setSettings] = useState<HydroscopeSettings>(() =>
       loadSettings(),
@@ -659,6 +668,9 @@ export const Hydroscope = memo<HydroscopeProps>(
     const [selectedGrouping, setSelectedGrouping] = useState<string | null>(
       null,
     );
+
+    // Save dialog state
+    const [showSaveDialog, setShowSaveDialog] = useState(false);
     const currentGrouping = useMemo(() => {
       // Use selected grouping if available, otherwise default to first hierarchy choice
       return selectedGrouping || data?.hierarchyChoices?.[0]?.id;
@@ -1015,159 +1027,63 @@ export const Hydroscope = memo<HydroscopeProps>(
 
     // Handle save file button
     const handleSave = useCallback(() => {
-      if (!state.data) return;
+      setShowSaveDialog(true);
+    }, []);
 
-      const filename = state.uploadedFilename || "hydroscope-export";
-      const baseFilename = filename.replace(/\.(json|png)$/i, "");
+    // Handle actual save after format selection
+    const handleSaveWithFormat = useCallback(
+      (format: SaveFormat) => {
+        setShowSaveDialog(false);
 
-      // Create a simple modal using native browser APIs
-      const modal = document.createElement("div");
-      modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-      `;
+        if (!state.data) return;
 
-      const dialog = document.createElement("div");
-      dialog.style.cssText = `
-        background: white;
-        padding: 24px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        min-width: 300px;
-      `;
-
-      dialog.innerHTML = `
-        <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Export Visualization</h3>
-        <div style="margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 8px; font-size: 14px;">Choose format:</label>
-          <select id="format-select" style="width: 100%; padding: 8px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px;">
-            <option value="png">PNG (Image)</option>
-            <option value="json">JSON (Data)</option>
-          </select>
-        </div>
-        <div style="display: flex; gap: 8px; justify-content: flex-end;">
-          <button id="cancel-btn" style="padding: 8px 16px; border: 1px solid #d9d9d9; border-radius: 4px; background: white; cursor: pointer; font-size: 14px;">Cancel</button>
-          <button id="save-btn" style="padding: 8px 16px; border: none; border-radius: 4px; background: #1890ff; color: white; cursor: pointer; font-size: 14px;">Save</button>
-        </div>
-      `;
-
-      modal.appendChild(dialog);
-      document.body.appendChild(modal);
-
-      const formatSelect = dialog.querySelector(
-        "#format-select",
-      ) as HTMLSelectElement;
-      const cancelBtn = dialog.querySelector(
-        "#cancel-btn",
-      ) as HTMLButtonElement;
-      const saveBtn = dialog.querySelector("#save-btn") as HTMLButtonElement;
-
-      const cleanup = () => {
-        document.body.removeChild(modal);
-      };
-
-      cancelBtn.onclick = cleanup;
-      modal.onclick = (e) => {
-        if (e.target === modal) cleanup();
-      };
-
-      saveBtn.onclick = () => {
-        const format = formatSelect.value;
-        cleanup();
+        const filename = state.uploadedFilename || "hydroscope-export";
+        const baseFilename = filename.replace(/\.(json|png)$/i, "");
 
         if (format === "png") {
-          // Export as PNG using the ReactFlow wrapper
+          // Export as PNG using html-to-image library
           const reactFlowWrapper = document.querySelector(".react-flow");
           if (!reactFlowWrapper) {
             alert("Unable to export: visualization not found");
             return;
           }
 
-          // Use modern browser APIs to capture the element
-          // This approach works without external dependencies
-          const rect = reactFlowWrapper.getBoundingClientRect();
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-
-          if (!ctx) {
-            alert("Unable to create canvas context");
-            return;
-          }
-
-          // Set canvas size to match the element
-          canvas.width = rect.width * 2; // 2x for better quality
-          canvas.height = rect.height * 2;
-          ctx.scale(2, 2);
-
-          // Fill with white background
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, rect.width, rect.height);
-
-          // Get all SVG elements and draw them
-          const svgElements =
-            reactFlowWrapper.querySelectorAll<SVGSVGElement>("svg");
-
-          if (svgElements.length === 0) {
-            alert("No content found to export");
-            return;
-          }
-
-          // For a simple implementation, we'll serialize the SVG and use it
-          // This is a basic approach that works for most cases
-          const serializer = new XMLSerializer();
-          let svgString = "";
-
-          svgElements.forEach((svg) => {
-            svgString += serializer.serializeToString(svg);
-          });
-
-          // Create a data URL from the SVG
-          const svgBlob = new Blob([svgString], {
-            type: "image/svg+xml;charset=utf-8",
-          });
-          const svgUrl = URL.createObjectURL(svgBlob);
-
-          // Load the SVG as an image and draw to canvas
-          const img = new Image();
-          img.onload = () => {
-            ctx.drawImage(img, 0, 0, rect.width, rect.height);
-            URL.revokeObjectURL(svgUrl);
-
-            // Convert canvas to blob and download
-            canvas.toBlob((blob) => {
-              if (!blob) {
-                alert("Failed to create image");
-                return;
-              }
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.download = `${baseFilename}.png`;
-              link.href = url;
-              link.style.display = "none";
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              // Delay cleanup to ensure download starts
-              setTimeout(() => URL.revokeObjectURL(url), 100);
+          // Use html-to-image for reliable PNG export
+          // This properly handles CSS styles, fonts, and complex layouts
+          toPng(reactFlowWrapper as HTMLElement, {
+            cacheBust: true,
+            pixelRatio: 2, // 2x resolution for better quality
+            backgroundColor: "#ffffff",
+          })
+            .then((dataUrl) => {
+              // Convert data URL to blob and download
+              fetch(dataUrl)
+                .then((res) => res.blob())
+                .then((blob) => {
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.download = `${baseFilename}.png`;
+                  link.href = url;
+                  link.style.display = "none";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  // Delay cleanup to ensure download starts
+                  setTimeout(() => URL.revokeObjectURL(url), 100);
+                })
+                .catch((error) => {
+                  console.error("Failed to download PNG:", error);
+                  alert(
+                    "Failed to download PNG. The image was generated but download failed.",
+                  );
+                });
+            })
+            .catch((error) => {
+              console.error("Failed to export PNG:", error);
+              alert(
+                "Failed to export PNG. This may happen with very large visualizations or in some browsers. Please try JSON export or take a screenshot.",
+              );
             });
-          };
-
-          img.onerror = () => {
-            URL.revokeObjectURL(svgUrl);
-            alert(
-              "Failed to export PNG. Please try JSON export or take a screenshot.",
-            );
-          };
-
-          img.src = svgUrl;
         } else if (format === "json") {
           // Export as JSON
           const dataStr = JSON.stringify(state.data, null, 2);
@@ -1183,8 +1099,9 @@ export const Hydroscope = memo<HydroscopeProps>(
           // Delay cleanup to ensure download starts
           setTimeout(() => URL.revokeObjectURL(url), 100);
         }
-      };
-    }, [state.data, state.uploadedFilename]);
+      },
+      [state.data, state.uploadedFilename],
+    );
     // Handle search updates from InfoPanel
     const handleSearchUpdate = useCallback(
       async (query: string, matches: SearchMatch[], current?: SearchMatch) => {
@@ -1647,7 +1564,7 @@ export const Hydroscope = memo<HydroscopeProps>(
                   initialContainerBorderWidth={
                     state.renderConfig.containerBorderWidth
                   }
-                  uiScale={uiScale}
+                  uiScale={constrainedUiScale}
                   autoFitEnabled={state.autoFitEnabled}
                   onNodeClick={onNodeClick || handleNodeClick}
                   onContainerCollapse={onContainerCollapse}
@@ -1985,6 +1902,13 @@ export const Hydroscope = memo<HydroscopeProps>(
               </div>
             </ReactFlowProvider>
           )}
+
+          {/* Save Dialog */}
+          <SaveDialog
+            isOpen={showSaveDialog}
+            onClose={() => setShowSaveDialog(false)}
+            onSave={handleSaveWithFormat}
+          />
         </div>
       </ErrorBoundary>
     );
