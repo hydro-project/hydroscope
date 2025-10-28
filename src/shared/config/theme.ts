@@ -11,6 +11,10 @@ let cachedDarkMode: boolean | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 100; // Cache for 100ms to avoid repeated checks in same render cycle
 
+// Cache for luminance calculation to avoid redundant RGB parsing
+let cachedLuminance: number | null = null;
+let cachedBackgroundColor: string | null = null;
+
 /**
  * Detect if the user prefers dark mode (with caching)
  */
@@ -40,18 +44,10 @@ function detectDarkModeUncached(): boolean {
   // In test environments (jsdom), force light mode for deterministic results
   // to avoid relying on missing VS Code classes or computed styles.
   try {
-    // Define proper type for globalThis with process
-    interface GlobalWithProcess {
-      process?: {
-        env?: {
-          NODE_ENV?: string;
-        };
-      };
-    }
-    const maybeProcess = (globalThis as GlobalWithProcess)?.process;
+    // Check for test environment (jsdom, etc.)
     if (
-      typeof maybeProcess !== "undefined" &&
-      maybeProcess?.env?.NODE_ENV === "test"
+      typeof globalThis.process !== "undefined" &&
+      globalThis.process?.env?.NODE_ENV === "test"
     ) {
       return false;
     }
@@ -78,31 +74,10 @@ function detectDarkModeUncached(): boolean {
 
   // Heuristic: infer from computed background luminance when classes aren't ready yet
   // This helps on first render when VS Code hasn't applied body classes to the webview.
-  try {
-    const bg = getComputedStyle(document.body).backgroundColor;
-    if (bg) {
-      const m = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-      if (m) {
-        const r = parseInt(m[1], 10);
-        const g = parseInt(m[2], 10);
-        const b = parseInt(m[3], 10);
-        // Perceived luminance approximation
-        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        if (!Number.isNaN(luminance)) {
-          // Threshold tuned to VS Code webview dark backgrounds
-          if (luminance < 128) return true;
-          else return false;
-        }
-      }
-    }
-  } catch (error) {
-    // In development, log the error for debugging
-    if (
-      typeof process !== "undefined" &&
-      process.env?.NODE_ENV === "development"
-    ) {
-      console.warn("[Hydroscope] Theme luminance detection failed:", error);
-    }
+  const luminance = getBackgroundLuminance();
+  if (luminance !== null) {
+    // Threshold tuned to VS Code webview dark backgrounds
+    return luminance < 128;
   }
 
   // Fallback to browser preference
@@ -120,6 +95,50 @@ function detectDarkModeUncached(): boolean {
       console.warn("[Hydroscope] matchMedia detection failed:", error);
     }
     return false; // Fallback for environments without matchMedia support
+  }
+}
+
+/**
+ * Calculate luminance from document body background color with caching
+ * @returns Luminance value (0-255) or null if calculation fails
+ */
+function getBackgroundLuminance(): number | null {
+  try {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    if (!bg) return null;
+
+    // Check if we have a cached result for this background color
+    if (cachedBackgroundColor === bg && cachedLuminance !== null) {
+      return cachedLuminance;
+    }
+
+    // Parse RGB values
+    const m = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (!m) return null;
+
+    const r = parseInt(m[1], 10);
+    const g = parseInt(m[2], 10);
+    const b = parseInt(m[3], 10);
+
+    // Perceived luminance approximation
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+    if (Number.isNaN(luminance)) return null;
+
+    // Cache the result
+    cachedBackgroundColor = bg;
+    cachedLuminance = luminance;
+
+    return luminance;
+  } catch (error) {
+    // In development, log the error for debugging
+    if (
+      typeof process !== "undefined" &&
+      process.env?.NODE_ENV === "development"
+    ) {
+      console.warn("[Hydroscope] Theme luminance detection failed:", error);
+    }
+    return null;
   }
 }
 

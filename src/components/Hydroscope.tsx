@@ -1068,8 +1068,9 @@ export const Hydroscope = memo<HydroscopeProps>(
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
-                  // Delay cleanup to ensure download starts
-                  setTimeout(() => URL.revokeObjectURL(url), 100);
+                  // Use a safer timeout to ensure download completes before cleanup
+                  // Increased from 100ms to 1000ms for slower systems/networks
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
                 })
                 .catch((error) => {
                   console.error("Failed to download PNG:", error);
@@ -1096,8 +1097,9 @@ export const Hydroscope = memo<HydroscopeProps>(
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          // Delay cleanup to ensure download starts
-          setTimeout(() => URL.revokeObjectURL(url), 100);
+          // Use a safer timeout to ensure download completes before cleanup
+          // Increased from 100ms to 1000ms for slower systems/networks
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
       },
       [state.data, state.uploadedFilename],

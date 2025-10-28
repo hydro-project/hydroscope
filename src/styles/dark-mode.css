@@ -3,6 +3,9 @@
  * 
  * ReactFlow's built-in controls don't automatically adapt to dark mode,
  * so we need to override their styles when the user has dark mode enabled.
+ * 
+ * Uses CSS custom properties to avoid duplication between media query
+ * and VS Code class-based dark mode detection.
  */
 
 /* Hide ReactFlow attribution (node count badge) in all modes */
@@ -10,678 +13,151 @@
   display: none !important;
 }
 
-/* Dark mode media query - ultra high specificity */
+/* Define CSS custom properties for light mode (defaults) */
+:root {
+  --hydroscope-control-bg: #fefefe;
+  --hydroscope-control-border: #b1b1b7;
+  --hydroscope-control-text: #555;
+  --hydroscope-control-hover-bg: #f0f0f0;
+  --hydroscope-control-hover-border: #999;
+  --hydroscope-minimap-bg: rgba(255, 255, 255, 0.95);
+  --hydroscope-minimap-border: #e2e8f0;
+  --hydroscope-minimap-node: rgba(100, 100, 100, 0.4);
+  --hydroscope-minimap-mask: rgba(240, 240, 240, 0.8);
+  --hydroscope-panel-bg: #ffffff;
+  --hydroscope-panel-border: #eeeeee;
+  --hydroscope-panel-text: #222222;
+  --hydroscope-input-bg: #ffffff;
+  --hydroscope-input-border: #ced4da;
+  --hydroscope-selection: #3b82f6;
+}
+
+/* Dark mode custom properties - applied via media query */
 @media (prefers-color-scheme: dark) {
-  /* ReactFlow control buttons - maximum specificity */
-  .react-flow .react-flow__panel .react-flow__controls .react-flow__controls-button,
-  .react-flow .react-flow__controls .react-flow__controls-button,
-  .react-flow__panel .react-flow__controls .react-flow__controls-button,
-  .react-flow__controls .react-flow__controls-button,
-  .react-flow__controls button {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-    fill: #e0e0e0 !important;
-  }
-
-  .react-flow .react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow__controls button:hover {
-    background-color: #3a3a3a !important;
-    border-color: #5a5a5a !important;
-  }
-
-  /* SVG icons inside buttons */
-  .react-flow .react-flow__controls .react-flow__controls-button svg,
-  .react-flow__controls .react-flow__controls-button svg,
-  .react-flow__controls button svg,
-  .react-flow__controls svg {
-    fill: #e0e0e0 !important;
-    color: #e0e0e0 !important;
-  }
-
-  /* SVG paths */
-  .react-flow .react-flow__controls .react-flow__controls-button svg path,
-  .react-flow__controls .react-flow__controls-button svg path,
-  .react-flow__controls .react-flow__controls-button path,
-  .react-flow__controls button path,
-  .react-flow__controls svg path {
-    fill: #e0e0e0 !important;
-  }
-
-  /* Custom control buttons (pack/unpack/autofit/load) - positioned above ReactFlow controls */
-  div[style*="bottom: 125px"] button.react-flow__controls-button,
-  div[style*="bottom: 125px"] button {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  div[style*="bottom: 125px"] button.react-flow__controls-button:hover,
-  div[style*="bottom: 125px"] button:hover {
-    background-color: #3a3a3a !important;
-  }
-
-  div[style*="bottom: 125px"] button svg,
-  div[style*="bottom: 125px"] button svg path,
-  div[style*="bottom: 125px"] button svg rect {
-    fill: #e0e0e0 !important;
-    stroke: #e0e0e0 !important;
-    color: #e0e0e0 !important;
-  }
-
-  /* Custom controls container background */
-  div[style*="bottom: 125px"][style*="backgroundColor: white"] {
-    background-color: #2a2a2a !important;
-  }
-
-  /* Panel toggle buttons (InfoPanel and StyleTuner) - upper right corner */
-  div[style*="top: 20px"][style*="right: 20px"] button {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  /* Active state for panel toggle buttons */
-  div[style*="top: 20px"][style*="right: 20px"] button[style*="rgb(76, 175, 80)"] {
-    background-color: #4caf50 !important;
-  }
-
-  div[style*="top: 20px"][style*="right: 20px"] button:hover {
-    background-color: #3a3a3a !important;
-  }
-
-  div[style*="top: 20px"][style*="right: 20px"] button svg,
-  div[style*="top: 20px"][style*="right: 20px"] button svg path {
-    fill: #e0e0e0 !important;
-    color: #e0e0e0 !important;
-  }
-
-  /* InfoPanel and StyleTuner - Ant Design components */
-  /* Select dropdowns */
-  .ant-select,
-  .ant-select-selector {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-select-arrow {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-select-selection-item {
-    color: #e0e0e0 !important;
-  }
-
-  /* Select dropdown menu */
-  .ant-select-dropdown {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-  }
-
-  .ant-select-item {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-select-item-option-selected {
-    background-color: #3a3a3a !important;
-  }
-
-  .ant-select-item-option-active {
-    background-color: #3a3a3a !important;
-  }
-
-  /* Input fields - maximum specificity */
-  .ant-input,
-  .ant-input-affix-wrapper,
-  .ant-input-affix-wrapper > input,
-  input.ant-input,
-  input[type="text"],
-  input[type="search"],
-  .search-input,
-  input.search-input {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):hover {
-    border-color: #5a5a5a !important;
-  }
-
-  .ant-input-affix-wrapper-focused,
-  .ant-input-affix-wrapper:focus,
-  .ant-input:focus {
-    border-color: #60a5fa !important;
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
-  }
-
-  .ant-input::placeholder,
-  .ant-input-affix-wrapper input::placeholder,
-  input::placeholder,
-  .search-input::placeholder {
-    color: #707070 !important;
-  }
-
-  /* AutoComplete dropdown */
-  .ant-select-auto-complete .ant-select-selector {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-  }
-
-  /* Search input container */
-  .search-input-container,
-  .search-input-wrapper {
-    background-color: transparent !important;
-  }
-
-  /* Clear button in input */
-  .ant-input-clear-icon {
-    color: #a0a0a0 !important;
-  }
-
-  .ant-input-clear-icon:hover {
-    color: #e0e0e0 !important;
-  }
-
-  /* Buttons */
-  .ant-btn {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-btn:hover {
-    background-color: #3a3a3a !important;
-    border-color: #5a5a5a !important;
-  }
-
-  .ant-btn-primary {
-    background-color: #60a5fa !important;
-    border-color: #3b82f6 !important;
-  }
-
-  .ant-btn-primary:hover {
-    background-color: #3b82f6 !important;
-  }
-
-  /* Dividers */
-  .ant-divider {
-    border-color: #3a3a3a !important;
-  }
-
-  /* Tree view in InfoPanel */
-  .ant-tree {
-    background-color: transparent !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-tree-node-content-wrapper {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-tree-node-content-wrapper:hover {
-    background-color: #3a3a3a !important;
-  }
-
-  .ant-tree-node-selected .ant-tree-node-content-wrapper {
-    background-color: #3a3a3a !important;
-  }
-
-  .ant-tree-switcher {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-tree-title {
-    color: #e0e0e0 !important;
-  }
-
-  /* Checkboxes */
-  .ant-checkbox-wrapper {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-checkbox-inner {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-  }
-
-  .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #60a5fa !important;
-    border-color: #3b82f6 !important;
-  }
-
-  /* Collapsible section headers */
-  .collapsible-summary,
-  summary.collapsible-summary,
-  details > summary {
-    color: #e0e0e0 !important;
-  }
-
-  .collapsible-summary span,
-  summary.collapsible-summary span {
-    color: #e0e0e0 !important;
-  }
-
-  /* Collapsible section caret icon */
-  .collapsible-summary span[aria-hidden="true"] {
-    color: #a0a0a0 !important;
-  }
-
-  /* Search controls buttons */
-  button[title*="Previous"],
-  button[title*="Next"],
-  button[title*="Clear"] {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  button[title*="Previous"]:hover,
-  button[title*="Next"]:hover,
-  button[title*="Clear"]:hover {
-    background-color: #3a3a3a !important;
-  }
-
-  /* Hierarchy tree container with white background */
-  div[style*="background: white"],
-  div[style*="background: rgb(255, 255, 255)"],
-  div[style*="backgroundColor: white"],
-  div[style*="backgroundColor: rgb(255, 255, 255)"] {
-    background-color: #2a2a2a !important;
-    color: #e0e0e0 !important;
-  }
-
-  /* ReactFlow minimap */
-  .react-flow__minimap {
-    background-color: #2a2a2a !important;
-    border: 1px solid #4a4a4a !important;
-  }
-
-  .react-flow__minimap-mask {
-    fill: rgba(255, 255, 255, 0.1) !important;
-  }
-
-  .react-flow__minimap-node {
-    fill: #4a4a4a !important;
-    stroke: #6a6a6a !important;
-  }
-
-  /* ReactFlow attribution */
-  .react-flow__attribution {
-    background-color: rgba(42, 42, 42, 0.8) !important;
-    color: #a0a0a0 !important;
-  }
-
-  .react-flow__attribution a {
-    color: #60a5fa !important;
-  }
-
-  /* ReactFlow panel (used by controls) */
-  .react-flow__panel {
-    color: #e0e0e0 !important;
-  }
-
-  /* ReactFlow edges */
-  .react-flow__edge-path {
-    stroke: #a0a0a0 !important;
-  }
-
-  /* ReactFlow selection box */
-  .react-flow__selection {
-    background: rgba(96, 165, 250, 0.1) !important;
-    border: 1px solid #60a5fa !important;
-  }
-
-  /* ReactFlow node selection */
-  .react-flow__node.selected {
-    box-shadow: 0 0 0 2px #60a5fa !important;
-  }
-
-  /* ReactFlow edge selection */
-  .react-flow__edge.selected .react-flow__edge-path {
-    stroke: #60a5fa !important;
+  :root {
+    --hydroscope-control-bg: #2a2a2a;
+    --hydroscope-control-border: #4a4a4a;
+    --hydroscope-control-text: #e0e0e0;
+    --hydroscope-control-hover-bg: #3a3a3a;
+    --hydroscope-control-hover-border: #5a5a5a;
+    --hydroscope-minimap-bg: rgba(42, 42, 42, 0.95);
+    --hydroscope-minimap-border: #4a4a4a;
+    --hydroscope-minimap-node: rgba(200, 200, 200, 0.4);
+    --hydroscope-minimap-mask: rgba(50, 50, 50, 0.8);
+    --hydroscope-panel-bg: #1e1e1e;
+    --hydroscope-panel-border: #3a3a3a;
+    --hydroscope-panel-text: #e0e0e0;
+    --hydroscope-input-bg: #2a2a2a;
+    --hydroscope-input-border: #4a4a4a;
+    --hydroscope-selection: #60a5fa;
   }
 }
 
-/* VS Code Dark Theme Support - duplicate all dark mode rules for VS Code webviews */
-/* VS Code adds .vscode-dark or .vscode-high-contrast classes to the body element */
+/* Dark mode custom properties - applied via VS Code class */
 .vscode-dark,
 .vscode-high-contrast {
-  /* ReactFlow control buttons - maximum specificity */
-  .react-flow .react-flow__panel .react-flow__controls .react-flow__controls-button,
-  .react-flow .react-flow__controls .react-flow__controls-button,
-  .react-flow__panel .react-flow__controls .react-flow__controls-button,
-  .react-flow__controls .react-flow__controls-button,
-  .react-flow__controls button {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-    fill: #e0e0e0 !important;
-  }
+  --hydroscope-control-bg: #2a2a2a;
+  --hydroscope-control-border: #4a4a4a;
+  --hydroscope-control-text: #e0e0e0;
+  --hydroscope-control-hover-bg: #3a3a3a;
+  --hydroscope-control-hover-border: #5a5a5a;
+  --hydroscope-minimap-bg: rgba(42, 42, 42, 0.95);
+  --hydroscope-minimap-border: #4a4a4a;
+  --hydroscope-minimap-node: rgba(200, 200, 200, 0.4);
+  --hydroscope-minimap-mask: rgba(50, 50, 50, 0.8);
+  --hydroscope-panel-bg: #1e1e1e;
+  --hydroscope-panel-border: #3a3a3a;
+  --hydroscope-panel-text: #e0e0e0;
+  --hydroscope-input-bg: #2a2a2a;
+  --hydroscope-input-border: #4a4a4a;
+  --hydroscope-selection: #60a5fa;
+}
 
-  .react-flow .react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow__controls .react-flow__controls-button:hover,
-  .react-flow__controls button:hover {
-    background-color: #3a3a3a !important;
-    border-color: #5a5a5a !important;
-  }
+/* Apply custom properties to ReactFlow controls - single definition, works in all modes */
+.react-flow
+  .react-flow__panel
+  .react-flow__controls
+  .react-flow__controls-button,
+.react-flow .react-flow__controls .react-flow__controls-button,
+.react-flow__panel .react-flow__controls .react-flow__controls-button,
+.react-flow__controls .react-flow__controls-button,
+.react-flow__controls button {
+  background-color: var(--hydroscope-control-bg) !important;
+  border-color: var(--hydroscope-control-border) !important;
+  color: var(--hydroscope-control-text) !important;
+  fill: var(--hydroscope-control-text) !important;
+}
 
-  /* SVG icons inside buttons */
-  .react-flow .react-flow__controls .react-flow__controls-button svg,
-  .react-flow__controls .react-flow__controls-button svg,
-  .react-flow__controls button svg,
-  .react-flow__controls svg {
-    fill: #e0e0e0 !important;
-    color: #e0e0e0 !important;
-  }
+.react-flow
+  .react-flow__panel
+  .react-flow__controls
+  .react-flow__controls-button:hover,
+.react-flow .react-flow__controls .react-flow__controls-button:hover,
+.react-flow__panel .react-flow__controls .react-flow__controls-button:hover,
+.react-flow__controls .react-flow__controls-button:hover,
+.react-flow__controls button:hover {
+  background-color: var(--hydroscope-control-hover-bg) !important;
+  border-color: var(--hydroscope-control-hover-border) !important;
+}
 
-  /* SVG paths */
-  .react-flow .react-flow__controls .react-flow__controls-button svg path,
-  .react-flow__controls .react-flow__controls-button svg path,
-  .react-flow__controls .react-flow__controls-button path,
-  .react-flow__controls button path,
-  .react-flow__controls svg path {
-    fill: #e0e0e0 !important;
-  }
+/* SVG icons inside buttons */
+.react-flow .react-flow__controls .react-flow__controls-button svg,
+.react-flow__controls .react-flow__controls-button svg,
+.react-flow__controls button svg,
+.react-flow__controls svg {
+  fill: var(--hydroscope-control-text) !important;
+  color: var(--hydroscope-control-text) !important;
+}
 
-  /* Custom control buttons (pack/unpack/autofit/load) - positioned above ReactFlow controls */
-  div[style*="bottom: 125px"] button.react-flow__controls-button,
-  div[style*="bottom: 125px"] button {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
+/* SVG paths */
+.react-flow .react-flow__controls .react-flow__controls-button svg path,
+.react-flow__controls .react-flow__controls-button svg path,
+.react-flow__controls .react-flow__controls-button path,
+.react-flow__controls button path,
+.react-flow__controls svg path {
+  fill: var(--hydroscope-control-text) !important;
+}
 
-  div[style*="bottom: 125px"] button.react-flow__controls-button:hover,
-  div[style*="bottom: 125px"] button:hover {
-    background-color: #3a3a3a !important;
-  }
+/* Custom control buttons (pack/unpack/autofit/load) */
+div[style*="bottom: 125px"] button.react-flow__controls-button,
+div[style*="bottom: 125px"] button {
+  background-color: var(--hydroscope-control-bg) !important;
+  border-color: var(--hydroscope-control-border) !important;
+  color: var(--hydroscope-control-text) !important;
+}
 
-  div[style*="bottom: 125px"] button svg,
-  div[style*="bottom: 125px"] button svg path,
-  div[style*="bottom: 125px"] button svg rect {
-    fill: #e0e0e0 !important;
-    stroke: #e0e0e0 !important;
-    color: #e0e0e0 !important;
-  }
+div[style*="bottom: 125px"] button.react-flow__controls-button:hover,
+div[style*="bottom: 125px"] button:hover {
+  background-color: var(--hydroscope-control-hover-bg) !important;
+  border-color: var(--hydroscope-control-hover-border) !important;
+}
 
-  /* Custom controls container background */
-  div[style*="bottom: 125px"][style*="backgroundColor: white"] {
-    background-color: #2a2a2a !important;
-  }
+div[style*="bottom: 125px"] button svg,
+div[style*="bottom: 125px"] button svg path {
+  fill: var(--hydroscope-control-text) !important;
+  color: var(--hydroscope-control-text) !important;
+}
 
-  /* Panel toggle buttons (InfoPanel and StyleTuner) - upper right corner */
-  div[style*="top: 20px"][style*="right: 20px"] button {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
+/* MiniMap */
+.react-flow__minimap {
+  background-color: var(--hydroscope-minimap-bg) !important;
+  border: 1px solid var(--hydroscope-minimap-border) !important;
+}
 
-  /* Active state for panel toggle buttons */
-  div[style*="top: 20px"][style*="right: 20px"] button[style*="rgb(76, 175, 80)"] {
-    background-color: #4caf50 !important;
-  }
+.react-flow__minimap-node {
+  fill: var(--hydroscope-minimap-node) !important;
+}
 
-  div[style*="top: 20px"][style*="right: 20px"] button:hover {
-    background-color: #3a3a3a !important;
-  }
+.react-flow__minimap-mask {
+  fill: var(--hydroscope-minimap-mask) !important;
+}
 
-  div[style*="top: 20px"][style*="right: 20px"] button svg,
-  div[style*="top: 20px"][style*="right: 20px"] button svg path {
-    fill: #e0e0e0 !important;
-    color: #e0e0e0 !important;
-  }
+/* ReactFlow node selection */
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px var(--hydroscope-selection) !important;
+}
 
-  /* InfoPanel and StyleTuner - Ant Design components */
-  /* Select dropdowns */
-  .ant-select,
-  .ant-select-selector {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-select-arrow {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-select-selection-item {
-    color: #e0e0e0 !important;
-  }
-
-  /* Select dropdown menu */
-  .ant-select-dropdown {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-  }
-
-  .ant-select-item {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-select-item-option-selected {
-    background-color: #3a3a3a !important;
-  }
-
-  .ant-select-item-option-active {
-    background-color: #3a3a3a !important;
-  }
-
-  /* Input fields - maximum specificity */
-  .ant-input,
-  .ant-input-affix-wrapper,
-  .ant-input-affix-wrapper > input,
-  input.ant-input,
-  input[type="text"],
-  input[type="search"],
-  .search-input,
-  input.search-input {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):hover {
-    border-color: #5a5a5a !important;
-  }
-
-  .ant-input-affix-wrapper-focused,
-  .ant-input-affix-wrapper:focus,
-  .ant-input:focus {
-    border-color: #60a5fa !important;
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
-  }
-
-  .ant-input::placeholder,
-  .ant-input-affix-wrapper input::placeholder,
-  input::placeholder,
-  .search-input::placeholder {
-    color: #707070 !important;
-  }
-
-  /* AutoComplete dropdown */
-  .ant-select-auto-complete .ant-select-selector {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-  }
-
-  /* Search input container */
-  .search-input-container,
-  .search-input-wrapper {
-    background-color: transparent !important;
-  }
-
-  /* Clear button in input */
-  .ant-input-clear-icon {
-    color: #a0a0a0 !important;
-  }
-
-  .ant-input-clear-icon:hover {
-    color: #e0e0e0 !important;
-  }
-
-  /* Buttons */
-  .ant-btn {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-btn:hover {
-    background-color: #3a3a3a !important;
-    border-color: #5a5a5a !important;
-  }
-
-  .ant-btn-primary {
-    background-color: #60a5fa !important;
-    border-color: #3b82f6 !important;
-  }
-
-  .ant-btn-primary:hover {
-    background-color: #3b82f6 !important;
-  }
-
-  /* Dividers */
-  .ant-divider {
-    border-color: #3a3a3a !important;
-  }
-
-  /* Tree view in InfoPanel */
-  .ant-tree {
-    background-color: transparent !important;
-    color: #e0e0e0 !important;
-  }
-
-  .ant-tree-node-content-wrapper {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-tree-node-content-wrapper:hover {
-    background-color: #3a3a3a !important;
-  }
-
-  .ant-tree-node-selected .ant-tree-node-content-wrapper {
-    background-color: #3a3a3a !important;
-  }
-
-  .ant-tree-switcher {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-tree-title {
-    color: #e0e0e0 !important;
-  }
-
-  /* Checkboxes */
-  .ant-checkbox-wrapper {
-    color: #e0e0e0 !important;
-  }
-
-  .ant-checkbox-inner {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-  }
-
-  .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #60a5fa !important;
-    border-color: #3b82f6 !important;
-  }
-
-  /* Collapsible section headers */
-  .collapsible-summary,
-  summary.collapsible-summary,
-  details > summary {
-    color: #e0e0e0 !important;
-  }
-
-  .collapsible-summary span,
-  summary.collapsible-summary span {
-    color: #e0e0e0 !important;
-  }
-
-  /* Collapsible section caret icon */
-  .collapsible-summary span[aria-hidden="true"] {
-    color: #a0a0a0 !important;
-  }
-
-  /* Search controls buttons */
-  button[title*="Previous"],
-  button[title*="Next"],
-  button[title*="Clear"] {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e0e0e0 !important;
-  }
-
-  button[title*="Previous"]:hover,
-  button[title*="Next"]:hover,
-  button[title*="Clear"]:hover {
-    background-color: #3a3a3a !important;
-  }
-
-  /* Hierarchy tree container with white background */
-  div[style*="background: white"],
-  div[style*="background: rgb(255, 255, 255)"],
-  div[style*="backgroundColor: white"],
-  div[style*="backgroundColor: rgb(255, 255, 255)"] {
-    background-color: #2a2a2a !important;
-    color: #e0e0e0 !important;
-  }
-
-  /* ReactFlow minimap */
-  .react-flow__minimap {
-    background-color: #2a2a2a !important;
-    border: 1px solid #4a4a4a !important;
-  }
-
-  .react-flow__minimap-mask {
-    fill: rgba(255, 255, 255, 0.1) !important;
-  }
-
-  .react-flow__minimap-node {
-    fill: #4a4a4a !important;
-    stroke: #6a6a6a !important;
-  }
-
-  /* ReactFlow attribution */
-  .react-flow__attribution {
-    background-color: rgba(42, 42, 42, 0.8) !important;
-    color: #a0a0a0 !important;
-  }
-
-  .react-flow__attribution a {
-    color: #60a5fa !important;
-  }
-
-  /* ReactFlow panel (used by controls) */
-  .react-flow__panel {
-    color: #e0e0e0 !important;
-  }
-
-  /* ReactFlow edges */
-  .react-flow__edge-path {
-    stroke: #a0a0a0 !important;
-  }
-
-  /* ReactFlow selection box */
-  .react-flow__selection {
-    background: rgba(96, 165, 250, 0.1) !important;
-    border: 1px solid #60a5fa !important;
-  }
-
-  /* ReactFlow node selection */
-  .react-flow__node.selected {
-    box-shadow: 0 0 0 2px #60a5fa !important;
-  }
-
-  /* ReactFlow edge selection */
-  .react-flow__edge.selected .react-flow__edge-path {
-    stroke: #60a5fa !important;
-  }
+/* ReactFlow edge selection */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--hydroscope-selection) !important;
 }
