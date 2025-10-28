@@ -181,6 +181,12 @@ export interface HydroscopeCoreProps {
   /** Initial container border width */
   initialContainerBorderWidth?: number;
 
+  /** Initial zoom level (default: 1.0) */
+  initialZoom?: number;
+
+  /** UI scale factor for controls and minimap (default: 1.0) */
+  uiScale?: number;
+
   /** Whether auto-fit is enabled (controlled by parent component) */
   autoFitEnabled?: boolean;
 
@@ -313,6 +319,8 @@ const HydroscopeCoreInternal = forwardRef<
       initialNodePadding = 8,
       initialNodeFontSize = 12,
       initialContainerBorderWidth = 2,
+      initialZoom = 1.0,
+      uiScale = 1.0,
       autoFitEnabled = true,
       onNodeClick,
       onContainerCollapse,
@@ -2320,6 +2328,7 @@ const HydroscopeCoreInternal = forwardRef<
             defaultEdgeOptions={{
               markerEnd: { type: "arrowclosed" },
             }}
+            defaultViewport={{ x: 0, y: 0, zoom: initialZoom }}
             proOptions={{ hideAttribution: true }}
             onInit={() => {
               // ReactFlow instance initialized
@@ -2367,18 +2376,20 @@ const HydroscopeCoreInternal = forwardRef<
           >
             {showBackground && <Background />}
             {showControls && (
-              <>
+              <div style={{ zoom: uiScale }}>
                 {/* Standard ReactFlow controls with zoom and fit view */}
                 <Controls />
-              </>
+              </div>
             )}
             {showMiniMap && (
-              <MiniMap
-                pannable={true}
-                zoomable={true}
-                nodeStrokeWidth={3}
-                maskColor="rgba(0, 0, 0, 0.1)"
-              />
+              <div style={{ zoom: uiScale }}>
+                <MiniMap
+                  pannable={true}
+                  zoomable={true}
+                  nodeStrokeWidth={3}
+                  maskColor="rgba(0, 0, 0, 0.1)"
+                />
+              </div>
             )}
           </ReactFlow>
 
@@ -2527,25 +2538,6 @@ const HydroscopeCoreInternal = forwardRef<
               );
             },
           )}
-
-          {/* Node count display for e2e testing */}
-          <div
-            data-testid="node-count"
-            style={{
-              position: "absolute",
-              top: "10px",
-              right: "10px",
-              background: "rgba(255, 255, 255, 0.9)",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              color: "#666",
-              pointerEvents: "none",
-              zIndex: 1000,
-            }}
-          >
-            {state.reactFlowData.nodes.length}
-          </div>
 
           {/* CSS for loading spinner animation */}
           <style>{`

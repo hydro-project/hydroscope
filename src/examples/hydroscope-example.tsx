@@ -3,7 +3,7 @@
  *
  * This example demonstrates how to use the new Hydroscope component
  * with all its enhanced features including file upload, InfoPanel,
- * StyleTuner, and CustomControls.
+ * StyleTuner, CustomControls, and save functionality (PNG/JSON export).
  */
 import React, { useState } from "react";
 import { Hydroscope } from "../components/Hydroscope";
@@ -120,7 +120,8 @@ export default function HydroscopeExample() {
           <li>File upload with drag-and-drop support</li>
           <li>InfoPanel with search and hierarchy controls</li>
           <li>StyleTuner for real-time appearance customization</li>
-          <li>CustomControls for pack/unpack and auto-fit operations</li>
+          <li>CustomControls for pack/unpack, auto-fit, and save operations</li>
+          <li>Save functionality with PNG and JSON export options</li>
           <li>Configuration persistence to localStorage</li>
           <li>Error boundaries and graceful error handling</li>
           <li>Responsive layout and keyboard shortcuts</li>

@@ -6,13 +6,31 @@
  */
 import type { CSSProperties } from "react";
 import type { StyleConfig } from "../types/core.js";
+import {
+  detectDarkMode,
+  getEdgeColorForToken,
+} from "../shared/config/theme.js";
+import type { EdgeColorToken } from "../shared/config/theme.js";
 // Visual channels supported by the style processor
 export const VISUAL_CHANNELS = {
   "line-pattern": ["solid", "dashed", "dotted", "dash-dot"],
   "line-width": [2, 3, 4, 5],
   animation: ["static", "animated"],
   "line-style": ["single", "double", "hash-marks"],
-  color: [], // Edge stroke color - values are hex codes from semantic mappings
+  // Preferred: semantic color tokens for edge stroke color
+  "color-token": [
+    "default",
+    "muted",
+    "light",
+    "highlight-1",
+    "highlight-2",
+    "highlight-3",
+    "success",
+    "warning",
+    "danger",
+  ],
+  // Legacy: hex color values from semantic mappings
+  color: [],
   halo: ["none", "light-blue", "light-red", "light-green"],
   arrowhead: [
     "none",
@@ -32,9 +50,10 @@ export const DEFAULT_STYLE = {
 
 // Dark mode style values
 export const DARK_MODE_STYLE = {
-  STROKE_COLOR: "#a0a0a0",
+  // Brighter defaults for contrast on dark backgrounds
+  STROKE_COLOR: "#cbd5e1",
   STROKE_WIDTH: 2,
-  DEFAULT_STROKE_COLOR: "#c0c0c0", // For elements with no semantic tags
+  DEFAULT_STROKE_COLOR: "#e5e7eb", // For elements with no semantic tags
 } as const;
 
 /**
@@ -57,6 +76,12 @@ export interface ProcessedStyle {
   markerEnd?: string | object;
   lineStyle?: "single" | "hash-marks";
   waviness?: boolean;
+}
+
+// Small utility to detect pure black legacy colors (hex or named)
+function isPureBlack(color: string): boolean {
+  const c = (color || "").trim().toLowerCase();
+  return c === "#000" || c === "#000000" || c === "black";
 }
 /**
  * Process semantic tags and return visual style
@@ -226,6 +251,7 @@ function getNeutralDefaultForProperty(
     halo: "none",
     arrowhead: "triangle-open", // Neutral arrow for aggregated edges
     waviness: "none",
+    "color-token": "default",
   };
   return neutralDefaults[property];
 }
@@ -358,9 +384,22 @@ function convertStyleSettingsToVisual(
   }
 
   // Apply color (for edge stroke color)
-  const color = styleSettings["color"] as string;
-  if (color) {
-    style.stroke = color;
+  const colorToken = styleSettings["color-token"] as string;
+  if (colorToken) {
+    // Theme-aware mapping at runtime; falls back to light in non-browser/test envs
+    const isDark = detectDarkMode();
+    style.stroke = getEdgeColorForToken(colorToken as EdgeColorToken, isDark);
+  } else {
+    const color = styleSettings["color"] as string; // legacy hex
+    if (color) {
+      // In dark mode, avoid pure black legacy colors which have poor contrast
+      const isDark = detectDarkMode();
+      if (isDark && isPureBlack(color)) {
+        style.stroke = getEdgeColorForToken("default", true);
+      } else {
+        style.stroke = color;
+      }
+    }
   }
 
   // Apply animation
@@ -519,7 +558,7 @@ function createTagLabel(
 export function validateSemanticMappings(
   semanticMappings: Record<
     string,
-    Record<string, Record<string, string | number>>
+    Record<string, Record<string, string | number | boolean>>
   >,
 ): string[] {
   const errors: string[] = [];
@@ -528,9 +567,119 @@ export function validateSemanticMappings(
   for (const [groupName, group] of Object.entries(semanticMappings)) {
     const groupStyleProperties = new Set<string>();
     // Collect all style properties used in this group
-    for (const [, styleMapping] of Object.entries(group)) {
-      for (const styleProperty of Object.keys(styleMapping)) {
+    for (const [optionName, styleMapping] of Object.entries(group)) {
+      for (const [styleProperty, value] of Object.entries(styleMapping)) {
         groupStyleProperties.add(styleProperty);
+
+        // Validate that the style property is a known visual channel
+        const knownChannels = Object.keys(VISUAL_CHANNELS) as Array<
+          keyof typeof VISUAL_CHANNELS
+        >;
+        if (!knownChannels.includes(styleProperty as any)) {
+          errors.push(
+            `Unknown style property "${styleProperty}" in group "${groupName}" option "${optionName}"`,
+          );
+          continue;
+        }
+
+        // Validate value domain for known channels (best-effort)
+        switch (styleProperty) {
+          case "color-token": {
+            if (
+              typeof value !== "string" ||
+              !(VISUAL_CHANNELS as any)["color-token"].includes(value)
+            ) {
+              errors.push(
+                `Invalid value for color-token: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "line-pattern": {
+            if (
+              typeof value !== "string" ||
+              !(VISUAL_CHANNELS as any)["line-pattern"].includes(value)
+            ) {
+              errors.push(
+                `Invalid value for line-pattern: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "line-style": {
+            if (
+              typeof value !== "string" ||
+              !(VISUAL_CHANNELS as any)["line-style"].includes(value)
+            ) {
+              errors.push(
+                `Invalid value for line-style: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "arrowhead": {
+            if (
+              typeof value !== "string" ||
+              !(VISUAL_CHANNELS as any)["arrowhead"].includes(value)
+            ) {
+              errors.push(
+                `Invalid value for arrowhead: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "animation": {
+            if (
+              typeof value !== "string" ||
+              !(VISUAL_CHANNELS as any)["animation"].includes(value)
+            ) {
+              errors.push(
+                `Invalid value for animation: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "line-width": {
+            if (typeof value !== "number" || !(value > 0)) {
+              errors.push(
+                `Invalid value for line-width: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "halo": {
+            if (
+              typeof value !== "string" ||
+              !(VISUAL_CHANNELS as any)["halo"].includes(value)
+            ) {
+              errors.push(
+                `Invalid value for halo: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "waviness": {
+            const ok =
+              typeof value === "boolean" ||
+              (typeof value === "string" &&
+                (VISUAL_CHANNELS as any)["waviness"].includes(value));
+            if (!ok) {
+              errors.push(
+                `Invalid value for waviness: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+          case "color": {
+            // Legacy hex color, accept any string
+            if (typeof value !== "string") {
+              errors.push(
+                `Invalid value for legacy color: ${JSON.stringify(value)} in group "${groupName}" option "${optionName}"`,
+              );
+            }
+            break;
+          }
+        }
       }
     }
     // Track group usage for each style property

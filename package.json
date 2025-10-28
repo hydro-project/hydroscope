@@ -83,7 +83,8 @@
   "dependencies": {
     "@xyflow/react": "^12.8.2",
     "antd": "^5.27.5",
-    "elkjs": "^0.11.0"
+    "elkjs": "^0.11.0",
+    "html-to-image": "^1.11.13"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.8",
@@ -122,9 +123,9 @@
     "vitest": "^3.2.4"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.52.4",
-    "@rollup/rollup-darwin-x64": "^4.52.4",
     "@rollup/rollup-darwin-arm64": "^4.52.4",
+    "@rollup/rollup-darwin-x64": "^4.52.4",
+    "@rollup/rollup-linux-x64-gnu": "^4.52.4",
     "@rollup/rollup-win32-x64-msvc": "^4.52.4"
   },
   "engines": {

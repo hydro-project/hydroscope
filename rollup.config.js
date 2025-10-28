@@ -1,33 +1,44 @@
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
-import postcss from 'rollup-plugin-postcss';
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import typescript from "@rollup/plugin-typescript";
+import postcss from "rollup-plugin-postcss";
 
 export default {
-  input: 'src/index.ts',
-  external: ['react', 'react-dom', 'react/jsx-runtime', '@xyflow/react', 'elkjs', 'elkjs/lib/elk.bundled.js', 'antd'],
+  input: "src/index.ts",
+  external: [
+    "react",
+    "react-dom",
+    "react/jsx-runtime",
+    "@xyflow/react",
+    "elkjs",
+    "elkjs/lib/elk.bundled.js",
+    "antd",
+  ],
   onwarn(warning, warn) {
     // Suppress "use client" directive warnings from Ant Design
-    if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && warning.message.includes('use client')) {
+    if (
+      warning.code === "MODULE_LEVEL_DIRECTIVE" &&
+      warning.message.includes("use client")
+    ) {
       return;
     }
     warn(warning);
   },
   output: [
     {
-      file: 'dist/index.cjs',
-      format: 'cjs',
+      file: "dist/index.cjs",
+      format: "cjs",
       sourcemap: true,
       inlineDynamicImports: true,
       globals: {
-        'react': 'React',
-        'react-dom': 'ReactDOM',
-        'react/jsx-runtime': 'jsxRuntime'
-      }
+        react: "React",
+        "react-dom": "ReactDOM",
+        "react/jsx-runtime": "jsxRuntime",
+      },
     },
     {
-      file: 'dist/index.esm.js',
-      format: 'esm',
+      file: "dist/index.esm.js",
+      format: "esm",
       sourcemap: true,
       inlineDynamicImports: true,
     },
@@ -39,13 +50,13 @@ export default {
     }),
     commonjs(),
     typescript({
-      tsconfig: './tsconfig.build.json',
+      tsconfig: "./tsconfig.build.json",
       declaration: true,
-      declarationDir: 'dist',
-      rootDir: 'src',
+      declarationDir: "dist",
+      rootDir: "src",
     }),
     postcss({
-      extract: 'style.css',
+      extract: "style.css",
       minimize: true,
     }),
   ],

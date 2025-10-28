@@ -190,6 +190,20 @@ describe("StyleProcessor", () => {
       expect(diamondResult.markerEnd).toEqual({ type: "arrow" });
     });
 
+    it("should handle color-token mapping (semantic colors)", () => {
+      const styleConfig: StyleConfig = {
+        semanticMappings: {
+          collection: {
+            Stream: { "color-token": "highlight-1" },
+          },
+        },
+      };
+
+      const result = processSemanticTags(["Stream"], styleConfig);
+      // highlight-1 maps to a blue tone by default
+      expect(result.style.stroke).toBe("#2563eb");
+    });
+
     it("should handle waviness", () => {
       const styleConfig: StyleConfig = {
         semanticMappings: {
