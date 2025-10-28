@@ -26,6 +26,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated JSON format spec and added UI scaling guide
 
+## [1.1.0] - 2025-10-24
+
+### Added
+
+- Comprehensive dark mode support across the UI
+
+### Changed
+
+- Split monolithic configuration into a modular system
+- Simplified EdgeStyleLegend rendering and improved text truncation
+- Use explicit ELK bundled import for more reliable builds
+
+### Fixed
+
+- Eliminated flashing/remount loops with event-driven major update phase
+- Resolved ResizeObserver loop errors by debouncing at the source
+- More robust timing in HierarchyTree sync behavior tests
+- Ensure isRecalculating is cleared properly in handleExpand when sync is disabled
+
 ## [1.0.2] - 2024-10-20
 
 ### Added
@@ -106,5 +125,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.2]: https://github.com/hydro-project/hydroscope/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/hydro-project/hydroscope/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hydro-project/hydroscope/releases/tag/v1.0.0
-[1.2.0]: https://github.com/hydro-project/hydroscope/compare/v1.0.2...v1.2.0
+[1.1.0]: https://github.com/hydro-project/hydroscope/compare/v1.0.2...v1.1.0
+[1.2.0]: https://github.com/hydro-project/hydroscope/compare/v1.1.0...v1.2.0
 [Unreleased]: https://github.com/hydro-project/hydroscope/compare/v1.2.0...HEAD
