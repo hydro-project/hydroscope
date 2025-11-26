@@ -347,6 +347,15 @@ export const HALO_COLOR_MAPPINGS = {
   "light-green": "#27ae60",
 } as const;
 
+// Node type specific halo colors
+export const NODE_TYPE_HALO_COLORS = {
+  NonDeterministic: {
+    color: "#ff3535ff", // Bright orange-red border
+    glowColor: "rgba(255, 107, 53, 1.0)", // Bright glow around edges
+    shadowSpread: "12px", // Glow spread distance
+  },
+} as const;
+
 export const HIGHLIGHT_STYLING = {
   EDGE_STROKE_WIDTH: 3,
   GLOW_OPACITY: "40", // 40% opacity for glow effects

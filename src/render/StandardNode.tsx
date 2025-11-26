@@ -16,6 +16,7 @@ import { PANEL_CONSTANTS } from "../shared/config/ui.js";
 import {
   COLOR_CONSTANTS,
   DEFAULT_COLOR_PALETTE,
+  NODE_TYPE_HALO_COLORS,
 } from "../shared/config/styling.js";
 import { LAYOUT_DIMENSIONS } from "../shared/config/layout.js";
 // Container color generation (copied from ContainerNode for consistency)
@@ -343,6 +344,12 @@ export function StandardNode({
   const isShowingLongLabel =
     (showFullLabels && data.longLabel) ||
     (data.showingLongLabel && data.longLabel);
+
+  // Check if this node type should have a halo effect
+  const haloConfig =
+    NODE_TYPE_HALO_COLORS[nodeType as keyof typeof NODE_TYPE_HALO_COLORS];
+  const hasHalo = !!haloConfig;
+
   // Regular node styling
   return (
     <>
@@ -364,8 +371,10 @@ export function StandardNode({
               box-shadow: 0 0 20px rgba(255, 215, 0, 1);
             }
           }
+
         `}
       </style>
+
       <div
         style={{
           // Default component styles
@@ -408,14 +417,23 @@ export function StandardNode({
             } else if (searchHighlight) {
               // Search match - yellow-300: #fcd34d = rgb(252, 211, 77)
               return "0 0 0 3px rgba(252, 211, 77, 0.4), 0 2px 6px rgba(0,0,0,0.1)";
+            } else if (hasHalo && haloConfig) {
+              // NonDeterministic node - bright glowing border
+              return `0 0 0 3px ${haloConfig.color}, 0 0 ${haloConfig.shadowSpread} ${haloConfig.glowColor}, 0 2px 4px rgba(0, 0, 0, 0.1)`;
             } else if (isClicked) {
               return "0 8px 20px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1)";
             } else {
               return "0 2px 4px rgba(0, 0, 0, 0.05)";
             }
           })(),
-          // Z-index priority: clicked animation (20) > default (1)
-          zIndex: (data as any).searchHighlightStrong ? 30 : isClicked ? 20 : 1,
+          // Z-index priority: search highlight (30) > clicked animation (20) > halo (1) > default (1)
+          zIndex: (data as any).searchHighlightStrong
+            ? 30
+            : isClicked
+              ? 20
+              : hasHalo
+                ? 1
+                : 1,
           // No animation for search highlights - use spotlight for current result instead
           // Keep animation for clicked nodes
           animation: isClicked ? "glowEffect 1.5s ease-in-out" : undefined,

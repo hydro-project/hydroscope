@@ -72,30 +72,34 @@ function detectDarkModeUncached(): boolean {
     return false;
   }
 
-  // Heuristic: infer from computed background luminance when classes aren't ready yet
-  // This helps on first render when VS Code hasn't applied body classes to the webview.
+  // Check browser preference first (more reliable than luminance heuristic)
+  if (window.matchMedia) {
+    try {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      if (mediaQuery) {
+        return mediaQuery.matches;
+      }
+    } catch (error) {
+      // In development, log the error for debugging
+      if (
+        typeof process !== "undefined" &&
+        process.env?.NODE_ENV === "development"
+      ) {
+        console.warn("[Hydroscope] matchMedia detection failed:", error);
+      }
+    }
+  }
+
+  // Fallback heuristic: infer from computed background luminance
+  // This helps when browser preference is not available
   const luminance = getBackgroundLuminance();
   if (luminance !== null) {
     // Threshold tuned to VS Code webview dark backgrounds
     return luminance < 128;
   }
 
-  // Fallback to browser preference
-  if (!window.matchMedia) return false; // For test environments
-
-  try {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    return mediaQuery?.matches ?? false;
-  } catch (error) {
-    // In development, log the error for debugging
-    if (
-      typeof process !== "undefined" &&
-      process.env?.NODE_ENV === "development"
-    ) {
-      console.warn("[Hydroscope] matchMedia detection failed:", error);
-    }
-    return false; // Fallback for environments without matchMedia support
-  }
+  // Final fallback: assume light mode
+  return false;
 }
 
 /**
