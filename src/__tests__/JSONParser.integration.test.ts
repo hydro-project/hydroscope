@@ -88,13 +88,13 @@ describe("JSONParser Integration Tests", () => {
       // Verify specific nodes exist
       const node195 = result.visualizationState.getGraphNode("195");
       expect(node195).toBeDefined();
-      expect(node195?.label).toBe("map");
-      expect(node195?.longLabel).toContain("map");
+      expect(node195?.label).toBe("crosssingleton");
+      expect(node195?.longLabel).toContain("crosssingleton");
 
       const node13 = result.visualizationState.getGraphNode("13");
       expect(node13).toBeDefined();
-      expect(node13?.label).toBe("cast");
-      expect(node13?.longLabel).toContain("cast");
+      expect(node13?.label).toBe("cycle_source");
+      expect(node13?.longLabel).toContain("cycle_source");
 
       // Verify edges exist
       const edges = result.visualizationState.visibleEdges;
@@ -168,8 +168,8 @@ describe("JSONParser Integration Tests", () => {
       // Verify specific nodes exist
       const node0 = result.visualizationState.getGraphNode("0");
       const node5 = result.visualizationState.getGraphNode("5");
-      expect(node0?.label).toBe("source_iter");
-      expect(node0?.longLabel).toContain("source_iter");
+      expect(node0?.label).toBe("source_stream");
+      expect(node0?.longLabel).toContain("source_stream");
       expect(node5?.label).toBe("source_iter");
       expect(node5?.longLabel).toContain("source_iter");
 
