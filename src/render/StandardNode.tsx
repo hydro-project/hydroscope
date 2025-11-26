@@ -7,7 +7,6 @@ import {
   generateNodeColors,
   type NodeColor,
   getSearchHighlightColors,
-  getContrastColor,
 } from "../shared/colorUtils";
 import { truncateLabel } from "../shared/textUtils";
 import { useStyleConfig } from "./StyleConfigContext";
@@ -380,28 +379,18 @@ export function StandardNode({
           // Default component styles
           width: `${width}px`,
           height: `${height}px`,
-          padding: `${styleCfg.nodePadding ?? 8}px 16px`,
+          padding: 0,
           backgroundColor: colors.backgroundColor,
+          // Uniform border - will overlay dark sections on top
           border: `2px solid ${colors.borderColor}`,
           borderRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
-          fontSize: isShowingLongLabel
-            ? `${PANEL_CONSTANTS.FONT_SIZE_POPUP}px`
-            : `${styleCfg.nodeFontSize ?? 11}px`,
-          fontWeight: isShowingLongLabel ? "500" : "normal",
-          textAlign: "center",
           boxSizing: "border-box",
           position: "relative",
-          overflow: "hidden",
+          overflow: "visible",
           cursor: "pointer",
           transition: "all 0.2s ease",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color:
-            colors.textColor ||
-            getContrastColor(
-              colors.backgroundColor || baseColors.backgroundColor,
-            ), // Ensure good contrast
+          flexDirection: "column",
           // Click animation styles
           transform: isClicked
             ? "scale(1.05) translateY(-2px)"
@@ -445,7 +434,104 @@ export function StandardNode({
         }
       >
         <HandlesRenderer />
-        {String(displayLabel)}
+        {/* Dark border overlay for top 20% */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-2px",
+            left: "-2px",
+            right: "-2px",
+            height: "calc(20% + 2px)",
+            minHeight: "20px",
+            pointerEvents: "none",
+            borderTop: `2px solid ${(() => {
+              const borderColor = colors.borderColor;
+              const hex = borderColor.replace("#", "");
+              const r = parseInt(hex.substring(0, 2), 16);
+              const g = parseInt(hex.substring(2, 4), 16);
+              const b = parseInt(hex.substring(4, 6), 16);
+              const newR = Math.floor(r * 0.6);
+              const newG = Math.floor(g * 0.6);
+              const newB = Math.floor(b * 0.6);
+              return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+            })()}`,
+            borderLeft: `2px solid ${(() => {
+              const borderColor = colors.borderColor;
+              const hex = borderColor.replace("#", "");
+              const r = parseInt(hex.substring(0, 2), 16);
+              const g = parseInt(hex.substring(2, 4), 16);
+              const b = parseInt(hex.substring(4, 6), 16);
+              const newR = Math.floor(r * 0.6);
+              const newG = Math.floor(g * 0.6);
+              const newB = Math.floor(b * 0.6);
+              return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+            })()}`,
+            borderRight: `2px solid ${(() => {
+              const borderColor = colors.borderColor;
+              const hex = borderColor.replace("#", "");
+              const r = parseInt(hex.substring(0, 2), 16);
+              const g = parseInt(hex.substring(2, 4), 16);
+              const b = parseInt(hex.substring(4, 6), 16);
+              const newR = Math.floor(r * 0.6);
+              const newG = Math.floor(g * 0.6);
+              const newB = Math.floor(b * 0.6);
+              return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+            })()}`,
+            borderTopLeftRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
+            borderTopRightRadius: `${styleCfg.nodeBorderRadius ?? 8}px`,
+            zIndex: 2,
+          }}
+        />
+        {/* Header strip - darker 20% at top */}
+        <div
+          style={{
+            width: "100%",
+            height: "20%",
+            minHeight: "18px",
+            backgroundColor: (() => {
+              // Darken the border color for the header
+              const borderColor = colors.borderColor;
+              const hex = borderColor.replace("#", "");
+              const r = parseInt(hex.substring(0, 2), 16);
+              const g = parseInt(hex.substring(2, 4), 16);
+              const b = parseInt(hex.substring(4, 6), 16);
+              // Darken by 40%
+              const newR = Math.floor(r * 0.6);
+              const newG = Math.floor(g * 0.6);
+              const newB = Math.floor(b * 0.6);
+              return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+            })(),
+            borderTopLeftRadius: `${(styleCfg.nodeBorderRadius ?? 8) - 2}px`,
+            borderTopRightRadius: `${(styleCfg.nodeBorderRadius ?? 8) - 2}px`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 8px",
+            fontSize: isShowingLongLabel
+              ? `${PANEL_CONSTANTS.FONT_SIZE_POPUP}px`
+              : `${styleCfg.nodeFontSize ?? 11}px`,
+            fontWeight: "600",
+            color: "#ffffff",
+            textAlign: "center",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            position: "relative",
+            zIndex: 3,
+          }}
+        >
+          {String(displayLabel)}
+        </div>
+        {/* Body area - remaining 80% */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "4px 8px",
+          }}
+        />
         {data.longLabel ? (
           <div
             className="node-info-button"

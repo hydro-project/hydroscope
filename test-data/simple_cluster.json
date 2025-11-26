@@ -4,14 +4,6 @@
       "data": {
         "backtrace": [
           {
-            "file": "src/location/mod.rs",
-            "filename": "src/location/mod.rs",
-            "fn": "source_cluster_members",
-            "function": "source_cluster_members",
-            "line": 209,
-            "lineNumber": 209
-          },
-          {
             "file": "src/cluster/simple_cluster.rs",
             "filename": "src/cluster/simple_cluster.rs",
             "fn": "simple_cluster",
@@ -128,18 +120,18 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
         "locationType": "Process"
       },
-      "fullLabel": "source_iter(q!({ use hydro_lang :: __staged :: __deps :: * ; use hydro_lang :: __staged :: location :: * ; let underlying_memberids__free = unsafe { :: std :: mem :: transmute :: < _ , & [hydro_lang :: location :: MemberId < () >] > (__hydro_lang_cluster_ids_1) } ; underlying_memberids__free }))",
+      "fullLabel": "source_stream(cluster_membership_stream(Cluster(1)))",
       "id": "0",
-      "label": "source_iter",
+      "label": "source_stream",
       "nodeType": "Source",
-      "shortLabel": "source_iter"
+      "shortLabel": "source_stream"
     },
     {
       "data": {
@@ -149,8 +141,8 @@
             "filename": "src/location/mod.rs",
             "fn": "source_cluster_members",
             "function": "source_cluster_members",
-            "line": 210,
-            "lineNumber": 210
+            "line": 218,
+            "lineNumber": 218
           },
           {
             "file": "src/cluster/simple_cluster.rs",
@@ -269,14 +261,14 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
         "locationType": "Process"
       },
-      "fullLabel": "map(q!(| id | (* id , MembershipEvent :: Joined)))",
+      "fullLabel": "map(q!(| (k , v) | (MemberId :: from_tagless (k) , v)))",
       "id": "1",
       "label": "map",
       "nodeType": "Transform",
@@ -402,8 +394,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 1,
@@ -535,8 +527,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -556,8 +548,8 @@
             "filename": "src/live_collections/stream/networking.rs",
             "fn": "send_bincode",
             "function": "send_bincode",
-            "line": 455,
-            "lineNumber": 455
+            "line": 491,
+            "lineNumber": 491
           },
           {
             "file": "src/cluster/simple_cluster.rs",
@@ -676,8 +668,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -809,8 +801,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -942,8 +934,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -952,7 +944,7 @@
       "fullLabel": "observenondet [hydro operator]",
       "id": "14",
       "label": "observenondet",
-      "nodeType": "Transform",
+      "nodeType": "NonDeterministic",
       "shortLabel": "observenondet"
     },
     {
@@ -1075,8 +1067,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -1096,8 +1088,8 @@
             "filename": "src/location/mod.rs",
             "fn": "source_cluster_members",
             "function": "source_cluster_members",
-            "line": 211,
-            "lineNumber": 211
+            "line": 219,
+            "lineNumber": 219
           },
           {
             "file": "src/cluster/simple_cluster.rs",
@@ -1216,8 +1208,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -1349,8 +1341,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -1482,8 +1474,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -1615,14 +1607,14 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
         "locationType": "Process"
       },
-      "fullLabel": "source_iter(q!({ use crate :: __staged :: __deps :: * ; use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 }))",
+      "fullLabel": "source_iter(q!(stageleft :: runtime_support :: type_hint :: < std :: ops :: Range < i32 > > ({ use crate :: __staged :: __deps :: * ; use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 })))",
       "id": "5",
       "label": "source_iter",
       "nodeType": "Source",
@@ -1748,8 +1740,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -1881,14 +1873,14 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
         "locationType": "Process"
       },
-      "fullLabel": "map(q!(| (id , n) | (id , (id , n))))",
+      "fullLabel": "map(q!(| (id , n) | (id . clone () , (id , n))))",
       "id": "7",
       "label": "map",
       "nodeType": "Transform",
@@ -1902,8 +1894,8 @@
             "filename": "src/live_collections/stream/networking.rs",
             "fn": "demux_bincode",
             "function": "demux_bincode",
-            "line": 301,
-            "lineNumber": 301
+            "line": 330,
+            "lineNumber": 330
           },
           {
             "file": "src/cluster/simple_cluster.rs",
@@ -2022,8 +2014,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 0,
@@ -2043,8 +2035,8 @@
             "filename": "src/live_collections/stream/networking.rs",
             "fn": "demux_bincode",
             "function": "demux_bincode",
-            "line": 301,
-            "lineNumber": 301
+            "line": 330,
+            "lineNumber": 330
           },
           {
             "file": "src/cluster/simple_cluster.rs",
@@ -2163,8 +2155,8 @@
             "filename": "src/ops/function.rs",
             "fn": "call_once",
             "function": "call_once",
-            "line": 253,
-            "lineNumber": 253
+            "line": 250,
+            "lineNumber": 250
           }
         ],
         "locationId": 1,
@@ -2395,7 +2387,7 @@
   ],
   "nodeAssignments": {
     "backtrace": {
-      "0": "bt_17",
+      "0": "bt_14",
       "1": "bt_17",
       "10": "bt_14",
       "11": "bt_14",
@@ -2446,15 +2438,15 @@
       "CollectionGroup": {
         "Optional": {
           "arrowhead": "diamond-open",
-          "color-token": "muted"
+          "color": "#6b7280"
         },
         "Singleton": {
           "arrowhead": "circle-filled",
-          "color-token": "default"
+          "color": "#000000"
         },
         "Stream": {
           "arrowhead": "triangle-filled",
-          "color-token": "highlight-1"
+          "color": "#2563eb"
         }
       },
       "KeyednessGroup": {
@@ -2523,21 +2515,26 @@
       },
       {
         "colorIndex": 3,
+        "id": "NonDeterministic",
+        "label": "NonDeterministic"
+      },
+      {
+        "colorIndex": 4,
         "id": "Sink",
         "label": "Sink"
       },
       {
-        "colorIndex": 4,
+        "colorIndex": 5,
         "id": "Source",
         "label": "Source"
       },
       {
-        "colorIndex": 5,
+        "colorIndex": 6,
         "id": "Tee",
         "label": "Tee"
       },
       {
-        "colorIndex": 6,
+        "colorIndex": 7,
         "id": "Transform",
         "label": "Transform"
       }
@@ -2556,6 +2553,10 @@
       {
         "label": "Network",
         "type": "Network"
+      },
+      {
+        "label": "NonDeterministic",
+        "type": "NonDeterministic"
       },
       {
         "label": "Sink",
