@@ -1,0 +1,42 @@
+.hydroscope-wrapper { position: relative; width: 100%; height: 100%; }
+.hydroscope-core { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
+.hydroscope-toolbar {
+  display: flex; gap: 8px; padding: 8px 12px; background: #fafafa;
+  border-bottom: 1px solid #e0e0e0; align-items: center; flex-shrink: 0; z-index: 10;
+}
+.hydroscope-search { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 200px; }
+.hydroscope-hierarchy-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+.hydroscope-btn { padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; background: white; font-size: 13px; cursor: pointer; }
+.hydroscope-btn:hover { background: #f0f0f0; }
+.hydroscope-canvas { flex: 1; position: relative; }
+
+.hydroscope-dropzone {
+  display: flex; align-items: center; justify-content: center;
+  border: 2px dashed #ccc; border-radius: 8px; background: #fafafa;
+  min-height: 300px;
+}
+.hydroscope-dropzone-content { text-align: center; color: #888; }
+.hydroscope-file-button { display: inline-block; padding: 8px 16px; background: #4a90d9; color: white; border-radius: 4px; cursor: pointer; }
+.hydroscope-file-button:hover { background: #357abd; }
+
+.hydro-node {
+  padding: 6px 12px; background: #f5f5f5; border: 1px solid #bbb; border-radius: 4px;
+  font-size: 12px; font-family: "Monaco","Menlo","Consolas",monospace;
+  cursor: default; position: relative; min-width: 60px; text-align: center;
+}
+.hydro-node-dimmed { opacity: 0.25; }
+.hydro-node-highlighted { border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.3); }
+.hydro-node-collapsed { background: #e8e8e8; border-style: dashed; cursor: pointer; }
+.hydro-node-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.hydro-node-badge {
+  position: absolute; top: -6px; right: -6px; width: 14px; height: 14px;
+  background: #4a90d9; color: white; border-radius: 50%; font-size: 10px; line-height: 14px; text-align: center;
+}
+
+.hydro-container { width: 100%; height: 100%; border: 1px solid #e0e0e0; border-radius: 6px; background: rgba(250,250,250,0.5); }
+.hydro-container-header {
+  padding: 4px 10px; font-size: 11px; color: #666; font-weight: 500;
+  border-bottom: 1px solid #e0e0e0; background: rgba(240,240,240,0.8); border-radius: 6px 6px 0 0; cursor: pointer;
+}
+
+.react-flow__handle { width: 6px; height: 6px; background: #bbb; border: none; }

@@ -1,34 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
-    "types": ["vitest/globals", "node"],
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-
-    /* Linting */
+    "declaration": true,
+    "declarationDir": "dist",
+    "outDir": "dist",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
   },
-  "include": ["src/**/*"],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
