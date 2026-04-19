@@ -4,3 +4,4 @@ export type {
   HydroscopeData, HydroscopeProps, HydroscopeCoreProps,
   RawNode, RawEdge, HierarchyChoice, EdgeStyleConfig, NodeTypeConfig,
 } from "./types";
+export type { LayoutOptions, LayoutDirection, LayoutAlgorithm } from "./layout";

@@ -1,42 +1,412 @@
-.hydroscope-wrapper { position: relative; width: 100%; height: 100%; }
-.hydroscope-core { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
+/* === Layout === */
+.hydro-layout { display: flex; width: 100%; height: 100%; overflow: hidden; }
+.hydro-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* === Toolbar === */
 .hydroscope-toolbar {
   display: flex; gap: 8px; padding: 8px 12px; background: #fafafa;
   border-bottom: 1px solid #e0e0e0; align-items: center; flex-shrink: 0; z-index: 10;
 }
 .hydroscope-search { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 200px; }
-.hydroscope-hierarchy-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
-.hydroscope-btn { padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; background: white; font-size: 13px; cursor: pointer; }
-.hydroscope-btn:hover { background: #f0f0f0; }
-.hydroscope-canvas { flex: 1; position: relative; }
-
-.hydroscope-dropzone {
-  display: flex; align-items: center; justify-content: center;
-  border: 2px dashed #ccc; border-radius: 8px; background: #fafafa;
-  min-height: 300px;
+.hydroscope-search:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
+.hydro-toolbar-stats { font-size: 12px; color: #888; margin-left: auto; white-space: nowrap; }
+.hydro-toolbar-hierarchy {
+  padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px;
+  font-size: 12px; background: white;
 }
-.hydroscope-dropzone-content { text-align: center; color: #888; }
-.hydroscope-file-button { display: inline-block; padding: 8px 16px; background: #4a90d9; color: white; border-radius: 4px; cursor: pointer; }
-.hydroscope-file-button:hover { background: #357abd; }
+.hydro-toolbar-close {
+  padding: 3px 8px; border: 1px solid #ccc; border-radius: 3px;
+  background: white; font-size: 11px; cursor: pointer; color: #666; white-space: nowrap;
+}
+.hydro-toolbar-close:hover { background: #f0f0f0; color: #333; }
+
+/* === Sidebar === */
+.hydro-sidebar {
+  width: 240px; flex-shrink: 0; background: #fafafa; border-right: 1px solid #e0e0e0;
+  overflow-y: auto; font-size: 12px; display: flex; flex-direction: column;
+}
+.hydro-sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; font-weight: 600; font-size: 13px; color: #333;
+  border-bottom: 1px solid #e0e0e0; background: #f0f0f0; flex-shrink: 0;
+}
+.hydro-sidebar-close {
+  background: none; border: none; font-size: 16px; cursor: pointer; color: #888;
+  padding: 0 4px; line-height: 1;
+}
+.hydro-sidebar-close:hover { color: #333; }
+.hydro-sidebar-collapsed {
+  width: 20px; flex-shrink: 0; background: #e8eaf0; border-right: 1px solid #ccc;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.hydro-sidebar-collapsed:hover { background: #d0d4e0; }
+.hydro-sidebar-caret { font-size: 16px; color: #666; line-height: 1; font-weight: 600; }
+.hydro-sidebar-collapsed:hover .hydro-sidebar-caret { color: #333; }
+
+/* === Sidebar search === */
+.hydro-sidebar-search { padding: 8px 12px; border-bottom: 1px solid #eee; }
+.hydro-sidebar-search .hydroscope-search { width: 100%; box-sizing: border-box; }
+.hydro-search-results {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: #666;
+}
+.hydro-reveal-btn {
+  background: #4a90d9; color: white; border: none; border-radius: 3px;
+  padding: 1px 6px; font-size: 10px; cursor: pointer; white-space: nowrap;
+}
+.hydro-reveal-btn:hover { background: #357abd; }
+.hydro-search-hits {
+  max-height: 200px; overflow-y: auto; margin-top: 4px;
+  border: 1px solid #eee; border-radius: 3px;
+}
+.hydro-search-hit {
+  display: flex; align-items: center; gap: 4px; padding: 3px 6px;
+  font-size: 11px; border-bottom: 1px solid #f5f5f5;
+}
+.hydro-search-hit:last-child { border-bottom: none; }
+.hydro-search-hit-hidden { opacity: 0.6; }
+.hydro-search-hit-label {
+  font-family: "Monaco","Menlo","Consolas",monospace; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1;
+}
+.hydro-search-hit-path { font-size: 10px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.hydro-search-hit-reveal {
+  background: none; border: 1px solid #ccc; border-radius: 2px;
+  padding: 0 3px; font-size: 11px; cursor: pointer; flex-shrink: 0;
+}
+.hydro-search-hit-reveal:hover { background: #f0f0f0; }
+.hydro-search-more { padding: 3px 6px; font-size: 10px; color: #999; text-align: center; }
+
+/* === Sidebar sections === */
+.hydro-section { border-bottom: 1px solid #eee; }
+.hydro-section-header {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  cursor: pointer; user-select: none; font-weight: 500; color: #444;
+}
+.hydro-section-header:hover { background: #f0f0f0; }
+.hydro-section-arrow { font-size: 8px; color: #999; transition: transform 0.15s; display: inline-block; }
+.hydro-section-arrow-open { transform: rotate(90deg); }
+.hydro-section-body { padding: 4px 12px 8px; }
+
+/* === Sidebar controls === */
+.hydro-select {
+  width: 100%; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px;
+  font-size: 12px; background: white;
+}
+.hydro-field { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.hydro-field > span { font-size: 11px; color: #666; }
+.hydro-field input[type="range"] { width: 100%; }
+.hydro-field-row { display: flex; gap: 4px; align-items: center; }
+.hydro-field-row .hydro-select { flex: 1; min-width: 0; }
+.hydro-color-picker {
+  width: 24px; height: 24px; padding: 0; border: 1px solid #ccc; border-radius: 3px;
+  cursor: pointer; flex-shrink: 0; background: none;
+}
+.hydro-color-picker::-webkit-color-swatch-wrapper { padding: 1px; }
+.hydro-color-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
+.hydro-color-label { font-size: 10px; color: #888; font-family: "Monaco","Menlo","Consolas",monospace; }
+.hydro-save-row { margin-top: 6px; display: flex; gap: 4px; }
+.hydro-save-btn { flex: 1; text-align: center; }
+.hydro-reset-btn { text-align: center; }
+
+/* === Element style editor === */
+.hydro-element-style { margin-bottom: 6px; }
+.hydro-element-style-label { font-size: 11px; color: #666; margin-bottom: 2px; }
+.hydro-element-style-controls { display: flex; gap: 4px; align-items: center; }
+.hydro-select-sm { width: auto; min-width: 55px; font-size: 11px; padding: 2px 4px; }
+.hydro-toggle-inline {
+  display: flex; align-items: center; gap: 2px; font-size: 10px; cursor: pointer;
+  color: #666; white-space: nowrap;
+}
+.hydro-toggle-inline input { margin: 0; }
+.hydro-btn-row { display: flex; gap: 4px; }
+.hydro-sidebar-btn {
+  flex: 1; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px;
+  background: white; font-size: 11px; cursor: pointer;
+}
+.hydro-sidebar-btn:hover { background: #f0f0f0; }
+
+/* === Toggle controls === */
+.hydro-toggle {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+  font-size: 11px; cursor: pointer;
+}
+.hydro-toggle input[type="checkbox"] { margin: 0; }
+
+/* === Legend === */
+.hydro-legend { display: flex; flex-direction: column; gap: 3px; }
+.hydro-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.hydro-legend-swatch {
+  width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* === Edge style legend === */
+.hydro-edge-legend { display: flex; flex-direction: column; gap: 6px; }
+.hydro-edge-legend-group-name { font-size: 11px; font-weight: 500; color: #555; margin-bottom: 2px; }
+.hydro-edge-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; padding-left: 8px; }
+.hydro-edge-legend-tag { color: #333; }
+.hydro-edge-preview { flex-shrink: 0; }
+
+/* === Nodes === */
+.hydro-node-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  position: relative;
+}
+.hydro-node-dot .react-flow__handle { opacity: 0; width: 4px; height: 4px; }
 
 .hydro-node {
   padding: 6px 12px; background: #f5f5f5; border: 1px solid #bbb; border-radius: 4px;
   font-size: 12px; font-family: "Monaco","Menlo","Consolas",monospace;
-  cursor: default; position: relative; min-width: 60px; text-align: center;
+  cursor: grab; position: relative; min-width: 60px; text-align: center;
+  border-left: 3px solid #999;
 }
+.hydro-node:active { cursor: grabbing; }
 .hydro-node-dimmed { opacity: 0.25; }
 .hydro-node-highlighted { border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.3); }
-.hydro-node-collapsed { background: #e8e8e8; border-style: dashed; cursor: pointer; }
-.hydro-node-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.hydro-node-label {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;
+  direction: rtl; text-align: left;
+}
+.hydro-node-info-btn {
+  position: absolute; top: -1px; right: -1px; width: 18px; height: 18px;
+  background: rgba(255,255,255,0.85); border: 1px solid #ccc; border-radius: 0 4px 0 4px;
+  font-size: 10px; line-height: 16px; text-align: center; cursor: pointer;
+  color: #888; padding: 0; opacity: 0; transition: opacity 0.15s;
+}
+.hydro-node:hover .hydro-node-info-btn { opacity: 1; }
+.hydro-node-info-btn:hover { background: #e8e8e8; color: #333; }
+
+/* Node hover tooltip */
+.hydro-node-tooltip {
+  display: none; position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%); background: #333; color: white; padding: 6px 10px;
+  border-radius: 4px; font-size: 11px; white-space: pre-wrap; word-break: break-word;
+  width: max-content; max-width: 360px; z-index: 1000; pointer-events: none; line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  direction: ltr; text-align: left;
+}
+.hydro-node-tooltip::after {
+  content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #333;
+}
+.hydro-node:hover .hydro-node-tooltip { display: block; }
+/* Ensure node doesn't clip the tooltip */
+.hydro-node { overflow: visible; }
 .hydro-node-badge {
   position: absolute; top: -6px; right: -6px; width: 14px; height: 14px;
   background: #4a90d9; color: white; border-radius: 50%; font-size: 10px; line-height: 14px; text-align: center;
 }
 
-.hydro-container { width: 100%; height: 100%; border: 1px solid #e0e0e0; border-radius: 6px; background: rgba(250,250,250,0.5); }
-.hydro-container-header {
-  padding: 4px 10px; font-size: 11px; color: #666; font-weight: 500;
-  border-bottom: 1px solid #e0e0e0; background: rgba(240,240,240,0.8); border-radius: 6px 6px 0 0; cursor: pointer;
+/* === Collapsed container nodes === */
+.hydro-collapsed-container {
+  width: var(--hydro-collapsed-w, 120px); height: var(--hydro-collapsed-h, 120px); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: pointer; overflow: visible;
+  color: white; font-size: 11px; font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.hydro-collapsed-container:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.hydro-collapsed-label {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100px; text-align: center; direction: rtl;
+  padding: 0 8px;
+}
+.hydro-collapsed-badge {
+  position: absolute; top: -5px; right: -5px; width: 16px; height: 16px;
+  background: white; color: #333; border-radius: 50%; font-size: 11px;
+  line-height: 16px; text-align: center; font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.hydro-collapsed-count {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+  background: white; color: #333; border-radius: 9px; font-size: 10px;
+  line-height: 18px; text-align: center; font-weight: 700; padding: 0 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* === Container/group nodes === */
+.hydro-container {
+  width: 100%; height: 100%;
+  border: 1px solid #d0d0d0; border-radius: 6px;
+  background: rgba(245,245,245,0.5);
+  pointer-events: all; overflow: hidden;
+}
+.hydro-container-header {
+  display: flex; align-items: center;
+  padding: 4px 10px; font-size: 11px; color: #555; font-weight: 600;
+  background: rgba(230,230,230,0.9); border-radius: 6px 6px 0 0;
+  cursor: pointer; user-select: none;
+  border-bottom: 1px solid #d0d0d0;
+  overflow: hidden;
+}
+.hydro-container-type { flex-shrink: 0; margin-right: 2px; }
+.hydro-container-name {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  direction: rtl; text-align: left; min-width: 0;
+}
+.hydro-container-header:hover { background: rgba(220,220,220,0.95); }
+.hydro-rebundle-btn {
+  flex-shrink: 0; margin-left: auto; background: #7c8594; color: white;
+  border: none; border-radius: 3px; padding: 0 5px; font-size: 10px;
+  cursor: pointer; line-height: 16px; opacity: 0.8;
+}
+.hydro-rebundle-btn:hover { opacity: 1; background: #5c6574; }
+
+/* === ReactFlow overrides === */
 .react-flow__handle { width: 6px; height: 6px; background: #bbb; border: none; }
+.react-flow__minimap {
+  bottom: 10px !important; left: 10px !important;
+  top: auto !important; right: auto !important;
+  border: 1px solid #ddd; border-radius: 4px;
+  background: rgba(255,255,255,0.9);
+}
+.react-flow__controls {
+  bottom: 10px !important; right: 10px !important;
+  top: auto !important; left: auto !important;
+}
+
+/* === Node info popup === */
+.hydro-popup-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.hydro-popup {
+  background: white; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  max-width: 520px; width: 90%; max-height: 80vh; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.hydro-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid #e0e0e0; background: #f8f8f8;
+}
+.hydro-popup-title {
+  font-weight: 600; font-size: 14px; font-family: "Monaco","Menlo","Consolas",monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.hydro-popup-close {
+  background: none; border: none; font-size: 18px; cursor: pointer; color: #888;
+  padding: 0 4px; line-height: 1; flex-shrink: 0;
+}
+.hydro-popup-close:hover { color: #333; }
+.hydro-popup-body { padding: 10px 14px; overflow-y: auto; font-size: 12px; }
+.hydro-popup-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.hydro-popup-row-full { justify-content: space-between; }
+.hydro-popup-key { font-weight: 500; color: #555; min-width: 60px; }
+.hydro-popup-val { color: #333; }
+.hydro-copy-btn {
+  background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px;
+  padding: 1px 8px; font-size: 11px; cursor: pointer; color: #555;
+}
+.hydro-copy-btn:hover { background: #e0e0e0; }
+.hydro-popup-code {
+  background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px;
+  padding: 8px 10px; font-size: 11px; font-family: "Monaco","Menlo","Consolas",monospace;
+  white-space: pre-wrap; word-break: break-all; margin: 0 0 8px; max-height: 120px;
+  overflow-y: auto; user-select: all;
+}
+.hydro-popup-frames {
+  border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;
+}
+.hydro-popup-frame {
+  display: flex; flex-direction: column; padding: 4px 8px;
+  border-bottom: 1px solid #f0f0f0; font-size: 11px;
+}
+.hydro-popup-frame:last-child { border-bottom: none; }
+.hydro-popup-fn {
+  font-family: "Monaco","Menlo","Consolas",monospace; font-weight: 500; color: #333;
+}
+.hydro-popup-file { font-size: 10px; color: #888; }
+.hydro-popup-frame-more { padding: 4px 8px; font-size: 10px; color: #999; text-align: center; }
+
+/* === Visual style modifiers === */
+
+/* --- Node shadows (directional, bottom-right light source) --- */
+.hydro-shadow-light .hydro-node {
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.1);
+}
+.hydro-shadow-medium .hydro-node {
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.06);
+}
+.hydro-shadow-medium .hydro-node:hover {
+  box-shadow: 3px 5px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08);
+}
+.hydro-shadow-heavy .hydro-node {
+  box-shadow: 3px 6px 18px rgba(0,0,0,0.22), 1px 2px 4px rgba(0,0,0,0.1);
+}
+.hydro-shadow-heavy .hydro-node:hover {
+  box-shadow: 4px 8px 24px rgba(0,0,0,0.28), 1px 3px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+.hydro-shadow-heavy .hydro-node-highlighted {
+  box-shadow: 0 0 0 2px rgba(74,144,217,0.4), 3px 6px 18px rgba(74,144,217,0.2);
+}
+
+/* --- Node gradient --- */
+.hydro-node-gradient .hydro-node {
+  background: linear-gradient(180deg, #fafafa 0%, #ececec 100%);
+}
+
+/* --- Container styles (use --hydro-container-tint CSS var) --- */
+.hydro-container-light .hydro-container {
+  background: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 4%, rgba(250,250,252,0.5));
+  border-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 15%, #ccc);
+}
+.hydro-container-light .hydro-container-header {
+  background: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 8%, rgba(240,240,244,0.95));
+}
+
+.hydro-container-medium .hydro-container {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 5%, rgba(250,250,255,0.6)) 0%,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 8%, rgba(240,240,250,0.35)) 100%
+  );
+  border-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 20%, #bbb);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.hydro-container-medium .hydro-container-header {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 10%, rgba(238,238,245,0.95)) 0%,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 14%, rgba(228,228,240,0.9)) 100%
+  );
+  border-bottom-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 20%, #bbb);
+}
+
+.hydro-container-heavy .hydro-container {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 8%, rgba(245,245,255,0.7)) 0%,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 14%, rgba(230,230,250,0.4)) 100%
+  );
+  border-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 30%, #aaa);
+  box-shadow: 2px 3px 10px color-mix(in srgb, var(--hydro-container-tint, #6366f1) 15%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.hydro-container-heavy .hydro-container-header {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 15%, rgba(225,225,245,0.95)) 0%,
+    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 22%, rgba(210,210,238,0.9)) 100%
+  );
+  border-bottom-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 30%, #aaa);
+  color: #3a3f55;
+}
+
+/* --- Edge glow (use --hydro-glow-color CSS var) --- */
+.hydro-glow-light .react-flow__edge path {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--hydro-glow-color, #6366f1) 50%, transparent));
+}
+.hydro-glow-medium .react-flow__edge path {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hydro-glow-color, #6366f1) 60%, transparent));
+}
+.hydro-glow-heavy .react-flow__edge path {
+  filter: drop-shadow(0 0 5px var(--hydro-glow-color, #6366f1))
+    drop-shadow(0 0 12px color-mix(in srgb, var(--hydro-glow-color, #6366f1) 40%, transparent));
+}

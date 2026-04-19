@@ -95,6 +95,8 @@ export interface Container {
   parentId: string | null;
   childContainerIds: string[];
   nodeIds: string[];
+  /** Derived from child nodes' locationType (e.g. "Process", "Cluster") */
+  locationType?: string;
 }
 
 export interface EdgeStyle {
@@ -120,4 +122,5 @@ export interface HydroscopeCoreProps {
   data: HydroscopeData;
   width?: string | number;
   height?: string | number;
+  onClose?: () => void;
 }
