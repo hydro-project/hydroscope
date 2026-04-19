@@ -62,7 +62,7 @@ export interface HydroscopeData {
   nodes: RawNode[];
   edges: RawEdge[];
   hierarchyChoices: HierarchyChoice[];
-  nodeAssignments: Record<string, Record<string, string>>;
+  nodeAssignments: Record<string, Record<string, unknown>>;
   selectedHierarchy?: string;
   nodeTypeConfig?: NodeTypeConfig;
   edgeStyleConfig?: EdgeStyleConfig;

@@ -31,8 +31,30 @@ export async function decompressData(compressed: string): Promise<string> {
   return decompressDataAsync(compressed);
 }
 
-export async function parseDataFromUrl(urlString?: string): Promise<HydroscopeData | null> {
-  const url = new URL(urlString ?? window.location.href);
+/**
+ * Parse hydroscope data from URL parameters.
+ * Supports two calling conventions:
+ *   parseDataFromUrl() — reads from window.location
+ *   parseDataFromUrl(dataParam, compressedParam) — uses provided values directly
+ */
+export async function parseDataFromUrl(
+  dataOrUrl?: string | null,
+  compressed?: string | null,
+): Promise<HydroscopeData | null> {
+  // Two-arg form: called with (dataParam, compressedParam) directly
+  if (compressed) {
+    const json = await decompressDataAsync(compressed);
+    return parseHydroscopeData(json);
+  }
+  if (dataOrUrl && !dataOrUrl.includes("://")) {
+    // Looks like a raw base64 data param, not a URL
+    const raw = dataOrUrl.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = raw.length % 4 === 0 ? "" : "=".repeat(4 - (raw.length % 4));
+    return parseHydroscopeData(atob(raw + pad));
+  }
+
+  // Single-arg or no-arg form: parse from URL
+  const url = new URL(dataOrUrl ?? window.location.href);
   const dataParam = url.searchParams.get("data");
   const compressedParam = url.searchParams.get("compressed");
   const fileParam = url.searchParams.get("file");
