@@ -27,14 +27,9 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.esm.js"
     },
-    "./style.css": {
-      "import": "./dist/style.css",
-      "require": "./dist/style.css"
-    },
-    "./src/style.css": {
-      "import": "./dist/style.css",
-      "require": "./dist/style.css"
-    }
+    "./style.css": "./dist/style.css",
+    "./dist/style.css": "./dist/style.css",
+    "./src/style.css": "./dist/style.css"
   },
   "sideEffects": [
     "dist/style.css",
