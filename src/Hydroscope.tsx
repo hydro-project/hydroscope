@@ -116,12 +116,9 @@ const CollapsedContainerNode = memo(function CollapsedContainerNode({ data }: No
 
 const ContainerNodeComponent = memo(function ContainerNodeComponent({ data }: NodeProps) {
   const d = data as any;
-  const locType = d.locationType as string | undefined;
-  const showPrefix = locType && !d.label?.startsWith(locType);
   return (
     <div className="hydro-container">
       <div className="hydro-container-header" title={d.label}>
-        {showPrefix && <span className="hydro-container-type">{locType}: </span>}
         <span className="hydro-container-name">{d.label}</span>
         {d.hasDissolved && (
           <button className="hydro-rebundle-btn"
