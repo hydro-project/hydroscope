@@ -194,6 +194,7 @@ interface HydroEdgeData {
   color: string;
   strokeDasharray?: string;
   lineStyle: "single" | "hash-marks";
+  wavy: boolean;
   count: number;
   label?: string;
 }
@@ -203,17 +204,73 @@ function HydroEdge(props: EdgeProps) {
   const d = (props.data as unknown) as HydroEdgeData;
   if (!d) return null;
   const [path, labelX, labelY] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
-  const color = d.color ?? "#666666";
-  const strokeWidth = d.count > 1 ? Math.min(1 + d.count * 0.5, 4) : 1.5;
+  const color = d.color ?? "#8b95a5";
+  const strokeWidth = d.count > 1 ? Math.min(1.5 + d.count * 0.5, 4.5) : 2;
+
+  // For wavy edges, render a sine-wave distortion along the path
+  const wavyPath = d.wavy ? makeWavyPath(path, 3, 14) : null;
+
   return (
     <>
-      <BaseEdge path={path} markerEnd={markerEnd}
-        style={{ stroke: color, strokeWidth, strokeDasharray: d.strokeDasharray, opacity: 0.8 }} />
+      {wavyPath ? (
+        <>
+          {/* Invisible base path for arrowhead positioning */}
+          <BaseEdge path={path} markerEnd={markerEnd}
+            style={{ stroke: "transparent", strokeWidth: 0 }} />
+          <path d={wavyPath} stroke={color} strokeWidth={strokeWidth} fill="none"
+            strokeDasharray={d.strokeDasharray} markerEnd={markerEnd as any} />
+        </>
+      ) : (
+        <BaseEdge path={path} markerEnd={markerEnd}
+          style={{ stroke: color, strokeWidth, strokeDasharray: d.strokeDasharray }} />
+      )}
       {d.lineStyle === "hash-marks" && <HashMarks path={path} color={color} />}
       {d.label && <text x={labelX} y={labelY - 8} textAnchor="middle" fontSize={10} fill="#666">{d.label}</text>}
       {d.count > 1 && <text x={labelX} y={labelY + 12} textAnchor="middle" fontSize={9} fill="#999">{d.count}×</text>}
     </>
   );
+}
+
+/** Create a wavy version of an SVG path by sampling points and adding sine displacement */
+function makeWavyPath(svgPath: string, amplitude: number, wavelength: number): string | null {
+  if (typeof document === "undefined") return null;
+  const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  pathEl.setAttribute("d", svgPath);
+  const totalLen = pathEl.getTotalLength();
+  if (totalLen < 20) return null;
+
+  // Sample points along the path with sine displacement perpendicular to direction
+  const step = 2;
+  const points: [number, number][] = [];
+  for (let dist = 0; dist <= totalLen; dist += step) {
+    const p = pathEl.getPointAtLength(dist);
+    const p2 = pathEl.getPointAtLength(Math.min(dist + 0.5, totalLen));
+    const dx = p2.x - p.x, dy = p2.y - p.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    // Taper wave at endpoints so it connects smoothly
+    const taper = Math.min(dist / 20, (totalLen - dist) / 20, 1);
+    const wave = Math.sin((dist / wavelength) * Math.PI * 2) * amplitude * taper;
+    points.push([p.x + nx * wave, p.y + ny * wave]);
+  }
+  if (points.length < 4) return null;
+
+  // Build smooth cubic bezier through the points using Catmull-Rom → cubic conversion
+  let d = `M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+    // Catmull-Rom tangents
+    const t = 0.3;
+    const cp1x = p1[0] + (p2[0] - p0[0]) * t;
+    const cp1y = p1[1] + (p2[1] - p0[1]) * t;
+    const cp2x = p2[0] - (p3[0] - p1[0]) * t;
+    const cp2y = p2[1] - (p3[1] - p1[1]) * t;
+    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
 }
 
 function HashMarks({ path, color }: { path: string; color: string }) {
@@ -230,7 +287,7 @@ function HashMarks({ path, color }: { path: string; color: string }) {
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
     const nx = -dy / len * 6, ny = dx / len * 6;
     marks.push(<line key={dist} x1={p.x - nx} y1={p.y - ny} x2={p.x + nx} y2={p.y + ny}
-      stroke={color} strokeWidth={1.5} opacity={0.6} />);
+      stroke={color} strokeWidth={2} opacity={0.85} />);
   }
   return <g>{marks}</g>;
 }
@@ -472,9 +529,9 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
       )}
 
       {/* Edge style legend */}
-      {data.edgeStyleConfig?.semanticMappings && (
+      {data.edgeStyleConfig && (
         <Section title="Edge Styles" defaultOpen={true}>
-          <EdgeStyleLegend mappings={data.edgeStyleConfig.semanticMappings} />
+          <EdgeStyleLegend config={data.edgeStyleConfig} />
         </Section>
       )}
 
@@ -774,29 +831,34 @@ function SaveStyleButton({ visualStyle, onReset, onDark, onLight }: {
   );
 }
 
-function EdgeStyleLegend({ mappings }: { mappings: Record<string, Record<string, Record<string, string>>> }) {
+function EdgeStyleLegend({ config }: { config: import("./types").EdgeStyleConfig }) {
   const groups = useMemo(() => {
-    const result: { group: string; items: { tag: string; color: string; dashed: boolean; animated: boolean; hashMarks: boolean; wavy: boolean }[] }[] = [];
-    for (const [groupName, tags] of Object.entries(mappings)) {
+    const defaultStyle = resolveEdgeStyle([], config);
+    const result: { group: string; items: { tag: string; color: string; dashed: boolean; hashMarks: boolean; wavy: boolean }[] }[] = [];
+    if (!config?.semanticMappings) return result;
+    for (const [groupName, tags] of Object.entries(config.semanticMappings)) {
       const items: typeof result[0]["items"] = [];
-      for (const [tagName, props] of Object.entries(tags)) {
-        let color = "#666", dashed = false, animated = false, hashMarks = false, wavy = false;
-        for (const [k, v] of Object.entries(props)) {
-          if (k === "color") color = v;
-          else if (k === "line-pattern" && v === "dashed") dashed = true;
-          else if (k === "animation" && v === "animated") animated = true;
-          else if (k === "line-style" && v === "hash-marks") hashMarks = true;
-          else if (k === "waviness" && v === "wavy") wavy = true;
-        }
-        // Only show items that have a visible style effect
-        if (color !== "#666" || dashed || animated || hashMarks || wavy) {
-          items.push({ tag: tagName, color, dashed, animated, hashMarks, wavy });
+      for (const tagName of Object.keys(tags)) {
+        const style = resolveEdgeStyle([tagName], config);
+        // Only show if this tag changes something visible from the default
+        const changed = style.color !== defaultStyle.color
+          || style.strokeDasharray !== defaultStyle.strokeDasharray
+          || style.lineStyle !== defaultStyle.lineStyle
+          || style.waviness !== defaultStyle.waviness;
+        if (changed) {
+          items.push({
+            tag: tagName,
+            color: style.color,
+            dashed: style.strokeDasharray === "5,5",
+            hashMarks: style.lineStyle === "hash-marks",
+            wavy: style.waviness === "wavy",
+          });
         }
       }
       if (items.length > 0) result.push({ group: groupName.replace(/Group$/, ""), items });
     }
     return result;
-  }, [mappings]);
+  }, [config]);
 
   return (
     <div className="hydro-edge-legend">
@@ -819,18 +881,20 @@ function EdgeStyleLegend({ mappings }: { mappings: Record<string, Record<string,
 
 function EdgePreviewLine({ color, dashed, hashMarks, wavy }: { color: string; dashed: boolean; hashMarks: boolean; wavy: boolean }) {
   const y = 8;
-  const path = wavy ? `M2,${y} Q10,${y - 4} 18,${y} Q26,${y + 4} 34,${y}` : `M2,${y} L38,${y}`;
+  // Wavy: tight sine wave; straight: simple line
+  const path = wavy
+    ? `M2,${y} C5,${y-3} 8,${y-3} 11,${y} C14,${y+3} 17,${y+3} 20,${y} C23,${y-3} 26,${y-3} 29,${y} C32,${y+3} 35,${y+3} 38,${y}`
+    : `M2,${y} L38,${y}`;
   return (
     <>
       <path d={path} stroke={color} strokeWidth={2} fill="none"
-        strokeDasharray={dashed ? "4,3" : undefined} />
+        strokeDasharray={dashed ? "5,5" : undefined} />
       {hashMarks && (
         <>
-          <line x1={14} y1={y - 4} x2={14} y2={y + 4} stroke={color} strokeWidth={1.5} />
-          <line x1={26} y1={y - 4} x2={26} y2={y + 4} stroke={color} strokeWidth={1.5} />
+          <line x1={14} y1={y - 4} x2={14} y2={y + 4} stroke={color} strokeWidth={2} opacity={0.85} />
+          <line x1={26} y1={y - 4} x2={26} y2={y + 4} stroke={color} strokeWidth={2} opacity={0.85} />
         </>
       )}
-      {/* Arrowhead */}
       <polygon points={`38,${y} 33,${y - 3} 33,${y + 3}`} fill={color} />
     </>
   );
@@ -1039,7 +1103,7 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
         id: edge.id, source: edge.source, target: edge.target, type: "hydro", animated: s.animated,
         markerEnd: { type: MarkerType.ArrowClosed, color: s.color, width: ARROW_SIZE, height: ARROW_SIZE },
         data: { color: s.color, strokeDasharray: s.strokeDasharray, lineStyle: s.lineStyle,
-          count: edge.count, label: edge.label } satisfies HydroEdgeData,
+          wavy: s.waviness === "wavy", count: edge.count, label: edge.label } satisfies HydroEdgeData,
       };
     }));
   }, [layout, visibleEdges, data.edgeStyleConfig]);

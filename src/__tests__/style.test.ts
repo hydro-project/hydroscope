@@ -14,7 +14,7 @@ const paxos = loadTestData("paxos.json");
 describe("resolveEdgeStyle", () => {
   it("returns default style with no config", () => {
     const style = resolveEdgeStyle(["Local", "Stream"], null);
-    expect(style.color).toBe("#666666");
+    expect(style.color).toBe("#8b95a5");
     expect(style.animated).toBe(false);
     expect(style.lineStyle).toBe("single");
   });
@@ -38,7 +38,7 @@ describe("resolveEdgeStyle", () => {
 
   it("applies Stream tag → color", () => {
     const style = resolveEdgeStyle(["Stream", "Local"], paxos.edgeStyleConfig);
-    expect(style.color).not.toBe("#666666"); // Should have a specific color
+    expect(style.color).not.toBe("#8b95a5"); // Should have a specific color
   });
 
   it("applies NoOrder tag → wavy", () => {
@@ -55,11 +55,11 @@ describe("resolveEdgeStyle", () => {
 
   it("handles empty semantic tags", () => {
     const style = resolveEdgeStyle([], paxos.edgeStyleConfig);
-    expect(style.color).toBe("#666666");
+    expect(style.color).toBe("#8b95a5");
   });
 
   it("handles unknown tags gracefully", () => {
     const style = resolveEdgeStyle(["UnknownTag", "AnotherUnknown"], paxos.edgeStyleConfig);
-    expect(style.color).toBe("#666666");
+    expect(style.color).toBe("#8b95a5");
   });
 });

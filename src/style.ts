@@ -1,7 +1,7 @@
 import type { EdgeStyleConfig, EdgeStyle } from "./types";
 
 const DEFAULT_STYLE: EdgeStyle = {
-  color: "#666666",
+  color: "#8b95a5",
   animated: false,
   arrowhead: "triangle-filled",
   lineStyle: "single",
