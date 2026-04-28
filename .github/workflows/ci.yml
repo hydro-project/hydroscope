@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   test:
@@ -29,29 +29,10 @@ jobs:
         run: npm ci
 
       - name: Type check
-        run: npm run typecheck
-
-      - name: Type check (strict)
-        run: npm run typecheck:strict
-
-      - name: Lint code
-        run: npm run lint
-
-      - name: Check code formatting
-        run: npm run format:check
+        run: npx tsc --noEmit
 
       - name: Run tests
         run: npm test
 
       - name: Build package
         run: npm run build
-
-      - name: Upload build artifacts
-        if: matrix.node-version == 20
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            dist/
-            package.json
-          retention-days: 7

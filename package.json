@@ -66,8 +66,8 @@
     "lint:fix": "eslint 'src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{js,ts,tsx}'",
     "format:check": "prettier --check 'src/**/*.{js,ts,tsx}'",
-    "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "typecheck:strict": "tsc -p tsconfig.strict.json --noEmit",
+    "typecheck": "tsc --noEmit",
+    "typecheck:strict": "tsc --noEmit --strict",
     "dev-reports": "bash dev_reports/refresh.sh",
     "prepublishOnly": "npm run build:clean"
   },
@@ -83,6 +83,7 @@
     "@rollup/plugin-commonjs": "^28.0.8",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.1.4",
+    "@types/node": "^25.6.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "react": "^19.1.1",
