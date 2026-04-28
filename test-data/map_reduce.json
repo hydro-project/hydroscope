@@ -1,0 +1,6609 @@
+{
+  "nodes": [
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 630,
+            "lineNumber": 630
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "filter(q!({ let orig = f__free ; move | t : & (_ , _) | orig (& t . 1) }))",
+      "id": "viz10v1",
+      "label": "filter",
+      "nodeType": "Transform",
+      "shortLabel": "filter"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 902,
+            "lineNumber": 902
+          },
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 985,
+            "lineNumber": 985
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 631,
+            "lineNumber": 631
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz11v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 902,
+            "lineNumber": 902
+          },
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 985,
+            "lineNumber": 985
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 631,
+            "lineNumber": 631
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz12v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 985,
+            "lineNumber": 985
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 631,
+            "lineNumber": 631
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| (k , _) | k))",
+      "id": "viz13v1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 632,
+            "lineNumber": 632
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "observenondet [hydro operator]",
+      "id": "viz14v1",
+      "label": "observenondet",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "observenondet"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/mod.rs",
+            "filename": "src/live_collections/stream/mod.rs",
+            "fn": "stream",
+            "function": "stream",
+            "line": 1513,
+            "lineNumber": 1513
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 633,
+            "lineNumber": 633
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "fold(q!(| | vec ! []), q!(| acc , v | { acc . push (v) ; }))",
+      "id": "viz15v1",
+      "label": "fold",
+      "nodeType": "Aggregation",
+      "shortLabel": "fold"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/convert/mod.rs",
+            "filename": "src/convert/mod.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 778,
+            "lineNumber": 778
+          },
+          {
+            "file": "src/live_collections/stream/mod.rs",
+            "filename": "src/live_collections/stream/mod.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 837,
+            "lineNumber": 837
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 636,
+            "lineNumber": 636
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz16v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 636,
+            "lineNumber": 636
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "crosssingleton [hydro operator]",
+      "id": "viz17v1",
+      "label": "crosssingleton",
+      "nodeType": "Join",
+      "shortLabel": "crosssingleton"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 637,
+            "lineNumber": 637
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| (data , members) | (members [data . 0 % members . len ()] . clone () , data . 1)))",
+      "id": "viz18v1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 508,
+            "lineNumber": 508
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 642,
+            "lineNumber": 642
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz19v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 12,
+            "lineNumber": 12
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "source_iter(q!(stageleft :: runtime_support :: type_hint :: < std :: vec :: Vec < & str > > ({ use crate :: __staged :: __deps :: * ; use crate :: __staged :: cluster :: map_reduce :: * ; vec ! [\"abc\" , \"abc\" , \"xyz\" , \"abc\"] })))",
+      "id": "viz1v1",
+      "label": "source_iter",
+      "nodeType": "Source",
+      "shortLabel": "source_iter"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 508,
+            "lineNumber": 508
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 642,
+            "lineNumber": 642
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "network(send + recv)",
+      "id": "viz20v1",
+      "label": "network",
+      "nodeType": "Network",
+      "shortLabel": "network"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 17,
+            "lineNumber": 17
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "map(q!(| string | (string , ())))",
+      "id": "viz21v1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 18,
+            "lineNumber": 18
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz22v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 21,
+            "lineNumber": 21
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "batch [hydro operator]",
+      "id": "viz23v1",
+      "label": "batch",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "batch"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 25,
+            "lineNumber": 25
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "foldkeyed(q!(| | 0), q!(| count , _ | * count += 1))",
+      "id": "viz24v1",
+      "label": "foldkeyed",
+      "nodeType": "Aggregation",
+      "shortLabel": "foldkeyed"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 902,
+            "lineNumber": 902
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 26,
+            "lineNumber": 26
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz25v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 902,
+            "lineNumber": 902
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 26,
+            "lineNumber": 26
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz26v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 27,
+            "lineNumber": 27
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 2,
+          "version": 1
+        },
+        "locationType": "Cluster"
+      },
+      "fullLabel": "inspect(q!(| (string , count) | println ! (\"partition count: {} - {}\" , string , count)))",
+      "id": "viz27v1",
+      "label": "inspect",
+      "nodeType": "Transform",
+      "shortLabel": "inspect"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 32,
+            "lineNumber": 32
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "network(send + recv)",
+      "id": "viz28v1",
+      "label": "network",
+      "nodeType": "Network",
+      "shortLabel": "network"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 958,
+            "lineNumber": 958
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 32,
+            "lineNumber": 32
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz29v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 13,
+            "lineNumber": 13
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| s | s . to_owned ()))",
+      "id": "viz2v1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_stream/mod.rs",
+            "filename": "src/live_collections/keyed_stream/mod.rs",
+            "fn": "stream",
+            "function": "stream",
+            "line": 614,
+            "lineNumber": 614
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 33,
+            "lineNumber": 33
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz30v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_stream/mod.rs",
+            "filename": "src/live_collections/keyed_stream/mod.rs",
+            "fn": "stream",
+            "function": "stream",
+            "line": 614,
+            "lineNumber": 614
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 33,
+            "lineNumber": 33
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| (_ , v) | v))",
+      "id": "viz31v1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 35,
+            "lineNumber": 35
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz32v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_stream/mod.rs",
+            "filename": "src/live_collections/keyed_stream/mod.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 1929,
+            "lineNumber": 1929
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 35,
+            "lineNumber": 35
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "observenondet [hydro operator]",
+      "id": "viz33v1",
+      "label": "observenondet",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "observenondet"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 35,
+            "lineNumber": 35
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "reducekeyed(q!(| total , count | * total += count))",
+      "id": "viz34v1",
+      "label": "reducekeyed",
+      "nodeType": "Aggregation",
+      "shortLabel": "reducekeyed"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 41,
+            "lineNumber": 41
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "batch [hydro operator]",
+      "id": "viz35v1",
+      "label": "batch",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "batch"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 902,
+            "lineNumber": 902
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 42,
+            "lineNumber": 42
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz36v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/keyed_singleton.rs",
+            "filename": "src/live_collections/keyed_singleton.rs",
+            "fn": "boundedness",
+            "function": "boundedness",
+            "line": 902,
+            "lineNumber": 902
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 42,
+            "lineNumber": 42
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz37v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 44,
+            "lineNumber": 44
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "observenondet [hydro operator]",
+      "id": "viz38v1",
+      "label": "observenondet",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "observenondet"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 44,
+            "lineNumber": 44
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "for_each(q!(| (string , count) | println ! (\"{}: {}\" , string , count)))",
+      "id": "viz39v1",
+      "label": "for_each",
+      "nodeType": "Sink",
+      "shortLabel": "for_each"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 627,
+            "lineNumber": 627
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "enumerate [hydro operator]",
+      "id": "viz3v1",
+      "label": "enumerate",
+      "nodeType": "Transform",
+      "shortLabel": "enumerate"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 627,
+            "lineNumber": 627
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "batch [hydro operator]",
+      "id": "viz4v1",
+      "label": "batch",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "batch"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 624,
+            "lineNumber": 624
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "source_stream(cluster_membership_stream(Cluster(loc2v1)))",
+      "id": "viz5v1",
+      "label": "source_stream",
+      "nodeType": "Source",
+      "shortLabel": "source_stream"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/location/mod.rs",
+            "filename": "src/location/mod.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 447,
+            "lineNumber": 447
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 624,
+            "lineNumber": 624
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "map(q!(| (k , v) | (MemberId :: from_tagless (k) , v)))",
+      "id": "viz6v1",
+      "label": "map",
+      "nodeType": "Transform",
+      "shortLabel": "map"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/location/mod.rs",
+            "filename": "src/location/mod.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 448,
+            "lineNumber": 448
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 624,
+            "lineNumber": 624
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "cast [hydro operator]",
+      "id": "viz7v1",
+      "label": "cast",
+      "nodeType": "Transform",
+      "shortLabel": "cast"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 33,
+            "lineNumber": 33
+          },
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 624,
+            "lineNumber": 624
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "foldkeyed(q!(| | false), q!(| present , event | { match event { MembershipEvent :: Joined => * present = true , MembershipEvent :: Left => * present = false , } }))",
+      "id": "viz8v1",
+      "label": "foldkeyed",
+      "nodeType": "Aggregation",
+      "shortLabel": "foldkeyed"
+    },
+    {
+      "data": {
+        "backtrace": [
+          {
+            "file": "src/live_collections/stream/networking.rs",
+            "filename": "src/live_collections/stream/networking.rs",
+            "fn": "networking",
+            "function": "networking",
+            "line": 626,
+            "lineNumber": 626
+          },
+          {
+            "file": "src/cluster/map_reduce.rs",
+            "filename": "src/cluster/map_reduce.rs",
+            "fn": "map_reduce",
+            "function": "map_reduce",
+            "line": 16,
+            "lineNumber": 16
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "{async_block#0}",
+            "function": "{async_block#0}",
+            "line": 75,
+            "lineNumber": 75
+          },
+          {
+            "file": "src/future/future.rs",
+            "filename": "src/future/future.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 167,
+            "lineNumber": 167
+          },
+          {
+            "file": "src/task/coop/mod.rs",
+            "filename": "src/task/coop/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 133,
+            "lineNumber": 133
+          },
+          {
+            "file": "src/runtime/park.rs",
+            "filename": "src/runtime/park.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 285,
+            "lineNumber": 285
+          },
+          {
+            "file": "src/runtime/context/blocking.rs",
+            "filename": "src/runtime/context/blocking.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 66,
+            "lineNumber": 66
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 87,
+            "lineNumber": 87
+          },
+          {
+            "file": "src/runtime/context/runtime.rs",
+            "filename": "src/runtime/context/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 65,
+            "lineNumber": 65
+          },
+          {
+            "file": "src/runtime/scheduler/multi_thread/mod.rs",
+            "filename": "src/runtime/scheduler/multi_thread/mod.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 86,
+            "lineNumber": 86
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "alloc",
+            "function": "alloc",
+            "line": 370,
+            "lineNumber": 370
+          },
+          {
+            "file": "src/runtime/runtime.rs",
+            "filename": "src/runtime/runtime.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 340,
+            "lineNumber": 340
+          },
+          {
+            "file": "examples/map_reduce.rs",
+            "filename": "examples/map_reduce.rs",
+            "fn": "main",
+            "function": "main",
+            "line": 102,
+            "lineNumber": 102
+          },
+          {
+            "file": "src/ops/function.rs",
+            "filename": "src/ops/function.rs",
+            "fn": "call_once<fn(), ()>",
+            "function": "call_once<fn(), ()>",
+            "line": 250,
+            "lineNumber": 250
+          }
+        ],
+        "locationKey": {
+          "idx": 1,
+          "version": 1
+        },
+        "locationType": "Process"
+      },
+      "fullLabel": "batch [hydro operator]",
+      "id": "viz9v1",
+      "label": "batch",
+      "nodeType": "NonDeterministic",
+      "shortLabel": "batch"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e8",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "Local",
+        "Singleton",
+        "TotalOrder"
+      ],
+      "source": "viz10v1",
+      "target": "viz11v1"
+    },
+    {
+      "id": "e9",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder"
+      ],
+      "source": "viz11v1",
+      "target": "viz12v1"
+    },
+    {
+      "id": "e10",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "NoOrder",
+        "Stream"
+      ],
+      "source": "viz12v1",
+      "target": "viz13v1"
+    },
+    {
+      "id": "e11",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "NoOrder",
+        "Stream"
+      ],
+      "source": "viz13v1",
+      "target": "viz14v1"
+    },
+    {
+      "id": "e12",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Stream",
+        "TotalOrder"
+      ],
+      "source": "viz14v1",
+      "target": "viz15v1"
+    },
+    {
+      "id": "e13",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Singleton",
+        "TotalOrder"
+      ],
+      "source": "viz15v1",
+      "target": "viz16v1"
+    },
+    {
+      "id": "e15",
+      "label": "right",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Optional",
+        "TotalOrder"
+      ],
+      "source": "viz16v1",
+      "target": "viz17v1"
+    },
+    {
+      "id": "e16",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Stream",
+        "TotalOrder"
+      ],
+      "source": "viz17v1",
+      "target": "viz18v1"
+    },
+    {
+      "id": "e17",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz18v1",
+      "target": "viz19v1"
+    },
+    {
+      "id": "e18",
+      "label": "to Cluster(loc2v1)",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Network",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz19v1",
+      "target": "viz20v1"
+    },
+    {
+      "id": "e0",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Stream",
+        "TotalOrder"
+      ],
+      "source": "viz1v1",
+      "target": "viz2v1"
+    },
+    {
+      "id": "e19",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz20v1",
+      "target": "viz21v1"
+    },
+    {
+      "id": "e20",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz21v1",
+      "target": "viz22v1"
+    },
+    {
+      "id": "e21",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz22v1",
+      "target": "viz23v1"
+    },
+    {
+      "id": "e22",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder"
+      ],
+      "source": "viz23v1",
+      "target": "viz24v1"
+    },
+    {
+      "id": "e23",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "Local",
+        "Singleton",
+        "TotalOrder"
+      ],
+      "source": "viz24v1",
+      "target": "viz25v1"
+    },
+    {
+      "id": "e24",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder"
+      ],
+      "source": "viz25v1",
+      "target": "viz26v1"
+    },
+    {
+      "id": "e25",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "NoOrder",
+        "Stream"
+      ],
+      "source": "viz26v1",
+      "target": "viz27v1"
+    },
+    {
+      "id": "e26",
+      "label": "to Process(loc1v1)",
+      "semanticTags": [
+        "Network",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "viz27v1",
+      "target": "viz28v1"
+    },
+    {
+      "id": "e27",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "viz28v1",
+      "target": "viz29v1"
+    },
+    {
+      "id": "e28",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "NoOrder",
+        "Unbounded"
+      ],
+      "source": "viz29v1",
+      "target": "viz30v1"
+    },
+    {
+      "id": "e1",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Stream",
+        "TotalOrder"
+      ],
+      "source": "viz2v1",
+      "target": "viz3v1"
+    },
+    {
+      "id": "e29",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "viz30v1",
+      "target": "viz31v1"
+    },
+    {
+      "id": "e30",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "viz31v1",
+      "target": "viz32v1"
+    },
+    {
+      "id": "e31",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "NoOrder",
+        "Unbounded"
+      ],
+      "source": "viz32v1",
+      "target": "viz33v1"
+    },
+    {
+      "id": "e32",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz33v1",
+      "target": "viz34v1"
+    },
+    {
+      "id": "e33",
+      "semanticTags": [
+        "Keyed",
+        "Local",
+        "Singleton",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz34v1",
+      "target": "viz35v1"
+    },
+    {
+      "id": "e34",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "Local",
+        "Singleton",
+        "TotalOrder"
+      ],
+      "source": "viz35v1",
+      "target": "viz36v1"
+    },
+    {
+      "id": "e35",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder"
+      ],
+      "source": "viz36v1",
+      "target": "viz37v1"
+    },
+    {
+      "id": "e36",
+      "semanticTags": [
+        "Local",
+        "NoOrder",
+        "Stream",
+        "Unbounded"
+      ],
+      "source": "viz37v1",
+      "target": "viz38v1"
+    },
+    {
+      "id": "e37",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz38v1",
+      "target": "viz39v1"
+    },
+    {
+      "id": "e2",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Stream",
+        "TotalOrder"
+      ],
+      "source": "viz3v1",
+      "target": "viz4v1"
+    },
+    {
+      "id": "e14",
+      "label": "left",
+      "semanticTags": [
+        "Bounded",
+        "Local",
+        "Stream",
+        "TotalOrder"
+      ],
+      "source": "viz4v1",
+      "target": "viz17v1"
+    },
+    {
+      "id": "e3",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz5v1",
+      "target": "viz6v1"
+    },
+    {
+      "id": "e4",
+      "semanticTags": [
+        "Local",
+        "Stream",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz6v1",
+      "target": "viz7v1"
+    },
+    {
+      "id": "e5",
+      "semanticTags": [
+        "Keyed",
+        "KeyedStream",
+        "Local",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz7v1",
+      "target": "viz8v1"
+    },
+    {
+      "id": "e6",
+      "semanticTags": [
+        "Keyed",
+        "Local",
+        "Singleton",
+        "TotalOrder",
+        "Unbounded"
+      ],
+      "source": "viz8v1",
+      "target": "viz9v1"
+    },
+    {
+      "id": "e7",
+      "semanticTags": [
+        "Bounded",
+        "Keyed",
+        "Local",
+        "Singleton",
+        "TotalOrder"
+      ],
+      "source": "viz9v1",
+      "target": "viz10v1"
+    }
+  ],
+  "hierarchyChoices": [
+    {
+      "children": [
+        {
+          "id": "bt_1",
+          "name": "map_reduce — src/cluster/map_reduce.rs:12"
+        },
+        {
+          "id": "bt_2",
+          "name": "map_reduce — src/cluster/map_reduce.rs:13"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "id": "bt_5",
+                  "name": "map_reduce — src/live_collections/stream/networking.rs:33"
+                },
+                {
+                  "id": "bt_6",
+                  "name": "map_reduce — src/location/mod.rs:447"
+                },
+                {
+                  "id": "bt_7",
+                  "name": "map_reduce — src/location/mod.rs:448"
+                }
+              ],
+              "id": "bt_4",
+              "name": "networking — src/live_collections/stream/networking.rs:624"
+            },
+            {
+              "id": "bt_8",
+              "name": "networking — src/live_collections/stream/networking.rs:626"
+            },
+            {
+              "id": "bt_9",
+              "name": "networking — src/live_collections/stream/networking.rs:627"
+            },
+            {
+              "id": "bt_10",
+              "name": "networking — src/live_collections/stream/networking.rs:630"
+            },
+            {
+              "children": [
+                {
+                  "id": "bt_13",
+                  "name": "src/live_collections/keyed_singleton.rs:902"
+                }
+              ],
+              "id": "bt_12",
+              "name": "networking — src/live_collections/stream/networking.rs:631 → boundedness — src/live_collections/keyed_singleton.rs:985"
+            },
+            {
+              "id": "bt_14",
+              "name": "networking — src/live_collections/stream/networking.rs:632"
+            },
+            {
+              "children": [
+                {
+                  "id": "bt_16",
+                  "name": "stream — src/live_collections/stream/mod.rs:1513"
+                }
+              ],
+              "id": "bt_15",
+              "name": "networking — src/live_collections/stream/networking.rs:633"
+            },
+            {
+              "children": [
+                {
+                  "id": "bt_19",
+                  "name": "src/convert/mod.rs:778"
+                }
+              ],
+              "id": "bt_18",
+              "name": "networking — src/live_collections/stream/networking.rs:636 → boundedness — src/live_collections/stream/mod.rs:837"
+            },
+            {
+              "id": "bt_20",
+              "name": "networking — src/live_collections/stream/networking.rs:637"
+            },
+            {
+              "children": [
+                {
+                  "id": "bt_22",
+                  "name": "src/live_collections/stream/networking.rs:508"
+                }
+              ],
+              "id": "bt_21",
+              "name": "networking — src/live_collections/stream/networking.rs:642"
+            }
+          ],
+          "id": "bt_3",
+          "name": "map_reduce — src/cluster/map_reduce.rs:16"
+        },
+        {
+          "id": "bt_23",
+          "name": "map_reduce — src/cluster/map_reduce.rs:17"
+        },
+        {
+          "id": "bt_24",
+          "name": "map_reduce — src/cluster/map_reduce.rs:18"
+        },
+        {
+          "id": "bt_25",
+          "name": "map_reduce — src/cluster/map_reduce.rs:21"
+        },
+        {
+          "id": "bt_26",
+          "name": "map_reduce — src/cluster/map_reduce.rs:25"
+        },
+        {
+          "children": [
+            {
+              "id": "bt_28",
+              "name": "boundedness — src/live_collections/keyed_singleton.rs:902"
+            }
+          ],
+          "id": "bt_27",
+          "name": "map_reduce — src/cluster/map_reduce.rs:26"
+        },
+        {
+          "id": "bt_29",
+          "name": "map_reduce — src/cluster/map_reduce.rs:27"
+        },
+        {
+          "children": [
+            {
+              "id": "bt_31",
+              "name": "networking — src/live_collections/stream/networking.rs:958"
+            }
+          ],
+          "id": "bt_30",
+          "name": "map_reduce — src/cluster/map_reduce.rs:32"
+        },
+        {
+          "children": [
+            {
+              "id": "bt_33",
+              "name": "stream — src/live_collections/keyed_stream/mod.rs:614"
+            }
+          ],
+          "id": "bt_32",
+          "name": "map_reduce — src/cluster/map_reduce.rs:33"
+        },
+        {
+          "children": [
+            {
+              "id": "bt_35",
+              "name": "src/live_collections/keyed_stream/mod.rs:1929"
+            }
+          ],
+          "id": "bt_34",
+          "name": "map_reduce — src/cluster/map_reduce.rs:35"
+        },
+        {
+          "id": "bt_36",
+          "name": "map_reduce — src/cluster/map_reduce.rs:41"
+        },
+        {
+          "children": [
+            {
+              "id": "bt_38",
+              "name": "boundedness — src/live_collections/keyed_singleton.rs:902"
+            }
+          ],
+          "id": "bt_37",
+          "name": "map_reduce — src/cluster/map_reduce.rs:42"
+        },
+        {
+          "id": "bt_39",
+          "name": "map_reduce — src/cluster/map_reduce.rs:44"
+        }
+      ],
+      "id": "backtrace",
+      "name": "Backtrace"
+    },
+    {
+      "children": [
+        {
+          "children": [],
+          "key": "loc1v1",
+          "name": "Process hydro_test::cluster::map_reduce::Leader"
+        },
+        {
+          "children": [],
+          "key": "loc2v1",
+          "name": "Cluster hydro_test::cluster::map_reduce::Worker"
+        }
+      ],
+      "id": "location",
+      "name": "Location"
+    }
+  ],
+  "nodeAssignments": {
+    "backtrace": {
+      "viz10v1": "bt_10",
+      "viz11v1": "bt_13",
+      "viz12v1": "bt_13",
+      "viz13v1": "bt_12",
+      "viz14v1": "bt_14",
+      "viz15v1": "bt_16",
+      "viz16v1": "bt_19",
+      "viz17v1": "bt_18",
+      "viz18v1": "bt_20",
+      "viz19v1": "bt_22",
+      "viz1v1": "bt_1",
+      "viz20v1": "bt_22",
+      "viz21v1": "bt_23",
+      "viz22v1": "bt_24",
+      "viz23v1": "bt_25",
+      "viz24v1": "bt_26",
+      "viz25v1": "bt_28",
+      "viz26v1": "bt_28",
+      "viz27v1": "bt_29",
+      "viz28v1": "bt_30",
+      "viz29v1": "bt_31",
+      "viz2v1": "bt_2",
+      "viz30v1": "bt_33",
+      "viz31v1": "bt_33",
+      "viz32v1": "bt_34",
+      "viz33v1": "bt_35",
+      "viz34v1": "bt_34",
+      "viz35v1": "bt_36",
+      "viz36v1": "bt_38",
+      "viz37v1": "bt_38",
+      "viz38v1": "bt_39",
+      "viz39v1": "bt_39",
+      "viz3v1": "bt_9",
+      "viz4v1": "bt_9",
+      "viz5v1": "bt_4",
+      "viz6v1": "bt_6",
+      "viz7v1": "bt_7",
+      "viz8v1": "bt_5",
+      "viz9v1": "bt_8"
+    },
+    "location": {
+      "viz10v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz11v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz12v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz13v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz14v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz15v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz16v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz17v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz18v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz19v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz1v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz20v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz21v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz22v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz23v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz24v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz25v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz26v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz27v1": {
+        "idx": 2,
+        "version": 1
+      },
+      "viz28v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz29v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz2v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz30v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz31v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz32v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz33v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz34v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz35v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz36v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz37v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz38v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz39v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz3v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz4v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz5v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz6v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz7v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz8v1": {
+        "idx": 1,
+        "version": 1
+      },
+      "viz9v1": {
+        "idx": 1,
+        "version": 1
+      }
+    }
+  },
+  "selectedHierarchy": "backtrace",
+  "edgeStyleConfig": {
+    "note": "Edge styles are now computed per-edge using the unified edge style system. This config is provided for reference and compatibility.",
+    "semanticMappings": {
+      "BoundednessGroup": {
+        "Bounded": {
+          "halo": "none"
+        },
+        "Unbounded": {
+          "halo": "light-blue"
+        }
+      },
+      "CollectionGroup": {
+        "Optional": {
+          "arrowhead": "diamond-open",
+          "color": "#6b7280"
+        },
+        "Singleton": {
+          "arrowhead": "circle-filled",
+          "color": "#000000"
+        },
+        "Stream": {
+          "arrowhead": "triangle-filled",
+          "color": "#2563eb"
+        }
+      },
+      "KeyednessGroup": {
+        "Keyed": {
+          "line-style": "hash-marks"
+        },
+        "NotKeyed": {
+          "line-style": "single"
+        }
+      },
+      "NetworkGroup": {
+        "Local": {
+          "animation": "static",
+          "line-pattern": "solid"
+        },
+        "Network": {
+          "animation": "animated",
+          "line-pattern": "dashed"
+        }
+      },
+      "OrderingGroup": {
+        "NoOrder": {
+          "waviness": "wavy"
+        },
+        "TotalOrder": {
+          "waviness": "straight"
+        }
+      }
+    },
+    "semanticPriorities": [
+      [
+        "Unbounded",
+        "Bounded"
+      ],
+      [
+        "NoOrder",
+        "TotalOrder"
+      ],
+      [
+        "Keyed",
+        "NotKeyed"
+      ],
+      [
+        "Network",
+        "Local"
+      ]
+    ]
+  },
+  "nodeTypeConfig": {
+    "defaultType": "Transform",
+    "types": [
+      {
+        "colorIndex": 0,
+        "id": "Aggregation",
+        "label": "Aggregation"
+      },
+      {
+        "colorIndex": 1,
+        "id": "Join",
+        "label": "Join"
+      },
+      {
+        "colorIndex": 2,
+        "id": "Network",
+        "label": "Network"
+      },
+      {
+        "colorIndex": 3,
+        "id": "NonDeterministic",
+        "label": "NonDeterministic"
+      },
+      {
+        "colorIndex": 4,
+        "id": "Sink",
+        "label": "Sink"
+      },
+      {
+        "colorIndex": 5,
+        "id": "Source",
+        "label": "Source"
+      },
+      {
+        "colorIndex": 6,
+        "id": "Tee",
+        "label": "Tee"
+      },
+      {
+        "colorIndex": 7,
+        "id": "Transform",
+        "label": "Transform"
+      }
+    ]
+  },
+  "legend": {
+    "items": [
+      {
+        "label": "Aggregation",
+        "type": "Aggregation"
+      },
+      {
+        "label": "Join",
+        "type": "Join"
+      },
+      {
+        "label": "Network",
+        "type": "Network"
+      },
+      {
+        "label": "NonDeterministic",
+        "type": "NonDeterministic"
+      },
+      {
+        "label": "Sink",
+        "type": "Sink"
+      },
+      {
+        "label": "Source",
+        "type": "Source"
+      },
+      {
+        "label": "Tee",
+        "type": "Tee"
+      },
+      {
+        "label": "Transform",
+        "type": "Transform"
+      }
+    ],
+    "title": "Node Types"
+  }
+}

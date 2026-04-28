@@ -56,9 +56,28 @@ const DataflowNode = memo(function DataflowNode({ data }: NodeProps) {
   const d = data as any;
   const zoom = useStore(zoomSelector);
   const bgColor = d.typeColor ?? "#999";
+  const isMatch = d.highlighted === true;
+  const isDimmed = d.dimmed === true;
 
-  // Dot mode: below zoom threshold, render as a small colored circle
+  // Dot mode: below zoom threshold
   if (zoom < DOT_ZOOM_THRESHOLD) {
+    // Search active: matches are large bright dots, non-matches are tiny grey
+    if (isDimmed) {
+      return (
+        <div className="hydro-node-dot hydro-node-dot-dimmed">
+          <Handle type="target" position={Position.Top} />
+          <Handle type="source" position={Position.Bottom} />
+        </div>
+      );
+    }
+    if (isMatch) {
+      return (
+        <div className="hydro-node-dot hydro-node-dot-match">
+          <Handle type="target" position={Position.Top} />
+          <Handle type="source" position={Position.Bottom} />
+        </div>
+      );
+    }
     return (
       <div className="hydro-node-dot" style={{ background: bgColor }}>
         <Handle type="target" position={Position.Top} />
@@ -67,14 +86,21 @@ const DataflowNode = memo(function DataflowNode({ data }: NodeProps) {
     );
   }
 
-  const cls = ["hydro-node", d.dimmed && "hydro-node-dimmed", d.highlighted && "hydro-node-highlighted"].filter(Boolean).join(" ");
-  const showTooltip = d.fullLabel && d.fullLabel !== d.label;
+  // Full mode
+  const cls = ["hydro-node", isDimmed && "hydro-node-dimmed", isMatch && "hydro-node-highlighted"].filter(Boolean).join(" ");
+  const ns = d.nodeStyle as ElementStyle | undefined;
+  const fillColor = ns?.color ?? "#f5f5f5";
+  const borderCol = ns?.borderColor ?? "#bbb";
+  const bg = isMatch
+    ? "#fef08a" // bright yellow background for matches
+    : ns?.gradient
+      ? `linear-gradient(180deg, ${fillColor} 0%, ${darken(fillColor, 0.08)} 100%)`
+      : fillColor;
   return (
-    <div className={cls}
-      style={{ borderLeftColor: bgColor, borderLeftWidth: 3 }}>
+    <div className={cls} title={d.fullLabel ?? d.label}
+      style={{ background: bg, borderColor: isMatch ? "#eab308" : borderCol, borderLeftColor: bgColor, borderLeftWidth: 3, color: ns?.textColor ?? "#1e293b" }}>
       <Handle type="target" position={Position.Top} />
       <div className="hydro-node-label">{d.label}</div>
-      {showTooltip && <div className="hydro-node-tooltip">{d.fullLabel}</div>}
       <button className="hydro-node-info-btn" onClick={(e) => { e.stopPropagation(); d.onInfo?.(); }}
         title="Node details">ℹ</button>
       <Handle type="source" position={Position.Bottom} />
@@ -86,6 +112,8 @@ const CollapsedContainerNode = memo(function CollapsedContainerNode({ data }: No
   const d = data as any;
   const count = d.leafCount as number;
   const es = d.elemStyle as ElementStyle | undefined;
+  const isMatch = d.highlighted === true;
+  const isDimmed = d.dimmed === true;
   const bg = es?.color ?? d.collapsedColor ?? "#475569";
   const shadow = es?.shadow ?? "medium";
   const grad = es?.gradient ?? false;
@@ -97,15 +125,21 @@ const CollapsedContainerNode = memo(function CollapsedContainerNode({ data }: No
     heavy: "3px 6px 18px rgba(0,0,0,0.3)",
   };
 
+  const matchShadow = "0 0 0 3px rgba(250,204,21,0.6), 0 0 16px rgba(250,204,21,0.4)";
+
   const style: React.CSSProperties = {
-    background: grad
-      ? `linear-gradient(180deg, ${bg} 0%, ${darken(bg, 0.15)} 100%)`
-      : bg,
-    boxShadow: shadowMap[shadow],
+    background: isMatch
+      ? `linear-gradient(180deg, #fef08a 0%, #fde047 100%)`
+      : grad ? `linear-gradient(180deg, ${bg} 0%, ${darken(bg, 0.15)} 100%)` : bg,
+    boxShadow: isMatch ? matchShadow : shadowMap[shadow],
+    border: `2px solid ${isMatch ? "#eab308" : (es?.borderColor ?? darken(bg, 0.2))}`,
+    color: isMatch ? "#1e293b" : (es?.textColor ?? "#ffffff"),
+    opacity: isDimmed ? 0.35 : 1,
+    filter: isDimmed ? "grayscale(0.7)" : undefined,
   };
 
   return (
-    <div className="hydro-collapsed-container" style={style}>
+    <div className="hydro-collapsed-container" style={style} title={d.label}>
       <Handle type="target" position={Position.Top} />
       <div className="hydro-collapsed-label">{d.label}</div>
       <div className="hydro-collapsed-count">{count}</div>
@@ -118,8 +152,8 @@ const ContainerNodeComponent = memo(function ContainerNodeComponent({ data }: No
   const d = data as any;
   return (
     <div className="hydro-container">
-      <div className="hydro-container-header" title={d.label}>
-        <span className="hydro-container-name">{d.label}</span>
+      <div className="hydro-container-header">
+        <span className="hydro-container-name" title={d.label}>{d.label}</span>
         {d.hasDissolved && (
           <button className="hydro-rebundle-btn"
             onClick={(e) => { e.stopPropagation(); d.onRebundle?.(); }}
@@ -262,6 +296,8 @@ type Intensity = "none" | "light" | "medium" | "heavy";
 
 interface ElementStyle {
   color: string;
+  borderColor: string;
+  textColor: string;
   shadow: Intensity;
   gradient: boolean;
 }
@@ -272,19 +308,50 @@ interface VisualStyle {
   synthetic: ElementStyle;
   containerStyle: Intensity;
   containerTint: string;
+  containerFill: string;
+  containerTextColor: string;
   edgeGlow: Intensity;
   edgeGlowColor: string;
+  canvasColor: string;
 }
 
-const DEFAULT_VISUAL_STYLE: VisualStyle = {
-  node: { color: "#f5f5f5", shadow: "heavy", gradient: true },
-  collapsed: { color: "#475569", shadow: "heavy", gradient: true },
-  synthetic: { color: "#7c8594", shadow: "heavy", gradient: true },
+const DARK_STYLE: VisualStyle = {
+  node: { color: "#e2e8f0", borderColor: "#94a3b8", textColor: "#1e293b", shadow: "heavy", gradient: true },
+  collapsed: { color: "#64f2f2", borderColor: "#4f46e5", textColor: "#0f172a", shadow: "heavy", gradient: true },
+  synthetic: { color: "#cfe2ac", borderColor: "#0284c7", textColor: "#1e293b", shadow: "heavy", gradient: true },
   containerStyle: "medium",
-  containerTint: "#64e1f2",
+  containerTint: "#3b3b5c",
+  containerFill: "#1d595e",
+  containerTextColor: "#e2e8f0",
+  edgeGlow: "light",
+  edgeGlowColor: "#818cf8",
+  canvasColor: "#001f1e",
+};
+
+const LIGHT_STYLE: VisualStyle = {
+  node: { color: "#ffffff", borderColor: "#cbd5e1", textColor: "#1e293b", shadow: "medium", gradient: true },
+  collapsed: { color: "#64f2e8", borderColor: "#4338ca", textColor: "#000000", shadow: "medium", gradient: true },
+  synthetic: { color: "#b075e1", borderColor: "#059669", textColor: "#ffffff", shadow: "medium", gradient: true },
+  containerStyle: "medium",
+  containerTint: "#6366f1",
+  containerFill: "#f1f5f9",
+  containerTextColor: "#334155",
   edgeGlow: "none",
   edgeGlowColor: "#6366f1",
+  canvasColor: "#f8fafc",
 };
+
+function getSystemColorScheme(): "dark" | "light" {
+  if (typeof window === "undefined") return "light";
+  // Check Docusaurus data-theme attribute first
+  const docTheme = document.documentElement.getAttribute("data-theme");
+  if (docTheme === "dark") return "dark";
+  if (docTheme === "light") return "light";
+  // Fall back to system preference
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+const DEFAULT_VISUAL_STYLE = getSystemColorScheme() === "dark" ? DARK_STYLE : LIGHT_STYLE;
 
 // --- Sidebar Panel (search, legends, appearance) ---
 
@@ -317,8 +384,8 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
 
   if (!open) {
     return (
-      <div className="hydro-sidebar-collapsed" onClick={() => setOpen(true)} title="Show controls">
-        <span className="hydro-sidebar-caret">›</span>
+      <div className="hydro-sidebar-collapsed" onClick={() => setOpen(true)} title="Show panel">
+        <span className="hydro-sidebar-caret">Search + Legend</span>
       </div>
     );
   }
@@ -332,8 +399,13 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
 
       {/* Search */}
       <div className="hydro-sidebar-search">
-        <input className="hydroscope-search" type="text" placeholder="Search nodes..."
-          value={search} onChange={(e) => onSearchChange(e.target.value)} />
+        <div className="hydro-search-input-wrap">
+          <input className="hydroscope-search" type="text" placeholder="Search nodes..."
+            value={search} onChange={(e) => onSearchChange(e.target.value)} />
+          {search && (
+            <button className="hydro-search-clear" onClick={() => onSearchChange("")} title="Clear search">×</button>
+          )}
+        </div>
         {search && (
           <div className="hydro-search-results">
             <span>{searchHits.length} match{searchHits.length !== 1 ? "es" : ""}</span>
@@ -360,7 +432,7 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
 
       {/* Node type legend */}
       {data.legend && (
-        <Section title={data.legend.title ?? "Node Types"} defaultOpen={false}>
+        <Section title={data.legend.title ?? "Node Types"} defaultOpen={true}>
           <div className="hydro-legend">
             {data.legend.items.map((item) => (
               <div key={item.type} className="hydro-legend-item">
@@ -374,12 +446,13 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
 
       {/* Edge style legend */}
       {data.edgeStyleConfig?.semanticMappings && (
-        <Section title="Edge Styles" defaultOpen={false}>
+        <Section title="Edge Styles" defaultOpen={true}>
           <EdgeStyleLegend mappings={data.edgeStyleConfig.semanticMappings} />
         </Section>
       )}
 
-      {/* Appearance tuner */}
+      {/* Appearance tuner (hidden by default, enable with ?appearance=1 URL param) */}
+      {typeof window !== "undefined" && new URLSearchParams(window.location.search).has("appearance") && (
       <Section title="Appearance" defaultOpen={false}>
         <ElementStyleEditor label="Leaf nodes" value={visualStyle.node}
           onChange={(v) => onVisualStyleChange({ ...visualStyle, node: v })} />
@@ -390,23 +463,27 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
         <label className="hydro-field">
           <span>Expanded containers</span>
           <div className="hydro-field-row">
-            <select className="hydro-select" value={visualStyle.containerStyle}
+            <HexColorInput value={visualStyle.containerFill} title="Fill"
+              onChange={(c) => onVisualStyleChange({ ...visualStyle, containerFill: c })} />
+            <HexColorInput value={visualStyle.containerTint} title="Border/header tint"
+              onChange={(c) => onVisualStyleChange({ ...visualStyle, containerTint: c })} />
+            <HexColorInput value={visualStyle.containerTextColor} title="Text"
+              onChange={(c) => onVisualStyleChange({ ...visualStyle, containerTextColor: c })} />
+          </div>
+          <div className="hydro-field-row" style={{ marginTop: 3 }}>
+            <select className="hydro-select hydro-select-sm" value={visualStyle.containerStyle}
               onChange={(e) => onVisualStyleChange({ ...visualStyle, containerStyle: e.target.value as Intensity })}>
               <option value="none">Plain</option>
               <option value="light">Tinted</option>
               <option value="medium">Gradient</option>
               <option value="heavy">Bold</option>
             </select>
-            {visualStyle.containerStyle !== "none" && (
-              <input type="color" className="hydro-color-picker" value={visualStyle.containerTint}
-                onChange={(e) => onVisualStyleChange({ ...visualStyle, containerTint: e.target.value })} />
-            )}
           </div>
         </label>
         <label className="hydro-field">
           <span>Edge glow</span>
           <div className="hydro-field-row">
-            <select className="hydro-select" value={visualStyle.edgeGlow}
+            <select className="hydro-select hydro-select-sm" value={visualStyle.edgeGlow}
               onChange={(e) => onVisualStyleChange({ ...visualStyle, edgeGlow: e.target.value as Intensity })}>
               <option value="none">None</option>
               <option value="light">Subtle</option>
@@ -414,13 +491,22 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
               <option value="heavy">Neon</option>
             </select>
             {visualStyle.edgeGlow !== "none" && (
-              <input type="color" className="hydro-color-picker" value={visualStyle.edgeGlowColor}
-                onChange={(e) => onVisualStyleChange({ ...visualStyle, edgeGlowColor: e.target.value })} />
+              <HexColorInput value={visualStyle.edgeGlowColor}
+                onChange={(c) => onVisualStyleChange({ ...visualStyle, edgeGlowColor: c })} />
             )}
           </div>
         </label>
-        <SaveStyleButton visualStyle={visualStyle} onReset={() => onVisualStyleChange(DEFAULT_VISUAL_STYLE)} />
+        <label className="hydro-field">
+          <span>Canvas background</span>
+          <HexColorInput value={visualStyle.canvasColor}
+            onChange={(c) => onVisualStyleChange({ ...visualStyle, canvasColor: c })} />
+        </label>
+        <SaveStyleButton visualStyle={visualStyle}
+          onReset={() => onVisualStyleChange(getSystemColorScheme() === "dark" ? DARK_STYLE : LIGHT_STYLE)}
+          onDark={() => onVisualStyleChange(DARK_STYLE)}
+          onLight={() => onVisualStyleChange(LIGHT_STYLE)} />
       </Section>
+      )}
     </div>
   );
 }
@@ -569,6 +655,26 @@ function SearchHitRow({ hit, state, dispatch, containerNames }: {
   );
 }
 
+/** Color picker + editable hex text field */
+function HexColorInput({ value, onChange, title }: { value: string; onChange: (v: string) => void; title?: string }) {
+  const [text, setText] = useState(value);
+  useEffect(() => { setText(value); }, [value]);
+  const commit = () => {
+    const v = text.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v.toLowerCase());
+    else setText(value); // revert invalid
+  };
+  return (
+    <div className="hydro-hex-input" title={title}>
+      <input type="color" className="hydro-color-picker" value={value}
+        onChange={(e) => { onChange(e.target.value); setText(e.target.value); }} />
+      <input type="text" className="hydro-hex-text" value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }} />
+    </div>
+  );
+}
+
 function ElementStyleEditor({ label, value, onChange }: {
   label: string; value: ElementStyle; onChange: (v: ElementStyle) => void;
 }) {
@@ -576,8 +682,14 @@ function ElementStyleEditor({ label, value, onChange }: {
     <div className="hydro-element-style">
       <div className="hydro-element-style-label">{label}</div>
       <div className="hydro-element-style-controls">
-        <input type="color" className="hydro-color-picker" value={value.color}
-          onChange={(e) => onChange({ ...value, color: e.target.value })} />
+        <HexColorInput value={value.color} title="Fill"
+          onChange={(c) => onChange({ ...value, color: c })} />
+        <HexColorInput value={value.borderColor} title="Border"
+          onChange={(c) => onChange({ ...value, borderColor: c })} />
+        <HexColorInput value={value.textColor} title="Text"
+          onChange={(c) => onChange({ ...value, textColor: c })} />
+      </div>
+      <div className="hydro-element-style-controls" style={{ marginTop: 3 }}>
         <select className="hydro-select hydro-select-sm" value={value.shadow}
           onChange={(e) => onChange({ ...value, shadow: e.target.value as Intensity })}>
           <option value="none">Flat</option>
@@ -588,7 +700,7 @@ function ElementStyleEditor({ label, value, onChange }: {
         <label className="hydro-toggle-inline" title="Gradient">
           <input type="checkbox" checked={value.gradient}
             onChange={(e) => onChange({ ...value, gradient: e.target.checked })} />
-          <span>G</span>
+          <span>Gradient</span>
         </label>
       </div>
     </div>
@@ -608,7 +720,9 @@ function Section({ title, children, defaultOpen = true }: { title: string; child
   );
 }
 
-function SaveStyleButton({ visualStyle, onReset }: { visualStyle: VisualStyle; onReset: () => void }) {
+function SaveStyleButton({ visualStyle, onReset, onDark, onLight }: {
+  visualStyle: VisualStyle; onReset: () => void; onDark: () => void; onLight: () => void;
+}) {
   const [saved, setSaved] = useState(false);
   const save = useCallback(() => {
     const json = JSON.stringify(visualStyle, null, 2);
@@ -618,11 +732,17 @@ function SaveStyleButton({ visualStyle, onReset }: { visualStyle: VisualStyle; o
     }).catch(() => {});
   }, [visualStyle]);
   return (
-    <div className="hydro-save-row">
-      <button className="hydro-sidebar-btn hydro-save-btn" onClick={save}>
-        {saved ? "✓ Copied" : "Save config"}
-      </button>
-      <button className="hydro-sidebar-btn hydro-reset-btn" onClick={onReset}>Reset</button>
+    <div className="hydro-save-row-wrap">
+      <div className="hydro-save-row">
+        <button className="hydro-sidebar-btn hydro-save-btn" onClick={save}>
+          {saved ? "✓ Copied" : "Save"}
+        </button>
+        <button className="hydro-sidebar-btn" onClick={onReset}>Reset</button>
+      </div>
+      <div className="hydro-save-row">
+        <button className="hydro-sidebar-btn" onClick={onDark}>Dark</button>
+        <button className="hydro-sidebar-btn" onClick={onLight}>Light</button>
+      </div>
     </div>
   );
 }
@@ -706,6 +826,20 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
   const { fitView } = useReactFlow();
   const layoutVersion = useRef(0);
 
+  // Watch for Docusaurus/system theme changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const observer = new MutationObserver(() => {
+      const scheme = getSystemColorScheme();
+      setVisualStyle(scheme === "dark" ? DARK_STYLE : LIGHT_STYLE);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => setVisualStyle(getSystemColorScheme() === "dark" ? DARK_STYLE : LIGHT_STYLE);
+    mq.addEventListener("change", handler);
+    return () => { observer.disconnect(); mq.removeEventListener("change", handler); };
+  }, []);
+
   useEffect(() => { dispatch({ type: "load", data }); }, [data]);
 
   // Run headless ELK pass to get container sizes, then auto-expand
@@ -742,6 +876,34 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
     ).map((n) => n.id)) : null,
     [visibleNodes, searchLower, search],
   );
+
+  // Containers that have matching descendants (for highlighting collapsed containers)
+  const containerSearchMatches = useMemo(() => {
+    if (!search) return null;
+    const q = searchLower;
+    const matchingContainers = new Set<string>();
+    for (const node of state.nodes.values()) {
+      if (node.label.toLowerCase().includes(q) || node.fullLabel.toLowerCase().includes(q)) {
+        // Walk up the container hierarchy and mark all ancestors
+        let cid = node.parentId;
+        while (cid) {
+          matchingContainers.add(cid);
+          // Also mark the synthetic container for this parent
+          matchingContainers.add(`__syn_${cid}`);
+          const c = state.containers.get(cid);
+          cid = c?.parentId ?? null;
+        }
+      }
+    }
+    // Also mark __syn_root if any root-level node matches
+    for (const node of state.nodes.values()) {
+      if (!node.parentId && (node.label.toLowerCase().includes(q) || node.fullLabel.toLowerCase().includes(q))) {
+        matchingContainers.add("__syn_root");
+        break;
+      }
+    }
+    return matchingContainers;
+  }, [state.nodes, state.containers, searchLower, search]);
 
   useEffect(() => {
     const version = ++layoutVersion.current;
@@ -781,6 +943,10 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
       const color = isSynthetic ? visualStyle.synthetic.color : visualStyle.collapsed.color;
       const elemStyle = isSynthetic ? visualStyle.synthetic : visualStyle.collapsed;
 
+      // Search highlighting for containers
+      const containerHighlighted = containerSearchMatches === null || containerSearchMatches.has(container.id);
+      const containerDimmed = containerSearchMatches !== null && !containerHighlighted;
+
       nodes.push({
         id: container.id,
         type: isCollapsed ? "collapsed" : "group",
@@ -788,6 +954,8 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
         draggable: true,
         data: { label: container.name, isCollapsed, locationType: container.locationType,
           collapsedColor: color, elemStyle, leafCount: leafCounts.get(container.id) ?? container.nodeIds.length,
+          highlighted: containerHighlighted && containerSearchMatches !== null,
+          dimmed: containerDimmed,
           hasDissolved: !isCollapsed && state.dissolvedSynthetics.has(`__syn_${container.id}`),
           onRebundle: () => dispatch({ type: "toggle_synthetic", syntheticId: `__syn_${container.id}` }),
         },
@@ -800,7 +968,8 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
     for (const node of visibleNodes) {
       const pos = layout.nodePositions.get(node.id);
       if (!pos) continue;
-      const highlighted = searchMatches === null || searchMatches.has(node.id);
+      const highlighted = searchMatches !== null && searchMatches.has(node.id);
+      const dimmed = searchMatches !== null && !searchMatches.has(node.id);
 
       let x = pos.x, y = pos.y;
       if (node.parentId) {
@@ -815,7 +984,8 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
         data: {
           label: node.shortLabel, fullLabel: node.fullLabel, nodeType: node.nodeType,
           typeColor: nodeTypeColors.get(node.nodeType),
-          highlighted, dimmed: searchMatches !== null && !highlighted,
+          nodeStyle: visualStyle.node,
+          highlighted, dimmed,
           onInfo: () => setSelectedNodeInfo({
             id: node.id, label: node.shortLabel, fullLabel: node.fullLabel,
             nodeType: node.nodeType, locationType: node.data?.locationType,
@@ -827,7 +997,7 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
       });
     }
     setRfNodes(nodes);
-  }, [layout, visibleNodes, visibleContainers, state.collapsed, searchMatches, nodeTypeColors, visualStyle.collapsed, visualStyle.synthetic]);
+  }, [layout, visibleNodes, visibleContainers, state.collapsed, searchMatches, containerSearchMatches, nodeTypeColors, visualStyle.node, visualStyle.collapsed, visualStyle.synthetic]);
 
   // Build ReactFlow edges
   useEffect(() => {
@@ -857,20 +1027,30 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
   const styleClasses = [
     "hydro-layout",
     visualStyle.node.shadow !== "none" && `hydro-shadow-${visualStyle.node.shadow}`,
-    visualStyle.node.gradient && "hydro-node-gradient",
     visualStyle.containerStyle !== "none" && `hydro-container-${visualStyle.containerStyle}`,
     visualStyle.edgeGlow !== "none" && `hydro-glow-${visualStyle.edgeGlow}`,
   ].filter(Boolean).join(" ");
 
   const styleVars = {
     "--hydro-container-tint": visualStyle.containerTint,
+    "--hydro-container-fill": visualStyle.containerFill,
+    "--hydro-container-text": visualStyle.containerTextColor,
     "--hydro-glow-color": visualStyle.edgeGlowColor,
     "--hydro-collapsed-w": `${COLLAPSED_WIDTH}px`,
     "--hydro-collapsed-h": `${COLLAPSED_HEIGHT}px`,
   } as React.CSSProperties;
 
+  // Derive UI theme from canvas brightness
+  const isDarkUI = useMemo(() => {
+    const hex = visualStyle.canvasColor.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }, [visualStyle.canvasColor]);
+
   return (
-    <div className={styleClasses} style={styleVars}>
+    <div className={styleClasses} style={styleVars} data-theme={isDarkUI ? "dark" : "light"}>
       <SidebarPanel data={data} search={search} onSearchChange={setSearch}
         state={state} dispatch={dispatch}
         visualStyle={visualStyle} onVisualStyleChange={setVisualStyle} />
@@ -896,7 +1076,7 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
             onNodeClick={onNodeClick} fitView minZoom={0.05} maxZoom={2}
             nodesDraggable panOnDrag panOnScroll={false} zoomOnScroll zoomOnPinch
             proOptions={{ hideAttribution: true }}>
-            <Background />
+            <Background color={visualStyle.canvasColor === "#ffffff" ? undefined : "#ccc"} style={{ backgroundColor: visualStyle.canvasColor }} />
             <Controls>
               <GraphControlButtons layoutOpts={layoutOpts} onLayoutChange={setLayoutOpts} dispatch={dispatch} />
             </Controls>

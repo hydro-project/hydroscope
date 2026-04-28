@@ -4,49 +4,78 @@
 
 /* === Toolbar === */
 .hydroscope-toolbar {
-  display: flex; gap: 8px; padding: 8px 12px; background: #fafafa;
-  border-bottom: 1px solid #e0e0e0; align-items: center; flex-shrink: 0; z-index: 10;
+  display: flex; gap: 8px; padding: 8px 12px; background: var(--ui-bg-alt);
+  border-bottom: 1px solid var(--ui-border); align-items: center; flex-shrink: 0; z-index: 10;
 }
-.hydroscope-search { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 200px; }
-.hydroscope-search:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
-.hydro-toolbar-stats { font-size: 12px; color: #888; margin-left: auto; white-space: nowrap; }
+.hydroscope-search { padding: 4px 8px; border: 1px solid var(--ui-input-border); border-radius: 4px; font-size: 13px; width: 200px; background: var(--ui-input-bg); color: var(--ui-text); }
+.hydroscope-search:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+.hydro-toolbar-stats { font-size: 12px; color: var(--ui-text-muted); margin-left: auto; white-space: nowrap; }
 .hydro-toolbar-hierarchy {
-  padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px;
-  font-size: 12px; background: white;
+  padding: 3px 6px; border: 1px solid var(--ui-input-border); border-radius: 3px;
+  font-size: 12px; background: var(--ui-input-bg); color: var(--ui-text);
 }
 .hydro-toolbar-close {
-  padding: 3px 8px; border: 1px solid #ccc; border-radius: 3px;
-  background: white; font-size: 11px; cursor: pointer; color: #666; white-space: nowrap;
+  padding: 3px 8px; border: 1px solid var(--ui-input-border); border-radius: 3px;
+  background: var(--ui-input-bg); font-size: 11px; cursor: pointer; color: var(--ui-text); white-space: nowrap;
 }
-.hydro-toolbar-close:hover { background: #f0f0f0; color: #333; }
+.hydro-toolbar-close:hover { background: var(--ui-bg-hover); color: var(--ui-text-strong); }
 
 /* === Sidebar === */
 .hydro-sidebar {
-  width: 240px; flex-shrink: 0; background: #fafafa; border-right: 1px solid #e0e0e0;
+  width: 300px; flex-shrink: 0; border-right: 1px solid var(--ui-border);
   overflow-y: auto; font-size: 12px; display: flex; flex-direction: column;
+  background: var(--ui-bg); color: var(--ui-text);
 }
 .hydro-sidebar-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; font-weight: 600; font-size: 13px; color: #333;
-  border-bottom: 1px solid #e0e0e0; background: #f0f0f0; flex-shrink: 0;
+  padding: 8px 12px; font-weight: 600; font-size: 13px;
+  border-bottom: 1px solid var(--ui-border); background: var(--ui-bg-alt); flex-shrink: 0;
+  color: var(--ui-text-strong);
 }
 .hydro-sidebar-close {
-  background: none; border: none; font-size: 16px; cursor: pointer; color: #888;
+  background: none; border: none; font-size: 16px; cursor: pointer; color: var(--ui-text-muted);
   padding: 0 4px; line-height: 1;
 }
-.hydro-sidebar-close:hover { color: #333; }
+.hydro-sidebar-close:hover { color: var(--ui-text-strong); }
 .hydro-sidebar-collapsed {
-  width: 20px; flex-shrink: 0; background: #e8eaf0; border-right: 1px solid #ccc;
+  width: 24px; flex-shrink: 0; background: #b2f0e8; border-right: 1px solid #5dd9c8;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s;
+  transition: background 0.15s; writing-mode: vertical-rl;
 }
-.hydro-sidebar-collapsed:hover { background: #d0d4e0; }
-.hydro-sidebar-caret { font-size: 16px; color: #666; line-height: 1; font-weight: 600; }
-.hydro-sidebar-collapsed:hover .hydro-sidebar-caret { color: #333; }
+.hydro-sidebar-collapsed:hover { background: #80e8d8; }
+.hydro-sidebar-caret {
+  font-size: 11px; color: #1a6b5c; line-height: 1; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.hydro-sidebar-collapsed:hover .hydro-sidebar-caret { color: #0d4f43; }
+[data-theme="dark"] .hydro-sidebar-collapsed { background: #1a4040; border-right-color: #2d6b6b; }
+[data-theme="dark"] .hydro-sidebar-collapsed:hover { background: #255555; }
+[data-theme="dark"] .hydro-sidebar-caret { color: #64f2e8; }
+[data-theme="dark"] .hydro-sidebar-collapsed:hover .hydro-sidebar-caret { color: #a0fff5; }
+
+/* Theme variables */
+[data-theme="dark"] {
+  --ui-bg: #1a1a2e; --ui-bg-alt: #16162a; --ui-bg-hover: #252540;
+  --ui-border: #333; --ui-text: #ccc; --ui-text-strong: #e2e8f0; --ui-text-muted: #888;
+  --ui-input-bg: #2a2a3a; --ui-input-border: #444;
+}
+[data-theme="light"] {
+  --ui-bg: #f8f9fa; --ui-bg-alt: #f0f1f3; --ui-bg-hover: #e8e9ec;
+  --ui-border: #ddd; --ui-text: #333; --ui-text-strong: #111; --ui-text-muted: #888;
+  --ui-input-bg: #fff; --ui-input-border: #ccc;
+}
 
 /* === Sidebar search === */
-.hydro-sidebar-search { padding: 8px 12px; border-bottom: 1px solid #eee; }
+.hydro-sidebar-search { padding: 8px 12px; border-bottom: 1px solid var(--ui-border); }
 .hydro-sidebar-search .hydroscope-search { width: 100%; box-sizing: border-box; }
+.hydro-search-input-wrap { position: relative; }
+.hydro-search-input-wrap .hydroscope-search { padding-right: 24px; }
+.hydro-search-clear {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; font-size: 16px; cursor: pointer;
+  color: var(--ui-text-muted); line-height: 1; padding: 0 4px;
+}
+.hydro-search-clear:hover { color: var(--ui-text-strong); }
 .hydro-search-results {
   display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: #666;
 }
@@ -78,23 +107,23 @@
 .hydro-search-more { padding: 3px 6px; font-size: 10px; color: #999; text-align: center; }
 
 /* === Sidebar sections === */
-.hydro-section { border-bottom: 1px solid #eee; }
+.hydro-section { border-bottom: 1px solid var(--ui-border); }
 .hydro-section-header {
   display: flex; align-items: center; gap: 6px; padding: 6px 12px;
-  cursor: pointer; user-select: none; font-weight: 500; color: #444;
+  cursor: pointer; user-select: none; font-weight: 500; color: var(--ui-text);
 }
-.hydro-section-header:hover { background: #f0f0f0; }
+.hydro-section-header:hover { background: var(--ui-bg-hover); }
 .hydro-section-arrow { font-size: 8px; color: #999; transition: transform 0.15s; display: inline-block; }
 .hydro-section-arrow-open { transform: rotate(90deg); }
 .hydro-section-body { padding: 4px 12px 8px; }
 
 /* === Sidebar controls === */
 .hydro-select {
-  width: 100%; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px;
-  font-size: 12px; background: white;
+  width: 100%; padding: 3px 6px; border: 1px solid var(--ui-input-border); border-radius: 3px;
+  font-size: 12px; background: var(--ui-input-bg); color: var(--ui-text);
 }
 .hydro-field { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
-.hydro-field > span { font-size: 11px; color: #666; }
+.hydro-field > span { font-size: 11px; color: var(--ui-text-muted); }
 .hydro-field input[type="range"] { width: 100%; }
 .hydro-field-row { display: flex; gap: 4px; align-items: center; }
 .hydro-field-row .hydro-select { flex: 1; min-width: 0; }
@@ -105,9 +134,19 @@
 .hydro-color-picker::-webkit-color-swatch-wrapper { padding: 1px; }
 .hydro-color-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
 .hydro-color-label { font-size: 10px; color: #888; font-family: "Monaco","Menlo","Consolas",monospace; }
-.hydro-save-row { margin-top: 6px; display: flex; gap: 4px; }
-.hydro-save-btn { flex: 1; text-align: center; }
-.hydro-reset-btn { text-align: center; }
+
+/* === Hex color input === */
+.hydro-hex-input { display: flex; align-items: center; gap: 2px; }
+.hydro-hex-input .hydro-color-picker { width: 20px; height: 20px; }
+.hydro-hex-text {
+  width: 62px; font-size: 10px; font-family: "Monaco","Menlo","Consolas",monospace;
+  padding: 1px 3px; border: 1px solid var(--ui-input-border); border-radius: 2px;
+  background: var(--ui-input-bg); color: var(--ui-text);
+}
+.hydro-hex-text:focus { outline: none; border-color: #6366f1; }
+.hydro-save-row { display: flex; gap: 4px; }
+.hydro-save-row-wrap { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.hydro-save-btn { flex: 1; }
 
 /* === Element style editor === */
 .hydro-element-style { margin-bottom: 6px; }
@@ -121,10 +160,10 @@
 .hydro-toggle-inline input { margin: 0; }
 .hydro-btn-row { display: flex; gap: 4px; }
 .hydro-sidebar-btn {
-  flex: 1; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px;
-  background: white; font-size: 11px; cursor: pointer;
+  flex: 1; padding: 3px 6px; border: 1px solid var(--ui-input-border); border-radius: 3px;
+  background: var(--ui-input-bg); font-size: 11px; cursor: pointer; color: var(--ui-text);
 }
-.hydro-sidebar-btn:hover { background: #f0f0f0; }
+.hydro-sidebar-btn:hover { background: var(--ui-bg-hover); }
 
 /* === Toggle controls === */
 .hydro-toggle {
@@ -152,17 +191,32 @@
   width: 8px; height: 8px; border-radius: 50%;
   position: relative;
 }
-.hydro-node-dot .react-flow__handle { opacity: 0; width: 4px; height: 4px; }
+.hydro-node-dot-dimmed {
+  width: 5px; height: 5px; border-radius: 50%;
+  position: relative; background: #666; opacity: 0.3;
+}
+.hydro-node-dot-match {
+  width: 14px; height: 14px; border-radius: 50%;
+  position: relative; background: #facc15;
+  box-shadow: 0 0 8px rgba(250,204,21,0.7), 0 0 16px rgba(250,204,21,0.3);
+}
+.hydro-node-dot .react-flow__handle,
+.hydro-node-dot-dimmed .react-flow__handle,
+.hydro-node-dot-match .react-flow__handle { opacity: 0; width: 4px; height: 4px; }
 
 .hydro-node {
-  padding: 6px 12px; background: #f5f5f5; border: 1px solid #bbb; border-radius: 4px;
+  padding: 6px 12px; border: 1px solid #bbb; border-radius: 4px;
   font-size: 12px; font-family: "Monaco","Menlo","Consolas",monospace;
   cursor: grab; position: relative; min-width: 60px; text-align: center;
   border-left: 3px solid #999;
 }
 .hydro-node:active { cursor: grabbing; }
-.hydro-node-dimmed { opacity: 0.25; }
-.hydro-node-highlighted { border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.3); }
+.hydro-node-dimmed { opacity: 0.4; filter: grayscale(0.7); }
+.hydro-node-highlighted {
+  border-color: #eab308 !important;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.6), 0 0 16px rgba(250,204,21,0.4) !important;
+  z-index: 10;
+}
 .hydro-node-label {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;
   direction: rtl; text-align: left;
@@ -176,22 +230,6 @@
 .hydro-node:hover .hydro-node-info-btn { opacity: 1; }
 .hydro-node-info-btn:hover { background: #e8e8e8; color: #333; }
 
-/* Node hover tooltip */
-.hydro-node-tooltip {
-  display: none; position: absolute; bottom: calc(100% + 6px); left: 50%;
-  transform: translateX(-50%); background: #333; color: white; padding: 6px 10px;
-  border-radius: 4px; font-size: 11px; white-space: pre-wrap; word-break: break-word;
-  width: max-content; max-width: 360px; z-index: 1000; pointer-events: none; line-height: 1.4;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  direction: ltr; text-align: left;
-}
-.hydro-node-tooltip::after {
-  content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-  border: 5px solid transparent; border-top-color: #333;
-}
-.hydro-node:hover .hydro-node-tooltip { display: block; }
-/* Ensure node doesn't clip the tooltip */
-.hydro-node { overflow: visible; }
 .hydro-node-badge {
   position: absolute; top: -6px; right: -6px; width: 14px; height: 14px;
   background: #4a90d9; color: white; border-radius: 50%; font-size: 10px; line-height: 14px; text-align: center;
@@ -232,12 +270,12 @@
 .hydro-container {
   width: 100%; height: 100%;
   border: 1px solid #d0d0d0; border-radius: 6px;
-  background: rgba(245,245,245,0.5);
-  pointer-events: all; overflow: hidden;
+  background: var(--hydro-container-fill, rgba(245,245,245,0.5));
+  pointer-events: all; overflow: visible;
 }
 .hydro-container-header {
-  display: flex; align-items: center;
-  padding: 4px 10px; font-size: 11px; color: #555; font-weight: 600;
+  display: flex; align-items: center; position: relative;
+  padding: 4px 10px; font-size: 11px; color: var(--hydro-container-text, #555); font-weight: 600;
   background: rgba(230,230,230,0.9); border-radius: 6px 6px 0 0;
   cursor: pointer; user-select: none;
   border-bottom: 1px solid #d0d0d0;
@@ -259,15 +297,28 @@
 /* === ReactFlow overrides === */
 .react-flow__handle { width: 6px; height: 6px; background: #bbb; border: none; }
 .react-flow__minimap {
-  bottom: 10px !important; left: 10px !important;
-  top: auto !important; right: auto !important;
+  bottom: 10px !important; right: 10px !important;
+  top: auto !important; left: auto !important;
   border: 1px solid #ddd; border-radius: 4px;
   background: rgba(255,255,255,0.9);
 }
 .react-flow__controls {
-  bottom: 10px !important; right: 10px !important;
-  top: auto !important; left: auto !important;
+  bottom: 10px !important; left: 10px !important;
+  top: auto !important; right: auto !important;
 }
+
+/* Dark mode overrides for ReactFlow controls/minimap */
+[data-theme="dark"] .react-flow__minimap {
+  background: rgba(20,30,30,0.9); border-color: #444;
+}
+[data-theme="dark"] .react-flow__minimap-mask { fill: rgba(0,0,0,0.6) !important; }
+[data-theme="dark"] .react-flow__controls button {
+  background: #1e2a2a; border-color: #3a5050; color: #ccc;
+}
+[data-theme="dark"] .react-flow__controls button:hover {
+  background: #2a3e3e;
+}
+[data-theme="dark"] .react-flow__controls button svg { fill: #ccc; }
 
 /* === Node info popup === */
 .hydro-popup-overlay {
@@ -344,59 +395,37 @@
   transform: translateY(-1px);
 }
 .hydro-shadow-heavy .hydro-node-highlighted {
-  box-shadow: 0 0 0 2px rgba(74,144,217,0.4), 3px 6px 18px rgba(74,144,217,0.2);
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.6), 0 0 16px rgba(250,204,21,0.4), 3px 6px 18px rgba(0,0,0,0.2) !important;
 }
 
-/* --- Node gradient --- */
-.hydro-node-gradient .hydro-node {
-  background: linear-gradient(180deg, #fafafa 0%, #ececec 100%);
-}
-
-/* --- Container styles (use --hydro-container-tint CSS var) --- */
+/* --- Container styles (use --hydro-container-fill and --hydro-container-tint CSS vars) --- */
 .hydro-container-light .hydro-container {
-  background: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 4%, rgba(250,250,252,0.5));
-  border-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 15%, #ccc);
+  background: color-mix(in srgb, var(--hydro-container-tint) 8%, var(--hydro-container-fill, #f8f9fc));
+  border-color: color-mix(in srgb, var(--hydro-container-tint) 20%, #888);
 }
 .hydro-container-light .hydro-container-header {
-  background: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 8%, rgba(240,240,244,0.95));
+  background: color-mix(in srgb, var(--hydro-container-tint) 12%, var(--hydro-container-fill, #f8f9fc));
 }
 
 .hydro-container-medium .hydro-container {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 5%, rgba(250,250,255,0.6)) 0%,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 8%, rgba(240,240,250,0.35)) 100%
-  );
-  border-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 20%, #bbb);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  background: color-mix(in srgb, var(--hydro-container-tint) 12%, var(--hydro-container-fill, #f8f9fc));
+  border-color: color-mix(in srgb, var(--hydro-container-tint) 25%, #888);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
 }
 .hydro-container-medium .hydro-container-header {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 10%, rgba(238,238,245,0.95)) 0%,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 14%, rgba(228,228,240,0.9)) 100%
-  );
-  border-bottom-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 20%, #bbb);
+  background: color-mix(in srgb, var(--hydro-container-tint) 18%, var(--hydro-container-fill, #f8f9fc));
+  border-bottom-color: color-mix(in srgb, var(--hydro-container-tint) 25%, #888);
 }
 
 .hydro-container-heavy .hydro-container {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 8%, rgba(245,245,255,0.7)) 0%,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 14%, rgba(230,230,250,0.4)) 100%
-  );
-  border-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 30%, #aaa);
-  box-shadow: 2px 3px 10px color-mix(in srgb, var(--hydro-container-tint, #6366f1) 15%, transparent),
-    inset 0 1px 0 rgba(255,255,255,0.6);
+  background: color-mix(in srgb, var(--hydro-container-tint) 18%, var(--hydro-container-fill, #f8f9fc));
+  border-color: color-mix(in srgb, var(--hydro-container-tint) 35%, #888);
+  box-shadow: 2px 3px 10px color-mix(in srgb, var(--hydro-container-tint) 15%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.15);
 }
 .hydro-container-heavy .hydro-container-header {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 15%, rgba(225,225,245,0.95)) 0%,
-    color-mix(in srgb, var(--hydro-container-tint, #6366f1) 22%, rgba(210,210,238,0.9)) 100%
-  );
-  border-bottom-color: color-mix(in srgb, var(--hydro-container-tint, #6366f1) 30%, #aaa);
-  color: #3a3f55;
+  background: color-mix(in srgb, var(--hydro-container-tint) 25%, var(--hydro-container-fill, #f8f9fc));
+  border-bottom-color: color-mix(in srgb, var(--hydro-container-tint) 35%, #888);
 }
 
 /* --- Edge glow (use --hydro-glow-color CSS var) --- */

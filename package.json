@@ -79,19 +79,20 @@
     "@xyflow/react": "^12.8.2",
     "elkjs": "^0.11.0"
   },
-"devDependencies": {
-  "@rollup/plugin-commonjs": "^28.0.8",
-  "@rollup/plugin-node-resolve": "^16.0.3",
-  "@rollup/plugin-typescript": "^12.1.4",
-  "@types/react": "^18.0.0",
-  "@types/react-dom": "^18.0.0",
-  "react": "^19.1.1",
-  "react-dom": "^19.1.1",
-  "rollup": "^4.52.4",
-  "rollup-plugin-postcss": "^4.0.0",
-  "tslib": "^2.8.1",
-  "typescript": "^5.3.3"
-},
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.8",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "rollup": "^4.52.4",
+    "rollup-plugin-postcss": "^4.0.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.5"
+  },
   "optionalDependencies": {
     "@rollup/rollup-darwin-arm64": "^4.52.4",
     "@rollup/rollup-darwin-x64": "^4.52.4",
