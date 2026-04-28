@@ -245,3 +245,54 @@ describe("containersToExpand", () => {
     }
   });
 });
+
+describe("auto_expand action", () => {
+  it("expands containers based on area budget", () => {
+    const state = initState(paxos);
+    // Simulate container sizes — make some small, some large
+    const sizes = new Map<string, { width: number; height: number }>();
+    for (const c of state.containers.values()) {
+      // Give each container a size proportional to its node count
+      const nodeCount = c.nodeIds.length || 1;
+      sizes.set(c.id, { width: nodeCount * 50, height: nodeCount * 30 });
+    }
+    const next = reducer(state, { type: "auto_expand", containerSizes: sizes });
+    // Should have expanded at least some containers
+    expect(next.collapsed.size).toBeLessThan(state.collapsed.size);
+  });
+
+  it("expands everything if total area is small", () => {
+    const state = initState(mapReduce);
+    const sizes = new Map<string, { width: number; height: number }>();
+    // Give tiny sizes so everything fits
+    for (const c of state.containers.values()) {
+      sizes.set(c.id, { width: 100, height: 50 });
+    }
+    const next = reducer(state, { type: "auto_expand", containerSizes: sizes });
+    expect(next.collapsed.size).toBe(0);
+  });
+});
+
+describe("dissolvedSynthetics", () => {
+  it("resets on collapse_all", () => {
+    const state = initState(mapReduce);
+    const withDissolved = { ...state, dissolvedSynthetics: new Set(["__syn_test"]) };
+    const next = reducer(withDissolved, { type: "collapse_all" });
+    expect(next.dissolvedSynthetics.size).toBe(0);
+  });
+
+  it("resets on expand_all", () => {
+    const state = initState(mapReduce);
+    const withDissolved = { ...state, dissolvedSynthetics: new Set(["__syn_test"]) };
+    const next = reducer(withDissolved, { type: "expand_all" });
+    expect(next.dissolvedSynthetics.size).toBe(0);
+  });
+
+  it("resets on toggle_collapse", () => {
+    const state = initState(mapReduce);
+    const withDissolved = { ...state, dissolvedSynthetics: new Set(["__syn_test"]) };
+    const cid = [...state.containers.keys()][0];
+    const next = reducer(withDissolved, { type: "toggle_collapse", containerId: cid });
+    expect(next.dissolvedSynthetics.size).toBe(0);
+  });
+});

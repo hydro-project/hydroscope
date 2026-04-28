@@ -15,7 +15,6 @@ export type Action =
   | { type: "load"; data: HydroscopeData }
   | { type: "toggle_collapse"; containerId: string }
   | { type: "toggle_synthetic"; syntheticId: string }
-  | { type: "rebundle_all" }
   | { type: "set_hierarchy"; hierarchyId: string }
   | { type: "collapse_all" }
   | { type: "expand_all" }
@@ -133,7 +132,6 @@ export function reducer(state: GraphState, action: Action): GraphState {
       else next.add(action.syntheticId);
       return { ...state, dissolvedSynthetics: next };
     }
-    case "rebundle_all": return { ...state, dissolvedSynthetics: new Set() };
     case "set_hierarchy": return buildState(state.raw, action.hierarchyId);
     case "collapse_all": {
       const all = new Set<string>();
@@ -196,16 +194,9 @@ export interface VisibleEdge extends GraphEdge {
   count: number;
 }
 
-/** Cached visible graph computation */
-const visibleGraphCache = new WeakMap<GraphState, { nodes: GraphNode[]; containers: Container[]; syntheticMap: Map<string, string> }>();
-
 function getVisibleGraph(state: GraphState): { nodes: GraphNode[]; containers: Container[]; syntheticMap: Map<string, string> } {
-  const cached = visibleGraphCache.get(state);
-  if (cached) return cached;
-
   const visibleContainers: Container[] = [];
-  const syntheticMap = new Map<string, string>(); // nodeId → synthetic container id
-  const syntheticLeafCounts = new Map<string, number>(); // synthetic id → leaf count
+  const syntheticMap = new Map<string, string>();
 
   for (const c of state.containers.values()) {
     // Skip containers hidden inside collapsed parents
@@ -229,7 +220,6 @@ function getVisibleGraph(state: GraphState): { nodes: GraphNode[]; containers: C
       // Only bundle if this synthetic hasn't been dissolved
       if (!state.dissolvedSynthetics.has(synId)) {
         for (const nid of directLeaves) syntheticMap.set(nid, synId);
-        syntheticLeafCounts.set(synId, directLeaves.length);
         visibleContainers.push(c);
         visibleContainers.push({
           id: synId,
@@ -238,8 +228,7 @@ function getVisibleGraph(state: GraphState): { nodes: GraphNode[]; containers: C
           childContainerIds: [],
           nodeIds: directLeaves,
           locationType: undefined,
-          _synthetic: true,
-        } as Container & { _synthetic?: boolean });
+        });
       } else {
         // Dissolved — show leaves normally
         visibleContainers.push(c);
@@ -259,7 +248,6 @@ function getVisibleGraph(state: GraphState): { nodes: GraphNode[]; containers: C
     const synId = "__syn_root";
     if (!state.dissolvedSynthetics.has(synId)) {
       for (const nid of rootLeaves) syntheticMap.set(nid, synId);
-      syntheticLeafCounts.set(synId, rootLeaves.length);
       visibleContainers.push({
         id: synId,
         name: `${rootLeaves.length} nodes`,
@@ -267,8 +255,7 @@ function getVisibleGraph(state: GraphState): { nodes: GraphNode[]; containers: C
         childContainerIds: [],
         nodeIds: rootLeaves,
         locationType: undefined,
-        _synthetic: true,
-      } as Container & { _synthetic?: boolean });
+      });
     }
   }
 
@@ -278,7 +265,6 @@ function getVisibleGraph(state: GraphState): { nodes: GraphNode[]; containers: C
   );
 
   const result = { nodes: visibleNodes, containers: visibleContainers, syntheticMap };
-  visibleGraphCache.set(state, result);
   return result;
 }
 

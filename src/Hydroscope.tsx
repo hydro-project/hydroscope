@@ -16,16 +16,38 @@ import "./hydroscope.css";
 
 // Suppress benign ResizeObserver loop errors (triggered by ReactFlow internals)
 if (typeof window !== "undefined") {
-  // Must use capture phase to run before webpack-dev-server's overlay handler
   window.addEventListener("error", (e) => {
     if (e.message?.includes("ResizeObserver")) { e.stopImmediatePropagation(); }
   }, true);
-  // Also patch window.onerror for older error paths
   const _onerror = window.onerror;
   window.onerror = (msg, ...args) => {
     if (typeof msg === "string" && msg.includes("ResizeObserver")) return true;
     return _onerror ? (_onerror as any)(msg, ...args) : false;
   };
+}
+
+// --- Error boundary ---
+class HydroscopeErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 24, textAlign: "center", color: "#dc2626" }}>
+          <h3 style={{ margin: "0 0 8px" }}>Hydroscope Error</h3>
+          <p style={{ fontSize: 13, color: "#666" }}>{this.state.error.message}</p>
+          <button onClick={() => this.setState({ error: null })}
+            style={{ marginTop: 8, padding: "6px 12px", background: "#4a90d9", color: "white", border: "none", borderRadius: 4, cursor: "pointer" }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // --- Color palette for node types ---
@@ -40,7 +62,9 @@ function nodeTypeColor(colorIndex: number): string {
 
 /** Darken a hex color by a fraction (0–1) */
 function darken(hex: string, amount: number): string {
-  const n = parseInt(hex.replace("#", ""), 16);
+  const clean = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return hex;
+  const n = parseInt(clean, 16);
   const r = Math.max(0, ((n >> 16) & 0xff) * (1 - amount)) | 0;
   const g = Math.max(0, ((n >> 8) & 0xff) * (1 - amount)) | 0;
   const b = Math.max(0, (n & 0xff) * (1 - amount)) | 0;
@@ -353,6 +377,9 @@ function getSystemColorScheme(): "dark" | "light" {
 
 const DEFAULT_VISUAL_STYLE = getSystemColorScheme() === "dark" ? DARK_STYLE : LIGHT_STYLE;
 
+/** Whether the appearance panel is enabled (via ?appearance URL param) */
+const SHOW_APPEARANCE = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("appearance");
+
 // --- Sidebar Panel (search, legends, appearance) ---
 
 function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualStyle, onVisualStyleChange }: {
@@ -451,8 +478,8 @@ function SidebarPanel({ data, search, onSearchChange, state, dispatch, visualSty
         </Section>
       )}
 
-      {/* Appearance tuner (hidden by default, enable with ?appearance=1 URL param) */}
-      {typeof window !== "undefined" && new URLSearchParams(window.location.search).has("appearance") && (
+      {/* Appearance tuner (hidden by default, enable with ?appearance URL param) */}
+      {SHOW_APPEARANCE && (
       <Section title="Appearance" defaultOpen={false}>
         <ElementStyleEditor label="Leaf nodes" value={visualStyle.node}
           onChange={(v) => onVisualStyleChange({ ...visualStyle, node: v })} />
@@ -840,10 +867,11 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
     return () => { observer.disconnect(); mq.removeEventListener("change", handler); };
   }, []);
 
-  useEffect(() => { dispatch({ type: "load", data }); }, [data]);
+  const autoExpandRan = useRef(false);
+
+  useEffect(() => { dispatch({ type: "load", data }); autoExpandRan.current = false; }, [data]);
 
   // Run headless ELK pass to get container sizes, then auto-expand
-  const autoExpandRan = useRef(false);
   useEffect(() => {
     if (autoExpandRan.current) return;
     autoExpandRan.current = true;
@@ -869,18 +897,21 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
   }, [data.nodeTypeConfig]);
 
   // Search matches among visible nodes (for highlighting)
-  const searchLower = search.toLowerCase();
   const searchMatches = useMemo(
-    () => search ? new Set(visibleNodes.filter((n) =>
-      n.label.toLowerCase().includes(searchLower) || n.fullLabel.toLowerCase().includes(searchLower)
-    ).map((n) => n.id)) : null,
-    [visibleNodes, searchLower, search],
+    () => {
+      if (!search) return null;
+      const q = search.toLowerCase();
+      return new Set(visibleNodes.filter((n) =>
+        n.label.toLowerCase().includes(q) || n.fullLabel.toLowerCase().includes(q)
+      ).map((n) => n.id));
+    },
+    [visibleNodes, search],
   );
 
   // Containers that have matching descendants (for highlighting collapsed containers)
   const containerSearchMatches = useMemo(() => {
     if (!search) return null;
-    const q = searchLower;
+    const q = search.toLowerCase();
     const matchingContainers = new Set<string>();
     for (const node of state.nodes.values()) {
       if (node.label.toLowerCase().includes(q) || node.fullLabel.toLowerCase().includes(q)) {
@@ -903,7 +934,7 @@ function HydroscopeCoreInner({ data, containerWidth, containerHeight, onClose }:
       }
     }
     return matchingContainers;
-  }, [state.nodes, state.containers, searchLower, search]);
+  }, [state.nodes, state.containers, search]);
 
   useEffect(() => {
     const version = ++layoutVersion.current;
@@ -1113,9 +1144,11 @@ export function HydroscopeCore({ data, width = "100%", height = "100%", onClose 
   return (
     <div ref={ref} style={{ width, height }}>
       {size[0] > 0 && size[1] > 0 && (
-        <ReactFlowProvider>
-          <HydroscopeCoreInner data={data} containerWidth={size[0]} containerHeight={size[1]} onClose={onClose} />
-        </ReactFlowProvider>
+        <HydroscopeErrorBoundary>
+          <ReactFlowProvider>
+            <HydroscopeCoreInner data={data} containerWidth={size[0]} containerHeight={size[1]} onClose={onClose} />
+          </ReactFlowProvider>
+        </HydroscopeErrorBoundary>
       )}
     </div>
   );
